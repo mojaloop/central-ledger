@@ -1,0 +1,20 @@
+{
+  "PORT": 3000,
+  "ADMIN_PORT": 3001,
+  "HOSTNAME": "http://central-ledger",
+  "ENABLE_TOKEN_AUTH": false,
+  "ENABLE_BASIC_AUTH": false,
+  "LEDGER_ACCOUNT_NAME": "LedgerName",
+  "LEDGER_ACCOUNT_PASSWORD": "LedgerPassword",
+  "AMOUNT": {
+    "PRECISION": 10,
+    "SCALE": 2
+  },
+  "SIDECAR": {
+    "DISABLED": false,
+    "HOST": "localhost",
+    "PORT": 5678,
+    "CONNECT_TIMEOUT": 45000,
+    "RECONNECT_INTERVAL": 5000
+  }
+}

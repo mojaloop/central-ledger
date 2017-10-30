@@ -1,0 +1,14 @@
+instrumentation:
+  include-all-sources: true
+  excludes: ['**/migrations/**', '**/deploy/**']
+check:
+  global:
+    statements: 90
+    lines: 90
+    branches: 90
+    functions: 90
+  each:
+    statements: 90
+    lines: 90
+    branches: 90
+    functions: 90
