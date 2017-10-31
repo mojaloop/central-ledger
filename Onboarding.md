@@ -1,7 +1,7 @@
 # Central Ledger Setup
 ***
 ### Introduction 
-In this document we'll walk through the setup for the Level One Project Central Ledger. It consists of three sections:
+In this document we'll walk through the setup for the Mojaloop Central Ledger. It consists of three sections:
 
 * [Software List](#software-list)
 * [Setup](#setup)
@@ -25,7 +25,7 @@ In this document we'll walk through the setup for the Level One Project Central 
 ***
 
 ### Setup
-Make sure you have access to the [Level One Project on Github](https://github.com/@mojaloop/central-ledger) and clone the project.
+Make sure you have access to [Mojaloop on Github](https://github.com/mojaloop/central-ledger) and clone the project.
 
 To install Homebrew run this in a terminal window:
 ```
