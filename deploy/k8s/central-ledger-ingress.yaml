@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: central-ledger
+  labels:
+      app: central-ledger
+spec:
+  rules:
+    - host: central-ledger.local
+      http:
+        paths:
+        #  - backend:
+        #     serviceName: central-ledger
+        #     servicePort: 3000
+        - path: /
+          backend:
+            serviceName: central-ledger
+            servicePort: 3000
+        - path: /admin
+          backend:
+            serviceName: central-ledger
+            servicePort: 3001
