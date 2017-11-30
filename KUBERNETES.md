@@ -25,7 +25,7 @@
     `minikube addon ingress enable`
 
 9. Configure PostgreSQL
-    Edit `postgresUser` & `postgresPassword` as desired in the follow file `./k8s/central-ledger-helm-postgresql-values.yaml` 
+    Edit `postgresUser` & `postgresPassword` as desired in the following file `./k8s/central-ledger-helm-postgresql-values.yaml` 
 
 10. Deploy PosgreSQL
     `helm install --name central-ledger -f ./k8s/central-ledger-helm-postgresql-values.yaml stable/postgresql`
