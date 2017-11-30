@@ -19,15 +19,12 @@
             ports:
               - containerPort: 3000
               # - containerPort: 3001
-            # livenessProbe:
-            #   httpGet:
-            #     path: /health
-            #     port: 8080
-            #     httpHeaders:
-            #     - name: X-Custom-Header
-            #      value: Awesome
-            #   initialDelaySeconds: 30
-            #   periodSeconds: 3
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: 3000
+              initialDelaySeconds: 60
+              periodSeconds: 10
             # securityContext:
             #   capabilities:
             #     add:
@@ -65,15 +62,12 @@
             ports:
               # - containerPort: 3000
               - containerPort: 3001
-            # livenessProbe:
-            #   httpGet:
-            #     path: /health
-            #     port: 8080
-            #     httpHeaders:
-            #     - name: X-Custom-Header
-            #      value: Awesome
-            #   initialDelaySeconds: 30
-            #   periodSeconds: 3
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: 3001
+              initialDelaySeconds: 60
+              periodSeconds: 10
             # securityContext:
             #   capabilities:
             #     add:

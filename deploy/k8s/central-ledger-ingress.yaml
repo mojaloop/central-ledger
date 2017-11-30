@@ -2,6 +2,8 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: central-ledger
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: '/'
   labels:
       app: central-ledger
 spec:
@@ -9,9 +11,6 @@ spec:
     - host: central-ledger.local
       http:
         paths:
-        #  - backend:
-        #     serviceName: central-ledger
-        #     servicePort: 3000
         - path: /
           backend:
             serviceName: central-ledger
