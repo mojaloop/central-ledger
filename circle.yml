@@ -13,8 +13,8 @@ machine:
   environment:
     AWS_ACCOUNT_ID: 886403637725
     APP_NAME: central-ledger
-    API_IMAGE: leveloneproject/central-ledger
-    ADMIN_IMAGE: leveloneproject/central-ledger-admin
+    API_IMAGE: mojaloop/central-ledger
+    ADMIN_IMAGE: mojaloop/central-ledger-admin
     AWS_REGION: us-west-2
     BUCKET: elasticbeanstalk-$AWS_REGION-$AWS_ACCOUNT_ID
     INTG_TEST_CMD: tape 'test/integration/**/*.test.js' | tap-xunit > ./test/results/tape-integration.xml
@@ -24,7 +24,7 @@ dependencies:
   pre:
     - sudo rm -f /usr/local/bin/docker-compose
     - sudo pip install docker-compose==1.8.1
-    - curl -udwolla:$NPM_TOKEN "https://modusbox.jfrog.io/modusbox/api/npm/level1-npm-release/auth/leveloneproject" >> .npmrc
+    - echo "https://registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
   post:
     - npm install github:interledgerjs/five-bells-ledger-api-tests
     - docker build -f api.Dockerfile -t $API_IMAGE .
