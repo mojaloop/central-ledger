@@ -22,24 +22,24 @@
     `helm init` <-- this only needs to be done once
 
 8. Deploy Ingress
-    `minikube addon ingress enable`
+    `minikube addon enable ingress`
 
 9. Configure PostgreSQL
-    Edit `postgresUser` & `postgresPassword` as desired in the following file `./k8s/central-ledger-helm-postgresql-values.yaml` 
+    Edit `postgresUser` & `postgresPassword` as desired in the following file `./deploy/helm/central-ledger-helm-postgresql-values.yaml` 
 
 10. Deploy PosgreSQL
-    `helm install --name central-ledger -f ./k8s/central-ledger-helm-postgresql-values.yaml stable/postgresql`
+    `helm install --name central-ledger -f ./deploy/helm/central-ledger-helm-postgresql-values.yaml stable/postgresql`
 
 11. Configure credentials in the Central-ledger-secret
-    Edit `db.uri` with the details from step 10 above in the following file `./k8s/central-ledger-secret.yaml`. 
+    Edit `db.uri` with the details from step 10 above in the following file `./deploy/k8s/central-ledger-secret.yaml`. 
     
     Ensure the values are base64 encoded.
 
 12. Deploy Central-ledger
-    `kubectl create -f ./k8s`
+    `kubectl create -f ./deploy/k8s`
 
     Or alternatively you can stipulate a namespace for deployment
-    `kubectl -n dev create -f ./k8s`
+    `kubectl -n dev create -f ./deploy/k8s`
 
 13. Add the following to your hosts file
 `<IP>	central-ledger.local`
