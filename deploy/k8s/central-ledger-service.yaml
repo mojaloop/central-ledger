@@ -1,0 +1,19 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: central-ledger
+  labels:
+      app: central-ledger
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http-api
+      protocol: TCP
+    - port: 3001
+      targetPort: 3001
+      name: http-api-admin
+      protocol: TCP
+  selector:
+    app: central-ledger
+
