@@ -1,0 +1,225 @@
+# CircleCI v2 Config
+version: 2
+
+defaults: &defaults
+  working_directory: /home/circleci/project
+  docker:
+    - image: circleci/node:6.10.3
+      environment:
+        AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID
+        APP_NAME: central-ledger
+        API_IMAGE: $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME
+        ADMIN_IMAGE: $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME-admin
+        AWS_REGION: $AWS_REGION
+        BUCKET: elasticbeanstalk-$AWS_REGION-$AWS_ACCOUNT_ID
+        INTG_TEST_CMD: tape 'test/integration/**/*.test.js' | tap-xunit > ./test/results/tape-integration.xml
+        FUNC_TEST_CMD: tape 'test/functional/**/*.test.js' | tap-xunit > ./test/results/tape-functional.xml
+
+jobs:
+  setup:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Update NPM install
+          command: sudo npm install
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - node_modules
+  test-unit:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run: 
+          name: Execute unit tests
+          command: npm -s run test:xunit > ./test/results/tape.xml
+      - store_artifacts:
+          path: ./test/results
+          prefix: test
+      - store_test_results:
+          path: ./test/results
+  test-coverage:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Execute code coverage check
+          command: npm -s run test:coverage-check
+      - store_artifacts:
+          path: coverage
+          prefix: test
+      - store_test_results:
+          path: coverage
+  test-integration:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run: 
+          name: Execute unit tests
+          command: npm -s run test:integration
+      - store_artifacts:
+          path: ./test/results
+          prefix: test
+      - store_test_results:
+          path: ./test/results
+  test-functional:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run: 
+          name: Execute unit tests
+          command: npm -s run test:functional:test-only
+      - store_artifacts:
+          path: ./test/results
+          prefix: test
+      - store_test_results:
+          path: ./test/results
+  build:
+    machine: true
+    steps:
+      - checkout
+      # # build the application image
+      # - run: 
+      #     name: Build Docker image
+      #     command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+      # build the application image
+      - run: 
+          name: Build Docker image
+          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:test .
+      # save the docker image to the file system
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            mkdir -p ./caches
+            docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
+      # store docker image in cache
+      - save_cache:
+          key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+          paths:
+            - ./caches/dockerimage.tar
+  deploy:
+    machine: true
+    steps:
+      - checkout
+      # login to docker hub
+      - run: 
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      # restore docker image for deployment
+      - restore_cache:
+          keys:
+            - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+          paths:
+            - /caches/dockerimage.tar
+      # load docker image
+      - run:
+          name: Load Docker image layer cache
+          command: |
+            set +o pipefail
+            docker load -i /caches/dockerimage.tar | true
+      - run: 
+          name: Publish Docker image tag to Docker Hub
+          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:test
+      # # publish docker image with tag
+      # - run: 
+      #     name: Publish Docker image tag to Docker Hub
+      #     command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+      # # publish docker image with latest
+      # - run: 
+      #     name: Publish Docker image latest to Docker Hub
+      #     command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - setup:
+          context: org-global
+          filters:
+              branches:
+                ignore: 
+                  - /feature*/
+                  - /bugfix*/
+      - test-unit:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/             
+      - test-coverage:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-integration:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-functional:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - build:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+          # filters:
+          #   tags:
+          #     only: /v[0-9]+(\.[0-9]+)*/
+          #   branches:
+          #     only:
+          #       - master
+      - deploy:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            - build
+          # filters:
+          #   tags:
+          #     only: /v[0-9]+(\.[0-9]+)*/
+          #   branches:
+          #     only:
+          #       - master
