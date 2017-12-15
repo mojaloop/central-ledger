@@ -21,7 +21,9 @@ jobs:
     steps:
       - run:
           name: Install build dependencies
-          command: apk --no-cache add git
+          command: |
+            apk --no-cache add git
+            apk --no-cache add ca-certificates
       - checkout
       - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
