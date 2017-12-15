@@ -15,7 +15,7 @@ defaults: &defaults
         INTG_TEST_CMD: tape 'test/integration/**/*.test.js' | tap-xunit > ./test/results/tape-integration.xml
         FUNC_TEST_CMD: tape 'test/functional/**/*.test.js' | tap-xunit > ./test/results/tape-functional.xml
 
-defaultDepdencies: &defaultDependencies | 
+defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
 
