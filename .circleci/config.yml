@@ -4,7 +4,7 @@ version: 2
 defaults: &defaults
   working_directory: /home/circleci/project
   docker:
-    - image: circleci/node:6.10.3
+    - image: dwolla/alpine-node-make
       environment:
         AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID
         APP_NAME: central-ledger
