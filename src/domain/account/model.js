@@ -49,9 +49,9 @@ exports.updateAccountSettlement = (account, settlement) => {
 }
 
 exports.create = (account) => {
-  return Db.accounts.insert({ name: account.name })
-    .then(insertedAccount => {
-      return Db.userCredentials.insert({ accountId: insertedAccount.accountId, password: account.hashedPassword })
-        .then(() => insertedAccount)
-    })
+  return Db.accounts.insert({ name: account.name, emailAddress: account.emailAddress })
+  .then(insertedAccount => {
+    return Db.userCredentials.insert({ accountId: insertedAccount.accountId, password: account.hashedPassword })
+      .then(() => insertedAccount)
+  })
 }
