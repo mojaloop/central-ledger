@@ -15,15 +15,17 @@ defaults: &defaults
         INTG_TEST_CMD: tape 'test/integration/**/*.test.js' | tap-xunit > ./test/results/tape-integration.xml
         FUNC_TEST_CMD: tape 'test/functional/**/*.test.js' | tap-xunit > ./test/results/tape-functional.xml
 
+defaultDepdencies: &defaultDependencies | 
+    apk --no-cache add git
+    apk --no-cache add ca-certificates
+
 jobs:
   setup:
     <<: *defaults
     steps:
       - run:
           name: Install dependencies
-          command: |
-            apk --no-cache add git
-            apk --no-cache add ca-certificates
+          command: *defaultDependencies
       - checkout
       - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
@@ -49,9 +51,7 @@ jobs:
     steps:
       - run:
           name: Install dependencies
-          command: |
-            apk --no-cache add git
-            apk --no-cache add ca-certificates
+          command: *defaultDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -69,6 +69,9 @@ jobs:
   test-coverage:
     <<: *defaults
     steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -83,6 +86,9 @@ jobs:
   test-integration:
     <<: *defaults
     steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -100,6 +106,9 @@ jobs:
   test-functional:
     <<: *defaults
     steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -117,6 +126,9 @@ jobs:
   build:
     machine: true
     steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
       - checkout
       # # build the application image
       # - run: 
