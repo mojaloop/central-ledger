@@ -22,7 +22,11 @@ jobs:
       - checkout
       - run:
           name: Update NPM install
-          command: npm install
+          command: |
+            npm link sodium
+            npm link argon2
+            npm install --production
+            npm uninstall -g npm
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
