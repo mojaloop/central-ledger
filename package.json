@@ -33,7 +33,7 @@
     "test:xunit": "tape 'test/unit/**/*.test.js' | tap-xunit",
     "test:coverage": "istanbul cover tape -- 'test/unit/**/*.test.js'",
     "test:coverage-check": "npm run test:coverage && istanbul check-coverage",
-    "test:integration": "sh ./test/integration-runner.sh .env",
+    "test:integration": "sh ./test/integration-runner.sh ./test/.env",
     "test:functional": "run-s docker:build test:functional:test-only",
     "test:functional:test-only": "sh ./test/functional-runner.sh docker-compose.yml docker-compose.functional.yml .env",
     "test:spec": "sh ./test/spec-runner.sh",
