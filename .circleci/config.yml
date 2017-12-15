@@ -20,7 +20,7 @@ jobs:
     <<: *defaults
     steps:
       - run:
-          name: Install build dependencies
+          name: Install dependencies
           command: |
             apk --no-cache add git
             apk --no-cache add ca-certificates
@@ -47,6 +47,11 @@ jobs:
   test-unit:
     <<: *defaults
     steps:
+      - run:
+          name: Install dependencies
+          command: |
+            apk --no-cache add git
+            apk --no-cache add ca-certificates
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
