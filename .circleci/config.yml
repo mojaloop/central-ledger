@@ -21,12 +21,14 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Link NPM sodium
+          command: npm link sodium
+      - run:
+          name: Link NPM argon2
+          command: npm link argon2
+      - run:
           name: Update NPM install
-          command: |
-            npm link sodium
-            npm link argon2
-            npm install
-            npm uninstall -g npm
+          command: npm install
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
