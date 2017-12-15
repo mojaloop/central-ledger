@@ -19,6 +19,9 @@ jobs:
   setup:
     <<: *defaults
     steps:
+      - run:
+          name: Install build dependencies
+          command: apk --no-cache add git
       - checkout
       - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
