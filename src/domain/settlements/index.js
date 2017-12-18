@@ -6,7 +6,7 @@ const Events = require('../../lib/events')
 const csv = require('../../lib/csv')
 const settlementEventListener = require('./settlementEventListener')
 // const AccountDatabase = require('../../domain/account')
-const Logger = require('@leveloneproject/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const mapToSettlement = (settlement) => {
   return {
