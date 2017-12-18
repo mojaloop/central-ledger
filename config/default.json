@@ -11,10 +11,13 @@
     "SCALE": 2
   },
   "SIDECAR": {
-    "DISABLED": false,
+    "DISABLED": true,
     "HOST": "localhost",
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,
     "RECONNECT_INTERVAL": 5000
-  }
+  },
+  "EMAIL_USER": "modusboxemailtest@gmail.com",
+  "EMAIL_PASSWORD": "April2o0%",
+  "EMAIL_SMTP": "smtp.gmail.com"
 }

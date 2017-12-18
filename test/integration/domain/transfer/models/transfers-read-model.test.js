@@ -129,6 +129,33 @@ Test('transfers read model', modelTest => {
     getByIdTest.end()
   })
 
+  modelTest.test('getAll should', getAllTest => {
+    getAllTest.test('retrieve all transfers from read model', test => {
+      let debitAccountName = Fixtures.generateAccountName()
+      let creditAccountName = Fixtures.generateAccountName()
+
+      createAccounts([debitAccountName, creditAccountName])
+        .then(accountMap => {
+          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED)
+          let transfer2 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '40', accountMap), buildReadModelDebitOrCredit(creditAccountName, '40', accountMap), TransferState.PREPARED)
+          let transfer3 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '30', accountMap), buildReadModelDebitOrCredit(creditAccountName, '30', accountMap), TransferState.PREPARED)
+
+          ReadModel.truncateTransfers()
+            .then(() => ReadModel.saveTransfer(transfer))
+            .then(() => ReadModel.saveTransfer(transfer2))
+            .then(() => ReadModel.saveTransfer(transfer3))
+            .then(() => ReadModel.getAll())
+            .then(found => {
+              test.ok(found)
+              test.equal(3, found.length)
+              test.end()
+            })
+        })
+    })
+
+    getAllTest.end()
+  })
+
   modelTest.test('findExpired should', expiredTest => {
     expiredTest.test('retrieve prepared transfers with past expires at', test => {
       let debitAccountName = Fixtures.generateAccountName()

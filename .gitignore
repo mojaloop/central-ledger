@@ -41,3 +41,10 @@ jspm_packages
 .vscode
 
 .npmrc
+
+# --------------- #
+# IntelliJ #
+# --------------- #
+.idea/
+**/*.iml
+
