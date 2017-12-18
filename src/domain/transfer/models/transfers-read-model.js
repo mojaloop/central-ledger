@@ -13,6 +13,15 @@ const saveTransfer = (record) => {
   return Db.transfers.insert(record)
 }
 
+const getAll = () => {
+  return Db.transfers.query(builder => {
+    return builder
+      .innerJoin('accounts AS ca', 'transfers.creditAccountId', 'ca.accountId')
+      .innerJoin('accounts AS da', 'transfers.debitAccountId', 'da.accountId')
+      .select('transfers.*', 'ca.name AS creditAccountName', 'da.name AS debitAccountName')
+  })
+}
+
 const updateTransfer = (transferId, fields) => {
   return Db.transfers.update({ transferUuid: transferId }, fields)
 }
@@ -35,6 +44,7 @@ const getById = (id) => {
 module.exports = {
   findExpired,
   saveTransfer,
+  getAll,
   updateTransfer,
   truncateTransfers,
   getById

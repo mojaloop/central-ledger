@@ -5,8 +5,8 @@ const Fixtures = require('../../../fixtures')
 const Db = require('../../../../src/db')
 const Model = require('../../../../src/domain/account/model')
 
-function createAccount (name, hashedPassword = 'password') {
-  const payload = { name, hashedPassword }
+function createAccount (name, hashedPassword = 'password', emailAddress = name + '@test.com') {
+  const payload = { name, hashedPassword, emailAddress }
   return Model.create(payload)
 }
 
@@ -19,12 +19,15 @@ Test('accounts model', modelTest => {
     createTest.test('create a new account', test => {
       const accountName = Fixtures.generateAccountName()
       const hashedPassword = 'some-password'
-      createAccount(accountName, hashedPassword)
+      const emailAddress = accountName + '@test.com'
+      createAccount(accountName, hashedPassword, emailAddress)
         .then((account) => {
           test.equal(account.name, accountName)
           test.ok(account.createdDate)
           test.ok(account.accountId)
+          test.ok(account.emailAddress)
           test.equal(account.isDisabled, false)
+          test.ok
           test.end()
         })
     })
@@ -42,6 +45,7 @@ Test('accounts model', modelTest => {
               test.notEqual(found, account)
               test.equal(found.name, account.name)
               test.deepEqual(found.createdDate, account.createdDate)
+              test.equal(found.emailAddress, account.emailAddress)
               test.equal(found.isDisabled, false)
               test.end()
             })

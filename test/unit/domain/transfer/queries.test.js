@@ -14,6 +14,7 @@ Test('Transfer Queries tests', queriesTest => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(TransferReadModel, 'findExpired')
     sandbox.stub(TransferReadModel, 'getById')
+    sandbox.stub(TransferReadModel, 'getAll')
     t.end()
   })
 
@@ -32,6 +33,17 @@ Test('Transfer Queries tests', queriesTest => {
       test.end()
     })
     getByIdTest.end()
+  })
+
+  queriesTest.test('getAll should', getAllTest => {
+    getAllTest.test('return result from read model', test => {
+      const transfer = {}
+      const transferPromise = P.resolve(transfer)
+      TransferReadModel.getAll.returns(transferPromise)
+      test.equal(TransferQueries.getAll(), transferPromise)
+      test.end()
+    })
+    getAllTest.end()
   })
 
   queriesTest.test('findExpired should', findExpiredTest => {
