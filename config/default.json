@@ -17,7 +17,7 @@
     "CONNECT_TIMEOUT": 45000,
     "RECONNECT_INTERVAL": 5000
   },
-  "EMAIL_USER": "test@modusbox.com",
-  "EMAIL_PASSWORD": "password",
+  "EMAIL_USER": "modusboxemailtest@gmail.com",
+  "EMAIL_PASSWORD": "April2o0%",
   "EMAIL_SMTP": "smtp.gmail.com"
 }
