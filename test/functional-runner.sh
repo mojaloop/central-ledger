@@ -120,7 +120,8 @@ done
 >&2 echo " done"
 
 >&2 echo "Functional tests are starting"
-set -o pipefail && run_test_command
+# set -o pipefail && run_test_command
+run_test_command
 test_exit_code=$?
 
 if [ "$test_exit_code" != 0 ]
