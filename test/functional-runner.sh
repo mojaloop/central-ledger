@@ -18,7 +18,7 @@ fi
 
 psql() {
 	docker run --rm -i \
-		--net postgres_back \
+		--net centralledger_back \
 		--entrypoint psql \
 		-e PGPASSWORD=$POSTGRES_PASSWORD \
 		"postgres:9.4" \
@@ -30,7 +30,8 @@ psql() {
 }
 
 is_psql_up() {
-    psql -c '\l' > /dev/null 2>&1
+    # psql -c '\l' > /dev/null 2>&1
+    psql -c '\l'
 }
 
 is_api_up() {
@@ -57,7 +58,8 @@ echo "Loading environment variables 2"
 env
 
 >&2 echo "Postgres is starting"
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
+# docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
+docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
 
 until is_psql_up; do
   >&2 echo "Postgres is unavailable - sleeping"
