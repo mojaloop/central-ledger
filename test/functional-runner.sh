@@ -29,22 +29,9 @@ fpsql() {
 		"$@"
 }
 
-# psql() {
-# 	docker run --rm -i \
-# 		--net container:centralledger_postgres_1 \
-# 		--entrypoint psql \
-# 		-e PGPASSWORD=$POSTGRES_PASSWORD \
-# 		"postgres:9.4" \
-#     --host postgres \
-# 		--username $POSTGRES_USER \
-#     --dbname postgres \
-# 		--quiet --no-align --tuples-only \
-# 		"$@"
-# }
-
 is_psql_up() {
-    # psql -c '\l' > /dev/null 2>&1
-    fpsql -c '\l'
+    fpsql -c '\l' > /dev/null 2>&1
+    # fpsql -c '\l'
 }
 
 fcurl() {
@@ -75,15 +62,12 @@ shutdown_and_remove() {
   docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file stop
 }
 
->&2 echo "Loading environment variables 1"
-env
+>&2 echo "Loading environment variables"
 . $env_file
-echo "Loading environment variables 2"
-env
 
 >&2 echo "Postgres is starting"
-# docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
-docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
+docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
+# docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
 
 until is_psql_up; do
   >&2 echo "Postgres is unavailable - sleeping"
@@ -120,8 +104,7 @@ done
 >&2 echo " done"
 
 >&2 echo "Functional tests are starting"
-# set -o pipefail && run_test_command
-run_test_command
+. -o pipefail && run_test_command
 test_exit_code=$?
 
 if [ "$test_exit_code" != 0 ]
