@@ -111,6 +111,8 @@ jobs:
     #   - run:
     #       name: Install dependencies
     #       command: *defaultDependencies
+        # Add the Postgres 9.6 binaries to the path.  
+      - run: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
