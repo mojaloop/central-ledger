@@ -13,6 +13,7 @@ const permissions = {
   ACCOUNTS_VIEW: new Permission('ACCOUNTS_VIEW', 'View account details'),
   ACCOUNTS_UPDATE: new Permission('ACCOUNTS_UPDATE', 'Update account'),
   POSITIONS_LIST: new Permission('POSITIONS_LIST', 'List positions for all Accounts'),
+  POSITIONS_VIEW: new Permission('POSITIONS_VIEW', 'View position for an Account'),
   CHARGES_LIST: new Permission('CHARGES_GET', 'List all charges'),
   CHARGES_CREATE: new Permission('CHARGES_CREATE', 'Create a new charge'),
   CHARGES_UPDATE: new Permission('CHARGES_UPDATE', 'Update a charge'),

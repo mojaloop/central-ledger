@@ -77,9 +77,8 @@ const flattenSettlements = (settlementMap) => {
   return flattenedSettlements
 }
 
-const mailDetails = (settledTransfers, settledFees) => {
+function transfersMap (settledTransfers) {
   const settledTransfersMap = new Map()
-  Logger.info('Entering transfers')
   settledTransfers.forEach(settledTransfer => {
     Logger.info('in loop')
     const debitKey = settledTransfer.debitAccountName
@@ -114,6 +113,13 @@ const mailDetails = (settledTransfers, settledFees) => {
       settledTransfersMap.set(creditKey, newSettlementArray)
     }
   })
+  return settledTransfersMap
+}
+
+const mailDetails = (settledTransfers, settledFees) => {
+  var settledTransfersMap
+  Logger.info('Entering transfers')
+  settledTransfersMap = transfersMap(settledTransfers)
   Logger.info('out of map')
   for (const [key, value] of settledTransfersMap.entries()) {
     const feesArray = []
@@ -133,7 +139,7 @@ const mailDetails = (settledTransfers, settledFees) => {
       email: String
     }
     // const account = AccountDatabase.getByName(key).catch(account)
-    mailInformation.email = 'testing@gmail.com' // this will change to email once nico has the email in database
+    mailInformation.email = 'modusboxemailtest@gmail.com' // this will change to email once nico has the email in database
     Logger.info('calling email')
     Events.emailSettlementCsv(mailInformation)
   }

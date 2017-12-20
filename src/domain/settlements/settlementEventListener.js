@@ -2,6 +2,7 @@
 
 const nodemailer = require('nodemailer')
 const Config = require('../../lib/config')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const sendEmail = () => {
   return (mailInformation) => {
@@ -19,12 +20,11 @@ const sendEmail = () => {
     const mailOptions = {
       from: Config.EMAIL_USER, // sender address
       to: mailInformation.email, // receiver
-      subject: 'Hello', // Subject line
-      text: 'Hello world', // plaintext body
-      html: '<b>Hello world</b>', // html body
+      subject: 'Settlements', // Subject line
+      text: 'Please see attached settlements', // plaintext body
       attachments: [
         {
-          filename: 'test.csv',
+          filename: 'Settlements.csv',
           content: mailInformation.csvFile
         }
       ]
@@ -33,18 +33,17 @@ const sendEmail = () => {
     // verify connection configuration
     transporter.verify(function (error, success) {
       if (error) {
-        console.log(error)
-      } else {
-        console.log('Server is ready to take our messages')
+        Logger.error(error)
       }
+      Logger.info('Server is ready to take our messages')
     })
 
     // send mail with defined transport object
     transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
-        return console.log(error)
+        return Logger.error(error)
       }
-      console.log('Message sent: ' + info.response)
+      Logger.info('Message sent: ' + info.response)
     })
   }
 }
