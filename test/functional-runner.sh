@@ -1,7 +1,7 @@
 #!/bin/bash
-POSTGRES_USER=${POSTGRES_USER:-postgres}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-LEDGER_HOST=${HOST_IP:-localhost}
+export POSTGRES_USER=${POSTGRES_USER:-'postgres'}
+export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-'postgres'}
+export LEDGER_HOST=${HOST_IP:-'localhost'}
 export API_IMAGE=${API_IMAGE:-'central-ledger'}
 export ADMIN_IMAGE=${ADMIN_IMAGE:-'central-ledger-admin'}
 export CLEDG_HOSTNAME='http://central-ledger'
