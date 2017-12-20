@@ -51,7 +51,7 @@ shutdown_and_remove() {
 }
 
 >&2 echo "Loading environment variables"
-source $env_file
+. $env_file
 
 >&2 echo "Postgres is starting"
 docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
