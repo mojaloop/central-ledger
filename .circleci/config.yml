@@ -84,11 +84,12 @@ jobs:
       - store_test_results:
           path: coverage
   test-integration:
-    <<: *defaults
+    # <<: *defaults
+    machine: true
     steps:
-      - run:
-          name: Install dependencies
-          command: *defaultDependencies
+    #   - run:
+    #       name: Install dependencies
+    #       command: *defaultDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -104,11 +105,12 @@ jobs:
       - store_test_results:
           path: ./test/results
   test-functional:
-    <<: *defaults
+    # <<: *defaults
+    machine: true
     steps:
-      - run:
-          name: Install dependencies
-          command: *defaultDependencies
+    #   - run:
+    #       name: Install dependencies
+    #       command: *defaultDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -117,7 +119,7 @@ jobs:
           command: mkdir -p ./test/results
       - run: 
           name: Execute unit tests
-          command: npm -s run test:functional:test-only
+          command: npm -s run test:functional
       - store_artifacts:
           path: ./test/results
           prefix: test
