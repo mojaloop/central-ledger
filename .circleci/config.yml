@@ -111,8 +111,15 @@ jobs:
     #   - run:
     #       name: Install dependencies
     #       command: *defaultDependencies
-        # Add the Postgres 9.6 binaries to the path.  
-      - run: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+      - run: 
+          name: Add the Postgres 9.6 binaries to the path.  
+          command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+      - run:
+          name: Install Docker Compose
+          command: |
+            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+            chmod +x ~/docker-compose
+            sudo mv ~/docker-compose /usr/local/bin/docker-compose
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
