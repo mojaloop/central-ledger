@@ -5,15 +5,6 @@ defaults: &defaults
   working_directory: /home/circleci/project
   docker:
     - image: dwolla/alpine-node-make
-      environment:
-        AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID
-        APP_NAME: central-ledger
-        API_IMAGE: central-ledger
-        ADMIN_IMAGE: central-ledger-admin
-        AWS_REGION: $AWS_REGION
-        BUCKET: elasticbeanstalk-$AWS_REGION-$AWS_ACCOUNT_ID
-        INTG_TEST_CMD: tape 'test/integration/**/*.test.js' | tap-xunit > ./test/results/tape-integration.xml
-        FUNC_TEST_CMD: tape 'test/functional/**/*.test.js' | tap-xunit > ./test/results/tape-functional.xml
 
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
@@ -85,12 +76,8 @@ jobs:
       - store_test_results:
           path: coverage
   test-integration:
-    # <<: *defaults
     machine: true
     steps:
-    #   - run:
-    #       name: Install dependencies
-    #       command: *defaultDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -106,31 +93,11 @@ jobs:
       - store_test_results:
           path: ./test/results
   test-functional:
-    # <<: *defaults
     machine: true
     steps:
-    #   - run:
-    #       name: Install dependencies
-    #       command: *defaultDependencies
       - run: 
           name: Add the Postgres 9.6 binaries to the path.
           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
-    #   - run: 
-    #       name: Add the Postgres 9.6 binaries to the path.
-    #       command: apk --no-cache add postgresql-client
-    #   - setup_remote_docker
-    #   - run: 
-    #       name: Add docker
-    #       command: apk --no-cache add docker
-    #   - run: 
-    #       name: Add docker compose
-    #       command: |
-    #         apk --no-cache add py-pip
-    #         pip install docker-compose
-    #   - run:
-    #       name: Install Docker Compose
-    #       command: |
-    #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose
       - run:
           name: Install Docker Compose
           command: |
@@ -146,6 +113,32 @@ jobs:
       - run: 
           name: Execute unit tests
           command: npm -s run test:functional
+      - store_artifacts:
+          path: ./test/results
+          prefix: test
+      - store_test_results:
+          path: ./test/results
+  test-spec:
+    machine: true
+    steps:
+      - run: 
+          name: Add the Postgres 9.6 binaries to the path.
+          command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+      - run:
+          name: Install Docker Compose
+          command: |
+            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+            chmod +x ~/docker-compose
+            mv ~/docker-compose /usr/local/bin/docker-compose
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run: 
+          name: Execute unit tests
+          command: npm -s run test:spec
       - store_artifacts:
           path: ./test/results
           prefix: test
