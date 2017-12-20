@@ -106,30 +106,33 @@ jobs:
       - store_test_results:
           path: ./test/results
   test-functional:
-    <<: *defaults
-    # machine: true
+    # <<: *defaults
+    machine: true
     steps:
-      - run:
-          name: Install dependencies
-          command: *defaultDependencies
-      - run: 
-          name: Add the Postgres 9.6 binaries to the path.
-          command: apk --no-cache add postgresql-client
-      - run: 
-          name: Add the Postgres 9.6 binaries to the path.
-          command: apk --no-cache add docker
-      - run: 
-          name: Add the Postgres 9.6 binaries to the path.
-          command: |
-            apk --no-cache add py-pip
-            pip install docker-compose
-        #   command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
     #   - run:
-    #       name: Install Docker Compose
+    #       name: Install dependencies
+    #       command: *defaultDependencies
+      - run: 
+          name: Add the Postgres 9.6 binaries to the path.
+          command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+    #   - run: 
+    #       name: Add the Postgres 9.6 binaries to the path.
+    #       command: apk --no-cache add postgresql-client
+    #   - run: 
+    #       name: Add the Postgres 9.6 binaries to the path.
+    #       command: apk --no-cache add docker
+    #   - run: 
+    #       name: Add the Postgres 9.6 binaries to the path.
     #       command: |
-    #       curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose \
-    #       && chmod +x /usr/local/bin/docker-compose
-      - setup_remote_docker
+    #         apk --no-cache add py-pip
+    #         pip install docker-compose
+        #   command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+      - run:
+          name: Install Docker Compose
+          command: |
+          curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose \
+          && chmod +x /usr/local/bin/docker-compose
+    #   - setup_remote_docker
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
