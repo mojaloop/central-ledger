@@ -18,7 +18,7 @@ fi
 
 psql() {
 	docker run --rm -i \
-		--net centralledger_back \
+		--net postgres_back \
 		--entrypoint psql \
 		-e PGPASSWORD=$POSTGRES_PASSWORD \
 		"postgres:9.4" \
