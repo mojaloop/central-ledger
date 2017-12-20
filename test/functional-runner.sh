@@ -69,8 +69,7 @@ shutdown_and_remove() {
 . $env_file
 
 >&2 echo "Postgres is starting"
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
-# docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
+docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
 
 until is_psql_up; do
   >&2 echo "Postgres is unavailable - sleeping"
