@@ -72,7 +72,7 @@ env
 
 >&2 echo "Postgres is starting"
 # docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
+docker-compose -p central-leader -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
 
 until is_psql_up; do
   >&2 echo "Postgres is unavailable - sleeping"
@@ -87,7 +87,7 @@ psql <<'EOSQL'
 EOSQL
 
 >&2 printf "Central-ledger is building ..."
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger
+docker-compose -p central-leader -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger
 
 >&2 printf "Central-ledger is starting ..."
 until is_api_up; do
@@ -98,7 +98,7 @@ done
 >&2 echo " done"
 
 >&2 printf "Central-ledger-admin is building ..."
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger-admin
+docker-compose -p central-leader -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger-admin
 
 >&2 printf "Central-ledger-admin is starting ..."
 until is_admin_up; do
