@@ -59,48 +59,48 @@ env
 >&2 echo "Postgres is starting"
 docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres > /dev/null 2>&1
 
-until is_psql_up; do
-  >&2 echo "Postgres is unavailable - sleeping"
-  sleep 1
-done
+# until is_psql_up; do
+#   >&2 echo "Postgres is unavailable - sleeping"
+#   sleep 1
+# done
 
->&2 echo "Postgres is up - creating functional database"
-psql <<'EOSQL'
-    DROP DATABASE IF EXISTS "central_ledger_functional";
-	  CREATE DATABASE "central_ledger_functional";
-EOSQL
+# >&2 echo "Postgres is up - creating functional database"
+# psql <<'EOSQL'
+#     DROP DATABASE IF EXISTS "central_ledger_functional";
+# 	  CREATE DATABASE "central_ledger_functional";
+# EOSQL
 
->&2 printf "Central-ledger is building ..."
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger
+# >&2 printf "Central-ledger is building ..."
+# docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger
 
->&2 printf "Central-ledger is starting ..."
-until is_api_up; do
-  >&2 printf "."
-  sleep 5
-done
+# >&2 printf "Central-ledger is starting ..."
+# until is_api_up; do
+#   >&2 printf "."
+#   sleep 5
+# done
 
->&2 echo " done"
+# >&2 echo " done"
 
->&2 printf "Central-ledger-admin is building ..."
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger-admin
+# >&2 printf "Central-ledger-admin is building ..."
+# docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger-admin
 
->&2 printf "Central-ledger-admin is starting ..."
-until is_admin_up; do
-  >&2 printf "."
-  sleep 5
-done
+# >&2 printf "Central-ledger-admin is starting ..."
+# until is_admin_up; do
+#   >&2 printf "."
+#   sleep 5
+# done
 
->&2 echo " done"
+# >&2 echo " done"
 
->&2 echo "Functional tests are starting"
-set -o pipefail && run_test_command
-test_exit_code=$?
+# >&2 echo "Functional tests are starting"
+# set -o pipefail && run_test_command
+# test_exit_code=$?
 
-if [ "$test_exit_code" != 0 ]
-then
-  docker logs centralledger_central-ledger_1
-fi
+# if [ "$test_exit_code" != 0 ]
+# then
+#   docker logs centralledger_central-ledger_1
+# fi
 
-shutdown_and_remove
+# shutdown_and_remove
 
-exit "$test_exit_code"
+# exit "$test_exit_code"
