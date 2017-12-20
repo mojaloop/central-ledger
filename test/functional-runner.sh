@@ -6,10 +6,13 @@ export API_IMAGE=${API_IMAGE:-'central-ledger'}
 export ADMIN_IMAGE=${ADMIN_IMAGE:-'central-ledger-admin'}
 export CLEDG_HOSTNAME='http://central-ledger'
 export CLEDG_EXPIRES_TIMEOUT=0
-FUNC_TEST_CMD=${FUNC_TEST_CMD:-tape \'test/functional/**/*.test.js\' | faucet}
+FUNC_TEST_CMD=${FUNC_TEST_CMD:-"tape 'test/functional/**/*.test.js' | tap-xunit > ./test/results/tape-functional.xml"}
 docker_compose_file=$1
 docker_functional_compose_file=$2
 env_file=$3
+
+#create a directory for test results
+mkdir ./test/results
 
 if [ $# -ne 3 ]; then
     echo "Usage: $0 docker-compose-file docker-functional-compose-file env-file"
@@ -104,7 +107,7 @@ done
 >&2 echo " done"
 
 >&2 echo "Functional tests are starting"
-. -o pipefail && run_test_command
+run_test_command
 test_exit_code=$?
 
 if [ "$test_exit_code" != 0 ]

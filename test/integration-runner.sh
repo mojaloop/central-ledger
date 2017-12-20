@@ -1,16 +1,19 @@
 #!/bin/bash
-POSTGRES_USER=${POSTGRES_USER:-postgres}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-POSTGRES_HOST=${HOST_IP:-localhost}
-INTG_TEST_CMD=${INTG_TEST_CMD:-tape \'test/integration/**/*.test.js\' | faucet}
+export POSTGRES_USER=${POSTGRES_USER:-"postgres"}
+export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-"postgres"}
+export POSTGRES_HOST=${HOST_IP:-"localhost"}
+INTG_TEST_CMD=${INTG_TEST_CMD:-"tape 'test/integration/**/*.test.js' | tap-xunit > ./test/results/tape-integration.xml"}
 env_file=$1
+
+#create a directory for test results
+mkdir ./test/results
 
 if [ $# -ne 1 ]; then
     echo "Usage: $0 env-file"
     exit 1
 fi
 
-psql() {
+fpsql() {
 	docker run --rm -i \
 		--entrypoint psql \
     --link postgres-int \
@@ -24,7 +27,7 @@ psql() {
 }
 
 is_psql_up() {
-    psql -c '\l' > /dev/null 2>&1
+    fpsql -c '\l' > /dev/null 2>&1
 }
 
 stop_docker() {
@@ -49,7 +52,7 @@ until is_psql_up; do
 done
 
 >&2 echo "Postgres is up - creating integration database"
-psql <<'EOSQL'
+fpsql <<'EOSQL'
     DROP DATABASE IF EXISTS "central_ledger_integration";
 	  CREATE DATABASE "central_ledger_integration";
 EOSQL
@@ -60,4 +63,4 @@ export CLEDG_DATABASE_URI="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PO
 npm run migrate > /dev/null 2>&1
 
 >&2 echo "Integration tests are starting"
-set -o pipefail && run_test_command
+run_test_command

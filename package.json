@@ -36,7 +36,7 @@
     "test:integration": "sh ./test/integration-runner.sh ./test/.env",
     "test:functional": "run-s docker:build test:functional:test-only",
     "test:functional:test-only": "sh ./test/functional-runner.sh docker-compose.yml docker-compose.functional.yml ./test/.env",
-    "test:spec": "sh ./test/spec-runner.sh",
+    "test:spec": "sh ./test/spec-runner.sh ./test/.env",
     "db:psql": "docker run -it --net centralledger_back --rm postgres:9.4 sh -c 'exec psql -h postgres -p \"$POSTGRES_PORT_5432_TCP_PORT\" -U central_ledger -d postgres'",
     "migrate": "knex migrate:latest $npm_package_config_knex",
     "migrate:create": "knex migrate:make $npm_package_config_knex",

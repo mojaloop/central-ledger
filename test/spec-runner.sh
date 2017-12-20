@@ -1,7 +1,7 @@
 #!/bin/bash
-POSTGRES_USER=${POSTGRES_USER:-postgres}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-LEDGER_HOST=${HOST_IP:-localhost}
+export POSTGRES_USER=${POSTGRES_USER:-'postgres'}
+export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-'postgres'}
+export LEDGER_HOST=${HOST_IP:-'localhost'}
 export CLEDG_HOSTNAME='http://localhost:3000'
 export CLEDG_EXPIRES_TIMEOUT=5000
 export API_IMAGE=${API_IMAGE:-'central-ledger'}
@@ -9,9 +9,12 @@ export ADMIN_IMAGE=${ADMIN_IMAGE:-'central-ledger-admin'}
 TEST_CMD='node test/spec/index.js'
 docker_compose_file='docker-compose.yml'
 docker_functional_compose_file='docker-compose.functional.yml'
-env_file='.env'
+env_file=$1
 
-psql() {
+#create a directory for test results
+mkdir ./test/results
+
+fpsql() {
 	docker run --rm -i \
 		--net centralledger_back \
 		--entrypoint psql \
@@ -25,15 +28,26 @@ psql() {
 }
 
 is_psql_up() {
-    psql -c '\l' > /dev/null 2>&1
+    fpsql -c '\l' > /dev/null 2>&1
+}
+
+fcurl() {
+	docker run --rm -i \
+		--net centralledger_back \
+		--entrypoint curl \
+		"jlekie/curl:latest" \
+        --output /dev/null --silent --head --fail \
+		"$@"
 }
 
 is_api_up() {
-    curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3000/health
+    # curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3000/health
+    fcurl "http://centralledger_central-ledger_1:3000/health?"
 }
 
 is_admin_up() {
-    curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3001/health
+    # curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3001/health
+    fcurl "http://centralledger_central-ledger-admin_1:3001/health?"
 }
 
 run_test_command()
@@ -42,14 +56,14 @@ run_test_command()
 }
 
 shutdown_and_remove() {
-  docker-compose -f $docker_compose_file -f $docker_functional_compose_file stop
+  docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file stop
 }
 
 >&2 echo "Loading environment variables"
-source $env_file
+. $env_file
 
 >&2 echo "Postgres is starting"
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
+docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file up -d postgres
 
 until is_psql_up; do
   >&2 echo "Postgres is unavailable - sleeping"
@@ -57,13 +71,13 @@ until is_psql_up; do
 done
 
 >&2 echo "Postgres is up - creating functional database"
-psql <<'EOSQL'
+fpsql <<'EOSQL'
     DROP DATABASE IF EXISTS "central_ledger_functional";
 	  CREATE DATABASE "central_ledger_functional";
 EOSQL
 
 >&2 printf "Central-ledger is building ..."
-docker-compose -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger
+docker-compose -p centralledger -f $docker_compose_file -f $docker_functional_compose_file up -d central-ledger
 
 >&2 printf "Central-ledger is starting ..."
 until is_api_up; do
@@ -73,9 +87,8 @@ done
 
 >&2 echo " done"
 
-
 >&2 echo "Spec tests are starting"
-set -o pipefail && run_test_command
+run_test_command
 test_exit_code=$?
 
 if [ "$test_exit_code" != 0 ]
