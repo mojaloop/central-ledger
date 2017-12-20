@@ -16,9 +16,22 @@ if [ $# -ne 3 ]; then
     exit 1
 fi
 
+# psql() {
+# 	docker run --rm -i \
+# 		--net centralledger_back \
+# 		--entrypoint psql \
+# 		-e PGPASSWORD=$POSTGRES_PASSWORD \
+# 		"postgres:9.4" \
+#     --host postgres \
+# 		--username $POSTGRES_USER \
+#     --dbname postgres \
+# 		--quiet --no-align --tuples-only \
+# 		"$@"
+# }
+
 psql() {
 	docker run --rm -i \
-		--net centralledger_back \
+		--net container:centralledger_postgres_1 \
 		--entrypoint psql \
 		-e PGPASSWORD=$POSTGRES_PASSWORD \
 		"postgres:9.4" \
