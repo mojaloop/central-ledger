@@ -249,6 +249,15 @@ workflows:
               ignore: 
                 - /feature*/
                 - /bugfix*/
+      - test-spec:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
       - build:
           context: org-global
           requires:
@@ -257,6 +266,7 @@ workflows:
             - test-coverage
             - test-integration
             - test-functional
+            - test-spec
           # filters:
           #   tags:
           #     only: /v[0-9]+(\.[0-9]+)*/
@@ -271,6 +281,7 @@ workflows:
             - test-coverage
             - test-integration
             - test-functional
+            - test-spec
             - build
           # filters:
           #   tags:
