@@ -16,7 +16,7 @@ if [ $# -ne 3 ]; then
     exit 1
 fi
 
-psql() {
+fpsql() {
 	docker run --rm -i \
 		--net centralledger_back \
 		--entrypoint psql \
@@ -44,15 +44,26 @@ psql() {
 
 is_psql_up() {
     # psql -c '\l' > /dev/null 2>&1
-    psql -c '\l'
+    fpsql -c '\l'
+}
+
+fcurl() {
+	docker run --rm -i \
+		--net centralledger_back \
+		--entrypoint curl \
+		"jlekie/curl:latest" \
+        --output /dev/null --silent --head --fail \
+		"$@"
 }
 
 is_api_up() {
-    curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3000/health
+    # curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3000/health
+    fcurl "http://centralledger_central-ledger_1:3000/health?"
 }
 
 is_admin_up() {
-    curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3001/health
+    # curl --output /dev/null --silent --head --fail http://${LEDGER_HOST}:3001/health
+    fcurl "http://centralledger_central-ledger-admin_1:3001/health?"
 }
 
 run_test_command()
@@ -81,7 +92,7 @@ until is_psql_up; do
 done
 
 >&2 echo "Postgres is up - creating functional database"
-psql <<'EOSQL'
+fpsql <<'EOSQL'
     DROP DATABASE IF EXISTS "central_ledger_functional";
 	  CREATE DATABASE "central_ledger_functional";
 EOSQL
