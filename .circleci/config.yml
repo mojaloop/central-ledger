@@ -2,7 +2,7 @@
 version: 2
 
 defaults: &defaults
-  working_directory: /home/circleci/project
+  working_directory: /home/circleci/centralledger
   docker:
     - image: dwolla/alpine-node-make
       environment:
