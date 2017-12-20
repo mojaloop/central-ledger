@@ -9,7 +9,7 @@ defaults: &defaults
         AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID
         APP_NAME: central-ledger
         API_IMAGE: central-ledger
-        ADMIN_IMAGE: central-leader-admin
+        ADMIN_IMAGE: central-ledger-admin
         AWS_REGION: $AWS_REGION
         BUCKET: elasticbeanstalk-$AWS_REGION-$AWS_ACCOUNT_ID
         INTG_TEST_CMD: tape 'test/integration/**/*.test.js' | tap-xunit > ./test/results/tape-integration.xml
