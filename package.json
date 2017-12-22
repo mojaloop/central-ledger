@@ -58,7 +58,7 @@
     "@mojaloop/central-services-error-handling": "0.2.3",
     "@mojaloop/central-services-shared": "0.3.0",
     "@mojaloop/forensic-logging-client": "0.4.0",
-    "argon2": "^0.14.1",
+    "argon2": "0.14.0",
     "blipp": "2.3.0",
     "bluebird": "3.5.0",
     "continuation-local-storage": "3.2.0",

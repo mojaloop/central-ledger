@@ -10,7 +10,7 @@ const Fixtures = require('../../../fixtures')
 const amount = '50.00'
 
 function createAccounts (accountNames) {
-  return P.all(accountNames.map(name => Account.create({ name: name, password: '1234' }))).then(accounts => _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {}))
+  return P.all(accountNames.map(name => Account.create({ name: name, password: '1234', emailAddress: name + '@test.com' }))).then(accounts => _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {}))
 }
 
 Test('transfer service', function (modelTest) {
