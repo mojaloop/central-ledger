@@ -282,7 +282,7 @@ workflows:
             - test-coverage
             - test-integration
             - test-functional
-            - test-spec
+            # - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
@@ -297,7 +297,7 @@ workflows:
             - test-coverage
             - test-integration
             - test-functional
-            - test-spec
+            # - test-spec
             - build
           filters:
             tags:
