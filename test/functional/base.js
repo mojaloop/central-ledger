@@ -1,8 +1,10 @@
 'use strict'
 
-const host = process.env.HOST_IP || 'localhost'
-const RequestApi = require('supertest')('http://' + host + ':3000')
-const RequestAdmin = require('supertest')('http://' + host + ':3001')
+// const host = process.env.API_HOST_IP || 'localhost'
+const apiHost = process.env.API_HOST_IP || 'localhost'
+const adminHost = process.env.ADMIN_HOST_IP || 'localhost'
+const RequestApi = require('supertest')('http://' + apiHost + ':3000')
+const RequestAdmin = require('supertest')('http://' + adminHost + ':3001')
 const P = require('bluebird')
 const Encoding = require('@mojaloop/central-services-shared').Encoding
 const DA = require('deasync-promise')

@@ -4,6 +4,9 @@ logs
 npm-debug.log*
 .[Dd][Ss]_[Ss]tore
 
+# Ignore test results
+**/test/results/*
+
 # Runtime data
 pids
 *.pid
