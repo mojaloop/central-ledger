@@ -21,7 +21,8 @@ const buildResponse = (account, { net = '0' } = {}) => {
     created: account.createdDate,
     balance: net,
     is_disabled: account.isDisabled || false,
-    credentials: account.credentials
+    credentials: account.credentials,
+    emailAddress: account.emailAddress
   })
 }
 

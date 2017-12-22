@@ -20,6 +20,7 @@ Test('PUT /account/:name', putTest => {
             test.equal(res.body.id, accountRes.body.id)
             test.equal(res.body.created, accountRes.body.created)
             test.equal(res.body.is_disabled, isDisabled)
+            test.equal(res.body.emailAddress, accountRes.body.emailAddress)
             test.end()
           })
       })

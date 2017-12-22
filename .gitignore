@@ -44,3 +44,12 @@ jspm_packages
 .vscode
 
 .npmrc
+
+# --------------- #
+# IntelliJ #
+# --------------- #
+.idea/
+**/*.iml
+
+#package-lock.json
+package-lock.json
