@@ -5,7 +5,7 @@ defaults: &defaults
   working_directory: /home/circleci/project
   docker:
     - image: dwolla/alpine-node-make
-docker pull wernight/kubectl
+
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
