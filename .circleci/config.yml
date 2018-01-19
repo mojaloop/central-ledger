@@ -225,7 +225,7 @@ jobs:
       # build the application image
       - run: 
           name: Build Docker image
-          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:test -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
+          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG-test .
       # save the docker image to the file system
       - run:
           name: Save Docker image layer cache
@@ -258,12 +258,12 @@ jobs:
             set +o pipefail
             docker load -i /caches/dockerimage.tar | true
       # publish docker image with tag
-      - run: 
-          name: Publish Docker image latest tag to Docker Hub
-          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
+    #   - run: 
+    #       name: Publish Docker image latest tag to Docker Hub
+    #       command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
       - run: 
           name: Publish Docker image $TAG tag to Docker Hub
-          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG-test
 
 workflows:
   version: 2
