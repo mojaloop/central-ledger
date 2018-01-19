@@ -223,6 +223,12 @@ jobs:
         #   name: Build Docker image
         #   command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
       # build the application image
+    #   - run:
+    #       name: set git tag
+    #       command: CIRCLE_TAG="$(git tag -l --points-at HEAD)" 
+      - run: 
+          name: Print Docker image name
+          command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
       - run: 
           name: Print Docker image name
           command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
@@ -272,22 +278,22 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - setup:
-          context: org-global
-          filters:
-              branches:
-                ignore: 
-                  - /feature*/
-                  - /bugfix*/
-      - test-unit:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/             
+    #   - setup:
+    #       context: org-global
+    #       filters:
+    #           branches:
+    #             ignore: 
+    #               - /feature*/
+    #               - /bugfix*/
+    #   - test-unit:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         branches:
+    #           ignore: 
+    #             - /feature*/
+    #             - /bugfix*/             
     #   - test-coverage:
     #       context: org-global
     #       requires:
