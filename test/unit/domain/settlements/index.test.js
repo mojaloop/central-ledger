@@ -110,8 +110,6 @@ Test('Settlements Test', settlementTest => {
         generateFee(account2, account1, '5.00')
       ]
       const settledPosition = Settlements.performSettlement(transfers, fees)
-      console.log('Settled position')
-      console.log(settledPosition)
       test.deepEqual({ fees: [], transfers: [] }, settledPosition)
       test.end()
     })
@@ -127,8 +125,6 @@ Test('Settlements Test', settlementTest => {
         generateFee(account2, account1, '5.00')
       ]
       const settledPosition = Settlements.performSettlement(transfers, fees)
-      console.log('Settled position')
-      console.log(settledPosition)
       test.deepEqual({ fees: [], transfers: [] }, settledPosition)
       test.end()
     })
