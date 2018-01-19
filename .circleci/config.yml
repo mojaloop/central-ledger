@@ -218,10 +218,14 @@ jobs:
     #       name: Install dependencies
     #       command: *defaultDependencies
       - checkout
+      - run:
+          name: set git tag
+          command: TAG="0.1t" 
+        #   command: CIRCLE_TAG="$(git tag -l --points-at HEAD)" 
       # # build the application image
     #   - run: 
         #   name: Build Docker image
-        #   command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+        #   command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
       # build the application image
     #   - run:
     #       name: set git tag
@@ -230,8 +234,14 @@ jobs:
           name: Print Docker image name
           command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
       - run: 
+          name: Print Docker image name
+          command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+      - run: 
+          name: Print Docker image name
+          command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+      - run: 
           name: Build Docker image
-          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG-test .
+          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
       # save the docker image to the file system
       - run:
           name: Save Docker image layer cache
@@ -248,6 +258,9 @@ jobs:
     steps:
       - checkout
       # login to docker hub
+      - run:
+          name: set git tag
+          command: TAG="0.1t" 
       - run: 
           name: Login to Docker Hub
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
@@ -268,8 +281,8 @@ jobs:
     #       name: Publish Docker image latest tag to Docker Hub
     #       command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
       - run: 
-          name: Publish Docker image $CIRCLE_TAG tag to Docker Hub
-          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG-test
+          name: Publish Docker image $TAG tag to Docker Hub
+          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
 
 workflows:
   version: 2
