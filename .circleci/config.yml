@@ -12,6 +12,10 @@ default_env: &default_env
   environment:
     - TAG: "0.1t"
 
+default_env: &default_env
+  environment:
+    - TAG: "0.1t"
+
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
@@ -237,60 +241,58 @@ jobs:
     #   - run:
     #       name: set git tag
     #       command: CIRCLE_TAG="$(git tag -l --points-at HEAD)" 
-      - run: 
-          name: Print Docker image name
-          command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
-      - run: 
-          name: Print Docker image name
-          command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
-      - run: 
-          name: Print Docker image name
-          command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+    #   - run: 
+    #       name: Print Docker image name
+    #       command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
       - run: 
           name: Build Docker image
           command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
-      # save the docker image to the file system
-      - run:
-          name: Save Docker image layer cache
-          command: |
-            mkdir -p ./caches
-            docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
-      # store docker image in cache
-      - save_cache:
-          key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-          paths:
-            - ./caches/dockerimage.tar
-  deploy:
-    machine: true
-    <<: *default_env
-    steps:
-      - checkout
-      # login to docker hub
-      - run:
-          name: set git tag
-          command: export TAG="0.1t" 
-      - run: 
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
-      # restore docker image for deployment
-      - restore_cache:
-          keys:
-            - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-          paths:
-            - /caches/dockerimage.tar
-      # load docker image
-      - run:
-          name: Load Docker image layer cache
-          command: |
-            set +o pipefail
-            docker load -i /caches/dockerimage.tar | true
       # publish docker image with tag
-    #   - run: 
-    #       name: Publish Docker image latest tag to Docker Hub
-    #       command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
       - run: 
           name: Publish Docker image $TAG tag to Docker Hub
           command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+      # save the docker image to the file system
+    #   - run:
+    #       name: Save Docker image layer cache
+    #       command: |
+    #         mkdir -p ./caches
+    #         docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
+    #   # store docker image in cache
+    #   - save_cache:
+    #       key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+    #       paths:
+    #         - ./caches/dockerimage.tar
+#   deploy:
+#     machine: true
+#     <<: *default_env
+#     steps:
+#       - checkout
+#       # login to docker hub
+#       - run:
+#           name: set git tag
+#           command: export TAG="0.1t" 
+#       - run: 
+#           name: Login to Docker Hub
+#           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+#       # restore docker image for deployment
+#       - restore_cache:
+#           keys:
+#             - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+#           paths:
+#             - /caches/dockerimage.tar
+#       # load docker image
+#       - run:
+#           name: Load Docker image layer cache
+#           command: |
+#             set +o pipefail
+#             docker load -i /caches/dockerimage.tar | true
+#       # publish docker image with tag
+#     #   - run: 
+#     #       name: Publish Docker image latest tag to Docker Hub
+#     #       command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
+#       - run: 
+#           name: Publish Docker image $TAG tag to Docker Hub
+#           command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
 
 workflows:
   version: 2
@@ -394,19 +396,19 @@ workflows:
             branches:
               only:
                 - master-test
-      - deploy:
-          context: org-global
-          requires:
-            # - setup
-            # - test-unit
-            # - test-coverage
-            # - test-integration
-            # - test-functional
-            # - test-spec
-            - build
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*/
-            branches:
-              only:
-                - master-test
+    #   - deploy:
+    #       context: org-global
+    #       requires:
+    #         # - setup
+    #         # - test-unit
+    #         # - test-coverage
+    #         # - test-integration
+    #         # - test-functional
+    #         # - test-spec
+    #         - build
+    #       filters:
+    #         tags:
+    #           only: /v[0-9]+(\.[0-9]+)*/
+    #         branches:
+    #           only:
+    #             - master-test
