@@ -224,6 +224,9 @@ jobs:
         #   command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
       # build the application image
       - run: 
+          name: Print Docker image name
+          command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+      - run: 
           name: Build Docker image
           command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG-test .
       # save the docker image to the file system
@@ -324,8 +327,8 @@ workflows:
       - build-snapshot:
           context: org-global
           requires:
-            - setup
-            - test-unit
+            # - setup
+            # - test-unit
             # - test-coverage
             # - test-integration
             # - test-functional
@@ -339,8 +342,8 @@ workflows:
       - deploy-snapshot:
           context: org-global
           requires:
-            - setup
-            - test-unit
+            # - setup
+            # - test-unit
             # - test-coverage
             # - test-integration
             # - test-functional
@@ -355,8 +358,8 @@ workflows:
       - build:
           context: org-global
           requires:
-            - setup
-            - test-unit
+            # - setup
+            # - test-unit
             # - test-coverage
             # - test-integration
             # - test-functional
@@ -370,8 +373,8 @@ workflows:
       - deploy:
           context: org-global
           requires:
-            - setup
-            - test-unit
+            # - setup
+            # - test-unit
             # - test-coverage
             # - test-integration
             # - test-functional
