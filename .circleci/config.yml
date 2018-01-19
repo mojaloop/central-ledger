@@ -164,17 +164,64 @@ jobs:
 #           prefix: test
 #       - store_test_results:
 #           path: ./test/results
+  build-snapshot:
+    machine: true
+    steps:
+    #   - run:
+    #       name: Install dependencies
+    #       command: *defaultDependencies
+      - checkout
+      # build the application image
+      - run: 
+          name: Build Docker image
+          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:test -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG-SNAPSHOT .
+      # save the docker image to the file system
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            mkdir -p ./caches
+            docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
+      # store docker image in cache
+      - save_cache:
+          key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+          paths:
+            - ./caches/dockerimage.tar
+  deploy-snapshot:
+    machine: true
+    steps:
+      - checkout
+      # login to docker hub
+      - run: 
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      # restore docker image for deployment
+      - restore_cache:
+          keys:
+            - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+          paths:
+            - /caches/dockerimage.tar
+      # load docker image
+      - run:
+          name: Load Docker image layer cache
+          command: |
+            set +o pipefail
+            docker load -i /caches/dockerimage.tar | true
+      # publish docker image with tag
+      - run: 
+          name: Publish Docker image $TAG tag to Docker Hub
+          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG-SNAPSHOT
+
   build:
     machine: true
     steps:
-      - run:
-          name: Install dependencies
-          command: *defaultDependencies
+    #   - run:
+    #       name: Install dependencies
+    #       command: *defaultDependencies
       - checkout
       # # build the application image
-      # - run: 
-      #     name: Build Docker image
-      #     command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+    #   - run: 
+        #   name: Build Docker image
+        #   command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
       # build the application image
       - run: 
           name: Build Docker image
@@ -238,33 +285,33 @@ workflows:
               ignore: 
                 - /feature*/
                 - /bugfix*/             
-      - test-coverage:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/
-      - test-integration:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/
-      - test-functional:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/
+    #   - test-coverage:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         branches:
+    #           ignore: 
+    #             - /feature*/
+    #             - /bugfix*/
+    #   - test-integration:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         branches:
+    #           ignore: 
+    #             - /feature*/
+    #             - /bugfix*/
+    #   - test-functional:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         branches:
+    #           ignore: 
+    #             - /feature*/
+    #             - /bugfix*/
     #   - test-spec:
     #       context: org-global
     #       requires:
@@ -274,18 +321,49 @@ workflows:
     #           ignore: 
     #             - /feature*/
     #             - /bugfix*/
+      - build-snapshot:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            # - test-coverage
+            # - test-integration
+            # - test-functional
+            # - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*-SNAPSHOT/
+            branches:
+              only:
+                - develop-test
+      - deploy-snapshot:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            # - test-coverage
+            # - test-integration
+            # - test-functional
+            # - test-spec
+            - build-snapshot
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*-SNAPSHOT/
+            branches:
+              only:
+                - develop-test
       - build:
           context: org-global
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*/
+              only: /v[0-9]+(\.[0-9]+)*-/
             branches:
               only:
                 - master-test
@@ -294,9 +372,9 @@ workflows:
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
             - build
           filters:
