@@ -288,7 +288,7 @@ workflows:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
               only:
-                - master
+                - master-test
       - deploy:
           context: org-global
           requires:
@@ -304,4 +304,4 @@ workflows:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
               only:
-                - master
+                - master-test
