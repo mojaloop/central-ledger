@@ -14,7 +14,8 @@ const entityItem = ({ name, createdDate, isDisabled }) => {
     is_disabled: isDisabled,
     '_links': {
       self: link
-    }
+    },
+    emailAddress: name + '@test.com'
   }
 }
 

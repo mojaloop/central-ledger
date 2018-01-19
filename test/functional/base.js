@@ -1,8 +1,10 @@
 'use strict'
 
-const host = process.env.HOST_IP || 'localhost'
-const RequestApi = require('supertest')('http://' + host + ':3000')
-const RequestAdmin = require('supertest')('http://' + host + ':3001')
+// const host = process.env.API_HOST_IP || 'localhost'
+const apiHost = process.env.API_HOST_IP || 'localhost'
+const adminHost = process.env.ADMIN_HOST_IP || 'localhost'
+const RequestApi = require('supertest')('http://' + apiHost + ':3000')
+const RequestAdmin = require('supertest')('http://' + adminHost + ':3001')
 const P = require('bluebird')
 const Encoding = require('@mojaloop/central-services-shared').Encoding
 const DA = require('deasync-promise')
@@ -41,9 +43,9 @@ const account2 = () => {
 
 const getApi = (path, headers = {}) => RequestApi.get(path).auth('admin', 'admin').set(headers)
 
-const postApi = (path, data, auth = { name: 'admin', password: 'admin' }, contentType = 'application/json') => RequestApi.post(path).auth(auth.name, auth.password).set('Content-Type', contentType).send(data)
+const postApi = (path, data, auth = { name: 'admin', password: 'admin', emailAddress: 'admin@test.com' }, contentType = 'application/json') => RequestApi.post(path).auth(auth.name, auth.password, auth.emailAddress).set('Content-Type', contentType).send(data)
 
-const putApi = (path, data, auth = { name: 'admin', password: 'admin' }, contentType = 'application/json') => RequestApi.put(path).auth(auth.name, auth.password).set('Content-Type', contentType).send(data)
+const putApi = (path, data, auth = { name: 'admin', password: 'admin', emailAddress: 'admin@test.com' }, contentType = 'application/json') => RequestApi.put(path).auth(auth.name, auth.password, auth.emailAddress).set('Content-Type', contentType).send(data)
 
 const getAdmin = (path, headers = {}) => RequestAdmin.get(path).set(headers)
 
@@ -51,7 +53,7 @@ const postAdmin = (path, data, contentType = 'application/json') => RequestAdmin
 
 const putAdmin = (path, data, contentType = 'application/json') => RequestAdmin.put(path).set('Content-Type', contentType).send(data)
 
-const createAccount = (accountName, password = '1234') => postApi('/accounts', { name: accountName, password: password })
+const createAccount = (accountName, password = '1234', emailAddress = accountName + '@test.com') => postApi('/accounts', { name: accountName, password: password, emailAddress: emailAddress })
 
 const createAccountSettlement = (accountName, accountNumber, routingNumber) => putApi(`/accounts/${accountName}/settlement`, { account_number: accountNumber, routing_number: routingNumber })
 

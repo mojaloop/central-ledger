@@ -1,7 +1,7 @@
 version: '2'
 services:
   central-ledger:
-    env_file: .env
+    env_file: ./test/.env
     ports:
      - "3000:3000"
     depends_on:
@@ -9,7 +9,7 @@ services:
     networks:
      - back
   central-ledger-admin:
-    env_file: .env
+    env_file: ./test/.env
     ports:
      - "3001:3001"
     depends_on:
@@ -17,7 +17,7 @@ services:
     networks:
      - back
   postgres:
-    env_file: .env
+    env_file: ./test/.env
     image: postgres:9.4
     networks:
      - back

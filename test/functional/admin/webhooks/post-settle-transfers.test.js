@@ -21,7 +21,7 @@ Test('POST /webhooks/settle-transfers', settleTest => {
       payee: 'receiver'
     }
 
-    const response = { fees: [{ amount: { currency_code: 'USD', description: Base.account1Name, value: charge.rate }, destination: { account_number: Base.account2AccountNumber, routing_number: Base.account2RoutingNumber }, source: { account_number: Base.account1AccountNumber, routing_number: Base.account1RoutingNumber } }], transfers: [{ amount: { currency_code: 'USD', description: Base.account1Name, value: '101.00' }, destination: { account_number: Base.account2AccountNumber, routing_number: Base.account2RoutingNumber }, source: { account_number: Base.account1AccountNumber, routing_number: Base.account1RoutingNumber } }] }
+    const response = { fees: [{ amount: { currency_code: 'TZS', description: Base.account1Name, value: charge.rate }, destination: { account_number: Base.account2AccountNumber, routing_number: Base.account2RoutingNumber }, source: { account_number: Base.account1AccountNumber, routing_number: Base.account1RoutingNumber } }], transfers: [{ amount: { currency_code: 'TZS', description: Base.account1Name, value: '101.00' }, destination: { account_number: Base.account2AccountNumber, routing_number: Base.account2RoutingNumber }, source: { account_number: Base.account1AccountNumber, routing_number: Base.account1RoutingNumber } }] }
 
     Base.createCharge(charge)
       .then(() => Base.prepareTransfer(transferId, transfer))

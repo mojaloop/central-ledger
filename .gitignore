@@ -4,6 +4,9 @@ logs
 npm-debug.log*
 .[Dd][Ss]_[Ss]tore
 
+# Ignore test results
+**/test/results/*
+
 # Runtime data
 pids
 *.pid
@@ -41,3 +44,12 @@ jspm_packages
 .vscode
 
 .npmrc
+
+# --------------- #
+# IntelliJ #
+# --------------- #
+.idea/
+**/*.iml
+
+#package-lock.json
+package-lock.json
