@@ -229,9 +229,9 @@ jobs:
     #       name: Install dependencies
     #       command: *defaultDependencies
       - checkout
-      - run:
-          name: set git tag
-          command: export TAG="0.1t" 
+      - run: 
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
         #   command: CIRCLE_TAG="$(git tag -l --points-at HEAD)" 
       # # build the application image
     #   - run: 
