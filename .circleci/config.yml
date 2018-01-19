@@ -5,6 +5,12 @@ defaults: &defaults
   working_directory: /home/circleci/project
   docker:
     - image: dwolla/alpine-node-make
+      environment:
+        FLASK_CONFIG: testing
+
+default_env: &default_env
+  environment:
+    - TAG: "0.1t"
 
 default_env: &default_env
   environment:
