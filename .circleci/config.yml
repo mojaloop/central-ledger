@@ -5,6 +5,8 @@ defaults: &defaults
   working_directory: /home/circleci/project
   docker:
     - image: dwolla/alpine-node-make
+      environment:
+        FLASK_CONFIG: testing
 
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
@@ -220,7 +222,7 @@ jobs:
       - checkout
       - run:
           name: set git tag
-          command: TAG="0.1t" 
+          command: export TAG="0.1t" 
         #   command: CIRCLE_TAG="$(git tag -l --points-at HEAD)" 
       # # build the application image
     #   - run: 
@@ -260,7 +262,7 @@ jobs:
       # login to docker hub
       - run:
           name: set git tag
-          command: TAG="0.1t" 
+          command: export TAG="0.1t" 
       - run: 
           name: Login to Docker Hub
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
