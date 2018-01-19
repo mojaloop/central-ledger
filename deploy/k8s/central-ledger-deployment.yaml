@@ -1,0 +1,107 @@
+---
+ apiVersion: extensions/v1beta1
+ kind: Deployment
+ metadata:
+    name: central-ledger-deployment
+    labels:
+      app: central-ledger
+ spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: central-ledger
+      spec:
+        containers:
+          - name: central-ledger
+            image: mojaloop/central-ledger:latest
+            command: ["node", "src/api/index.js"]
+            ports:
+              - containerPort: 3000
+              # - containerPort: 3001
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: 3000
+              initialDelaySeconds: 60
+              periodSeconds: 10
+            # securityContext:
+            #   capabilities:
+            #     add:
+            #       - NET_ADMIN
+            # envFrom:
+            #   - configMapRef:
+            #       name: central-ledger-config-env
+            env:
+              - name: CLEDG_PORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: central-ledger-config
+                    key: server.port
+              # - name: CLEDG_ADMIN_PORT
+              #   valueFrom:
+              #     configMapKeyRef:
+              #       name: central-ledger-config
+              #       key: admin.port
+              - name: CLEDG_HOSTNAME
+                valueFrom:
+                  configMapKeyRef:
+                    name: central-ledger-config
+                    key: server.host
+              - name: CLEDG_DATABASE_URI
+                valueFrom:
+                  secretKeyRef:
+                    name: central-ledger-secret
+                    key: db.uri
+            volumeMounts:
+            - name: config-volume
+              mountPath: /opt/central-ledger/config
+          - name: central-ledger-admin
+            image: mojaloop/central-ledger:latest
+            command: ["node", "src/admin/index.js"]
+            ports:
+              # - containerPort: 3000
+              - containerPort: 3001
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: 3001
+              initialDelaySeconds: 60
+              periodSeconds: 10
+            # securityContext:
+            #   capabilities:
+            #     add:
+            #       - NET_ADMIN
+            env:
+              # - name: CLEDG_PORT
+              #   valueFrom:
+              #     configMapKeyRef:
+              #       name: central-ledger-config
+              #       key: server.port
+              - name: CLEDG_ADMIN_PORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: central-ledger-config
+                    key: admin.port
+              - name: CLEDG_HOSTNAME
+                valueFrom:
+                  configMapKeyRef:
+                    name: central-ledger-config
+                    key: server.host
+              - name: CLEDG_DATABASE_URI
+                valueFrom:
+                  secretKeyRef:
+                    name: central-ledger-secret
+                    key: db.uri
+            volumeMounts:
+            - name: config-volume
+              mountPath: /opt/central-ledger/config
+        volumes:
+          - name: config-volume
+            configMap:
+              name: central-ledger-config
+              items:
+              - key: default.json
+                path: default.json
+              - key: knexfile.js
+                path: knexfile.js

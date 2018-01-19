@@ -113,7 +113,7 @@ Test('fees model', modelTest => {
       const account2Name = Fixtures.generateAccountName()
       const account3Name = Fixtures.generateAccountName()
 
-      P.all([Account.create({ name: account1Name, password: '1234' }), Account.create({ name: account2Name, password: '1234' }), Account.create({ name: account3Name, password: '1234' })]).then(([account1, account2, account3]) => {
+      P.all([Account.create({ name: account1Name, password: '1234', emailAddress: account1Name + '@test.com' }), Account.create({ name: account2Name, password: '1234', emailAddress: account2Name + '@test.com' }), Account.create({ name: account3Name, password: '1234', emailAddress: account3Name + '@test.com' })]).then(([account1, account2, account3]) => {
         const unsettledTransferId = Fixtures.generateTransferId()
         const settledTransferId = Fixtures.generateTransferId()
         const unsettledOtherTransferId = Fixtures.generateTransferId()
@@ -150,7 +150,7 @@ Test('fees model', modelTest => {
       const account2Name = Fixtures.generateAccountName()
       const account3Name = Fixtures.generateAccountName()
 
-      P.all([Account.create({ name: account1Name, password: '1234' }), Account.create({ name: account2Name, password: '1234' }), Account.create({ name: account3Name, password: '1234' })]).then(([account1, account2, account3]) => {
+      P.all([Account.create({ name: account1Name, password: '1234', emailAddress: account1Name + '@test.com' }), Account.create({ name: account2Name, password: '1234', emailAddress: account2Name + '@test.com' }), Account.create({ name: account3Name, password: '1234', emailAddress: account1Name + '@test.com' })]).then(([account1, account2, account3]) => {
         const unsettledTransferId = Fixtures.generateTransferId()
         const settledTransferId = Fixtures.generateTransferId()
         const unsettledOtherTransferId = Fixtures.generateTransferId()

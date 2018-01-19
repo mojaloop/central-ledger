@@ -1,0 +1,307 @@
+# CircleCI v2 Config
+version: 2
+
+defaults: &defaults
+  working_directory: /home/circleci/project
+  docker:
+    - image: dwolla/alpine-node-make
+
+defaultDependencies: &defaultDependencies | 
+    apk --no-cache add git
+    apk --no-cache add ca-certificates
+    apk --no-cache add curl
+
+jobs:
+  setup:
+    <<: *defaults
+    steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
+      - checkout
+      - run:
+          name: Install interledgerjs/five-bells-ledger-api-tests
+          command: npm install github:interledgerjs/five-bells-ledger-api-tests
+      - run:
+          name: Link NPM sodium
+          command: npm link sodium
+      - run:
+          name: Link NPM argon2
+          command: npm link argon2
+      - run:
+          name: Update NPM install
+          command: npm install
+      # - run:
+      #     name: Update NPM install
+      #     command: npm link sodium && npm link argon2 && npm install --production
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - node_modules
+  test-unit:
+    <<: *defaults
+    steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run: 
+          name: Execute unit tests
+          command: npm -s run test:xunit > ./test/results/tape.xml
+      - store_artifacts:
+          path: ./test/results
+          prefix: test
+      - store_test_results:
+          path: ./test/results
+  test-coverage:
+    <<: *defaults
+    steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Execute code coverage check
+          command: npm -s run test:coverage-check
+      - store_artifacts:
+          path: coverage
+          prefix: test
+      - store_test_results:
+          path: coverage
+  test-integration:
+    machine: true
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run: 
+          name: Execute unit tests
+          command: npm -s run test:integration
+      - store_artifacts:
+          path: ./test/results
+          prefix: test
+      - store_test_results:
+          path: ./test/results
+  test-functional:
+    machine: true
+    steps:
+      - run: 
+          name: Add the Postgres 9.6 binaries to the path.
+          command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+      - run:
+          name: Install Docker Compose
+          command: |
+            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+            chmod +x ~/docker-compose
+            mv ~/docker-compose /usr/local/bin/docker-compose
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: 
+          name: Create dir for test results
+          command: mkdir -p ./test/results
+      - run: 
+          name: Execute unit tests
+          command: npm -s run test:functional
+      - store_artifacts:
+          path: ./test/results
+          prefix: test
+      - store_test_results:
+          path: ./test/results
+#   test-spec:
+#     machine: true
+#     # <<: *defaults 
+#     steps:
+#     #   - run: 
+#     #       name: Install dependencies 
+#     #       command: *defaultDependencies 
+#     #   - run:  
+#     #       name: Add the Postgres 9.6 binaries to the path. 
+#     #       command: apk --no-cache add postgresql-client 
+#     #   - setup_remote_docker 
+#     #   - run:  
+#     #       name: Add docker 
+#     #       command: apk --no-cache add docker 
+#     #   - run:  
+#     #       name: Add docker compose 
+#     #       command: | 
+#     #         apk --no-cache add py-pip 
+#     #         pip install docker-compose 
+#     #   - run: 
+#     #       name: Install Docker Compose 
+#     #       command: | 
+#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose 
+#       - run: 
+#           name: Add the Postgres 9.6 binaries to the path.
+#           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+#       - run:
+#           name: Install Docker Compose
+#           command: |
+#             curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+#             chmod +x ~/docker-compose
+#             mv ~/docker-compose /usr/local/bin/docker-compose
+#       - checkout
+#       - restore_cache:
+#           key: dependency-cache-{{ checksum "package.json" }}
+#       - run: 
+#           name: Create dir for test results
+#           command: mkdir -p ./test/results
+#       - run: 
+#           name: Execute unit tests
+#           command: npm -s run test:spec
+#       - store_artifacts:
+#           path: ./test/results
+#           prefix: test
+#       - store_test_results:
+#           path: ./test/results
+  build:
+    machine: true
+    steps:
+      - run:
+          name: Install dependencies
+          command: *defaultDependencies
+      - checkout
+      # # build the application image
+      # - run: 
+      #     name: Build Docker image
+      #     command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+      # build the application image
+      - run: 
+          name: Build Docker image
+          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:test -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
+      # save the docker image to the file system
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            mkdir -p ./caches
+            docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
+      # store docker image in cache
+      - save_cache:
+          key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+          paths:
+            - ./caches/dockerimage.tar
+  deploy:
+    machine: true
+    steps:
+      - checkout
+      # login to docker hub
+      - run: 
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      # restore docker image for deployment
+      - restore_cache:
+          keys:
+            - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
+          paths:
+            - /caches/dockerimage.tar
+      # load docker image
+      - run:
+          name: Load Docker image layer cache
+          command: |
+            set +o pipefail
+            docker load -i /caches/dockerimage.tar | true
+      # publish docker image with tag
+      - run: 
+          name: Publish Docker image latest tag to Docker Hub
+          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
+      - run: 
+          name: Publish Docker image $TAG tag to Docker Hub
+          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - setup:
+          context: org-global
+          filters:
+              branches:
+                ignore: 
+                  - /feature*/
+                  - /bugfix*/
+      - test-unit:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/             
+      - test-coverage:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-integration:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-functional:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+    #   - test-spec:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         branches:
+    #           ignore: 
+    #             - /feature*/
+    #             - /bugfix*/
+      - build:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            # - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              only:
+                - master-test
+      - deploy:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            # - test-spec
+            - build
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              only:
+                - master-test

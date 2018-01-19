@@ -6,27 +6,28 @@ const ValidationError = require('../../errors').ValidationError
 const UrlParser = require('../../lib/urlparser')
 const Crypto = require('../../lib/crypto')
 
-const createAccount = (name, hashedPassword) => {
-  return Model.create({ name, hashedPassword })
+const createAccount = (name, hashedPassword, emailAddress) => {
+  return Model.create({ name, hashedPassword, emailAddress })
 }
 
 const create = (payload) => {
   return Crypto.hash(payload.password)
     .then(hashedPassword => {
-      return createAccount(payload.name, hashedPassword)
-        .then(account => ({
-          accountId: account.accountId,
-          name: account.name,
-          createdDate: account.createdDate
-        }))
+      return createAccount(payload.name, hashedPassword, payload.emailAddress)
+      .then(account => ({
+        accountId: account.accountId,
+        name: account.name,
+        createdDate: account.createdDate,
+        emailAddress: account.emailAddress
+      }))
     })
 }
 
-const createLedgerAccount = (name, password) => {
+const createLedgerAccount = (name, password, emailAddress) => {
   return Model.getByName(name)
     .then(account => {
       if (!account) {
-        return create({ name, password })
+        return create({ name, password, emailAddress })
       }
       return account
     })
