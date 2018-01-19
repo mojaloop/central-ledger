@@ -8,6 +8,10 @@ defaults: &defaults
       environment:
         FLASK_CONFIG: testing
 
+default_env: &default_env
+  environment:
+    - TAG: "0.1t"
+
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
@@ -215,6 +219,7 @@ jobs:
 
   build:
     machine: true
+    <<: *default_env
     steps:
     #   - run:
     #       name: Install dependencies
@@ -257,6 +262,7 @@ jobs:
             - ./caches/dockerimage.tar
   deploy:
     machine: true
+    <<: *default_env
     steps:
       - checkout
       # login to docker hub
