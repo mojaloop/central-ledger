@@ -31,15 +31,17 @@ Test('Account service', serviceTest => {
       const createdDate = new Date()
       const password = 'password'
       const hashedPassword = 'hashed password'
-      Model.create.returns(P.resolve({ name, accountId, createdDate }))
+      const emailAddress = name + '@test.com'
+      Model.create.returns(P.resolve({ name, accountId, createdDate, emailAddress }))
       Crypto.hash.withArgs(password).returns(P.resolve(hashedPassword))
-      AccountService.create({ name, password })
+      AccountService.create({ name, password, emailAddress })
         .then(account => {
           test.equal(account.accountId, accountId)
           test.equal(account.name, name)
           test.equal(account.createdDate, createdDate)
           const createArgs = Model.create.firstCall.args
           test.equal(createArgs[0].hashedPassword, hashedPassword)
+          test.equal(account.emailAddress, emailAddress)
           test.end()
         })
     })
@@ -54,16 +56,18 @@ Test('Account service', serviceTest => {
       const accountId = Uuid()
       const createdDate = new Date()
       const hashedPassword = 'hashed password'
-      Model.create.returns(P.resolve({ name, accountId, createdDate }))
+      const emailAddress = 'cc@test.com'
+      Model.create.returns(P.resolve({ name, accountId, createdDate, emailAddress }))
       Model.getByName.returns(P.resolve(null))
       Crypto.hash.returns(P.resolve(hashedPassword))
-      AccountService.createLedgerAccount({ name, password })
+      AccountService.createLedgerAccount({ name, password, emailAddress })
         .then(account => {
           test.equal(account.accountId, accountId)
           test.equal(account.name, name)
           test.equal(account.createdDate, createdDate)
           const createArgs = Model.create.firstCall.args
           test.equal(createArgs[0].hashedPassword, hashedPassword)
+          test.equal(account.emailAddress, emailAddress)
           test.end()
         })
     })
@@ -73,12 +77,14 @@ Test('Account service', serviceTest => {
       const password = 'LedgerPassword'
       const accountId = Uuid()
       const createdDate = new Date()
-      Model.getByName.returns(P.resolve({ name, accountId, createdDate }))
-      AccountService.createLedgerAccount({ name, password })
+      const emailAddress = 'cc@test.com'
+      Model.getByName.returns(P.resolve({ name, accountId, createdDate, emailAddress }))
+      AccountService.createLedgerAccount({ name, password, emailAddress })
         .then(account => {
           test.equal(account.accountId, accountId)
           test.equal(account.name, name)
           test.equal(account.createdDate, createdDate)
+          test.equal(account.emailAddress, emailAddress)
           test.end()
         })
     })

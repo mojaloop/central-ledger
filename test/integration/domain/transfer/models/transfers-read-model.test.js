@@ -22,7 +22,7 @@ const getTransfersCount = () => {
 }
 
 const createAccounts = (accountNames) => {
-  return P.all(accountNames.map(name => Account.create({ name: name, password: '1234' }))).then(accounts => _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {}))
+  return P.all(accountNames.map(name => Account.create({ name: name, password: '1234', emailAddress: name + '@test.com' }))).then(accounts => _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {}))
 }
 
 const buildReadModelDebitOrCredit = (accountName, amount, accountMap) => {
@@ -127,6 +127,33 @@ Test('transfers read model', modelTest => {
     })
 
     getByIdTest.end()
+  })
+
+  modelTest.test('getAll should', getAllTest => {
+    getAllTest.test('retrieve all transfers from read model', test => {
+      let debitAccountName = Fixtures.generateAccountName()
+      let creditAccountName = Fixtures.generateAccountName()
+
+      createAccounts([debitAccountName, creditAccountName])
+        .then(accountMap => {
+          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED)
+          let transfer2 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '40', accountMap), buildReadModelDebitOrCredit(creditAccountName, '40', accountMap), TransferState.PREPARED)
+          let transfer3 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '30', accountMap), buildReadModelDebitOrCredit(creditAccountName, '30', accountMap), TransferState.PREPARED)
+
+          ReadModel.truncateTransfers()
+            .then(() => ReadModel.saveTransfer(transfer))
+            .then(() => ReadModel.saveTransfer(transfer2))
+            .then(() => ReadModel.saveTransfer(transfer3))
+            .then(() => ReadModel.getAll())
+            .then(found => {
+              test.ok(found)
+              test.equal(3, found.length)
+              test.end()
+            })
+        })
+    })
+
+    getAllTest.end()
   })
 
   modelTest.test('findExpired should', expiredTest => {

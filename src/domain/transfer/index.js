@@ -15,6 +15,10 @@ const getById = (id) => {
   return TransferQueries.getById(id)
 }
 
+const getAll = () => {
+  return TransferQueries.getAll()
+}
+
 const getFulfillment = (id) => {
   return getById(id)
     .then(transfer => {
@@ -103,6 +107,7 @@ const settle = () => {
 module.exports = {
   fulfill,
   getById,
+  getAll,
   getFulfillment,
   prepare,
   reject,
