@@ -371,8 +371,10 @@ workflows:
             tags:
               only: /.*/
             branches:
-              only:
-                - master-test
+              ignore: /.*/
+            # branches:
+            #   only:
+            #     - master-test
     #   - deploy:
     #       context: org-global
     #       requires:
