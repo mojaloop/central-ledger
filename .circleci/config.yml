@@ -369,7 +369,7 @@ workflows:
             # - test-spec
           filters:
             tags:
-              only: /.*/
+              only: /^.*/
             branches:
               only:
                 - master-test
