@@ -349,7 +349,7 @@ workflows:
             # - test-spec
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*-SNAPSHOT/
+              only: /v[0-9]+(\.[0-9]+)*\-SNAPSHOT/
             branches:
               only:
                 - develop-test
