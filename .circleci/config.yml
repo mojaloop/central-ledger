@@ -11,7 +11,7 @@ defaults: &defaults
 default_env: &default_env
   environment:
     # - TAG_EXP: 'v[0-9]+(\.[0-9]+)*'
-    # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*(\.SNAPSHOT)'
+    # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*(\-snapshot)'
     # - TAG: "v0.1"
 
 
@@ -212,8 +212,10 @@ jobs:
           command: |
             if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$snapshot
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot"
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot
             else
                 echo "Not a release (missing tag), skipping Docker Push"
             fi
@@ -257,8 +259,10 @@ jobs:
           command: |
             if [[ "$TAG" =~ ^$TAG_EXP$ ]]
             then
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$latest
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest"
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
             else
                 echo "Not a release (missing tag), skipping Docker Push"
             fi
