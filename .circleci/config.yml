@@ -185,7 +185,7 @@ jobs:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image: $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
       - run: 
           name: Login to Docker Hub
           command: |
@@ -230,7 +230,7 @@ jobs:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image: $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
       - run: 
           name: Login to Docker Hub
           command: |
