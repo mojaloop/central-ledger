@@ -185,7 +185,7 @@ jobs:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG or CIRCLE_TAG=$CIRCLE_TAG"
       - run: 
           name: Login to Docker Hub
           command: |
@@ -232,7 +232,7 @@ jobs:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG or CIRCLE_TAG=$CIRCLE_TAG"
       - run: 
           name: Login to Docker Hub
           command: |
@@ -245,7 +245,7 @@ jobs:
       - run: 
           name: Build Docker image
           command: |
-            if [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+)*$ ]]
+            if [[ "$TAG" =~ ^$TAG_EXP$ ]]
             then
                 docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
             else
