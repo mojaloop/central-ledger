@@ -10,11 +10,8 @@ defaults: &defaults
 
 default_env: &default_env
   environment:
-    - TAG: "0.1t"
+    - TAG: "v0.1t"
 
-default_env: &default_env
-  environment:
-    - TAG: "0.1t"
 
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
@@ -232,36 +229,25 @@ jobs:
       - run: 
           name: Login to Docker Hub
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
-        #   command: CIRCLE_TAG="$(git tag -l --points-at HEAD)" 
-      # # build the application image
-    #   - run: 
-        #   name: Build Docker image
-        #   command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
-      # build the application image
-    #   - run:
-    #       name: set git tag
-    #       command: CIRCLE_TAG="$(git tag -l --points-at HEAD)" 
-    #   - run: 
-    #       name: Print Docker image name
-    #       command: echo "$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
       - run: 
           name: Build Docker image
-          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
+          command: |
+            if [ -n $TAG ]
+            then
+                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
+            else
+                echo "Not a release, skipping Docker Build"
+            fi
       # publish docker image with tag
       - run: 
           name: Publish Docker image $TAG tag to Docker Hub
-          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
-      # save the docker image to the file system
-    #   - run:
-    #       name: Save Docker image layer cache
-    #       command: |
-    #         mkdir -p ./caches
-    #         docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
-    #   # store docker image in cache
-    #   - save_cache:
-    #       key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-    #       paths:
-    #         - ./caches/dockerimage.tar
+          command: |
+            if [ -n $TAG ]
+            then
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+            else
+                echo "Not a release, skipping Docker Push"
+            fi
 #   deploy:
 #     machine: true
 #     <<: *default_env
@@ -365,22 +351,22 @@ workflows:
             branches:
               only:
                 - develop-test
-      - deploy-snapshot:
-          context: org-global
-          requires:
-            # - setup
-            # - test-unit
-            # - test-coverage
-            # - test-integration
-            # - test-functional
-            # - test-spec
-            - build-snapshot
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*-SNAPSHOT/
-            branches:
-              only:
-                - develop-test
+    #   - deploy-snapshot:
+    #       context: org-global
+    #       requires:
+    #         # - setup
+    #         # - test-unit
+    #         # - test-coverage
+    #         # - test-integration
+    #         # - test-functional
+    #         # - test-spec
+    #         - build-snapshot
+    #       filters:
+    #         tags:
+    #           only: /v[0-9]+(\.[0-9]+)*-SNAPSHOT/
+    #         branches:
+    #           only:
+    #             - develop-test
       - build:
           context: org-global
           requires:
