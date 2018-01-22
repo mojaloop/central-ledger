@@ -231,7 +231,7 @@ jobs:
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: 
           name: Print Docker Image
-          command: echo "Docker Image being build: $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: echo "Docker Image being build- $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
       - run: 
           name: Build Docker image
           command: |
