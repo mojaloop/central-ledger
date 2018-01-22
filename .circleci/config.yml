@@ -235,7 +235,7 @@ jobs:
       - run: 
           name: Build Docker image
           command: |
-            if [ -n $TAG ]
+            if [ -n "$TAG" ]
             then
                 docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
             else
@@ -245,7 +245,7 @@ jobs:
       - run: 
           name: Publish Docker image $TAG tag to Docker Hub
           command: |
-            if [ -n $TAG ]
+            if [ -n "$TAG" ]
             then
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
             else
