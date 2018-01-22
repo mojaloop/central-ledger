@@ -10,7 +10,9 @@ defaults: &defaults
 
 default_env: &default_env
   environment:
-    - TAG: "v0.1t"
+    - TAG_EXP: 'v[0-9]+(\.[0-9]+)*'
+    - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*(\-SNAPSHOT)'
+    # - TAG: "v0.1"
 
 
 defaultDependencies: &defaultDependencies | 
@@ -45,6 +47,7 @@ jobs:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - node_modules
+  
   test-unit:
     <<: *defaults
     steps:
@@ -65,6 +68,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
+  
   test-coverage:
     <<: *defaults
     steps:
@@ -82,6 +86,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: coverage
+  
   test-integration:
     machine: true
     steps:
@@ -99,6 +104,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
+  
   test-functional:
     machine: true
     steps:
@@ -125,6 +131,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
+
 #   test-spec:
 #     machine: true
 #     # <<: *defaults 
@@ -171,85 +178,101 @@ jobs:
 #           prefix: test
 #       - store_test_results:
 #           path: ./test/results
+
   build-snapshot:
     machine: true
     steps:
-    #   - run:
-    #       name: Install dependencies
-    #       command: *defaultDependencies
       - checkout
-      # build the application image
-      - run: 
-          name: Build Docker SNAPSHOT image
-          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG-SNAPSHOT .
-      # save the docker image to the file system
-      - run:
-          name: Save Docker SNAPSHOT image layer cache
-          command: |
-            mkdir -p ./caches
-            docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
-      # store docker image in cache
-      - save_cache:
-          key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-          paths:
-            - ./caches/dockerimage.tar
-  deploy-snapshot:
-    machine: true
-    steps:
-      - checkout
-      # login to docker hub
-      - run: 
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
-      # restore docker image for deployment
-      - restore_cache:
-          keys:
-            - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-          paths:
-            - /caches/dockerimage.tar
-      # load docker image
-      - run:
-          name: Load Docker SNAPSHOT image layer cache
-          command: |
-            set +o pipefail
-            docker load -i /caches/dockerimage.tar | true
-      # publish docker image with tag
-      - run: 
-          name: Publish Docker SNAPSHOT image $CIRCLE_TAG tag to Docker Hub
-          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG-SNAPSHOT
-
-  build:
-    machine: true
-    # <<: *default_env
-    steps:
-    #   - run:
-    #       name: Install dependencies
-    #       command: *defaultDependencies
-      - checkout
-      - run: 
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: 
           name: Print Docker Image
-          command: echo "Docker Image being build- $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: |
+            if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            then
+                echo "Building Docker Image: $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+            else
+                echo "Not a release (missing tag), skipping Docker Build steps"
+            fi
+
+      - run: 
+          name: Login to Docker Hub
+          command: |
+            if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            then
+                docker login -u $DOCKER_USER -p $DOCKER_PASS
+            else
+                echo "Not a release (missing tag), skipping Docker Login"
+            fi
       - run: 
           name: Build Docker image
           command: |
-            if [ -n "$TAG" ]
+            if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
-                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
+                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
             else
-                echo "Not a release, skipping Docker Build"
+                echo "Not a release (missing tag), skipping Docker Build"
             fi
-      # publish docker image with tag
       - run: 
-          name: Publish Docker image $TAG tag to Docker Hub
+          name: Publish Docker image $TAG & Latest tag to Docker Hub
           command: |
-            if [ -n "$TAG" ]
+            if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$snapshot
             else
-                echo "Not a release, skipping Docker Push"
+                echo "Not a release (missing tag), skipping Docker Push"
+            fi
+
+#  deploy-snapshot:
+#     machine: true
+#     <<: *default_env
+#     steps:
+#       - checkout
+#       # login to docker hub
+#       # TBD
+
+  build:
+    machine: true
+    <<: *default_env
+    steps:
+      - checkout
+      - run: 
+          name: Print Docker Image
+          command: |
+            if [[ "$TAG" =~ ^$TAG_EXP$ ]]
+            then
+                echo "Building Docker Image: $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+            else
+                echo "Not a release (missing tag), skipping Docker Build steps"
+            fi
+
+        #if [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+)*$ ]]; then echo "Valid date"; else echo "Invalid date"; fi
+      - run: 
+          name: Login to Docker Hub
+          command: |
+            if [[ "$TAG" =~ ^$TAG_EXP$ ]]
+            then
+                docker login -u $DOCKER_USER -p $DOCKER_PASS
+            else
+                echo "Not a release (missing tag), skipping Docker Login"
+            fi
+      - run: 
+          name: Build Docker image
+          command: |
+            if [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+)*$ ]]
+            then
+                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+            else
+                echo "Not a release (missing tag), skipping Docker Build"
+            fi
+      - run: 
+          name: Publish Docker image $TAG & Latest tag to Docker Hub
+          command: |
+            if [[ "$TAG" =~ ^$TAG_EXP$ ]]
+            then
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$latest
+            else
+                echo "Not a release (missing tag), skipping Docker Push"
             fi
 #   deploy:
 #     machine: true
@@ -257,31 +280,7 @@ jobs:
 #     steps:
 #       - checkout
 #       # login to docker hub
-#       - run:
-#           name: set git tag
-#           command: export TAG="0.1t" 
-#       - run: 
-#           name: Login to Docker Hub
-#           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
-#       # restore docker image for deployment
-#       - restore_cache:
-#           keys:
-#             - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-#           paths:
-#             - /caches/dockerimage.tar
-#       # load docker image
-#       - run:
-#           name: Load Docker image layer cache
-#           command: |
-#             set +o pipefail
-#             docker load -i /caches/dockerimage.tar | true
-#       # publish docker image with tag
-#     #   - run: 
-#     #       name: Publish Docker image latest tag to Docker Hub
-#     #       command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
-#       - run: 
-#           name: Publish Docker image $TAG tag to Docker Hub
-#           command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+#       # TBD
 
 workflows:
   version: 2
@@ -381,7 +380,7 @@ workflows:
             # - test-spec
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*-/
+              only: /v[0-9]+(\.[0-9]+)*/
             branches:
               only:
                 - master-test
