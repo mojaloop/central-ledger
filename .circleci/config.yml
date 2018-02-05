@@ -186,11 +186,11 @@ jobs:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG or CIRCLE_TAG=$CIRCLE_TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG or CIRCLE_TAG=$CIRCLE_TAG"
       - run: 
           name: Login to Docker Hub
           command: |
-            if [[ "$$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
                 docker login -u $DOCKER_USER -p $DOCKER_PASS
             else
@@ -199,19 +199,19 @@ jobs:
       - run: 
           name: Build Docker image
           command: |
-            if [[ "$$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
-                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
+                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
             else
                 echo "Not a release (missing tag), skipping Docker Build"
             fi
       - run: 
-          name: Publish Docker image $$CIRCLE_TAG & Latest tag to Docker Hub
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
           command: |
-            if [[ "$$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
                 echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot"
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot
             else
@@ -233,11 +233,11 @@ jobs:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG or CIRCLE_TAG=$CIRCLE_TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG or CIRCLE_TAG=$CIRCLE_TAG"
       - run: 
           name: Login to Docker Hub
           command: |
-            if [[ "$$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
             then
                 docker login -u $DOCKER_USER -p $DOCKER_PASS
             else
@@ -246,19 +246,19 @@ jobs:
       - run: 
           name: Build Docker image
           command: |
-            if [[ "$$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
             then
-                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
             else
                 echo "Not a release (missing tag), skipping Docker Build"
             fi
       - run: 
-          name: Publish Docker image $$CIRCLE_TAG & Latest tag to Docker Hub
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
           command: |
-            if [[ "$$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
             then
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$$CIRCLE_TAG
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
                 echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest"
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
             else
