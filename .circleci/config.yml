@@ -5,20 +5,19 @@ defaults: &defaults
   working_directory: /home/circleci/project
   docker:
     - image: dwolla/alpine-node-make
-      environment:
-        FLASK_CONFIG: testing
 
-default_env: &default_env
-  environment:
-    # - TAG_EXP: 'v[0-9]+(\.[0-9]+)*'
-    # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*(\-snapshot)'
-    # - TAG: "v0.1"
+# default_env: &default_env
+#   environment:
+#     # - TAG_EXP: 'v[0-9]+(\.[0-9]+)*'
+#     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*(\-snapshot)'
+#     # - TAG: v1.0
 
 
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
+    apk --no-cache add openssh-client
 
 jobs:
   setup:
@@ -132,6 +131,7 @@ jobs:
       - store_test_results:
           path: ./test/results
 
+
 #   test-spec:
 #     machine: true
 #     # <<: *defaults 
@@ -185,11 +185,11 @@ jobs:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
       - run: 
           name: Login to Docker Hub
           command: |
-            if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
                 docker login -u $DOCKER_USER -p $DOCKER_PASS
             else
@@ -198,19 +198,19 @@ jobs:
       - run: 
           name: Build Docker image
           command: |
-            if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
-                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
+                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
             else
                 echo "Not a release (missing tag), skipping Docker Build"
             fi
       - run: 
-          name: Publish Docker image $TAG & Latest tag to Docker Hub
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
           command: |
-            if [[ "$TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
             then
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
                 echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot"
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot
             else
@@ -227,16 +227,16 @@ jobs:
 
   build:
     machine: true
-    <<: *default_env
+    # <<: *default_env
     steps:
       - checkout
       - run: 
           name: Print Docker Image
-          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
       - run: 
           name: Login to Docker Hub
           command: |
-            if [[ "$TAG" =~ ^$TAG_EXP$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
             then
                 docker login -u $DOCKER_USER -p $DOCKER_PASS
             else
@@ -245,19 +245,19 @@ jobs:
       - run: 
           name: Build Docker image
           command: |
-            if [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+)*$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
             then
-                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
             else
                 echo "Not a release (missing tag), skipping Docker Build"
             fi
       - run: 
-          name: Publish Docker image $TAG & Latest tag to Docker Hub
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
           command: |
-            if [[ "$TAG" =~ ^$TAG_EXP$ ]]
+            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
             then
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
                 echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest"
                 docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
             else
@@ -275,54 +275,66 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-    #   - setup:
-    #       context: org-global
-    #       filters:
-    #           branches:
-    #             ignore: 
-    #               - /feature*/
-    #               - /bugfix*/
-    #   - test-unit:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/             
-    #   - test-coverage:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/
-    #   - test-integration:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/
-    #   - test-functional:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/
+      - setup:
+          context: org-global
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-unit:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/             
+      - test-coverage:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-integration:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-functional:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
     #   - test-spec:
     #       context: org-global
     #       requires:
     #         - setup
     #       filters:
+    #           tags:
+    #             only: /.*/    
     #         branches:
     #           ignore: 
     #             - /feature*/
@@ -330,11 +342,11 @@ workflows:
       - build-snapshot:
           context: org-global
           requires:
-            # - setup
-            # - test-unit
-            # - test-coverage
-            # - test-integration
-            # - test-functional
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
             # - test-spec
           filters:
             tags:
@@ -343,49 +355,24 @@ workflows:
               only:
                 - develop-test
     #   - deploy-snapshot:
-    #       context: org-global
-    #       requires:
-    #         # - setup
-    #         # - test-unit
-    #         # - test-coverage
-    #         # - test-integration
-    #         # - test-functional
-    #         # - test-spec
-    #         - build-snapshot
-    #       filters:
-    #         tags:
-    #           only: /v[0-9]+(\.[0-9]+)*-SNAPSHOT/
-    #         branches:
-    #           only:
-    #             - develop-test
+    #       TBD
       - build:
           context: org-global
           requires:
-            # - setup
-            # - test-unit
-            # - test-coverage
-            # - test-integration
-            # - test-functional
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
             # - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              only:
+              only: 
                 - master-test
+            # branches:
+            #   only:
+            #     - master-test
     #   - deploy:
-    #       context: org-global
-    #       requires:
-    #         # - setup
-    #         # - test-unit
-    #         # - test-coverage
-    #         # - test-integration
-    #         # - test-functional
-    #         # - test-spec
-    #         - build
-    #       filters:
-    #         tags:
-    #           only: /v[0-9]+(\.[0-9]+)*/
-    #         branches:
-    #           only:
-    #             - master-test
+    #       TBD
