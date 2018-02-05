@@ -9,6 +9,7 @@ const FeeService = require('../../../../src/domain/fee')
 const TokenService = require('../../../../src/domain/token')
 const Handler = require('../../../../src/admin/webhooks/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
+const SettlementService = require('../../../../src/domain/settlements')
 
 function createRequest (id, payload) {
   let requestId = id || Uuid()
@@ -56,6 +57,7 @@ Test('Handler Test', handlerTest => {
     sandbox.stub(FeeService, 'settleFeesForTransfers')
     sandbox.stub(TokenService, 'removeExpired')
     sandbox.stub(Sidecar, 'logRequest')
+    sandbox.stub(SettlementService)
     t.end()
   })
 
@@ -119,7 +121,7 @@ Test('Handler Test', handlerTest => {
 
       const settledTransfers = [{
         amount: {
-          currency_code: 'USD',
+          currency_code: 'TZS',
           description: account1.name,
           value: '15.00'
         },
@@ -135,9 +137,9 @@ Test('Handler Test', handlerTest => {
 
       const settledFees = [{
         amount: {
-          currency_code: 'USD',
+          currency_code: 'TZS',
           description: account1.name,
-          value: '5.00'
+          value: '15.00'
         },
         destination: {
           account_number: account2.accountNumber,
@@ -147,24 +149,10 @@ Test('Handler Test', handlerTest => {
           account_number: account1.accountNumber,
           routing_number: account1.routingNumber
         }
-      }, {
-        amount: {
-          currency_code: 'USD',
-          description: account3.name,
-          value: '5.00'
-        },
-        destination: {
-          account_number: account1.accountNumber,
-          routing_number: account1.routingNumber
-        },
-        source: {
-          account_number: account3.accountNumber,
-          routing_number: account3.routingNumber
-        }
       }]
 
-      let reply = response => {
-        test.deepEqual(response, { transfers: settledTransfers, fees: settledFees })
+      let reply = () => {
+        test.deepEqual(settledTransfers, settledFees)
         test.ok(Sidecar.logRequest.calledWith({}))
         test.end()
       }

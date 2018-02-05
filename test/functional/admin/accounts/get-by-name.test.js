@@ -19,6 +19,7 @@ Test('GET /accounts', getTest => {
             assert.equal(res.body.name, account1Res.body.name)
             assert.equal(res.body.created, account1Res.body.created)
             assert.equal(res.body.id, account1Res.body.id)
+            assert.equal(res.body.emailAddress, account1Res.body.emailAddress)
             assert.end()
           })
       })

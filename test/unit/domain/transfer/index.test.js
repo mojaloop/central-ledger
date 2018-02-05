@@ -34,6 +34,7 @@ Test('Transfer Service tests', serviceTest => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(TransferQueries, 'findExpired')
     sandbox.stub(TransferQueries, 'getById')
+    sandbox.stub(TransferQueries, 'getAll')
     sandbox.stub(SettleableTransfersReadModel, 'getSettleableTransfers')
     sandbox.stub(SettlementsModel, 'generateId')
     sandbox.stub(SettlementsModel, 'create')
@@ -61,6 +62,17 @@ Test('Transfer Service tests', serviceTest => {
       const transferPromise = P.resolve(transfer)
       TransferQueries.getById.withArgs(id).returns(transferPromise)
       test.equal(Service.getById(id), transferPromise)
+      test.end()
+    })
+    getByIdTest.end()
+  })
+
+  serviceTest.test('getAll should', getByIdTest => {
+    getByIdTest.test('return result from read model', test => {
+      const transfer = {}
+      const transferPromise = P.resolve(transfer)
+      TransferQueries.getAll.returns(transferPromise)
+      test.equal(Service.getAll(), transferPromise)
       test.end()
     })
     getByIdTest.end()
