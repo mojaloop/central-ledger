@@ -333,6 +333,8 @@ workflows:
     #       requires:
     #         - setup
     #       filters:
+    #           tags:
+    #             only: /.*/    
     #         branches:
     #           ignore: 
     #             - /feature*/
