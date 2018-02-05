@@ -276,49 +276,49 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-    #   - setup:
-    #       context: org-global
-    #       filters:
-    #           branches:
-    #             ignore: 
-    #               - /feature*/
-    #               - /bugfix*/
-    #   - test-unit:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/             
-    #   - test-coverage:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/
-    #   - test-integration:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/
-    #   - test-functional:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #         branches:
-    #           ignore: 
-    #             - /feature*/
-    #             - /bugfix*/
+      - setup:
+          context: org-global
+          filters:
+              branches:
+                ignore: 
+                  - /feature*/
+                  - /bugfix*/
+      - test-unit:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/             
+      - test-coverage:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-integration:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - test-functional:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
     #   - test-spec:
     #       context: org-global
     #       requires:
@@ -331,43 +331,29 @@ workflows:
       - build-snapshot:
           context: org-global
           requires:
-            # - setup
-            # - test-unit
-            # - test-coverage
-            # - test-integration
-            # - test-functional
-            # - test-spec
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            - test-spec
           filters:
             tags:
-              only: /^v[0-9]+(\.[0-9]+)*\-SNAPSHOT/
+              only: /.*/
             branches:
               only:
                 - develop-test
     #   - deploy-snapshot:
-    #       context: org-global
-    #       requires:
-    #         # - setup
-    #         # - test-unit
-    #         # - test-coverage
-    #         # - test-integration
-    #         # - test-functional
-    #         # - test-spec
-    #         - build-snapshot
-    #       filters:
-    #         tags:
-    #           only: /v[0-9]+(\.[0-9]+)*-SNAPSHOT/
-    #         branches:
-    #           only:
-    #             - develop-test
+    #       TBD
       - build:
           context: org-global
           requires:
-            # - setup
-            # - test-unit
-            # - test-coverage
-            # - test-integration
-            # - test-functional
-            # - test-spec
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            - test-spec
           filters:
             tags:
               only: /.*/
@@ -377,18 +363,4 @@ workflows:
             #   only:
             #     - master-test
     #   - deploy:
-    #       context: org-global
-    #       requires:
-    #         # - setup
-    #         # - test-unit
-    #         # - test-coverage
-    #         # - test-integration
-    #         # - test-functional
-    #         # - test-spec
-    #         - build
-    #       filters:
-    #         tags:
-    #           only: /v[0-9]+(\.[0-9]+)*/
-    #         branches:
-    #           only:
-    #             - master-test
+    #       TBD
