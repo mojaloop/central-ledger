@@ -9,7 +9,7 @@ defaults: &defaults
 # default_env: &default_env
 #   environment:
 #     # - TAG_EXP: 'v[0-9]+(\.[0-9]+)*'
-#     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*(\-snapshot)'
+#     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-(?i)\SNAPSHOT\b'
 #     # - TAG: v1.0
 
 
@@ -350,7 +350,7 @@ workflows:
             # - test-spec
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*\-SNAPSHOT/
+              only: /v[0-9]+(\.[0-9]+)*\-(?i)\SNAPSHOT\b/
             branches:
               only:
                 - develop-test
