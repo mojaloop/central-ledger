@@ -348,8 +348,8 @@ workflows:
       - build:
           context: org-global
           requires:
-            # - setup
-            # - test-unit
+            - setup
+            - test-unit
             # - test-coverage
             # - test-integration
             # - test-functional
