@@ -10,7 +10,7 @@ defaults: &defaults
 #   environment:
 #     # - TAG_EXP: 'v[0-9]+(\.[0-9]+)*'
 #     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*(\-snapshot)'
-#     # - TAG: $CIRCLE_TAG
+#     # - TAG: v1.0
 
 
 defaultDependencies: &defaultDependencies | 
