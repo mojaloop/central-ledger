@@ -17,6 +17,7 @@ defaultDependencies: &defaultDependencies |
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
+    apk --no-cache add openssh-client
 
 jobs:
   setup:
