@@ -189,33 +189,18 @@ jobs:
       - run: 
           name: Login to Docker Hub
           command: |
-            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
-            then
-                docker login -u $DOCKER_USER -p $DOCKER_PASS
-            else
-                echo "Not a release (missing tag), skipping Docker Login"
-            fi
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: 
           name: Build Docker image
           command: |
-            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
-            then
-                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
-            else
-                echo "Not a release (missing tag), skipping Docker Build"
-            fi
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
       - run: 
           name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
           command: |
-            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP_SNAPSHOT$ ]]
-            then
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot
-            else
-                echo "Not a release (missing tag), skipping Docker Push"
-            fi
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot
 
 #  deploy-snapshot:
 #     machine: true
@@ -236,33 +221,19 @@ jobs:
       - run: 
           name: Login to Docker Hub
           command: |
-            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
-            then
-                docker login -u $DOCKER_USER -p $DOCKER_PASS
-            else
-                echo "Not a release (missing tag), skipping Docker Login"
-            fi
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: 
           name: Build Docker image
           command: |
-            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
-            then
-                docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
-            else
-                echo "Not a release (missing tag), skipping Docker Build"
-            fi
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
       - run: 
           name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
           command: |
-            if [[ "$CIRCLE_TAG" =~ ^$TAG_EXP$ ]]
-            then
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-                echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest"
-                docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
-            else
-                echo "Not a release (missing tag), skipping Docker Push"
-            fi
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
+
 #   deploy:
 #     machine: true
 #     <<: *default_env
