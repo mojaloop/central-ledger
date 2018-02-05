@@ -358,7 +358,8 @@ workflows:
             tags:
               only: /.*/
             branches:
-              only: master-test
+              only: 
+                - master-test
             # branches:
             #   only:
             #     - master-test
