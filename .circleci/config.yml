@@ -336,7 +336,7 @@ workflows:
             - test-coverage
             - test-integration
             - test-functional
-            - test-spec
+            # - test-spec
           filters:
             tags:
               only: /.*/
@@ -353,7 +353,7 @@ workflows:
             - test-coverage
             - test-integration
             - test-functional
-            - test-spec
+            # - test-spec
           filters:
             tags:
               only: /.*/
