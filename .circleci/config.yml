@@ -12,19 +12,28 @@ defaults: &defaults
 #     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-SNAPSHOT'
 #     # - TAG: v1.0
 
-
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
 
+awsCliDependencies: &awsCliDependencies | 
+    apk --no-cache add \
+            python \
+            py-pip \
+            groff \
+            less \
+            mailcap
+    pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
+    apk -v --purge del py-pip
+
 jobs:
   setup:
     <<: *defaults
     steps:
       - run:
-          name: Install dependencies
+          name: Install general dependencies
           command: *defaultDependencies
       - checkout
       - run:
@@ -51,7 +60,7 @@ jobs:
     <<: *defaults
     steps:
       - run:
-          name: Install dependencies
+          name: Install general dependencies
           command: *defaultDependencies
       - checkout
       - restore_cache:
@@ -72,8 +81,11 @@ jobs:
     <<: *defaults
     steps:
       - run:
-          name: Install dependencies
+          name: Install general dependencies
           command: *defaultDependencies
+      - run:
+          name: Install AWS CLI dependencies
+          command: *awsCliDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -85,6 +97,9 @@ jobs:
           prefix: test
       - store_test_results:
           path: coverage
+      - run:
+          name: Copy code coverage to SonarQube
+          command: aws s3 cp coverage/lcov.info $AWS_S3_DIR_SONARQUBE/central-ledger/lcov.info
   
   test-integration:
     machine: true
@@ -137,7 +152,7 @@ jobs:
 #     # <<: *defaults 
 #     steps:
 #     #   - run: 
-#     #       name: Install dependencies 
+#     #       name: Install general dependencies 
 #     #       command: *defaultDependencies 
 #     #   - run:  
 #     #       name: Add the Postgres 9.6 binaries to the path. 
