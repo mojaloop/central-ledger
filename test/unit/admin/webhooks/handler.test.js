@@ -9,6 +9,7 @@ const FeeService = require('../../../../src/domain/fee')
 const TokenService = require('../../../../src/domain/token')
 const Handler = require('../../../../src/admin/webhooks/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
+const SettlementService = require('../../../../src/domain/settlements')
 
 function createRequest (id, payload) {
   let requestId = id || Uuid()
@@ -56,6 +57,7 @@ Test('Handler Test', handlerTest => {
     sandbox.stub(FeeService, 'settleFeesForTransfers')
     sandbox.stub(TokenService, 'removeExpired')
     sandbox.stub(Sidecar, 'logRequest')
+    sandbox.stub(SettlementService)
     t.end()
   })
 
