@@ -6,17 +6,34 @@ defaults: &defaults
   docker:
     - image: dwolla/alpine-node-make
 
+# default_env: &default_env
+#   environment:
+#     # - TAG_EXP: 'v[0-9]+(\.[0-9]+)*'
+#     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-SNAPSHOT'
+#     # - TAG: v1.0
+
 defaultDependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
+    apk --no-cache add openssh-client
+
+awsCliDependencies: &awsCliDependencies | 
+    apk --no-cache add \
+            python \
+            py-pip \
+            groff \
+            less \
+            mailcap
+    pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
+    apk -v --purge del py-pip
 
 jobs:
   setup:
     <<: *defaults
     steps:
       - run:
-          name: Install dependencies
+          name: Install general dependencies
           command: *defaultDependencies
       - checkout
       - run:
@@ -38,11 +55,12 @@ jobs:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - node_modules
+  
   test-unit:
     <<: *defaults
     steps:
       - run:
-          name: Install dependencies
+          name: Install general dependencies
           command: *defaultDependencies
       - checkout
       - restore_cache:
@@ -58,12 +76,16 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
+  
   test-coverage:
     <<: *defaults
     steps:
       - run:
-          name: Install dependencies
+          name: Install general dependencies
           command: *defaultDependencies
+      - run:
+          name: Install AWS CLI dependencies
+          command: *awsCliDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -75,6 +97,17 @@ jobs:
           prefix: test
       - store_test_results:
           path: coverage
+      - run:
+          name: Copy code coverage to SonarQube
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ];
+            then
+                echo "Sending lcov.info to SonarQube..."  
+                aws s3 cp coverage/lcov.info $AWS_S3_DIR_SONARQUBE/central-ledger/lcov.info
+            else
+                echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube." 
+            fi 
+  
   test-integration:
     machine: true
     steps:
@@ -92,6 +125,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
+  
   test-functional:
     machine: true
     steps:
@@ -118,12 +152,14 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
+
+
 #   test-spec:
 #     machine: true
 #     # <<: *defaults 
 #     steps:
 #     #   - run: 
-#     #       name: Install dependencies 
+#     #       name: Install general dependencies 
 #     #       command: *defaultDependencies 
 #     #   - run:  
 #     #       name: Add the Postgres 9.6 binaries to the path. 
@@ -164,59 +200,69 @@ jobs:
 #           prefix: test
 #       - store_test_results:
 #           path: ./test/results
-  build:
+
+  build-snapshot:
     machine: true
     steps:
-      - run:
-          name: Install dependencies
-          command: *defaultDependencies
       - checkout
-      # # build the application image
-      # - run: 
-      #     name: Build Docker image
-      #     command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
-      # build the application image
       - run: 
-          name: Build Docker image
-          command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:test -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
-      # save the docker image to the file system
-      - run:
-          name: Save Docker image layer cache
-          command: |
-            mkdir -p ./caches
-            docker save -o ./caches/dockerimage.tar $CIRCLE_PROJECT_REPONAME
-      # store docker image in cache
-      - save_cache:
-          key: docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-          paths:
-            - ./caches/dockerimage.tar
-  deploy:
-    machine: true
-    steps:
-      - checkout
-      # login to docker hub
+          name: Print Docker Image
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
       - run: 
           name: Login to Docker Hub
-          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
-      # restore docker image for deployment
-      - restore_cache:
-          keys:
-            - docker-cache-{{ .Branch }}-{{ .BuildNum }}-{{ .Revision }}
-          paths:
-            - /caches/dockerimage.tar
-      # load docker image
-      - run:
-          name: Load Docker image layer cache
           command: |
-            set +o pipefail
-            docker load -i /caches/dockerimage.tar | true
-      # publish docker image with tag
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: 
-          name: Publish Docker image latest tag to Docker Hub
-          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
+          name: Build Docker image
+          command: |
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot .
       - run: 
-          name: Publish Docker image $TAG tag to Docker Hub
-          command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
+          command: |
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:snapshot
+
+#  deploy-snapshot:
+#     machine: true
+#     <<: *default_env
+#     steps:
+#       - checkout
+#       # login to docker hub
+#       # TBD
+
+  build:
+    machine: true
+    # <<: *default_env
+    steps:
+      - checkout
+      - run: 
+          name: Print Docker Image
+          command: echo "Building Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+      - run: 
+          name: Login to Docker Hub
+          command: |
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: 
+          name: Build Docker image
+          command: |
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
+      - run: 
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
+          command: |
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
+
+#   deploy:
+#     machine: true
+#     <<: *default_env
+#     steps:
+#       - checkout
+#       # login to docker hub
+#       # TBD
 
 workflows:
   version: 2
@@ -225,15 +271,19 @@ workflows:
       - setup:
           context: org-global
           filters:
-              branches:
-                ignore: 
-                  - /feature*/
-                  - /bugfix*/
+            tags:
+              only: /.*/
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
       - test-unit:
           context: org-global
           requires:
             - setup
           filters:
+            tags:
+              only: /.*/
             branches:
               ignore: 
                 - /feature*/
@@ -243,6 +293,8 @@ workflows:
           requires:
             - setup
           filters:
+            tags:
+              only: /.*/
             branches:
               ignore: 
                 - /feature*/
@@ -252,6 +304,8 @@ workflows:
           requires:
             - setup
           filters:
+            tags:
+              only: /.*/
             branches:
               ignore: 
                 - /feature*/
@@ -261,6 +315,8 @@ workflows:
           requires:
             - setup
           filters:
+            tags:
+              only: /.*/
             branches:
               ignore: 
                 - /feature*/
@@ -270,10 +326,29 @@ workflows:
     #       requires:
     #         - setup
     #       filters:
+    #           tags:
+    #             only: /.*/    
     #         branches:
     #           ignore: 
     #             - /feature*/
     #             - /bugfix*/
+      - build-snapshot:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            # - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-snapshot/
+            branches:
+              ignore: 
+                - /.*/
+    #   - deploy-snapshot:
+    #       TBD
       - build:
           context: org-global
           requires:
@@ -287,21 +362,7 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              only:
-                - master
-      - deploy:
-          context: org-global
-          requires:
-            - setup
-            - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
-            # - test-spec
-            - build
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*/
-            branches:
-              only:
-                - master
+              ignore: 
+                - /.*/
+    #   - deploy:
+    #       TBD
