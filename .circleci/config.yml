@@ -10,7 +10,7 @@ defaults_docker_node: &defaults_docker_node
 
 defaults_docker_helm_kube: &defaults_docker_helm_kube
   docker:
-    - image: dwolla/alpine-node-make
+    - image: hypnoglow/kubernetes-helm
 
 # default_env: &default_env
 #   environment:
