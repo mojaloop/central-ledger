@@ -174,14 +174,19 @@ By installing *node* during *nvm* installation above, you should have the corres
 * run `curl -udwolla:AP6vR3LGrB6zm8WQjLvJHnQzjJp "https://modusbox.jfrog.io/modusbox/api/npm/level1-npm/auth/@mojaloop" >> ~/.npmrc`
 * run `cp ~/.npmrc .npmrc` which will allow you to run the functional tests on your machine
 
+#### Installing ZenHub for GitHub
+Open Google Chrome browser and navigate to [Zenhub Extension](https://chrome.google.com/webstore/detail/zenhub-for-github/ogcgkffhplmphkaahpmffcafajaocjbd)
+
 #### Installing central_ledger
-Supposedly you've already cloned the project during the ini
-* cd into the central_ledger project
-* run `npm install -g node-gyp`
-* run `brew install libtool autoconf automake`
-* run `npm install`
-* run `source ~/.bash_profile`
-* run `npm rebuild`
+* **cd** into the central_ledger project and run subsequently the following commands:
+```
+npm install -g node-gyp
+brew install libtool autoconf automake
+npm install
+source ~/.bash_profile
+npm rebuild
+```
+* set *CLEDG_DATABASE_URI* environment variable:
 ```
 export CLEDG_DATABASE_URI=postgres://central_ledger:cVq8iFqaLuHy8jjKuA@localhost:5432/central_ledger
 ```
@@ -195,5 +200,5 @@ export CLEDG_DATABASE_URI=postgres://central_ledger:cVq8iFqaLuHy8jjKuA@localhost
 ### Errors On Setup
 * `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
   - resolved by running `CXX='clang++ -std=c++11 -stdlib=libc++' npm rebuild`
-
-
+* sodium v1.2.3 can't compile during npm install
+  - resolved by installing v2.0.3 `npm install sodium@2.0.3`
