@@ -190,6 +190,7 @@ npm rebuild
 ```
 export CLEDG_DATABASE_URI=postgres://central_ledger:cVq8iFqaLuHy8jjKuA@localhost:5432/central_ledger
 ```
+* disable SIDECAR in **config/default.json** temporary by setting `"SIDECAR": { "DISABLED": "true", ...`
 * run `npm start` *(to run it locally)* or `npm run dev` *(to run it on your Docker host)*
 
 ##### Run Postman
