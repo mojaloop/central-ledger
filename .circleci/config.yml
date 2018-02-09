@@ -258,20 +258,12 @@ jobs:
             kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
       - run: 
           name: Configure kubernetes credentails $K8_USER_NAME
-          command: >-
-            kubectl config set-credentials 
-              $K8_CLUSTER_NAME 
-              --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_CERT_FILENAME 
-              --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_KEY_FILENAME] 
-              --username=$K8_USER_NAME
+          command: |
+            kubectl config set-credentials $K8_CLUSTER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_KEY_FILENAME] --username=$K8_USER_NAME
       - run: 
           name: Configure kubernetes context ${KUBE_NAME}
-          command: >
-            kubectl config set-context 
-              $K8_CLUSTER_NAME 
-              --cluster=$K8_CLUSTER_NAME 
-              --user=$K8_USER_NAME 
-              --namespace=$KUBE_NAMESPACE_SNAPSHOT
+          command: |
+            kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$KUBE_NAMESPACE_SNAPSHOT
       - run: 
           name: Configure helm
           command: |
@@ -283,21 +275,10 @@ jobs:
             then
                 echo "Installing ${KUBE_RELEASE_NAME_SNAPSHOT} new release"  
                 helm install 
-                  --namespace=$KUBE_NAMESPACE_SNAPSHOT /
-                  --name=$KUBE_RELEASE_NAME_SNAPSHOT --repo=$K8_HELM_REPO  /
-                  --set central.centralhub.centralledger.containers.api.image.repository=$$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME /
-                  --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG /
-                  --set central.centralhub.centralledger.containers.admin.image.repository=$$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME /
-                  --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG /
-                  $K8_HELM_CHART_NAME
+                  --namespace=$KUBE_NAMESPACE_SNAPSHOT --name=$KUBE_RELEASE_NAME_SNAPSHOT --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
             else
                 echo "Upgrading ${KUBE_RELEASE_NAME_SNAPSHOT} release"  
-                helm upgrade /
-                  $KUBE_RELEASE_NAME_SNAPSHOT /
-                  --repo=$K8_HELM_REPO /
-                  --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG /
-                  --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG /
-                  $K8_HELM_CHART_NAME
+                helm upgrade $KUBE_RELEASE_NAME_SNAPSHOT --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
             fi
 
   build:
