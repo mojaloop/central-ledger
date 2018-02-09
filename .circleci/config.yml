@@ -328,7 +328,7 @@ jobs:
           name: setup environment vars for SNAPSHOT release
           command: |
             echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_DEV_FILENAME' >> $BASH_ENV
-            echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME_SNAPSHOT'' >> $BASH_ENV
+            echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME_SNAPSHOT' >> $BASH_ENV
             echo 'export KUBE_NAMESPACE=$KUBE_NAMESPACE_SNAPSHOT' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
