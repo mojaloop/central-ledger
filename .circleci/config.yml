@@ -317,7 +317,7 @@ jobs:
       - run:
           <<: *defaults_build_docker_publish
   
-  deploy_snapshot:
+  deploy-snapshot:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
     steps:
