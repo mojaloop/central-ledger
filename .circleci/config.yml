@@ -295,7 +295,7 @@ jobs:
           command: |
             echo 'export RELEASE_TAG=snapshot' >> $BASH_ENV
       - run:
-          <<: *defaults_deploy_prequisites
+          <<: *defaults_build_docker_login
       - run:
           <<: *defaults_build_docker_build
       - run:
@@ -313,7 +313,7 @@ jobs:
           command: |
             echo 'export RELEASE_TAG=latest' >> $BASH_ENV
       - run:
-          <<: *defaults_deploy_prequisites
+          <<: *defaults_build_docker_login
       - run:
           <<: *defaults_build_docker_build
       - run:
