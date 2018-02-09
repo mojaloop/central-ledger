@@ -263,10 +263,10 @@ jobs:
           name: Configure kubernetes credentails $K8_USER_NAME
           command: |
             kubectl config set-credentials /
-              $K8_CLUSTER_NAME /
-              --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_CERT_FILENAME /
-              --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_KEY_FILENAME] /
-              --username=$K8_USER_NAME
+                  $K8_CLUSTER_NAME /
+                  --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_CERT_FILENAME /
+                  --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_KEY_FILENAME] /
+                  --username=$K8_USER_NAME
       - run: 
           name: Configure kubernetes context ${KUBE_NAME}
           command: |
