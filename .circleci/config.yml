@@ -300,8 +300,6 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
-      - run:
-          <<: *defaults_deploy_prequisites
 
   build:
     machine: true
@@ -318,8 +316,6 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
-      - run:
-          <<: *defaults_deploy_prequisites
   
   deploy_snapshot:
     <<: *defaults_working_directory
