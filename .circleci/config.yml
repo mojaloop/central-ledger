@@ -495,18 +495,24 @@ workflows:
             - test-functional
             # - test-spec
           filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: 
-                - /.*/
+              only: 
+                - develop-test
+            # tags:
+            #   only: /v[0-9]+(\.[0-9]+)*/
+            # branches:
+            #   ignore: 
+            #     - /.*/
       - deploy:
           context: org-global
           requires:
             - build
           filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: 
-                - /.*/
+              only: 
+                - develop-test
+            # tags:
+            #   only: /v[0-9]+(\.[0-9]+)*/
+            # branches:
+            #   ignore: 
+            #     - /.*/
