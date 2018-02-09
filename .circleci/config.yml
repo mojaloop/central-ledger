@@ -326,6 +326,12 @@ jobs:
       #     name: Install general dependencies
       #     command: *defaultDependencies
       - run:
+          name: set test var
+          command: export TEST_ENV_VAR="meh-$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS"
+      - run:
+          name: print test var
+          command: echo "TEST_ENV_VAR=$TEST_ENV_VAR"
+      - run:
           name: Install AWS CLI dependencies
           command: *awsCliDependencies
       - run:
@@ -370,7 +376,7 @@ jobs:
             if [ -z "$(helm list -q | grep ${KUBE_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${KUBE_RELEASE_NAME})" != "Error: Unauthorized" ];
             then
                 echo "Installing ${KUBE_RELEASE_NAME} new release"  
-                helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_DEV_FILENAME $K8_HELM_CHART_NAME
+                helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_PROD_FILENAME $K8_HELM_CHART_NAME
             else
                 echo "Upgrading ${KUBE_RELEASE_NAME} release"  
                 helm upgrade $KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
