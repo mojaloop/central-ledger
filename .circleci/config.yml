@@ -18,13 +18,13 @@ defaults_docker_helm_kube: &defaults_docker_helm_kube
 #     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-SNAPSHOT'
 #     # - TAG: v1.0
 
-defaults_Dependencies: &defaultDependencies | 
+defaults_Dependencies: &defaults_Dependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
 
-defaults_awsCliDependencies: &awsCliDependencies | 
+defaults_awsCliDependencies: &defaults_awsCliDependencies | 
     apk --no-cache add \
             python \
             py-pip \
@@ -34,54 +34,59 @@ defaults_awsCliDependencies: &awsCliDependencies |
     pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
     apk -v --purge del py-pip
 
-defaults_deploy: &defaults_deploy
-  - run:
-      name: Copy deployment pre-requisites from S3 bucket
-      command: |
-        echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
-        mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
-        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
-        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+defaults_deploy_prequisites: &defaults_deploy_prequisites
+  name: Copy deployment pre-requisites from S3 bucket
+  command: |
+    echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
+    mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
+    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
 
-        echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $KUBE_RELEASE_NAME release"
-        mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
-        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
-  - run: 
-      name: Configure Kubernetes cluster
-      command: |
-        echo "Configure Kubernetes cluster ${K8_CLUSTER_NAME}"
-        kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
-  - run: 
-      name: Configure Kubernetes credentails
-      command: |
-        echo "Configure Kubernetes credentails ${K8_USER_NAME}"
-        kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
-  - run: 
-      name: Configure Kubernetes context
-      command: |
-        echo "Configure Kubernetes context ${KUBE_NAME}"
-        kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$KUBE_NAMESPACE
-  - run: 
-      name: Set Kubernetes context
-      command: |
-        echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
-        kubectl config use-context $K8_CLUSTER_NAME
-  - run: 
-      name: Configure Helm
-      command: |
-        helm init --client-only
-  - run: 
-      name: Install or Upgrade Helm Chart
-      command: |
-        echo "Install or Upgrade Chart ${KUBE_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
-        if [ -z "$(helm list -q | grep ${KUBE_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${KUBE_RELEASE_NAME})" != "Error: Unauthorized" ];
-        then
-            echo "Installing ${KUBE_RELEASE_NAME} new release"  
-            helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
-        else
-            echo "Upgrading ${KUBE_RELEASE_NAME} release"  
-            helm upgrade $KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
-        fi
+    echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $KUBE_RELEASE_NAME release"
+    mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
+    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
+
+defaults_deploy_config_kubernetes_cluster: &defaults_deploy_config_kubernetes_cluster
+  name: Configure Kubernetes cluster
+  command: |
+    echo "Configure Kubernetes cluster ${K8_CLUSTER_NAME}"
+    kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
+
+defaults_deploy_config_kubernetes_credentials: &defaults_deploy_config_kubernetes_credentials
+  name: Configure Kubernetes credentails
+  command: |
+    echo "Configure Kubernetes credentails ${K8_USER_NAME}"
+    kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
+  
+defaults_deploy_config_kubernetes_context: &defaults_deploy_config_kubernetes_context
+  name: Confi gure Kubernetes context
+  command: |
+    echo "Configure Kubernetes context ${KUBE_NAME}"
+    kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$KUBE_NAMESPACE
+
+defaults_deploy_set_kubernetes_context: &defaults_deploy_set_kubernetes_context
+  name: Set Kubernetes context
+  command: |
+    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
+    kubectl config use-context $K8_CLUSTER_NAME
+
+defaults_deploy_configure_helm: &defaults_deploy_configure_helm
+  name: Configure Helm
+  command: |
+    helm init --client-only
+
+defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgrade_helm_chart
+  name: Install or Upgrade Helm Chart
+  command: |
+    echo "Install or Upgrade Chart ${KUBE_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+    if [ -z "$(helm list -q | grep ${KUBE_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${KUBE_RELEASE_NAME})" != "Error: Unauthorized" ];
+    then
+        echo "Installing ${KUBE_RELEASE_NAME} new release"  
+        helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
+    else
+        echo "Upgrading ${KUBE_RELEASE_NAME} release"  
+        helm upgrade $KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
+    fi
           
 jobs:
   setup:
@@ -314,25 +319,50 @@ jobs:
     <<: *defaults_docker_helm_kube
     steps:
       - run:
-          name: setup environment vars
+          name: setup environment vars for SNAPSHOT release
           command: |
             echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_DEV_FILENAME' >> $BASH_ENV
             echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME_SNAPSHOT'' >> $BASH_ENV
             echo 'export KUBE_NAMESPACE=$KUBE_NAMESPACE_SNAPSHOT' >> $BASH_ENV
-      <<: *defaults_deploy
-
+      - run:
+          <<: *defaults_deploy_prequisites
+      - run:
+          <<: *defaults_deploy_config_kubernetes_cluster
+      - run:
+          <<: *defaults_deploy_config_kubernetes_credentials
+      - run:
+          <<: *defaults_deploy_config_kubernetes_context
+      - run:
+          <<: *defaults_deploy_set_kubernetes_context
+      - run:
+          <<: *defaults_deploy_configure_helm
+      - run:
+          <<: *defaults_deploy_install_or_upgrade_helm_chart
 
   deploy:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
     steps:
       - run:
-          name: setup environment vars
+          name: setup environment vars for release
           command: |
             echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_PROD_FILENAME' >> $BASH_ENV
             echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME' >> $BASH_ENV
             echo 'export KUBE_NAMESPACE=$KUBE_NAMESPACE' >> $BASH_ENV
-      <<: *defaults_deploy
+      - run:
+          <<: *defaults_deploy_prequisites
+      - run:
+          <<: *defaults_deploy_config_kubernetes_cluster
+      - run:
+          <<: *defaults_deploy_config_kubernetes_credentials
+      - run:
+          <<: *defaults_deploy_config_kubernetes_context
+      - run:
+          <<: *defaults_deploy_set_kubernetes_context
+      - run:
+          <<: *defaults_deploy_configure_helm
+      - run:
+          <<: *defaults_deploy_install_or_upgrade_helm_chart
 
 workflows:
   version: 2
