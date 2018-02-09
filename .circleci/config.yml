@@ -247,11 +247,16 @@ jobs:
           name: Install AWS CLI dependencies
           command: *awsCliDependencies
       - run:
-          name: Copy keys
+          name: Copy deployment pre-requisites from S3 bucket
           command: |
-            mkdir ./keys
-            aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_KEY_FILENAME ./keys/
-            aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_CERT_FILENAME ./keys/
+            echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
+            mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
+            aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+            aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+
+            echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $KUBE_RELEASE_NAME_SNAPSHOT release"
+            mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
+            aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_DEV_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
       - run: 
           name: Configure Kubernetes cluster
           command: |
@@ -261,7 +266,7 @@ jobs:
           name: Configure Kubernetes credentails
           command: |
             echo "Configure Kubernetes credentails ${K8_USER_NAME}"
-            kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_USER_PEM_KEY_FILENAME
+            kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
       - run: 
           name: Configure Kubernetes context
           command: |
@@ -283,7 +288,7 @@ jobs:
             if [ -z "$(helm list -q | grep ${KUBE_RELEASE_NAME_SNAPSHOT})"  ] && [ "$(helm list -q | grep ${KUBE_RELEASE_NAME_SNAPSHOT})" != "Error: Unauthorized" ];
             then
                 echo "Installing ${KUBE_RELEASE_NAME_SNAPSHOT} new release"  
-                helm install --namespace=$KUBE_NAMESPACE_SNAPSHOT --name=$KUBE_RELEASE_NAME_SNAPSHOT --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
+                helm install --namespace=$KUBE_NAMESPACE_SNAPSHOT --name=$KUBE_RELEASE_NAME_SNAPSHOT --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_DEV_FILENAME $K8_HELM_CHART_NAME
             else
                 echo "Upgrading ${KUBE_RELEASE_NAME_SNAPSHOT} release"  
                 helm upgrade $KUBE_RELEASE_NAME_SNAPSHOT --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
@@ -324,11 +329,16 @@ jobs:
           name: Install AWS CLI dependencies
           command: *awsCliDependencies
       - run:
-          name: Copy keys
+          name: Copy deployment pre-requisites from S3 bucket
           command: |
-            mkdir ./keys
-            aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_KEY_FILENAME ./keys/
-            aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_CERT_FILENAME ./keys/
+            echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
+            mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
+            aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+            aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+
+            echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $KUBE_RELEASE_NAME release"
+            mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
+            aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_DEV_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
       - run: 
           name: Configure Kubernetes cluster
           command: |
@@ -338,7 +348,7 @@ jobs:
           name: Configure Kubernetes credentails
           command: |
             echo "Configure Kubernetes credentails ${K8_USER_NAME}"
-            kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_USER_PEM_KEY_FILENAME
+            kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
       - run: 
           name: Configure Kubernetes context
           command: |
@@ -360,7 +370,7 @@ jobs:
             if [ -z "$(helm list -q | grep ${KUBE_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${KUBE_RELEASE_NAME})" != "Error: Unauthorized" ];
             then
                 echo "Installing ${KUBE_RELEASE_NAME} new release"  
-                helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
+                helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_DEV_FILENAME $K8_HELM_CHART_NAME
             else
                 echo "Upgrading ${KUBE_RELEASE_NAME} release"  
                 helm upgrade $KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
