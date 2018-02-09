@@ -146,9 +146,9 @@ sudo ln -s /opt/Postman/Postman /usr/bin/postman
 * navigate to the central_ledger directory and select [postman.json](./postman.json)
 
 #### nvm
-If you don't have curl already installed, on **Ubuntu** run `sudo apt install curl`
+If you don't have cURL already installed, on **Ubuntu** run `sudo apt install curl`
 
-Then download the nvm install script via cURL:
+Download the nvm install script via cURL:
 ```
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
 ```
