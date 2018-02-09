@@ -313,13 +313,58 @@ jobs:
             echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest"
             docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
 
-#   deploy:
-#     machine: true
-#     <<: *default_env
-#     steps:
-#       - checkout
-#       # login to docker hub
-#       # TBD
+  deploy:
+    <<: *defaults_working_directory
+    <<: *defaults_docker_helm_kube
+    steps:
+      # - run:
+      #     name: Install general dependencies
+      #     command: *defaultDependencies
+      - run:
+          name: Install AWS CLI dependencies
+          command: *awsCliDependencies
+      - run:
+          name: Copy keys
+          command: |
+            mkdir ./keys
+            aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_KEY_FILENAME ./keys/
+            aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_CERT_FILENAME ./keys/
+      - run: 
+          name: Configure Kubernetes cluster
+          command: |
+            echo "Configure Kubernetes cluster ${K8_CLUSTER_NAME}"
+            kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
+      - run: 
+          name: Configure Kubernetes credentails
+          command: |
+            echo "Configure Kubernetes credentails ${K8_USER_NAME}"
+            kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_USER_PEM_KEY_FILENAME
+      - run: 
+          name: Configure Kubernetes context
+          command: |
+            echo "Configure Kubernetes context ${KUBE_NAME}"
+            kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$KUBE_NAMESPACE
+      - run: 
+          name: Set Kubernetes context
+          command: |
+            echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
+            kubectl config use-context $K8_CLUSTER_NAME
+      - run: 
+          name: Configure Helm
+          command: |
+            helm init --client-only
+      - run: 
+          name: Install or Upgrade Helm Chart
+          command: |
+            echo "Install or Upgrade Chart ${KUBE_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+            if [ -z "$(helm list -q | grep ${KUBE_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${KUBE_RELEASE_NAME})" != "Error: Unauthorized" ];
+            then
+                echo "Installing ${KUBE_RELEASE_NAME} new release"  
+                helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
+            else
+                echo "Upgrading ${KUBE_RELEASE_NAME} release"  
+                helm upgrade $KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
+            fi
 
 workflows:
   version: 2
@@ -407,12 +452,6 @@ workflows:
       - deploy-snapshot:
           context: org-global
           requires:
-            - setup
-            - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
-            # - test-spec
             - build-snapshot
           filters:
             tags:
@@ -435,5 +474,13 @@ workflows:
             branches:
               ignore: 
                 - /.*/
-    #   - deploy:
-    #       TBD
+      - deploy:
+          context: org-global
+          requires:
+            - build
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: 
+                - /.*/
