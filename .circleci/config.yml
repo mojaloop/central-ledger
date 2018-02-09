@@ -261,7 +261,7 @@ jobs:
               --insecure-skip-tls-verify=true
       - run: 
           name: Configure kubernetes credentails $K8_USER_NAME
-          command: >
+          command: >-
             kubectl config set-credentials 
               $K8_CLUSTER_NAME 
               --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_CERT_FILENAME 
