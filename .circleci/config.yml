@@ -61,7 +61,7 @@ defaults_deploy_prequisites: &defaults_deploy_prequisites
     aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
     aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
 
-    echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $KUBE_RELEASE_NAME release"
+    echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $K8_RELEASE_NAME release"
     mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
     aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
 
@@ -80,8 +80,8 @@ defaults_deploy_config_kubernetes_credentials: &defaults_deploy_config_kubernete
 defaults_deploy_config_kubernetes_context: &defaults_deploy_config_kubernetes_context
   name: Confi gure Kubernetes context
   command: |
-    echo "Configure Kubernetes context ${KUBE_NAME}"
-    kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$KUBE_NAMESPACE
+    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
+    kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$K8_NAMESPACE
 
 defaults_deploy_set_kubernetes_context: &defaults_deploy_set_kubernetes_context
   name: Set Kubernetes context
@@ -97,14 +97,14 @@ defaults_deploy_configure_helm: &defaults_deploy_configure_helm
 defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgrade_helm_chart
   name: Install or Upgrade Helm Chart
   command: |
-    echo "Install or Upgrade Chart ${KUBE_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
-    if [ -z "$(helm list -q | grep ${KUBE_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${KUBE_RELEASE_NAME})" != "Error: Unauthorized" ];
+    echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+    if [ -z "$(helm list -q | grep ${K8_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${K8_RELEASE_NAME})" != "Error: Unauthorized" ];
     then
-        echo "Installing ${KUBE_RELEASE_NAME} new release"  
-        helm install --namespace=$KUBE_NAMESPACE --name=$KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
+        echo "Installing ${K8_RELEASE_NAME} new release"  
+        helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
     else
-        echo "Upgrading ${KUBE_RELEASE_NAME} release"  
-        helm upgrade $KUBE_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
+        echo "Upgrading ${K8_RELEASE_NAME} release"  
+        helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG $K8_HELM_CHART_NAME
     fi
           
 jobs:
@@ -293,7 +293,7 @@ jobs:
       - run:
           name: setup environment vars for SNAPSHOT release
           command: |
-            echo 'export RELEASE_TAG=snapshot' >> $BASH_ENV
+            echo 'export RELEASE_TAG=$RELEASE_TAG_SNAPSHOT' >> $BASH_ENV
       - run:
           <<: *defaults_build_docker_login
       - run:
@@ -309,7 +309,7 @@ jobs:
       - run:
           name: setup environment vars for SNAPSHOT release
           command: |
-            echo 'export RELEASE_TAG=latest' >> $BASH_ENV
+            echo 'export RELEASE_TAG=$RELEASE_TAG' >> $BASH_ENV
       - run:
           <<: *defaults_build_docker_login
       - run:
@@ -327,9 +327,9 @@ jobs:
       - run:
           name: setup environment vars for SNAPSHOT release
           command: |
-            echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_DEV_FILENAME' >> $BASH_ENV
-            echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME_SNAPSHOT' >> $BASH_ENV
-            echo 'export KUBE_NAMESPACE=$KUBE_NAMESPACE_SNAPSHOT' >> $BASH_ENV
+            echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_DEV_FILENAME' >> $BASH_ENV
+            echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_SNAPSHOT' >> $BASH_ENV
+            echo 'export K8_NAMESPACE=$K8_NAMESPACE_SNAPSHOT' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
       - run:
@@ -355,9 +355,9 @@ jobs:
       - run:
           name: setup environment vars for release
           command: |
-            echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_PROD_FILENAME' >> $BASH_ENV
-            echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME' >> $BASH_ENV
-            echo 'export KUBE_NAMESPACE=$KUBE_NAMESPACE' >> $BASH_ENV
+            echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_PROD_FILENAME' >> $BASH_ENV
+            echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME' >> $BASH_ENV
+            echo 'export K8_NAMESPACE=$K8_NAMESPACE' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
       - run:
