@@ -254,31 +254,31 @@ jobs:
             aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_CERT_FILENAME ./keys/
       - run: 
           name: Configure kubernetes cluster $K8_CLUSTER_NAME
-          command: |
-            kubectl config set-cluster /
-              $K8_CLUSTER_NAME /
-              --server=$K8_CLUSTER_SERVER /
+          command: >
+            kubectl config set-cluster 
+              $K8_CLUSTER_NAME 
+              --server=$K8_CLUSTER_SERVER 
               --insecure-skip-tls-verify=true
       - run: 
           name: Configure kubernetes credentails $K8_USER_NAME
-          command: |
-            kubectl config set-credentials /
-                  $K8_CLUSTER_NAME /
-                  --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_CERT_FILENAME /
-                  --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_KEY_FILENAME] /
-                  --username=$K8_USER_NAME
+          command: >
+            kubectl config set-credentials 
+              $K8_CLUSTER_NAME 
+              --client-certificate=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_CERT_FILENAME 
+              --client-key=$CIRCLE_WORKING_DIRECTORY/keys/$K8_ADMIN_PEM_KEY_FILENAME] 
+              --username=$K8_USER_NAME
       - run: 
           name: Configure kubernetes context ${KUBE_NAME}
-          command: |
-            kubectl config set-context /
-              $K8_CLUSTER_NAME /
-              --cluster=$K8_CLUSTER_NAME /
-              --user=$K8_USER_NAME /
+          command: >
+            kubectl config set-context 
+              $K8_CLUSTER_NAME 
+              --cluster=$K8_CLUSTER_NAME 
+              --user=$K8_USER_NAME 
               --namespace=$KUBE_NAMESPACE_SNAPSHOT
-      # - run: 
-      #     name: Configure helm
-      #     command: |
-      #       helm init --client-only
+      - run: 
+          name: Configure helm
+          command: |
+            helm init --client-only
       - run: 
           name: Install or Upgrade Chart $KUBE_RELEASE_NAME_SNAPSHOT for Docker Image $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
           command: |
