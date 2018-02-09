@@ -18,13 +18,13 @@ defaults_docker_helm_kube: &defaults_docker_helm_kube
 #     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-SNAPSHOT'
 #     # - TAG: v1.0
 
-defaultDependencies: &defaultDependencies | 
+defaults_Dependencies: &defaultDependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
 
-awsCliDependencies: &awsCliDependencies | 
+defaults_awsCliDependencies: &awsCliDependencies | 
     apk --no-cache add \
             python \
             py-pip \
@@ -34,7 +34,7 @@ awsCliDependencies: &awsCliDependencies |
     pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
     apk -v --purge del py-pip
 
-deploy_general: &deploy_general
+defaults_deploy: &defaults_deploy
   - run:
       name: Copy deployment pre-requisites from S3 bucket
       command: |
@@ -90,7 +90,7 @@ jobs:
     steps:
       - run:
           name: Install general dependencies
-          command: *defaultDependencies
+          command: *defaults_Dependencies
       - checkout
       - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
@@ -118,7 +118,7 @@ jobs:
     steps:
       - run:
           name: Install general dependencies
-          command: *defaultDependencies
+          command: *defaults_Dependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -140,10 +140,10 @@ jobs:
     steps:
       - run:
           name: Install general dependencies
-          command: *defaultDependencies
+          command: *defaults_Dependencies
       - run:
           name: Install AWS CLI dependencies
-          command: *awsCliDependencies
+          command: *defaults_awsCliDependencies
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -294,7 +294,7 @@ jobs:
   #     #     command: *defaultDependencies
   #     - run:
   #         name: Install AWS CLI dependencies
-  #         command: *awsCliDependencies
+  #         command: *defaults_awsCliDependencies
   #     - run:
   #         name: Copy deployment pre-requisites from S3 bucket
   #         command: |
@@ -377,7 +377,7 @@ jobs:
             echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_DEV_FILENAME' >> $BASH_ENV
             echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME_SNAPSHOT'' >> $BASH_ENV
             echo 'export KUBE_NAMESPACE=$KUBE_NAMESPACE_SNAPSHOT' >> $BASH_ENV
-      <<: *deploy_general
+      <<: *defaults_deploy
 
 
   deploy:
@@ -390,7 +390,7 @@ jobs:
             echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_PROD_FILENAME' >> $BASH_ENV
             echo 'export KUBE_RELEASE_NAME=$KUBE_RELEASE_NAME' >> $BASH_ENV
             echo 'export KUBE_NAMESPACE=$KUBE_NAMESPACE' >> $BASH_ENV
-      <<: *deploy_general
+      <<: *defaults_deploy
 
 workflows:
   version: 2
