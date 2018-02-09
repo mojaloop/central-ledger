@@ -319,6 +319,9 @@ jobs:
     <<: *defaults_docker_helm_kube
     steps:
       - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
+      - run:
           name: setup environment vars for SNAPSHOT release
           command: |
             echo 'export HELM_VALUE_FILENAME=$HELM_VALUE_DEV_FILENAME' >> $BASH_ENV
@@ -343,6 +346,9 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
     steps:
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
       - run:
           name: setup environment vars for release
           command: |
