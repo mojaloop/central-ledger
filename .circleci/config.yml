@@ -254,11 +254,8 @@ jobs:
             aws s3 cp $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG/$K8_USER_PEM_CERT_FILENAME ./keys/
       - run: 
           name: Configure kubernetes cluster $K8_CLUSTER_NAME
-          command: >-
-            kubectl config set-cluster 
-            $K8_CLUSTER_NAME 
-            --server=$K8_CLUSTER_SERVER 
-            --insecure-skip-tls-verify=true
+          command: |
+            kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
       - run: 
           name: Configure kubernetes credentails $K8_USER_NAME
           command: >-
