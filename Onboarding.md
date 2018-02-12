@@ -18,22 +18,19 @@ In this document we'll walk through the setup for the Mojaloop Central Ledger. I
 4. Docker
 5. PostgreSQL 9.4
 6. pgAdmin4
-7. Visual Studio Code
-8. Postman
-9. nvm
-10. npm
-11. Zenhub
-12. central_ledger
+7. Postman
+8. nvm
+9. npm
+10. Zenhub
+11. central_ledger
+12. JavaScript IDE
 ***
 
 ### Setup
 Make sure you have access to [Mojaloop on Github](https://github.com/mojaloop/central-ledger) and clone the project.
 
 #### Installing Slack (Optional):
-##### Ubuntu
-```
-snap install --classic slack
-```
+Do install Slack, follow these instructions: [Slack for Linux](https://slack.com/downloads/linux)
 
 #### Installing brew
 ##### macOS
@@ -80,7 +77,7 @@ For pgAdmin 4 v2.1 on Ubuntu, according to the [download page](https://www.pgadm
 
 Install dependencies, create a virtual environment, download, install & configure:
 ```
-udo apt-get install virtualenv python-pip libpq-dev python-dev
+sudo apt-get install virtualenv python-pip libpq-dev python-dev
 
 cd
 virtualenv pgadmin4
@@ -125,9 +122,6 @@ Run with `~/pgadmin4/start`
   * make sure the username and password match the username and password in the .env file
   * click on privileges and set **Can login?** to **Yes**
 * create a **central_ledger** database by right clicking on **Databases** and then **Create > Database...**
-
-#### Installing Visual Studio Code
-Please, follow these instructions: [Visual Studio Code](http://code.visualstudio.com)
 
 #### Installing Postman
 Please, follow these instructions: [Get Postman](https://www.getpostman.com/postman)
