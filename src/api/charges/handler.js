@@ -14,9 +14,7 @@ function entityItem (charge) {
   }
 }
 
-exports.chargeQuote = (request, reply) => {
-  Charges.quote(request.payload)
-    .then(results => results.map(entityItem))
-    .then(reply)
-    .catch(reply)
+exports.chargeQuote = async function (request, h) {
+  const charges = await Charges.quote(request.payload)
+  return charges.map(entityItem)
 }

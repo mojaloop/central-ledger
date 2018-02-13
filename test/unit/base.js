@@ -4,13 +4,9 @@ const ServerSetup = require('../../src/shared/setup')
 const ApiAuth = require('../../src/api/auth')
 const ApiRoutes = require('../../src/api/routes')
 
-let serverPromise
-
-const setupServer = () => {
-  if (!serverPromise) {
-    serverPromise = ServerSetup.createServer(3000, [ApiAuth, ApiRoutes], false)
-  }
-  return serverPromise
+const setupServer = async () => {
+  const server = await ServerSetup.createServer(3000, [ApiAuth, ApiRoutes])
+  return server
 }
 
 exports.setup = (connection = 'api') => {
@@ -18,7 +14,12 @@ exports.setup = (connection = 'api') => {
 }
 
 exports.buildRequest = (options) => {
-  return { url: options.url, method: options.method || 'GET', payload: options.payload || '', headers: options.headers || {} }
+  return {
+    url: options.url,
+    method: options.method || 'GET',
+    payload: options.payload || '',
+    headers: options.headers || {}
+  }
 }
 
 exports.assertBadRequestError = (assert, response, validationErrors) => {

@@ -17,8 +17,12 @@ module.exports = [
     path: '/positions/{name}',
     handler: Handler.calculateForAccount,
     config: RouteConfig.config(tags, Permissions.POSITIONS_VIEW, {
-      params: {
-        name: Joi.string().required().description('Account Name required')
+      options: {
+        validate: {
+          params: {
+            name: Joi.string().required().description('Account Name required')
+          }
+        }
       }
     })
   }

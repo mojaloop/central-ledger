@@ -12,7 +12,7 @@ module.exports = [
     handler: Handler.create,
     config: {
       tags,
-      auth: AdminAuthStrategy.name,
+      auth: AdminAuthStrategy.scheme,
       description: 'Get a token for admin authentication',
       validate: {
         payload: {

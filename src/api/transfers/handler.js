@@ -14,27 +14,24 @@ const buildGetTransferResponse = (record) => {
   return TransferTranslator.toTransfer(record)
 }
 
-exports.prepareTransfer = function (request, reply) {
+exports.prepareTransfer = async function (request, h) {
   Sidecar.logRequest(request)
-  return Validator.validate(request.payload, request.params.id)
-    .then(TransferService.prepare)
-    .then(result => reply(result.transfer).code((result.existing === true) ? 200 : 201))
-    .catch(reply)
+  const payload = await Validator.validate(request.payload, request.params.id)
+  const result = await TransferService.prepare(payload)
+  return h.response(result.transfer).code((result.existing === true) ? 200 : 201)
 }
 
-exports.fulfillTransfer = function (request, reply) {
+exports.fulfillTransfer = async function (request, h) {
   Sidecar.logRequest(request)
   const fulfillment = {
     id: request.params.id,
     fulfillment: request.payload
   }
-
-  return TransferService.fulfill(fulfillment)
-    .then(transfer => reply(transfer).code(200))
-    .catch(reply)
+  const transfer = await TransferService.fulfill(fulfillment)
+  return h.response(transfer).code(200)
 }
 
-exports.rejectTransfer = function (request, reply) {
+exports.rejectTransfer = async function (request, h) {
   Sidecar.logRequest(request)
   const rejection = {
     id: request.params.id,
@@ -42,21 +39,16 @@ exports.rejectTransfer = function (request, reply) {
     message: request.payload,
     requestingAccount: request.auth.credentials
   }
-
-  return TransferService.reject(rejection)
-    .then(result => reply(rejection.message).code(result.alreadyRejected ? 200 : 201))
-    .catch(reply)
+  const result = await TransferService.reject(rejection)
+  return h.response(rejection.message).code(result.alreadyRejected ? 200 : 201)
 }
 
-exports.getTransferById = function (request, reply) {
-  return TransferService.getById(request.params.id)
-    .then(buildGetTransferResponse)
-    .then(result => reply(result))
-    .catch(reply)
+exports.getTransferById = async function (request, h) {
+  const record = await TransferService.getById(request.params.id)
+  return buildGetTransferResponse(record)
 }
 
-exports.getTransferFulfillment = function (request, reply) {
-  return TransferService.getFulfillment(request.params.id)
-    .then(result => reply(result).type('text/plain'))
-    .catch(reply)
+exports.getTransferFulfillment = async function (request, h) {
+  const result = await TransferService.getFulfillment(request.params.id)
+  return h.response(result).type('text/plain')
 }

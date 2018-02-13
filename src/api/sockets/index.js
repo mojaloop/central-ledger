@@ -70,7 +70,7 @@ const wireEvents = () => {
   Events.onMessageSent(messageHandler)
 }
 
-exports.register = (server, options, next) => {
+exports.register = (server) => {
   manager = SocketManager.create()
 
   const wss = createWebSocketServer(server.listener)
@@ -78,10 +78,10 @@ exports.register = (server, options, next) => {
   wireConnection(wss)
 
   wireEvents()
-
-  next()
 }
 
 exports.register.attributes = {
   name: 'websockets'
 }
+
+exports.name = 'websockets'

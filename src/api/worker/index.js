@@ -38,9 +38,10 @@ exports.register = (server, options, next) => {
   if (Config.TOKEN_EXPIRATION) {
     setInterval(this.rejectExpiredTokens, Config.TOKEN_EXPIRATION)
   }
-  next()
 }
 
 exports.register.attributes = {
   name: 'worker'
 }
+
+exports.name = 'worker'

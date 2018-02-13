@@ -16,7 +16,7 @@ const buildAccount = (account) => {
   }
 }
 
-const buildResponse = (account, { net = '0' } = {}) => {
+const buildResponse = (account, {net = '0'} = {}) => {
   return Util.mergeAndOmitNil(buildAccount(account), {
     created: account.createdDate,
     balance: net,
@@ -54,16 +54,15 @@ const getPosition = (account) => {
     .then(position => buildResponse(account, position))
 }
 
-exports.create = (request, reply) => {
+exports.create = async function (request, h) {
   Sidecar.logRequest(request)
-  Account.getByName(request.payload.name)
-    .then(handleExistingRecord)
-    .then(() => Account.create(request.payload))
-    .then(account => reply(buildResponse(account)).code(201))
-    .catch(reply)
+  const entity = await Account.getByName(request.payload.name)
+  handleExistingRecord(entity)
+  const account = await Account.create(request.payload)
+  return h.response(buildResponse(account)).code(201)
 }
 
-exports.updateUserCredentials = (request, reply) => {
+exports.updateUserCredentials = async function (request, h) {
   Sidecar.logRequest(request)
   const accountName = request.params.name
   const credentials = request.auth.credentials
@@ -72,16 +71,13 @@ exports.updateUserCredentials = (request, reply) => {
   if (!authenticated) {
     throw new Errors.UnauthorizedError('Invalid attempt updating the password.')
   }
-
-  Account.getByName(request.params.name)
-    .then(handleMissingRecord)
-    .then(account => Account.updateUserCredentials(account, request.payload))
-    .then(updatedAccount => buildAccount(updatedAccount))
-    .then(reply)
-    .catch(reply)
+  const account = await Account.getByName(request.params.name)
+  handleMissingRecord(account)
+  const updatedAccount = await Account.updateUserCredentials(account, request.payload)
+  return buildAccount(updatedAccount)
 }
 
-exports.updateAccountSettlement = (request, reply) => {
+exports.updateAccountSettlement = async function (request, h) {
   Sidecar.logRequest(request)
   const accountName = request.params.name
   const credentials = request.auth.credentials
@@ -90,23 +86,22 @@ exports.updateAccountSettlement = (request, reply) => {
   if (!authenticated) {
     throw new Errors.UnauthorizedError('Invalid attempt updating the settlement.')
   }
-
-  Account.getByName(request.params.name)
-    .then(handleMissingRecord)
-    .then(account => Account.updateAccountSettlement(account, request.payload))
-    .then(settlement => settlementResponse(settlement))
-    .then(reply)
-    .catch(reply)
+  const account = await Account.getByName(request.params.name)
+  handleMissingRecord(account)
+  const settlement = await Account.updateAccountSettlement(account, request.payload)
+  return settlementResponse(settlement)
 }
 
-exports.getByName = (request, reply) => {
+exports.getByName = async function (request, h) {
   Sidecar.logRequest(request)
   const accountName = request.params.name
   const credentials = request.auth.credentials
   const authenticated = (credentials && (credentials.is_admin || credentials.name === accountName))
-  Account.getByName(request.params.name)
-    .then(handleMissingRecord)
-    .then(account => (authenticated ? getPosition(account) : buildAccount(account)))
-    .then(reply)
-    .catch(reply)
+  const account = await Account.getByName(request.params.name)
+  handleMissingRecord(account)
+  if (authenticated) {
+    return await getPosition(account)
+  } else {
+    return buildAccount(account)
+  }
 }

@@ -15,19 +15,21 @@ const reducePermissions = (roles) => {
   return flattened
 }
 
-const validate = (request, token, cb) => {
+const validate = async (request, token, h) => {
+  let isValid = false
   JWT.verify(token)
     .then(({ user, roles }) => {
+      isValid = true
       const scope = reducePermissions(roles)
       const credentials = Util.merge(user, { scope: scope })
-      return cb(null, true, credentials)
+      return {isValid, credentials}
     })
-    .catch(e => cb(e, false))
+    .catch(e => h(e, false))
 }
 
 module.exports = {
   name: 'admin-token',
-  scheme: 'bearer',
+  scheme: 'jwt-strategy',
   validate: validate
 }
 

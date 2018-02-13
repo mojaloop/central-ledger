@@ -8,8 +8,8 @@ module.exports = [{
   handler: Handler.calculateForAllAccounts,
   config: {
     id: 'positions',
-    auth: Auth.strategy(),
     tags: tags,
+    auth: Auth.strategy(),
     description: 'Retrieve outstanding positions.'
   }
 },
@@ -19,8 +19,8 @@ module.exports = [{
   handler: Handler.calculateForAccount,
   config: {
     id: 'positions_account',
-    auth: Auth.strategy(),
     tags: tags,
+    auth: Auth.strategy(),
     description: 'Retrieve outstanding positions for an account.'
   }
 }

@@ -4,16 +4,13 @@ const Package = require('../../package')
 const Inert = require('inert')
 const Vision = require('vision')
 const Blipp = require('blipp')
-const Good = require('good')
-
-const HapiSwagger = require('hapi-swagger')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const GoodWinston = require('good-winston')
+const goodWinstonStream = new GoodWinston({winston: require('winston')})
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
-const Auth = require('@mojaloop/central-services-auth')
 
-const registerPlugins = (server) => {
+const registerPlugins = async (server) => {
   server.register({
-    register: HapiSwagger,
+    plugin: require('hapi-swagger'),
     options: {
       info: {
         'title': 'Central Ledger API Documentation',
@@ -23,30 +20,26 @@ const registerPlugins = (server) => {
   })
 
   server.register({
-    register: Good,
+    plugin: require('good'),
     options: {
       ops: {
-        interval: 1000
+        interval: 10000
       },
       reporters: {
-        winston: [{
-          module: 'good-winston',
-          args: [
-            Logger,
-            {
-              error_level: 'error',
-              ops_level: 'debug',
-              request_level: 'debug',
-              response_level: 'info',
-              other_level: 'info'
-            }
-          ]
-        }]
+        winston: [goodWinstonStream]
       }
     }
   })
 
-  server.register([Inert, Vision, Blipp, ErrorHandling, Auth])
+  server.register({
+    plugin: require('hapi-auth-basic')
+  })
+
+  server.register({
+    plugin: require('@now-ims/hapi-now-auth')
+  })
+
+  await server.register([Inert, Vision, Blipp, ErrorHandling])
 }
 
 module.exports = {

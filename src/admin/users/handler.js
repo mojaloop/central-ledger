@@ -3,50 +3,36 @@
 const SecurityService = require('../../domain/security')
 const Sidecar = require('../../lib/sidecar')
 
-const create = (request, reply) => {
+const create = function (request, h) {
   Sidecar.logRequest(request)
-  SecurityService.createUser(request.payload)
-    .then(reply)
-    .catch(reply)
+  return SecurityService.createUser(request.payload)
 }
 
-const getAll = (request, reply) => {
-  SecurityService.getAllUsers()
-    .then(reply)
-    .catch(reply)
+const getAll = function (request, h) {
+  return SecurityService.getAllUsers()
 }
 
-const getById = (request, reply) => {
-  SecurityService.getUserById(request.params.id)
-    .then(reply)
-    .catch(reply)
+const getById = function (request, h) {
+  return SecurityService.getUserById(request.params.id)
 }
 
-const remove = (request, reply) => {
+const remove = function (request, h) {
   Sidecar.logRequest(request)
-  SecurityService.deleteUser(request.params.id)
-    .then(() => reply({}))
-    .catch(reply)
+  return SecurityService.deleteUser(request.params.id)
 }
 
-const update = (request, reply) => {
+const update = function (request, h) {
   Sidecar.logRequest(request)
-  SecurityService.updateUser(request.params.id, request.payload)
-    .then(reply)
-    .catch(reply)
+  return SecurityService.updateUser(request.params.id, request.payload)
 }
 
-const getRoles = (request, reply) => {
-  SecurityService.getUserRoles(request.params.id)
-    .then(reply)
-    .catch(reply)
+const getRoles = function (request, h) {
+  return SecurityService.getUserRoles(request.params.id)
 }
 
-const updateRoles = (request, reply) => {
+const updateRoles = function (request, h) {
   Sidecar.logRequest(request)
-  SecurityService.updateUserRoles(request.params.id, request.payload)
-    .then(reply)
-    .catch(reply)
+  return SecurityService.updateUserRoles(request.params.id, request.payload)
 }
 
 module.exports = {

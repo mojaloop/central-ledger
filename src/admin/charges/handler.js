@@ -16,6 +16,18 @@ const validateRequest = (request) => {
   })
 }
 
+const validateExistingRecord = (request) => {
+  return Charges.getByName(request.payload.name).then(charge => {
+    if (!(request.params.name && request.payload.name && request.payload.name === request.params.name)) {
+      throw new Errors.ValidationError('Charge names need to be the values')
+    }
+    if (!charge) {
+      throw new Errors.RecordExistsError('No record currently exists with the name ' + request.payload.name)
+    }
+    return request
+  })
+}
+
 function entityItem (charge) {
   return {
     name: charge.name,
@@ -33,27 +45,21 @@ function entityItem (charge) {
   }
 }
 
-exports.create = (request, reply) => {
+exports.create = async function (request, h) {
   Sidecar.logRequest(request)
-  return validateRequest(request)
-    .then(validatedRequest => Charges.create(validatedRequest.payload))
-    .then(result => reply(entityItem(result)).code(201))
-    .catch(reply)
+  const validatedRequest = await validateRequest(request)
+  const result = await Charges.create(validatedRequest.payload)
+  return h.response(entityItem(result)).code(201)
 }
 
-exports.update = (request, reply) => {
+exports.update = async function (request, h) {
   Sidecar.logRequest(request)
-  return validateRequest(request)
-    .then(validatedRequest => {
-      return Charges.update(request.params.name, validatedRequest.payload)
-    })
-    .then(result => reply(entityItem(result)))
-    .catch(reply)
+  const validatedRequest = await validateExistingRecord(request)
+  const updatedCharge = await Charges.update(request.params.name, validatedRequest.payload)
+  return entityItem(updatedCharge)
 }
 
-exports.getAll = (request, reply) => {
-  Charges.getAll()
-    .then(results => results.map(entityItem))
-    .then(result => reply(result))
-    .catch(e => reply(e))
+exports.getAll = async function (request, h) {
+  const results = await Charges.getAll()
+  return await results.map(entityItem)
 }

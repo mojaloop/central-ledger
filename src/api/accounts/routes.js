@@ -3,8 +3,8 @@ const Joi = require('joi')
 const Auth = require('../auth')
 
 const tags = ['api', 'accounts']
-const nameValidator = Joi.string().token().max(256).required().description('Name of the account')
-const passwordValidator = Joi.string().token().max(256).required().description('Password for the account')
+const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the account')
+const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the account')
 const emailAddressValidator = Joi.string().email()
 
 module.exports = [{
@@ -51,11 +51,13 @@ module.exports = [{
     description: 'Update an accounts user credentials',
     auth: Auth.strategy(),
     validate: {
-      params: {
-        name: nameValidator
-      },
-      payload: {
-        password: passwordValidator
+      options: {
+        params: {
+          name: nameValidator
+        },
+        payload: {
+          password: passwordValidator
+        }
       }
     }
   }
@@ -70,12 +72,14 @@ module.exports = [{
     description: 'Update an accounts user credentials',
     auth: Auth.strategy(),
     validate: {
-      params: {
-        name: nameValidator
-      },
-      payload: {
-        account_number: Joi.string().token().max(16).required().description('Account number for the settlement'),
-        routing_number: Joi.string().token().max(16).required().description('Routing number for the settlement')
+      options: {
+        params: {
+          name: nameValidator
+        },
+        payload: {
+          account_number: Joi.string().token().max(16).required().description('Account number for the settlement'),
+          routing_number: Joi.string().token().max(16).required().description('Routing number for the settlement')
+        }
       }
     }
   }

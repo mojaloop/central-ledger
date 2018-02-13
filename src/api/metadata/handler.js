@@ -16,12 +16,8 @@ const extractUrls = (request) => {
   return urls
 }
 
-exports.health = (request, reply) => {
-  reply({ status: 'OK' }).code(200)
-}
-
-exports.metadata = (request, reply) => {
-  reply({
+exports.metadata = function (request, h) {
+  return h.response({
     currency_code: null,
     currency_symbol: null,
     ledger: Config.HOSTNAME,

@@ -11,7 +11,7 @@ module.exports = [
     handler: Handler.create,
     config: {
       tags,
-      auth: AccountAuthStrategy.name,
+      auth: AccountAuthStrategy.scheme,
       description: 'Get a token that can be used to authenticate future requests',
       id: 'auth_token'
     }
