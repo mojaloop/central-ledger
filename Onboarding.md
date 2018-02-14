@@ -13,24 +13,21 @@ In this document we'll walk through the setup for the Mojaloop Central Ledger. I
 
 ### Software List
 1. Github
-2. Slack (Optional)
-3. brew
-4. Docker
-5. PostgreSQL 9.4
-6. pgAdmin4
-7. Postman
-8. nvm
-9. npm
-10. Zenhub
-11. central_ledger
-12. JavaScript IDE
+2. brew
+3. Docker
+4. PostgreSQL 9.4
+5. pgAdmin4
+6. Postman
+7. nvm
+8. npm
+9. Zenhub
+10. central_ledger
+11. JavaScript IDE
+12. Slack (Optional)
 ***
 
 ### Setup
 Make sure you have access to [Mojaloop on Github](https://github.com/mojaloop/central-ledger) and clone the project.
-
-#### Installing Slack (Optional):
-Do install Slack, follow these instructions: [Slack for Linux](https://slack.com/downloads/linux)
 
 #### Installing brew
 ##### macOS
