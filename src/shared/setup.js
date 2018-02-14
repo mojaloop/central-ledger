@@ -26,7 +26,7 @@ const startEventric = (loadEventric) => {
 }
 
 const createServer = (port, modules) => {
-  (async () => {
+  return (async () => {
     const server = await new Hapi.Server({
       port,
       routes: {
@@ -47,6 +47,7 @@ const createServer = (port, modules) => {
     await server.register(modules)
     await server.start()
     Logger.info('Server running at: %s', server.info.uri)
+    return server
   })()
 }
 
@@ -60,11 +61,12 @@ const initialize = ({service, port, modules = [], loadEventric = false, runMigra
     await connectDatabase()
     await Sidecar.connect(service)
     await startEventric(loadEventric)
-    await createServer(port, modules)
+    const server = await createServer(port, modules)
     Logger.info('Service is: ' + service)
     if (service === 'api') {
       await Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
     }
+    return server
   }
 
   initialization()

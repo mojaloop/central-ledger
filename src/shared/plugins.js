@@ -6,7 +6,7 @@ const Vision = require('vision')
 const Blipp = require('blipp')
 const GoodWinston = require('good-winston')
 const goodWinstonStream = new GoodWinston({winston: require('winston')})
-const ErrorHandling = require('@mojaloop/central-services-error-handling')
+// const ErrorHandling = require('@mojaloop/central-services-error-handling')
 
 const registerPlugins = async (server) => {
   server.register({
@@ -39,7 +39,7 @@ const registerPlugins = async (server) => {
     plugin: require('@now-ims/hapi-now-auth')
   })
 
-  await server.register([Inert, Vision, Blipp, ErrorHandling])
+  await server.register([Inert, Vision, Blipp])
 }
 
 module.exports = {

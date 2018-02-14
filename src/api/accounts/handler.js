@@ -7,6 +7,8 @@ const Util = require('../../lib/util')
 const PositionService = require('../../domain/position')
 const Errors = require('../../errors')
 const Sidecar = require('../../lib/sidecar')
+const Logger = require('@mojaloop/central-services-shared').Logger
+const Boom = require('boom')
 
 const buildAccount = (account) => {
   return {
@@ -55,11 +57,15 @@ const getPosition = (account) => {
 }
 
 exports.create = async function (request, h) {
-  Sidecar.logRequest(request)
-  const entity = await Account.getByName(request.payload.name)
-  handleExistingRecord(entity)
-  const account = await Account.create(request.payload)
-  return h.response(buildResponse(account)).code(201)
+  try {
+    Sidecar.logRequest(request)
+    const entity = await Account.getByName(request.payload.name)
+    handleExistingRecord(entity)
+    const account = await Account.create(request.payload)
+    return h.response(buildResponse(account)).code(201)
+  } catch (err) {
+    return Boom.boomify(err, {statusCode: 400, message: 'An error has occurred'})
+  }
 }
 
 exports.updateUserCredentials = async function (request, h) {

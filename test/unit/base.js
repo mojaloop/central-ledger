@@ -9,7 +9,7 @@ const setupServer = async () => {
   return server
 }
 
-exports.setup = (connection = 'api') => {
+exports.setup = () => {
   return setupServer()
 }
 
@@ -18,7 +18,11 @@ exports.buildRequest = (options) => {
     url: options.url,
     method: options.method || 'GET',
     payload: options.payload || '',
-    headers: options.headers || {}
+    headers: options.headers || {},
+    credentials: {
+      username: 'admin',
+      password: 'admin'
+    }
   }
 }
 

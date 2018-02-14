@@ -1,35 +1,37 @@
 const Handler = require('./handler')
 const Joi = require('joi')
 const Auth = require('../auth')
+const RouteConfig = require('../route-config')
 
 const tags = ['api', 'accounts']
 const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the account')
 const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the account')
-const emailAddressValidator = Joi.string().email()
+const emailAddressValidator = Joi.string().email().required()
 
 module.exports = [{
   method: 'POST',
   path: '/accounts',
   handler: Handler.create,
-  config: {
-    id: 'accounts',
-    tags: tags,
-    auth: Auth.strategy(),
-    description: 'Create an account.',
-    validate: {
+  config: RouteConfig.config(tags, 'accounts', 'Create an account.', {
+    options: {
       payload: {
-        name: nameValidator,
-        password: passwordValidator,
-        emailAddress: emailAddressValidator
+        allow: ['application/json']
+      },
+      validate: {
+        payload: {
+          name: nameValidator,
+          password: passwordValidator,
+          emailAddress: emailAddressValidator
+        }
       }
     }
-  }
+  })
 },
 {
   method: 'GET',
   path: '/accounts/{name}',
   handler: Handler.getByName,
-  config: {
+  options: {
     id: 'account',
     tags: tags,
     description: 'Retrieve an accounts details by name',

@@ -8,7 +8,6 @@ const Account = require('../../domain/account')
 const Fee = require('../../domain/fee')
 const SettleableTransfersReadmodel = require('../../models/settleable-transfers-read-model')
 const P = require('bluebird')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
 const buildPosition = (payments, receipts, net) => {
   return {

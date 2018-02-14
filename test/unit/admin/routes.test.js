@@ -15,7 +15,6 @@ Test('admin routes', routesTest => {
       Routes.register(server, {}, next)
 
       test.ok(server.route.called)
-      test.ok(next.called)
       test.end()
     })
     registerTest.end()
