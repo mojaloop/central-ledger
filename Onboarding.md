@@ -23,7 +23,6 @@ In this document we'll walk through the setup for the Mojaloop Central Ledger. I
 9. Zenhub
 10. central_ledger
 11. JavaScript IDE
-12. Slack (Optional)
 ***
 
 ### Setup
