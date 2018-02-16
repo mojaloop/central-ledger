@@ -4,9 +4,9 @@ version: 2
 defaults: &defaults
   working_directory: /home/circleci/project
   docker:
-    - image: dwolla/alpine-node-make
+    - image: mhart/alpine-node:8.9.4
 
-defaultDependencies: &defaultDependencies | 
+defaultDependencies: &defaultDependencies |
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
@@ -15,6 +15,30 @@ jobs:
   setup:
     <<: *defaults
     steps:
+      - run:
+          name: Build dependencies
+          command: apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
+      - run:
+          name: Access npm folder as root
+          command: cd $(npm root -g)/npm
+      - run:
+          name: Install fs-extra
+          command: npm install fs-extra
+      - run:
+          name: Edit something
+          command: sed -i -e s/graceful-fs/fs-extra/ -e s/fs.rename/fs.move/ ./lib/utils/rename.js
+      - run:
+          name: Install node-gyp globally
+          command: npm install -g node-gyp
+      - run:
+          name: Install sodium
+          command: npm install -g sodium@2.0.3 --unsafe-perm
+      - run:
+          name: Install argon
+          command: npm install -g argon2@0.17.1 --unsafe-perm
+      - run:
+          name: Delete build dependencies
+          command: apk del build-dependencies
       - run:
           name: Install dependencies
           command: *defaultDependencies
@@ -47,10 +71,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute unit tests
           command: npm -s run test:xunit > ./test/results/tape.xml
       - store_artifacts:
@@ -67,7 +91,7 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
       - store_artifacts:
@@ -81,10 +105,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute unit tests
           command: npm -s run test:integration
       - store_artifacts:
@@ -95,7 +119,7 @@ jobs:
   test-functional:
     machine: true
     steps:
-      - run: 
+      - run:
           name: Add the Postgres 9.6 binaries to the path.
           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
       - run:
@@ -107,10 +131,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute unit tests
           command: npm -s run test:functional
       - store_artifacts:
@@ -120,28 +144,28 @@ jobs:
           path: ./test/results
 #   test-spec:
 #     machine: true
-#     # <<: *defaults 
+#     # <<: *defaults
 #     steps:
-#     #   - run: 
-#     #       name: Install dependencies 
-#     #       command: *defaultDependencies 
-#     #   - run:  
-#     #       name: Add the Postgres 9.6 binaries to the path. 
-#     #       command: apk --no-cache add postgresql-client 
-#     #   - setup_remote_docker 
-#     #   - run:  
-#     #       name: Add docker 
-#     #       command: apk --no-cache add docker 
-#     #   - run:  
-#     #       name: Add docker compose 
-#     #       command: | 
-#     #         apk --no-cache add py-pip 
-#     #         pip install docker-compose 
-#     #   - run: 
-#     #       name: Install Docker Compose 
-#     #       command: | 
-#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose 
-#       - run: 
+#     #   - run:
+#     #       name: Install dependencies
+#     #       command: *defaultDependencies
+#     #   - run:
+#     #       name: Add the Postgres 9.6 binaries to the path.
+#     #       command: apk --no-cache add postgresql-client
+#     #   - setup_remote_docker
+#     #   - run:
+#     #       name: Add docker
+#     #       command: apk --no-cache add docker
+#     #   - run:
+#     #       name: Add docker compose
+#     #       command: |
+#     #         apk --no-cache add py-pip
+#     #         pip install docker-compose
+#     #   - run:
+#     #       name: Install Docker Compose
+#     #       command: |
+#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose
+#       - run:
 #           name: Add the Postgres 9.6 binaries to the path.
 #           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
 #       - run:
@@ -153,10 +177,10 @@ jobs:
 #       - checkout
 #       - restore_cache:
 #           key: dependency-cache-{{ checksum "package.json" }}
-#       - run: 
+#       - run:
 #           name: Create dir for test results
 #           command: mkdir -p ./test/results
-#       - run: 
+#       - run:
 #           name: Execute unit tests
 #           command: npm -s run test:spec
 #       - store_artifacts:
@@ -172,11 +196,11 @@ jobs:
           command: *defaultDependencies
       - checkout
       # # build the application image
-      # - run: 
+      # - run:
       #     name: Build Docker image
       #     command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest .
       # build the application image
-      - run: 
+      - run:
           name: Build Docker image
           command: docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:test -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG .
       # save the docker image to the file system
@@ -195,7 +219,7 @@ jobs:
     steps:
       - checkout
       # login to docker hub
-      - run: 
+      - run:
           name: Login to Docker Hub
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
       # restore docker image for deployment
@@ -211,10 +235,10 @@ jobs:
             set +o pipefail
             docker load -i /caches/dockerimage.tar | true
       # publish docker image with tag
-      - run: 
+      - run:
           name: Publish Docker image latest tag to Docker Hub
           command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:latest
-      - run: 
+      - run:
           name: Publish Docker image $TAG tag to Docker Hub
           command: docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$TAG
 
@@ -226,7 +250,7 @@ workflows:
           context: org-global
           filters:
               branches:
-                ignore: 
+                ignore:
                   - /feature*/
                   - /bugfix*/
       - test-unit:
@@ -235,16 +259,16 @@ workflows:
             - setup
           filters:
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
-                - /bugfix*/             
+                - /bugfix*/
       - test-coverage:
           context: org-global
           requires:
             - setup
           filters:
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
       - test-integration:
@@ -253,7 +277,7 @@ workflows:
             - setup
           filters:
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
       - test-functional:
@@ -262,7 +286,7 @@ workflows:
             - setup
           filters:
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
     #   - test-spec:
@@ -271,7 +295,7 @@ workflows:
     #         - setup
     #       filters:
     #         branches:
-    #           ignore: 
+    #           ignore:
     #             - /feature*/
     #             - /bugfix*/
       - build:

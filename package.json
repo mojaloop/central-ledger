@@ -57,7 +57,7 @@
     "@mojaloop/central-services-database": "0.4.0",
     "@mojaloop/central-services-error-handling": "file:../central-services-error-handling",
     "@mojaloop/central-services-shared": "0.4.0",
-    "@mojaloop/forensic-logging-client": "0.5.0",
+    "@mojaloop/forensic-logging-client": "0.5.1",
     "@now-ims/hapi-now-auth": "1.0.1",
     "argon2": "0.17.1",
     "bcrypt": "1.0.3",

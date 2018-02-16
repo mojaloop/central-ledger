@@ -7,8 +7,9 @@ const Util = require('../../lib/util')
 const PositionService = require('../../domain/position')
 const Errors = require('../../errors')
 const Sidecar = require('../../lib/sidecar')
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 const Boom = require('boom')
+// const ErrorHandling = require('@mojaloop/central-services-error-handling')
 
 const buildAccount = (account) => {
   return {
@@ -69,18 +70,22 @@ exports.create = async function (request, h) {
 }
 
 exports.updateUserCredentials = async function (request, h) {
-  Sidecar.logRequest(request)
-  const accountName = request.params.name
-  const credentials = request.auth.credentials
-  const authenticated = (credentials && (credentials.is_admin || credentials.name === accountName))
+  try {
+    Sidecar.logRequest(request)
+    const accountName = request.params.name
+    const credentials = request.auth.credentials
+    const authenticated = (credentials && (credentials.is_admin || credentials.name === accountName))
 
-  if (!authenticated) {
-    throw new Errors.UnauthorizedError('Invalid attempt updating the password.')
+    if (!authenticated) {
+      return Boom.boomify(new Errors.UnauthorizedError('Invalid attempt updating the password.'), {statusCode: 400})
+    }
+    const account = await Account.getByName(request.params.name)
+    handleMissingRecord(account)
+    const updatedAccount = await Account.updateUserCredentials(account, request.payload)
+    return buildAccount(updatedAccount)
+  } catch (err) {
+    return Boom.boomify(err, {statusCode: 400, message: 'An error has occurred'})
   }
-  const account = await Account.getByName(request.params.name)
-  handleMissingRecord(account)
-  const updatedAccount = await Account.updateUserCredentials(account, request.payload)
-  return buildAccount(updatedAccount)
 }
 
 exports.updateAccountSettlement = async function (request, h) {

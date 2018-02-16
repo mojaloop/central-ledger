@@ -33,18 +33,18 @@ const createServer = (port, modules) => {
         validate: ErrorHandling.validateRoutes()
       }
     })
-    await server.ext('onRequest', function (request, h) {
+    await Plugins.registerPlugins(server)
+    await server.register(modules)
+    server.ext('onRequest', function (request, h) {
       const transferId = UrlParser.idFromTransferUri(`${Config.HOSTNAME}${request.url.path}`)
       request.headers.traceid = request.headers.traceid || transferId || Uuid()
       RequestLogger.logRequest(request)
       return h.continue
     })
-    await server.ext('onPreResponse', function (request, h) {
+    server.ext('onPreResponse', function (request, h) {
       RequestLogger.logResponse(request)
       return h.continue
     })
-    await Plugins.registerPlugins(server)
-    await server.register(modules)
     await server.start()
     Logger.info('Server running at: %s', server.info.uri)
     return server
