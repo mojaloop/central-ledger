@@ -6,7 +6,7 @@ defaults_working_directory: &defaults_working_directory
 
 defaults_docker_node: &defaults_docker_node
   docker:
-    - image: dwolla/alpine-node-make
+    - image: mhart/alpine-node:8.9.4
 
 defaults_docker_helm_kube: &defaults_docker_helm_kube
   docker:
@@ -18,13 +18,13 @@ defaults_docker_helm_kube: &defaults_docker_helm_kube
 #     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-SNAPSHOT'
 #     # - TAG: v1.0
 
-defaults_Dependencies: &defaults_Dependencies | 
+defaults_Dependencies: &defaults_Dependencies |
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
 
-defaults_awsCliDependencies: &defaults_awsCliDependencies | 
+defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add \
             python \
             py-pip \
@@ -76,7 +76,7 @@ defaults_deploy_config_kubernetes_credentials: &defaults_deploy_config_kubernete
   command: |
     echo "Configure Kubernetes credentails ${K8_USER_NAME}"
     kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
-  
+
 defaults_deploy_config_kubernetes_context: &defaults_deploy_config_kubernetes_context
   name: Confi gure Kubernetes context
   command: |
@@ -100,13 +100,13 @@ defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgra
     echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
     if [ -z "$(helm list -q | grep ${K8_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${K8_RELEASE_NAME})" != "Error: Unauthorized" ];
     then
-        echo "Installing ${K8_RELEASE_NAME} new release"  
+        echo "Installing ${K8_RELEASE_NAME} new release"
         helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
     else
-        echo "Upgrading ${K8_RELEASE_NAME} release"  
+        echo "Upgrading ${K8_RELEASE_NAME} release"
         helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --reuse-values $HELM_VALUE_SET_VALUES $K8_HELM_CHART_NAME
     fi
-          
+
 jobs:
   setup:
     <<: *defaults_working_directory
@@ -116,6 +116,30 @@ jobs:
           name: Install general dependencies
           command: *defaults_Dependencies
       - checkout
+      - run:
+          name: Build dependencies
+          command: apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
+      - run:
+          name: Access npm folder as root
+          command: cd $(npm root -g)/npm
+      - run:
+          name: Install fs-extra
+          command: npm install fs-extra
+      - run:
+          name: Edit something
+          command: sed -i -e s/graceful-fs/fs-extra/ -e s/fs.rename/fs.move/ ./lib/utils/rename.js
+      - run:
+          name: Install node-gyp globally
+          command: npm install -g node-gyp
+      - run:
+          name: Install sodium
+          command: npm install -g sodium@2.0.3 --unsafe-perm
+      - run:
+          name: Install argon
+          command: npm install -g argon2@0.17.1 --unsafe-perm
+      - run:
+          name: Delete build dependencies
+          command: apk del build-dependencies
       - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
           command: npm install github:interledgerjs/five-bells-ledger-api-tests
@@ -135,7 +159,7 @@ jobs:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - node_modules
-  
+
   test-unit:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
@@ -146,10 +170,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute unit tests
           command: npm -s run test:xunit > ./test/results/tape.xml
       - store_artifacts:
@@ -157,7 +181,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
-  
+
   test-coverage:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
@@ -171,7 +195,7 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
       - store_artifacts:
@@ -184,12 +208,12 @@ jobs:
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ];
             then
-                echo "Sending lcov.info to SonarQube..."  
+                echo "Sending lcov.info to SonarQube..."
                 aws s3 cp coverage/lcov.info $AWS_S3_DIR_SONARQUBE/central-ledger/lcov.info
             else
-                echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube." 
-            fi 
-  
+                echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube."
+            fi
+
   test-integration:
     machine: true
     <<: *defaults_working_directory
@@ -197,10 +221,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute unit tests
           command: npm -s run test:integration
       - store_artifacts:
@@ -208,12 +232,12 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
-  
+
   test-functional:
     machine: true
     <<: *defaults_working_directory
     steps:
-      - run: 
+      - run:
           name: Add the Postgres 9.6 binaries to the path.
           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
       - run:
@@ -225,10 +249,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute unit tests
           command: npm -s run test:functional
       - store_artifacts:
@@ -240,28 +264,28 @@ jobs:
 
 #   test-spec:
 #     machine: true
-#     # <<: *defaults 
+#     # <<: *defaults
 #     steps:
-#     #   - run: 
-#     #       name: Install general dependencies 
-#     #       command: *defaultDependencies 
-#     #   - run:  
-#     #       name: Add the Postgres 9.6 binaries to the path. 
-#     #       command: apk --no-cache add postgresql-client 
-#     #   - setup_remote_docker 
-#     #   - run:  
-#     #       name: Add docker 
-#     #       command: apk --no-cache add docker 
-#     #   - run:  
-#     #       name: Add docker compose 
-#     #       command: | 
-#     #         apk --no-cache add py-pip 
-#     #         pip install docker-compose 
-#     #   - run: 
-#     #       name: Install Docker Compose 
-#     #       command: | 
-#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose 
-#       - run: 
+#     #   - run:
+#     #       name: Install general dependencies
+#     #       command: *defaultDependencies
+#     #   - run:
+#     #       name: Add the Postgres 9.6 binaries to the path.
+#     #       command: apk --no-cache add postgresql-client
+#     #   - setup_remote_docker
+#     #   - run:
+#     #       name: Add docker
+#     #       command: apk --no-cache add docker
+#     #   - run:
+#     #       name: Add docker compose
+#     #       command: |
+#     #         apk --no-cache add py-pip
+#     #         pip install docker-compose
+#     #   - run:
+#     #       name: Install Docker Compose
+#     #       command: |
+#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose
+#       - run:
 #           name: Add the Postgres 9.6 binaries to the path.
 #           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
 #       - run:
@@ -273,10 +297,10 @@ jobs:
 #       - checkout
 #       - restore_cache:
 #           key: dependency-cache-{{ checksum "package.json" }}
-#       - run: 
+#       - run:
 #           name: Create dir for test results
 #           command: mkdir -p ./test/results
-#       - run: 
+#       - run:
 #           name: Execute unit tests
 #           command: npm -s run test:spec
 #       - store_artifacts:
@@ -316,7 +340,7 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
-  
+
   deploy-snapshot:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
@@ -385,7 +409,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
       - test-unit:
@@ -396,9 +420,9 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
-                - /bugfix*/             
+                - /bugfix*/
       - test-coverage:
           context: org-global
           requires:
@@ -407,7 +431,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
       - test-integration:
@@ -418,7 +442,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
       - test-functional:
@@ -429,7 +453,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
     #   - test-spec:
@@ -438,9 +462,9 @@ workflows:
     #         - setup
     #       filters:
     #           tags:
-    #             only: /.*/    
+    #             only: /.*/
     #         branches:
-    #           ignore: 
+    #           ignore:
     #             - /feature*/
     #             - /bugfix*/
       - build-snapshot:
@@ -456,7 +480,7 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-snapshot/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - deploy-snapshot:
           context: org-global
@@ -466,7 +490,7 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-snapshot/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - build:
           context: org-global
@@ -481,7 +505,7 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - deploy:
           context: org-global
@@ -491,5 +515,5 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
