@@ -55,7 +55,7 @@
   "dependencies": {
     "@mojaloop/central-services-auth": "0.2.0",
     "@mojaloop/central-services-database": "0.4.0",
-    "@mojaloop/central-services-error-handling": "file:../central-services-error-handling",
+    "@mojaloop/central-services-error-handling": "0.5.0",
     "@mojaloop/central-services-shared": "0.4.0",
     "@mojaloop/forensic-logging-client": "0.5.1",
     "@now-ims/hapi-now-auth": "1.0.1",
