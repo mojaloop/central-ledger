@@ -122,12 +122,12 @@ jobs:
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
-      - run:
-          name: Install fs-extra
-          command: npm install fs-extra
-      - run:
-          name: Edit something
-          command: sed -i -e s/graceful-fs/fs-extra/ -e s/fs.rename/fs.move/ ./lib/utils/rename.js
+#      - run:
+#          name: Install fs-extra
+#          command: npm install fs-extra
+#      - run:
+#          name: Edit something
+#          command: sed -i -e s/graceful-fs/fs-extra/ -e s/fs.rename/fs.move/ ./lib/utils/rename.js
       - run:
           name: Install node-gyp globally
           command: npm install -g node-gyp
