@@ -4,7 +4,7 @@ version: 2
 defaults: &defaults
   working_directory: /home/circleci/project
   docker:
-    - image: mhart/alpine-node:8.9.4
+    - image: dwolla/alpine-node-make
 
 defaultDependencies: &defaultDependencies |
     apk --no-cache add git
@@ -19,30 +19,6 @@ jobs:
           name: Install dependencies
           command: *defaultDependencies
       - checkout
-      - run:
-          name: Build dependencies
-          command: apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
-      - run:
-          name: Access npm folder as root
-          command: cd $(npm root -g)/npm
-      - run:
-          name: Install fs-extra
-          command: npm install fs-extra
-      - run:
-          name: Edit something
-          command: sed -i -e s/graceful-fs/fs-extra/ -e s/fs.rename/fs.move/ ./lib/utils/rename.js
-      - run:
-          name: Install node-gyp globally
-          command: npm install -g node-gyp
-      - run:
-          name: Install sodium
-          command: npm install -g sodium@2.0.3 --unsafe-perm
-      - run:
-          name: Install argon
-          command: npm install -g argon2@0.17.1 --unsafe-perm
-      - run:
-          name: Delete build dependencies
-          command: apk del build-dependencies
       - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
           command: npm install github:interledgerjs/five-bells-ledger-api-tests
