@@ -309,7 +309,7 @@ jobs:
       - run:
           name: setup environment vars for SNAPSHOT release
           command: |
-            echo 'export RELEASE_TAG=$RELEASE_TAG' >> $BASH_ENV
+            echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
       - run:
           <<: *defaults_build_docker_login
       - run:
