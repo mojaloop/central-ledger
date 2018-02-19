@@ -307,7 +307,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: setup environment vars for SNAPSHOT release
+          name: setup environment vars for LATEST release
           command: |
             echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
       - run:
