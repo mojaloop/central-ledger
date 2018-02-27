@@ -27,7 +27,7 @@ Test('charges handler', handlerTest => {
   })
 
   handlerTest.test('chargeQuote should', chargeQuoteTest => {
-    chargeQuoteTest.test('get all charge quotes and format charge quote list', test => {
+    chargeQuoteTest.test('get all charge quotes and format charge quote list', async function (test) {
       const chargeQuote1 = {
         name: 'charge1',
         charge_type: 'flat',
@@ -43,34 +43,30 @@ Test('charges handler', handlerTest => {
       const charges = [chargeQuote1, chargeQuote2]
 
       Charge.quote.returns(P.resolve(charges))
-
-      const reply = response => {
-        test.equal(response.length, 2)
-        const item1 = response[0]
-        test.equal(item1.name, chargeQuote1.name)
-        test.equal(item1.charge_type, chargeQuote1.charge_type)
-        test.equal(item1.code, chargeQuote1.code)
-        test.equal(item1.amount, chargeQuote1.amount)
-        const item2 = response[1]
-        test.equal(item2.name, chargeQuote2.name)
-        test.equal(item2.charge_type, chargeQuote2.charge_type)
-        test.equal(item2.code, chargeQuote2.code)
-        test.equal(item2.amount, chargeQuote2.amount)
-        test.end()
-      }
-
-      Handler.chargeQuote({}, reply)
+      const response = await Handler.chargeQuote({}, {})
+      test.equal(response.length, 2)
+      const item1 = response[0]
+      test.equal(item1.name, chargeQuote1.name)
+      test.equal(item1.charge_type, chargeQuote1.charge_type)
+      test.equal(item1.code, chargeQuote1.code)
+      test.equal(item1.amount, chargeQuote1.amount)
+      const item2 = response[1]
+      test.equal(item2.name, chargeQuote2.name)
+      test.equal(item2.charge_type, chargeQuote2.charge_type)
+      test.equal(item2.code, chargeQuote2.code)
+      test.equal(item2.amount, chargeQuote2.amount)
+      test.end()
     })
 
-    chargeQuoteTest.test('reply with error if Charge services throws', test => {
+    chargeQuoteTest.test('reply with error if Charge services throws', async function (test) {
       const error = new Error()
       Charge.quote.returns(P.reject(error))
-
-      const reply = (e) => {
+      try {
+        await Handler.chargeQuote({}, {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-      Handler.chargeQuote({}, reply)
     })
 
     chargeQuoteTest.end()

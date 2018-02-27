@@ -10,7 +10,7 @@ module.exports = [
     handler: function (request, h) {
       return h.response({ status: 'OK' }).code(200)
     },
-    config: RouteConfig.config(tags, 'Status of ledger admin api')
+    options: RouteConfig.config(tags, 'Status of ledger admin api')
   },
   {
     method: 'GET',
@@ -18,6 +18,6 @@ module.exports = [
     handler: function (request, h) {
       return h.response({ status: 'OK' }).code(200)
     },
-    config: RouteConfig.config(tags, 'Status of ledger admin api')
+    options: RouteConfig.config(tags, 'Status of ledger admin api')
   }
 ]

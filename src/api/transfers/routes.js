@@ -7,34 +7,37 @@ module.exports = [{
   method: 'PUT',
   path: '/transfers/{id}',
   handler: Handler.prepareTransfer,
-  config: {
+  options: {
     id: 'transfer',
     tags: tags,
     auth: Auth.strategy(),
     description: 'Prepare a transfer',
+    payload: {
+      allow: 'application/json',
+      failAction: 'error',
+      output: 'data'
+    },
     validate: {
-      options: {
-        params: {
-          id: Joi.string().guid().required().description('Id of transfer to prepare')
-        },
-        payload: {
-          id: Joi.string().uri().required().description('Id of transfer'),
-          ledger: Joi.string().uri().required().description('Ledger of transfer'),
-          debits: Joi.array().items(Joi.object().keys({
-            account: Joi.string().uri().required().description('Debit account of the transfer'),
-            amount: Joi.number().required().description('Debit amount of the transfer'),
-            memo: Joi.object().optional().unknown().description('Additional information related to the debit'),
-            authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by account holder')
-          })).required().description('Debits of the transfer'),
-          credits: Joi.array().items(Joi.object().keys({
-            account: Joi.string().uri().required().description('Credit account of the transfer'),
-            amount: Joi.number().required().description('Credit amount of the transfer'),
-            memo: Joi.object().optional().unknown().description('Additional information related to the credit'),
-            authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by account holder')
-          })).required().description('Credits of the transfer'),
-          execution_condition: Joi.string().trim().max(65535).optional().description('Execution condition of transfer'),
-          expires_at: Joi.string().isoDate().optional().description('When the transfer expires')
-        }
+      params: {
+        id: Joi.string().guid().required().description('Id of transfer to prepare')
+      },
+      payload: {
+        id: Joi.string().uri().required().description('Id of transfer'),
+        ledger: Joi.string().uri().required().description('Ledger of transfer'),
+        debits: Joi.array().items(Joi.object().keys({
+          account: Joi.string().uri().required().description('Debit account of the transfer'),
+          amount: Joi.number().required().description('Debit amount of the transfer'),
+          memo: Joi.object().optional().unknown().description('Additional information related to the debit'),
+          authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by account holder')
+        })).required().description('Debits of the transfer'),
+        credits: Joi.array().items(Joi.object().keys({
+          account: Joi.string().uri().required().description('Credit account of the transfer'),
+          amount: Joi.number().required().description('Credit amount of the transfer'),
+          memo: Joi.object().optional().unknown().description('Additional information related to the credit'),
+          authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by account holder')
+        })).required().description('Credits of the transfer'),
+        execution_condition: Joi.string().trim().max(65535).optional().description('Execution condition of transfer'),
+        expires_at: Joi.string().isoDate().optional().description('When the transfer expires')
       }
     }
   }
@@ -43,7 +46,7 @@ module.exports = [{
   method: 'GET',
   path: '/transfers/{id}',
   handler: Handler.getTransferById,
-  config: {
+  options: {
     tags: tags,
     auth: Auth.strategy(),
     description: 'Get transfer by ID',
@@ -58,19 +61,21 @@ module.exports = [{
   method: 'PUT',
   path: '/transfers/{id}/fulfillment',
   handler: Handler.fulfillTransfer,
-  config: {
+  options: {
     id: 'transfer_fulfillment',
     tags: tags,
     auth: Auth.strategy(),
     description: 'Fulfill a transfer',
+    payload: {
+      allow: 'application/json',
+      failAction: 'error'
+    },
     validate: {
-      options: {
-        headers: Joi.object({'content-type': Joi.string().required().valid('text/plain')}).unknown(),
-        params: {
-          id: Joi.string().guid().required().description('Id of transfer to fulfill')
-        },
-        payload: Joi.string().trim().max(65535).required().description('Fulfillment of the execution condition')
-      }
+      headers: Joi.object({'content-type': Joi.string().required().valid('text/plain')}).unknown(),
+      params: {
+        id: Joi.string().guid().required().description('Id of transfer to fulfill')
+      },
+      payload: Joi.string().trim().max(65535).required().description('Fulfillment of the execution condition')
     }
   }
 },
@@ -78,18 +83,20 @@ module.exports = [{
   method: 'PUT',
   path: '/transfers/{id}/rejection',
   handler: Handler.rejectTransfer,
-  config: {
+  options: {
     id: 'transfer_rejection',
     tags: tags,
     auth: Auth.strategy(),
     description: 'Reject a transfer',
+    payload: {
+      allow: 'application/json',
+      failAction: 'error'
+    },
     validate: {
-      options: {
-        params: {
-          id: Joi.string().guid().required().description('Id of transfer to reject')
-        },
-        payload: Joi.object().unknown().optional().description('Rejection reason')
-      }
+      params: {
+        id: Joi.string().guid().required().description('Id of transfer to reject')
+      },
+      payload: Joi.object().unknown().optional().description('Rejection reason')
     }
   }
 },
@@ -97,7 +104,7 @@ module.exports = [{
   method: 'GET',
   path: '/transfers/{id}/fulfillment',
   handler: Handler.getTransferFulfillment,
-  config: {
+  options: {
     tags: tags,
     description: 'Get transfer fulfillment',
     auth: Auth.strategy(),

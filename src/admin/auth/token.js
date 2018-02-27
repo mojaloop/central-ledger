@@ -16,15 +16,18 @@ const reducePermissions = (roles) => {
 }
 
 const validate = async (request, token, h) => {
-  let isValid = false
-  JWT.verify(token)
-    .then(({ user, roles }) => {
+  try {
+    let isValid = false
+    const result = await JWT.verify(token)
+    if (result) {
       isValid = true
-      const scope = reducePermissions(roles)
-      const credentials = Util.merge(user, { scope: scope })
+      const scope = reducePermissions(result.roles)
+      const credentials = Util.merge(result.user, {scope: scope})
       return {isValid, credentials}
-    })
-    .catch(e => h(e, false))
+    }
+  } catch (e) {
+    return {e, verified: false}
+  }
 }
 
 module.exports = {

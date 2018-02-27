@@ -10,5 +10,6 @@ exports.calculateForAllAccounts = async function (request, h) {
 
 exports.calculateForAccount = async function (request, h) {
   const account = await Account.getByName(request.params.name)
-  return await PositionService.calculateForAccount(account)
+  const positions = await PositionService.calculateForAccount(account)
+  return h.response(positions)
 }

@@ -9,11 +9,15 @@ module.exports = [
     method: 'POST',
     path: '/charges/quote',
     handler: Handler.chargeQuote,
-    config: {
+    options: {
       id: 'charges',
       tags: tags,
       auth: Auth.strategy(),
       description: 'Quote a charge for a transaction amount',
+      payload: {
+        allow: 'application/json',
+        failAction: 'error'
+      },
       validate: {
         payload: {
           amount: Joi.number().required().description('Amount for charge quote')

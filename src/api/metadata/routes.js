@@ -8,7 +8,7 @@ module.exports = [
     handler: function (request, h) {
       return h.response({ status: 'OK' }).code(200)
     },
-    config: {
+    options: {
       tags: tags,
       description: 'Status of ledger',
       id: 'health'
@@ -18,7 +18,7 @@ module.exports = [
     method: 'GET',
     path: '/',
     handler: Handler.metadata,
-    config: {
+    options: {
       tags: tags,
       description: 'Metadata'
     }

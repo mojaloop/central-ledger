@@ -80,6 +80,10 @@ module.exports = [{
     tags: tags,
     description: 'Update an accounts user credentials',
     auth: Auth.strategy(),
+    payload: {
+      allow: 'application/json',
+      failAction: 'error'
+    },
     validate: {
       params: {
         name: nameValidator

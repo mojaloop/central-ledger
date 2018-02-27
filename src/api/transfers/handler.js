@@ -6,6 +6,8 @@ const TransferRejectionType = require('../../domain/transfer/rejection-type')
 const TransferTranslator = require('../../domain/transfer/translator')
 const NotFoundError = require('../../errors').NotFoundError
 const Sidecar = require('../../lib/sidecar')
+const Logger = require('@mojaloop/central-services-shared').Logger
+const Boom = require('boom')
 
 const buildGetTransferResponse = (record) => {
   if (!record) {
@@ -15,10 +17,15 @@ const buildGetTransferResponse = (record) => {
 }
 
 exports.prepareTransfer = async function (request, h) {
-  Sidecar.logRequest(request)
-  const payload = await Validator.validate(request.payload, request.params.id)
-  const result = await TransferService.prepare(payload)
-  return h.response(result.transfer).code((result.existing === true) ? 200 : 201)
+  try {
+    Logger.info('entering prepare transfer')
+    Sidecar.logRequest(request)
+    const payload = await Validator.validate(request.payload, request.params.id)
+    const result = await TransferService.prepare(payload)
+    return h.response(result.transfer).code((result.existing === true) ? 200 : 201)
+  } catch (err) {
+    throw Boom.boomify(err, {statusCode: 400, message: 'An error has occurred'})
+  }
 }
 
 exports.fulfillTransfer = async function (request, h) {

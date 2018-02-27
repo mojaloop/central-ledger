@@ -14,6 +14,7 @@ const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlparser')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Account = require('../domain/account')
+const Boom = require('boom')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -30,11 +31,14 @@ const createServer = (port, modules) => {
     const server = await new Hapi.Server({
       port,
       routes: {
-        validate: ErrorHandling.validateRoutes()
+        validate: {
+          options: ErrorHandling.validateRoutes(),
+          failAction: async (request, h, err) => {
+            throw Boom.boomify(err)
+          }
+        }
       }
     })
-    await Plugins.registerPlugins(server)
-    await server.register(modules)
     server.ext('onRequest', function (request, h) {
       const transferId = UrlParser.idFromTransferUri(`${Config.HOSTNAME}${request.url.path}`)
       request.headers.traceid = request.headers.traceid || transferId || Uuid()
@@ -45,6 +49,8 @@ const createServer = (port, modules) => {
       RequestLogger.logResponse(request)
       return h.continue
     })
+    await Plugins.registerPlugins(server)
+    await server.register(modules)
     await server.start()
     Logger.info('Server running at: %s', server.info.uri)
     return server
@@ -53,23 +59,16 @@ const createServer = (port, modules) => {
 
 // Migrator.migrate is called before connecting to the database to ensure all new tables are loaded properly.
 // Eventric.getContext is called to replay all events through projections (creating the read-model) before starting the server.
-const initialize = ({service, port, modules = [], loadEventric = false, runMigrations = false}) => {
-  async function initialization () {
-    await migrate(runMigrations).catch((error) => {
-      Logger.error(error)
-    })
-    await connectDatabase()
-    await Sidecar.connect(service)
-    await startEventric(loadEventric)
-    const server = await createServer(port, modules)
-    Logger.info('Service is: ' + service)
-    if (service === 'api') {
-      await Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
-    }
-    return server
+const initialize = async function ({service, port, modules = [], loadEventric = false, runMigrations = false}) {
+  await migrate(runMigrations).catch(() => {})
+  await connectDatabase()
+  await Sidecar.connect(service)
+  await startEventric(loadEventric)
+  const server = await createServer(port, modules)
+  if (service === 'api') {
+    await Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
   }
-
-  initialization()
+  return server
 }
 
 module.exports = {

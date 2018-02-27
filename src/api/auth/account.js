@@ -25,7 +25,7 @@ const validate = async (request, name, password, h) => {
     return {credentials: null, isValid: false}
   }
   if (Config.ADMIN_KEY && Config.ADMIN_SECRET && name === Config.ADMIN_KEY && password === Config.ADMIN_SECRET) {
-    return {credentials: null, isValid: true}
+    return {credentials: {is_admin: true, name}, isValid: true}
   }
   const account = await AccountService.verify(name, password)
   if (account) {

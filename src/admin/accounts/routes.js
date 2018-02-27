@@ -14,13 +14,13 @@ module.exports = [
     method: 'GET',
     path: '/accounts',
     handler: Handler.getAll,
-    config: RouteConfig.config(tags, Permissions.ACCOUNTS_LIST)
+    options: RouteConfig.config(tags, Permissions.ACCOUNTS_LIST)
   },
   {
     method: 'GET',
     path: '/accounts/{name}',
     handler: Handler.getByName,
-    config: RouteConfig.config(tags, Permissions.ACCOUNTS_VIEW, {
+    options: RouteConfig.config(tags, Permissions.ACCOUNTS_VIEW, {
       params: {
         name: Joi.string().required().description('Account name')
       }
@@ -30,16 +30,15 @@ module.exports = [
     method: 'POST',
     path: '/accounts',
     handler: Handler.create,
-    config: RouteConfig.config(tags, Permissions.ACCOUNTS_CREATE, {
-      options: {
+    options: RouteConfig.config(tags, Permissions.ACCOUNTS_CREATE, {
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
         payload: {
-          allow: ['application/json']
-        },
-        validate: {
-          payload: {
-            name: nameValidator,
-            password: passwordValidator
-          }
+          name: nameValidator,
+          password: passwordValidator
         }
       }
     })
@@ -48,18 +47,17 @@ module.exports = [
     method: 'PUT',
     path: '/accounts/{name}',
     handler: Handler.update,
-    config: RouteConfig.config(tags, Permissions.ACCOUNTS_UPDATE, {
-      options: {
+    options: RouteConfig.config(tags, Permissions.ACCOUNTS_UPDATE, {
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
         payload: {
-          allow: ['application/json']
+          is_disabled: Joi.boolean().required().description('Account is_disabled boolean')
         },
-        validate: {
-          payload: {
-            is_disabled: Joi.boolean().required().description('Account is_disabled boolean')
-          },
-          params: {
-            name: Joi.string().required().description('Account name')
-          }
+        params: {
+          name: Joi.string().required().description('Account name')
         }
       }
     })

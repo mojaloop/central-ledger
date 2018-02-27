@@ -6,9 +6,9 @@ const TokenService = require('../../domain/token')
 const SettlementService = require('../../domain/settlements')
 const Sidecar = require('../../lib/sidecar')
 
-exports.rejectExpired = function (request, h) {
+exports.rejectExpired = async function (request, h) {
   Sidecar.logRequest(request)
-  return TransferService.rejectExpired()
+  return await TransferService.rejectExpired()
 }
 
 exports.settle = async function (request, h) {

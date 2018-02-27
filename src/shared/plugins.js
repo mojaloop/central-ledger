@@ -4,12 +4,12 @@ const Package = require('../../package')
 const Inert = require('inert')
 const Vision = require('vision')
 const Blipp = require('blipp')
-const GoodWinston = require('good-winston')
-const goodWinstonStream = new GoodWinston({winston: require('winston')})
-// const ErrorHandling = require('@mojaloop/central-services-error-handling')
+// const GoodWinston = require('good-winston')
+// const goodWinstonStream = new GoodWinston({winston: require('winston')})
+const ErrorHandling = require('@mojaloop/central-services-error-handling')
 
 const registerPlugins = async (server) => {
-  server.register({
+  await server.register({
     plugin: require('hapi-swagger'),
     options: {
       info: {
@@ -19,27 +19,28 @@ const registerPlugins = async (server) => {
     }
   })
 
-  server.register({
+  await server.register({
     plugin: require('good'),
     options: {
       ops: {
         interval: 10000
-      },
-      reporters: {
-        winston: [goodWinstonStream]
       }
     }
   })
 
-  server.register({
+  await server.register({
     plugin: require('hapi-auth-basic')
   })
 
-  server.register({
+  await server.register({
     plugin: require('@now-ims/hapi-now-auth')
   })
 
-  await server.register([Inert, Vision, Blipp])
+  await server.register({
+    plugin: require('hapi-auth-bearer-token')
+  })
+
+  await server.register([Inert, Vision, Blipp, ErrorHandling])
 }
 
 module.exports = {

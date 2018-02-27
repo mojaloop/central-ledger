@@ -3,14 +3,12 @@
 const Test = require('tape')
 const Base = require('../../base')
 
-Test('return error if required field missing', assert => {
-  let req = Base.buildRequest({ url: '/charges/quote', method: 'POST', payload: { } })
-
-  Base.setup().then(server => {
-    server.inject(req, res => {
-      Base.assertBadRequestError(assert, res, [{ message: 'amount is required', params: { key: 'amount' } }])
-      assert.end()
-    })
-  })
+Test('return error if required field missing', async function (assert) {
+  let req = Base.buildRequest({url: '/charges/quote', method: 'POST', payload: {}})
+  const server = await Base.setup()
+  const res = await server.inject(req)
+  Base.assertBadRequestError(assert, res, 'child "amount" fails because [amount is required]')
+  await server.stop()
+  assert.end()
 })
 

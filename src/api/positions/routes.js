@@ -6,7 +6,7 @@ module.exports = [{
   method: 'GET',
   path: '/positions',
   handler: Handler.calculateForAllAccounts,
-  config: {
+  options: {
     id: 'positions',
     tags: tags,
     auth: Auth.strategy(),
@@ -17,7 +17,7 @@ module.exports = [{
   method: 'GET',
   path: '/positions/{name}',
   handler: Handler.calculateForAccount,
-  config: {
+  options: {
     id: 'positions_account',
     tags: tags,
     auth: Auth.strategy(),

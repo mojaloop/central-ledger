@@ -15,20 +15,18 @@ module.exports = [
     method: 'GET',
     path: '/roles',
     handler: Handler.getRoles,
-    config: RouteConfig.config(tags, Permissions.ROLES_LIST)
+    options: RouteConfig.config(tags, Permissions.ROLES_LIST)
   },
   {
     method: 'POST',
     path: '/roles',
     handler: Handler.createRole,
-    config: RouteConfig.config(tags, Permissions.ROLES_CREATE, {
-      options: {
-        validate: {
-          payload: {
-            name: nameValidator.required(),
-            description: descriptionValidator,
-            permissions: permissionsValidator.required()
-          }
+    options: RouteConfig.config(tags, Permissions.ROLES_CREATE, {
+      validate: {
+        payload: {
+          name: nameValidator.required(),
+          description: descriptionValidator,
+          permissions: permissionsValidator.required()
         }
       }
     })

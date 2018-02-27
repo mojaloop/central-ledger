@@ -10,9 +10,9 @@ const validate = async (request, username, password, h) => {
   }
   const isValid = password === Config.ADMIN_SECRET
   // const isValid = await Bcrypt.compare(password, Config.ADMIN_SECRET) to be used in the future to hash passwords
-  Logger.info('isvalid = ' + isValid)
   if (username === Config.ADMIN_KEY && isValid) {
-    const credentials = {id: 'test', name: username}
+    const credentials = {id: 'test', name: username, is_admin: true}
+    Logger.info('is a valid admin')
     return {isValid: true, credentials}
   } else {
     return {credentials: null, isValid: false}

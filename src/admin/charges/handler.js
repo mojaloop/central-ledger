@@ -3,6 +3,7 @@
 const Charges = require('../../domain/charge')
 const Errors = require('../../errors')
 const Sidecar = require('../../lib/sidecar')
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
 const validateRequest = (request) => {
   return Charges.getByName(request.payload.name).then(charge => {

@@ -3,36 +3,36 @@
 const SecurityService = require('../../domain/security')
 const Sidecar = require('../../lib/sidecar')
 
-const create = function (request, h) {
+const create = async function (request, h) {
   Sidecar.logRequest(request)
-  return SecurityService.createUser(request.payload)
+  return await SecurityService.createUser(request.payload)
 }
 
-const getAll = function (request, h) {
-  return SecurityService.getAllUsers()
+const getAll = async function (request, h) {
+  return await SecurityService.getAllUsers()
 }
 
-const getById = function (request, h) {
-  return SecurityService.getUserById(request.params.id)
+const getById = async function (request, h) {
+  return await SecurityService.getUserById(request.params.id)
 }
 
-const remove = function (request, h) {
+const remove = async function (request, h) {
   Sidecar.logRequest(request)
-  return SecurityService.deleteUser(request.params.id)
+  return await SecurityService.deleteUser(request.params.id)
 }
 
-const update = function (request, h) {
+const update = async function (request, h) {
   Sidecar.logRequest(request)
-  return SecurityService.updateUser(request.params.id, request.payload)
+  return await SecurityService.updateUser(request.params.id, request.payload)
 }
 
-const getRoles = function (request, h) {
-  return SecurityService.getUserRoles(request.params.id)
+const getRoles = async function (request, h) {
+  return await SecurityService.getUserRoles(request.params.id)
 }
 
-const updateRoles = function (request, h) {
+const updateRoles = async function (request, h) {
   Sidecar.logRequest(request)
-  return SecurityService.updateUserRoles(request.params.id, request.payload)
+  return await SecurityService.updateUserRoles(request.params.id, request.payload)
 }
 
 module.exports = {
