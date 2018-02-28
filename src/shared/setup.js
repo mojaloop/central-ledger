@@ -60,7 +60,7 @@ const createServer = (port, modules) => {
 // Migrator.migrate is called before connecting to the database to ensure all new tables are loaded properly.
 // Eventric.getContext is called to replay all events through projections (creating the read-model) before starting the server.
 const initialize = async function ({service, port, modules = [], loadEventric = false, runMigrations = false}) {
-  await migrate(runMigrations).catch(() => {})
+  await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)
   await startEventric(loadEventric)
