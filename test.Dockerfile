@@ -1,4 +1,12 @@
-FROM dwolla/alpine-node-make
+FROM mhart/alpine-node:8.9.4
+
+RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake \
+    && cd $(npm root -g)/npm \
+    && npm install -g node-gyp \
+    && npm install -g sodium@2.0.3 --unsafe-perm \
+    && npm install -g argon2@0.17.1 --unsafe-perm \
+    && apk del build-dependencies
+
 
 WORKDIR /opt/central-ledger
 COPY . /opt/central-ledger
