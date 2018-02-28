@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:8.9.5
+FROM mhart/alpine-node:8.9.4
 
 RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake \
     && cd $(npm root -g)/npm \

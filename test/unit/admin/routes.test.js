@@ -12,7 +12,7 @@ Test('admin routes', routesTest => {
         route: Sinon.spy()
       }
       const next = Sinon.spy()
-      Routes.register(server, {}, next)
+      Routes.plugin.register(server, {}, next)
 
       test.ok(server.route.called)
       test.end()
