@@ -5,9 +5,7 @@ module.exports = [
   {
     method: 'GET',
     path: '/health',
-    handler: function (request, h) {
-      return h.response({ status: 'OK' }).code(200)
-    },
+    handler: Handler.health,
     options: {
       tags: tags,
       description: 'Status of ledger',

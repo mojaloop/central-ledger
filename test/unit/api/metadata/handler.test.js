@@ -39,6 +39,25 @@ Test('metadata handler', (handlerTest) => {
     t.end()
   })
 
+  handlerTest.test('health should', (healthTest) => {
+    healthTest.test('return status ok', async function (assert) {
+      let reply = {
+        response: (response) => {
+          assert.equal(response.status, 'OK')
+          return {
+            code: (statusCode) => {
+              assert.equal(statusCode, 200)
+              assert.end()
+            }
+          }
+        }
+      }
+
+      Handler.health(createRequest(), reply)
+    })
+    healthTest.end()
+  })
+
   handlerTest.test('metadata should', function (metadataTest) {
     metadataTest.test('return 200 httpStatus', async function (t) {
       let reply = {

@@ -30,6 +30,14 @@ Test('token auth strategy', tokenTest => {
       test.end()
     })
 
+    validateTest.test('should yield error if token verification fails', async function (test) {
+      await JWT.verify.returns(Promise.resolve(null))
+      const response = await TokenAuth.validate({}, '', {})
+      test.equal(response.e.message, 'Invalid token')
+      test.equal(response.verified, false)
+      test.end()
+    })
+
     validateTest.test('should pass if token verification passes', async function (test) {
       const userId = Uuid()
       const user = { userId }

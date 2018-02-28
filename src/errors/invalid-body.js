@@ -3,7 +3,7 @@
 const Shared = require('@mojaloop/central-services-shared')
 
 class InvalidBodyError extends Shared.BaseError {
-  constructor (message = 'Invalid body') {
+  constructor (message) {
     super(Shared.ErrorCategory.BAD_REQUEST, message)
   }
 }

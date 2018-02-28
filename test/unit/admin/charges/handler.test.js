@@ -309,6 +309,37 @@ Test('charges handler', handlerTest => {
       }
     })
 
+    updateTest.test('reply with error if Charge services throws Record Exists Error', async function (test) {
+      const error = new Errors.RecordExistsError('No record currently exists with the name name')
+
+      const payload = {
+        name: 'name',
+        chargeType: 'fee',
+        rateType: 'flat',
+        rate: '1.00',
+        minimum: '1.00',
+        maximum: '100.00',
+        code: '001',
+        is_active: true,
+        payer: 'ledger',
+        payee: 'sender'
+      }
+
+      const request = {
+        payload: payload,
+        params: {name: 'name'}
+      }
+
+      Charge.getByName.withArgs(payload.name).returns(P.resolve(null))
+      Charge.update.withArgs(request.params.name, payload).returns(P.reject(error))
+      try {
+        await Handler.update(request, {})
+      } catch (e) {
+        test.deepEqual(e, error)
+        test.end()
+      }
+    })
+
     updateTest.test('reply with already exists error if a charge with the given name already exists', async function (test) {
       const charge = createCharge('charge')
       charge.payer = 'sender'

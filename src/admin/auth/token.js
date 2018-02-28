@@ -2,6 +2,7 @@
 
 const Util = require('../../lib/util')
 const JWT = require('../../domain/security/jwt')
+const Errors = require('../../errors')
 
 const reducePermissions = (roles) => {
   const flattened = []
@@ -24,6 +25,8 @@ const validate = async (request, token, h) => {
       const scope = reducePermissions(result.roles)
       const credentials = Util.merge(result.user, {scope: scope})
       return {isValid, credentials}
+    } else {
+      throw new Errors.UnauthorizedError('Invalid token')
     }
   } catch (e) {
     return {e, verified: false}

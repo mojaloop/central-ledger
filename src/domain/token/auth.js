@@ -13,11 +13,9 @@ const validateToken = (token, bearer) => {
   return !expired && Crypto.verifyHash(token.token, bearer)
 }
 
-const getAccount = (name, adminOnly = false) => {
+const getAccount = (name) => {
   if (Config.ADMIN_KEY && Config.ADMIN_KEY === name) {
     return P.resolve({is_admin: true, accountId: null})
-  } else if (adminOnly) {
-    return P.resolve({is_admin: false})
   } else {
     return AccountService.getByName(name)
   }

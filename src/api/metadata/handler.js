@@ -16,6 +16,10 @@ const extractUrls = (request) => {
   return urls
 }
 
+exports.health = function (request, h) {
+  return h.response({ status: 'OK' }).code(200)
+}
+
 exports.metadata = function (request, h) {
   return h.response({
     currency_code: null,

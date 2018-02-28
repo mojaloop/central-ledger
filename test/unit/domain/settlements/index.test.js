@@ -66,6 +66,12 @@ const settledFees = [{
   }
 }]
 
+const settledTransfersInverse = [{
+  amount: {currency_code: 'TZS', description: 'Bill', value: '1.00'},
+  destination: {account_number: '2345', routing_number: '6789'},
+  source: {account_number: '1234', routing_number: '5678'}
+}]
+
 const mockedCompletedSettlement = {
   transfers: settledTransfers,
   fees: settledFees
@@ -110,7 +116,21 @@ Test('Settlements Test', settlementTest => {
         generateFee(account2, account1, '5.00')
       ]
       const settledPosition = Settlements.performSettlement(transfers, fees)
-      test.deepEqual({ fees: [], transfers: [] }, settledPosition)
+      test.deepEqual({fees: [], transfers: []}, settledPosition)
+      test.end()
+    })
+
+    performSettlementTest.test('return flattened transfers and fees when amounts are inverse but initial is higher', test => {
+      let transfers = [
+        generateTransfer(account1, account2, '11.00'),
+        generateTransfer(account2, account1, '10.00')
+      ]
+      let fees = [
+        generateFee(account1, account2, '5.00'),
+        generateFee(account2, account1, '5.00')
+      ]
+      const settledPosition = Settlements.performSettlement(transfers, fees)
+      test.deepEqual({fees: [], transfers: settledTransfersInverse}, settledPosition)
       test.end()
     })
 
@@ -125,7 +145,7 @@ Test('Settlements Test', settlementTest => {
         generateFee(account2, account1, '5.00')
       ]
       const settledPosition = Settlements.performSettlement(transfers, fees)
-      test.deepEqual({ fees: [], transfers: [] }, settledPosition)
+      test.deepEqual({fees: [], transfers: []}, settledPosition)
       test.end()
     })
 

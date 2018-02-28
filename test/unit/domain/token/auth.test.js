@@ -87,6 +87,24 @@ Test('Token Auth', tokenTest => {
       await TokenAuth.validate(request, 'token', reply)
     })
 
+    validateTest.test('be invalid if token not found by account and is admin', async function (test) {
+      const name = 'admin'
+      const accountId = Uuid().toString()
+      const account = {accountId, is_admin: true}
+      AccountService.getByName.withArgs(name).returns(P.resolve(account))
+      TokenService.byAccount.withArgs(account).returns(P.resolve(null))
+      const request = createRequest(name)
+
+      const reply = {
+        response: (response) => {
+          test.notOk(response.credentials)
+          test.equal(response.isValid, false)
+          test.end()
+        }
+      }
+      await TokenAuth.validate(request, 'token', reply)
+    })
+
     validateTest.test('be invalid if no account tokens can be verified', async function (test) {
       const name = 'some-name'
       const token = 'token'
