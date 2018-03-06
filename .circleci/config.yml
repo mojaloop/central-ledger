@@ -355,6 +355,7 @@ jobs:
           name: setup environment vars for SNAPSHOT release
           command: |
             echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_SNAPSHOT' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_SNAPSHOT' >> $BASH_ENV
             echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_SNAPSHOT' >> $BASH_ENV
             echo 'export K8_NAMESPACE=$K8_NAMESPACE_SNAPSHOT' >> $BASH_ENV
             echo 'export K8_USER_NAME=$K8_USER_NAME_SNAPSHOT' >> $BASH_ENV
@@ -387,6 +388,7 @@ jobs:
           name: setup environment vars for POC release
           command: |
             echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_POC' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_POC' >> $BASH_ENV
             echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_POC' >> $BASH_ENV
             echo 'export K8_NAMESPACE=$K8_NAMESPACE_POC' >> $BASH_ENV
             echo 'export K8_USER_NAME=$K8_USER_NAME_POC' >> $BASH_ENV
@@ -419,6 +421,7 @@ jobs:
           name: setup environment vars for release
           command: |
             echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_PROD' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_PROD' >> $BASH_ENV
             echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_PROD' >> $BASH_ENV
             echo 'export K8_NAMESPACE=$K8_NAMESPACE_PROD' >> $BASH_ENV
             echo 'export K8_USER_NAME=$K8_USER_NAME_PROD' >> $BASH_ENV
