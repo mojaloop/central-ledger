@@ -3,7 +3,7 @@
 const migrationsDirectory = '../migrations'
 const Config = require('../src/lib/config')
 module.exports = {
-  client: 'pg',
+  client: 'mysql',
   connection: Config.DATABASE_URI,
   migrations: {
     directory: migrationsDirectory,
