@@ -677,7 +677,7 @@ workflows:
       - deploy-pocdb:
           context: org-global
           requires:
-            - build-poc
+            - build-pocdb
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-pocdb/
@@ -702,7 +702,7 @@ workflows:
       - deploy-base:
           context: org-global
           requires:
-            - build-poc
+            - build-base
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-base/
