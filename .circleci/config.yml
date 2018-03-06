@@ -610,6 +610,31 @@ workflows:
             branches:
               ignore: 
                 - /.*/
+      - build-pocdb:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            # - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-pocdb/
+            branches:
+              ignore: 
+                - /.*/
+      - deploy-pocdb:
+          context: org-global
+          requires:
+            - build-poc
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-pocdb/
+            branches:
+              ignore: 
+                - /.*/
       - build:
           context: org-global
           requires:
