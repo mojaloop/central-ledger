@@ -23,6 +23,7 @@ defaults_Dependencies: &defaults_Dependencies |
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
+    apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add \
@@ -116,9 +117,6 @@ jobs:
           name: Install general dependencies
           command: *defaults_Dependencies
       - checkout
-      - run:
-          name: Build dependencies
-          command: apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm

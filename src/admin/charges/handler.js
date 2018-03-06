@@ -19,11 +19,11 @@ const validateRequest = (request) => {
 
 const validateExistingRecord = (request) => {
   return Charges.getByName(request.payload.name).then(charge => {
-    if (!(request.params.name && request.payload.name && request.payload.name === request.params.name)) {
-      throw new Errors.ValidationError('Charge names need to be the values')
-    }
     if (!charge) {
       throw new Errors.RecordExistsError('No record currently exists with the name ' + request.payload.name)
+    }
+    if (!(request.params.name && request.payload.name && request.payload.name === request.params.name)) {
+      throw new Errors.ValidationError('Charge names need to be the values')
     }
     return request
   })

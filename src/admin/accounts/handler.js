@@ -4,7 +4,6 @@ const Account = require('../../domain/account')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlparser')
 const Sidecar = require('../../lib/sidecar')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
 const entityItem = ({name, createdDate, isDisabled}) => {
   const link = UrlParser.toAccountUri(name)
@@ -24,7 +23,6 @@ const handleExistingRecord = (entity) => {
   if (entity) {
     throw new Errors.RecordExistsError()
   }
-  Logger.info('entity not found')
   return entity
 }
 
@@ -32,7 +30,6 @@ const handleMissingRecord = (entity) => {
   if (!entity) {
     throw new Errors.NotFoundError('The requested resource could not be found.')
   }
-  Logger.info('entity found')
   return entity
 }
 

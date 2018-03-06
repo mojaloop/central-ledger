@@ -278,8 +278,49 @@ Test('charges handler', handlerTest => {
       test.end()
     })
 
-    updateTest.test('reply with error if Charge services throws validation Error', async function (test) {
+    updateTest.test('reply with error if Charge services throws Validation Error', async function (test) {
       const error = new Errors.ValidationError('Charge names need to be the values')
+
+      const charge = {
+        name: 'charge_b',
+        charge_type: 'fee',
+        rate_type: 'flat',
+        rate: '1.00',
+        minimum: '10',
+        maximum: '5',
+        code: '2',
+        is_active: false,
+        payer: 'ledger',
+        payee: 'sender'
+      }
+
+      const payload = {
+        name: 'charge_b',
+        chargeType: 'fee',
+        minimum: '10',
+        maximum: '5',
+        code: '2',
+        is_active: false
+      }
+
+      const request = {
+        payload: payload,
+        params: {name: 'charge_c'}
+      }
+
+      Charge.getByName.withArgs(request.payload.name).returns(P.resolve(null))
+      Charge.getByName.withArgs(charge.name).returns(P.resolve(charge))
+      Charge.update.withArgs(request.params.name, payload).returns(P.resolve(charge))
+      try {
+        await Handler.update(request, {})
+      } catch (e) {
+        test.deepEqual(e, error)
+        test.end()
+      }
+    })
+
+    updateTest.test('reply with error if Charge services throws Record Exists Error', async function (test) {
+      const error = new Errors.RecordExistsError('No record currently exists with the name charge')
 
       const payload = {
         name: 'charge',

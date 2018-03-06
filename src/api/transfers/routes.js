@@ -67,7 +67,6 @@ module.exports = [{
     auth: Auth.strategy(),
     description: 'Fulfill a transfer',
     payload: {
-      allow: 'application/json',
       failAction: 'error'
     },
     validate: {

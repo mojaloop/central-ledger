@@ -8,11 +8,9 @@ const apiTags = ['api']
 function createRequest (routes) {
   return {
     server: {
-      table: () => [
-        {
-          table: routes || []
-        }
-      ]
+      table: () => {
+        return routes || []
+      }
     }
   }
 }
@@ -70,7 +68,7 @@ Test('metadata handler', (handlerTest) => {
           }
         }
       }
-      Handler.metadata(createRequest(), reply)
+      await Handler.metadata(createRequest(), reply)
     })
 
     metadataTest.test('return default values', async function (t) {
@@ -103,7 +101,7 @@ Test('metadata handler', (handlerTest) => {
       let hostName = 'some-host-name'
       Config.HOSTNAME = hostName
       let request = createRequest([
-        { settings: { id: 'first_route', tags: apiTags }, path: '/first' }
+        {settings: {id: 'first_route', tags: apiTags}, path: '/first'}
       ])
 
       let reply = {
@@ -117,8 +115,8 @@ Test('metadata handler', (handlerTest) => {
 
     metadataTest.test('only return urls with id', t => {
       let request = createRequest([
-        { settings: { tags: apiTags }, path: '/' },
-        { settings: { id: 'expected', tags: apiTags }, path: '/expected' }
+        {settings: {tags: apiTags}, path: '/'},
+        {settings: {id: 'expected', tags: apiTags}, path: '/expected'}
       ])
 
       let reply = {
@@ -133,9 +131,9 @@ Test('metadata handler', (handlerTest) => {
 
     metadataTest.test('only return urls tagged with api', t => {
       let request = createRequest([
-        { settings: { id: 'nottagged' }, path: '/nottagged' },
-        { settings: { id: 'tagged', tags: apiTags }, path: '/tagged' },
-        { settings: { id: 'wrongtag', tags: ['notapi'] }, path: '/wrongtag' }
+        {settings: {id: 'nottagged'}, path: '/nottagged'},
+        {settings: {id: 'tagged', tags: apiTags}, path: '/tagged'},
+        {settings: {id: 'wrongtag', tags: ['notapi']}, path: '/wrongtag'}
       ])
 
       let reply = {
@@ -143,7 +141,7 @@ Test('metadata handler', (handlerTest) => {
           t.equal(Object.keys(response.urls).length, 2)
           t.equal(response.urls['tagged'], '/tagged')
           t.notOk(response.urls['nottagged'])
-          return { code: statusCode => { t.end() } }
+          return {code: statusCode => { t.end() }}
         }
       }
 
@@ -152,15 +150,15 @@ Test('metadata handler', (handlerTest) => {
 
     metadataTest.test('format url parameters with colons', t => {
       let request = createRequest([
-        { settings: { id: 'path', tags: apiTags }, path: '/somepath/{id}' },
-        { settings: { id: 'manyargs', tags: apiTags }, path: '/somepath/{id}/{path*}/{test2}/' }
+        {settings: {id: 'path', tags: apiTags}, path: '/somepath/{id}'},
+        {settings: {id: 'manyargs', tags: apiTags}, path: '/somepath/{id}/{path*}/{test2}/'}
       ])
 
       let reply = {
         response: (response) => {
           t.equal(response.urls['path'], '/somepath/:id')
           t.equal(response.urls['manyargs'], '/somepath/:id/:path*/:test2/')
-          return { code: statusCode => { t.end() } }
+          return {code: statusCode => { t.end() }}
         }
       }
 

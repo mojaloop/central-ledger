@@ -2,7 +2,6 @@
 
 const P = require('bluebird')
 const Config = require('./config')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
 const accountRegex = new RegExp(`${Config.HOSTNAME}/accounts/([A-Za-z0-9_]*)/?`, 'i')
 const transfersRegex = new RegExp(`${Config.HOSTNAME}/transfers/([a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12})`, 'i')
@@ -30,12 +29,6 @@ const accountNameFromTransfersRoute = (url) => {
 }
 
 const idFromTransferUri = (uri, callback) => {
-  Logger.info('transfersRegex')
-  Logger.info(transfersRegex)
-  Logger.info('Config HOSTNAME')
-  Logger.info(Config.HOSTNAME)
-  Logger.info('URI')
-  Logger.info(uri)
   const matches = uri.match(transfersRegex)
   const hasCallback = (typeof callback === 'function')
   if (matches) {

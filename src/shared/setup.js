@@ -52,7 +52,7 @@ const createServer = (port, modules) => {
     await Plugins.registerPlugins(server)
     await server.register(modules)
     await server.start()
-    Logger.info('Server running at: %s', server.info.uri)
+    Logger.info('Server running at: ', server.info.uri)
     return server
   })()
 }

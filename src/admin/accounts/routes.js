@@ -38,7 +38,8 @@ module.exports = [
       validate: {
         payload: {
           name: nameValidator,
-          password: passwordValidator
+          password: passwordValidator,
+          emailAddress: Joi.string().email().required()
         }
       }
     })
