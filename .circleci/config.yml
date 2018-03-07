@@ -212,7 +212,7 @@ jobs:
           name: Create dir for test results
           command: mkdir -p ./test/results
       - run: 
-          name: Execute unit tests
+          name: Execute integration tests
           command: npm -s run test:integration
       - store_artifacts:
           path: ./test/results
@@ -240,7 +240,7 @@ jobs:
           name: Create dir for test results
           command: mkdir -p ./test/results
       - run: 
-          name: Execute unit tests
+          name: Execute functional tests
           command: npm -s run test:functional
       - store_artifacts:
           path: ./test/results
