@@ -130,6 +130,9 @@ jobs:
           name: Update NPM install
           command: npm install
       - run:
+          name: Install tape and tap-xunit
+          command: npm install tape tap-xunit
+      - run:
           name: Delete build dependencies
           command: apk del build-dependencies
       # - run:

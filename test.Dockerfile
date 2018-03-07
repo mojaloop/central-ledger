@@ -13,8 +13,9 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autocon
     && npm install -g node-gyp \
     && apk --no-cache add git
 
-RUN npm install -g tape tap-xunit \
-    && npm install
+RUN npm install
+
+RUN npm install tape tap-xunit
 
 RUN apk del build-dependencies
 
