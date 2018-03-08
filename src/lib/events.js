@@ -44,9 +44,10 @@ module.exports = {
       resource: transfer
     })
   },
-  emitPublishMessage: (topic, msg) => {
+  emitPublishMessage: (topic, key, msg) => {
     publish(publishMessage, {
       topic: topic,
+      key: key,
       msg: msg
     })
   },

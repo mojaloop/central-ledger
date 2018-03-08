@@ -2,18 +2,25 @@
 const Publish = require('./publish')
 const Consume = require('./consume')
 
-
-const publish = (?) => {
-    //TBD by laz
-    return ??
+const getPrepareTxTopicName = (uri) => {
+    return "topic-dfsp1-prepare-tx"
 }
 
-const consume = (?) => {
-    //TBD 
-    return ??
+const getPrepareNotificationTopicName = (uri) => {
+    return "topic-dfsp1-prepare-notification"
 }
+
+// const publish = (?) => {
+//     //TBD by laz
+//     return ??
+// }
+
+// const consume = (?) => {
+//     //TBD 
+//     return ??
+// }
 
 module.exports = {
-    publish,
-    consume
+    getPrepareTxTopicName,
+    getPrepareNotificationTopicName
 }
