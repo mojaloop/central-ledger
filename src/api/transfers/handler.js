@@ -6,6 +6,7 @@ const TransferRejectionType = require('../../domain/transfer/rejection-type')
 const TransferTranslator = require('../../domain/transfer/translator')
 const NotFoundError = require('../../errors').NotFoundError
 const Sidecar = require('../../lib/sidecar')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const buildGetTransferResponse = (record) => {
   if (!record) {
@@ -15,6 +16,7 @@ const buildGetTransferResponse = (record) => {
 }
 
 exports.prepareTransfer = function (request, reply) {
+  Logger.info('prepareTransfer::start(%s)', JSON.stringify(request.payload));
   Sidecar.logRequest(request)
   return Validator.validate(request.payload, request.params.id)
     .then(TransferService.prepare)

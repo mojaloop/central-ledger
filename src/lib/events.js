@@ -6,7 +6,7 @@ const ledgerEmitter = new Events()
 const transferRejected = 'transferRejected'
 const transferPrepared = 'transferPrepared'
 const transferExecuted = 'transferExecuted'
-const publishMessage = "publish.message"
+const publishMessage = 'publish.message'
 const messageSend = 'message.send'
 const emailSettlementCsvSend = 'emailSettlementCsv'
 

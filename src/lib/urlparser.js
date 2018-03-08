@@ -6,6 +6,17 @@ const Config = require('./config')
 const accountRegex = new RegExp(`${Config.HOSTNAME}/accounts/([A-Za-z0-9_]*)/?`, 'i')
 const transfersRegex = new RegExp(`${Config.HOSTNAME}/transfers/([a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12})`, 'i')
 const accountsTransfersRouteRegex = new RegExp(/\/accounts\/([A-Za-z0-9_]*)\/transfers/, 'i')
+const transferUUIDRegex = new RegExp(`([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})`, 'i')
+
+const uuidFromTransferUri = (uri, callback) => {
+  const matches = uri.match(transferUUIDRegex)
+  const hasCallback = (typeof callback === 'function')
+  if (matches) {
+    return (hasCallback) ? callback(null, matches[1]) : matches[1]
+  } else {
+    return (hasCallback) ? callback('no match', null) : null
+  }
+}
 
 const nameFromAccountUri = (uri, callback) => {
   const matches = uri.match(accountRegex)
@@ -49,6 +60,7 @@ const toAccountUri = (name) => {
 }
 
 module.exports = {
+  uuidFromTransferUri,
   accountNameFromTransfersRoute,
   nameFromAccountUri,
   idFromTransferUri,

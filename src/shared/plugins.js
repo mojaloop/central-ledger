@@ -29,19 +29,19 @@ const registerPlugins = (server) => {
         interval: 1000
       },
       reporters: {
-        winston: [{
-          module: 'good-winston',
-          args: [
-            Logger,
-            {
-              error_level: 'error',
-              ops_level: 'debug',
-              request_level: 'debug',
-              response_level: 'info',
-              other_level: 'info'
-            }
-          ]
-        }]
+        // winston: [{
+        //   module: 'good-winston',
+        //   args: [
+        //     Logger,
+        //     {
+        //       error_level: 'error',
+        //       ops_level: 'debug',
+        //       request_level: 'debug',
+        //       response_level: 'info',
+        //       other_level: 'info'
+        //     }
+        //   ]
+        // }]
       }
     }
   })
