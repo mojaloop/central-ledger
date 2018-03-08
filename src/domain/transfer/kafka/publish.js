@@ -25,14 +25,14 @@ const publishHandler = (event) => {
             producer.send([
                 { topic: topic, partitions: p, messages: [keyedMessage], attributes: a }
             ], function (err, result) {
-                console.log(err || result);
+                Logger.info("Publish topic(%s) result: %s", topic, (err || result));
                 process.exit();
             })
             Logger.info("Sent something keyedMessage='%s'", keyedMessage);
         });
 
         producer.on('error', function (err) {
-            Logger.info('error: %s', err);
+            Logger.error('error: %s', err);
         });
     }
 }
