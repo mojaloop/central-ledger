@@ -6,6 +6,7 @@ const ledgerEmitter = new Events()
 const transferRejected = 'transferRejected'
 const transferPrepared = 'transferPrepared'
 const transferExecuted = 'transferExecuted'
+const publishMessage = "publish.message"
 const messageSend = 'message.send'
 const emailSettlementCsvSend = 'emailSettlementCsv'
 
@@ -35,9 +36,18 @@ module.exports = {
   onEmailSettlementCsv: (callback) => {
     listen(emailSettlementCsvSend, callback)
   },
+  onPublishMessage: (callback) => {
+    listen(publishMessage, callback)
+  },
   emitTransferPrepared: (transfer) => {
     publish(transferPrepared, {
       resource: transfer
+    })
+  },
+  emitPublishMessage: (topic, msg) => {
+    publish(publishMessage, {
+      topic: topic,
+      msg: msg
     })
   },
   emitTransferExecuted: (resource, relatedResources) => {

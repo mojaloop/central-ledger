@@ -40,11 +40,12 @@ const getFulfillment = (id) => {
 
 const prepare = (payload) => {
   const transfer = Translator.fromPayload(payload)
-
   return Commands.prepare(transfer)
     .then(result => {
       const t = Translator.toTransfer(result.transfer)
-      Events.emitTransferPrepared(t)
+      // Events.emitTransferPrepared(t) //<-- this is to fire off event for Notifications <-- this needs to moved to the consumer of the notifications
+      // Events.emitTransferPreparedPublishEvent(t) //<-- this is to fire off event for Notifications
+      Events.emitPublishMessage(topic, t)
       return { existing: result.existing, transfer: t }
     })
 }

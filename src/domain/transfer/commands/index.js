@@ -2,8 +2,13 @@
 
 const Eventric = require('../../../eventric')
 
+// const prepare = (transfer) => {
+//   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer))
+// }
+
 const prepare = (transfer) => {
-  return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer))
+  //for future to check if prepare already exists then return { existing: true, transfer: existing }
+  return { existing: false, transfer }
 }
 
 const fulfill = (fulfillment) => {
