@@ -3,6 +3,7 @@
 const Eventric = require('../../../eventric')
 const Translator = require('../translator')
 const Events = require('../../../lib/events')
+const Kafka = require('../kafka')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Errors = require('../../errors')
 
@@ -29,9 +30,9 @@ const prepareExecute = (transfer) => {
     return new Promise(function (fulfill, reject) {
       if (result) {
         Logger.info('prepareExecute::result= %s', JSON.stringify(result))
-        // const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
-        // const topic = getPrepareNotificationTopicName(debits[0].account)
-        // Events.emitPublishMessage(topic, t)
+        const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
+        const topic = Kafka.getPrepareNotificationTopicName(debits[0].account)
+        Events.emitPublishMessage(topic, id, transfer)
       }
       fulfill(result)
     })

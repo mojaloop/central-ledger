@@ -1,10 +1,10 @@
 // STUFF TO GO IN HERE FOR RE-USABLE PRODUCER CODE
 
 const Events = require('../../../lib/events')
-const kafka = require('kafka-node')
-const Producer = kafka.Producer
-const KeyedMessage = kafka.KeyedMessage
-const Client = kafka.Client
+const kafkanode = require('kafka-node')
+const Producer = kafkanode.Producer
+const KeyedMessage = kafkanode.KeyedMessage
+const Client = kafkanode.Client
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 // let client = new Client('localhost:2181')

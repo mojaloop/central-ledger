@@ -1,12 +1,14 @@
 
 // STUFF TO GO IN HERE FOR RE-USABLE CONSUMING
 const Logger = require('@mojaloop/central-services-shared').Logger
-const kafka = require('kafka-node')
-const Consumer = kafka.Consumer
+const kafkanode = require('kafka-node')
+const Consumer = kafkanode.Consumer
+const Client = kafkanode.Client
+const kafka = require('./index')
 const Commands = require('../commands')
 const Translator = require('../translator')
 
-let client
+// let client
 
 const options = {
   groupId: 'kafka-node-group', // consumer group id, default `kafka-node-group`
@@ -30,16 +32,16 @@ const options = {
 const consumePrepare = () => {
   // client = new kafka.Client("a02bcb8d21d2d11e8ada0027eebfb29a-160662342.eu-west-2.elb.amazonaws.com:2181");
   Logger.info('consumePrepare::start')
-  if (!client) {
-    client = new kafka.Client('localhost:2181')
-  }
+  const client = new Client('localhost:2181')
+  // if (!client) {
+  //   client = new kafka.Client('localhost:2181')
+  // }
   // var payload = { topic: 'topic-dfsp1-prepare-tx', partition: 0, offset: 0 }
-  var payload = { topic: 'topic-dfsp1-prepare-tx', partition: 0 }
+  var res = kafka.getListOfTopics('')
+  var topicList = [ { topic: 'topic-dfsp1-prepare-tx', partition: 0 } ]
   var consumer = new Consumer(
       client,
-    [
-      payload
-    ],
+      topicList,
       options
   )
 
@@ -108,21 +110,25 @@ const consumePrepare = () => {
 
 const consumeNotification = () => {
   Logger.info('consumeNotification::start')
-  if (!client) {
-    client = new kafka.Client('localhost:2181')
-  }
+  const client = new Client('localhost:2181')
+  // if (!client) {
+  //   client = new kafka.Client('localhost:2181')
+  // }
     // client = new kafka.Client("a02bcb8d21d2d11e8ada0027eebfb29a-160662342.eu-west-2.elb.amazonaws.com:2181");
+  var payload = [{ topic: 'topic-dfsp1-prepare-notification', partition: 0 }]
   var consumer = new Consumer(
-        client,
-    [
-            { topic: 'topic-dfsp1-prepare-notification', partition: 0, offset: 0 }
-    ],
-        options
-    )
+    client,
+    payload,
+    options
+  )
 
   consumer.on('message', function (message) {
-    Logger.info('prepare-notification consumed: %s', message)
-        // need to call something in the commands/index.js
+    Logger.info('prepare-notification consumed: %s', JSON.stringify(message))
+    // need to call something in the commands/index.js
+    // consumer.commit(
+    //   function (err, result) {
+    //     Logger.info('Committing index result: %s', (JSON.stringify(err) || JSON.stringify(result)))
+    //   })
   })
 
   consumer.on('error', function (err) {
@@ -132,6 +138,7 @@ const consumeNotification = () => {
 }
 
 exports.register = (server, options, next) => {
+  // client = new kafka.Client('localhost:2181')
   consumePrepare()
   consumeNotification()
   next()
