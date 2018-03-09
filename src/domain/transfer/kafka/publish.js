@@ -48,6 +48,10 @@ const publishHandler = (event) => {
     producer.on('error', function (err) {
       Logger.error('error: %s', err)
     })
+
+    // client.close((result, err) => {
+    //   Logger.error(' %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
+    // })
   }
 }
 
