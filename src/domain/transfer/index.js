@@ -47,7 +47,7 @@ const prepare = (payload) => {
   // const transfer = payload
   return Commands.prepare(transfer)
     .then(result => {
-      Logger.info('prepare::start.Commands.prepare.result(%s)', JSON.stringify(result));
+      Logger.info('prepare::start.Commands.prepare.result(%s)', JSON.stringify(result))
       const { id, ledger, debits, credits, execution_condition, expires_at } = result.transfer
       const t = Translator.toTransfer(result.transfer)
       Logger.info('prepare::start.Commands.prepare.result.translate(%s)', t);
