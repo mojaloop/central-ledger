@@ -80,6 +80,7 @@
     "kafka-node": "^2.4.0",
     "lodash": "4.17.4",
     "moment": "2.18.1",
+    "mustache": "^2.3.0",
     "nodemailer": "^4.4.0",
     "rc": "1.2.1",
     "sodium": "1.2.3",

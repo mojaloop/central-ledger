@@ -66,7 +66,6 @@ const fromTransferReadModel = (t) => fromTransferAggregate({
 })
 
 const toTransfer = (t) => {
-  Logger.info('toTransfer(%s)', t);
   if (t.id) {
     return fromTransferAggregate(t)
   } else if (t.transferUuid) {

@@ -31,7 +31,7 @@ const prepareExecute = (transfer) => {
       if (result) {
         Logger.info('prepareExecute::result= %s', JSON.stringify(result))
         const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
-        const topic = Kafka.getPrepareNotificationTopicName(debits[0].account)
+        const topic = Kafka.getPrepareNotificationTopicName(transfer)
         Events.emitPublishMessage(topic, id, transfer)
       }
       fulfill(result)

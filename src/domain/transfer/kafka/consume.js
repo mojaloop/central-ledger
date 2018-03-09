@@ -1,7 +1,7 @@
 
 // STUFF TO GO IN HERE FOR RE-USABLE CONSUMING
 const Logger = require('@mojaloop/central-services-shared').Logger
-
+const Config = require('../../../lib/config')
 const kafkaLogging = require('kafka-node/logging')
 const getLoggerProvider = {
   debug: console.log.bind(Logger),
@@ -14,30 +14,32 @@ const kafkanode = require('kafka-node')
 const Consumer = kafkanode.Consumer
 const Client = kafkanode.Client
 
-const kafka = require('./index')
+// const kafka = require('./index')
 const Commands = require('../commands')
 const Translator = require('../translator')
 
 // let client
 
-const options = {
-  groupId: 'kafka-node-group', // consumer group id, default `kafka-node-group`
-    // Auto commit config
-  // autoCommit: true,
-  autoCommit: false,
-  autoCommitIntervalMs: 100,
-    // The max wait time is the maximum amount of time in milliseconds to block waiting if insufficient data is available at the time the request is issued, default 100ms
-  fetchMaxWaitMs: 100,
-    // This is the minimum number of bytes of messages that must be available to give a response, default 1 byte
-  fetchMinBytes: 1,
-    // The maximum bytes to include in the message set for this partition. This helps bound the size of the response.
-  fetchMaxBytes: 1024 * 1024,
-    // If set true, consumer will fetch message from the given offset in the payloads
-  fromOffset: false,
-    // If set to 'buffer', values will be returned as raw buffer objects.
-  encoding: 'utf8',
-  keyEncoding: 'utf8'
-}
+// const options = {
+//   groupId: 'kafka-node-group', // consumer group id, default `kafka-node-group`
+//     // Auto commit config
+//   // autoCommit: true,
+//   autoCommit: false,
+//   autoCommitIntervalMs: 100,
+//     // The max wait time is the maximum amount of time in milliseconds to block waiting if insufficient data is available at the time the request is issued, default 100ms
+//   fetchMaxWaitMs: 100,
+//     // This is the minimum number of bytes of messages that must be available to give a response, default 1 byte
+//   fetchMinBytes: 1,
+//     // The maximum bytes to include in the message set for this partition. This helps bound the size of the response.
+//   fetchMaxBytes: 1024 * 1024,
+//     // If set true, consumer will fetch message from the given offset in the payloads
+//   fromOffset: false,
+//     // If set to 'buffer', values will be returned as raw buffer objects.
+//   encoding: 'utf8',
+//   keyEncoding: 'utf8'
+// }
+
+const options = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
 
 const consumePrepare = () => {
   // client = new kafka.Client("a02bcb8d21d2d11e8ada0027eebfb29a-160662342.eu-west-2.elb.amazonaws.com:2181");
@@ -57,19 +59,19 @@ const consumePrepare = () => {
   // Logger.info('list of topics: %s', res)
   var topicList = [ { topic: 'topic-dfsp1-prepare-tx', partition: 0 } ]
 
-  const client = new Client('localhost:2181')
+  const client = new Client(Config.TOPICS_KAFKA_HOSTS)
 
-  var temp = {}
-  client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
-    if (error) {
-      console.log(error.stack)
-      return
-    }
-    temp = children
-    console.log('Children are: %j.', children)
-    // return children
-  })
-  console.log('temp are: %j.', temp)
+  // var temp = {}
+  // client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
+  //   if (error) {
+  //     console.log(error.stack)
+  //     return
+  //   }
+  //   temp = children
+  //   console.log('Children are: %j.', children)
+  //   // return children
+  // })
+  // console.log('temp are: %j.', temp)
 
   var consumer = new Consumer(
       client,
@@ -146,7 +148,7 @@ const consumeNotification = () => {
   //   client = new kafka.Client('localhost:2181')
   // }
     // client = new kafka.Client("a02bcb8d21d2d11e8ada0027eebfb29a-160662342.eu-west-2.elb.amazonaws.com:2181");
-  const client = new Client('localhost:2181')
+  const client = new Client(Config.TOPICS_KAFKA_HOSTS)
   var payload = [{ topic: 'topic-dfsp1-prepare-notification', partition: 0 }]
   var consumer = new Consumer(
     client,

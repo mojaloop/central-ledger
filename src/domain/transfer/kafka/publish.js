@@ -1,5 +1,5 @@
 // STUFF TO GO IN HERE FOR RE-USABLE PRODUCER CODE
-
+const Config = require('../../../lib/config')
 const Events = require('../../../lib/events')
 const kafkanode = require('kafka-node')
 const Producer = kafkanode.Producer
@@ -10,23 +10,26 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // let client = new Client('localhost:2181')
 // let client
 
-const options = {
-  // Configuration for when to consider a message as acknowledged, default 1
-  requireAcks: -1,
-    // The amount of time in milliseconds to wait for all acks before considered, default 100ms
-  ackTimeoutMs: 100,
-  // Partitioner type (default = 0, random = 1, cyclic = 2, keyed = 3, custom = 4), default 0
-  partitionerType: 2
-}
+// const options = {
+//   // Configuration for when to consider a message as acknowledged, default 1
+//   requireAcks: -1,
+//     // The amount of time in milliseconds to wait for all acks before considered, default 100ms
+//   ackTimeoutMs: 100,
+//   // Partitioner type (default = 0, random = 1, cyclic = 2, keyed = 3, custom = 4), default 0
+//   partitionerType: 2
+// }
+
+const options = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+const attributes = Config.TOPICS_KAFKA_PRODUCER_ATTRIBUTES
 
 const publishHandler = (event) => {
   return (eventMessage) => {
     const { topic, key, msg } = eventMessage
     Logger.info('publishHandler::start(%s, %s, %s)', topic, key, msg)
     // var topic = topic
-    var p = 0
-    var a = 0
-    const client = new Client('localhost:2181')
+    var partition = 0
+    // var attributes = 0
+    const client = new Client(Config.TOPICS_KAFKA_HOSTS)
     // if (!client) {
     //   client = new Client('localhost:2181')
     // }
@@ -37,7 +40,7 @@ const publishHandler = (event) => {
       var keyedMessage = new KeyedMessage(key, message)
 
       producer.send([
-                { topic: topic, partitions: p, messages: [keyedMessage], attributes: a }
+                { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
       ], function (err, result) {
         Logger.info('Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
         // process.exit()

@@ -11,7 +11,7 @@
     "SCALE": 2
   },
   "SIDECAR": {
-    "DISABLED": false,
+    "DISABLED": "true",
     "HOST": "localhost",
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,
@@ -19,5 +19,48 @@
   },
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",
-  "EMAIL_SMTP": "smtp.gmail.com"
+  "EMAIL_SMTP": "smtp.gmail.com",
+  "TOPICS":{
+    "KAFKA": {
+      "HOSTS": "localhost:2181",
+      "PRODUCER": {
+        "OPTIONS": {
+          "requireAcks": -1,
+          "ackTimeoutMs": 100,
+          "partitionerType": 2
+        },
+        "ATTRIBUTES":{
+          "compressionType": 0
+        }
+      },
+      "CONSUMER": {
+        "OPTIONS": {
+          "groupId": "kafka-node-group",
+          "autoCommit": false,
+          "autoCommitIntervalMs": 100,
+          "fetchMaxWaitMs": 100,
+          "fetchMinBytes": 1,
+          "fetchMaxBytes": 1048576,
+          "fromOffset": false,
+          "encoding": "utf8",
+          "keyEncoding": "utf8"
+        }
+
+      }
+    },
+    "PREPARE": {
+      "TX":{
+        "TEMPLATE": "topic-{{dfspName}}-prepare-tx",
+        "REGEX": "topic-(.*)-prepare-tx"
+      },
+      "NOTIFICATION":{
+        "TEMPLATE": "topic-{{dfspName}}-prepare-notification",
+        "REGEX": "topic-(.*)-prepare-notification"
+      },
+      "POSITION":{
+        "TEMPLATE": "topic-{{dfspName}}-prepare-position",
+        "REGEX": "topic-(.*)-prepare-position"
+      }
+    }
+  }
 }
