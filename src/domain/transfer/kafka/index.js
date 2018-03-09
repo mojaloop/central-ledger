@@ -15,8 +15,9 @@ const getPrepareTxTopicName = (transfer) => {
   return 'topic-' + dfspName + '-prepare-tx'
 }
 
-const getPrepareNotificationTopicName = (uri) => {
-  return 'topic-dfsp1-prepare-notification'
+const getPrepareNotificationTopicName = (transfer) => {
+  const dfspName = getDfspName(transfer.debits[0].account)
+  return 'topic-' + dfspName + '-prepare-notification'
 }
 
 const getListOfTopics = (regex) => {
