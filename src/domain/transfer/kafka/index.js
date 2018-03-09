@@ -1,4 +1,3 @@
-
 // const Publish = require('./publish')
 // const Consume = require('./consume')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -36,15 +35,20 @@ const jp = require('jsonpath')
 //   }
 // }
 
-const getPrepareTxTopicName = (uri) => {
-  return 'topic-dfsp1-prepare-tx'
+const getDfspName = (accountUri) => {
+  const index = accountUri.indexOf('accounts/')
+  return accountUri.substr(index + 9)
 }
 
-const getPrepareNotificationTopicName = (uri) => {
-  return 'topic-dfsp1-prepare-notification'
+const getPrepareTxTopicName = (transfer) => {
+  const dfspName = getDfspName(transfer.debits[0].account)
+  return 'topic-' + dfspName + '-prepare-tx'
 }
 
-// globalListOfResults = {}
+const getPrepareNotificationTopicName = (transfer) => {
+  const dfspName = getDfspName(transfer.debits[0].account)
+  return 'topic-' + dfspName + '-prepare-notification'
+}
 
 // const getListOfTopics = (regex) => {
 //   const client = new Client('localhost:2181')
