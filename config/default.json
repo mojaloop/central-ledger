@@ -35,7 +35,7 @@
       },
       "CONSUMER": {
         "OPTIONS": {
-          "groupId": "kafka-node-group",
+          "groupId": "kafka-mojaloop-group",
           "autoCommit": false,
           "autoCommitIntervalMs": 100,
           "fetchMaxWaitMs": 100,

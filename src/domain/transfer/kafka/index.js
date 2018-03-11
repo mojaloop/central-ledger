@@ -1,67 +1,16 @@
+'use strict'
+
 // const Publish = require('./publish')
 // const Consume = require('./consume')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
-// const kafkanode = require('kafka-node')
-// const Client = kafkanode.Client
-const _ = require('lodash')
+const kafkanode = require('kafka-node')
+const Client = kafkanode.Client
+// const _ = require('lodash')
 // const jp = require('jsonpath')
 const UrlParser = require('../../../lib/urlparser')
 // const format = require('string-template')
 const Mustache = require('mustache')
-
-// const topicRegexEnum = {
-//   topicPrepareRegex: {
-//     name: 'topicPrepare',
-//     regex: new RegExp(/topic-(.*)-prepare-tx/, 'i')
-//   },
-//   topicNotificationRegex: {
-//     name: 'topicNotification',
-//     regex: new RegExp(/topic-(.*)-prepare-notification/, 'i')
-//   }
-// }
-//
-// const filterTopicsForPrepareTx = (topic) => {
-//   const matches = topic.match(topicRegexEnum.topicPrepareRegex.regex)
-//   if (matches) {
-//     return true
-//   } else {
-//     return false
-//   }
-// }
-//
-// const filterTopicsForPrepareNotification = (topic) => {
-//   const matches = topic.match(topicRegexEnum.topicNotificationRegex.regex)
-//   if (matches) {
-//     return true
-//   } else {
-//     return false
-//   }
-// }
-
-// const template = {
-//   prepare: {
-//     tx: 'topic-{0}-prepare-tx',
-//     notification: 'topic-{0}-prepare-notification',
-//     position: 'topic-{0}-prepare-position'
-//   }
-// }
-
-// function template(strings, ...keys) {
-//   return (function(...values) {
-//     var dict = values[values.length - 1] || {};
-//     var result = [strings[0]];
-//     keys.forEach(function(key, i) {
-//       var value = Number.isInteger(key) ? values[key] : dict[key];
-//       result.push(value, strings[i + 1]);
-//     });
-//     return result.join('');
-//   });
-// }
-
-// var t1Closure = template`${0}${1}${0}!`;
-// t1Closure('Y', 'A');  // "YAY!"
-// var test = (name) => {return `Hello ${you}! You're looking ${adjective} today!`}
 
 const topicTemplate = {
   prepare: {
@@ -86,6 +35,32 @@ const getPrepareTxTopicName = (transfer) => {
 const getPrepareNotificationTopicName = (transfer) => {
   const dfspName = getDfspName(transfer.debits[0].account)
   return topicTemplate.prepare.notification(dfspName)
+}
+
+const getListOfTopics = (regex) => {
+  return new Promise((resolve, reject) => {
+    const client = new Client(Config.TOPICS_KAFKA_HOSTS)
+    client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
+      if (error) {
+        console.log(error.stack)
+        return reject(error)
+      }
+      if (!regex) {
+        return children
+      }
+      // console.log('Children are: %j.', children)
+      var filteredChildren = children.filter((topic) => {
+        const filterRegex = new RegExp(regex, 'i')
+        const matches = topic.match(filterRegex)
+        if (matches) {
+          return matches[1]
+        } else {
+          return null
+        }
+      })
+      return resolve(filteredChildren)
+    })
+  })
 }
 
 // const getListOfTopics = (regex) => {
@@ -122,21 +97,10 @@ const getPrepareNotificationTopicName = (transfer) => {
 //   // })
 // }
 
-// const publish = (?) => {
-//     //TBD by laz
-//     return ??
-// }
-
-// const consume = (?) => {
-//     //TBD
-//     return ??
-// }
-
 module.exports = {
   getPrepareTxTopicName,
-  getPrepareNotificationTopicName
-  // getPrepareNotificationTopicName,
-  // getListOfTopics,
+  getPrepareNotificationTopicName,
+  getListOfTopics
   // topicRegexEnum,
   // globalListOfResults
 }

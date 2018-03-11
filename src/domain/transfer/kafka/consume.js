@@ -1,184 +1,143 @@
 
+'use strict'
+
 // STUFF TO GO IN HERE FOR RE-USABLE CONSUMING
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
-const kafkaLogging = require('kafka-node/logging')
-const getLoggerProvider = {
-  debug: console.log.bind(Logger),
-  info: console.log.bind(Logger),
-  warn: console.log.bind(Logger),
-  error: console.log.bind(Logger)
-}
-kafkaLogging.setLoggerProvider(getLoggerProvider)
+// const kafkaLogging = require('kafka-node/logging')
+// const getLoggerProvider = {
+//   debug: console.log.bind(Logger),
+//   info: console.log.bind(Logger),
+//   warn: console.log.bind(Logger),
+//   error: console.log.bind(Logger)
+// }
+// kafkaLogging.setLoggerProvider(getLoggerProvider)
 const kafkanode = require('kafka-node')
 const Consumer = kafkanode.Consumer
 const Client = kafkanode.Client
-
-// const kafka = require('./index')
+const kafka = require('./index')
 const Commands = require('../commands')
-const Translator = require('../translator')
 
-// let client
+// const options = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
 
-// const options = {
-//   groupId: 'kafka-node-group', // consumer group id, default `kafka-node-group`
-//     // Auto commit config
-//   // autoCommit: true,
-//   autoCommit: false,
-//   autoCommitIntervalMs: 100,
-//     // The max wait time is the maximum amount of time in milliseconds to block waiting if insufficient data is available at the time the request is issued, default 100ms
-//   fetchMaxWaitMs: 100,
-//     // This is the minimum number of bytes of messages that must be available to give a response, default 1 byte
-//   fetchMinBytes: 1,
-//     // The maximum bytes to include in the message set for this partition. This helps bound the size of the response.
-//   fetchMaxBytes: 1024 * 1024,
-//     // If set true, consumer will fetch message from the given offset in the payloads
-//   fromOffset: false,
-//     // If set to 'buffer', values will be returned as raw buffer objects.
-//   encoding: 'utf8',
-//   keyEncoding: 'utf8'
-// }
+// var consumerList = {}
 
-const options = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+// var CronJob = require('cron').CronJob
 
-const consumePrepare = () => {
-  // client = new kafka.Client("a02bcb8d21d2d11e8ada0027eebfb29a-160662342.eu-west-2.elb.amazonaws.com:2181");
-  Logger.info('consumePrepare::start')
+// const reLoadConsumersJob = new CronJob('*/10 * * * * *', function () {
+//   console.log('You will see this message every 10 second')
+//   // consumerList.forEach(consumer =>
+//   if ('prepare' in consumerList) {
+//     var consumer = consumerList['prepare']
+//     // Logger.info(`consumer = ${JSON.stringify(item)}`)
+//     console.log(`conumer topicList = ${JSON.stringify(consumer.topicList)}`)
+//     console.log(`conumer status = ${consumer.status}`)
+//     // consumer.client.close()
+//     // kafka.getListOfTopics(Config.TOPICS_PREPARE_TX_REGEX).then(listOfPreparedTopics => {
+//     //   var topicList = listOfPreparedTopics.map(item => {
+//     //     return {
+//     //       topic: item,
+//     //       partition: 0
+//     //     }
+//     //   })
+//       // consumer.addTopics(topicList, function (err, added) {
+//       //   if (err) {
+//       //     Logger.error(`${err}`)
+//       //   } else {
+//       //     Logger.info(`Topics added ${added}`)
+//       //   }
+//       // },
+//       //   true
+//       // )
+//     // })
+//     // })
+//   }
+// }, null, false, 'America/Los_Angeles')
 
-  // const client = new Client('localhost:2181')
-  // if (!client) {
-  //   client = new kafka.Client('localhost:2181')
-  // }
-  // var payload = { topic: 'topic-dfsp1-prepare-tx', partition: 0, offset: 0 }
-  // kafka.getListOfTopics(kafka.topicRegexEnum.topicPrepareRegex)
-  // var temp =  kafka.globalListOfResults[kafka.topicRegexEnum.topicPrepareRegex.name]
-  // Logger.info('list of topics: %s', temp)
-  // kafka.getListOfTopics(kafka.topicRegexEnum.topicPrepareRegex).then(result => {
-  //   Logger.info('list of topics: %s', result)
-  // })
-  // Logger.info('list of topics: %s', res)
-  var topicList = [ { topic: 'topic-dfsp1-prepare-tx', partition: 0 } ]
+const kafkaConsumer = (clientId, funcProcessMessage, topicRegexFilter, options) => {
+  Logger.info(`kafkaConsumer:: Creating Kafka Consumer clientId:'${clientId}', funcProcessMessage:'${funcProcessMessage.name || 'anonymousFunc'}', topicRegexFilter:'${topicRegexFilter}'`)
 
-  const client = new Client(Config.TOPICS_KAFKA_HOSTS)
+  kafka.getListOfTopics(topicRegexFilter).then(listOfPreparedTopics => {
+    // Logger.info(`List of Topics for for Prepare= ${listOfPreparedTopics}`)
 
-  // var temp = {}
-  // client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
-  //   if (error) {
-  //     console.log(error.stack)
-  //     return
-  //   }
-  //   temp = children
-  //   console.log('Children are: %j.', children)
-  //   // return children
-  // })
-  // console.log('temp are: %j.', temp)
+    var topicList = listOfPreparedTopics.map(topic => {
+      return {
+        topic: topic,
+        partition: 0
+      }
+    })
 
-  var consumer = new Consumer(
+    const client = new Client(Config.TOPICS_KAFKA_HOSTS, 'clientId')
+
+    Logger.info(`kafkaConsumer:: Client ${clientId} ready for Consumption for ${JSON.stringify(topicList)}`)
+
+    var consumer = new Consumer(
       client,
       topicList,
       options
-  )
-  consumer.on('message', (message) => {
-    Logger.info('prepare-tx consumed: %s', JSON.stringify(message))
+    )
 
-    var payload = JSON.parse(message.value)
-    const transfer = Translator.fromPayload(payload)
-    // figure out what message appear here
-    // const transfer = Translator.fromPayload(payload)
-    // var transfer = JSON.parse(message.value)
-    Commands.prepareExecute(transfer).then(result => {
-      if (result) {
-        // Logger.info('result: %s', result)
-        consumer.commit(
-          function (err, result) {
-            Logger.info('Committing index result: %s', (JSON.stringify(err) || JSON.stringify(result)))
-          })
-      }
+    // const reLoadConsumersJob = new CronJob('*/10 * * * * *', function () {
+    //   console.log('You will see this message every 10 second')
+    //   Logger.info(`topicList=${JSON.stringify(topicList)}`)
+    //   client.topicExists(topicList, (err, resp) => {
+    //     if (err) {
+    //       Logger.error(err)
+    //     }
+    //     Logger.info(resp)
+    //   })
+    // }, null, true, 'America/Los_Angeles')
+    //
+    // consumerList['prepare'] = {
+    //   consumerObj: consumer,
+    //   clientOjb: client,
+    //   topicList: topicList,
+    //   status: 'connected'
+    // }
+    //
+    // Logger.info(`consumerList = ${JSON.stringify(consumerList)}`)
+
+    consumer.on('message', (message) => {
+      Logger.info(`kafkaConsumer:: Consumed from ${message.topic} consumed: ${JSON.stringify(message)}`)
+
+      var payload = JSON.parse(message.value)
+
+      funcProcessMessage(payload).then(result => {
+        if (result) {
+          // Logger.info('result: %s', result)
+          consumer.commit(
+            function (err, result) {
+              if (err) {
+                Logger.info('kafkaConsumer:: Committing index error: %s', (JSON.stringify(err) || JSON.stringify(result)))
+              }
+              Logger.info('kafkaConsumer:: Committing index for %s', message.topic)
+            })
+        }
+      }).catch(reason => {
+        Logger.error(`kafkaConsumer:: funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
+      })
     })
-    // consumer.commit(
-    //   function (err, result) {
-    //     Logger.info('Committing index result: %s', (JSON.stringify(err) || JSON.stringify(result)))
-    //   })
-    // var offset = new kafka.Offset(client)
-    // var offsetValue = 0
-    // offset.fetch([
-    //   {
-    //     topic: 'topic-dfsp1-prepare-tx',
-    //     partition: 0,
-    //     time: Date.now(),
-    //     maxNum: 1
-    //   }
-    // ], function (err, data) {
-    //   if (err) {
-    //     Logger.error('ERROR=%s', JSON.stringify(err))
-    //   } else {
-    //     Logger.info('data=%s', JSON.stringify(data))
-    //   }
-    //   // data
-    //   // { 't': { '0': [999] } }
-    //   offsetValue = data['topic-dfsp1-prepare-tx']['0'][0]
-    //   Logger.info('offsetValue=%d', offsetValue)
-    // })
 
-    // consumer.commit(
-    //   options.groupId,
-    //   {
-    //     topic: 'topic-dfsp1-prepare-tx',
-    //     partition: 0,
-    //     offset: offsetValue
-    //   },
-    //   function (err, result) {
-    //     Logger.info('Committing index result: %s', (JSON.stringify(err) || JSON.stringify(result)))
-    //   })
-    // consumer.commit(
-    //   function (err, result) {
-    //     Logger.info('Committing index result: %s', (JSON.stringify(err) || JSON.stringify(result)))
-    //   })
-  })
-
-  consumer.on('error', function (err) {
-    Logger.error('ERROR: %s', err.toString())
-  })
-}
-
-const consumeNotification = () => {
-  Logger.info('consumeNotification::start')
-  // const client = new Client('localhost:2181')
-  // if (!client) {
-  //   client = new kafka.Client('localhost:2181')
-  // }
-    // client = new kafka.Client("a02bcb8d21d2d11e8ada0027eebfb29a-160662342.eu-west-2.elb.amazonaws.com:2181");
-  const client = new Client(Config.TOPICS_KAFKA_HOSTS)
-  var payload = [{ topic: 'topic-dfsp1-prepare-notification', partition: 0 }]
-  var consumer = new Consumer(
-    client,
-    payload,
-    options
+    consumer.on('error', function (err) {
+      Logger.error('kafkaConsumer:: ERROR: %s', err.toString())
+    })
+  }).catch(reason => {
+    Logger.error(`kafkaConsumer:: Unable to fetch list topics with regex topicRegexFilter(${topicRegexFilter}) with the following reason: ${reason}`)
+  }
   )
-
-  // var res = kafka.getListOfTopics('')
-  // Logger.info('list of topics: %s', res)
-
-  consumer.on('message', function (message) {
-    Logger.info('prepare-notification consumed: %s', JSON.stringify(message))
-    // need to call something in the commands/index.js
-    // consumer.commit(
-    //   function (err, result) {
-    //     Logger.info('Committing index result: %s', (JSON.stringify(err) || JSON.stringify(result)))
-    //   })
-  })
-
-  consumer.on('error', function (err) {
-    Logger.error('ERROR: %s', err.toString())
-        // error handling code needs to go here
-  })
 }
 
 exports.register = (server, options, next) => {
-  // client = new kafka.Client('localhost:2181')
-  // kafka.getListOfTopics(kafka.topicRegexEnum.topicPrepareRegex)
-  consumePrepare()
-  consumeNotification()
+  // reLoadConsumersJob.start()
+  const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+
+  kafkaConsumer('PREPARE_TX', Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions)
+  kafkaConsumer('PREPARE_NOTIFICATIONS', (msg) => {
+    return new Promise((resolve, reject) => {
+      Logger.info(`Message process for Notifications ${JSON.stringify(msg)}`)
+      return resolve(true)
+    })
+  }, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions)
   next()
 }
 

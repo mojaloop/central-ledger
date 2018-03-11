@@ -12,32 +12,29 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // }
 
 const prepare = (transfer) => {
-  Logger.info('Command:prepare::start(%s)', JSON.stringify(transfer))
+  // Logger.info('Transfer.Command.prepare:: start(%s)', JSON.stringify(transfer))
   // for future to check if prepare already exists then return { existing: true, transfer: existing }
   var response = { existing: false, transfer }
-  Logger.info('Command:prepare::end=%s', JSON.stringify(response))
-  return new Promise(function (fulfill, reject) {
-    fulfill(response)
+  // Logger.info('Transfer.Command.prepare:: end=%s', JSON.stringify(response))
+  return new Promise(function (resolve, reject) {
+    resolve(response)
   })
 }
 
-const prepareExecute = (transfer) => {
+const prepareExecute = (unTranslatedTransfer) => {
+  const transfer = Translator.fromPayload(unTranslatedTransfer)
   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer)).then(result => {
-    // const t = Translator.toTransfer(result.transfer)
-    // const { id, ledger, debits, credits, execution_condition, expires_at } = transfer
-    // const topic = getPrepareNotificationTopicName(debits[0].account)
-    // Events.emitPublishMessage(topic, t)
-    return new Promise(function (fulfill, reject) {
+    return new Promise(function (resolve, reject) {
       if (result) {
-        Logger.info('prepareExecute::result= %s', JSON.stringify(result))
+        Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
         const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
         const topic = Kafka.getPrepareNotificationTopicName(transfer)
-        Events.emitPublishMessage(topic, id, transfer)
+        Events.emitPublishMessage(topic, id, result)
       }
-      fulfill(result)
+      resolve(result)
     })
-  }).catch(error => {
-    Logger.info('HOLYSHIT! %s', error)
+  }).catch(reason => {
+    Logger.info('Transfer.Command.prepareExecute:: ERROR! %s', reason)
   })
 }
 

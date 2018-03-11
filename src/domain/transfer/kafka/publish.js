@@ -1,3 +1,5 @@
+'use strict'
+
 // STUFF TO GO IN HERE FOR RE-USABLE PRODUCER CODE
 const Config = require('../../../lib/config')
 const Events = require('../../../lib/events')
@@ -19,13 +21,12 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 //   partitionerType: 2
 // }
 
-const options = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
-const attributes = Config.TOPICS_KAFKA_PRODUCER_ATTRIBUTES
-
 const publishHandler = (event) => {
   return (eventMessage) => {
+    const options = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+    const attributes = Config.TOPICS_KAFKA_PRODUCER_ATTRIBUTES
     const { topic, key, msg } = eventMessage
-    Logger.info('publishHandler::start(%s, %s, %s)', topic, key, msg)
+    Logger.info('publishHandler:: start(%s, %s, %s)', topic, key, msg)
     // var topic = topic
     var partition = 0
     // var attributes = 0
@@ -42,14 +43,14 @@ const publishHandler = (event) => {
       producer.send([
                 { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
       ], function (err, result) {
-        Logger.info('Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
+        Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
         // process.exit()
       })
-      Logger.info("Sent something keyedMessage='%s'", JSON.stringify(keyedMessage))
+      Logger.info("publishHandler:: Sent something keyedMessage='%s'", JSON.stringify(keyedMessage))
     })
 
-    producer.on('error', function (err) {
-      Logger.error('error: %s', err)
+    producer.on('publishHandler:: error', function (err) {
+      Logger.error('publishHandler:: error: %s', err)
     })
 
     // client.close((result, err) => {
@@ -59,7 +60,7 @@ const publishHandler = (event) => {
 }
 
 const wireEvents = () => {
-  Logger.info('publish.wireEvents::start')
+  // Logger.info('publish.wireEvents::start')
   Events.onPublishMessage(publishHandler('publish.message'))
 }
 
@@ -72,7 +73,7 @@ const wireEvents = () => {
 // }
 
 exports.register = (server, options, next) => {
-  Logger.info('publish.exports.register:start')
+  // Logger.info('publish.exports.register:start')
   wireEvents()
   next()
 }
