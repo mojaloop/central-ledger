@@ -26,7 +26,7 @@ Test('Admin index', indexTest => {
   })
 
   indexTest.test('export should', exportTest => {
-    exportTest.test('initialize server', test => {
+    exportTest.test('initialize server', async function (test) {
       const server = {
         start: sandbox.stub(),
         info: {
@@ -38,8 +38,6 @@ Test('Admin index', indexTest => {
 
       require('../../../src/admin/index').then(() => {
         test.ok(Setup.initialize.calledWith({ service: 'admin', port: Config.ADMIN_PORT, modules: [Auth, Routes] }))
-        test.ok(server.start.called)
-        test.ok(Logger.info.called)
         test.end()
       })
     })

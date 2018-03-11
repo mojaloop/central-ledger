@@ -23,8 +23,8 @@ Test('User handler', handlerTest => {
     test.end()
   })
 
-  handlerTest.test('create should createUser in service', test => {
-    const user = { firstName: 'dave' }
+  handlerTest.test('create should createUser in service', async function (test) {
+    const user = {firstName: 'dave'}
 
     SecurityService.createUser.returns(P.resolve(user))
 
@@ -32,109 +32,88 @@ Test('User handler', handlerTest => {
       payload: user
     }
 
-    const reply = (response) => {
-      test.equal(response, user)
-      test.ok(Sidecar.logRequest.calledWith(request))
-      test.end()
-    }
-
-    Handler.create(request, reply)
+    const response = await Handler.create(request, {})
+    test.equal(response, user)
+    test.ok(Sidecar.logRequest.calledWith(request))
+    test.end()
   })
 
-  handlerTest.test('getAll should get all users from service', test => {
+  handlerTest.test('getAll should get all users from service', async function (test) {
     const users = [{}, {}]
     SecurityService.getAllUsers.returns(P.resolve(users))
 
-    const reply = (response) => {
-      test.equal(response, users)
-      test.end()
-    }
-
-    Handler.getAll({}, reply)
+    const response = await Handler.getAll({}, {})
+    test.equal(response, users)
+    test.end()
   })
 
-  handlerTest.test('getById should get user by id from service', test => {
-    const user = { firstName: 'Dave' }
+  handlerTest.test('getById should get user by id from service', async function (test) {
+    const user = {firstName: 'Dave'}
     const userId = Uuid()
     SecurityService.getUserById.withArgs(userId).returns(P.resolve(user))
 
-    const reply = (response) => {
-      test.equal(response, user)
-      test.end()
-    }
-
-    Handler.getById({ params: { id: userId } }, reply)
+    const response = await Handler.getById({params: {id: userId}}, {})
+    test.equal(response, user)
+    test.end()
   })
 
-  handlerTest.test('remove should deleteUser in service and return empty', test => {
+  handlerTest.test('remove should deleteUser in service and return empty', async function (test) {
     const userId = Uuid()
 
     SecurityService.deleteUser.returns(P.resolve({}))
 
-    const request = { params: { id: userId } }
-    const reply = (response) => {
-      test.deepEqual(response, {})
-      test.ok(Sidecar.logRequest.calledWith(request))
-      test.ok(SecurityService.deleteUser.calledWith(userId))
-      test.end()
-    }
+    const request = {params: {id: userId}}
 
-    Handler.remove(request, reply)
+    const response = await Handler.remove(request, {})
+    test.deepEqual(response, {})
+    test.ok(Sidecar.logRequest.calledWith(request))
+    test.ok(SecurityService.deleteUser.calledWith(userId))
+    test.end()
   })
 
-  handlerTest.test('update should update user by id', test => {
+  handlerTest.test('update should update user by id', async function (test) {
     const userId = Uuid()
-    const details = { firstName: 'Dave' }
-    const user = { lastName: 'Superuser' }
+    const details = {firstName: 'Dave'}
+    const user = {lastName: 'Superuser'}
 
     SecurityService.updateUser.returns(P.resolve(user))
     const request = {
-      params: { id: userId },
+      params: {id: userId},
       payload: details
     }
 
-    const reply = (response) => {
-      test.deepEqual(response, user)
-      test.ok(Sidecar.logRequest.calledWith(request))
-      test.ok(SecurityService.updateUser.calledWith(userId, details))
-      test.end()
-    }
-
-    Handler.update(request, reply)
+    const response = await Handler.update(request, {})
+    test.deepEqual(response, user)
+    test.ok(Sidecar.logRequest.calledWith(request))
+    test.ok(SecurityService.updateUser.calledWith(userId, details))
+    test.end()
   })
 
-  handlerTest.test('getRoles should return roles from service', test => {
+  handlerTest.test('getRoles should return roles from service', async function (test) {
     const roles = [{}, {}]
     const userId = Uuid()
     SecurityService.getUserRoles.withArgs(userId).returns(P.resolve(roles))
 
-    const reply = (response) => {
-      test.deepEqual(response, roles)
-      test.end()
-    }
-
-    Handler.getRoles({ params: { id: userId } }, reply)
+    const response = await Handler.getRoles({params: {id: userId}}, {})
+    test.deepEqual(response, roles)
+    test.end()
   })
 
-  handlerTest.test('updateRoles should update roles in service', test => {
+  handlerTest.test('updateRoles should update roles in service', async function (test) {
     const updatedRoles = [{}, {}]
     const roleIds = [Uuid(), Uuid()]
     const userId = Uuid()
 
     SecurityService.updateUserRoles.withArgs(userId, roleIds).returns(P.resolve(updatedRoles))
-
-    const reply = (response) => {
-      test.deepEqual(response, updatedRoles)
-      test.ok(Sidecar.logRequest.calledWith(request))
-      test.end()
-    }
-
     const request = {
-      params: { id: userId },
+      params: {id: userId},
       payload: roleIds
     }
 
-    Handler.updateRoles(request, reply)
+    const response = await Handler.updateRoles(request, {})
+    test.deepEqual(response, updatedRoles)
+    test.ok(Sidecar.logRequest.calledWith(request))
+    test.end()
   })
 
   handlerTest.end()

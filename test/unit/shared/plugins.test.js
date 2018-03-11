@@ -6,7 +6,6 @@ const Inert = require('inert')
 const Blipp = require('blipp')
 const Vision = require('vision')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
-const Auth = require('@mojaloop/central-services-auth')
 
 class Server {
   constructor () {
@@ -27,10 +26,10 @@ class Server {
 }
 
 Test('registerPlugins should', pluginsTest => {
-  pluginsTest.test('registers base modules', test => {
-    const server = new Server()
-    Plugins.registerPlugins(server)
-    const modules = [Inert, Vision, Blipp, ErrorHandling, Auth]
+  pluginsTest.test('registers base modules', async function (test) {
+    const server = await new Server()
+    await Plugins.registerPlugins(server)
+    const modules = [Inert, Vision, Blipp, ErrorHandling]
     modules.forEach(x => test.ok(server.contains(x)))
     test.end()
   })

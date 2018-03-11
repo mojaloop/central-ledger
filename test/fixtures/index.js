@@ -15,7 +15,7 @@ const generateAccountName = () => {
 }
 
 const generateRandomName = () => {
-  return `dfsp${Uuid().replace(/-/g, '')}`
+  return `dfsp${Uuid().replace(/-/g, '')}`.substr(0, 25)
 }
 
 const buildDebitOrCredit = (accountName, amount, memo) => {

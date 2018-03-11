@@ -8,6 +8,7 @@ const UrlParser = require('../../lib/urlparser')
 const Account = require('../../domain/account')
 const ValidationError = require('../../errors').ValidationError
 const CryptoConditions = require('../../crypto-conditions')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
@@ -50,6 +51,8 @@ exports.validate = (transfer, transferId) => {
     if (!transfer) {
       throw new ValidationError('Transfer must be provided')
     }
+    Logger.info('transfer')
+    Logger.info(transfer)
     const id = UrlParser.idFromTransferUri(transfer.id)
     if (!id || id !== transferId) {
       throw new ValidationError('transfer.id: Invalid URI')

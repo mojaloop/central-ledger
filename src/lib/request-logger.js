@@ -21,8 +21,11 @@ const logResponse = function (request) {
     } catch (e) {
       response = Util.inspect(request.response.source)
     }
-
-    Logger.info(`L1p-Trace-Id=${traceId} - Response: ${response} Status: ${request.response.statusCode}`)
+    if (!response) {
+      Logger.info(`L1p-Trace-Id=${traceId} - Response: ${request.response}`)
+    } else {
+      Logger.info(`L1p-Trace-Id=${traceId} - Response: ${response} Status: ${request.response.statusCode}`)
+    }
   }
 }
 

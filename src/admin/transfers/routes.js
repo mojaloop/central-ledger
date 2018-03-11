@@ -11,6 +11,6 @@ module.exports = [
     method: 'GET',
     path: '/transfers',
     handler: Handler.getAll,
-    config: RouteConfig.config(tags, Permissions.TRANSFERS_LIST)
+    options: RouteConfig.config(tags, Permissions.TRANSFERS_LIST)
   }
 ]

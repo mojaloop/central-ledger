@@ -23,7 +23,7 @@ Test('token handler', handlerTest => {
   })
 
   handlerTest.test('create should', createTest => {
-    createTest.test('create token from user key', test => {
+    createTest.test('create token from user key', async function (test) {
       const userKey = 'user-key'
       const account = { accountId: 1 }
       const token = 'generated-token'
@@ -37,25 +37,22 @@ Test('token handler', handlerTest => {
         }
       }
 
-      const reply = (response) => {
-        test.deepEqual(response, { token })
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.create(request, reply)
+      const response = await Handler.create(request, {})
+      test.deepEqual(response, token)
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
-    createTest.test('reply with error if thrown', test => {
+    createTest.test('reply with error if thrown', async function (test) {
       const error = new Error()
       JWT.create.returns(P.reject(error))
 
-      const reply = (response) => {
-        test.equal(response, error)
+      try {
+        await Handler.create({ auth: { credentials: {} }, payload: { key: 'key' } }, {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
       }
-
-      Handler.create({ auth: { credentials: {} }, payload: { key: 'key' } }, reply)
     })
 
     createTest.end()

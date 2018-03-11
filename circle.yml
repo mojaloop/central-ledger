@@ -9,7 +9,7 @@ machine:
   services:
     - docker
   node:
-    version: 6.5.0
+    version: 8.9.4
   environment:
     AWS_ACCOUNT_ID: 886403637725
     APP_NAME: central-ledger

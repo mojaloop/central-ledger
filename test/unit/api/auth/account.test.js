@@ -28,68 +28,51 @@ Test('account auth module', authTest => {
     test.end()
   })
 
-  authTest.test('scheme should be basic', test => {
-    test.equal(AccountAuth.scheme, 'basic')
+  authTest.test('scheme should be simple', test => {
+    test.equal(AccountAuth.scheme, 'simple')
     test.end()
   })
 
   authTest.test('validate should', validateTest => {
-    validateTest.test('return false if password missing', test => {
-      const cb = (err, isValid) => {
-        test.notOk(err)
-        test.equal(isValid, false)
-        test.end()
-      }
-
-      AccountAuth.validate({}, 'username', '', cb)
+    validateTest.test('return false if password missing', async function (test) {
+      const response = await AccountAuth.validate({}, 'username', '', {})
+      test.notOk(response.credentials)
+      test.equal(response.isValid, false)
+      test.end()
     })
 
-    validateTest.test('return false if password cannot be verified', test => {
+    validateTest.test('return false if password cannot be verified', async function (test) {
       const name = 'name'
       const password = 'password'
-      AccountService.verify.withArgs(name, password).returns(P.reject({}))
-
-      const cb = (err, isValid) => {
-        test.notOk(err)
-        test.equal(isValid, false)
-        test.end()
-      }
-
-      AccountAuth.validate({}, name, password, cb)
+      AccountService.verify.withArgs(name, password).returns(P.reject({}).catch(() => { console.log('error occurred') }))
+      const response = await AccountAuth.validate({}, name, password, {})
+      test.notOk(response.credentials)
+      test.equal(response.isValid, false)
+      test.end()
     })
 
-    validateTest.test('return true if user is configured admin', test => {
+    validateTest.test('return true if user is configured admin', async function (test) {
       const adminName = 'admin'
       const adminSecret = 'admin'
       Config.ADMIN_KEY = adminName
       Config.ADMIN_SECRET = adminSecret
-
-      const cb = (err, isValid, credentials) => {
-        test.notOk(err)
-        test.equal(isValid, true)
-        test.equal(credentials.is_admin, true)
-        test.equal(credentials.name, adminName)
-        test.equal(AccountService.verify.callCount, 0)
-        test.end()
-      }
-
-      AccountAuth.validate({}, adminName, adminSecret, cb)
+      const response = await AccountAuth.validate({}, adminName, adminSecret, {})
+      test.equal(response.isValid, true)
+      test.equal(response.credentials.is_admin, true)
+      test.equal(response.credentials.name, adminName)
+      test.equal(await AccountService.verify.callCount, 0)
+      test.end()
     })
 
-    validateTest.test('return true and account if password verified', test => {
+    validateTest.test('return true and account if password verified', async function (test) {
       const name = 'name'
       const password = 'password'
       const account = { name, password }
       AccountService.verify.withArgs(name, password).returns(P.resolve(account))
-
-      const cb = (err, isValid, credentials) => {
-        test.notOk(err)
-        test.equal(isValid, true)
-        test.equal(credentials, account)
-        test.end()
-      }
-
-      AccountAuth.validate({}, name, password, cb)
+      const response = await AccountAuth.validate({}, name, password, {})
+      test.equal(response.isValid, true)
+      test.equal(response.credentials, account)
+      test.end()
     })
 
     validateTest.end()

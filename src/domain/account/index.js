@@ -101,11 +101,11 @@ const verifyUserCredentials = (account, userCredentials, password) => {
     })
 }
 
-const verify = (name, password) => {
-  return Model.getByName(name)
-    .then(accountExists)
-    .then(account => retrieveUserCredentials(account)
-      .then(userCredentials => verifyUserCredentials(account, userCredentials, password)))
+const verify = async function (name, password) {
+  const account = await Model.getByName(name)
+  accountExists(account)
+  const userCredentials = await retrieveUserCredentials(account)
+  return verifyUserCredentials(account, userCredentials, password)
 }
 
 module.exports = {

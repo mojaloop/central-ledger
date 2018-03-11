@@ -16,7 +16,7 @@ function createRequest (id, payload) {
   let requestPayload = payload || {}
   return {
     payload: requestPayload,
-    params: { id: requestId },
+    params: {id: requestId},
     server: {
       log: function () { }
     }
@@ -67,39 +67,34 @@ Test('Handler Test', handlerTest => {
   })
 
   handlerTest.test('rejectExpired should', rejectExpiredTest => {
-    rejectExpiredTest.test('return rejected transfer ids', test => {
+    rejectExpiredTest.test('return rejected transfer ids', async function (test) {
       let transferIds = [Uuid(), Uuid(), Uuid()]
       TransferService.rejectExpired.returns(P.resolve(transferIds))
-
-      let reply = response => {
-        test.equal(response, transferIds)
-        test.ok(Sidecar.logRequest.calledWith({}))
-        test.end()
-      }
-
-      Handler.rejectExpired({}, reply)
+      const response = await Handler.rejectExpired({}, {})
+      test.equal(response, transferIds)
+      test.ok(Sidecar.logRequest.calledWith({}))
+      test.end()
     })
 
-    rejectExpiredTest.test('return error if rejectExpired fails', test => {
+    rejectExpiredTest.test('return error if rejectExpired fails', async function (test) {
       let error = new Error()
       TransferService.rejectExpired.returns(P.reject(error))
-
-      let reply = response => {
-        test.equal(response, error)
+      try {
+        await Handler.rejectExpired(createRequest(), {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
       }
-
-      Handler.rejectExpired(createRequest(), reply)
     })
 
     rejectExpiredTest.end()
   })
 
   handlerTest.test('settle should', settleTest => {
-    settleTest.test('return settled transfer and fee ids', test => {
-      const account1 = { accountNumber: '1234', routingNumber: '5678', name: 'Bill' }
-      const account2 = { accountNumber: '2345', routingNumber: '6789', name: 'Will' }
-      const account3 = { accountNumber: '3456', routingNumber: '7890', name: 'Rob' }
+    settleTest.test('return settled transfer and fee ids', async function (test) {
+      const account1 = {accountNumber: '1234', routingNumber: '5678', name: 'Bill'}
+      const account2 = {accountNumber: '2345', routingNumber: '6789', name: 'Will'}
+      const account3 = {accountNumber: '3456', routingNumber: '7890', name: 'Rob'}
       let transfers = [
         generateTransfer(account1, account2, '10.00'),
         generateTransfer(account1, account2, '10.00'),
@@ -150,55 +145,45 @@ Test('Handler Test', handlerTest => {
           routing_number: account1.routingNumber
         }
       }]
-
-      let reply = () => {
-        test.deepEqual(settledTransfers, settledFees)
-        test.ok(Sidecar.logRequest.calledWith({}))
-        test.end()
-      }
-
-      Handler.settle({}, reply)
+      await Handler.settle({}, {})
+      test.deepEqual(settledTransfers, settledFees)
+      test.ok(Sidecar.logRequest.calledWith({}))
+      test.end()
     })
 
-    settleTest.test('return error if settlement failed', test => {
+    settleTest.test('return error if settlement failed', async function (test) {
       let error = new Error()
       TransferService.settle.returns(P.reject(error))
-
-      let reply = response => {
-        test.equal(response, error)
+      try {
+        await Handler.settle(createRequest(), {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
       }
-
-      Handler.settle(createRequest(), reply)
     })
 
     settleTest.end()
   })
 
   handlerTest.test('removeExpired should', removeExpiredTest => {
-    removeExpiredTest.test('return expired tokens', test => {
+    removeExpiredTest.test('return expired tokens', async function (test) {
       let tokenIds = [Uuid(), Uuid(), Uuid()]
       TokenService.removeExpired.returns(P.resolve(tokenIds))
-
-      let reply = response => {
-        test.equal(response, tokenIds)
-        test.ok(Sidecar.logRequest.calledWith({}))
-        test.end()
-      }
-
-      Handler.rejectExpiredTokens({}, reply)
+      const response = await Handler.rejectExpiredTokens({}, {})
+      test.equal(response, tokenIds)
+      test.ok(Sidecar.logRequest.calledWith({}))
+      test.end()
     })
 
-    removeExpiredTest.test('return error if removeExpired fails', test => {
+    removeExpiredTest.test('return error if removeExpired fails', async function (test) {
       let error = new Error()
       TokenService.removeExpired.returns(P.reject(error))
-
-      let reply = response => {
-        test.equal(response, error)
+      try {
+        await Handler.rejectExpiredTokens(createRequest(), {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
       }
-
-      Handler.rejectExpiredTokens(createRequest(), reply)
     })
 
     removeExpiredTest.end()

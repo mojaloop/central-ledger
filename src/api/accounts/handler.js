@@ -7,6 +7,9 @@ const Util = require('../../lib/util')
 const PositionService = require('../../domain/position')
 const Errors = require('../../errors')
 const Sidecar = require('../../lib/sidecar')
+// const Logger = require('@mojaloop/central-services-shared').Logger
+const Boom = require('boom')
+// const ErrorHandling = require('@mojaloop/central-services-error-handling')
 
 const buildAccount = (account) => {
   return {
@@ -16,7 +19,7 @@ const buildAccount = (account) => {
   }
 }
 
-const buildResponse = (account, { net = '0' } = {}) => {
+const buildResponse = (account, {net = '0'} = {}) => {
   return Util.mergeAndOmitNil(buildAccount(account), {
     created: account.createdDate,
     balance: net,
@@ -54,34 +57,34 @@ const getPosition = (account) => {
     .then(position => buildResponse(account, position))
 }
 
-exports.create = (request, reply) => {
-  Sidecar.logRequest(request)
-  Account.getByName(request.payload.name)
-    .then(handleExistingRecord)
-    .then(() => Account.create(request.payload))
-    .then(account => reply(buildResponse(account)).code(201))
-    .catch(reply)
+exports.create = async function (request, h) {
+  try {
+    Sidecar.logRequest(request)
+    const entity = await Account.getByName(request.payload.name)
+    handleExistingRecord(entity)
+    const account = await Account.create(request.payload)
+    return h.response(buildResponse(account)).code(201)
+  } catch (err) {
+    throw Boom.boomify(err, {statusCode: 400, message: 'An error has occurred'})
+  }
 }
 
-exports.updateUserCredentials = (request, reply) => {
+exports.updateUserCredentials = async function (request, h) {
   Sidecar.logRequest(request)
   const accountName = request.params.name
   const credentials = request.auth.credentials
   const authenticated = (credentials && (credentials.is_admin || credentials.name === accountName))
 
   if (!authenticated) {
-    throw new Errors.UnauthorizedError('Invalid attempt updating the password.')
+    throw Boom.boomify(new Errors.UnauthorizedError('Invalid attempt updating the password.'), {statusCode: 400})
   }
-
-  Account.getByName(request.params.name)
-    .then(handleMissingRecord)
-    .then(account => Account.updateUserCredentials(account, request.payload))
-    .then(updatedAccount => buildAccount(updatedAccount))
-    .then(reply)
-    .catch(reply)
+  const account = await Account.getByName(request.params.name)
+  handleMissingRecord(account)
+  const updatedAccount = await Account.updateUserCredentials(account, request.payload)
+  return buildAccount(updatedAccount)
 }
 
-exports.updateAccountSettlement = (request, reply) => {
+exports.updateAccountSettlement = async function (request, h) {
   Sidecar.logRequest(request)
   const accountName = request.params.name
   const credentials = request.auth.credentials
@@ -90,23 +93,22 @@ exports.updateAccountSettlement = (request, reply) => {
   if (!authenticated) {
     throw new Errors.UnauthorizedError('Invalid attempt updating the settlement.')
   }
-
-  Account.getByName(request.params.name)
-    .then(handleMissingRecord)
-    .then(account => Account.updateAccountSettlement(account, request.payload))
-    .then(settlement => settlementResponse(settlement))
-    .then(reply)
-    .catch(reply)
+  const account = await Account.getByName(request.params.name)
+  handleMissingRecord(account)
+  const settlement = await Account.updateAccountSettlement(account, request.payload)
+  return settlementResponse(settlement)
 }
 
-exports.getByName = (request, reply) => {
+exports.getByName = async function (request, h) {
   Sidecar.logRequest(request)
   const accountName = request.params.name
   const credentials = request.auth.credentials
   const authenticated = (credentials && (credentials.is_admin || credentials.name === accountName))
-  Account.getByName(request.params.name)
-    .then(handleMissingRecord)
-    .then(account => (authenticated ? getPosition(account) : buildAccount(account)))
-    .then(reply)
-    .catch(reply)
+  const account = await Account.getByName(request.params.name)
+  handleMissingRecord(account)
+  if (authenticated) {
+    return await getPosition(account)
+  } else {
+    return buildAccount(account)
+  }
 }
