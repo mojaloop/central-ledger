@@ -49,9 +49,9 @@ const publishHandler = (event) => {
           { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
         ], function (err, result) {
           if (err) {
-            Logger.error(`publishHandler:: Publish topic(%s) failed with error: ${err}`)
+            Logger.error(`publishHandler:: Publish topics ${topic} failed with error: ${err}`)
           } else {
-            Logger.info('publishHandler:: Publish topic(%s) successful')
+            Logger.info(`publishHandler:: Publish to topic ${topic} successful`)
           }
           // process.exit()
         })
