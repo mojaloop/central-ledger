@@ -2,6 +2,7 @@
 'use strict'
 
 // STUFF TO GO IN HERE FOR RE-USABLE CONSUMING
+var async = require('async')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
 // const kafkaLogging = require('kafka-node/logging')
@@ -18,41 +19,7 @@ const Client = kafkanode.Client
 const kafka = require('./index')
 const Commands = require('../commands')
 
-// const options = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-
-// var consumerList = {}
-
 var CronJob = require('cron').CronJob
-
-// const reLoadConsumersJob = new CronJob('*/10 * * * * *', function () {
-//   console.log('You will see this message every 10 second')
-//   // consumerList.forEach(consumer =>
-//   if ('prepare' in consumerList) {
-//     var consumer = consumerList['prepare']
-//     // Logger.info(`consumer = ${JSON.stringify(item)}`)
-//     console.log(`conumer topicList = ${JSON.stringify(consumer.topicList)}`)
-//     console.log(`conumer status = ${consumer.status}`)
-//     // consumer.client.close()
-//     // kafka.getListOfTopics(Config.TOPICS_PREPARE_TX_REGEX).then(listOfPreparedTopics => {
-//     //   var topicList = listOfPreparedTopics.map(item => {
-//     //     return {
-//     //       topic: item,
-//     //       partition: 0
-//     //     }
-//     //   })
-//       // consumer.addTopics(topicList, function (err, added) {
-//       //   if (err) {
-//       //     Logger.error(`${err}`)
-//       //   } else {
-//       //     Logger.info(`Topics added ${added}`)
-//       //   }
-//       // },
-//       //   true
-//       // )
-//     // })
-//     // })
-//   }
-// }, null, false, 'America/Los_Angeles')
 
 const kafkaConsumer = (clientId, funcProcessMessage, topicRegexFilter, options) => {
   Logger.info(`kafkaConsumer:: Creating Kafka Consumer clientId:'${clientId}', funcProcessMessage:'${funcProcessMessage.name || 'anonymousFunc'}', topicRegexFilter:'${topicRegexFilter}'`)
@@ -114,21 +81,9 @@ const kafkaConsumer = (clientId, funcProcessMessage, topicRegexFilter, options) 
         // consumer.resumeTopics(topicList)
       })
     }, null, true, 'America/Los_Angeles')
-    //
-    // consumerList['prepare'] = {
-    //   consumerObj: consumer,
-    //   clientOjb: client,
-    //   topicList: topicList,
-    //   status: 'connected'
-    // }
-    //
-    // Logger.info(`consumerList = ${JSON.stringify(consumerList)}`)
 
-    consumer.on('message', (message) => {
-      Logger.info(`kafkaConsumer:: Consumed from ${message.topic} consumed: ${JSON.stringify(message)}`)
-
+    var q = async.queue(function (message, cb) {
       var payload = JSON.parse(message.value)
-
       funcProcessMessage(payload).then(result => {
         if (result) {
           // Logger.info('result: %s', result)
@@ -139,10 +94,50 @@ const kafkaConsumer = (clientId, funcProcessMessage, topicRegexFilter, options) 
               }
               Logger.info('kafkaConsumer:: Committing index for %s', message.topic)
             })
+          cb() // this marks the completion of the processing by the worker
         }
       }).catch(reason => {
         Logger.error(`kafkaConsumer:: funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
       })
+    }, 1)
+
+    // a callback function, invoked when queue is empty.
+    q.drain = function () {
+      consumer.resume() // resume listening new messages from the Kafka consumer group
+    }
+
+    // //on receipt of message from kafka, push the message to local queue, which then will be processed by worker
+    // function onMessage(message) {
+    //   q.push(message, function (err, result) {
+    //     if (err) { Logger.error(err); return }
+    //   })
+    //   consumer.pause(); //Pause kafka consumer group to not receive any more new messages
+    // }
+
+    consumer.on('message', (message) => {
+      Logger.info(`kafkaConsumer:: Consumed from ${message.topic} consumed: ${JSON.stringify(message)}`)
+
+      // var payload = JSON.parse(message.value)
+
+      q.push(message, function (err, result) {
+        if (err) { Logger.error(err); return }
+      })
+      consumer.pause() // Pause kafka consumer group to not receive any more new messages
+
+      // funcProcessMessage(payload).then(result => {
+      //   if (result) {
+      //     // Logger.info('result: %s', result)
+      //     consumer.commit(
+      //       function (err, result) {
+      //         if (err) {
+      //           Logger.info('kafkaConsumer:: Committing index error: %s', (JSON.stringify(err) || JSON.stringify(result)))
+      //         }
+      //         Logger.info('kafkaConsumer:: Committing index for %s', message.topic)
+      //       })
+      //   }
+      // }).catch(reason => {
+      //   Logger.error(`kafkaConsumer:: funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
+      // })
     })
 
     consumer.on('error', function (err) {

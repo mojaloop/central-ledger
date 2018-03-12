@@ -48,7 +48,11 @@ const publishHandler = (event) => {
         producer.send([
           { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
         ], function (err, result) {
-          Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
+          if (err) {
+            Logger.error(`publishHandler:: Publish topic(%s) failed with error: ${err}`)
+          } else {
+            Logger.info('publishHandler:: Publish topic(%s) successful')
+          }
           // process.exit()
         })
       })
