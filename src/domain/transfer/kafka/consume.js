@@ -22,7 +22,7 @@ const Commands = require('../commands')
 
 // var consumerList = {}
 
-// var CronJob = require('cron').CronJob
+var CronJob = require('cron').CronJob
 
 // const reLoadConsumersJob = new CronJob('*/10 * * * * *', function () {
 //   console.log('You will see this message every 10 second')
@@ -57,10 +57,11 @@ const Commands = require('../commands')
 const kafkaConsumer = (clientId, funcProcessMessage, topicRegexFilter, options) => {
   Logger.info(`kafkaConsumer:: Creating Kafka Consumer clientId:'${clientId}', funcProcessMessage:'${funcProcessMessage.name || 'anonymousFunc'}', topicRegexFilter:'${topicRegexFilter}'`)
 
-  kafka.getListOfTopics(topicRegexFilter).then(listOfPreparedTopics => {
+  kafka.getListOfFilteredTopics(topicRegexFilter).then(listOfPreparedTopics => {
+    var templistOfPreparedTopics = listOfPreparedTopics
     // Logger.info(`List of Topics for for Prepare= ${listOfPreparedTopics}`)
 
-    var topicList = listOfPreparedTopics.map(topic => {
+    var topicList = templistOfPreparedTopics.map(topic => {
       return {
         topic: topic,
         partition: 0
@@ -77,16 +78,42 @@ const kafkaConsumer = (clientId, funcProcessMessage, topicRegexFilter, options) 
       options
     )
 
-    // const reLoadConsumersJob = new CronJob('*/10 * * * * *', function () {
-    //   console.log('You will see this message every 10 second')
-    //   Logger.info(`topicList=${JSON.stringify(topicList)}`)
-    //   client.topicExists(topicList, (err, resp) => {
-    //     if (err) {
-    //       Logger.error(err)
-    //     }
-    //     Logger.info(resp)
-    //   })
-    // }, null, true, 'America/Los_Angeles')
+    const reLoadConsumersJob = new CronJob('*/10 * * * * *', function () {
+      Logger.info(`kafkaConsumer:: Polling for new topic changes for Consumer: '${clientId}'`)
+      kafka.getListOfFilteredTopics(topicRegexFilter).then(refreshedListOfPreparedTopics => {
+        Logger.info(`kafkaConsumer:: Client ${clientId} ready for Consumption for ${JSON.stringify(refreshedListOfPreparedTopics)}`)
+        var difference = refreshedListOfPreparedTopics.filter(x => !templistOfPreparedTopics.includes(x))
+        Logger.info(`kafkaConsumer:: Client ${clientId} adding new Topics for Consumption for ${JSON.stringify(difference)}`)
+        templistOfPreparedTopics = refreshedListOfPreparedTopics
+        if (difference && difference.length) {
+          topicList = difference.map(topic => {
+            return {
+              topic: topic,
+              partition: 0
+            }
+          })
+          consumer.addTopics(
+            topicList
+            , (err, result) => {
+              if (err) {
+                Logger.error(err)
+              }
+              Logger.info(`kafkaConsumer:: added new Topic result - ${result}`)
+            }, false)
+          // client.refreshMetadata(
+          //   difference
+          //   , (err, result) => {
+          //     if (err) {
+          //       Logger.error(err)
+          //     }
+          //     Logger.info(`kafkaConsumer:: refreshMetadata result - ${result}`)
+          //   })
+          // consumer.pauseTopics(topicList)
+          // consumer.resumeTopics(topicList)
+        }
+        // consumer.resumeTopics(topicList)
+      })
+    }, null, true, 'America/Los_Angeles')
     //
     // consumerList['prepare'] = {
     //   consumerObj: consumer,

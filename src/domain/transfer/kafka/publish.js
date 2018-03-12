@@ -36,16 +36,36 @@ const publishHandler = (event) => {
     // }
     var producer = new Producer(client, options)
 
-    producer.on('ready', function () {
+    producer.on('ready', async function () {
       var message = JSON.stringify(msg)
       var keyedMessage = new KeyedMessage(key, message)
 
-      producer.send([
-                { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
-      ], function (err, result) {
-        Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
-        // process.exit()
+      producer.createTopics([topic], true, (err, data) => {
+        if (err) {
+          Logger.error(`'publishHandler:: Error - ${err}`)
+        }
+        Logger.info(`'publishHandler:: Created topic - ${data}`)
+        producer.send([
+          { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
+        ], function (err, result) {
+          Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
+          // process.exit()
+        })
       })
+      //   producer.send([
+      //             { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
+      //   ], function (err, result) {
+      //     Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
+      //     // process.exit()
+      //   })
+      // }, 10000)
+
+      // producer.send([
+      //           { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
+      // ], function (err, result) {
+      //   Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
+      //   // process.exit()
+      // })
       Logger.info("publishHandler:: Sent something keyedMessage='%s'", JSON.stringify(keyedMessage))
     })
 

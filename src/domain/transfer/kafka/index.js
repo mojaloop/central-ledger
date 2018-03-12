@@ -37,7 +37,7 @@ const getPrepareNotificationTopicName = (transfer) => {
   return topicTemplate.prepare.notification(dfspName)
 }
 
-const getListOfTopics = (regex) => {
+const getListOfTopics = () => {
   return new Promise((resolve, reject) => {
     const client = new Client(Config.TOPICS_KAFKA_HOSTS)
     client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
@@ -45,11 +45,15 @@ const getListOfTopics = (regex) => {
         console.log(error.stack)
         return reject(error)
       }
-      if (!regex) {
-        return children
-      }
-      // console.log('Children are: %j.', children)
-      var filteredChildren = children.filter((topic) => {
+      return resolve(children)
+    })
+  })
+}
+
+const getListOfFilteredTopics = (regex) => {
+  return getListOfTopics().then(result => {
+    return new Promise((resolve, reject) => {
+      var filteredChildren = result.filter((topic) => {
         const filterRegex = new RegExp(regex, 'i')
         const matches = topic.match(filterRegex)
         if (matches) {
@@ -61,6 +65,26 @@ const getListOfTopics = (regex) => {
       return resolve(filteredChildren)
     })
   })
+  // return new Promise((resolve, reject) => {
+  //   const client = new Client(Config.TOPICS_KAFKA_HOSTS)
+  //   client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
+  //     if (error) {
+  //       console.log(error.stack)
+  //       return reject(error)
+  //     }
+  //     // console.log('Children are: %j.', children)
+  //     var filteredChildren = children.filter((topic) => {
+  //       const filterRegex = new RegExp(regex, 'i')
+  //       const matches = topic.match(filterRegex)
+  //       if (matches) {
+  //         return matches[1]
+  //       } else {
+  //         return null
+  //       }
+  //     })
+  //     return resolve(filteredChildren)
+  //   })
+  // })
 }
 
 // const getListOfTopics = (regex) => {
@@ -100,7 +124,8 @@ const getListOfTopics = (regex) => {
 module.exports = {
   getPrepareTxTopicName,
   getPrepareNotificationTopicName,
-  getListOfTopics
+  getListOfTopics,
+  getListOfFilteredTopics
   // topicRegexEnum,
   // globalListOfResults
 }
