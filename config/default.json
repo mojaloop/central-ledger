@@ -34,6 +34,10 @@
         }
       },
       "CONSUMER": {
+        "CONFIG": {
+          "pollingCronTab": "*/10 * * * * *",
+          "pollingTimeZone": "UTC"
+        },
         "OPTIONS": {
           "groupId": "kafka-mojaloop-group",
           "autoCommit": false,
