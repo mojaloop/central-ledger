@@ -43,10 +43,16 @@ const prepareExecute = (unTranslatedTransfer) => {
       if (result) {
         Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
         const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
-        const topic = Kafka.getPrepareNotificationTopicName(transfer)
+
         // Events.emitPublishMessage(topic, id, result)
+        // CALCULATE THE POSITION
+        //  1. read the latest position from the topic
+        //  2. calculate the position
+        //  3. publish position
+
         var response = result
-        return Kafka.send(topic, id, result).then(result => {
+        const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        return Kafka.send(topicForNotifications, id, result).then(result => {
           if (result) {
             return resolve(response)
           } else {
