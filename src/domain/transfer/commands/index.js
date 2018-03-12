@@ -11,13 +11,28 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 //   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer))
 // }
 
-const prepare = (transfer) => {
-  // Logger.info('Transfer.Command.prepare:: start(%s)', JSON.stringify(transfer))
-  // for future to check if prepare already exists then return { existing: true, transfer: existing }
-  var response = { existing: false, transfer }
-  // Logger.info('Transfer.Command.prepare:: end=%s', JSON.stringify(response))
-  return new Promise(function (resolve, reject) {
-    resolve(response)
+const prepare = async (message) => {
+  return new Promise((resolve, reject) => {
+    Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
+    const { id, ledger, debits, credits, execution_condition, expires_at } = message
+    const t = Translator.toTransfer(message)
+    var topic = Kafka.getPrepareTxTopicName(t)
+    // Logger.info('Transfers.Commands.prepare:: emit PublishMessage(%s, %s, %s)', topic, id, JSON.stringify(t))
+    // Events.emitPublishMessage(topic, id, t)
+    // return resolve({ existing: result.existing, transfer: t })
+    return Kafka.send(topic, id, t).then(result => {
+      var response = {}
+      if (result) {
+        response = { status: 'pending', existing: false, transfer: message }
+        return resolve(response)
+      } else {
+        response = { status: 'pending-failed', existing: false, transfer: message }
+        return reject(response)
+      }
+    }).catch(reason => {
+      Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+      return reject(reason)
+    })
   })
 }
 
@@ -29,12 +44,24 @@ const prepareExecute = (unTranslatedTransfer) => {
         Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
         const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
         const topic = Kafka.getPrepareNotificationTopicName(transfer)
-        Events.emitPublishMessage(topic, id, result)
+        // Events.emitPublishMessage(topic, id, result)
+        var response = result
+        return Kafka.send(topic, id, result).then(result => {
+          if (result) {
+            return resolve(response)
+          } else {
+            return reject(response)
+          }
+        }).catch(reason => {
+          Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+          return reject(reason)
+        })
       }
       resolve(result)
     })
   }).catch(reason => {
-    Logger.info('Transfer.Command.prepareExecute:: ERROR! %s', reason)
+    Logger.error(`Transfers.Commands.prepareExecute:: ERROR:'${reason}'`)
+    return reject(reason)
   })
 }
 

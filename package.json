@@ -76,7 +76,6 @@
     "inert": "4.2.0",
     "joi": "10.4.1",
     "json2csv": "^3.11.5",
-    "jsonpath": "^1.0.0",
     "jsonwebtoken": "7.4.0",
     "kafka-node": "^2.4.0",
     "lodash": "4.17.4",

@@ -41,24 +41,11 @@ const getFulfillment = (id) => {
 }
 
 const prepare = (payload) => {
-  Logger.info('prepare::start(%s)', payload);
+  Logger.info('prepare::start(%s)', payload)
   const transfer = Translator.fromPayload(payload)
   // const transfer = Translator.fromUriIDtoUUIDFromPayload(payload)
   // const transfer = payload
   return Commands.prepare(transfer)
-    .then(result => {
-      Logger.info('prepare::start.Commands.prepare.result(%s)', JSON.stringify(result))
-      const { id, ledger, debits, credits, execution_condition, expires_at } = result.transfer
-      const t = Translator.toTransfer(result.transfer)
-      Logger.info('prepare::start.Commands.prepare.result.translate(%s)', t);
-      // Events.emitTransferPrepared(t) //<-- this is to fire off event for Notifications <-- this needs to moved to the consumer of the notifications
-      // Events.emitTransferPreparedPublishEvent(t) //<-- this is to fire off event for Notifications
-      // var topic = Kafka.getPrepareTxTopicName(debits[0].account)
-      var topic = Kafka.getPrepareTxTopicName(t)
-      Logger.info('emit PublishMessage(%s, %s, %s)', topic, id, JSON.stringify(t))
-      Events.emitPublishMessage(topic, id, t)
-      return { existing: result.existing, transfer: t }
-    })
 }
 
 const reject = (rejection) => {

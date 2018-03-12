@@ -1,3 +1,33 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Gates Foundation
+ * - Name Surname <name.surname@gatesfoundation.com>
+
+ * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+
+ ******/
+
 'use strict'
 
 // STUFF TO GO IN HERE FOR RE-USABLE PRODUCER CODE
@@ -9,31 +39,18 @@ const KeyedMessage = kafkanode.KeyedMessage
 const Client = kafkanode.Client
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-// let client = new Client('localhost:2181')
-// let client
-
-// const options = {
-//   // Configuration for when to consider a message as acknowledged, default 1
-//   requireAcks: -1,
-//     // The amount of time in milliseconds to wait for all acks before considered, default 100ms
-//   ackTimeoutMs: 100,
-//   // Partitioner type (default = 0, random = 1, cyclic = 2, keyed = 3, custom = 4), default 0
-//   partitionerType: 2
-// }
-
-const publishHandler = (event) => {
-  return (eventMessage) => {
+const send = (topic, key, msg) => {
+  return new Promise((resolve, reject) => {
     const options = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+
     const attributes = Config.TOPICS_KAFKA_PRODUCER_ATTRIBUTES
-    const { topic, key, msg } = eventMessage
-    Logger.info('publishHandler:: start(%s, %s, %s)', topic, key, msg)
-    // var topic = topic
+
+    Logger.info('Publish.send:: start(%s, %s, %s)', topic, key, msg)
+
     var partition = 0
-    // var attributes = 0
+
     const client = new Client(Config.TOPICS_KAFKA_HOSTS)
-    // if (!client) {
-    //   client = new Client('localhost:2181')
-    // }
+
     var producer = new Producer(client, options)
 
     producer.on('ready', async function () {
@@ -42,44 +59,41 @@ const publishHandler = (event) => {
 
       producer.createTopics([topic], true, (err, data) => {
         if (err) {
-          Logger.error(`'publishHandler:: Error - ${err}`)
+          Logger.error(`Publish.send:: Error - ${err}`)
         }
-        Logger.info(`'publishHandler:: Created topic - ${data}`)
+        Logger.info(`'Publish.send:: Created topic - ${data}`)
         producer.send([
           { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
         ], function (err, result) {
           if (err) {
-            Logger.error(`publishHandler:: Publish topics ${topic} failed with error: ${err}`)
+            Logger.error(`Publish.send:: Publish topics ${topic} failed with error: ${err}`)
+            reject(err)
           } else {
-            Logger.info(`publishHandler:: Publish to topic ${topic} successful`)
+            Logger.info(`Publish.send:: Publish to topic ${topic} successful`)
+            resolve(true)
           }
-          // process.exit()
         })
       })
-      //   producer.send([
-      //             { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
-      //   ], function (err, result) {
-      //     Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
-      //     // process.exit()
-      //   })
-      // }, 10000)
-
-      // producer.send([
-      //           { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
-      // ], function (err, result) {
-      //   Logger.info('publishHandler:: Publish topic(%s) result: %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
-      //   // process.exit()
-      // })
-      Logger.info("publishHandler:: Sent something keyedMessage='%s'", JSON.stringify(keyedMessage))
+      Logger.info("Publish.send:: Sent something keyedMessage='%s'", JSON.stringify(keyedMessage))
     })
 
-    producer.on('publishHandler:: error', function (err) {
-      Logger.error('publishHandler:: error: %s', err)
+    producer.on('Publish.send:: error', function (err) {
+      Logger.error('Publish.send:: error: %s', err)
+      reject(err)
     })
+  })
+}
 
-    // client.close((result, err) => {
-    //   Logger.error(' %s', topic, (JSON.stringify(err) || JSON.stringify(result)))
-    // })
+exports.send = send
+
+const publishHandler = (event) => {
+  return async (eventMessage) => {
+    const { topic, key, msg } = eventMessage
+    Logger.info('Kafka.publish.publishHandler:: start(%s, %s, %s)', topic, key, msg)
+
+    await send(topic, key, msg).then(results => {
+      Logger.info(`Kafka.publish.publishHandler:: result:'${results}'`)
+    })
   }
 }
 
