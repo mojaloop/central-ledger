@@ -1,7 +1,6 @@
 'use strict'
 
 const Db = require('../../db')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
 exports.getById = (id) => {
   return Db.accounts.findOne({ accountId: id })

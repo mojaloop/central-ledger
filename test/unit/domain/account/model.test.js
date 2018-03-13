@@ -207,14 +207,17 @@ Test('accounts model', modelTest => {
       let emailAddress = 'dfsp1@test.com'
       let payload = { name: name, hashedPassword: 'hashedPassword', emailAddress: emailAddress }
       let insertedAccount = { accountId: 1, name: name, emailAddress: emailAddress }
+      let accountId = 1
 
-      Db.accounts.insert.returns(P.resolve(insertedAccount))
+      Db.accounts.insert.returns(P.resolve(accountId))
+      Db.accounts.findOne.returns(P.resolve(insertedAccount))
       Db.userCredentials.insert.returns(P.resolve({}))
 
       Model.create(payload)
         .then(s => {
           test.ok(Db.accounts.insert.withArgs({ name: name, emailAddress: payload.emailAddress }).calledOnce)
-          test.ok(Db.userCredentials.insert.withArgs({ accountId: insertedAccount.accountId, password: payload.hashedPassword }).calledOnce)
+          test.ok(Db.accounts.findOne.withArgs({ accountId: accountId }).calledOnce)
+          test.ok(Db.userCredentials.insert.withArgs({ accountId: accountId, password: payload.hashedPassword }).calledOnce)
           test.equal(s, insertedAccount)
           test.end()
         })

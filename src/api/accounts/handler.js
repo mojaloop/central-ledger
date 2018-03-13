@@ -7,7 +7,7 @@ const Util = require('../../lib/util')
 const PositionService = require('../../domain/position')
 const Errors = require('../../errors')
 const Sidecar = require('../../lib/sidecar')
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
 const buildAccount = (account) => {
   return {
@@ -18,8 +18,8 @@ const buildAccount = (account) => {
 }
 
 const buildResponse = (account, { net = '0' } = {}) => {
-  Logger.info('Account')
-  Logger.info(account)
+  // Logger.info('Account')
+  // Logger.info(account)
   return Util.mergeAndOmitNil(buildAccount(account), {
     created: account.createdDate,
     balance: net,
@@ -57,27 +57,27 @@ const getPosition = (account) => {
     .then(position => buildResponse(account, position))
 }
 
-// exports.create = (request, reply) => {
-//  Sidecar.logRequest(request)
-//  Account.getByName(request.payload.name)
-//    .then(handleExistingRecord)
-//    .then(() => Account.create(request.payload))
-//    .then(account => reply(buildResponse(account)).code(201))
-//    .catch(reply)
-// }
-
 exports.create = (request, reply) => {
   Sidecar.logRequest(request)
   Account.getByName(request.payload.name)
     .then(handleExistingRecord)
     .then(() => Account.create(request.payload))
     .then(account => reply(buildResponse(account)).code(201))
-    .catch((err) => {
-      Logger.info('error has occurred' + err)
-      // console.log(request)
-      Logger.info(err)
-    })
+    .catch(reply)
 }
+
+// exports.create = (request, reply) => {
+//   Sidecar.logRequest(request)
+//  Account.getByName(request.payload.name)
+//    .then(handleExistingRecord)
+//   .then(() => Account.create(request.payload))
+//    .then(account => reply(buildResponse(account)).code(201))
+//    .catch((err) => {
+      // Logger.info('error has occurred' + err)
+      // console.log(request)
+//      Logger.info(err)
+//    })
+// }
 
 exports.updateUserCredentials = (request, reply) => {
   Sidecar.logRequest(request)
