@@ -31,7 +31,7 @@
           "pollingTimeZone": "UTC"
         },
         "OPTIONS": {
-          "debug": "all",
+          "debug": false,
           "metadata.broker.list": "localhost:9092",
           "group.id": "kafka-mojaloop-group",
           "compression.codec": "none",
@@ -40,14 +40,17 @@
           "socket.keepalive.enable": true,
           "queue.buffering.max.messages": 100000,
           "queue.buffering.max.ms": 1000,
-          "batch.num.messages": 1000000
+          "batch.num.messages": 1000000,
+          "concurrency": 1,
+          "batchSize": 1,
+          "commitEveryNBatch": 1
         }
       },
       "PRODUCER":{
         "OPTIONS": {
           "requiredAcks": -1,
           "partitionCount": 1,
-          "debug": "all",
+          "debug": false,
           "metadata.broker.list": "localhost:9092",
           "client.id": "kafka-mojaloop-client",
           "compression.codec": "none",

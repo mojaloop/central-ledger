@@ -189,10 +189,11 @@ const ConsumerOnceOff = () => {}
 
 const Consumer = (options, topic, funcProcessMessage) => {
   Logger.info(`Consumer::['${topic}'] - starting`)
+
   const config = {
     logger: Logger,
     noptions: {
-      'debug': options['debug'] || 'none',
+      // 'debug': options['debug'] || 'all',
       'metadata.broker.list': options['metadata.broker.list'],
       'group.id': options['group.id'],
       // 'enable.auto.commit': false,
@@ -204,6 +205,7 @@ const Consumer = (options, topic, funcProcessMessage) => {
       'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
       'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
       'batch.num.messages': options['batch.num.messages'] || 1000000,
+
       // 'security.protocol': 'sasl_ssl',
       // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
       // 'ssl.key.password': 'nodesinek',
@@ -212,6 +214,7 @@ const Consumer = (options, topic, funcProcessMessage) => {
       // 'sasl.mechanisms': 'PLAIN',
       // 'sasl.username': 'admin',
       // 'sasl.password': 'nodesinek',
+
       'api.version.request': true
     },
     tconf: {
@@ -220,10 +223,14 @@ const Consumer = (options, topic, funcProcessMessage) => {
     }
   }
 
+  if (options.debug) {
+    config.noptions.debug = 'all'
+  }
+
   const consumerConfig = {
-    // batchSize: 1, // grab up to 500 messages per batch round
-    // commitEveryNBatch: 1, // commit all offsets on every 5th batch
-    concurrency: 1, // calls synFunction in parallel * 2 for messages in batch
+    batchSize: options.batchSize || 1, // grab up to 500 messages per batch round
+    commitEveryNBatch: options.commitEveryNBatch || 1, // commit all offsets on every 5th batch
+    concurrency: options.concurrency || 1, // calls synFunction in parallel * 2 for messages in batch
     commitSync: true, // commits asynchronously (faster, but potential danger of growing offline commit request queue) => default is true
     noBatchCommits: false // default is false, IF YOU SET THIS TO true THERE WONT BE ANY COMMITS FOR BATCHES
   }
@@ -233,13 +240,6 @@ const Consumer = (options, topic, funcProcessMessage) => {
   consumer.on('error',
       error => config.logger.error(`Consumer::['${topic}'] - ERROR: ${error}`)
   )
-
-  // const syncFunction = (payload, cb, func = funcProcessMessage) => {
-  //   return funcProcessMessage(payload).then((result) => {
-  //     Logger.info('WEUWUEUWEUWEUEWU')
-  //     cb()
-  //   })
-  // }
 
   consumer.connect().then(() => {
     config.logger.debug(`Consumer::['${topic}'] - connected`)
@@ -254,12 +254,6 @@ const Consumer = (options, topic, funcProcessMessage) => {
   consumer.on('message', message => {
     config.logger.debug(`Consumer::['${topic}'] - message.offset='${message.offset}', message.value='${message.value}'`)
     config.logger.debug(`Consumer::['${topic}'] - stats=${JSON.stringify(consumer.getStats())}`)
-    // funcProcessMessage(message).then(result => {
-    //   Logger.info(`funcProcessMessage = ${result}`)
-    //   return new Promise((resolve, reject) => {
-    //     resolve(true)
-    //   })
-    // })
   })
 }
 
@@ -269,12 +263,9 @@ const createConsumer = async (funcProcessMessage, topicRegexFilter, options, con
   await kafka.getListOfFilteredTopics(topicRegexFilter).then(listOfPreparedTopics => {
     var templistOfPreparedTopics = listOfPreparedTopics
     // Logger.info(`List of Topics for for Prepare= ${listOfPreparedTopics}`)
-    // return new Promise((resolve, reject) => {
+
     templistOfPreparedTopics.forEach(topic => {
-      // var clientId = setClientId(topic)
-      // var groupId = options.groupId
-      // Logger.info(`kafkaConsumer:: Creating Kafka Consumer with ClientId=['${clientId}']`)
-      Logger.info(`kafkaConsumer:: Creating Kafka Consumer with Topic=['${topic}']`)
+      Logger.info(`kafkaConsumer:: Creating Kafka Consumer with Topic='${topic}'`)
       Consumer(options, topic, funcProcessMessage)
     })
 

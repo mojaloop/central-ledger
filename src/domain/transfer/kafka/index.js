@@ -33,16 +33,9 @@
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
-const kafkanode = require('kafka-node')
-const Client = kafkanode.Client
-// const _ = require('lodash')
 const UrlParser = require('../../../lib/urlparser')
 // const format = require('string-template')
 const Mustache = require('mustache')
-const send = require('../kafka/publish').send
-// const createConsumerGroups = require('../kafka/consume').createConsumerGroups
-// const createOnceOffConsumerGroup = require('../kafka/consume').createOnceOffConsumerGroup
-// const createConsumerGroup = require('../kafka/consume').createConsumerGroup
 const createConsumer = require('../kafka/consumeN').createConsumer
 const ConsumerOnceOff = require('../kafka/consumeN').ConsumerOnceOff
 const getListOfTopics = require('../kafka/zookeeper').getListOfTopics
@@ -50,6 +43,7 @@ const Producer = require('../kafka/produceN')
 
 const topicTemplate = {
   prepare: {
+    // leaving these in for string-template <-- to compare performance against mustache
     // tx: (DFSP) => { return format(Config.TOPICS_PREPARE_TEMPLATES_TX, {dfspName: DFSP}) },
     // notification: (DFSP) => { return format(Config.TOPICS_PREPARE_TEMPLATES_NOTIFICATION, {dfspName: DFSP}) },
     // position: (DFSP) => { return format(Config.TOPICS_PREPARE_TEMPLATES_POSITION, {dfspName: DFSP}) }
@@ -78,25 +72,6 @@ const getPreparePositionTopicName = (transfer) => {
   return topicTemplate.prepare.position(dfspName)
 }
 
-// const getListOfTopics = () => {
-//   return new Promise((resolve, reject) => {
-//     const client = new Client(Config.TOPICS_KAFKA_HOSTS)
-//     client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
-//       if (error) {
-//         console.log(error.stack)
-//         // client.close((err) => {
-//         //   Logger.info(`ERR=${err}`)
-//         // })
-//         return reject(error)
-//       }
-//       // client.close((err) => {
-//       //   Logger.info(`ERR=${err}`)
-//       // })
-//       return resolve(children)
-//     })
-//   })
-// }
-
 const getListOfFilteredTopics = (regex) => {
   return getListOfTopics(Config.TOPICS_KAFKA_ZOOKEEPER_HOSTS).then(result => {
     return new Promise((resolve, reject) => {
@@ -112,81 +87,13 @@ const getListOfFilteredTopics = (regex) => {
       return resolve(filteredChildren)
     })
   })
-  // return new Promise((resolve, reject) => {
-  //   const client = new Client(Config.TOPICS_KAFKA_HOSTS)
-  //   client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
-  //     if (error) {
-  //       console.log(error.stack)
-  //       return reject(error)
-  //     }
-  //     // console.log('Children are: %j.', children)
-  //     var filteredChildren = children.filter((topic) => {
-  //       const filterRegex = new RegExp(regex, 'i')
-  //       const matches = topic.match(filterRegex)
-  //       if (matches) {
-  //         return matches[1]
-  //       } else {
-  //         return null
-  //       }
-  //     })
-  //     return resolve(filteredChildren)
-  //   })
-  // })
 }
-
-// const getListOfTopics = (regex) => {
-//   const client = new Client('localhost:2181')
-//   // let listOfResults
-//   client.once('connect', function () {
-//     client.loadMetadataForTopics([], function (error, results) {
-//       if (error) {
-//         return Logger.error('%s', error)
-//       }
-//       var listOfResults = jp.query(results, '$.1.metadata..topic')
-//       switch (regex) {
-//         case topicRegexEnum.topicPrepareRegex:
-//           listOfResults = listOfResults.filter(filterTopicsForPrepareTx)
-//           Logger.info(`{$topicRegexEnum.topicPrepareRegex.name}`)
-//           globalListOfResults[topicRegexEnum.topicPrepareRegex.name] = listOfResults
-//           break
-//         case topicRegexEnum.topicNotificationRegex:
-//           listOfResults = listOfResults.filter(filterTopicsForPrepareNotification)
-//           break
-//         default:
-//           client.close()
-//           return []
-//       }
-//       Logger.info('LIST OF WTF TOPICs: %j', listOfResults)
-//       client.close()
-//       return listOfResults
-//     })
-//     client.close()
-//     return []
-//   })
-//   // return new Promise(function (fulfill, reject) {
-//   //   fulfill(listOfResults)
-//   // })
-// }
-
-// module.exports = {
-//   getPrepareTxTopicName,
-//   getPrepareNotificationTopicName,
-//   getListOfTopics,
-//   getListOfFilteredTopics,
-//   send
-//   // topicRegexEnum,
-//   // globalListOfResults
-// }
 
 exports.getPrepareTxTopicName = getPrepareTxTopicName
 exports.getPrepareNotificationTopicName = getPrepareNotificationTopicName
 exports.getPreparePositionTopicName = getPreparePositionTopicName
 exports.getListOfTopics = getListOfTopics
 exports.getListOfFilteredTopics = getListOfFilteredTopics
-exports.send = send
-// exports.createOnceOffConsumerGroup = createOnceOffConsumerGroup
-// exports.createConsumerGroups = createConsumerGroups
-// exports.createConsumerGroup = createConsumerGroup
 exports.createConsumer = createConsumer
 exports.ConsumerOnceOff = ConsumerOnceOff
 exports.Producer = Producer

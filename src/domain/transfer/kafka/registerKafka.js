@@ -31,18 +31,17 @@
 
 'use strict'
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
 const Commands = require('../commands')
 const Events = require('../../../lib/events')
 const Kafka = require('../kafka')
 
 const wireEvents = () => {
-  // Logger.info('publish.wireEvents::start')
   Events.onPublishMessage(Kafka.Producer.publishHandler('publish.message'))
 }
 
-// for nodejs v8.x upgrade (hapi server v17.xx)
+// *** for nodejs v8.x upgrade (hapi server v17.xx)
 // exports.plugin = {
 //     name: 'publishkafka',
 //     register: (server, options) => {
@@ -53,15 +52,16 @@ const wireEvents = () => {
 exports.register = (server, options, next) => {
   const kafkaConsumerOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
   const kafkaConsumerConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
-  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
-
-  // createConsumerGroups(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
-  // createConsumerGroups(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
-  // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-// // const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+  // Register Kafka Consumers for incoming Prepare Transactions
   Kafka.createConsumer(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
+  // Register Kafka Consumers for Prepare Transactions Notifications
   Kafka.createConsumer(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
+
+  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+  // Connect Kafka Producer
   Kafka.Producer.connect(kafkaProducerOptions)
+
+  // Wire any events for Kafka Handlers
   wireEvents()
   next()
 }

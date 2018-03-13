@@ -29,7 +29,6 @@
 
 'use strict'
 
-// const debug = require('debug')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const NProducer = require('sinek').NProducer
 
@@ -37,11 +36,11 @@ let producer
 
 const connect = (options = {requiredAcks: -1, partitionCount: 1}) => {
   Logger.info(`Producer::connect - clientId='${options['client.id']}'`)
-  // if (!producer) {
-  var producerConfig = {
+
+  var config = {
     logger: Logger,
     noptions: {
-      'debug': options['debug'] || 'none',
+      // 'debug': options['debug'] || 'all',
       'metadata.broker.list': options['metadata.broker.list'],
       'client.id': options['client.id'] || 'default-client',
       'event_cb': true,
@@ -68,11 +67,13 @@ const connect = (options = {requiredAcks: -1, partitionCount: 1}) => {
       // 0=Broker does not send any response/ack to client, 1=Only the leader broker will need to ack the message, -1 or all=broker will block until message is committed by all in sync replicas (ISRs) or broker's min.insync.replicas setting before sending response.
       'request.required.acks': options.requiredAcks || 1
     }
-
   }
-  // producer = new NProducer(config, [topic], partitionCount)
-  producer = new NProducer(producerConfig, options.partitionCount || 1)
-  // }
+
+  if (options.debug) {
+    config.noptions.debug = 'all'
+  }
+
+  producer = new NProducer(config, options.partitionCount || 1)
 }
 
 const send = (options = {message, topic, partition: 0, key: null, partitionKey: null}) => {

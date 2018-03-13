@@ -4,14 +4,16 @@ const Eventric = require('../../../eventric')
 const Translator = require('../translator')
 const Events = require('../../../lib/events')
 const Kafka = require('../kafka')
-const Config = require('../../../lib/config')
+// const Config = require('../../../lib/config')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Errors = require('../../errors')
 
+// *** Original prepare function
 // const prepare = (transfer) => {
 //   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer))
 // }
 
+// *** POC prepare function that publishes messages to Kafka topics
 const prepare = async (message) => {
   return new Promise((resolve, reject) => {
     // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
@@ -39,6 +41,8 @@ const prepare = async (message) => {
     })
   })
 }
+
+// *** POC prepare function that Consumes Prepare messages from Kafka topics
 const prepareExecute = (payload, done) => {
 // const prepareExecute = (payload, done) => {
   var unTranslatedTransfer = JSON.parse(payload.value)
@@ -111,83 +115,16 @@ const prepareExecute = (payload, done) => {
   })
 }
 
-// const prepareExecute = (unTranslatedTransfer) => {
-//   const transfer = Translator.fromPayload(unTranslatedTransfer)
-//   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer)).then(result => {
-//     return new Promise(function (resolve, reject) {
-//       if (result) {
-//         Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
-//         const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
-//
-//         // Events.emitPublishMessage(topic, id, result)
-//         // CALCULATE THE POSITION
-//         //  1. read the latest position from the topic
-//         //  2. calculate the position
-//         //  3. publish position
-//
-//         // var posTopicName = Kafka.getPreparePositionTopicName(transfer)
-//         // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-//         // var groupId = kafkaOptions.groupId
-//         // Kafka.createOnceOffConsumerGroup(groupId,
-//         //   (message) => {
-//         //     return new Promise((resolve, reject) => {
-//         //       Logger.info(`messagemessagemessage: ${message}`)
-//         //       return resolve(true)
-//         //     })
-//         //   }, posTopicName, kafkaOptions).then(result => {
-//         //     var response = result
-//         //     const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
-//         //     return Kafka.send(topicForNotifications, id, result).then(result => {
-//         //       if (result) {
-//         //         return resolve(response)
-//         //       } else {
-//         //         return reject(response)
-//         //       }
-//         //     }).catch(reason => {
-//         //       Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
-//         //       return reject(reason)
-//         //     })
-//         //   })
-//
-//         var response = result
-//         const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
-//         return Kafka.send(topicForNotifications, id, result).then(result => {
-//           if (result) {
-//             return resolve(response)
-//           } else {
-//             return reject(response)
-//           }
-//         }).catch(reason => {
-//           Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
-//           return reject(reason)
-//         })
-//       } else {
-//         reject(result)
-//       }
-//     })
-//   }).catch(reason => {
-//     Logger.error(`Transfers.Commands.prepareExecute:: ERROR:'${reason}'`)
-//     return reject(reason)
-//   })
-// }
-
+// *** POC prepare function that Consumes Prepare Notifications messages from Kafka topics
 const prepareNotification = (payload, done) => {
   var transfer = JSON.parse(payload.value)
   return new Promise(function (resolve, reject) {
     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(transfer))
-    Events.emitTransferPrepared(payload)
+    Events.emitTransferPrepared(payload) // May need to re-work this to be synchronous
     done()
     return resolve(true)
   })
 }
-
-// const prepareNotification = (payload) => {
-//   return new Promise(function (resolve, reject) {
-//     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(payload))
-//     Events.emitTransferPrepared(payload)
-//     return resolve(true)
-//   })
-// }
 
 const fulfill = (fulfillment) => {
   return Eventric.getContext().then(ctx => ctx.command('FulfillTransfer', fulfillment))
