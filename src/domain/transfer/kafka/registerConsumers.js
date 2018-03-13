@@ -34,19 +34,19 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
 const Commands = require('../commands')
-const createConsumerGroups = require('../kafka').createConsumerGroups
+// const createConsumerGroups = require('../kafka').createConsumerGroups
+const createConsumer = require('../kafka').createConsumer
 
 exports.register = (server, options, next) => {
   const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
   const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
 
-  createConsumerGroups(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
-  createConsumerGroups((msg) => {
-    return new Promise((resolve, reject) => {
-      Logger.info(`Message process for Notifications ${JSON.stringify(msg)}`)
-      return resolve(true)
-    })
-  }, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
+  // createConsumerGroups(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
+  // createConsumerGroups(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
+  // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+// // const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+  createConsumer(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
+  createConsumer(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
   next()
 }
 

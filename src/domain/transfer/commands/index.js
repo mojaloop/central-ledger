@@ -37,7 +37,8 @@ const prepare = async (message) => {
   })
 }
 
-const prepareExecute = (unTranslatedTransfer) => {
+const prepareExecute = (payload, cb) => {
+  var unTranslatedTransfer = JSON.parse(payload.value)
   const transfer = Translator.fromPayload(unTranslatedTransfer)
   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer)).then(result => {
     return new Promise(function (resolve, reject) {
@@ -51,51 +52,110 @@ const prepareExecute = (unTranslatedTransfer) => {
         //  2. calculate the position
         //  3. publish position
 
-        // var posTopicName = Kafka.getPreparePositionTopicName(transfer)
-        // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-        // var groupId = kafkaOptions.groupId
-        // Kafka.createOnceOffConsumerGroup(groupId,
-        //   (message) => {
-        //     return new Promise((resolve, reject) => {
-        //       Logger.info(`messagemessagemessage: ${message}`)
-        //       return resolve(true)
-        //     })
-        //   }, posTopicName, kafkaOptions).then(result => {
-        //     var response = result
-        //     const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
-        //     return Kafka.send(topicForNotifications, id, result).then(result => {
-        //       if (result) {
-        //         return resolve(response)
-        //       } else {
-        //         return reject(response)
-        //       }
-        //     }).catch(reason => {
-        //       Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
-        //       return reject(reason)
-        //     })
-        //   })
-
         var response = result
         const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
         return Kafka.send(topicForNotifications, id, result).then(result => {
           if (result) {
+            cb()
             return resolve(response)
           } else {
+            cb()
             return reject(response)
           }
         }).catch(reason => {
           Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+          cb()
           return reject(reason)
         })
       } else {
+        cb()
         reject(result)
       }
     })
   }).catch(reason => {
+    cb()
     Logger.error(`Transfers.Commands.prepareExecute:: ERROR:'${reason}'`)
     return reject(reason)
   })
 }
+
+// const prepareExecute = (unTranslatedTransfer) => {
+//   const transfer = Translator.fromPayload(unTranslatedTransfer)
+//   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer)).then(result => {
+//     return new Promise(function (resolve, reject) {
+//       if (result) {
+//         Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
+//         const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
+//
+//         // Events.emitPublishMessage(topic, id, result)
+//         // CALCULATE THE POSITION
+//         //  1. read the latest position from the topic
+//         //  2. calculate the position
+//         //  3. publish position
+//
+//         // var posTopicName = Kafka.getPreparePositionTopicName(transfer)
+//         // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+//         // var groupId = kafkaOptions.groupId
+//         // Kafka.createOnceOffConsumerGroup(groupId,
+//         //   (message) => {
+//         //     return new Promise((resolve, reject) => {
+//         //       Logger.info(`messagemessagemessage: ${message}`)
+//         //       return resolve(true)
+//         //     })
+//         //   }, posTopicName, kafkaOptions).then(result => {
+//         //     var response = result
+//         //     const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+//         //     return Kafka.send(topicForNotifications, id, result).then(result => {
+//         //       if (result) {
+//         //         return resolve(response)
+//         //       } else {
+//         //         return reject(response)
+//         //       }
+//         //     }).catch(reason => {
+//         //       Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+//         //       return reject(reason)
+//         //     })
+//         //   })
+//
+//         var response = result
+//         const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+//         return Kafka.send(topicForNotifications, id, result).then(result => {
+//           if (result) {
+//             return resolve(response)
+//           } else {
+//             return reject(response)
+//           }
+//         }).catch(reason => {
+//           Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+//           return reject(reason)
+//         })
+//       } else {
+//         reject(result)
+//       }
+//     })
+//   }).catch(reason => {
+//     Logger.error(`Transfers.Commands.prepareExecute:: ERROR:'${reason}'`)
+//     return reject(reason)
+//   })
+// }
+
+const prepareNotification = (payload, cb) => {
+  var transfer = JSON.parse(payload.value)
+  return new Promise(function (resolve, reject) {
+    Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(transfer))
+    Events.emitTransferPrepared(payload)
+    cb()
+    return resolve(true)
+  })
+}
+
+// const prepareNotification = (payload) => {
+//   return new Promise(function (resolve, reject) {
+//     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(payload))
+//     Events.emitTransferPrepared(payload)
+//     return resolve(true)
+//   })
+// }
 
 const fulfill = (fulfillment) => {
   return Eventric.getContext().then(ctx => ctx.command('FulfillTransfer', fulfillment))
@@ -114,5 +174,6 @@ module.exports = {
   prepare,
   prepareExecute,
   reject,
-  settle
+  settle,
+  prepareNotification
 }

@@ -62,7 +62,7 @@ const send = (topic, key, msg) => {
         if (err) {
           Logger.error(`Publish.send:: Error - ${err}`)
         }
-        Logger.info(`'Publish.send:: Created topic - ${data}`)
+        Logger.info(`Publish.send:: Created topic - ${data}`)
         producer.send([
           { topic: topic, partitions: partition, messages: [keyedMessage], attributes: attributes }
         ], function (err, result) {

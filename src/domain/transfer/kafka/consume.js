@@ -154,54 +154,57 @@ const createConsumerGroup = (groupId, funcProcessMessage, topics, options) => {
 
   var consumer = new kafkanode.ConsumerGroup(localOptions, topics)
 
-  var q = asyncQ.queue(function (message, cb) {
-    var payload = JSON.parse(message.value)
-    funcProcessMessage(payload).then(result => {
-      if (result) {
-        // Logger.info('result: %s', result)
-        consumer.commit(
-          function (err, result) {
-            if (err) {
-              Logger.info(`consumerGroup::['${topics}'] Committing index error: ${JSON.stringify(err)}`)
+  setTimeout(() => {
+    Logger.info(`consumerGroup::['${topics}'] Warming up Consumer`)
+    var q = asyncQ.queue(function (message, cb) {
+      var payload = JSON.parse(message.value)
+      funcProcessMessage(payload).then(result => {
+        if (result) {
+          // Logger.info('result: %s', result)
+          consumer.commit(
+            function (err, result) {
+              if (err) {
+                Logger.info(`consumerGroup::['${topics}'] Committing index error: ${JSON.stringify(err)}`)
+                cb() // this marks the completion of the processing by the worker
+                // return false
+              }
+              Logger.info(`consumerGroup::['${topics}'] Committing index`)
               cb() // this marks the completion of the processing by the worker
-              // return false
-            }
-            Logger.info(`consumerGroup::['${topics}'] Committing index`)
-            cb() // this marks the completion of the processing by the worker
-            // return true
-          })
-        // cb() // this marks the completion of the processing by the worker
-      }
-    }).catch(reason => {
-      // Logger.error(`consumerGroup::['${clientId}'] funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
-      Logger.error(`consumerGroup::[''] funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
-      cb()
-      return reason
+              // return true
+            })
+          // cb() // this marks the completion of the processing by the worker
+        }
+      }).catch(reason => {
+        // Logger.error(`consumerGroup::['${clientId}'] funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
+        Logger.error(`consumerGroup::[''] funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
+        cb()
+        return reason
+      })
+    }, 1)
+
+    // a callback function, invoked when queue is empty.
+    q.drain = function () {
+      consumer.resume()
+    }
+
+    consumer.on('error', function onError (error) {
+      console.error(error)
+      console.error(error.stack)
+      // return false
     })
-  }, 1)
 
-  // a callback function, invoked when queue is empty.
-  q.drain = function () {
-    consumer.resume()
-  }
-
-  consumer.on('error', function onError (error) {
-    console.error(error)
-    console.error(error.stack)
-    // return false
-  })
-
-  consumer.on('message', function onMessage (message) {
-    console.log('consumerGroup::%s read msg Topic="%s" Partition=%s Offset=%d', this.client.clientId, message.topic, message.partition, message.offset)
-    Logger.info(`consumerGroup::['${topics}'] Consumed message: ${JSON.stringify(message)}`)
-    q.push(message, function (err, result) {
-      if (err) {
-        Logger.error(err)
-        return err
-      }
+    consumer.on('message', function onMessage (message) {
+      console.log('consumerGroup::%s read msg Topic="%s" Partition=%s Offset=%d', this.client.clientId, message.topic, message.partition, message.offset)
+      Logger.info(`consumerGroup::['${topics}'] Consumed message: ${JSON.stringify(message)}`)
+      q.push(message, function (err, result) {
+        if (err) {
+          Logger.error(err)
+          return err
+        }
+      })
+      consumer.pause() // Pause kafka consumer group to not receive any more new messages
     })
-    consumer.pause() // Pause kafka consumer group to not receive any more new messages
-  })
+  }, 60000)
 }
 
 const createConsumerGroups = async (funcProcessMessage, topicRegexFilter, options, config) => {

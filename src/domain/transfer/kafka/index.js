@@ -40,9 +40,10 @@ const UrlParser = require('../../../lib/urlparser')
 // const format = require('string-template')
 const Mustache = require('mustache')
 const send = require('../kafka/publish').send
-const createConsumerGroups = require('../kafka/consume').createConsumerGroups
-const createOnceOffConsumerGroup = require('../kafka/consume').createOnceOffConsumerGroup
-const createConsumerGroup = require('../kafka/consume').createConsumerGroup
+// const createConsumerGroups = require('../kafka/consume').createConsumerGroups
+// const createOnceOffConsumerGroup = require('../kafka/consume').createOnceOffConsumerGroup
+// const createConsumerGroup = require('../kafka/consume').createConsumerGroup
+const createConsumer = require('../kafka/consumeN').createConsumer
 
 const topicTemplate = {
   prepare: {
@@ -174,7 +175,7 @@ exports.getPreparePositionTopicName = getPreparePositionTopicName
 exports.getListOfTopics = getListOfTopics
 exports.getListOfFilteredTopics = getListOfFilteredTopics
 exports.send = send
-exports.createOnceOffConsumerGroup = createOnceOffConsumerGroup
-exports.createConsumerGroups = createConsumerGroups
-exports.createConsumerGroup = createConsumerGroup
-
+// exports.createOnceOffConsumerGroup = createOnceOffConsumerGroup
+// exports.createConsumerGroups = createConsumerGroups
+// exports.createConsumerGroup = createConsumerGroup
+exports.createConsumer = createConsumer
