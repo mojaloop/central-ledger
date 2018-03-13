@@ -40,7 +40,9 @@ const UrlParser = require('../../../lib/urlparser')
 // const format = require('string-template')
 const Mustache = require('mustache')
 const send = require('../kafka/publish').send
-// const createConsumerGroups = require('../kafka/consumerGroup').createConsumerGroups
+const createConsumerGroups = require('../kafka/consume').createConsumerGroups
+const createOnceOffConsumerGroup = require('../kafka/consume').createOnceOffConsumerGroup
+const createConsumerGroup = require('../kafka/consume').createConsumerGroup
 
 const topicTemplate = {
   prepare: {
@@ -65,6 +67,11 @@ const getPrepareTxTopicName = (transfer) => {
 const getPrepareNotificationTopicName = (transfer) => {
   const dfspName = getDfspName(transfer.debits[0].account)
   return topicTemplate.prepare.notification(dfspName)
+}
+
+const getPreparePositionTopicName = (transfer) => {
+  const dfspName = getDfspName(transfer.debits[0].account)
+  return topicTemplate.prepare.position(dfspName)
 }
 
 const getListOfTopics = () => {
@@ -151,30 +158,23 @@ const getListOfFilteredTopics = (regex) => {
 //   // })
 // }
 
-module.exports = {
-  getPrepareTxTopicName,
-  getPrepareNotificationTopicName,
-  getListOfTopics,
-  getListOfFilteredTopics,
-  send
-  // topicRegexEnum,
-  // globalListOfResults
-}
+// module.exports = {
+//   getPrepareTxTopicName,
+//   getPrepareNotificationTopicName,
+//   getListOfTopics,
+//   getListOfFilteredTopics,
+//   send
+//   // topicRegexEnum,
+//   // globalListOfResults
+// }
 
-// exports.register = (server, options, next) => {
-//   const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-//   const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
-//
-//   createConsumerGroups(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
-//   createConsumerGroups((msg) => {
-//     return new Promise((resolve, reject) => {
-//       Logger.info(`Message process for Notifications ${JSON.stringify(msg)}`)
-//       return resolve(true)
-//     })
-//   }, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
-//   next()
-// }
-//
-// exports.register.attributes = {
-//   name: 'consume.message'
-// }
+exports.getPrepareTxTopicName = getPrepareTxTopicName
+exports.getPrepareNotificationTopicName = getPrepareNotificationTopicName
+exports.getPreparePositionTopicName = getPreparePositionTopicName
+exports.getListOfTopics = getListOfTopics
+exports.getListOfFilteredTopics = getListOfFilteredTopics
+exports.send = send
+exports.createOnceOffConsumerGroup = createOnceOffConsumerGroup
+exports.createConsumerGroups = createConsumerGroups
+exports.createConsumerGroup = createConsumerGroup
+

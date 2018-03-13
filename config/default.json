@@ -50,12 +50,14 @@
           "keyEncoding": "utf8"
         },
         "OPTIONS": {
-          "kafkaHost": "localhost:9092",
+          "host": "localhost:2181",
           "groupId": "kafka-mojaloop-group",
           "sessionTimeout": 15000,
-          "fromOffset": "earliest",
+          "fromOffset": "latest",
           "autoCommit": false,
-          "outOfRangeOffset": "earliest"
+          "outOfRangeOffset": "earliest",
+          "migrateHLC": true,
+          "migrateRolling": false
         }
       }
     },

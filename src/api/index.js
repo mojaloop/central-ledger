@@ -8,11 +8,11 @@ const Sockets = require('./sockets')
 const Worker = require('./worker')
 const Account = require('../domain/account')
 const Publish = require('../domain/transfer/kafka/publish')
-const ConsumeGroup = require('../domain/transfer/kafka/consumerGroup')
+const Consumers = require('../domain/transfer/kafka/registerConsumers')
 
 const Setup = require('../shared/setup')
 
-module.exports = Setup.initialize({ service: 'api', port: Config.PORT, modules: [Auth, Routes, Sockets, Worker, Publish, ConsumeGroup], loadEventric: true, runMigrations: true })
+module.exports = Setup.initialize({ service: 'api', port: Config.PORT, modules: [Auth, Routes, Sockets, Worker, Publish, Consumers], loadEventric: true, runMigrations: true })
   .then(server => {
     return Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL).then(() => server)
   })

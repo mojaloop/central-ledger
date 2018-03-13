@@ -4,6 +4,7 @@ const Eventric = require('../../../eventric')
 const Translator = require('../translator')
 const Events = require('../../../lib/events')
 const Kafka = require('../kafka')
+const Config = require('../../../lib/config')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Errors = require('../../errors')
 
@@ -50,6 +51,30 @@ const prepareExecute = (unTranslatedTransfer) => {
         //  2. calculate the position
         //  3. publish position
 
+        // var posTopicName = Kafka.getPreparePositionTopicName(transfer)
+        // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+        // var groupId = kafkaOptions.groupId
+        // Kafka.createOnceOffConsumerGroup(groupId,
+        //   (message) => {
+        //     return new Promise((resolve, reject) => {
+        //       Logger.info(`messagemessagemessage: ${message}`)
+        //       return resolve(true)
+        //     })
+        //   }, posTopicName, kafkaOptions).then(result => {
+        //     var response = result
+        //     const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        //     return Kafka.send(topicForNotifications, id, result).then(result => {
+        //       if (result) {
+        //         return resolve(response)
+        //       } else {
+        //         return reject(response)
+        //       }
+        //     }).catch(reason => {
+        //       Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+        //       return reject(reason)
+        //     })
+        //   })
+
         var response = result
         const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
         return Kafka.send(topicForNotifications, id, result).then(result => {
@@ -62,8 +87,9 @@ const prepareExecute = (unTranslatedTransfer) => {
           Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
           return reject(reason)
         })
+      } else {
+        reject(result)
       }
-      resolve(result)
     })
   }).catch(reason => {
     Logger.error(`Transfers.Commands.prepareExecute:: ERROR:'${reason}'`)
