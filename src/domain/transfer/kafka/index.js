@@ -40,6 +40,7 @@ const UrlParser = require('../../../lib/urlparser')
 // const format = require('string-template')
 const Mustache = require('mustache')
 const send = require('../kafka/publish').send
+// const createConsumerGroups = require('../kafka/consumerGroup').createConsumerGroups
 
 const topicTemplate = {
   prepare: {
@@ -159,3 +160,21 @@ module.exports = {
   // topicRegexEnum,
   // globalListOfResults
 }
+
+// exports.register = (server, options, next) => {
+//   const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+//   const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+//
+//   createConsumerGroups(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
+//   createConsumerGroups((msg) => {
+//     return new Promise((resolve, reject) => {
+//       Logger.info(`Message process for Notifications ${JSON.stringify(msg)}`)
+//       return resolve(true)
+//     })
+//   }, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
+//   next()
+// }
+//
+// exports.register.attributes = {
+//   name: 'consume.message'
+// }

@@ -38,7 +38,7 @@
           "pollingCronTab": "*/10 * * * * *",
           "pollingTimeZone": "UTC"
         },
-        "OPTIONS": {
+        "OPTIONS_OLD": {
           "groupId": "kafka-mojaloop-group",
           "autoCommit": false,
           "autoCommitIntervalMs": 100,
@@ -48,8 +48,15 @@
           "fromOffset": false,
           "encoding": "utf8",
           "keyEncoding": "utf8"
+        },
+        "OPTIONS": {
+          "kafkaHost": "localhost:9092",
+          "groupId": "kafka-mojaloop-group",
+          "sessionTimeout": 15000,
+          "fromOffset": "earliest",
+          "autoCommit": false,
+          "outOfRangeOffset": "earliest"
         }
-
       }
     },
     "PREPARE": {

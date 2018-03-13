@@ -85,6 +85,7 @@ const createConsumer = (clientId, funcProcessMessage, topic, options) => {
       }
     }).catch(reason => {
       Logger.error(`kafkaConsumer::['${clientId}'] funcProcessMessage(${funcProcessMessage.name}) failed with the following reason: ${reason}`)
+      cb()
     })
   }, 1)
 
@@ -147,21 +148,21 @@ const kafkaConsumers = async (funcProcessMessage, topicRegexFilter, options, con
     Logger.error(`kafkaConsumer:: Poller '${topicRegexFilter}' Unable to fetch list topics with regex topicRegexFilter(${topicRegexFilter}) with the following reason: ${reason}`)
   })
 }
-
-exports.register = (server, options, next) => {
-  const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-  const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
-
-  kafkaConsumers(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
-  kafkaConsumers((msg) => {
-    return new Promise((resolve, reject) => {
-      Logger.info(`Message process for Notifications ${JSON.stringify(msg)}`)
-      return resolve(true)
-    })
-  }, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
-  next()
-}
-
-exports.register.attributes = {
-  name: 'consume.message'
-}
+//
+// exports.register = (server, options, next) => {
+//   const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+//   const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+//
+//   kafkaConsumers(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
+//   kafkaConsumers((msg) => {
+//     return new Promise((resolve, reject) => {
+//       Logger.info(`Message process for Notifications ${JSON.stringify(msg)}`)
+//       return resolve(true)
+//     })
+//   }, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
+//   next()
+// }
+//
+// exports.register.attributes = {
+//   name: 'consume.message'
+// }
