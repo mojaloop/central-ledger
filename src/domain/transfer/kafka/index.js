@@ -31,7 +31,7 @@
 
 'use strict'
 
-// const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
 const kafkanode = require('kafka-node')
 const Client = kafkanode.Client
@@ -44,6 +44,8 @@ const send = require('../kafka/publish').send
 // const createOnceOffConsumerGroup = require('../kafka/consume').createOnceOffConsumerGroup
 // const createConsumerGroup = require('../kafka/consume').createConsumerGroup
 const createConsumer = require('../kafka/consumeN').createConsumer
+const ConsumerOnceOff = require('../kafka/consumeN').ConsumerOnceOff
+const getListOfTopics = require('../kafka/zookeeper').getListOfTopics
 
 const topicTemplate = {
   prepare: {
@@ -75,21 +77,27 @@ const getPreparePositionTopicName = (transfer) => {
   return topicTemplate.prepare.position(dfspName)
 }
 
-const getListOfTopics = () => {
-  return new Promise((resolve, reject) => {
-    const client = new Client(Config.TOPICS_KAFKA_HOSTS)
-    client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
-      if (error) {
-        console.log(error.stack)
-        return reject(error)
-      }
-      return resolve(children)
-    })
-  })
-}
+// const getListOfTopics = () => {
+//   return new Promise((resolve, reject) => {
+//     const client = new Client(Config.TOPICS_KAFKA_HOSTS)
+//     client.zk.client.getChildren('/brokers/topics', (error, children, stats) => {
+//       if (error) {
+//         console.log(error.stack)
+//         // client.close((err) => {
+//         //   Logger.info(`ERR=${err}`)
+//         // })
+//         return reject(error)
+//       }
+//       // client.close((err) => {
+//       //   Logger.info(`ERR=${err}`)
+//       // })
+//       return resolve(children)
+//     })
+//   })
+// }
 
 const getListOfFilteredTopics = (regex) => {
-  return getListOfTopics().then(result => {
+  return getListOfTopics(Config.TOPICS_KAFKA_HOSTS).then(result => {
     return new Promise((resolve, reject) => {
       var filteredChildren = result.filter((topic) => {
         const filterRegex = new RegExp(regex, 'i')
@@ -179,3 +187,4 @@ exports.send = send
 // exports.createConsumerGroups = createConsumerGroups
 // exports.createConsumerGroup = createConsumerGroup
 exports.createConsumer = createConsumer
+exports.ConsumerOnceOff = ConsumerOnceOff

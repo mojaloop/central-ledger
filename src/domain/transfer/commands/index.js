@@ -36,8 +36,8 @@ const prepare = async (message) => {
     })
   })
 }
-
 const prepareExecute = (payload, cb) => {
+// const prepareExecute = (payload, cb) => {
   var unTranslatedTransfer = JSON.parse(payload.value)
   const transfer = Translator.fromPayload(unTranslatedTransfer)
   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer)).then(result => {
@@ -51,7 +51,17 @@ const prepareExecute = (payload, cb) => {
         //  1. read the latest position from the topic
         //  2. calculate the position
         //  3. publish position
-
+        // const topicForPositions = Kafka.getPreparePositionTopicName(transfer)
+        // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+        // var groupId = kafkaOptions.groupId
+        // Kafka.ConsumerOnceOff(groupId, topicForPositions,
+        //   (payload, cb) => {
+        //     var positionPayload = JSON.parse(payload.value)
+        //     return new Promise((resolve, reject) => {
+        //       Logger.info(`positionPayload = ${JSON.stringify(positionPayload)}`)
+        //       return resolve(true)
+        //     })
+        //   })
         var response = result
         const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
         return Kafka.send(topicForNotifications, id, result).then(result => {
