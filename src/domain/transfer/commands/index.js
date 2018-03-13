@@ -14,20 +14,23 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 
 const prepare = async (message) => {
   return new Promise((resolve, reject) => {
-    Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
+    // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
     const { id, ledger, debits, credits, execution_condition, expires_at } = message
     const t = Translator.toTransfer(message)
     var topic = Kafka.getPrepareTxTopicName(t)
     // Logger.info('Transfers.Commands.prepare:: emit PublishMessage(%s, %s, %s)', topic, id, JSON.stringify(t))
     // Events.emitPublishMessage(topic, id, t)
     // return resolve({ existing: result.existing, transfer: t })
-    return Kafka.send(topic, id, t).then(result => {
+    // return Kafka.send(topic, id, t).then(result => {
+    return Kafka.Producer.send({topic, key: id, message: JSON.stringify(t)}).then(result => {
       var response = {}
       if (result) {
         response = { status: 'pending', existing: false, transfer: message }
+        Logger.info(`Transfers.Commands.prepare:: result='${JSON.stringify(response)}'`)
         return resolve(response)
       } else {
         response = { status: 'pending-failed', existing: false, transfer: message }
+        Logger.info(`Transfers.Commands.prepare:: result='${JSON.stringify(response)}'`)
         return reject(response)
       }
     }).catch(reason => {
@@ -36,8 +39,8 @@ const prepare = async (message) => {
     })
   })
 }
-const prepareExecute = (payload, cb) => {
-// const prepareExecute = (payload, cb) => {
+const prepareExecute = (payload, done) => {
+// const prepareExecute = (payload, done) => {
   var unTranslatedTransfer = JSON.parse(payload.value)
   const transfer = Translator.fromPayload(unTranslatedTransfer)
   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer)).then(result => {
@@ -54,36 +57,55 @@ const prepareExecute = (payload, cb) => {
         // const topicForPositions = Kafka.getPreparePositionTopicName(transfer)
         // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
         // var groupId = kafkaOptions.groupId
+        // Kafka.ConsumerOnceOff(groupId, topicForPositions, null)
         // Kafka.ConsumerOnceOff(groupId, topicForPositions,
         //   (payload, cb) => {
         //     var positionPayload = JSON.parse(payload.value)
         //     return new Promise((resolve, reject) => {
         //       Logger.info(`positionPayload = ${JSON.stringify(positionPayload)}`)
+        //       cb()
         //       return resolve(true)
+        //     })
+        //   }).then(result => {
+        //     var response = result
+        //     const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        //     return Kafka.send(topicForNotifications, id, result).then(result => {
+        //       if (result) {
+        //         done()
+        //         return resolve(response)
+        //       } else {
+        //         done()
+        //         return reject(response)
+        //       }
+        //     }).catch(reason => {
+        //       Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+        //       done()
+        //       return reject(reason)
         //     })
         //   })
         var response = result
         const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
-        return Kafka.send(topicForNotifications, id, result).then(result => {
+        return Kafka.Producer.send({topic: topicForNotifications, key: id, message: JSON.stringify(result)}).then(result => {
+        // return Kafka.send(topicForNotifications, id, result).then(result => {
           if (result) {
-            cb()
+            done()
             return resolve(response)
           } else {
-            cb()
+            done()
             return reject(response)
           }
         }).catch(reason => {
-          Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
-          cb()
+          Logger.error(`Transfers.prepareExecute.prepare:: ERROR:'${reason}'`)
+          done()
           return reject(reason)
         })
       } else {
-        cb()
+        done()
         reject(result)
       }
     })
   }).catch(reason => {
-    cb()
+    done()
     Logger.error(`Transfers.Commands.prepareExecute:: ERROR:'${reason}'`)
     return reject(reason)
   })
@@ -149,12 +171,12 @@ const prepareExecute = (payload, cb) => {
 //   })
 // }
 
-const prepareNotification = (payload, cb) => {
+const prepareNotification = (payload, done) => {
   var transfer = JSON.parse(payload.value)
   return new Promise(function (resolve, reject) {
     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(transfer))
     Events.emitTransferPrepared(payload)
-    cb()
+    done()
     return resolve(true)
   })
 }

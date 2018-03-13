@@ -22,42 +22,41 @@
   "EMAIL_SMTP": "smtp.gmail.com",
   "TOPICS":{
     "KAFKA": {
-      "HOSTS": "localhost:2181",
-      "PRODUCER": {
-        "OPTIONS": {
-          "requireAcks": -1,
-          "ackTimeoutMs": 100,
-          "partitionerType": 2
-        },
-        "ATTRIBUTES":{
-          "compressionType": 0
-        }
+      "ZOOKEEPER": {
+        "HOSTS": "localhost:2181"
       },
       "CONSUMER": {
         "CONFIG": {
           "pollingCronTab": "*/10 * * * * *",
           "pollingTimeZone": "UTC"
         },
-        "OPTIONS_OLD": {
-          "groupId": "kafka-mojaloop-group",
-          "autoCommit": false,
-          "autoCommitIntervalMs": 100,
-          "fetchMaxWaitMs": 100,
-          "fetchMinBytes": 1,
-          "fetchMaxBytes": 1048576,
-          "fromOffset": false,
-          "encoding": "utf8",
-          "keyEncoding": "utf8"
-        },
         "OPTIONS": {
-          "host": "localhost:2181",
-          "groupId": "kafka-mojaloop-group",
-          "sessionTimeout": 15000,
-          "fromOffset": "latest",
-          "autoCommit": false,
-          "outOfRangeOffset": "earliest",
-          "migrateHLC": true,
-          "migrateRolling": false
+          "debug": "all",
+          "metadata.broker.list": "localhost:9092",
+          "group.id": "kafka-mojaloop-group",
+          "compression.codec": "none",
+          "retry.backoff.ms": 200,
+          "message.send.max.retries": 10,
+          "socket.keepalive.enable": true,
+          "queue.buffering.max.messages": 100000,
+          "queue.buffering.max.ms": 1000,
+          "batch.num.messages": 1000000
+        }
+      },
+      "PRODUCER":{
+        "OPTIONS": {
+          "requiredAcks": -1,
+          "partitionCount": 1,
+          "debug": "all",
+          "metadata.broker.list": "localhost:9092",
+          "client.id": "kafka-mojaloop-client",
+          "compression.codec": "none",
+          "retry.backoff.ms": 200,
+          "message.send.max.retries": 10,
+          "socket.keepalive.enable": true,
+          "queue.buffering.max.messages": 100000,
+          "queue.buffering.max.ms": 1000,
+          "batch.num.messages": 1000000
         }
       }
     },

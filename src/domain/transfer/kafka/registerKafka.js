@@ -34,22 +34,38 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../lib/config')
 const Commands = require('../commands')
-// const createConsumerGroups = require('../kafka').createConsumerGroups
-const createConsumer = require('../kafka').createConsumer
+const Events = require('../../../lib/events')
+const Kafka = require('../kafka')
+
+const wireEvents = () => {
+  // Logger.info('publish.wireEvents::start')
+  Events.onPublishMessage(Kafka.Producer.publishHandler('publish.message'))
+}
+
+// for nodejs v8.x upgrade (hapi server v17.xx)
+// exports.plugin = {
+//     name: 'publishkafka',
+//     register: (server, options) => {
+//         wireEvents()
+//     }
+// }
 
 exports.register = (server, options, next) => {
-  const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-  const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+  const kafkaConsumerOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+  const kafkaConsumerConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
 
   // createConsumerGroups(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
   // createConsumerGroups(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
   // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
 // // const kafkaConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
-  createConsumer(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions, kafkaConfig)
-  createConsumer(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaOptions, kafkaConfig)
+  Kafka.createConsumer(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
+  Kafka.createConsumer(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
+  Kafka.Producer.connect(kafkaProducerOptions)
+  wireEvents()
   next()
 }
 
 exports.register.attributes = {
-  name: 'consume.message'
+  name: 'register.kafka'
 }

@@ -46,6 +46,7 @@ const send = require('../kafka/publish').send
 const createConsumer = require('../kafka/consumeN').createConsumer
 const ConsumerOnceOff = require('../kafka/consumeN').ConsumerOnceOff
 const getListOfTopics = require('../kafka/zookeeper').getListOfTopics
+const Producer = require('../kafka/produceN')
 
 const topicTemplate = {
   prepare: {
@@ -97,7 +98,7 @@ const getPreparePositionTopicName = (transfer) => {
 // }
 
 const getListOfFilteredTopics = (regex) => {
-  return getListOfTopics(Config.TOPICS_KAFKA_HOSTS).then(result => {
+  return getListOfTopics(Config.TOPICS_KAFKA_ZOOKEEPER_HOSTS).then(result => {
     return new Promise((resolve, reject) => {
       var filteredChildren = result.filter((topic) => {
         const filterRegex = new RegExp(regex, 'i')
@@ -188,3 +189,4 @@ exports.send = send
 // exports.createConsumerGroup = createConsumerGroup
 exports.createConsumer = createConsumer
 exports.ConsumerOnceOff = ConsumerOnceOff
+exports.Producer = Producer
