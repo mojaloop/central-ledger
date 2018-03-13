@@ -1,6 +1,7 @@
 'use strict'
 
 const Db = require('../../db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 exports.getById = (id) => {
   return Db.accounts.findOne({ accountId: id })
@@ -51,7 +52,8 @@ exports.updateAccountSettlement = (account, settlement) => {
 exports.create = (account) => {
   return Db.accounts.insert({ name: account.name, emailAddress: account.emailAddress })
   .then(insertedAccount => {
-    return Db.userCredentials.insert({ accountId: insertedAccount.accountId, password: account.hashedPassword })
-      .then(() => insertedAccount)
+    const newaccount = Db.accounts.findOne({ accountId: insertedAccount })
+    return Db.userCredentials.insert({ accountId: insertedAccount, password: account.hashedPassword })
+      .then(() => newaccount)
   })
 }

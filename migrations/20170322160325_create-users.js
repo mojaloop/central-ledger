@@ -2,7 +2,7 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('users', (t) => {
-    t.uuid('userId').primary()
+    t.uuid('userId').notNullable().primary()
     t.string('key', 256).notNullable()
     t.string('lastName', 128).notNullable()
     t.string('firstName', 128).notNullable()
