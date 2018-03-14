@@ -148,15 +148,15 @@ Test('knex store test', storeTest => {
 
               test.ok(insertArg.eventId)
               test.equal(insertArg.name, domainEvent.name)
-              test.equal(insertArg.payload, domainEvent.payload)
+              test.equal(insertArg.payload, '{}')
               test.equal(insertArg.aggregateId, domainEvent.aggregate.id)
               test.equal(insertArg.aggregateName, domainEvent.aggregate.name)
               test.equal(insertArg.sequenceNumber, 1)
-              test.equal(insertArg.timestamp, domainEvent.timestamp.toISOString())
+              test.equal(insertArg.timestamp.toISOString(), domainEvent.timestamp.toISOString())
 
               test.equal(result.id, 1)
               test.equal(result.name, domainEvent.name)
-              test.equal(result.payload, domainEvent.payload)
+              test.equal(result.payload, '{}')
               test.deepEqual(result.aggregate, domainEvent.aggregate)
               test.equal(result.context, 'SomeName')
               test.equal(result.timestamp, domainEvent.timestamp.getTime())

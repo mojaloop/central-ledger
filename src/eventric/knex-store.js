@@ -22,7 +22,7 @@ class KnexStore {
     return Db.from(this._tableName)
       .max({ aggregateId: domainEvent.aggregate.id }, 'sequenceNumber')
       .then(max => {
-        if (domainEvent.ensureIsFirstDomainEvent || max === null) {
+        if (domainEvent.ensureIsFirstDomainEvent || !max || max === null) {
           return 1
         } else {
           return max + 1
@@ -45,11 +45,11 @@ class KnexStore {
     return Db.from(this._tableName).insert({
       eventId: Uuid(),
       name: domainEvent.name,
-      payload: domainEvent.payload,
+      payload: JSON.stringify(domainEvent.payload),
       aggregateId: domainEvent.aggregate.id,
       aggregateName: domainEvent.aggregate.name,
       sequenceNumber: sequenceNumber,
-      timestamp: (new Date(domainEvent.timestamp)).toISOString()
+      timestamp: new Date(domainEvent.timestamp)
     })
   }
 
