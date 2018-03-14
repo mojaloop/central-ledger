@@ -37,7 +37,9 @@ const wireConnection = (webSocketServer) => {
 const transferHandler = (event) => {
   return (msg) => {
     const resource = formatResource(event, msg.resource, msg.related_resources)
-    getAccounts(msg.resource).forEach(account => manager.send(account, resource))
+    const account = msg.resource.to
+    manager.send(account, resource)
+    // getAccounts(msg.resource).forEach(account => manager.send(account, resource))
   }
 }
 

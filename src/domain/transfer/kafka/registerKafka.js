@@ -53,9 +53,9 @@ exports.register = (server, options, next) => {
   const kafkaConsumerOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
   const kafkaConsumerConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
   // Register Kafka Consumers for incoming Prepare Transactions
-  Kafka.createConsumer(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
+  Kafka.createConsumerFilteredTopics(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
   // Register Kafka Consumers for Prepare Transactions Notifications
-  Kafka.createConsumer(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
+  // Kafka.createConsumerFilteredTopics(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
 
   // const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
   // Connect Kafka Producer

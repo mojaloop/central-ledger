@@ -257,15 +257,15 @@ const Consumer = (options, topic, funcProcessMessage) => {
   })
 }
 
-const createConsumer = async (funcProcessMessage, topicRegexFilter, options, config) => {
-  Logger.info(`kafkaConsumer:: Creating Kafka Consumer funcProcessMessage:'${funcProcessMessage.name || 'anonymousFunc'}', topicRegexFilter:'${topicRegexFilter}'`)
+const createConsumerFilteredTopics = async (funcProcessMessage, topicRegexFilter, options, config) => {
+  Logger.info(`kafkaConsume.createConsumerFilteredTopicsr:: Creating Kafka Consumer funcProcessMessage:'${funcProcessMessage.name || 'anonymousFunc'}', topicRegexFilter:'${topicRegexFilter}'`)
 
   await kafka.getListOfFilteredTopics(topicRegexFilter).then(listOfPreparedTopics => {
     var templistOfPreparedTopics = listOfPreparedTopics
     // Logger.info(`List of Topics for for Prepare= ${listOfPreparedTopics}`)
 
     templistOfPreparedTopics.forEach(topic => {
-      Logger.info(`kafkaConsumer:: Creating Kafka Consumer with Topic='${topic}'`)
+      Logger.info(`kafkaConsumer.createConsumerFilteredTopics:: Creating Kafka Consumer with Topic='${topic}'`)
       Consumer(options, topic, funcProcessMessage)
     })
 
@@ -290,8 +290,13 @@ const createConsumer = async (funcProcessMessage, topicRegexFilter, options, con
       })
     }, null, true, config.pollingTimeZone)
   }).catch(reason => {
-    Logger.error(`kafkaConsumer:: Poller '${topicRegexFilter}' Unable to fetch list topics with regex topicRegexFilter(${topicRegexFilter}) with the following reason: ${reason}`)
+    Logger.error(`kafkaConsumer.createConsumerFilteredTopics:: Poller '${topicRegexFilter}' Unable to fetch list topics with regex topicRegexFilter(${topicRegexFilter}) with the following reason: ${reason}`)
   })
+}
+
+const createConsumer = async (options, topic, funcProcessMessage) => {
+  Logger.info(`kafkaConsumer.createConsumer:: creating Kafka Consumer with Topic=['${topic}']`)
+  Consumer(options, topic, funcProcessMessage)
 }
 
 // var topic = 'topic-dfsp1-prepare-tx'
@@ -312,4 +317,5 @@ const createConsumer = async (funcProcessMessage, topicRegexFilter, options, con
 // }, Config.TOPICS_PREPARE_TX_REGEX, kafkaOptions)
 
 exports.createConsumer = createConsumer
+exports.createConsumerFilteredTopics = createConsumerFilteredTopics
 exports.ConsumerOnceOff = ConsumerOnceOff

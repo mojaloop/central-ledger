@@ -37,6 +37,7 @@ const UrlParser = require('../../../lib/urlparser')
 // const format = require('string-template')
 const Mustache = require('mustache')
 const createConsumer = require('../kafka/consumeN').createConsumer
+const createConsumerFilteredTopics = require('../kafka/consumeN').createConsumerFilteredTopics
 const ConsumerOnceOff = require('../kafka/consumeN').ConsumerOnceOff
 const getListOfTopics = require('../kafka/zookeeper').getListOfTopics
 const Producer = require('../kafka/produceN')
@@ -67,6 +68,10 @@ const getPrepareNotificationTopicName = (transfer) => {
   return topicTemplate.prepare.notification(dfspName)
 }
 
+const tansformAccountToPrepareNotificationTopicName = (account) => {
+  return topicTemplate.prepare.notification(account)
+}
+
 const getPreparePositionTopicName = (transfer) => {
   const dfspName = getDfspName(transfer.debits[0].account)
   return topicTemplate.prepare.position(dfspName)
@@ -94,7 +99,9 @@ exports.getPrepareNotificationTopicName = getPrepareNotificationTopicName
 exports.getPreparePositionTopicName = getPreparePositionTopicName
 exports.getListOfTopics = getListOfTopics
 exports.getListOfFilteredTopics = getListOfFilteredTopics
+exports.tansformAccountToPrepareNotificationTopicName = tansformAccountToPrepareNotificationTopicName
 exports.createConsumer = createConsumer
+exports.createConsumerFilteredTopics = createConsumerFilteredTopics
 exports.ConsumerOnceOff = ConsumerOnceOff
 exports.Producer = Producer
 // exports.getClientId = getClientId

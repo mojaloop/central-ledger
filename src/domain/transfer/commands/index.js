@@ -6,6 +6,7 @@ const Events = require('../../../lib/events')
 const Kafka = require('../kafka')
 // const Config = require('../../../lib/config')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const UrlParser = require('../../../lib/urlparser')
 // const Errors = require('../../errors')
 
 // *** Original prepare function
@@ -88,9 +89,22 @@ const prepareExecute = (payload, done) => {
         //     })
         //   })
         var response = result
-        const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        // const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        var notificatioMsgForDebits = {
+          from: transfer.debits[0].account,
+          to: transfer.debits[0].account,
+          payload: result
+        }
+        var notificatioMsgForCredits = {
+          from: transfer.debits[0].account,
+          to: transfer.credits[0].account,
+          payload: result
+        }
+
+        const topicForDebitNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificatioMsgForDebits.to))
+        const topicForCreditNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificatioMsgForCredits.to))
         // TODO: WS Notifications to be re-worked so that it sends a notification to each DFSP
-        return Kafka.Producer.send({topic: topicForNotifications, key: id, message: JSON.stringify(result)}).then(result => {
+        return Kafka.Producer.send({topic: topicForDebitNotifications, key: id, message: JSON.stringify(notificatioMsgForDebits)}).then(result => {
         // return Kafka.send(topicForNotifications, id, result).then(result => {
           if (result) {
             done()
@@ -121,7 +135,14 @@ const prepareNotification = (payload, done) => {
   var jsonPayload = JSON.parse(payload.value)
   return new Promise(function (resolve, reject) {
     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(jsonPayload))
-    Events.emitTransferPrepared(jsonPayload.transfer) // May need to re-work this to be synchronous
+    // jsonPayload.to = jsonPayload.transfer.debits[0].account
+    Events.emitTransferPrepared(jsonPayload) // May need to re-work this to be synchronous
+    // const message = {
+    //   to: jsonPayload.transfer.debits[0].account,
+    //   from: jsonPayload.transfer.credits[0].account,
+    //   data: jsonPayload.transfer
+    // }
+    // Events.sendMessage(message)
     // TODO: WS Notifications to be re-worked so that it only sends a single notification
     done()
     return resolve(true)

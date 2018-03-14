@@ -108,7 +108,7 @@ const send = (options = {message, topic, partition: 0, key: null, partitionKey: 
     producer.connect().then(() => {
       Logger.info(`Producer::send key='${key}' - connected.`)
       producer.send(topic, message, partition, key, partitionKey).then(result => {
-        Logger.info(`Producer::send key='${key}' - send - result='${JSON.stringify(result)}'`)
+        Logger.info(`Producer::send key='${key}' - send to ${topic} - result='${JSON.stringify(result)}'`)
         // producer.close()
         return resolve(result)
       })
