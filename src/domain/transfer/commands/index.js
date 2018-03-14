@@ -89,6 +89,7 @@ const prepareExecute = (payload, done) => {
         //   })
         var response = result
         const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        // TODO: WS Notifications to be re-worked so that it sends a notification to each DFSP
         return Kafka.Producer.send({topic: topicForNotifications, key: id, message: JSON.stringify(result)}).then(result => {
         // return Kafka.send(topicForNotifications, id, result).then(result => {
           if (result) {
@@ -121,6 +122,7 @@ const prepareNotification = (payload, done) => {
   return new Promise(function (resolve, reject) {
     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(jsonPayload))
     Events.emitTransferPrepared(jsonPayload.transfer) // May need to re-work this to be synchronous
+    // TODO: WS Notifications to be re-worked so that it only sends a single notification
     done()
     return resolve(true)
   }) // TODO: Need to handle errors for Prepare Notification process
