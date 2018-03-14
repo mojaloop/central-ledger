@@ -100,18 +100,18 @@ const prepareExecute = (payload, done) => {
           }
         }).catch(reason => {
           Logger.error(`Transfers.prepareExecute.prepare:: ERROR:'${reason}'`)
-          done()
+          done() // TODO: Need to handle errors for Prepare Execution process
           return reject(reason)
         })
       } else {
-        done()
+        done() // TODO: Need to handle errors for Prepare Execution process
         reject(result)
       }
     })
   }).catch(reason => {
     done()
     Logger.error(`Transfers.Commands.prepareExecute:: ERROR:'${reason}'`)
-    return reject(reason)
+    return reject(reason) // TODO: Need to handle errors for Prepare Execution process
   })
 }
 
@@ -123,7 +123,7 @@ const prepareNotification = (payload, done) => {
     Events.emitTransferPrepared(payload) // May need to re-work this to be synchronous
     done()
     return resolve(true)
-  })
+  }) // TODO: Need to handle errors for Prepare Notification process
 }
 
 const fulfill = (fulfillment) => {
