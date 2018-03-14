@@ -1,6 +1,7 @@
 'use strict'
 
 const RequestLogger = require('./../../lib/request-logger')
+const UrlParser = require('./../../lib/urlparser')
 
 class SocketManager {
   constructor () {
@@ -28,16 +29,20 @@ class SocketManager {
     if (accounts.length <= 0) {
       ws.close()
     } else {
-      ws.accounts = accounts
+      // accounts.map(account => UrlParser.nameFromAccountUri(account))
+      // const account = UrlParser.nameFromAccountUri(accounts)
+      ws.accounts = accounts.map(account => UrlParser.nameFromAccountUri(account))
+      // ws.accounts = accounts
       this._addSocket(ws)
     }
   }
 
   send (name, message) {
+    const account = UrlParser.nameFromAccountUri(name)
     const jsonMessage = JSON.stringify(message)
-    this._findSocketsForAccount(name)
+    this._findSocketsForAccount(account)
       .forEach(s => {
-        RequestLogger.logWebsocket(JSON.stringify({ name, message }))
+        RequestLogger.logWebsocket(JSON.stringify({ account, message }))
         s.send(jsonMessage)
       })
   }

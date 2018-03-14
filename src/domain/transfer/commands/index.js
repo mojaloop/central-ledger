@@ -117,10 +117,10 @@ const prepareExecute = (payload, done) => {
 
 // *** POC prepare function that Consumes Prepare Notifications messages from Kafka topics
 const prepareNotification = (payload, done) => {
-  var transfer = JSON.parse(payload.value)
+  var jsonPayload = JSON.parse(payload.value)
   return new Promise(function (resolve, reject) {
-    Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(transfer))
-    Events.emitTransferPrepared(payload) // May need to re-work this to be synchronous
+    Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(jsonPayload))
+    Events.emitTransferPrepared(jsonPayload.transfer) // May need to re-work this to be synchronous
     done()
     return resolve(true)
   }) // TODO: Need to handle errors for Prepare Notification process
