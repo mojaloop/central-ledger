@@ -97,3 +97,4 @@ exports.getListOfFilteredTopics = getListOfFilteredTopics
 exports.createConsumer = createConsumer
 exports.ConsumerOnceOff = ConsumerOnceOff
 exports.Producer = Producer
+// exports.getClientId = getClientId

@@ -31,8 +31,20 @@
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const NProducer = require('sinek').NProducer
+const Config = require('../../../lib/config')
+var crypto = require('crypto')
 
-let producer
+let clientId
+const getClientId = () => {
+  if (!clientId) {
+    const randomHash = crypto.randomBytes(5).toString('hex')
+    clientId = `${Config.TOPICS_KAFKA_PRODUCER_OPTIONS['client.id'] || 'default-client'}-${randomHash}`
+  }
+  // const clientId = `${Config.TOPICS_KAFKA_PRODUCER_OPTIONS['client.id'] || 'default-client'}-${id}`
+  return clientId
+}
+
+// let producer
 
 const connect = (options = {requiredAcks: -1, partitionCount: 1}) => {
   Logger.info(`Producer::connect - clientId='${options['client.id']}'`)
@@ -42,7 +54,7 @@ const connect = (options = {requiredAcks: -1, partitionCount: 1}) => {
     noptions: {
       // 'debug': options['debug'] || 'all',
       'metadata.broker.list': options['metadata.broker.list'],
-      'client.id': options['client.id'] || 'default-client',
+      'client.id': getClientId() || 'default-client',
       'event_cb': true,
       'compression.codec': options['compression.codec'] || 'none',
       'retry.backoff.ms': options['retry.backoff.ms'] || 200,
@@ -73,17 +85,23 @@ const connect = (options = {requiredAcks: -1, partitionCount: 1}) => {
     config.noptions.debug = 'all'
   }
 
-  producer = new NProducer(config, options.partitionCount || 1)
+  const producer = new NProducer(config, options.partitionCount || 1)
+
+  return producer
 }
 
 const send = (options = {message, topic, partition: 0, key: null, partitionKey: null}) => {
+  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+
+  const producer = connect(kafkaProducerOptions)
+
   const {message, topic, partition, key, partitionKey} = options
   return new Promise((resolve, reject) => {
     Logger.info(`Producer::send - message='${message}', topic=''${topic}, partition='${partition}', key='${key}', partitionKey='${partitionKey}'`)
 
     producer.on('error', error => {
       Logger.error(`Producer::send - ERROR=${error}`)
-      // producer.close()
+      producer.close()
       return reject(error)
     })
 
@@ -96,19 +114,91 @@ const send = (options = {message, topic, partition: 0, key: null, partitionKey: 
       })
     }).catch(error => {
       Logger.error(`Producer::send - ERROR=${error}`)
-      // producer.close()
+      producer.close()
       return reject(error)
     })
   })
 }
 
-const stats = () => {
-  // if(producer.isc
-  var stats = producer.getStats()
-  Logger.info('Producer::stats %j', stats)
-  return stats
-  // Logger.info('%j',health)
-}
+const stats = () => {}
+
+// let producer
+//
+// const connect = (options = {requiredAcks: -1, partitionCount: 1}) => {
+//   Logger.info(`Producer::connect - clientId='${options['client.id']}'`)
+//
+//   var config = {
+//     logger: Logger,
+//     noptions: {
+//       // 'debug': options['debug'] || 'all',
+//       'metadata.broker.list': options['metadata.broker.list'],
+//       'client.id': Kafka.getClientId() || 'default-client',
+//       'event_cb': true,
+//       'compression.codec': options['compression.codec'] || 'none',
+//       'retry.backoff.ms': options['retry.backoff.ms'] || 200,
+//       'message.send.max.retries': options['message.send.max.retries'] || 10,
+//       'socket.keepalive.enable': options['socket.keepalive.enable'] || true,
+//       'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
+//       'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
+//       'batch.num.messages': options['batch.num.messages'] || 1000000,
+//
+//       // 'security.protocol': 'sasl_ssl',
+//       // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
+//       // 'ssl.key.password': 'nodesinek',
+//       // 'ssl.certificate.location': path.join(__dirname, '../certs/ca-cert'),
+//       // 'ssl.ca.location': path.join(__dirname, '../certs/ca-cert'),
+//       // 'sasl.mechanisms': 'PLAIN',
+//       // 'sasl.username': 'admin',
+//       // 'sasl.password': 'nodesinek',
+//
+//       'api.version.request': true
+//     },
+//     tconf: {
+//       // 0=Broker does not send any response/ack to client, 1=Only the leader broker will need to ack the message, -1 or all=broker will block until message is committed by all in sync replicas (ISRs) or broker's min.insync.replicas setting before sending response.
+//       'request.required.acks': options.requiredAcks || 1
+//     }
+//   }
+//
+//   if (options.debug) {
+//     config.noptions.debug = 'all'
+//   }
+//
+//   producer = new NProducer(config, options.partitionCount || 1)
+// }
+//
+// const send = (options = {message, topic, partition: 0, key: null, partitionKey: null}) => {
+//   const {message, topic, partition, key, partitionKey} = options
+//   return new Promise((resolve, reject) => {
+//     Logger.info(`Producer::send - message='${message}', topic=''${topic}, partition='${partition}', key='${key}', partitionKey='${partitionKey}'`)
+//
+//     producer.on('error', error => {
+//       Logger.error(`Producer::send - ERROR=${error}`)
+//       // producer.close()
+//       return reject(error)
+//     })
+//
+//     producer.connect().then(() => {
+//       Logger.info(`Producer::send key='${key}' - connected.`)
+//       producer.send(topic, message, partition, key, partitionKey).then(result => {
+//         Logger.info(`Producer::send key='${key}' - send - result='${JSON.stringify(result)}'`)
+//         // producer.close()
+//         return resolve(result)
+//       })
+//     }).catch(error => {
+//       Logger.error(`Producer::send - ERROR=${error}`)
+//       // producer.close()
+//       return reject(error)
+//     })
+//   })
+// }
+//
+// const stats = () => {
+//   // if(producer.isc
+//   var stats = producer.getStats()
+//   Logger.info('Producer::stats %j', stats)
+//   return stats
+//   // Logger.info('%j',health)
+// }
 
 // connect('test-client', {requiredAcks: -1, partitionCount: 1})
 // connect('test-client')

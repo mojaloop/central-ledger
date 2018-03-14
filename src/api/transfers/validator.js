@@ -54,9 +54,10 @@ exports.validate = (transfer, transferId) => {
     if (!id || id !== transferId) {
       throw new ValidationError('transfer.id: Invalid URI')
     }
-    if (transfer.ledger !== Config.HOSTNAME) {
-      throw new ValidationError('transfer.ledger is not valid for this ledger')
-    }
+    // ** TODO: DISABLED - NEED TO REWORK TO SUPPORT MULTIPLE LEDGERS
+    // if (transfer.ledger !== Config.HOSTNAME) {
+    //   throw new ValidationError('transfer.ledger is not valid for this ledger')
+    // }
 
     validateConditionalTransfer(transfer)
 

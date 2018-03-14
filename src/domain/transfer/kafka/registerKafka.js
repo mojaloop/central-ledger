@@ -57,9 +57,9 @@ exports.register = (server, options, next) => {
   // Register Kafka Consumers for Prepare Transactions Notifications
   Kafka.createConsumer(Commands.prepareNotification, Config.TOPICS_PREPARE_NOTIFICATION_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
 
-  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+  // const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
   // Connect Kafka Producer
-  Kafka.Producer.connect(kafkaProducerOptions)
+  // Kafka.Producer.connect(kafkaProducerOptions)
 
   // Wire any events for Kafka Handlers
   wireEvents()
