@@ -14,7 +14,9 @@ const initialize = (socket, uri, socketManager) => {
     .then(result => UrlParser.toAccountUri(result))
     .then(accountUri => {
       return AccountService.exists(accountUri)
-        .then(account => socketManager.add(socket, accountUri))
+        .then(account => socketManager.add(socket, accountUri)).then(result => {
+          // TODO: LAZ to add code to register kafka consumer
+        })
     })
     .catch(err => {
       sendNotFoundAndClose(socket, err.message || 'The requested account does not exist')
