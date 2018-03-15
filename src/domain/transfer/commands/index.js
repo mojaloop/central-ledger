@@ -18,7 +18,7 @@ const UrlParser = require('../../../lib/urlparser')
 const prepare = async (message) => {
   return new Promise((resolve, reject) => {
     // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
-    const { id, ledger, debits, credits, execution_condition, expires_at } = message
+    const {id, ledger, debits, credits, execution_condition, expires_at} = message
     const t = Translator.toTransfer(message)
     var topic = Kafka.getPrepareTxTopicName(t)
     // Logger.info('Transfers.Commands.prepare:: emit PublishMessage(%s, %s, %s)', topic, id, JSON.stringify(t))
@@ -28,11 +28,11 @@ const prepare = async (message) => {
     return Kafka.Producer.send({topic, key: id, message: JSON.stringify(t)}).then(result => {
       var response = {}
       if (result) {
-        response = { status: 'pending', existing: false, transfer: message }
+        response = {status: 'pending', existing: false, transfer: message}
         Logger.info(`Transfers.Commands.prepare:: result='${JSON.stringify(response)}'`)
         return resolve(response)
       } else {
-        response = { status: 'pending-failed', existing: false, transfer: message }
+        response = {status: 'pending-failed', existing: false, transfer: message}
         Logger.info(`Transfers.Commands.prepare:: result='${JSON.stringify(response)}'`)
         return reject(response)
       }
@@ -103,9 +103,47 @@ const prepareExecute = (payload, done) => {
 
         const topicForDebitNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificatioMsgForDebits.to))
         const topicForCreditNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificatioMsgForCredits.to))
-        // TODO: WS Notifications to be re-worked so that it sends a notification to each DFSP
-        return Kafka.Producer.send({topic: topicForDebitNotifications, key: id, message: JSON.stringify(notificatioMsgForDebits)}).then(result => {
-        // return Kafka.send(topicForNotifications, id, result).then(result => {
+        const debitNotificationPromise = new Promise(function (resolve, reject) {
+          return Kafka.Producer.send({
+            topic: topicForDebitNotifications,
+            key: id,
+            message: JSON.stringify(notificatioMsgForDebits)
+          }).then(result => {
+            // return Kafka.send(topicForNotifications, id, result).then(result => {
+            if (result) {
+              done()
+              return resolve(response)
+            } else {
+              done()
+              return reject(response)
+            }
+          }).catch(reason => {
+            Logger.error(`Transfers.prepareExecute.prepare:: ERROR:'${reason}'`)
+            done() // TODO: Need to handle errors for Prepare Execution process
+            return reject(reason)
+          })
+        })
+        const creditNotificationPromise = new Promise(function (resolve, reject) {
+          return Kafka.Producer.send({
+            topic: topicForCreditNotifications,
+            key: id,
+            message: JSON.stringify(notificatioMsgForCredits)
+          }).then(result => {
+            // return Kafka.send(topicForNotifications, id, result).then(result => {
+            if (result) {
+              done()
+              return resolve(response)
+            } else {
+              done()
+              return reject(response)
+            }
+          }).catch(reason => {
+            Logger.error(`Transfers.prepareExecute.prepare:: ERROR:'${reason}'`)
+            done() // TODO: Need to handle errors for Prepare Execution process
+            return reject(reason)
+          })
+        })
+        return Promise.all([debitNotificationPromise, creditNotificationPromise]).then(result => {
           if (result) {
             done()
             return resolve(response)
@@ -113,11 +151,8 @@ const prepareExecute = (payload, done) => {
             done()
             return reject(response)
           }
-        }).catch(reason => {
-          Logger.error(`Transfers.prepareExecute.prepare:: ERROR:'${reason}'`)
-          done() // TODO: Need to handle errors for Prepare Execution process
-          return reject(reason)
         })
+        // TODO: WS Notifications to be re-worked so that it sends a notification to each DFSP
       } else {
         done() // TODO: Need to handle errors for Prepare Execution process
         reject(result)
