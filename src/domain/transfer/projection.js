@@ -13,31 +13,33 @@ const TransferRejectionType = require('./rejection-type')
 const TransfersReadModel = require('./models/transfers-read-model')
 
 const saveTransferPrepared = ({ aggregate, payload, timestamp }) => {
+  Logger.info('Payload')
+  Logger.info(payload)
+  Logger.info('aggregate')
+  Logger.info(aggregate)
   const debitAccount = UrlParser.nameFromAccountUri(payload.debits[0].account)
   const creditAccount = UrlParser.nameFromAccountUri(payload.credits[0].account)
 
   return P.all([debitAccount, creditAccount].map(name => AccountService.getByName(name)))
     .then(accounts => {
       const accountIds = _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {})
-
       const record = {
         transferUuid: aggregate.id,
         state: TransferState.PREPARED,
         ledger: payload.ledger,
         debitAccountId: accountIds[debitAccount],
         debitAmount: payload.debits[0].amount,
-        debitMemo: payload.debits[0].memo,
+        debitMemo: JSON.stringify(payload.debits[0].memo),
         creditAccountId: accountIds[creditAccount],
         creditAmount: payload.credits[0].amount,
-        creditMemo: payload.credits[0].memo,
+        creditMemo: JSON.stringify(payload.credits[0].memo),
         executionCondition: payload.execution_condition,
         cancellationCondition: payload.cancellation_condition,
         rejectionReason: payload.rejection_reason,
-        expiresAt: payload.expires_at,
+        expiresAt: new Date(payload.expires_at),
         additionalInfo: payload.additional_info,
-        preparedDate: Moment(timestamp)
+        preparedDate: new Date(timestamp)
       }
-
       return TransfersReadModel.saveTransfer(record)
     })
 }
@@ -75,6 +77,8 @@ const initialize = (params, done) => {
 }
 
 const handleTransferPrepared = (event) => {
+  Logger.info('Event')
+  Logger.info(event)
   return DA(saveTransferPrepared(event)
     .catch(err => {
       Logger.error('Error handling TransferPrepared event', err)

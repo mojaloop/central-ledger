@@ -34,7 +34,7 @@ class KnexStore {
     return {
       id: event.sequenceNumber,
       name: event.name,
-      payload: event.payload,
+      payload: JSON.parse(event.payload),
       aggregate: { id: event.aggregateId, name: event.aggregateName },
       context: this._context.name,
       timestamp: (new Date(event.timestamp)).getTime()

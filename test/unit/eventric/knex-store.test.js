@@ -29,7 +29,7 @@ Test('knex store test', storeTest => {
     return {
       sequenceNumber: 1,
       name: 'SomeEventName',
-      payload: {},
+      payload: JSON.stringify({}),
       aggregateId: Uuid(),
       aggregateName: 'TestAggregate',
       timestamp: new Date().toISOString()
@@ -156,7 +156,7 @@ Test('knex store test', storeTest => {
 
               test.equal(result.id, 1)
               test.equal(result.name, domainEvent.name)
-              test.equal(result.payload, '{}')
+              test.deepEqual(result.payload, domainEvent.payload)
               test.deepEqual(result.aggregate, domainEvent.aggregate)
               test.equal(result.context, 'SomeName')
               test.equal(result.timestamp, domainEvent.timestamp.getTime())
