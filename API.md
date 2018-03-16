@@ -20,6 +20,7 @@ The central ledger has two APIs targeted at different consumers. The DFSP API is
 * `POST` [**Get charge quote**](#get-a-charge-quote) 
 * `POST` [**Get authentication token**](#get-authentication-token)
 * `GET`  [**Health**](#health)
+* `GET`  [**Kafka**](#kafka)
 
 #### [Admin API](#admin-api) endpoints
 * `POST` [**Create account**](#create-account-admin)
@@ -980,18 +981,29 @@ Get the current status of the service
 | ----- | ---- | ----------- |
 | status | String | The status of the ledger, *OK* if the service is working |
 
+#### Kafka
+Register a Kafka Consumer
+
+##### HTTP Request
+`POST http://central-ledger/kafka`
+
+##### Response 201 OK
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| status | String | A kafka consumer has been registered for your DFSP Account  |
+
+
 ##### Request
 ``` http
-GET http://central-ledger/health HTTP/1.1
+POST http://central-ledger/kafka HTTP/1.1
 ```
 
 ##### Response
 ``` http
-HTTP/1.1 200 OK
+HTTP/1.1 201 OK
 {
-  "status": "OK"
-}
-```
+    "accountTopic": "topic-dfsp10-prepare-notification"
+}`
 
 ## Admin API
 
