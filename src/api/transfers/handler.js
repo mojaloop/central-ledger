@@ -16,7 +16,7 @@ const buildGetTransferResponse = (record) => {
 }
 
 exports.prepareTransfer = function (request, reply) {
-  Logger.info('prepareTransfer::start(%s)', JSON.stringify(request.payload));
+  Logger.info('prepareTransfer::start(%s)', JSON.stringify(request.payload))
   Sidecar.logRequest(request)
   return Validator.validate(request.payload, request.params.id)
     .then(TransferService.prepare)

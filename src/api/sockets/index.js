@@ -16,11 +16,11 @@ const createWebSocketServer = (listener) => {
   })
 }
 
-const getAccounts = (transfer) => {
-  const credits = transfer.credits || []
-  const debits = transfer.debits || []
-  return [...credits, ...debits].map(c => c.account)
-}
+// const getAccounts = (transfer) => {
+//   const credits = transfer.credits || []
+//   const debits = transfer.debits || []
+//   return [...credits, ...debits].map(c => c.account)
+// }
 
 const wireConnection = (webSocketServer) => {
   webSocketServer.on('connection', (ws) => {
