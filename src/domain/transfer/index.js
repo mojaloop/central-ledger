@@ -43,12 +43,8 @@ const prepare = (payload) => {
   const transfer = Translator.fromPayload(payload)
   return Commands.prepare(transfer)
     .then(result => {
-      Logger.info('prepare result')
-      Logger.info(JSON.stringify(result))
       const t = Translator.toTransfer(result)
-      Logger.info('translate completed')
       Events.emitTransferPrepared(t)
-      Logger.info('emit completed')
       return {existing: result.existing, transfer: t}
     }).catch(err => {
       throw err
@@ -59,9 +55,7 @@ const reject = (rejection) => {
   return Commands.reject(rejection)
     .then(({alreadyRejected, transfer}) => {
       const t = Translator.toTransfer(transfer)
-      Logger.info('transfer index.jz : Const reject ')
       if (!alreadyRejected) {
-        Logger.info('transfer index.jz : if (!alreadyRejected) ')
         Events.emitTransferRejected(t)
       }
       return {alreadyRejected, transfer: t}
@@ -73,12 +67,8 @@ const expire = (id) => {
 }
 
 const fulfill = (fulfillment) => {
-  Logger.info('transfer index.jz : const fulfill ')
   return Commands.fulfill(fulfillment)
     .then(transfer => {
-      Logger.info('prepare result')
-      Logger.info(JSON.stringify(transfer))
-      Logger.info('transfer index.jz : .then(transfer => ')
       const t = Translator.toTransfer(transfer)
       Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfillment.fulfillment})
       return t
@@ -101,7 +91,6 @@ const rejectExpired = () => {
 }
 
 const settle = async () => {
-  Logger.info('transfer index.jz : const settle = () ')
   const settlementId = SettlementsModel.generateId()
   const settledTransfers = SettlementsModel.create(settlementId, 'transfer').then(() => {
     return SettleableTransfersReadModel.getSettleableTransfers().then(transfers => {

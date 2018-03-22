@@ -65,7 +65,7 @@ const reject = async (rejection) => {
   }
   await Projection.saveTransferRejected(record)
   const updatedTransfer = await Query.getById(rejection.id)
-  return {alreadyRejected: false, updatedTransfer}
+  return {alreadyRejected: false, transfer: updatedTransfer}
 }
 
 const settle = ({id, settlement_id}) => {
