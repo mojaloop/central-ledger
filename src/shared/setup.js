@@ -19,9 +19,10 @@ const migrate = (runMigrations) => {
 
 const connectDatabase = () => Db.connect(Config.DATABASE_URI)
 
-const startEventric = (loadEventric) => {
-  return loadEventric ? Eventric.getContext() : P.resolve()
-}
+// Story #135 : Removing Eventric 21 Mar 2018 D. Botha
+// const startEventric = (loadEventric) => {
+//  return loadEventric ? Eventric.getContext() : P.resolve()
+// }
 
 const createServer = (port, modules, addRequestLogging = true) => {
   return new P((resolve, reject) => {
@@ -50,7 +51,8 @@ const initialize = ({ service, port, modules = [], loadEventric = false, runMigr
   return migrate(runMigrations)
     .then(() => connectDatabase())
     .then(() => Sidecar.connect(service))
-    .then(() => startEventric(loadEventric))
+    // Story #135 : Removing Eventric 21 Mar 2018 D. Botha
+    // .then(() => startEventric(loadEventric))
     .then(() => createServer(port, modules))
     .catch(err => {
       cleanup()

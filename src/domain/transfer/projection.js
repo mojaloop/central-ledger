@@ -11,53 +11,63 @@ const AccountService = require('../../domain/account')
 const TransferState = require('./state')
 const TransferRejectionType = require('./rejection-type')
 const TransfersReadModel = require('./models/transfers-read-model')
+const ExecuteTransfersModel = require('../../models/executed-transfers')
 
-const saveTransferPrepared = ({ aggregate, payload, timestamp }) => {
-  Logger.info('Payload')
-  Logger.info(payload)
-  Logger.info('aggregate')
-  Logger.info(aggregate)
-  const debitAccount = UrlParser.nameFromAccountUri(payload.debits[0].account)
-  const creditAccount = UrlParser.nameFromAccountUri(payload.credits[0].account)
+const saveTransferPrepared = async ({aggregate, payload, timestamp}) => {
+  const debitAccount = await UrlParser.nameFromAccountUri(payload.debits[0].account)
+  const creditAccount = await UrlParser.nameFromAccountUri(payload.credits[0].account)
+  const names = [debitAccount, creditAccount]
+  const accounts = []
+  for (var i = 0, len = names.length; i < len; i++) {
+    const account = await AccountService.getByName(names[i])
+    accounts.push(account)
+  }
+  const accountIds = await _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {})
+  const record = {
+    transferUuid: aggregate.id,
+    state: TransferState.PREPARED,
+    ledger: payload.ledger,
+    debitAccountId: accountIds[debitAccount],
+    debitAmount: payload.debits[0].amount,
+    debitMemo: JSON.stringify(payload.debits[0].memo),
+    creditAccountId: accountIds[creditAccount],
+    creditAmount: payload.credits[0].amount,
+    creditMemo: JSON.stringify(payload.credits[0].memo),
+    creditRejected: 0,
+    creditRejectionMessage: null,
+    executionCondition: payload.execution_condition,
+    cancellationCondition: payload.cancellation_condition,
+    fulfillment: null,
+    rejectionReason: payload.rejection_reason,
+    expiresAt: new Date(payload.expires_at),
+    additionalInfo: payload.additional_info,
+    preparedDate: new Date(timestamp),
+    executedDate: null,
+    rejectedDate: null
+  }
 
-  return P.all([debitAccount, creditAccount].map(name => AccountService.getByName(name)))
-    .then(accounts => {
-      const accountIds = _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {})
-      const record = {
-        transferUuid: aggregate.id,
-        state: TransferState.PREPARED,
-        ledger: payload.ledger,
-        debitAccountId: accountIds[debitAccount],
-        debitAmount: payload.debits[0].amount,
-        debitMemo: JSON.stringify(payload.debits[0].memo),
-        creditAccountId: accountIds[creditAccount],
-        creditAmount: payload.credits[0].amount,
-        creditMemo: JSON.stringify(payload.credits[0].memo),
-        executionCondition: payload.execution_condition,
-        cancellationCondition: payload.cancellation_condition,
-        rejectionReason: payload.rejection_reason,
-        expiresAt: new Date(payload.expires_at),
-        additionalInfo: payload.additional_info,
-        preparedDate: new Date(timestamp)
-      }
-      return TransfersReadModel.saveTransfer(record)
-    })
+  await TransfersReadModel.saveTransfer(record).catch(err => {
+    throw new Error(err.message)
+  })
+  record.creditAccountName = creditAccount
+  record.debitAccountName = debitAccount
+  return record
 }
 
-const saveTransferExecuted = ({ aggregate, payload, timestamp }) => {
+const saveTransferExecuted = async ({aggregate, payload, timestamp}) => {
   const fields = {
     state: TransferState.EXECUTED,
     fulfillment: payload.fulfillment,
-    executedDate: Moment(timestamp)
+    executedDate: new Date(timestamp)
   }
-  return TransfersReadModel.updateTransfer(aggregate.id, fields)
+  return await TransfersReadModel.updateTransfer(aggregate.id, fields)
 }
 
-const saveTransferRejected = ({ aggregate, payload, timestamp }) => {
+const saveTransferRejected = async ({aggregate, payload, timestamp}) => {
   const fields = {
     state: TransferState.REJECTED,
     rejectionReason: payload.rejection_reason,
-    rejectedDate: Moment(timestamp)
+    rejectedDate: new Date(timestamp)
   }
   if (payload.rejection_reason === TransferRejectionType.CANCELLED) {
     Util.assign(fields, {
@@ -65,43 +75,16 @@ const saveTransferRejected = ({ aggregate, payload, timestamp }) => {
       creditRejectionMessage: payload.message || ''
     })
   }
-  return TransfersReadModel.updateTransfer(aggregate.id, fields)
+  return await TransfersReadModel.updateTransfer(aggregate.id, fields)
 }
 
-const initialize = (params, done) => {
-  return TransfersReadModel.truncateTransfers()
-    .then(() => done())
-    .catch(err => {
-      Logger.error('Error truncating read model', err)
-    })
-}
-
-const handleTransferPrepared = (event) => {
-  Logger.info('Event')
-  Logger.info(event)
-  return DA(saveTransferPrepared(event)
-    .catch(err => {
-      Logger.error('Error handling TransferPrepared event', err)
-    }))
-}
-
-const handleTransferExecuted = (event) => {
-  return DA(saveTransferExecuted(event)
-    .catch(err => {
-      Logger.error('Error handling TransferExecuted event', err)
-    }))
-}
-
-const handleTransferRejected = (event) => {
-  return DA(saveTransferRejected(event)
-    .catch(err => {
-      Logger.error('Error handling TransferRejected event', err)
-    }))
+const saveExecutedTransfer = async (transfer) => {
+  await ExecuteTransfersModel.create(transfer.id)
 }
 
 module.exports = {
-  initialize,
-  handleTransferExecuted,
-  handleTransferPrepared,
-  handleTransferRejected
+  saveTransferPrepared,
+  saveTransferExecuted,
+  saveTransferRejected,
+  saveExecutedTransfer
 }

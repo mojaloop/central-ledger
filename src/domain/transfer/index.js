@@ -10,6 +10,7 @@ const RejectionType = require('./rejection-type')
 const State = require('./state')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = (id) => {
   return TransferQueries.getById(id)
@@ -40,40 +41,55 @@ const getFulfillment = (id) => {
 
 const prepare = (payload) => {
   const transfer = Translator.fromPayload(payload)
-
   return Commands.prepare(transfer)
     .then(result => {
-      const t = Translator.toTransfer(result.transfer)
+      Logger.info('prepare result')
+      Logger.info(JSON.stringify(result))
+      const t = Translator.toTransfer(result)
+      Logger.info('translate completed')
       Events.emitTransferPrepared(t)
-      return { existing: result.existing, transfer: t }
+      Logger.info('emit completed')
+      return {existing: result.existing, transfer: t}
+    }).catch(err => {
+      throw err
     })
 }
 
 const reject = (rejection) => {
   return Commands.reject(rejection)
-    .then(({ alreadyRejected, transfer }) => {
+    .then(({alreadyRejected, transfer}) => {
       const t = Translator.toTransfer(transfer)
+      Logger.info('transfer index.jz : Const reject ')
       if (!alreadyRejected) {
+        Logger.info('transfer index.jz : if (!alreadyRejected) ')
         Events.emitTransferRejected(t)
       }
-      return { alreadyRejected, transfer: t }
+      return {alreadyRejected, transfer: t}
     })
 }
 
 const expire = (id) => {
-  return reject({ id, rejection_reason: RejectionType.EXPIRED })
+  return reject({id, rejection_reason: RejectionType.EXPIRED})
 }
 
 const fulfill = (fulfillment) => {
+  Logger.info('transfer index.jz : const fulfill ')
   return Commands.fulfill(fulfillment)
     .then(transfer => {
+      Logger.info('prepare result')
+      Logger.info(JSON.stringify(transfer))
+      Logger.info('transfer index.jz : .then(transfer => ')
       const t = Translator.toTransfer(transfer)
-      Events.emitTransferExecuted(t, { execution_condition_fulfillment: fulfillment.fulfillment })
+      Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfillment.fulfillment})
       return t
     })
-    .catch(Errors.ExpiredTransferError, () => {
-      return expire(fulfillment.id)
-        .then(() => { throw new Errors.UnpreparedTransferError() })
+    .catch(err => {
+      if (typeof err === Errors.ExpiredTransferError) {
+        return expire(fulfillment.id)
+          .then(() => { throw new Errors.UnpreparedTransferError() })
+      } else {
+        throw new Error(err)
+      }
     })
 }
 
@@ -85,11 +101,12 @@ const rejectExpired = () => {
 }
 
 const settle = () => {
+  Logger.info('transfer index.jz : const settle = () ')
   const settlementId = SettlementsModel.generateId()
   const settledTransfers = SettlementsModel.create(settlementId, 'transfer').then(() => {
     return SettleableTransfersReadModel.getSettleableTransfers().then(transfers => {
       transfers.forEach(transfer => {
-        Commands.settle({ id: transfer.transferId, settlement_id: settlementId })
+        Commands.settle({id: transfer.transferId, settlement_id: settlementId})
       })
       return transfers
     })

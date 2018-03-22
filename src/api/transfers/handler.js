@@ -6,6 +6,7 @@ const TransferRejectionType = require('../../domain/transfer/rejection-type')
 const TransferTranslator = require('../../domain/transfer/translator')
 const NotFoundError = require('../../errors').NotFoundError
 const Sidecar = require('../../lib/sidecar')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const buildGetTransferResponse = (record) => {
   if (!record) {
@@ -16,10 +17,17 @@ const buildGetTransferResponse = (record) => {
 
 exports.prepareTransfer = function (request, reply) {
   Sidecar.logRequest(request)
+  Logger.info('enter prepare')
   return Validator.validate(request.payload, request.params.id)
     .then(TransferService.prepare)
-    .then(result => reply(result.transfer).code((result.existing === true) ? 200 : 201))
-    .catch(reply)
+    .then(result => {
+      Logger.info('in handler result')
+      Logger.info(JSON.stringify(result))
+      return reply(result.transfer).code((result.existing === true) ? 200 : 202)
+    })
+    .catch(err => {
+      return reply(err)
+    })
 }
 
 exports.fulfillTransfer = function (request, reply) {
@@ -30,8 +38,14 @@ exports.fulfillTransfer = function (request, reply) {
   }
 
   return TransferService.fulfill(fulfillment)
-    .then(transfer => reply(transfer).code(200))
-    .catch(reply)
+    .then(transfer => {
+      Logger.info('transfer record')
+      Logger.info(transfer)
+      reply(transfer).code(200)
+    })
+    .catch(err => {
+      throw new Error(err)
+    })
 }
 
 exports.rejectTransfer = function (request, reply) {
@@ -39,7 +53,7 @@ exports.rejectTransfer = function (request, reply) {
   const rejection = {
     id: request.params.id,
     rejection_reason: TransferRejectionType.CANCELLED,
-    message: request.payload,
+    message: request.payload.reason,
     requestingAccount: request.auth.credentials
   }
 
