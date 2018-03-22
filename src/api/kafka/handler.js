@@ -7,9 +7,9 @@ const UrlParser = require('./../../lib/urlparser')
 
 exports.create = (request, response) => {
   const account = UrlParser.nameFromAccountUri(request.payload.account)
-  const accountTopic = Kafka.tansformAccountToPrepareNotificationTopicName(account)
+  const accountTopic = Kafka.tansformAccountToPrepareTxTopicName(account)
   const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
   Kafka.Producer.connect(kafkaProducerOptions)
-  Kafka.createConsumer(kafkaProducerOptions, accountTopic, Commands.prepareNotification)
+  Kafka.createConsumer(kafkaProducerOptions, accountTopic, Commands.prepareExecute)
   return response({accountTopic}).code(201)
 }

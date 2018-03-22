@@ -20,7 +20,7 @@ The central ledger has two APIs targeted at different consumers. The DFSP API is
 * `POST` [**Get charge quote**](#get-a-charge-quote) 
 * `POST` [**Get authentication token**](#get-authentication-token)
 * `GET`  [**Health**](#health)
-* `GET`  [**Kafka**](#kafka)
+* `POST`  [**Kafka**](#kafka)
 
 #### [Admin API](#admin-api) endpoints
 * `POST` [**Create account**](#create-account-admin)
@@ -46,6 +46,7 @@ The central ledger has two APIs targeted at different consumers. The DFSP API is
 * `POST` [**Reject expired tokens**](#reject-expired-tokens)
 * `POST` [**Settle transfers and fees**](#settle-transfers-and-fees)
 * `GET`  [**Health**](#admin-health)
+* `POST`  [**Kafka**](#admin-kafka)
 
 The API endpoints often deal with these [data structures](#data-structures): 
 
@@ -990,12 +991,16 @@ Register a Kafka Consumer
 ##### Response 201 OK
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| status | String | A kafka consumer has been registered for your DFSP Account  |
+| accountTopic | String | A kafka topic where the consumer has been registered for your DFSP Account  |
 
 
 ##### Request
 ``` http
 POST http://central-ledger/kafka HTTP/1.1
+Content-Type: application/json
+{
+  "account": "http://localhost:3000/accounts/dfsp10"
+}
 ```
 
 ##### Response
@@ -1003,7 +1008,8 @@ POST http://central-ledger/kafka HTTP/1.1
 HTTP/1.1 201 OK
 {
     "accountTopic": "topic-dfsp10-prepare-notification"
-}`
+}
+```
 
 ## Admin API
 
@@ -2264,6 +2270,36 @@ HTTP/1.1 200 OK
   "status": "OK"
 }
 ```
+
+#### Admin Kafka
+Register a Kafka Consumer
+
+##### HTTP Request
+`POST http://central-ledger/kafka`
+
+##### Response 201 OK
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| accountTopic | String | A kafka topic where the consumer has been registered for your DFSP Account  |
+
+
+##### Request
+``` http
+POST http://central-ledger/kafka HTTP/1.1
+Content-Type: application/json
+{
+  "account": "http://localhost:3000/accounts/dfsp10"
+}
+```
+
+##### Response
+``` http
+HTTP/1.1 201 OK
+{
+    "accountTopic": "topic-dfsp10-prepare-notification"
+}
+```
+
 ***
 
 ## Data Structures
