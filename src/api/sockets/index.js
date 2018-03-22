@@ -34,6 +34,13 @@ const wireConnection = (webSocketServer) => {
   })
 }
 
+const send = (accountUri, message) => {
+  return new Promise((resolve, reject) => {
+    manager.send(accountUri, message)
+    resolve(true)
+  })
+}
+
 const transferHandler = (event) => {
   return (msg) => {
     const resource = formatResource(event, msg.resource, msg.related_resources)
@@ -87,3 +94,5 @@ exports.register = (server, options, next) => {
 exports.register.attributes = {
   name: 'websockets'
 }
+
+exports.send = send

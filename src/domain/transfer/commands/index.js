@@ -7,6 +7,7 @@ const Kafka = require('../kafka')
 // const Config = require('../../../lib/config')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../lib/urlparser')
+const Socket = require('../../../api/sockets')
 // const Errors = require('../../errors')
 
 // *** Original prepare function
@@ -43,48 +44,28 @@ const prepare = async (message) => {
   })
 }
 
-const debitNotificationPromise = (topicForDebitNotifications, notificationMsgForDebits, id) => {
-  return new Promise(function (resolve, reject) {
-    return Kafka.Producer.send({
-      topic: topicForDebitNotifications,
-      key: id,
-      message: JSON.stringify(notificationMsgForDebits)
-    }).then(result => {
-      // return Kafka.send(topicForNotifications, id, result).then(result => {
-      if (result) {
-        return resolve(true)
-      } else {
-        return reject(false)
-      }
-    }).catch(reason => {
-      Logger.error(`Transfers.prepareExecute.prepare.debit:: ERROR:'${reason}'`)
-      return reject(reason)
-    })
-  })
-}
-
-const creditNotificationPromise = (topicForCreditNotifications, notificationMsgForCredits, id) => {
-  return new Promise(function (resolve, reject) {
-    return Kafka.Producer.send({
-      topic: topicForCreditNotifications,
-      key: id,
-      message: JSON.stringify(notificationMsgForCredits)
-    }).then(result => {
-      // return Kafka.send(topicForNotifications, id, result).then(result => {
-      if (result) {
-        return resolve(true)
-      } else {
-        return reject(false)
-      }
-    }).catch(reason => {
-      Logger.error(`Transfers.prepareExecute.prepare.credit:: ERROR:'${reason}'`)
-      return reject(reason)
-    })
-  })
-}
-
 // *** POC prepare function that Consumes Prepare messages from Kafka topics
 const prepareExecute = (payload, done) => {
+  // utility function promise to send notifications to the kafka publisher
+  const sendNotificationPromise = (notificationTopic, notificationMsg, id) => {
+    return new Promise(function (resolve, reject) {
+      return Kafka.Producer.send({
+        topic: notificationTopic,
+        key: id,
+        message: JSON.stringify(notificationMsg)
+      }).then(result => {
+        if (result) {
+          return resolve(true)
+        } else {
+          return reject(false)
+        }
+      }).catch(reason => {
+        Logger.error(`Transfers.prepareExecute.sendNotificationPromise:: ERROR:'${reason}'`)
+        return reject(reason)
+      })
+    })
+  }
+
 // const prepareExecute = (payload, done) => {
   var unTranslatedTransfer = JSON.parse(payload.value)
   const transfer = Translator.fromPayload(unTranslatedTransfer)
@@ -164,26 +145,8 @@ const prepareExecute = (payload, done) => {
             done() // TODO: Need to handle errors for Prepare Execution process
             return reject(reason)
           })
-        })
-        const creditNotificationPromise = new Promise(function (resolve, reject) {
-          return Kafka.Producer.send({
-            topic: topicForCreditNotifications,
-            key: id,
-            message: JSON.stringify(notificationMsgForCredits)
-          }).then(result => {
-            // return Kafka.send(topicForNotifications, id, result).then(result => {
-            if (result) {
-              done()
-              Logger.info('result credit true')
-              return resolve(true)
-            } else {
-              done()
-              Logger.info('result credit false')
-              return reject(false)
-            }
-          })
         }) */
-        return Promise.all([debitNotificationPromise(topicForDebitNotifications, notificationMsgForDebits, id), creditNotificationPromise(topicForCreditNotifications, notificationMsgForCredits, id)]).then(result => {
+        return Promise.all([sendNotificationPromise(topicForDebitNotifications, notificationMsgForDebits, id), sendNotificationPromise(topicForCreditNotifications, notificationMsgForCredits, id)]).then(result => {
           if (result) {
             done()
             return resolve(response)
@@ -215,7 +178,11 @@ const prepareNotification = (payload, done) => {
   return new Promise(function (resolve, reject) {
     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(jsonPayload))
     // jsonPayload.to = jsonPayload.transfer.debits[0].account
-    Events.emitTransferPrepared(jsonPayload) // May need to re-work this to be synchronous
+    // Events.emitTransferPrepared(jsonPayload) // May need to re-work this to be synchronous
+    Socket.send(jsonPayload.to, jsonPayload.payload).then(result => {
+      done()
+      return resolve(result)
+    })
     // const message = {
     //   to: jsonPayload.transfer.debits[0].account,
     //   from: jsonPayload.transfer.credits[0].account,
@@ -223,7 +190,7 @@ const prepareNotification = (payload, done) => {
     // }
     // Events.sendMessage(message)
     // TODO: WS Notifications to be re-worked so that it only sends a single notification
-    done()
+    // done()
     return resolve(true)
   }) // TODO: Need to handle errors for Prepare Notification process
 }
