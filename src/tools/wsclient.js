@@ -55,7 +55,9 @@ const start = (uri, accountUri) => {
 
   const WebSocket = require('ws')
 
-  const ws = new WebSocket(uri)
+  const ws = new WebSocket(uri, {
+    perMessageDeflate: false
+  })
 
   ws.on('open', function open () {
     const params = {

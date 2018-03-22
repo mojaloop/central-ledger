@@ -115,12 +115,12 @@ const prepareExecute = (payload, done) => {
         var notificationMsgForDebits = {
           from: transfer.debits[0].account,
           to: transfer.debits[0].account,
-          payload: result
+          payload: result.transfer
         }
         var notificationMsgForCredits = {
           from: transfer.debits[0].account,
           to: transfer.credits[0].account,
-          payload: result
+          payload: result.transfer
         }
 
         const topicForDebitNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificationMsgForDebits.to))
