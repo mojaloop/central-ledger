@@ -23,7 +23,7 @@
   "TOPICS":{
     "KAFKA": {
       "ZOOKEEPER": {
-        "HOSTS": "localhost:2181"
+        "HOSTS": "poc-zookeeper:2181"
       },
       "CONSUMER": {
         "CONFIG": {
@@ -32,7 +32,7 @@
         },
         "OPTIONS": {
           "debug": false,
-          "metadata.broker.list": "localhost:9092",
+          "metadata.broker.list": "poc-kafka:9092",
           "group.id": "kafka-mojaloop-group",
           "compression.codec": "none",
           "retry.backoff.ms": 200,
