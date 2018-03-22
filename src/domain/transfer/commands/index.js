@@ -1,6 +1,6 @@
 'use strict'
 
-const Eventric = require('../../../eventric')
+// const Eventric = require('../../../eventric')
 const Translator = require('../translator')
 const Events = require('../../../lib/events')
 const Kafka = require('../kafka')
@@ -8,6 +8,8 @@ const Kafka = require('../kafka')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../lib/urlparser')
 const Socket = require('../../../api/sockets')
+const Projection = require('../../../domain/transfer/projection')
+
 // const Errors = require('../../errors')
 
 // *** Original prepare function
@@ -45,7 +47,8 @@ const prepare = async (message) => {
 }
 
 // *** POC prepare function that Consumes Prepare messages from Kafka topics
-const prepareExecute = (payload, done) => {
+const prepareExecute = async (payload, done) => {
+  Logger.info('Transfers.prepareExecute.entry')
   // utility function promise to send notifications to the kafka publisher
   const sendNotificationPromise = (notificationTopic, notificationMsg, id) => {
     return new Promise(function (resolve, reject) {
@@ -69,7 +72,14 @@ const prepareExecute = (payload, done) => {
 // const prepareExecute = (payload, done) => {
   var unTranslatedTransfer = JSON.parse(payload.value)
   const transfer = Translator.fromPayload(unTranslatedTransfer)
-  return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer)).then(result => {
+  const record = {
+    aggregate: {
+      id: transfer.id
+    },
+    payload: transfer,
+    timestamp: new Date()
+  }
+  return await Projection.saveTransferPrepared(record).then(result => {
     return new Promise(function (resolve, reject) {
       if (result) {
         Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
@@ -196,15 +206,15 @@ const prepareNotification = (payload, done) => {
 }
 
 const fulfill = (fulfillment) => {
-  return Eventric.getContext().then(ctx => ctx.command('FulfillTransfer', fulfillment))
+  return null // Eventric.getContext().then(ctx => ctx.command('FulfillTransfer', fulfillment))
 }
 
 const reject = (rejection) => {
-  return Eventric.getContext().then(ctx => ctx.command('RejectTransfer', rejection))
+  return null // Eventric.getContext().then(ctx => ctx.command('RejectTransfer', rejection))
 }
 
 const settle = ({id, settlement_id}) => {
-  return Eventric.getContext().then(ctx => ctx.command('SettleTransfer', {id, settlement_id}))
+  return null // Eventric.getContext().then(ctx => ctx.command('SettleTransfer', {id, settlement_id}))
 }
 
 module.exports = {
