@@ -9,6 +9,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../lib/urlparser')
 const Socket = require('../../../api/sockets')
 const Projection = require('../../../domain/transfer/projection')
+const Query = require('../../../domain/transfer/queries')
 
 // const Errors = require('../../errors')
 
@@ -78,6 +79,19 @@ const prepareExecute = async (payload, done) => {
     },
     payload: transfer,
     timestamp: new Date()
+  }
+  const existingTransfer = await Query.getById(transfer.id)
+  if (existingTransfer) {
+    Logger.info('Transfer.Command.prepareExecute.duplicateTransfer:: existingTransfer= %s', JSON.stringify(existingTransfer))
+    var notificationMsgForDuplicateDebits = {
+      from: transfer.debits[0].account,
+      to: transfer.debits[0].account,
+      payload: Translator.toTransfer(existingTransfer)
+    }
+    const topicForDuplicateNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificationMsgForDuplicateDebits.to))
+    Logger.info('Transfer.Command.prepareExecute.duplicateTransfer:: sending notification')
+    sendNotificationPromise(topicForDuplicateNotifications, notificationMsgForDuplicateDebits, transfer.id)
+    return true
   }
   return await Projection.saveTransferPrepared(record).then(result => {
     return new Promise(function (resolve, reject) {
