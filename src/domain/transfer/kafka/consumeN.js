@@ -288,7 +288,7 @@ const createConsumerFilteredTopics = async (funcProcessMessage, topicRegexFilter
       }).catch(reason => {
         Logger.error(`kafkaConsumer.reLoadConsumersJob:: ERROR= ${reason}`)
       })
-    }, null, true, config.pollingTimeZone)
+    }, null, config.pollingEnabled, config.pollingTimeZone)
   }).catch(reason => {
     Logger.error(`kafkaConsumer.createConsumerFilteredTopics:: Poller '${topicRegexFilter}' Unable to fetch list topics with regex topicRegexFilter(${topicRegexFilter}) with the following reason: ${reason}`)
   })

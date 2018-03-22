@@ -20,7 +20,8 @@ const prepare = async (message) => {
   return new Promise((resolve, reject) => {
     // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
     const {id, ledger, debits, credits, execution_condition, expires_at} = message
-    const t = Translator.toTransfer(message)
+    var t = Translator.fromPayload(message)
+    t = Translator.toTransfer(message)
     var topic = Kafka.getPrepareTxTopicName(t)
     // Logger.info('Transfers.Commands.prepare:: emit PublishMessage(%s, %s, %s)', topic, id, JSON.stringify(t))
     // Events.emitPublishMessage(topic, id, t)

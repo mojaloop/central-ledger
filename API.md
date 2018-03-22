@@ -419,6 +419,12 @@ The prepare transfer endpoint will create or update a transfer object. A transfe
 | ----- | ---- | ----------- |
 | Object | Transfer | A [Transfer object](#transfer-object) to describe the transfer that should take place. For a conditional transfer, this includes an execution_condition |
 
+##### Response 202 Accepted
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| Object | Transfer | The [Transfer object](#transfer-object) has been saved for processing|
+
+<!-- 
 ##### Response 201 Created
 | Field | Type | Description |
 | ----- | ---- | ----------- |
@@ -428,6 +434,7 @@ The prepare transfer endpoint will create or update a transfer object. A transfe
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | Object | Transfer | The updated [Transfer object](#transfer-object) as saved |
+-->
 
 ##### Request
 ``` http
