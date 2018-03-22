@@ -88,7 +88,7 @@ const fulfill = (fulfillment) => {
         return expire(fulfillment.id)
           .then(() => { throw new Errors.UnpreparedTransferError() })
       } else {
-        throw new Error(err)
+        throw err
       }
     })
 }
@@ -100,7 +100,7 @@ const rejectExpired = () => {
   })
 }
 
-const settle = () => {
+const settle = async () => {
   Logger.info('transfer index.jz : const settle = () ')
   const settlementId = SettlementsModel.generateId()
   const settledTransfers = SettlementsModel.create(settlementId, 'transfer').then(() => {
