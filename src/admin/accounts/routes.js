@@ -8,6 +8,7 @@ const RouteConfig = require('../route-config')
 const tags = ['api', 'accounts']
 const nameValidator = Joi.string().token().max(256).required().description('Name of the account')
 const passwordValidator = Joi.string().token().max(256).required().description('Password for the account')
+const emailAddressValidator = Joi.string().email()
 
 module.exports = [
   {
@@ -33,7 +34,8 @@ module.exports = [
     config: RouteConfig.config(tags, Permissions.ACCOUNTS_CREATE, {
       payload: {
         name: nameValidator,
-        password: passwordValidator
+        password: passwordValidator,
+        emailAddress: emailAddressValidator
       }
     })
   },
