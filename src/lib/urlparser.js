@@ -5,7 +5,7 @@ const Config = require('./config')
 
 const uuidv4Regex = '([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})'
 // const accountRegex = new RegExp(`${Config.HOSTNAME}/accounts/([A-Za-z0-9_]*)/?`, 'i')
-// const transfersRegex = new RegExp(`${Config.HOSTNAME}/transfers/([a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12})`, 'i')
+const transfersValidationRegex = new RegExp(`${Config.HOSTNAME}/transfers/([a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12})`, 'i')
 const accountRegex = new RegExp(`[^/]+(?=/$|$)`, 'i')
 const transfersRegex = new RegExp(`${uuidv4Regex}`, 'i')
 const accountsTransfersRouteRegex = new RegExp(/\/accounts\/([A-Za-z0-9_]*)\/transfers/, 'i')
@@ -53,7 +53,7 @@ const idFromTransferUri = (uri, callback) => {
 }
 
 const toTransferUri = (id) => {
-  const matches = id.match(transfersRegex)
+  const matches = id.match(transfersValidationRegex)
   return (matches ? id : `${Config.HOSTNAME}/transfers/${id}`)
 }
 

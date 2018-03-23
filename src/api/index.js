@@ -12,7 +12,7 @@ const Kafka = require('../domain/transfer/kafka/registerKafka')
 
 const Setup = require('../shared/setup')
 
-module.exports = Setup.initialize({ service: 'api', port: Config.PORT, modules: [Auth, Routes, Sockets, Worker, Kafka], loadEventric: true, runMigrations: true })
+module.exports = Setup.initialize({ service: 'api', port: Config.PORT, modules: [Auth, Routes, Sockets, Worker, Kafka], loadEventric: false, runMigrations: true })
   .then(server => {
     return Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL).then(() => server)
   })
