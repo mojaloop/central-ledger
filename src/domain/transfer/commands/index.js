@@ -2,6 +2,7 @@
 
 const Eventric = require('../../../eventric')
 const Projection = require('../../../domain/transfer/projection')
+const FeeProjection = require('../../../domain/fee/index')
 const Query = require('../../../domain/transfer/queries')
 const State = require('../state')
 const CryptoConditions = require('../../../crypto-conditions')
@@ -23,9 +24,6 @@ const prepare = async (transfer) => {
 
 const fulfill = async (fulfillment) => {
   const record = {
-    aggregate: {
-      id: fulfillment.id
-    },
     payload: fulfillment,
     timestamp: new Date()
   }
@@ -36,16 +34,18 @@ const fulfill = async (fulfillment) => {
   if ((transfer.state === State.EXECUTED || transfer.state === State.SETTLED) && fulfillment === fulfillment.fulfillment) {
     return transfer
   }
-  if (new Date() < new Date(transfer.expiresAt)) {
+  if (new Date() > new Date(transfer.expiresAt)) {
     throw new Errors.ExpiredTransferError()
   }
   if (transfer.state !== State.PREPARED) {
     throw new Errors.InvalidModificationError(`Transfers in state ${transfer.state} may not be executed`)
   }
   CryptoConditions.validateFulfillment(fulfillment.fulfillment, transfer.executionCondition)
-  await Projection.saveTransferExecuted(record)
+  await Projection.saveTransferExecuted({payload: record.payload, timestamp: record.timestamp})
   await Projection.saveExecutedTransfer(record)
-  return await Query.getById(fulfillment.id)
+  const fulfilledTransfer = await Query.getById(fulfillment.id)
+  await FeeProjection.generateFeesForTransfer(fulfilledTransfer)
+  return fulfilledTransfer
 }
 
 const reject = async (rejection) => {
@@ -65,11 +65,11 @@ const reject = async (rejection) => {
   }
   await Projection.saveTransferRejected(record)
   const updatedTransfer = await Query.getById(rejection.id)
-  return {alreadyRejected: false, updatedTransfer}
+  return {alreadyRejected: false, transfer: updatedTransfer}
 }
 
 const settle = ({id, settlement_id}) => {
-  return Eventric.getContext().then(ctx => ctx.command('SettleTransfer', {id, settlement_id}))
+  return Projection.saveSettledTransfers({id, settlement_id})
 }
 
 module.exports = {

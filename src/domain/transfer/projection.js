@@ -12,6 +12,7 @@ const TransferState = require('./state')
 const TransferRejectionType = require('./rejection-type')
 const TransfersReadModel = require('./models/transfers-read-model')
 const ExecuteTransfersModel = require('../../models/executed-transfers')
+const SettledTransfersModel = require('../../models/settled-transfers')
 
 const saveTransferPrepared = async ({aggregate, payload, timestamp}) => {
   const debitAccount = await UrlParser.nameFromAccountUri(payload.debits[0].account)
@@ -54,13 +55,13 @@ const saveTransferPrepared = async ({aggregate, payload, timestamp}) => {
   return record
 }
 
-const saveTransferExecuted = async ({aggregate, payload, timestamp}) => {
+const saveTransferExecuted = async ({payload, timestamp}) => {
   const fields = {
     state: TransferState.EXECUTED,
     fulfillment: payload.fulfillment,
     executedDate: new Date(timestamp)
   }
-  return await TransfersReadModel.updateTransfer(aggregate.id, fields)
+  return await TransfersReadModel.updateTransfer(payload.id, fields)
 }
 
 const saveTransferRejected = async ({aggregate, payload, timestamp}) => {
@@ -79,12 +80,17 @@ const saveTransferRejected = async ({aggregate, payload, timestamp}) => {
 }
 
 const saveExecutedTransfer = async (transfer) => {
-  await ExecuteTransfersModel.create(transfer.id)
+  await ExecuteTransfersModel.create(transfer.payload.id)
+}
+
+const saveSettledTransfers = async ({id, settlement_id}) => {
+  await SettledTransfersModel.create({id, settlement_id})
 }
 
 module.exports = {
   saveTransferPrepared,
   saveTransferExecuted,
   saveTransferRejected,
-  saveExecutedTransfer
+  saveExecutedTransfer,
+  saveSettledTransfers
 }

@@ -39,12 +39,10 @@ exports.fulfillTransfer = function (request, reply) {
 
   return TransferService.fulfill(fulfillment)
     .then(transfer => {
-      Logger.info('transfer record')
-      Logger.info(transfer)
       reply(transfer).code(200)
     })
     .catch(err => {
-      throw new Error(err)
+      reply(err)
     })
 }
 
