@@ -72,6 +72,10 @@ const tansformAccountToPrepareNotificationTopicName = (account) => {
   return topicTemplate.prepare.notification(account)
 }
 
+const tansformAccountToPrepareTxTopicName = (account) => {
+  return topicTemplate.prepare.tx(account)
+}
+
 const getPreparePositionTopicName = (transfer) => {
   const dfspName = getDfspName(transfer.debits[0].account)
   return topicTemplate.prepare.position(dfspName)
@@ -100,6 +104,7 @@ exports.getPreparePositionTopicName = getPreparePositionTopicName
 exports.getListOfTopics = getListOfTopics
 exports.getListOfFilteredTopics = getListOfFilteredTopics
 exports.tansformAccountToPrepareNotificationTopicName = tansformAccountToPrepareNotificationTopicName
+exports.tansformAccountToPrepareTxTopicName = tansformAccountToPrepareTxTopicName
 exports.createConsumer = createConsumer
 exports.createConsumerFilteredTopics = createConsumerFilteredTopics
 exports.ConsumerOnceOff = ConsumerOnceOff
