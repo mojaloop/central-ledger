@@ -88,6 +88,7 @@ const start = (uri, accountUri) => {
 
   ws.on('close', function close (code, reason) {
     logger(`disconnected - ${code}: ${reason}`)
+    start(argv.uri, argv.a)
   })
 }
 
