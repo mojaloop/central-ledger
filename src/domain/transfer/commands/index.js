@@ -24,17 +24,19 @@ const prepare = async (message) => {
     // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
     const {id, ledger, debits, credits, execution_condition, expires_at} = message
     var t = Translator.fromPayload(message)
-    t = Translator.toTransfer(message)
+    // t = Translator.toTransfer(message)
+    Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepare::start`)
     var topic = Kafka.getPrepareTxTopicName(t)
     // Logger.info('Transfers.Commands.prepare:: emit PublishMessage(%s, %s, %s)', topic, id, JSON.stringify(t))
     // Events.emitPublishMessage(topic, id, t)
     // return resolve({ existing: result.existing, transfer: t })
     // return Kafka.send(topic, id, t).then(result => {
-    return Kafka.Producer.send({topic, key: id, message: JSON.stringify(t)}).then(result => {
+    return Kafka.Producer.send({topic, key: id, message: JSON.stringify(message)}).then(result => {
       var response = {}
       if (result) {
         response = {status: 'pending', existing: false, transfer: message}
         Logger.info(`Transfers.Commands.prepare:: result='${JSON.stringify(response)}'`)
+        Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepare::end`)
         return resolve(response)
       } else {
         response = {status: 'pending-failed', existing: false, transfer: message}
@@ -74,6 +76,7 @@ const prepareExecute = async (payload, done) => {
 // const prepareExecute = (payload, done) => {
   var unTranslatedTransfer = JSON.parse(payload.value)
   const transfer = Translator.fromPayload(unTranslatedTransfer)
+  Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::start`)
   const record = {
     aggregate: {
       id: transfer.id
@@ -93,12 +96,14 @@ const prepareExecute = async (payload, done) => {
     Logger.info('Transfer.Command.prepareExecute.duplicateTransfer:: sending notification')
     sendNotificationPromise(topicForDuplicateNotifications, notificationMsgForDuplicateDebits, transfer.id)
     done()
+    Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(notificationMsgForDuplicateDebits))
+    Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::end`)
     await true
   } else {
     await Projection.saveTransferPrepared(record).then(result => {
       return new Promise(async function (resolve, reject) {
         if (result) {
-          Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
+          // Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
           const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
 
           // Events.emitPublishMessage(topic, id, result)
@@ -175,6 +180,8 @@ const prepareExecute = async (payload, done) => {
           return Promise.all([sendNotificationPromise(topicForDebitNotifications, notificationMsgForDebits, id), sendNotificationPromise(topicForCreditNotifications, notificationMsgForCredits, id)]).then(result => {
             if (result) {
               done()
+              Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
+              Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::end`)
               return resolve(response)
             } else {
               done()
@@ -203,6 +210,9 @@ const prepareExecute = async (payload, done) => {
 const prepareNotification = (payload, done) => {
   var jsonPayload = JSON.parse(payload.value)
   return new Promise(function (resolve, reject) {
+    // var t = Translator.fromPayload(message)
+    var t = Translator.fromPayload(jsonPayload.payload)
+    Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepareNotification::start`)
     Logger.info('Transfer.Commands.prepareNotification:: result= %s', JSON.stringify(jsonPayload))
     // jsonPayload.to = jsonPayload.transfer.debits[0].account
     // Events.emitTransferPrepared(jsonPayload) // May need to re-work this to be synchronous
@@ -210,14 +220,7 @@ const prepareNotification = (payload, done) => {
       done()
       return resolve(result)
     })
-    // const message = {
-    //   to: jsonPayload.transfer.debits[0].account,
-    //   from: jsonPayload.transfer.credits[0].account,
-    //   data: jsonPayload.transfer
-    // }
-    // Events.sendMessage(message)
-    // TODO: WS Notifications to be re-worked so that it only sends a single notification
-    // done()
+    Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepareNotification::end`)
     return resolve(true)
   }) // TODO: Need to handle errors for Prepare Notification process
 }
