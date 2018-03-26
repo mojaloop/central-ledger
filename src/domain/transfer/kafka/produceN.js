@@ -32,13 +32,13 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const NProducer = require('sinek').NProducer
 const Config = require('../../../lib/config')
-var crypto = require('crypto')
+const crypto = require('crypto')
 
 let clientId
 const getClientId = () => {
   if (!clientId) {
     const randomHash = crypto.randomBytes(5).toString('hex')
-    clientId = `${Config.TOPICS_KAFKA_PRODUCER_OPTIONS['client.id'] || 'default-client'}-${randomHash}`
+    clientId = `${Config.TOPICS_KAFKA_PRODUCER_OPTIONS['client.id'] || 'default-client-prod'}-${randomHash}`
   }
   // const clientId = `${Config.TOPICS_KAFKA_PRODUCER_OPTIONS['client.id'] || 'default-client'}-${id}`
   return clientId
