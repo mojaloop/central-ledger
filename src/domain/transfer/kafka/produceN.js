@@ -44,80 +44,93 @@ const getClientId = () => {
   return clientId
 }
 
-// let producer
+let producer
+let producerHealth
 
-const connect = (options = {requiredAcks: -1, partitionCount: 1}) => {
+const connect = async (options = {requiredAcks: -1, partitionCount: 1}) => {
   Logger.info(`Producer::connect - clientId='${options['client.id']}'`)
+  if (!producer) {
+  // if (!producer || producerHealth.status !== 0) {
+    var config = {
+      logger: Logger,
+      noptions: {
+        // 'debug': options['debug'] || 'all',
+        'metadata.broker.list': options['metadata.broker.list'],
+        'client.id': getClientId() || 'default-client',
+        'event_cb': true,
+        'compression.codec': options['compression.codec'] || 'none',
+        'retry.backoff.ms': options['retry.backoff.ms'] || 200,
+        'message.send.max.retries': options['message.send.max.retries'] || 10,
+        'socket.keepalive.enable': options['socket.keepalive.enable'] || true,
+        'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
+        'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
+        'batch.num.messages': options['batch.num.messages'] || 1000000,
 
-  var config = {
-    logger: Logger,
-    noptions: {
-      // 'debug': options['debug'] || 'all',
-      'metadata.broker.list': options['metadata.broker.list'],
-      'client.id': getClientId() || 'default-client',
-      'event_cb': true,
-      'compression.codec': options['compression.codec'] || 'none',
-      'retry.backoff.ms': options['retry.backoff.ms'] || 200,
-      'message.send.max.retries': options['message.send.max.retries'] || 10,
-      'socket.keepalive.enable': options['socket.keepalive.enable'] || true,
-      'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
-      'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
-      'batch.num.messages': options['batch.num.messages'] || 1000000,
+        // 'security.protocol': 'sasl_ssl',
+        // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
+        // 'ssl.key.password': 'nodesinek',
+        // 'ssl.certificate.location': path.join(__dirname, '../certs/ca-cert'),
+        // 'ssl.ca.location': path.join(__dirname, '../certs/ca-cert'),
+        // 'sasl.mechanisms': 'PLAIN',
+        // 'sasl.username': 'admin',
+        // 'sasl.password': 'nodesinek',
 
-      // 'security.protocol': 'sasl_ssl',
-      // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
-      // 'ssl.key.password': 'nodesinek',
-      // 'ssl.certificate.location': path.join(__dirname, '../certs/ca-cert'),
-      // 'ssl.ca.location': path.join(__dirname, '../certs/ca-cert'),
-      // 'sasl.mechanisms': 'PLAIN',
-      // 'sasl.username': 'admin',
-      // 'sasl.password': 'nodesinek',
-
-      'api.version.request': true
-    },
-    tconf: {
-      // 0=Broker does not send any response/ack to client, 1=Only the leader broker will need to ack the message, -1 or all=broker will block until message is committed by all in sync replicas (ISRs) or broker's min.insync.replicas setting before sending response.
-      'request.required.acks': options.requiredAcks || 1
+        'api.version.request': true
+      },
+      tconf: {
+        // 0=Broker does not send any response/ack to client, 1=Only the leader broker will need to ack the message, -1 or all=broker will block until message is committed by all in sync replicas (ISRs) or broker's min.insync.replicas setting before sending response.
+        'request.required.acks': options.requiredAcks || 1
+      }
     }
+
+    if (options.debug) {
+      config.noptions.debug = 'all'
+    }
+
+    // const producer = new NProducer(config, options.partitionCount || 1)
+    producer = new NProducer(config, options.partitionCount || 1)
+    // await producer
+    await producer.connect()
+    // await producer.enableAnalytics(/* .. */)
+    // producerHealth = await producer.checkHealth()
   }
-
-  if (options.debug) {
-    config.noptions.debug = 'all'
-  }
-
-  const producer = new NProducer(config, options.partitionCount || 1)
-
   return producer
 }
 
-const send = (options = {message, topic, partition: 0, key: null, partitionKey: null}) => {
-  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
-
-  const producer = connect(kafkaProducerOptions)
-
+const send = async (options = {message, topic, partition: 0, key: null, partitionKey: null}) => {
   const {message, topic, partition, key, partitionKey} = options
-  return new Promise((resolve, reject) => {
-    Logger.info(`Producer::send - message='${message}', topic=''${topic}, partition='${partition}', key='${key}', partitionKey='${partitionKey}'`)
+  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+  const producer = await connect(kafkaProducerOptions)
+  const result = await producer.send(topic, message, partition, key, partitionKey)
+  Logger.info(`Producer::send key='${key}' - send to ${topic} - result='${JSON.stringify(result)}'`)
+  return result
 
-    producer.on('error', error => {
-      Logger.error(`Producer::send - ERROR=${error}`)
-      producer.close()
-      return reject(error)
-    })
-
-    producer.connect().then(() => {
-      Logger.info(`Producer::send key='${key}' - connected.`)
-      producer.send(topic, message, partition, key, partitionKey).then(result => {
-        Logger.info(`Producer::send key='${key}' - send to ${topic} - result='${JSON.stringify(result)}'`)
-        // producer.close()
-        return resolve(result)
-      })
-    }).catch(error => {
-      Logger.error(`Producer::send - ERROR=${error}`)
-      producer.close()
-      return reject(error)
-    })
-  })
+  //
+  // const producer = connect(kafkaProducerOptions)
+  //
+  // const {message, topic, partition, key, partitionKey} = options
+  // return new Promise((resolve, reject) => {
+  //   Logger.info(`Producer::send - message='${message}', topic=''${topic}, partition='${partition}', key='${key}', partitionKey='${partitionKey}'`)
+  //
+  //   producer.on('error', error => {
+  //     Logger.error(`Producer::send - ERROR=${error}`)
+  //     // producer.close()
+  //     return reject(error)
+  //   })
+  //
+  //   producer.connect().then(() => {
+  //     Logger.info(`Producer::send key='${key}' - connected.`)
+  //     producer.send(topic, message, partition, key, partitionKey).then(result => {
+  //       Logger.info(`Producer::send key='${key}' - send to ${topic} - result='${JSON.stringify(result)}'`)
+  //       // producer.close()
+  //       return resolve(result)
+  //     })
+  //   }).catch(error => {
+  //     Logger.error(`Producer::send - ERROR=${error}`)
+  //     // producer.close()
+  //     return reject(error)
+  //   })
+  // })
 }
 
 const stats = () => {}
