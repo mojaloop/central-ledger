@@ -6,7 +6,7 @@ defaults_working_directory: &defaults_working_directory
 
 defaults_docker_node: &defaults_docker_node
   docker:
-    - image: mhart/alpine-node:8.9.4
+    - image: dwolla/alpine-node-make
 
 defaults_docker_helm_kube: &defaults_docker_helm_kube
   docker:
@@ -18,14 +18,13 @@ defaults_docker_helm_kube: &defaults_docker_helm_kube
 #     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-SNAPSHOT'
 #     # - TAG: v1.0
 
-defaults_Dependencies: &defaults_Dependencies |
+defaults_Dependencies: &defaults_Dependencies | 
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
-    apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
 
-defaults_awsCliDependencies: &defaults_awsCliDependencies |
+defaults_awsCliDependencies: &defaults_awsCliDependencies | 
     apk --no-cache add \
             python \
             py-pip \
@@ -57,11 +56,15 @@ defaults_build_docker_publish: &defaults_build_docker_publish
 defaults_deploy_prequisites: &defaults_deploy_prequisites
   name: Copy deployment pre-requisites from S3 bucket
   command: |
-    echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
-    mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
-    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
-    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
-
+    if [ -z "$K8_USER_TOKEN" ];
+    then
+        echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
+        mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
+        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+    else
+        echo "Skipping K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
+    fi
     echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $K8_RELEASE_NAME release"
     mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
     aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
@@ -75,8 +78,15 @@ defaults_deploy_config_kubernetes_cluster: &defaults_deploy_config_kubernetes_cl
 defaults_deploy_config_kubernetes_credentials: &defaults_deploy_config_kubernetes_credentials
   name: Configure Kubernetes credentails
   command: |
-    echo "Configure Kubernetes credentails ${K8_USER_NAME}"
-    kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
+    echo "Configure Kubernetes credentials ${K8_USER_NAME}"
+    if [ ! -z "$K8_USER_TOKEN" ];
+    then
+        echo "Configure Kubernetes credentials ${K8_USER_NAME} using Token"
+        kubectl config set-credentials $K8_USER_NAME --token=$K8_USER_TOKEN
+    else
+        echo "Configure Kubernetes credentials ${K8_USER_NAME} using Certs"
+        kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
+    fi
 
 defaults_deploy_config_kubernetes_context: &defaults_deploy_config_kubernetes_context
   name: Confi gure Kubernetes context
@@ -101,13 +111,13 @@ defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgra
     echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
     if [ -z "$(helm list -q | grep ${K8_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${K8_RELEASE_NAME})" != "Error: Unauthorized" ];
     then
-        echo "Installing ${K8_RELEASE_NAME} new release"
+        echo "Installing ${K8_RELEASE_NAME} new release"  
         helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
     else
-        echo "Upgrading ${K8_RELEASE_NAME} release"
+        echo "Upgrading ${K8_RELEASE_NAME} release"  
         helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --reuse-values $HELM_VALUE_SET_VALUES $K8_HELM_CHART_NAME
     fi
-
+          
 jobs:
   setup:
     <<: *defaults_working_directory
@@ -118,20 +128,17 @@ jobs:
           command: *defaults_Dependencies
       - checkout
       - run:
-          name: Access npm folder as root
-          command: cd $(npm root -g)/npm
-      - run:
-          name: Install node-gyp globally
-          command: npm install -g node-gyp
-      - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
           command: npm install github:interledgerjs/five-bells-ledger-api-tests
       - run:
+          name: Link NPM sodium
+          command: npm link sodium
+      - run:
+          name: Link NPM argon2
+          command: npm link argon2
+      - run:
           name: Update NPM install
           command: npm install
-      - run:
-          name: Delete build dependencies
-          command: apk del build-dependencies
       # - run:
       #     name: Update NPM install
       #     command: npm link sodium && npm link argon2 && npm install --production
@@ -139,7 +146,7 @@ jobs:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - node_modules
-
+  
   test-unit:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
@@ -150,13 +157,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run:
-          name: Install tape and tap-xunit
-          command: npm install -g tape tap-xunit
-      - run:
+      - run: 
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run:
+      - run: 
           name: Execute unit tests
           command: npm -s run test:xunit > ./test/results/tape.xml
       - store_artifacts:
@@ -164,7 +168,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
-
+  
   test-coverage:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
@@ -178,7 +182,7 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run:
+      - run: 
           name: Execute code coverage check
           command: npm -s run test:coverage-check
       - store_artifacts:
@@ -191,12 +195,12 @@ jobs:
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ];
             then
-                echo "Sending lcov.info to SonarQube..."
+                echo "Sending lcov.info to SonarQube..."  
                 aws s3 cp coverage/lcov.info $AWS_S3_DIR_SONARQUBE/central-ledger/lcov.info
             else
-                echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube."
-            fi
-
+                echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube." 
+            fi 
+  
   test-integration:
     machine: true
     <<: *defaults_working_directory
@@ -204,23 +208,23 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run:
+      - run: 
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run:
-          name: Execute unit tests
+      - run: 
+          name: Execute integration tests
           command: npm -s run test:integration
       - store_artifacts:
           path: ./test/results
           prefix: test
       - store_test_results:
           path: ./test/results
-
+  
   test-functional:
     machine: true
     <<: *defaults_working_directory
     steps:
-      - run:
+      - run: 
           name: Add the Postgres 9.6 binaries to the path.
           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
       - run:
@@ -232,11 +236,11 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run:
+      - run: 
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run:
-          name: Execute unit tests
+      - run: 
+          name: Execute functional tests
           command: npm -s run test:functional
       - store_artifacts:
           path: ./test/results
@@ -247,28 +251,28 @@ jobs:
 
 #   test-spec:
 #     machine: true
-#     # <<: *defaults
+#     # <<: *defaults 
 #     steps:
-#     #   - run:
-#     #       name: Install general dependencies
-#     #       command: *defaultDependencies
-#     #   - run:
-#     #       name: Add the Postgres 9.6 binaries to the path.
-#     #       command: apk --no-cache add postgresql-client
-#     #   - setup_remote_docker
-#     #   - run:
-#     #       name: Add docker
-#     #       command: apk --no-cache add docker
-#     #   - run:
-#     #       name: Add docker compose
-#     #       command: |
-#     #         apk --no-cache add py-pip
-#     #         pip install docker-compose
-#     #   - run:
-#     #       name: Install Docker Compose
-#     #       command: |
-#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose
-#       - run:
+#     #   - run: 
+#     #       name: Install general dependencies 
+#     #       command: *defaultDependencies 
+#     #   - run:  
+#     #       name: Add the Postgres 9.6 binaries to the path. 
+#     #       command: apk --no-cache add postgresql-client 
+#     #   - setup_remote_docker 
+#     #   - run:  
+#     #       name: Add docker 
+#     #       command: apk --no-cache add docker 
+#     #   - run:  
+#     #       name: Add docker compose 
+#     #       command: | 
+#     #         apk --no-cache add py-pip 
+#     #         pip install docker-compose 
+#     #   - run: 
+#     #       name: Install Docker Compose 
+#     #       command: | 
+#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose 
+#       - run: 
 #           name: Add the Postgres 9.6 binaries to the path.
 #           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
 #       - run:
@@ -280,10 +284,10 @@ jobs:
 #       - checkout
 #       - restore_cache:
 #           key: dependency-cache-{{ checksum "package.json" }}
-#       - run:
+#       - run: 
 #           name: Create dir for test results
 #           command: mkdir -p ./test/results
-#       - run:
+#       - run: 
 #           name: Execute unit tests
 #           command: npm -s run test:spec
 #       - store_artifacts:
@@ -308,6 +312,54 @@ jobs:
       - run:
           <<: *defaults_build_docker_publish
 
+  build-poc:
+    machine: true
+    <<: *defaults_working_directory
+    steps:
+      - checkout
+      - run:
+          name: setup environment vars for POC release
+          command: |
+            echo 'export RELEASE_TAG=$RELEASE_TAG_POC' >> $BASH_ENV
+      - run:
+          <<: *defaults_build_docker_login
+      - run:
+          <<: *defaults_build_docker_build
+      - run:
+          <<: *defaults_build_docker_publish
+
+  build-pocdb:
+    machine: true
+    <<: *defaults_working_directory
+    steps:
+      - checkout
+      - run:
+          name: setup environment vars for POCDB release
+          command: |
+            echo 'export RELEASE_TAG=$RELEASE_TAG_POCDB' >> $BASH_ENV
+      - run:
+          <<: *defaults_build_docker_login
+      - run:
+          <<: *defaults_build_docker_build
+      - run:
+          <<: *defaults_build_docker_publish
+  
+  build-base:
+    machine: true
+    <<: *defaults_working_directory
+    steps:
+      - checkout
+      - run:
+          name: setup environment vars for BASE release
+          command: |
+            echo 'export RELEASE_TAG=$RELEASE_TAG_BASE' >> $BASH_ENV
+      - run:
+          <<: *defaults_build_docker_login
+      - run:
+          <<: *defaults_build_docker_build
+      - run:
+          <<: *defaults_build_docker_publish
+
   build:
     machine: true
     # <<: *default_env
@@ -323,7 +375,7 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
-
+  
   deploy-snapshot:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
@@ -335,8 +387,111 @@ jobs:
           name: setup environment vars for SNAPSHOT release
           command: |
             echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_SNAPSHOT' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_SNAPSHOT' >> $BASH_ENV
             echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_SNAPSHOT' >> $BASH_ENV
             echo 'export K8_NAMESPACE=$K8_NAMESPACE_SNAPSHOT' >> $BASH_ENV
+            echo 'export K8_USER_NAME=$K8_USER_NAME_SNAPSHOT' >> $BASH_ENV
+            echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_SNAPSHOT' >> $BASH_ENV
+            echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_SNAPSHOT' >> $BASH_ENV
+            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+      - run:
+          <<: *defaults_deploy_prequisites
+      - run:
+          <<: *defaults_deploy_config_kubernetes_cluster
+      - run:
+          <<: *defaults_deploy_config_kubernetes_credentials
+      - run:
+          <<: *defaults_deploy_config_kubernetes_context
+      - run:
+          <<: *defaults_deploy_set_kubernetes_context
+      - run:
+          <<: *defaults_deploy_configure_helm
+      - run:
+          <<: *defaults_deploy_install_or_upgrade_helm_chart
+
+  deploy-poc:
+    <<: *defaults_working_directory
+    <<: *defaults_docker_helm_kube
+    steps:
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
+      - run:
+          name: setup environment vars for POC release
+          command: |
+            echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_POC' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_POC' >> $BASH_ENV
+            echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_POC' >> $BASH_ENV
+            echo 'export K8_NAMESPACE=$K8_NAMESPACE_POC' >> $BASH_ENV
+            echo 'export K8_USER_NAME=$K8_USER_NAME_POC' >> $BASH_ENV
+            echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_POC' >> $BASH_ENV
+            echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_POC' >> $BASH_ENV
+            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+      - run:
+          <<: *defaults_deploy_prequisites
+      - run:
+          <<: *defaults_deploy_config_kubernetes_cluster
+      - run:
+          <<: *defaults_deploy_config_kubernetes_credentials
+      - run:
+          <<: *defaults_deploy_config_kubernetes_context
+      - run:
+          <<: *defaults_deploy_set_kubernetes_context
+      - run:
+          <<: *defaults_deploy_configure_helm
+      - run:
+          <<: *defaults_deploy_install_or_upgrade_helm_chart
+
+  deploy-pocdb:
+    <<: *defaults_working_directory
+    <<: *defaults_docker_helm_kube
+    steps:
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
+      - run:
+          name: setup environment vars for POCDB release
+          command: |
+            echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_POCDB' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_POCDB' >> $BASH_ENV
+            echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_POCDB' >> $BASH_ENV
+            echo 'export K8_NAMESPACE=$K8_NAMESPACE_POCDB' >> $BASH_ENV
+            echo 'export K8_USER_NAME=$K8_USER_NAME_POCDB' >> $BASH_ENV
+            echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_POCDB' >> $BASH_ENV
+            echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_POCDB' >> $BASH_ENV
+            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+      - run:
+          <<: *defaults_deploy_prequisites
+      - run:
+          <<: *defaults_deploy_config_kubernetes_cluster
+      - run:
+          <<: *defaults_deploy_config_kubernetes_credentials
+      - run:
+          <<: *defaults_deploy_config_kubernetes_context
+      - run:
+          <<: *defaults_deploy_set_kubernetes_context
+      - run:
+          <<: *defaults_deploy_configure_helm
+      - run:
+          <<: *defaults_deploy_install_or_upgrade_helm_chart
+
+  deploy-base:
+    <<: *defaults_working_directory
+    <<: *defaults_docker_helm_kube
+    steps:
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
+      - run:
+          name: setup environment vars for BASE release
+          command: |
+            echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_BASE' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_BASE' >> $BASH_ENV
+            echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_BASE' >> $BASH_ENV
+            echo 'export K8_NAMESPACE=$K8_NAMESPACE_BASE' >> $BASH_ENV
+            echo 'export K8_USER_NAME=$K8_USER_NAME_BASE' >> $BASH_ENV
+            echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_BASE' >> $BASH_ENV
+            echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_BASE' >> $BASH_ENV
             echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
@@ -364,8 +519,12 @@ jobs:
           name: setup environment vars for release
           command: |
             echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_PROD' >> $BASH_ENV
+            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_PROD' >> $BASH_ENV
             echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_PROD' >> $BASH_ENV
             echo 'export K8_NAMESPACE=$K8_NAMESPACE_PROD' >> $BASH_ENV
+            echo 'export K8_USER_NAME=$K8_USER_NAME_PROD' >> $BASH_ENV
+            echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_PROD' >> $BASH_ENV
+            echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_PROD' >> $BASH_ENV
             echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
@@ -392,7 +551,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore:
+              ignore: 
                 - /feature*/
                 - /bugfix*/
       - test-unit:
@@ -403,9 +562,9 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore:
+              ignore: 
                 - /feature*/
-                - /bugfix*/
+                - /bugfix*/             
       - test-coverage:
           context: org-global
           requires:
@@ -414,7 +573,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore:
+              ignore: 
                 - /feature*/
                 - /bugfix*/
       - test-integration:
@@ -425,7 +584,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore:
+              ignore: 
                 - /feature*/
                 - /bugfix*/
       - test-functional:
@@ -436,7 +595,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore:
+              ignore: 
                 - /feature*/
                 - /bugfix*/
     #   - test-spec:
@@ -445,9 +604,9 @@ workflows:
     #         - setup
     #       filters:
     #           tags:
-    #             only: /.*/
+    #             only: /.*/    
     #         branches:
-    #           ignore:
+    #           ignore: 
     #             - /feature*/
     #             - /bugfix*/
       - build-snapshot:
@@ -463,7 +622,7 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-snapshot/
             branches:
-              ignore:
+              ignore: 
                 - /.*/
       - deploy-snapshot:
           context: org-global
@@ -473,7 +632,82 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-snapshot/
             branches:
-              ignore:
+              ignore: 
+                - /.*/
+      - build-poc:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            # - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-poc/
+            branches:
+              ignore: 
+                - /.*/
+      - deploy-poc:
+          context: org-global
+          requires:
+            - build-poc
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-poc/
+            branches:
+              ignore: 
+                - /.*/
+      - build-pocdb:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            # - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-pocdb/
+            branches:
+              ignore: 
+                - /.*/
+      - deploy-pocdb:
+          context: org-global
+          requires:
+            - build-pocdb
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-pocdb/
+            branches:
+              ignore: 
+                - /.*/
+      - build-base:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+            - test-functional
+            # - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-base/
+            branches:
+              ignore: 
+                - /.*/
+      - deploy-base:
+          context: org-global
+          requires:
+            - build-base
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-base/
+            branches:
+              ignore: 
                 - /.*/
       - build:
           context: org-global
@@ -488,7 +722,7 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore:
+              ignore: 
                 - /.*/
       - deploy:
           context: org-global
@@ -498,5 +732,5 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore:
+              ignore: 
                 - /.*/
