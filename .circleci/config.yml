@@ -614,9 +614,9 @@ workflows:
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
@@ -639,9 +639,9 @@ workflows:
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
@@ -689,9 +689,9 @@ workflows:
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
@@ -714,9 +714,9 @@ workflows:
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
