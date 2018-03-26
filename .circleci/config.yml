@@ -109,7 +109,7 @@ defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgra
   name: Install or Upgrade Helm Chart
   command: |
     echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
-    if [ -z "$(helm list -q | grep ${K8_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${K8_RELEASE_NAME})" != "Error: Unauthorized" ];
+    if [ -z "$(helm list -q | grep -w ${K8_RELEASE_NAME})"  ] && [ "$(helm list -q | grep -w ${K8_RELEASE_NAME})" != "Error: Unauthorized" ];
     then
         echo "Installing ${K8_RELEASE_NAME} new release"
         helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
