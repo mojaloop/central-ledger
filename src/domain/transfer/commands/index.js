@@ -23,13 +23,9 @@ const prepare = async (message) => {
   const existingTransfer = await Query.getById(UrlParser.idFromTransferUri(message.id))
   if (existingTransfer) {
     Logger.info('Transfer.Command.prepare.duplicateTransfer:: existingTransfer= %s', JSON.stringify(existingTransfer))
-    message.state = 'prepared'
-    message.timeline = {
-      prepared_at: existingTransfer.preparedDate
-    }
     return {
       existing: true,
-      transfer: message
+      transfer: Translator.toTransfer(existingTransfer)
     }
   }
   message.timeline = {
