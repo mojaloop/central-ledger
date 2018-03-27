@@ -26,8 +26,6 @@ defaults_Dependencies: &defaults_Dependencies |
     apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
     npm install fs-extra
     npm install -g node-gyp
-    npm install -g sodium@2.0.3 --unsafe-perm
-    npm install -g argon2@0.14.0 --unsafe-perm
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add \
@@ -135,12 +133,6 @@ jobs:
       - run:
           name: Install interledgerjs/five-bells-ledger-api-tests
           command: npm install github:interledgerjs/five-bells-ledger-api-tests
-      - run:
-          name: Link NPM sodium
-          command: npm link sodium
-      - run:
-          name: Link NPM argon2
-          command: npm link argon2
       - run:
           name: Update NPM install
           command: npm install
