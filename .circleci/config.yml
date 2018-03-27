@@ -154,6 +154,9 @@ jobs:
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
+          name: Install tap and tap-xunit
+          command: npm install tape tap-xunit
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
       - run:
