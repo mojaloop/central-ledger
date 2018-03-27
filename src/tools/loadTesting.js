@@ -48,7 +48,7 @@ var argv = require('yargs')
 
 const LineByLineReader = require('line-by-line')
 const lr = new LineByLineReader(argv.file)
-const logMap = {}
+let logMap = {}
 let firstLine
 let lastLine
 let perEntryResponse = []
