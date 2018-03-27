@@ -20,6 +20,14 @@ const Query = require('../../../domain/transfer/queries')
 
 // *** POC prepare function that publishes messages to Kafka topics
 const prepare = async (message) => {
+  const existingTransfer = await Query.getById(UrlParser.idFromTransferUri(message.id))
+  if (existingTransfer) {
+    Logger.info('Transfer.Command.prepare.duplicateTransfer:: existingTransfer= %s', JSON.stringify(existingTransfer))
+    return {
+      existing: true,
+      transfer: message
+    }
+  }
   return new Promise((resolve, reject) => {
     // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
     const {id, ledger, debits, credits, execution_condition, expires_at} = message
@@ -84,126 +92,109 @@ const prepareExecute = async (payload, done) => {
     payload: transfer,
     timestamp: new Date()
   }
-  const existingTransfer = await Query.getById(transfer.id)
-  if (existingTransfer) {
-    Logger.info('Transfer.Command.prepareExecute.duplicateTransfer:: existingTransfer= %s', JSON.stringify(existingTransfer))
-    var notificationMsgForDuplicateDebits = {
-      from: transfer.debits[0].account,
-      to: transfer.debits[0].account,
-      payload: Translator.toTransfer(existingTransfer)
-    }
-    const topicForDuplicateNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificationMsgForDuplicateDebits.to))
-    Logger.info('Transfer.Command.prepareExecute.duplicateTransfer:: sending notification')
-    sendNotificationPromise(topicForDuplicateNotifications, notificationMsgForDuplicateDebits, transfer.id)
-    done()
-    Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(notificationMsgForDuplicateDebits))
-    Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::end`)
-    await true
-  } else {
-    await Projection.saveTransferPrepared(record).then(result => {
-      return new Promise(async function (resolve, reject) {
-        if (result) {
-          // Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
-          const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
+  await Projection.saveTransferPrepared(record).then(result => {
+    return new Promise(async function (resolve, reject) {
+      if (result) {
+        // Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
+        const {id, ledger, debits, credits, execution_condition, expires_at} = transfer
 
-          // Events.emitPublishMessage(topic, id, result)
-          // CALCULATE THE POSITION
-          //  1. read the latest position from the topic
-          //  2. calculate the position
-          //  3. publish position
-          // const topicForPositions = Kafka.getPreparePositionTopicName(transfer)
-          // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-          // var groupId = kafkaOptions.groupId
-          // Kafka.ConsumerOnceOff(groupId, topicForPositions, null)
-          // Kafka.ConsumerOnceOff(groupId, topicForPositions,
-          //   (payload, cb) => {
-          //     var positionPayload = JSON.parse(payload.value)
-          //     return new Promise((resolve, reject) => {
-          //       Logger.info(`positionPayload = ${JSON.stringify(positionPayload)}`)
-          //       cb()
-          //       return resolve(true)
-          //     })
-          //   }).then(result => {
-          //     var response = result
-          //     const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
-          //     return Kafka.send(topicForNotifications, id, result).then(result => {
-          //       if (result) {
-          //         done()
-          //         return resolve(response)
-          //       } else {
-          //         done()
-          //         return reject(response)
-          //       }
-          //     }).catch(reason => {
-          //       Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
-          //       done()
-          //       return reject(reason)
-          //     })
-          //   })
-          var response = await Query.getById(id)
-          // const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
-          var notificationMsgForDebits = {
-            from: transfer.debits[0].account,
-            to: transfer.debits[0].account,
-            payload: Translator.toTransfer(response)
-          }
-          var notificationMsgForCredits = {
-            from: transfer.debits[0].account,
-            to: transfer.credits[0].account,
-            payload: Translator.toTransfer(response)
-          }
+        // Events.emitPublishMessage(topic, id, result)
+        // CALCULATE THE POSITION
+        //  1. read the latest position from the topic
+        //  2. calculate the position
+        //  3. publish position
+        // const topicForPositions = Kafka.getPreparePositionTopicName(transfer)
+        // const kafkaOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+        // var groupId = kafkaOptions.groupId
+        // Kafka.ConsumerOnceOff(groupId, topicForPositions, null)
+        // Kafka.ConsumerOnceOff(groupId, topicForPositions,
+        //   (payload, cb) => {
+        //     var positionPayload = JSON.parse(payload.value)
+        //     return new Promise((resolve, reject) => {
+        //       Logger.info(`positionPayload = ${JSON.stringify(positionPayload)}`)
+        //       cb()
+        //       return resolve(true)
+        //     })
+        //   }).then(result => {
+        //     var response = result
+        //     const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        //     return Kafka.send(topicForNotifications, id, result).then(result => {
+        //       if (result) {
+        //         done()
+        //         return resolve(response)
+        //       } else {
+        //         done()
+        //         return reject(response)
+        //       }
+        //     }).catch(reason => {
+        //       Logger.error(`Transfers.Commands.prepare:: ERROR:'${reason}'`)
+        //       done()
+        //       return reject(reason)
+        //     })
+        //   })
+        var response = await Query.getById(id)
+        // const topicForNotifications = Kafka.getPrepareNotificationTopicName(transfer)
+        var notificationMsgForDebits = {
+          from: transfer.debits[0].account,
+          to: transfer.debits[0].account,
+          payload: Translator.toTransfer(response)
+        }
+        var notificationMsgForCredits = {
+          from: transfer.debits[0].account,
+          to: transfer.credits[0].account,
+          payload: Translator.toTransfer(response)
+        }
 
-          const topicForDebitNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificationMsgForDebits.to))
-          const topicForCreditNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificationMsgForCredits.to))
-          /* const debitNotificationPromise = new Promise(function (resolve, reject) {
-            return Kafka.Producer.send({
-              topic: topicForDebitNotifications,
-              key: id,
-              message: JSON.stringify(notificationMsgForDebits)
-            }).then(result => {
-              // return Kafka.send(topicForNotifications, id, result).then(result => {
-              if (result) {
-                done()
-                Logger.info('result debit true')
-                return resolve(true)
-              } else {
-                done()
-                Logger.info('result debit false')
-                return reject(false)
-              }
-            }).catch(reason => {
-              Logger.error(`Transfers.prepareExecute.prepare.debit:: ERROR:'${reason}'`)
-              done() // TODO: Need to handle errors for Prepare Execution process
-              return reject(reason)
-            })
-          }) */
-          return Promise.all([sendNotificationPromise(topicForDebitNotifications, notificationMsgForDebits, id), sendNotificationPromise(topicForCreditNotifications, notificationMsgForCredits, id)]).then(result => {
+        const topicForDebitNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificationMsgForDebits.to))
+        const topicForCreditNotifications = Kafka.tansformAccountToPrepareNotificationTopicName(UrlParser.nameFromAccountUri(notificationMsgForCredits.to))
+        /* const debitNotificationPromise = new Promise(function (resolve, reject) {
+          return Kafka.Producer.send({
+            topic: topicForDebitNotifications,
+            key: id,
+            message: JSON.stringify(notificationMsgForDebits)
+          }).then(result => {
+            // return Kafka.send(topicForNotifications, id, result).then(result => {
             if (result) {
               done()
-              Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
-              Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::end`)
-              return resolve(response)
+              Logger.info('result debit true')
+              return resolve(true)
             } else {
               done()
-              return reject(response)
+              Logger.info('result debit false')
+              return reject(false)
             }
           }).catch(reason => {
-            Logger.error(`Transfers.prepareExecute.prepare.credit:: ERROR:'${reason}'`)
+            Logger.error(`Transfers.prepareExecute.prepare.debit:: ERROR:'${reason}'`)
             done() // TODO: Need to handle errors for Prepare Execution process
             return reject(reason)
           })
-          // TODO: WS Notifications to be re-worked so that it sends a notification to each DFSP
-        } else {
+        }) */
+        return Promise.all([sendNotificationPromise(topicForDebitNotifications, notificationMsgForDebits, id), sendNotificationPromise(topicForCreditNotifications, notificationMsgForCredits, id)]).then(result => {
+          if (result) {
+            done()
+            Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
+            Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::end`)
+            return resolve(response)
+          } else {
+            done()
+            return reject(response)
+          }
+        }).catch(reason => {
+          Logger.error(`Transfers.prepareExecute.prepare.credit:: ERROR:'${reason}'`)
           done() // TODO: Need to handle errors for Prepare Execution process
-          reject(result)
-        }
-      })
-    }).catch(reason => {
-      done()
-      Logger.error(`Transfers.Commands.prepareExecute.group:: ERROR:'${reason}'`)
-      return reject(reason) // TODO: Need to handle errors for Prepare Execution process
+          return reject(reason)
+        })
+        // TODO: WS Notifications to be re-worked so that it sends a notification to each DFSP
+      } else {
+        done() // TODO: Need to handle errors for Prepare Execution process
+        reject(result)
+      }
     })
-  }
+  }).catch(reason => {
+    done()
+    Logger.error(`Transfers.Commands.prepareExecute.group:: ERROR:'${reason}'`)
+    return reject(reason) // TODO: Need to handle errors for Prepare Execution process
+  })
 }
 
 // *** POC prepare function that Consumes Prepare Notifications messages from Kafka topics
