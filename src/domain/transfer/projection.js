@@ -12,7 +12,7 @@ const TransferState = require('./state')
 const TransferRejectionType = require('./rejection-type')
 const TransfersReadModel = require('./models/transfers-read-model')
 
-const saveTransferPrepared = async ({aggregate, payload, timestamp}) => {
+const saveTransferPrepared = async (payload) => {
   const debitAccount = await UrlParser.nameFromAccountUri(payload.debits[0].account)
   const creditAccount = await UrlParser.nameFromAccountUri(payload.credits[0].account)
   const names = [debitAccount, creditAccount]
@@ -23,7 +23,7 @@ const saveTransferPrepared = async ({aggregate, payload, timestamp}) => {
   }
   const accountIds = await _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {})
   const record = {
-    transferUuid: aggregate.id,
+    transferUuid: payload.id,
     state: TransferState.PREPARED,
     ledger: payload.ledger,
     debitAccountId: accountIds[debitAccount],
@@ -40,7 +40,7 @@ const saveTransferPrepared = async ({aggregate, payload, timestamp}) => {
     rejectionReason: payload.rejection_reason,
     expiresAt: new Date(payload.expires_at),
     additionalInfo: payload.additional_info,
-    preparedDate: new Date(timestamp),
+    preparedDate: payload.timeline.prepared_at,
     executedDate: null,
     rejectedDate: null
   }
