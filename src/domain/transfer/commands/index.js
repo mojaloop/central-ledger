@@ -24,10 +24,16 @@ const prepare = async (message) => {
   if (existingTransfer) {
     Logger.info('Transfer.Command.prepare.duplicateTransfer:: existingTransfer= %s', JSON.stringify(existingTransfer))
     message.state = 'prepared'
+    message.timeline = {
+      prepared_at: existingTransfer.preparedDate
+    }
     return {
       existing: true,
       transfer: message
     }
+  }
+  message.timeline = {
+    prepared_at: new Date()
   }
   return new Promise((resolve, reject) => {
     // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
@@ -87,14 +93,7 @@ const prepareExecute = async (payload, done) => {
   var unTranslatedTransfer = JSON.parse(payload.value)
   const transfer = Translator.fromPayload(unTranslatedTransfer)
   Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::start`)
-  const record = {
-    aggregate: {
-      id: transfer.id
-    },
-    payload: transfer,
-    timestamp: new Date()
-  }
-  await Projection.saveTransferPrepared(record).then(result => {
+  await Projection.saveTransferPrepared(transfer).then(result => {
     return new Promise(async function (resolve, reject) {
       if (result) {
         // Logger.info('Transfer.Command.prepareExecute:: result= %s', JSON.stringify(result))
