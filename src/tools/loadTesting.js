@@ -37,10 +37,13 @@ const _ = require('lodash')
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
   .describe('file', 'File to be parsed for metrics')
+  .describe('num', 'Number of entries per transaction')
   .demandOption(['f'])
+  .demandOption(['n'])
   .help('h')
   .alias('h', 'help')
   .alias('f', 'file')
+  .alias('n', 'num')
   .argv
 
 const LineByLineReader = require('line-by-line')
@@ -89,8 +92,8 @@ lr.on('line', function (line) {
       const entry = logMap[logLine.uuid]
       entry.entries.push(logLine)
       entry.entries.sort(compare)
-      if (entry.entries.length === 3) {
-        entry.totalDifference = new Date(entry.entries[2].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime()
+      if (entry.entries.length === parseInt(argv.num)) {
+        entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime()
         perEntryResponse.push(entry.totalDifference)
       }
       logMap[logLine.uuid] = entry
@@ -102,22 +105,22 @@ lr.on('line', function (line) {
 lr.on('end', function () {
   const firstTime = new Date(firstLine.timestamp).getTime()
   const lastTime = new Date(lastLine.timestamp).getTime()
-  const totalTime = Math.floor((lastTime - firstTime) / 1000)
+  const totalTime = (lastTime - firstTime) / 1000
   const totalTransactions = perEntryResponse.length
   const sortedPerEntryResponse = perEntryResponse.sort(compareNumbers)
-  const shortestResponse = Math.floor(sortedPerEntryResponse[0] / 1000)
-  const longestResponse = Math.floor(sortedPerEntryResponse[perEntryResponse.length - 1] / 1000)
-  const averageTransaction = Math.floor(perEntryResponse.reduce((a, b) => a + b, 0) / totalTransactions / 1000)
+  const shortestResponse = sortedPerEntryResponse[0] / 1000
+  const longestResponse = sortedPerEntryResponse[perEntryResponse.length - 1] / 1000
+  const averageTransaction = (perEntryResponse.reduce((a, b) => a + b, 0) / totalTransactions) / 1000
 
   console.log('First request: ' + firstLine.timestamp)
-  console.log('Last request: ' + lastTime.timestamp)
+  console.log('Last request: ' + lastLine.timestamp)
   console.log('Total number of lines in log file: ' + lineCount)
   console.log('Number of unique entries: ' + totalTransactions)
   // console.log('First request duration in milliseconds ' + new Date(firstLine.timestamp).getTime())
   // console.log('Last request duration in milliseconds ' + new Date(lastLine.timestamp).getTime())
   console.log('Total difference of all requests in seconds: ' + (totalTime))
-  console.log('Shortest response time in seconds: ' + shortestResponse)
-  console.log('Longest response time in seconds: ' + longestResponse)
-  console.log('The average transaction in seconds: ' + averageTransaction)
+  console.log('Shortest response time in second: ' + shortestResponse)
+  console.log('Longest response time in second: ' + longestResponse)
+  console.log('The average transaction in second: ' + averageTransaction)
   console.log('Average transactions per second: ' + (totalTransactions / totalTime))
 })
