@@ -25,7 +25,6 @@ defaults_Dependencies: &defaults_Dependencies |
     apk --no-cache add openssh-client
     apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
     npm install fs-extra
-    sed -i -e s/graceful-fs/fs-extra/ -e s/fs.rename/fs.move/ ./lib/utils/rename.js
     npm install -g node-gyp
     npm install -g sodium@2.0.3 --unsafe-perm
     npm install -g argon2@0.14.0 --unsafe-perm
