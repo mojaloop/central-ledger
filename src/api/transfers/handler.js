@@ -21,7 +21,7 @@ exports.prepareTransfer = function (request, reply) {
   return Validator.validate(request.payload, request.params.id)
     .then(TransferService.prepare)
     // .then(result => reply(result.transfer).code(202))
-    .then(result => reply(result.transfer).code((result.existing === true) ? 200 : 201))
+    .then(result => reply(result.transfer).code((result.existing === true) ? 200 : 202))
     .catch(reply)
 }
 
