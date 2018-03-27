@@ -23,6 +23,7 @@ const prepare = async (message) => {
   const existingTransfer = await Query.getById(UrlParser.idFromTransferUri(message.id))
   if (existingTransfer) {
     Logger.info('Transfer.Command.prepare.duplicateTransfer:: existingTransfer= %s', JSON.stringify(existingTransfer))
+    message.state = 'prepared'
     return {
       existing: true,
       transfer: message
@@ -41,6 +42,7 @@ const prepare = async (message) => {
     // return Kafka.send(topic, id, t).then(result => {
     return Kafka.Producer.send({topic, key: id, message: JSON.stringify(message)}).then(result => {
       var response = {}
+      message.state = 'prepared'
       if (result) {
         response = {status: 'pending', existing: false, transfer: message}
         Logger.info(`Transfers.Commands.prepare:: result='${JSON.stringify(response)}'`)
