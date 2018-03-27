@@ -218,7 +218,14 @@ const Consumer = (options, topic, funcProcessMessage) => {
       'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
       'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
       'batch.num.messages': options['batch.num.messages'] || 1000000,
-
+      'queued.min.messages': 1,
+      'queued.max.messages.kbytes': 5000,
+      // 'fetch.message.max.bytes': 524288, // tps 45
+      'fetch.message.max.bytes': 262144, // tps 46
+      // 'fetch.message.max.bytes': 131072, // tps 40
+      // 'fetch.wait.max.ms': 100, // default
+      'fetch.wait.max.ms': 20, // tps 48
+      // 'fetch.wait.max.ms': 5, // tps 46
       // 'security.protocol': 'sasl_ssl',
       // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
       // 'ssl.key.password': 'nodesinek',
@@ -241,11 +248,15 @@ const Consumer = (options, topic, funcProcessMessage) => {
   }
 
   const consumerConfig = {
-    batchSize: options.batchSize || 1, // grab up to 500 messages per batch round
-    commitEveryNBatch: options.commitEveryNBatch || 1, // commit all offsets on every 5th batch
+    batchSize: options.batchSize || 1, // grab up to 500 messages per batch round // tps 46, 48, 45
+    // batchSize: options.batchSize || 5, // grab up to 500 messages per batch round // tps 63 (2)
+    // batchSize: options.batchSize || 10, // grab up to 500 messages per batch round // tps 63 (2)
+    commitEveryNBatch: options.commitEveryNBatch || 1, // commit all offsets on every 5th batch // tps 46, 48, 45, 63
+    // commitEveryNBatch: options.commitEveryNBatch || 5, // commit all offsets on every 5th batch
     concurrency: options.concurrency || 1, // calls synFunction in parallel * 2 for messages in batch
-    commitSync: true, // commits asynchronously (faster, but potential danger of growing offline commit request queue) => default is true
-    noBatchCommits: false // default is false, IF YOU SET THIS TO true THERE WONT BE ANY COMMITS FOR BATCHES
+    commitSync: true, // commits asynchronously (faster, but potential danger of growing offline commit request queue) => default is true // tps 80
+    // commitSync: false, // commits asynchronously (faster, but potential danger of growing offline commit request queue) => default is true // tps 75
+    noBatchCommits: true // default is false, IF YOU SET THIS TO true THERE WONT BE ANY COMMITS FOR BATCHES // tps 80
   }
 
   const consumer = new NConsumer(topic, config)
