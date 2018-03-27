@@ -23,17 +23,19 @@
   "TOPICS":{
     "KAFKA": {
       "ZOOKEEPER": {
-        "HOSTS": "poc-zookeeper:2181"
+        "HOSTS": "localhost:2181"
       },
       "CONSUMER": {
         "CONFIG": {
+          "pollingEnabled": false,
           "pollingCronTab": "*/10 * * * * *",
           "pollingTimeZone": "UTC"
         },
         "OPTIONS": {
           "debug": false,
-          "metadata.broker.list": "poc-kafka:9092",
+          "metadata.broker.list": "localhost:9092",
           "group.id": "kafka-mojaloop-group",
+          "client.id": "kafka-mojaloop-client-cons",
           "compression.codec": "none",
           "retry.backoff.ms": 200,
           "message.send.max.retries": 10,
@@ -52,7 +54,7 @@
           "partitionCount": 1,
           "debug": false,
           "metadata.broker.list": "localhost:9092",
-          "client.id": "kafka-mojaloop-client",
+          "client.id": "kafka-mojaloop-client-prod",
           "compression.codec": "none",
           "retry.backoff.ms": 200,
           "message.send.max.retries": 10,

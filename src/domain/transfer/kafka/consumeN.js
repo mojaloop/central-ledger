@@ -36,9 +36,11 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // const path = require('path')
 // const Config = require('../../../lib/config')
 const NConsumer = require('sinek').NConsumer
-const OConsumer = require('sinek').Consumer
+// const OConsumer = require('sinek').Consumer
 var CronJob = require('cron').CronJob
 const kafka = require('./index')
+const Config = require('../../../lib/config')
+const crypto = require('crypto')
 
 // const logger = {
 //   debug: debug('sinek:debug'),
@@ -187,6 +189,16 @@ const ConsumerOnceOff = () => {}
 //   })
 // }
 
+let clientId
+const getClientId = () => {
+  if (!clientId) {
+    const randomHash = crypto.randomBytes(5).toString('hex')
+    clientId = `${Config.TOPICS_KAFKA_CONSUMER_OPTIONS['client.id'] || 'default-client-con'}-${randomHash}`
+  }
+  // const clientId = `${Config.TOPICS_KAFKA_PRODUCER_OPTIONS['client.id'] || 'default-client'}-${id}`
+  return clientId
+}
+
 const Consumer = (options, topic, funcProcessMessage) => {
   Logger.info(`Consumer::['${topic}'] - starting`)
 
@@ -196,6 +208,7 @@ const Consumer = (options, topic, funcProcessMessage) => {
       // 'debug': options['debug'] || 'all',
       'metadata.broker.list': options['metadata.broker.list'],
       'group.id': options['group.id'],
+      'client.id': getClientId() || 'default-client',
       // 'enable.auto.commit': false,
       'event_cb': true,
       'compression.codec': options['compression.codec'] || 'none',
@@ -288,7 +301,7 @@ const createConsumerFilteredTopics = async (funcProcessMessage, topicRegexFilter
       }).catch(reason => {
         Logger.error(`kafkaConsumer.reLoadConsumersJob:: ERROR= ${reason}`)
       })
-    }, null, true, config.pollingTimeZone)
+    }, null, config.pollingEnabled, config.pollingTimeZone)
   }).catch(reason => {
     Logger.error(`kafkaConsumer.createConsumerFilteredTopics:: Poller '${topicRegexFilter}' Unable to fetch list topics with regex topicRegexFilter(${topicRegexFilter}) with the following reason: ${reason}`)
   })
