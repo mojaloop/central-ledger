@@ -20,9 +20,13 @@ const Query = require('../../../domain/transfer/queries')
 
 // *** POC prepare function that publishes messages to Kafka topics
 const prepare = async (message) => {
+  const {id, ledger, debits, credits, execution_condition, expires_at} = message
+  var t = Translator.fromPayload(message)
+  Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepare::start`)
   const existingTransfer = await Query.getById(UrlParser.idFromTransferUri(message.id))
   if (existingTransfer) {
     Logger.info('Transfer.Command.prepare.duplicateTransfer:: existingTransfer= %s', JSON.stringify(existingTransfer))
+    Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepare::end`)
     return {
       existing: true,
       transfer: Translator.toTransfer(existingTransfer)
@@ -33,10 +37,10 @@ const prepare = async (message) => {
   }
   return new Promise((resolve, reject) => {
     // Logger.info(`Transfers.Commands.prepare:: message='${message}'`)
-    const {id, ledger, debits, credits, execution_condition, expires_at} = message
-    var t = Translator.fromPayload(message)
+    // const {id, ledger, debits, credits, execution_condition, expires_at} = message
+    // var t = Translator.fromPayload(message)
     // t = Translator.toTransfer(message)
-    Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepare::start`)
+    // Logger.info(`L1p-Trace-Id=${t.id} - Transfers.Commands.prepare::start`)
     var topic = Kafka.getPrepareTxTopicName(t)
     // Logger.info('Transfers.Commands.prepare:: emit PublishMessage(%s, %s, %s)', topic, id, JSON.stringify(t))
     // Events.emitPublishMessage(topic, id, t)
@@ -64,7 +68,10 @@ const prepare = async (message) => {
 
 // *** POC prepare function that Consumes Prepare messages from Kafka topics
 const prepareExecute = async (payload, done) => {
-  Logger.info('Transfers.prepareExecute.entry')
+  var unTranslatedTransfer = JSON.parse(payload.value)
+  const transfer = Translator.fromPayload(unTranslatedTransfer)
+  Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::start`)
+  // Logger.info('Transfers.prepareExecute.entry')
   // utility function promise to send notifications to the kafka publisher
   const sendNotificationPromise = (notificationTopic, notificationMsg, id) => {
     return new Promise(function (resolve, reject) {
@@ -86,9 +93,9 @@ const prepareExecute = async (payload, done) => {
   }
 
 // const prepareExecute = (payload, done) => {
-  var unTranslatedTransfer = JSON.parse(payload.value)
-  const transfer = Translator.fromPayload(unTranslatedTransfer)
-  Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::start`)
+//   var unTranslatedTransfer = JSON.parse(payload.value)
+//   const transfer = Translator.fromPayload(unTranslatedTransfer)
+  // Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepareExecute::start`)
   await Projection.saveTransferPrepared(transfer).then(result => {
     return new Promise(async function (resolve, reject) {
       if (result) {
