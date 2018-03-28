@@ -50,7 +50,7 @@ let producerHealth
 const connect = async (options = {requiredAcks: -1, partitionCount: 1}) => {
   Logger.info(`Producer::connect - clientId='${options['client.id']}'`)
   if (!producer) {
-  // if (!producer || producerHealth.status !== 0) {
+    // if (!producer || producerHealth.status !== 0) {
     var config = {
       logger: Logger,
       noptions: {
@@ -62,10 +62,9 @@ const connect = async (options = {requiredAcks: -1, partitionCount: 1}) => {
         'retry.backoff.ms': options['retry.backoff.ms'] || 200,
         'message.send.max.retries': options['message.send.max.retries'] || 10,
         'socket.keepalive.enable': options['socket.keepalive.enable'] || true,
-        'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
-        'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
-        'batch.num.messages': options['batch.num.messages'] || 1000000,
-
+        'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 10,
+        'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 50,
+        'batch.num.messages': options['batch.num.messages'] || 2,
         // 'security.protocol': 'sasl_ssl',
         // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
         // 'ssl.key.password': 'nodesinek',
@@ -223,7 +222,7 @@ const stats = () => {}
 
 const publishHandler = (event) => {
   return async (eventMessage) => {
-    const { topic, key, msg } = eventMessage
+    const {topic, key, msg} = eventMessage
     Logger.info('Kafka.publish.publishHandler:: start(%s, %s, %s)', topic, key, msg)
 
     await send({topic, key, message: msg}).then(results => {
