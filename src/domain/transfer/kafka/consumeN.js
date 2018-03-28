@@ -218,13 +218,14 @@ const Consumer = (options, topic, funcProcessMessage) => {
       'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
       'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
       'batch.num.messages': options['batch.num.messages'] || 1000000,
-      'queued.min.messages': 1,
-      'queued.max.messages.kbytes': 5000,
+      'queued.min.messages': options['queued.min.messages'] || 1,
+      'queued.max.messages.kbytes': options['queued.max.messages.kbytes'] || 5000,
       // 'fetch.message.max.bytes': 524288, // tps 45
-      'fetch.message.max.bytes': 262144, // tps 46
+      'fetch.message.max.bytes': options['fetch.message.max.bytes'] || 262144, // tps 46
       // 'fetch.message.max.bytes': 131072, // tps 40
       // 'fetch.wait.max.ms': 100, // default
-      'fetch.wait.max.ms': 20, // tps 48
+      'fetch.wait.max.ms': options['fetch.wait.max.ms'] || 20, // tps 48
+      'fetch.error.backoff.ms': options['fetch.error.backoff.ms'] || 20,
       // 'fetch.wait.max.ms': 5, // tps 46
       // 'security.protocol': 'sasl_ssl',
       // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),

@@ -45,7 +45,12 @@
           "batch.num.messages": 1000000,
           "concurrency": 1,
           "batchSize": 1,
-          "commitEveryNBatch": 1
+          "commitEveryNBatch": 1,
+          "queued.min.messages": 1,
+          "queued.max.messages.kbytes": 5000,
+          "fetch.message.max.bytes": 262144,
+          "fetch.wait.max.ms": 20,
+          "fetch.error.backoff.ms": 20
         }
       },
       "PRODUCER":{
@@ -59,9 +64,9 @@
           "retry.backoff.ms": 200,
           "message.send.max.retries": 10,
           "socket.keepalive.enable": true,
-          "queue.buffering.max.messages": 100000,
-          "queue.buffering.max.ms": 1000,
-          "batch.num.messages": 1000000
+          "queue.buffering.max.messages": 10,
+          "queue.buffering.max.ms": 50,
+          "batch.num.messages": 2
         }
       }
     },
