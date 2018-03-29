@@ -12,9 +12,9 @@ const registerNotificationConsumer = (data) => {
   if (jsonPayload.params.accounts.length === 1) {
     const account = UrlParser.nameFromAccountUri(jsonPayload.params.accounts[0])
     const accountTopic = Kafka.tansformAccountToPrepareNotificationTopicName(account)
-    const kafkaProducerOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-    Kafka.Producer.connect(kafkaProducerOptions)
-    Kafka.createConsumer(kafkaProducerOptions, accountTopic, Commands.prepareNotification)
+    // const kafkaConsumerrOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+    const kafkaConsumerrOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS_NOTFIY
+    Kafka.createConsumer(kafkaConsumerrOptions, accountTopic, Commands.prepareNotification)
   }
 }
 

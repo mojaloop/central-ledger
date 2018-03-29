@@ -75,7 +75,7 @@ const prepareExecute = async (payload, done) => {
   // utility function promise to send notifications to the kafka publisher
   const sendNotificationPromise = (notificationTopic, notificationMsg, id) => {
     return new Promise(function (resolve, reject) {
-      return Kafka.Producer.send({
+      return Kafka.Producer.sendNotify({
         topic: notificationTopic,
         key: id,
         message: JSON.stringify(notificationMsg)
@@ -184,7 +184,7 @@ const prepareExecute = async (payload, done) => {
             return reject(response)
           }
         }).catch(reason => {
-          Logger.error(`Transfers.prepareExecute.prepare.credit:: ERROR:'${reason}'`)
+          Logger.error(`Transfers.prepareExecute.sendNotificationPromise:: ERROR:'${reason}'`)
           done() // TODO: Need to handle errors for Prepare Execution process
           return reject(reason)
         })

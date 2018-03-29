@@ -44,12 +44,11 @@ const getClientId = () => {
   return clientId
 }
 
-let producer
-let producerHealth
+// let producerHealth
 
-const connect = async (options = {requiredAcks: -1, partitionCount: 1}) => {
+const create = async (nProducer, options = {requiredAcks: -1, partitionCount: 1}) => {
   Logger.info(`Producer::connect - clientId='${options['client.id']}'`)
-  if (!producer) {
+  if (!nProducer) {
     // if (!producer || producerHealth.status !== 0) {
     var config = {
       logger: Logger,
@@ -59,12 +58,14 @@ const connect = async (options = {requiredAcks: -1, partitionCount: 1}) => {
         'client.id': getClientId() || 'default-client',
         'event_cb': true,
         'compression.codec': options['compression.codec'] || 'none',
-        'retry.backoff.ms': options['retry.backoff.ms'] || 200,
-        'message.send.max.retries': options['message.send.max.retries'] || 10,
+        'retry.backoff.ms': options['retry.backoff.ms'] || 100,
+        'message.send.max.retries': options['message.send.max.retries'] || 2,
         'socket.keepalive.enable': options['socket.keepalive.enable'] || true,
         'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 10,
         'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 50,
-        'batch.num.messages': options['batch.num.messages'] || 2,
+        // 'queue.buffering.max.kbytes': options['queue.buffering.max.kbytes'] || 1048576,
+        // 'queue.buffering.backpressure.threshold': options['queue.buffering.backpressure.threshold'] || 10,
+        'batch.num.messages': options['batch.num.messages'] || 10000,
         // 'security.protocol': 'sasl_ssl',
         // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
         // 'ssl.key.password': 'nodesinek',
@@ -87,19 +88,24 @@ const connect = async (options = {requiredAcks: -1, partitionCount: 1}) => {
     }
 
     // const producer = new NProducer(config, options.partitionCount || 1)
-    producer = new NProducer(config, options.partitionCount || 1)
+    var producer = new NProducer(config, options.partitionCount || 1)
     // await producer
     await producer.connect()
     // await producer.enableAnalytics(/* .. */)
     // producerHealth = await producer.checkHealth()
+    Logger.info(`Producer::connect - created Producer clientId='${options['client.id']}'`)
+    return producer
+  } else {
+    return nProducer
   }
-  return producer
 }
+
+let producer
 
 const send = async (options = {message, topic, partition: 0, key: null, partitionKey: null}) => {
   const {message, topic, partition, key, partitionKey} = options
-  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
-  const producer = await connect(kafkaProducerOptions)
+  // const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+  // producer = await connect(producer, kafkaProducerOptions)
   const result = await producer.send(topic, message, partition, key, partitionKey)
   Logger.info(`Producer::send key='${key}' - send to ${topic} - result='${JSON.stringify(result)}'`)
   return result
@@ -130,6 +136,17 @@ const send = async (options = {message, topic, partition: 0, key: null, partitio
   //     return reject(error)
   //   })
   // })
+}
+
+let producerNotify
+
+const sendNotify = async (options = {message, topic, partition: 0, key: null, partitionKey: null}) => {
+  const {message, topic, partition, key, partitionKey} = options
+  // const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS_NOTFIY
+  // producerNotify = await connect(producerNotify, kafkaProducerOptions)
+  const result = await producerNotify.send(topic, message, partition, key, partitionKey)
+  Logger.info(`Producer::sendNotify key='${key}' - send to ${topic} - result='${JSON.stringify(result)}'`)
+  return result
 }
 
 const stats = () => {}
@@ -231,7 +248,16 @@ const publishHandler = (event) => {
   }
 }
 
+const connect = async () => {
+  const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+  producer = await create(producer, kafkaProducerOptions)
+
+  const kafkaProducerOptionsNotify = Config.TOPICS_KAFKA_PRODUCER_OPTIONS_NOTFIY
+  producerNotify = await create(producerNotify, kafkaProducerOptionsNotify)
+}
+
 exports.connect = connect
 exports.send = send
+exports.sendNotify = sendNotify
 exports.stats = stats
 exports.publishHandler = publishHandler

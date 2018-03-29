@@ -50,8 +50,11 @@ const wireEvents = () => {
 // }
 
 exports.register = (server, options, next) => {
-  const kafkaConsumerOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
-  const kafkaConsumerConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+  // const kafkaConsumerOptions = Config.TOPICS_KAFKA_CONSUMER_OPTIONS
+  // const kafkaConsumerConfig = Config.TOPICS_KAFKA_CONSUMER_CONFIG
+  // const kafkaProducerOptions = Config.TOPICS_KAFKA_PRODUCER_OPTIONS
+  Kafka.Producer.connect()
+
   // Register Kafka Consumers for incoming Prepare Transactions
   // Kafka.createConsumerFilteredTopics(Commands.prepareExecute, Config.TOPICS_PREPARE_TX_REGEX, kafkaConsumerOptions, kafkaConsumerConfig)
   // Register Kafka Consumers for Prepare Transactions Notifications
