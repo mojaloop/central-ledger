@@ -215,8 +215,8 @@ const Consumer = (options, topic, funcProcessMessage) => {
       'retry.backoff.ms': options['retry.backoff.ms'] || 200,
       'message.send.max.retries': options['message.send.max.retries'] || 10,
       'socket.keepalive.enable': options['socket.keepalive.enable'] || true,
-      'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
-      'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
+      // 'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
+      // 'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
       'batch.num.messages': options['batch.num.messages'] || 1000000,
       'queued.min.messages': options['queued.min.messages'] || 1,
       'queued.max.messages.kbytes': options['queued.max.messages.kbytes'] || 5000,
@@ -277,8 +277,10 @@ const Consumer = (options, topic, funcProcessMessage) => {
   // }).catch(error => config.logger.error(error))
 
   consumer.on('message', message => {
+    // Logger.info(`L1p-Trace-Id= - Transfers.Commands.Consumer.onMessage::start  message.value='${message.value}`)
     config.logger.debug(`Consumer::['${topic}'] - message.offset='${message.offset}', message.value='${message.value}'`)
     config.logger.debug(`Consumer::['${topic}'] - stats=${JSON.stringify(consumer.getStats())}`)
+    // Logger.info(`L1p-Trace-Id= - Transfers.Commands.Consumer.onMessage::end  message.value='${message.value}`)
   })
 }
 
