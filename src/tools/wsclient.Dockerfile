@@ -6,11 +6,20 @@
 
 FROM mhart/alpine-node:8.9.4
 
+RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
+
+RUN apk --no-cache add tzdata openntpd
+
+RUN echo "ntpd -s" > ~/.bashrc
+
+RUN npm install -g node-gyp
+
 WORKDIR /opt/tools
 COPY package.json /opt/tools
 COPY wsclient.js /opt/tools
 
 RUN npm install
 
-EXPOSE 3000
+RUN apk del build-dependencies
+
 CMD node wsclient.js -u $WSCLIENT_URI -a $WSCLIENT_ACCOUNT
