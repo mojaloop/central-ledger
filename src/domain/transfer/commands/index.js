@@ -1,8 +1,10 @@
 'use strict'
 
 const Eventric = require('../../../eventric')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const prepare = (transfer) => {
+  Logger.info(`L1p-Trace-Id=${transfer.id} - Transfers.Commands.prepare::start`)
   return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer))
 }
 

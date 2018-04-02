@@ -10,6 +10,7 @@ const RejectionType = require('./rejection-type')
 const State = require('./state')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = (id) => {
   return TransferQueries.getById(id)
@@ -43,6 +44,7 @@ const prepare = (payload) => {
 
   return Commands.prepare(transfer)
     .then(result => {
+      Logger.info(`Transfers.Commands.prepare:: result='${JSON.stringify(result)}'`)
       const t = Translator.toTransfer(result.transfer)
       Events.emitTransferPrepared(t)
       return { existing: result.existing, transfer: t }
