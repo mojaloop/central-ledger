@@ -7,6 +7,7 @@ const Events = require('../../lib/events')
 const SocketManager = require('./socket-manager')
 const WebSocket = require('./websocket')
 const AccountTransfers = require('./account-transfers')
+const UrlParser = require('../../lib/urlparser')
 
 let manager
 
@@ -52,7 +53,7 @@ const formatResource = (event, resource, relatedResources) => {
   }
   return {
     jsonrpc: '2.0',
-    id: null,
+    id: UrlParser.idFromTransferUri(resource.id),
     method: 'notify',
     params
   }
