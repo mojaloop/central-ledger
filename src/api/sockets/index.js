@@ -54,6 +54,7 @@ const formatResource = (event, resource, relatedResources) => {
   return {
     jsonrpc: '2.0',
     id: UrlParser.idFromTransferUri(resource.id),
+    // id: null,
     method: 'notify',
     params
   }
