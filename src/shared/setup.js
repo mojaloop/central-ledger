@@ -47,6 +47,8 @@ const createServer = (port, modules, addRequestLogging = true) => {
 // Migrator.migrate is called before connecting to the database to ensure all new tables are loaded properly.
 // Eventric.getContext is called to replay all events through projections (creating the read-model) before starting the server.
 const initialize = ({ service, port, modules = [], loadEventric = false, runMigrations = false }) => {
+  // ## Added to increase available threads for IO processing
+  process.env.UV_THREADPOOL_SIZE = Config.UV_THREADPOOL_SIZE
   return migrate(runMigrations)
     .then(() => connectDatabase())
     .then(() => Sidecar.connect(service))

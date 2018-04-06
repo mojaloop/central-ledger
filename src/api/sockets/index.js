@@ -16,11 +16,11 @@ const createWebSocketServer = (listener) => {
   })
 }
 
-const getAccounts = (transfer) => {
-  const credits = transfer.credits || []
-  const debits = transfer.debits || []
-  return [...credits, ...debits].map(c => c.account)
-}
+// const getAccounts = (transfer) => {
+//   const credits = transfer.credits || []
+//   const debits = transfer.debits || []
+//   return [...credits, ...debits].map(c => c.account)
+// }
 
 const wireConnection = (webSocketServer) => {
   webSocketServer.on('connection', (ws) => {
@@ -31,6 +31,13 @@ const wireConnection = (webSocketServer) => {
     } else {
       AccountTransfers.initialize(ws, url, manager)
     }
+  })
+}
+
+const send = (accountUri, message) => {
+  return new Promise((resolve, reject) => {
+    manager.send(accountUri, message)
+    resolve(true)
   })
 }
 
@@ -87,3 +94,5 @@ exports.register = (server, options, next) => {
 exports.register.attributes = {
   name: 'websockets'
 }
+
+exports.send = send

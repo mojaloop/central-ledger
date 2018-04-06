@@ -20,6 +20,7 @@ The central ledger has two APIs targeted at different consumers. The DFSP API is
 * `POST` [**Get charge quote**](#get-a-charge-quote) 
 * `POST` [**Get authentication token**](#get-authentication-token)
 * `GET`  [**Health**](#health)
+* `POST`  [**Kafka**](#kafka)
 
 #### [Admin API](#admin-api) endpoints
 * `POST` [**Create account**](#create-account-admin)
@@ -45,6 +46,7 @@ The central ledger has two APIs targeted at different consumers. The DFSP API is
 * `POST` [**Reject expired tokens**](#reject-expired-tokens)
 * `POST` [**Settle transfers and fees**](#settle-transfers-and-fees)
 * `GET`  [**Health**](#admin-health)
+* `POST`  [**Kafka**](#admin-kafka)
 
 The API endpoints often deal with these [data structures](#data-structures): 
 
@@ -417,6 +419,12 @@ The prepare transfer endpoint will create or update a transfer object. A transfe
 | ----- | ---- | ----------- |
 | Object | Transfer | A [Transfer object](#transfer-object) to describe the transfer that should take place. For a conditional transfer, this includes an execution_condition |
 
+##### Response 202 Accepted
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| Object | Transfer | The [Transfer object](#transfer-object) has been saved for processing|
+
+<!-- 
 ##### Response 201 Created
 | Field | Type | Description |
 | ----- | ---- | ----------- |
@@ -426,6 +434,7 @@ The prepare transfer endpoint will create or update a transfer object. A transfe
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | Object | Transfer | The updated [Transfer object](#transfer-object) as saved |
+-->
 
 ##### Request
 ``` http
@@ -980,16 +989,32 @@ Get the current status of the service
 | ----- | ---- | ----------- |
 | status | String | The status of the ledger, *OK* if the service is working |
 
+#### Kafka
+Register a Kafka Consumer
+
+##### HTTP Request
+`POST http://central-ledger/kafka`
+
+##### Response 201 OK
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| accountTopic | String | A kafka topic where the consumer has been registered for your DFSP Account  |
+
+
 ##### Request
 ``` http
-GET http://central-ledger/health HTTP/1.1
+POST http://central-ledger/kafka HTTP/1.1
+Content-Type: application/json
+{
+  "account": "http://localhost:3000/accounts/dfsp10"
+}
 ```
 
 ##### Response
 ``` http
-HTTP/1.1 200 OK
+HTTP/1.1 201 OK
 {
-  "status": "OK"
+    "accountTopic": "topic-dfsp10-prepare-notification"
 }
 ```
 
@@ -2252,6 +2277,36 @@ HTTP/1.1 200 OK
   "status": "OK"
 }
 ```
+
+#### Admin Kafka
+Register a Kafka Consumer
+
+##### HTTP Request
+`POST http://central-ledger/kafka`
+
+##### Response 201 OK
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| accountTopic | String | A kafka topic where the consumer has been registered for your DFSP Account  |
+
+
+##### Request
+``` http
+POST http://central-ledger/kafka HTTP/1.1
+Content-Type: application/json
+{
+  "account": "http://localhost:3000/accounts/dfsp10"
+}
+```
+
+##### Response
+``` http
+HTTP/1.1 201 OK
+{
+    "accountTopic": "topic-dfsp10-prepare-notification"
+}
+```
+
 ***
 
 ## Data Structures

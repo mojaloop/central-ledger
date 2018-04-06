@@ -6,7 +6,7 @@ defaults_working_directory: &defaults_working_directory
 
 defaults_docker_node: &defaults_docker_node
   docker:
-    - image: dwolla/alpine-node-make
+    - image: mhart/alpine-node:8.9.4
 
 defaults_docker_helm_kube: &defaults_docker_helm_kube
   docker:
@@ -18,13 +18,15 @@ defaults_docker_helm_kube: &defaults_docker_helm_kube
 #     # - TAG_EXP_SNAPSHOT: 'v[0-9]+(\.[0-9]+)*\-SNAPSHOT'
 #     # - TAG: v1.0
 
-defaults_Dependencies: &defaults_Dependencies | 
+defaults_Dependencies: &defaults_Dependencies |
     apk --no-cache add git
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
+    apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
+    npm install -g node-gyp
 
-defaults_awsCliDependencies: &defaults_awsCliDependencies | 
+defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add \
             python \
             py-pip \
@@ -109,15 +111,15 @@ defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgra
   name: Install or Upgrade Helm Chart
   command: |
     echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
-    if [ -z "$(helm list -q | grep ${K8_RELEASE_NAME})"  ] && [ "$(helm list -q | grep ${K8_RELEASE_NAME})" != "Error: Unauthorized" ];
+    if [ -z "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")"  ] && [ "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")" != "Error: Unauthorized" ];
     then
-        echo "Installing ${K8_RELEASE_NAME} new release"  
+        echo "Installing ${K8_RELEASE_NAME} new release"
         helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
     else
-        echo "Upgrading ${K8_RELEASE_NAME} release"  
-        helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --reuse-values $HELM_VALUE_SET_VALUES $K8_HELM_CHART_NAME
+        echo "Upgrading ${K8_RELEASE_NAME} release"
+        helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --reuse-values $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
     fi
-          
+
 jobs:
   setup:
     <<: *defaults_working_directory
@@ -131,12 +133,6 @@ jobs:
           name: Install interledgerjs/five-bells-ledger-api-tests
           command: npm install github:interledgerjs/five-bells-ledger-api-tests
       - run:
-          name: Link NPM sodium
-          command: npm link sodium
-      - run:
-          name: Link NPM argon2
-          command: npm link argon2
-      - run:
           name: Update NPM install
           command: npm install
       # - run:
@@ -146,7 +142,7 @@ jobs:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - node_modules
-  
+
   test-unit:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
@@ -157,10 +153,13 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
+          name: Install tap and tap-xunit
+          command: npm install tape tap-xunit
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute unit tests
           command: npm -s run test:xunit > ./test/results/tape.xml
       - store_artifacts:
@@ -168,7 +167,7 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
-  
+
   test-coverage:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
@@ -182,7 +181,7 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
       - store_artifacts:
@@ -195,12 +194,12 @@ jobs:
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ];
             then
-                echo "Sending lcov.info to SonarQube..."  
+                echo "Sending lcov.info to SonarQube..."
                 aws s3 cp coverage/lcov.info $AWS_S3_DIR_SONARQUBE/central-ledger/lcov.info
             else
-                echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube." 
-            fi 
-  
+                echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube."
+            fi
+
   test-integration:
     machine: true
     <<: *defaults_working_directory
@@ -208,10 +207,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute integration tests
           command: npm -s run test:integration
       - store_artifacts:
@@ -219,12 +218,12 @@ jobs:
           prefix: test
       - store_test_results:
           path: ./test/results
-  
+
   test-functional:
     machine: true
     <<: *defaults_working_directory
     steps:
-      - run: 
+      - run:
           name: Add the Postgres 9.6 binaries to the path.
           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
       - run:
@@ -236,10 +235,10 @@ jobs:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
-      - run: 
+      - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
-      - run: 
+      - run:
           name: Execute functional tests
           command: npm -s run test:functional
       - store_artifacts:
@@ -251,28 +250,28 @@ jobs:
 
 #   test-spec:
 #     machine: true
-#     # <<: *defaults 
+#     # <<: *defaults
 #     steps:
-#     #   - run: 
-#     #       name: Install general dependencies 
-#     #       command: *defaultDependencies 
-#     #   - run:  
-#     #       name: Add the Postgres 9.6 binaries to the path. 
-#     #       command: apk --no-cache add postgresql-client 
-#     #   - setup_remote_docker 
-#     #   - run:  
-#     #       name: Add docker 
-#     #       command: apk --no-cache add docker 
-#     #   - run:  
-#     #       name: Add docker compose 
-#     #       command: | 
-#     #         apk --no-cache add py-pip 
-#     #         pip install docker-compose 
-#     #   - run: 
-#     #       name: Install Docker Compose 
-#     #       command: | 
-#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose 
-#       - run: 
+#     #   - run:
+#     #       name: Install general dependencies
+#     #       command: *defaultDependencies
+#     #   - run:
+#     #       name: Add the Postgres 9.6 binaries to the path.
+#     #       command: apk --no-cache add postgresql-client
+#     #   - setup_remote_docker
+#     #   - run:
+#     #       name: Add docker
+#     #       command: apk --no-cache add docker
+#     #   - run:
+#     #       name: Add docker compose
+#     #       command: |
+#     #         apk --no-cache add py-pip
+#     #         pip install docker-compose
+#     #   - run:
+#     #       name: Install Docker Compose
+#     #       command: |
+#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose
+#       - run:
 #           name: Add the Postgres 9.6 binaries to the path.
 #           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
 #       - run:
@@ -284,10 +283,10 @@ jobs:
 #       - checkout
 #       - restore_cache:
 #           key: dependency-cache-{{ checksum "package.json" }}
-#       - run: 
+#       - run:
 #           name: Create dir for test results
 #           command: mkdir -p ./test/results
-#       - run: 
+#       - run:
 #           name: Execute unit tests
 #           command: npm -s run test:spec
 #       - store_artifacts:
@@ -343,7 +342,7 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
-  
+
   build-base:
     machine: true
     <<: *defaults_working_directory
@@ -375,7 +374,7 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
-  
+
   deploy-snapshot:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
@@ -426,7 +425,7 @@ jobs:
             echo 'export K8_USER_NAME=$K8_USER_NAME_POC' >> $BASH_ENV
             echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_POC' >> $BASH_ENV
             echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_POC' >> $BASH_ENV
-            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+            echo 'export HELM_VALUE_SET_VALUES="--set containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set containers.api.image.tag=$CIRCLE_TAG --set containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
       - run:
@@ -459,7 +458,7 @@ jobs:
             echo 'export K8_USER_NAME=$K8_USER_NAME_POCDB' >> $BASH_ENV
             echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_POCDB' >> $BASH_ENV
             echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_POCDB' >> $BASH_ENV
-            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+            echo 'export HELM_VALUE_SET_VALUES="--set containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set containers.api.image.tag=$CIRCLE_TAG --set containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
       - run:
@@ -492,7 +491,7 @@ jobs:
             echo 'export K8_USER_NAME=$K8_USER_NAME_BASE' >> $BASH_ENV
             echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_BASE' >> $BASH_ENV
             echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_BASE' >> $BASH_ENV
-            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+            echo 'export HELM_VALUE_SET_VALUES="--set containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set containers.api.image.tag=$CIRCLE_TAG --set containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
       - run:
           <<: *defaults_deploy_prequisites
       - run:
@@ -551,7 +550,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
       - test-unit:
@@ -562,51 +561,51 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/             
-      - test-coverage:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore: 
+              ignore:
                 - /feature*/
                 - /bugfix*/
-      - test-integration:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/
-      - test-functional:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/
+    #   - test-coverage:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         tags:
+    #           only: /.*/
+    #         branches:
+    #           ignore:
+    #             - /feature*/
+    #             - /bugfix*/
+    #   - test-integration:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         tags:
+    #           only: /.*/
+    #         branches:
+    #           ignore:
+    #             - /feature*/
+    #             - /bugfix*/
+    #   - test-functional:
+    #       context: org-global
+    #       requires:
+    #         - setup
+    #       filters:
+    #         tags:
+    #           only: /.*/
+    #         branches:
+    #           ignore:
+    #             - /feature*/
+    #             - /bugfix*/
     #   - test-spec:
     #       context: org-global
     #       requires:
     #         - setup
     #       filters:
     #           tags:
-    #             only: /.*/    
+    #             only: /.*/
     #         branches:
-    #           ignore: 
+    #           ignore:
     #             - /feature*/
     #             - /bugfix*/
       - build-snapshot:
@@ -614,15 +613,15 @@ workflows:
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-snapshot/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - deploy-snapshot:
           context: org-global
@@ -632,22 +631,22 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-snapshot/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - build-poc:
           context: org-global
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-poc/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - deploy-poc:
           context: org-global
@@ -657,22 +656,22 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-poc/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - build-pocdb:
           context: org-global
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-pocdb/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - deploy-pocdb:
           context: org-global
@@ -682,22 +681,22 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-pocdb/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - build-base:
           context: org-global
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-base/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - deploy-base:
           context: org-global
@@ -707,22 +706,22 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-base/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - build:
           context: org-global
           requires:
             - setup
             - test-unit
-            - test-coverage
-            - test-integration
-            - test-functional
+            # - test-coverage
+            # - test-integration
+            # - test-functional
             # - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: 
+              ignore:
                 - /.*/
       - deploy:
           context: org-global
@@ -732,5 +731,5 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: 
+              ignore:
                 - /.*/

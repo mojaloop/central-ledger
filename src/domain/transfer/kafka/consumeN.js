@@ -36,9 +36,11 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // const path = require('path')
 // const Config = require('../../../lib/config')
 const NConsumer = require('sinek').NConsumer
-const OConsumer = require('sinek').Consumer
+// const OConsumer = require('sinek').Consumer
 var CronJob = require('cron').CronJob
 const kafka = require('./index')
+const Config = require('../../../lib/config')
+const crypto = require('crypto')
 
 // const logger = {
 //   debug: debug('sinek:debug'),
@@ -187,6 +189,16 @@ const ConsumerOnceOff = () => {}
 //   })
 // }
 
+let clientId
+const getClientId = () => {
+  if (!clientId) {
+    const randomHash = crypto.randomBytes(5).toString('hex')
+    clientId = `${Config.TOPICS_KAFKA_CONSUMER_OPTIONS['client.id'] || 'default-client-con'}-${randomHash}`
+  }
+  // const clientId = `${Config.TOPICS_KAFKA_PRODUCER_OPTIONS['client.id'] || 'default-client'}-${id}`
+  return clientId
+}
+
 const Consumer = (options, topic, funcProcessMessage) => {
   Logger.info(`Consumer::['${topic}'] - starting`)
 
@@ -194,18 +206,25 @@ const Consumer = (options, topic, funcProcessMessage) => {
     logger: Logger,
     noptions: {
       // 'debug': options['debug'] || 'all',
+      'event_cb': true,
       'metadata.broker.list': options['metadata.broker.list'],
       'group.id': options['group.id'],
+      'client.id': getClientId() || 'default-client',
       // 'enable.auto.commit': false,
-      'event_cb': true,
-      'compression.codec': options['compression.codec'] || 'none',
-      'retry.backoff.ms': options['retry.backoff.ms'] || 200,
-      'message.send.max.retries': options['message.send.max.retries'] || 10,
       'socket.keepalive.enable': options['socket.keepalive.enable'] || true,
       'queue.buffering.max.messages': options['queue.buffering.max.messages'] || 100000,
-      'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
-      'batch.num.messages': options['batch.num.messages'] || 1000000,
-
+      // 'queue.buffering.max.ms': options['queue.buffering.max.ms'] || 1000,
+      'queued.min.messages': options['queued.min.messages'] || 1,
+      'queued.max.messages.kbytes': options['queued.max.messages.kbytes'] || 1048576,
+      // 'fetch.message.max.bytes': 524288, // tps 45
+      'fetch.message.max.bytes': options['fetch.message.max.bytes'] || 1048576, // tps 46
+      // 'fetch.message.max.bytes': 131072, // tps 40
+      // 'fetch.wait.max.ms': 100, // default
+      'fetch.wait.max.ms': options['fetch.wait.max.ms'] || 20, // tps 48
+      'fetch.error.backoff.ms': options['fetch.error.backoff.ms'] || 20,
+      'fetch.min.bytes': options['fetch.min.bytes'] || 1,
+      // 'fetch.max.bytes': options['fetch.max.bytes'] || 52428800,
+      // 'fetch.wait.max.ms': 5, // tps 46
       // 'security.protocol': 'sasl_ssl',
       // 'ssl.key.location': path.join(__dirname, '../certs/ca-key'),
       // 'ssl.key.password': 'nodesinek',
@@ -228,11 +247,15 @@ const Consumer = (options, topic, funcProcessMessage) => {
   }
 
   const consumerConfig = {
-    batchSize: options.batchSize || 1, // grab up to 500 messages per batch round
-    commitEveryNBatch: options.commitEveryNBatch || 1, // commit all offsets on every 5th batch
+    batchSize: options.batchSize || 1, // grab up to 500 messages per batch round // tps 46, 48, 45
+    // batchSize: options.batchSize || 5, // grab up to 500 messages per batch round // tps 63 (2)
+    // batchSize: options.batchSize || 10, // grab up to 500 messages per batch round // tps 63 (2)
+    commitEveryNBatch: options.commitEveryNBatch || 1, // commit all offsets on every 5th batch // tps 46, 48, 45, 63
+    // commitEveryNBatch: options.commitEveryNBatch || 5, // commit all offsets on every 5th batch
     concurrency: options.concurrency || 1, // calls synFunction in parallel * 2 for messages in batch
-    commitSync: true, // commits asynchronously (faster, but potential danger of growing offline commit request queue) => default is true
-    noBatchCommits: false // default is false, IF YOU SET THIS TO true THERE WONT BE ANY COMMITS FOR BATCHES
+    commitSync: options.commitSync || true, // commits asynchronously (faster, but potential danger of growing offline commit request queue) => default is true // tps 80
+    // commitSync: false, // commits asynchronously (faster, but potential danger of growing offline commit request queue) => default is true // tps 75
+    noBatchCommits: options.noBatchCommits || false // default is false, IF YOU SET THIS TO true THERE WONT BE ANY COMMITS FOR BATCHES // tps 80
   }
 
   const consumer = new NConsumer(topic, config)
@@ -252,8 +275,10 @@ const Consumer = (options, topic, funcProcessMessage) => {
   // }).catch(error => config.logger.error(error))
 
   consumer.on('message', message => {
+    // Logger.info(`L1p-Trace-Id= - Transfers.Commands.Consumer.onMessage::start  message.value='${message.value}`)
     config.logger.debug(`Consumer::['${topic}'] - message.offset='${message.offset}', message.value='${message.value}'`)
     config.logger.debug(`Consumer::['${topic}'] - stats=${JSON.stringify(consumer.getStats())}`)
+    // Logger.info(`L1p-Trace-Id= - Transfers.Commands.Consumer.onMessage::end  message.value='${message.value}`)
   })
 }
 
@@ -288,7 +313,7 @@ const createConsumerFilteredTopics = async (funcProcessMessage, topicRegexFilter
       }).catch(reason => {
         Logger.error(`kafkaConsumer.reLoadConsumersJob:: ERROR= ${reason}`)
       })
-    }, null, true, config.pollingTimeZone)
+    }, null, config.pollingEnabled, config.pollingTimeZone)
   }).catch(reason => {
     Logger.error(`kafkaConsumer.createConsumerFilteredTopics:: Poller '${topicRegexFilter}' Unable to fetch list topics with regex topicRegexFilter(${topicRegexFilter}) with the following reason: ${reason}`)
   })

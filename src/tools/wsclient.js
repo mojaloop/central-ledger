@@ -47,7 +47,19 @@ var argv = require('yargs')
 const Moment = require('moment')
 
 const logger = (message) => {
-  console.log(`${Moment.utc().toISOString()} - ${message}`)
+  console.log(`${Moment.utc().toISOString()} - info: ${message}`)
+}
+
+const uuidv4Regex = '([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})'
+const transfersRegex = new RegExp(`${uuidv4Regex}`, 'i')
+const idFromTransferUri = (uri, callback) => {
+  const matches = uri.match(transfersRegex)
+  const hasCallback = (typeof callback === 'function')
+  if (matches) {
+    return hasCallback ? callback(null, matches[1]) : matches[1]
+  } else {
+    return hasCallback ? callback('no match', null) : null
+  }
 }
 
 const start = (uri, accountUri) => {
@@ -55,7 +67,9 @@ const start = (uri, accountUri) => {
 
   const WebSocket = require('ws')
 
-  const ws = new WebSocket(uri)
+  const ws = new WebSocket(uri, {
+    perMessageDeflate: false
+  })
 
   ws.on('open', function open () {
     const params = {
@@ -73,7 +87,12 @@ const start = (uri, accountUri) => {
     } else if (payload.method === 'notify') {
       logger(`Notify received: ${data}`)
     } else {
-      logger(`Message received: ${data}`)
+      if (payload.id) {
+        var id = idFromTransferUri(payload.id)
+        logger(`L1p-Trace-Id=${id} - Transfers.Commands.wsNotification::received`)
+      } else {
+        logger(`Message received: ${data}`)
+      }
     }
   })
 
@@ -84,8 +103,9 @@ const start = (uri, accountUri) => {
     logger(response)
   })
 
-  ws.on('close', function close () {
-    logger('disconnected')
+  ws.on('close', function close (code, reason) {
+    logger(`disconnected - ${code}: ${reason}`)
+    start(argv.uri, argv.a)
   })
 }
 
