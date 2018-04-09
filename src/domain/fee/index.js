@@ -4,12 +4,10 @@ const P = require('bluebird')
 const Model = require('./model')
 const Charges = require('../charge')
 const Account = require('../account')
-const TransferQueries = require('../transfer/queries')
 const SettlementsModel = require('../../models/settlements')
 const SettledFee = require('../../models/settled-fees.js')
 const Util = require('../../../src/lib/util')
 const Config = require('../../../src/lib/config')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
 const PERCENTAGE = 'percent'
 const FLAT = 'flat'

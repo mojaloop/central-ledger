@@ -1,23 +1,17 @@
 'use strict'
 
-const Eventric = require('../../../eventric')
 const Projection = require('../../../domain/transfer/projection')
 const FeeProjection = require('../../../domain/fee/index')
 const Query = require('../../../domain/transfer/queries')
 const State = require('../state')
 const CryptoConditions = require('../../../crypto-conditions')
 const Errors = require('../../../errors')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
 const prepare = async (transfer) => {
-  const record = {
-    aggregate: {
-      id: transfer.id
-    },
-    payload: transfer,
-    timestamp: new Date()
+  transfer.timeline = {
+    prepared_at: new Date()
   }
-  return await Projection.saveTransferPrepared(record).catch(err => {
+  return await Projection.saveTransferPrepared(transfer).catch(err => {
     throw err
   })
 }

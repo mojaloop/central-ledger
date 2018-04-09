@@ -10,7 +10,6 @@ const RejectionType = require('./rejection-type')
 const State = require('./state')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = (id) => {
   return TransferQueries.getById(id)
