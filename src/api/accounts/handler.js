@@ -9,7 +9,6 @@ const Errors = require('../../errors')
 const Sidecar = require('../../lib/sidecar')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 const Boom = require('boom')
-// const ErrorHandling = require('@mojaloop/central-services-error-handling')
 
 const buildAccount = (account) => {
   return {

@@ -107,16 +107,16 @@ Test('Transfers-Projection', transfersProjectionTest => {
         ledger: event.payload.ledger,
         debitAccountId: dfsp1Account.accountId,
         debitAmount: event.payload.debits[0].amount,
-        debitMemo: undefined,
+        debitMemo: JSON.stringify(undefined),
         creditAccountId: dfsp2Account.accountId,
         creditAmount: event.payload.credits[0].amount,
-        creditMemo: undefined,
+        creditMemo: JSON.stringify(undefined),
         executionCondition: event.payload.execution_condition,
         cancellationCondition: undefined,
         rejectReason: undefined,
-        expiresAt: event.payload.expires_at,
+        expiresAt: new Date(event.payload.expires_at),
         additionalInfo: undefined,
-        preparedDate: Moment(event.timestamp)
+        preparedDate: new Date(event.timestamp)
       })))
       test.end()
     })

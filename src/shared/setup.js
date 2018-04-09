@@ -22,9 +22,10 @@ const migrate = (runMigrations) => {
 
 const connectDatabase = () => Db.connect(Config.DATABASE_URI)
 
-const startEventric = (loadEventric) => {
-  return loadEventric ? Eventric.getContext() : P.resolve()
-}
+// Story #135 : Removing Eventric 21 Mar 2018 D. Botha
+// const startEventric = (loadEventric) => {
+//  return loadEventric ? Eventric.getContext() : P.resolve()
+// }
 
 const createServer = (port, modules) => {
   return (async () => {
@@ -63,7 +64,7 @@ const initialize = async function ({service, port, modules = [], loadEventric = 
   await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)
-  await startEventric(loadEventric)
+  // await startEventric(loadEventric)
   const server = await createServer(port, modules)
   if (service === 'api') {
     await Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)

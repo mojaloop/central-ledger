@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "@mojaloop/central-services-auth": "0.2.0",
-    "@mojaloop/central-services-database": "0.4.2",
+    "@mojaloop/central-services-database": "1.2.1-snapshotMYSQL",
     "@mojaloop/central-services-error-handling": "0.5.1",
     "@mojaloop/central-services-shared": "0.4.0",
     "@mojaloop/forensic-logging-client": "0.5.1",
@@ -84,6 +84,7 @@
     "knex": "0.14.2",
     "lodash": "4.17.4",
     "moment": "2.21.0",
+    "mysql": "^2.15.0",
     "nodemailer": "4.4.2",
     "rc": "1.2.5",
     "sodium": "2.0.3",
