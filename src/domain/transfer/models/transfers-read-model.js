@@ -3,6 +3,7 @@
 const Moment = require('moment')
 const Db = require('../../../db')
 const TransferState = require('../state')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const findExpired = (expirationDate) => {
   const expiresAt = (expirationDate || Moment.utc()).toISOString()
@@ -10,7 +11,10 @@ const findExpired = (expirationDate) => {
 }
 
 const saveTransfer = (record) => {
-  return Db.transfers.insert(record)
+  Logger.info('inside save transfer' + record.toString())
+  return Db.transfers.insert(record).catch(err => {
+    throw err
+  })
 }
 
 const getAll = () => {
@@ -23,7 +27,10 @@ const getAll = () => {
 }
 
 const updateTransfer = (transferId, fields) => {
-  return Db.transfers.update({ transferUuid: transferId }, fields)
+  return Db.transfers.update({ transferUuid: transferId }, fields).catch(err => {
+    Logger.info(err)
+    throw err
+  })
 }
 
 const truncateTransfers = () => {

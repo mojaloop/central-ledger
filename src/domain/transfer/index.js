@@ -40,40 +40,45 @@ const getFulfillment = (id) => {
 
 const prepare = (payload) => {
   const transfer = Translator.fromPayload(payload)
-
   return Commands.prepare(transfer)
     .then(result => {
-      const t = Translator.toTransfer(result.transfer)
+      const t = Translator.toTransfer(result)
       Events.emitTransferPrepared(t)
-      return { existing: result.existing, transfer: t }
+      return {existing: result.existing, transfer: t}
+    }).catch(err => {
+      throw err
     })
 }
 
 const reject = (rejection) => {
   return Commands.reject(rejection)
-    .then(({ alreadyRejected, transfer }) => {
+    .then(({alreadyRejected, transfer}) => {
       const t = Translator.toTransfer(transfer)
       if (!alreadyRejected) {
         Events.emitTransferRejected(t)
       }
-      return { alreadyRejected, transfer: t }
+      return {alreadyRejected, transfer: t}
     })
 }
 
 const expire = (id) => {
-  return reject({ id, rejection_reason: RejectionType.EXPIRED })
+  return reject({id, rejection_reason: RejectionType.EXPIRED})
 }
 
 const fulfill = (fulfillment) => {
   return Commands.fulfill(fulfillment)
     .then(transfer => {
       const t = Translator.toTransfer(transfer)
-      Events.emitTransferExecuted(t, { execution_condition_fulfillment: fulfillment.fulfillment })
+      Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfillment.fulfillment})
       return t
     })
-    .catch(Errors.ExpiredTransferError, () => {
-      return expire(fulfillment.id)
-        .then(() => { throw new Errors.UnpreparedTransferError() })
+    .catch(err => {
+      if (typeof err === Errors.ExpiredTransferError) {
+        return expire(fulfillment.id)
+          .then(() => { throw new Errors.UnpreparedTransferError() })
+      } else {
+        throw err
+      }
     })
 }
 
@@ -84,12 +89,12 @@ const rejectExpired = () => {
   })
 }
 
-const settle = () => {
+const settle = async () => {
   const settlementId = SettlementsModel.generateId()
   const settledTransfers = SettlementsModel.create(settlementId, 'transfer').then(() => {
     return SettleableTransfersReadModel.getSettleableTransfers().then(transfers => {
       transfers.forEach(transfer => {
-        Commands.settle({ id: transfer.transferId, settlement_id: settlementId })
+        Commands.settle({id: transfer.transferId, settlement_id: settlementId})
       })
       return transfers
     })

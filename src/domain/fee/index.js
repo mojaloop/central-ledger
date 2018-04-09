@@ -4,7 +4,6 @@ const P = require('bluebird')
 const Model = require('./model')
 const Charges = require('../charge')
 const Account = require('../account')
-const TransferQueries = require('../transfer/queries')
 const SettlementsModel = require('../../models/settlements')
 const SettledFee = require('../../models/settled-fees.js')
 const Util = require('../../../src/lib/util')
@@ -64,11 +63,9 @@ const getAllForTransfer = (transfer) => {
   return Model.getAllForTransfer(transfer)
 }
 
-const generateFeesForTransfer = (event) => {
-  return TransferQueries.getById(event.aggregate.id).then(transfer => {
-    return Charges.getAllForTransfer(transfer).then(charges => {
-      return P.all(charges.map(charge => create(charge, transfer)))
-    })
+const generateFeesForTransfer = (transfer) => {
+  return Charges.getAllForTransfer(transfer).then(charges => {
+    return P.all(charges.map(charge => create(charge, transfer)))
   })
 }
 
@@ -96,15 +93,16 @@ const reduceFees = (unflattenedFees) => {
   return flattened
 }
 
-const settleFeesForTransfers = (transfers) => {
-  return SettlementsModel.create(SettlementsModel.generateId(), 'fee').then(settlement => {
-    return P.all(transfers.map(transfer => {
-      return Model.getSettleableFeesForTransfer(transfer).then(fees => {
-        return P.all(fees.map(fee => settleFee(fee, settlement)))
-      })
-    })).then(unflattenedFees => {
-      return reduceFees(unflattenedFees)
+const settleFeesForTransfers = async (transfers) => {
+  const settlementId = SettlementsModel.generateId()
+  await SettlementsModel.create(settlementId, 'fee')
+  const settlement = await SettlementsModel.findById(settlementId)
+  return P.all(transfers.map(transfer => {
+    return Model.getSettleableFeesForTransfer(transfer).then(fees => {
+      return P.all(fees.map(fee => settleFee(fee, settlement)))
     })
+  })).then(unflattenedFees => {
+    return reduceFees(unflattenedFees)
   })
 }
 
