@@ -6,10 +6,10 @@ module.exports = [{
   method: 'GET',
   path: '/positions',
   handler: Handler.calculateForAllAccounts,
-  config: {
+  options: {
     id: 'positions',
-    auth: Auth.strategy(),
     tags: tags,
+    auth: Auth.strategy(),
     description: 'Retrieve outstanding positions.'
   }
 },
@@ -17,10 +17,10 @@ module.exports = [{
   method: 'GET',
   path: '/positions/{name}',
   handler: Handler.calculateForAccount,
-  config: {
+  options: {
     id: 'positions_account',
-    auth: Auth.strategy(),
     tags: tags,
+    auth: Auth.strategy(),
     description: 'Retrieve outstanding positions for an account.'
   }
 }

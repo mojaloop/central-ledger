@@ -2,36 +2,31 @@
 
 const Test = require('tape')
 const Base = require('../../base')
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
-Test('return error if required field missing', assert => {
-  let req = Base.buildRequest({ url: '/accounts', method: 'POST', payload: {} })
-
-  Base.setup().then(server => {
-    server.inject(req, res => {
-      Base.assertBadRequestError(assert, res, [{ message: 'name is required', params: { key: 'name' } }, { message: 'password is required', params: { key: 'password' } }])
-      assert.end()
-    })
-  })
+Test('return error if required field missing', async function (assert) {
+  let req = Base.buildRequest({url: '/accounts', method: 'POST', payload: {}})
+  const server = await Base.setup()
+  const res = await server.inject(req)
+  Base.assertBadRequestError(assert, res, 'child "name" fails because [name is required]. child "password" fails because [password is required]. child "emailAddress" fails because [emailAddress is required]')
+  await server.stop()
+  assert.end()
 })
 
-Test('return error if name is not a token', assert => {
-  let req = Base.buildRequest({ url: '/accounts', method: 'POST', payload: { name: 'this contains spaces' } })
-
-  Base.setup().then(server => {
-    server.inject(req, res => {
-      Base.assertBadRequestError(assert, res, [{ message: 'name must only contain alpha-numeric and underscore characters', params: { key: 'name', value: 'this contains spaces' } }, { message: 'password is required', params: { key: 'password' } }])
-      assert.end()
-    })
-  })
+Test('return error if name contains spaces', async function (assert) {
+  let req = Base.buildRequest({url: '/accounts', method: 'POST', payload: {name: 'this contains spaces'}})
+  const server = await Base.setup()
+  const res = await server.inject(req)
+  Base.assertBadRequestError(assert, res, 'child "name" fails because [name must only contain alpha-numeric characters]. child "password" fails because [password is required]. child "emailAddress" fails because [emailAddress is required]')
+  await server.stop()
+  assert.end()
 })
 
-Test('return error if name is not a token', assert => {
-  let req = Base.buildRequest({ url: '/accounts/some%20bad%20name', method: 'GET' })
-
-  Base.setup().then(server => {
-    server.inject(req, res => {
-      Base.assertInvalidUriParameterError(assert, res, [{ message: 'name must only contain alpha-numeric and underscore characters', params: { key: 'name', value: 'some bad name' } }])
-      assert.end()
-    })
-  })
+Test('return error if name is not a token', async function (assert) {
+  let req = Base.buildRequest({url: '/accounts/some%20bad%20name', method: 'GET'})
+  const server = await Base.setup()
+  const res = await server.inject(req)
+  Base.assertInvalidUriParameterError(assert, res, 'child "name" fails because [name must only contain alpha-numeric characters]')
+  await server.stop()
+  assert.end()
 })

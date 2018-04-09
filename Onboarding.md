@@ -143,12 +143,12 @@ Download the nvm install script via cURL:
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
 ```
 * Ensure that nvm was installed correctly with `nvm --version`, which should return the version of nvm installed
-* Install the version of Node.js you want:
+* Install the version (8.9.4 current LTS) of Node.js you want:
   * Install the latest LTS version with `nvm install --lts`
   * Use the latest LTS verison with `nvm use --lts`
   * Install the latest version with `nvm install node`
   * Use the latest version with `nvm use node`
-  * If necessary, fallback to `nvm install 6.5.0` and `nvm use 6`
+  * If necessary, fallback to `nvm install 8.9.4` and `nvm use 0.33.6`
 
 ##### Setup nvm
 Create a *.bash_profile* file with `touch ~/.bash_profile`, then `nano ~/.bash_profile` and *write*:

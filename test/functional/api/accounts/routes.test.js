@@ -3,6 +3,7 @@
 const Test = require('tape')
 const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
+const Config = require('../../../../src/lib/config')
 
 Test('post and get an account', assert => {
   const accountName = Fixtures.generateAccountName()
@@ -30,28 +31,23 @@ Test('post and get an account', assert => {
     })
 })
 
-Test('return the net position for the account as the balance', assert => {
+Test('return the net position for the account as the balance', async function (assert) {
   let fulfillment = 'oAKAAA'
+  Config.LEDGER_ACCOUNT_NAME = 'LedgerAccountName'
   let transferId = Fixtures.generateTransferId()
   let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '50'), Fixtures.buildDebitOrCredit(Base.account2Name, '50'))
 
   let transfer2Id = Fixtures.generateTransferId()
   let transfer2 = Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(Base.account2Name, '15'), Fixtures.buildDebitOrCredit(Base.account1Name, '15'))
 
-  Base.prepareTransfer(transferId, transfer)
-    .then(() => Base.fulfillTransfer(transferId, fulfillment))
-    .then(() => Base.prepareTransfer(transfer2Id, transfer2))
-    .then(() => Base.fulfillTransfer(transfer2Id, fulfillment))
-    .then(() => {
-      Base.getAccount(Base.account1Name)
-        .expect(200)
-        .expect('Content-Type', /json/)
-        .then(res => {
-          assert.equal(Base.account1Name, res.body.name)
-          assert.equal('-35', res.body.balance)
-          assert.end()
-        })
-    })
+  await Base.prepareTransfer(transferId, transfer)
+  await Base.fulfillTransfer(transferId, fulfillment)
+  await Base.prepareTransfer(transfer2Id, transfer2)
+  await Base.fulfillTransfer(transfer2Id, fulfillment)
+  const res = await Base.getAccount(Base.account1Name)
+  assert.equal(Base.account1Name, res.body.name)
+  assert.equal('-35', res.body.balance)
+  assert.end()
 })
 
 Test('ensure an account name can only be registered once', assert => {
@@ -73,24 +69,16 @@ Test('ensure an account name can only be registered once', assert => {
     })
 })
 
-Test('update an accounts passsword', test => {
+Test('update an accounts password', async function (test) {
   const accountName = Fixtures.generateAccountName()
   const password = '1234'
 
-  Base.createAccount(accountName, password)
-    .expect(201)
-    .expect('Content-Type', /json/)
-    .then(() => {
-      Base.putApi(`/accounts/${accountName}`, { password })
-        .expect(200)
-        .expect('Content-Type', /json/)
-        .then(res => {
-          test.equal(res.body.id, `http://central-ledger/accounts/${accountName}`)
-          test.equal(res.body.name, accountName)
-          test.equal(res.body.ledger, 'http://central-ledger')
-          test.end()
-        })
-    })
+  await Base.createAccount(accountName, password)
+  const res = await Base.putApi(`/accounts/${accountName}`, {password, emailAddress: accountName + '@test.com'})
+  test.equal(res.body.id, `http://central-ledger/accounts/${accountName}`)
+  test.equal(res.body.name, accountName)
+  test.equal(res.body.ledger, 'http://central-ledger')
+  test.end()
 })
 
 Test('update an accounts settlement', test => {
@@ -103,7 +91,7 @@ Test('update an accounts settlement', test => {
     .expect(201)
     .expect('Content-Type', /json/)
     .then(() => {
-      Base.putApi(`/accounts/${accountName}/settlement`, { account_number: accountNumber, routing_number: routingNumber })
+      Base.putApi(`/accounts/${accountName}/settlement`, {account_number: accountNumber, routing_number: routingNumber})
         .expect(200)
         .expect('Content-Type', /json/)
         .then(res => {

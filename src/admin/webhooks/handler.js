@@ -6,28 +6,19 @@ const TokenService = require('../../domain/token')
 const SettlementService = require('../../domain/settlements')
 const Sidecar = require('../../lib/sidecar')
 
-exports.rejectExpired = function (request, reply) {
+exports.rejectExpired = async function (request, h) {
   Sidecar.logRequest(request)
-  return TransferService.rejectExpired()
-    .then(response => reply(response))
-    .catch(e => reply(e))
+  return await TransferService.rejectExpired()
 }
 
-exports.settle = function (request, reply) {
+exports.settle = async function (request, h) {
   Sidecar.logRequest(request)
-  return TransferService.settle()
-    .then(settledTransfers => {
-      return FeeService.settleFeesForTransfers(settledTransfers)
-        .then(settledFees => {
-          return reply(SettlementService.performSettlement(settledTransfers, settledFees))
-        })
-    })
-    .catch(e => reply(e))
+  const settledTransfers = await TransferService.settle()
+  const settledFees = await FeeService.settleFeesForTransfers(settledTransfers)
+  return SettlementService.performSettlement(settledTransfers, settledFees)
 }
 
-exports.rejectExpiredTokens = function (request, reply) {
+exports.rejectExpiredTokens = async function (request, h) {
   Sidecar.logRequest(request)
   return TokenService.removeExpired()
-    .then(response => reply(response))
-    .catch(e => reply(e))
 }

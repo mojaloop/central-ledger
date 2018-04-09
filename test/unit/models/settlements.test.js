@@ -28,17 +28,15 @@ Test('settlements model', function (modelTest) {
   })
 
   modelTest.test('create should', createTest => {
-    createTest.test('insert and return new settlement record for a transfer', test => {
+    createTest.test('insert and return new settlement record for a transfer', async function (test) {
       let settlementId = Uuid()
       let settlement = { settlementId: settlementId, settlementType: 'transfer' }
 
       Db.settlements.insert.returns(P.resolve(settlement))
 
-      Model.create(settlementId, 'transfer')
-        .then(c => {
-          test.equal(c, settlement)
-          test.end()
-        })
+      const c = await Model.create(settlementId, 'transfer')
+      test.equal(c, settlement)
+      test.end()
     })
 
     createTest.end()

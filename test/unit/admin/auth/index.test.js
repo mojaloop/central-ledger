@@ -23,24 +23,22 @@ Test('Auth module', authTest => {
   })
 
   authTest.test('should be named "admin auth"', test => {
-    test.equal(AuthModule.register.attributes.name, 'admin auth')
+    test.equal(AuthModule.plugin.name, 'admin auth')
     test.end()
   })
 
   authTest.test('register should', registerTest => {
-    registerTest.test('add AdminStrategy to server auth strategies', test => {
+    registerTest.test('add AdminStrategy to server auth strategies', async function (test) {
       const strategySpy = Sinon.spy()
       const server = {
         auth: {
           strategy: strategySpy
         }
       }
-      const next = () => {
-        test.ok(strategySpy.calledWith(AdminStrategy.name, AdminStrategy.scheme, Sinon.match({ validate: AdminStrategy.validate })))
-        test.end()
-      }
 
-      AuthModule.register(server, {}, next)
+      await AuthModule.plugin.register(server, {}, {})
+      test.ok(strategySpy.calledWith(AdminStrategy.scheme, 'basic', Sinon.match({ validate: AdminStrategy.validate })))
+      test.end()
     })
 
     registerTest.test('add TokenStrategy to server auth strategies', test => {
@@ -51,12 +49,9 @@ Test('Auth module', authTest => {
         }
       }
 
-      const next = () => {
-        test.ok(strategySpy.calledWith(TokenStrategy.name, TokenStrategy.scheme, Sinon.match({ validate: TokenStrategy.validate })))
-        test.end()
-      }
-
-      AuthModule.register(server, {}, next)
+      AuthModule.plugin.register(server, {}, {})
+      test.ok(strategySpy.calledWith(TokenStrategy.scheme, 'hapi-now-auth', Sinon.match({ validate: TokenStrategy.validate })))
+      test.end()
     })
 
     registerTest.end()

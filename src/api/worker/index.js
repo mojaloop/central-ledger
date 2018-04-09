@@ -31,16 +31,14 @@ exports.rejectExpiredTransfers = rejectExpiredTransfers
 
 exports.rejectExpiredTokens = rejectExpiredTokens
 
-exports.register = (server, options, next) => {
-  if (Config.EXPIRES_TIMEOUT && Config.EXPIRES_TIMEOUT > 0) {
-    setInterval(this.rejectExpiredTransfers, Config.EXPIRES_TIMEOUT)
+exports.plugin = {
+  name: 'worker',
+  register: (server, options) => {
+    if (Config.EXPIRES_TIMEOUT && Config.EXPIRES_TIMEOUT > 0) {
+      setInterval(this.rejectExpiredTransfers, Config.EXPIRES_TIMEOUT)
+    }
+    if (Config.TOKEN_EXPIRATION) {
+      setInterval(this.rejectExpiredTokens, Config.TOKEN_EXPIRATION)
+    }
   }
-  if (Config.TOKEN_EXPIRATION) {
-    setInterval(this.rejectExpiredTokens, Config.TOKEN_EXPIRATION)
-  }
-  next()
-}
-
-exports.register.attributes = {
-  name: 'worker'
 }

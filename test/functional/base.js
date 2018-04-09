@@ -18,7 +18,7 @@ const account2RoutingNumber = '4567'
 
 const basicAuth = (name, password) => {
   const credentials = Encoding.toBase64(name + ':' + password)
-  return { 'Authorization': `Basic ${credentials}` }
+  return {'Authorization': `Basic ${credentials}`}
 }
 
 let account1promise
@@ -43,9 +43,17 @@ const account2 = () => {
 
 const getApi = (path, headers = {}) => RequestApi.get(path).auth('admin', 'admin').set(headers)
 
-const postApi = (path, data, auth = { name: 'admin', password: 'admin', emailAddress: 'admin@test.com' }, contentType = 'application/json') => RequestApi.post(path).auth(auth.name, auth.password, auth.emailAddress).set('Content-Type', contentType).send(data)
+const postApi = (path, data, auth = {
+  name: 'admin',
+  password: 'admin',
+  emailAddress: 'admin@test.com'
+}, contentType = 'application/json') => RequestApi.post(path).auth(auth.name, auth.password, auth.emailAddress).set('Content-Type', contentType).send(data)
 
-const putApi = (path, data, auth = { name: 'admin', password: 'admin', emailAddress: 'admin@test.com' }, contentType = 'application/json') => RequestApi.put(path).auth(auth.name, auth.password, auth.emailAddress).set('Content-Type', contentType).send(data)
+const putApi = (path, data, auth = {
+  name: 'admin',
+  password: 'admin',
+  emailAddress: 'admin@test.com'
+}, contentType = 'application/json') => RequestApi.put(path).auth(auth.name, auth.password, auth.emailAddress).set('Content-Type', contentType).send(data)
 
 const getAdmin = (path, headers = {}) => RequestAdmin.get(path).set(headers)
 
@@ -53,13 +61,20 @@ const postAdmin = (path, data, contentType = 'application/json') => RequestAdmin
 
 const putAdmin = (path, data, contentType = 'application/json') => RequestAdmin.put(path).set('Content-Type', contentType).send(data)
 
-const createAccount = (accountName, password = '1234', emailAddress = accountName + '@test.com') => postApi('/accounts', { name: accountName, password: password, emailAddress: emailAddress })
+const createAccount = (accountName, password = '1234', emailAddress = accountName + '@test.com') => postApi('/accounts', {
+  name: accountName,
+  password: password,
+  emailAddress: emailAddress
+})
 
-const createAccountSettlement = (accountName, accountNumber, routingNumber) => putApi(`/accounts/${accountName}/settlement`, { account_number: accountNumber, routing_number: routingNumber })
+const createAccountSettlement = (accountName, accountNumber, routingNumber) => putApi(`/accounts/${accountName}/settlement`, {
+  account_number: accountNumber,
+  routing_number: routingNumber
+})
 
 const getAccount = (accountName) => getApi(`/accounts/${accountName}`)
 
-const updateAccount = (accountName, isDisabled) => putAdmin(`/accounts/${accountName}`, { is_disabled: isDisabled })
+const updateAccount = (accountName, isDisabled) => putAdmin(`/accounts/${accountName}`, {is_disabled: isDisabled})
 
 const getTransfer = (transferId) => getApi(`/transfers/${transferId}`)
 

@@ -10,27 +10,24 @@ const AuthModule = require('../../../../src/api/auth')
 
 Test('Auth module', authTest => {
   authTest.test('should be named "auth"', test => {
-    test.equal(AuthModule.register.attributes.name, 'auth')
+    test.equal(AuthModule.plugin.name, 'auth')
     test.end()
   })
 
   authTest.test('register should', registerTest => {
-    registerTest.test('add AccountStrategy to server auth strategies', test => {
+    registerTest.test('add AccountStrategy to server auth strategies', async function (test) {
       const strategySpy = Sinon.spy()
       const server = {
         auth: {
           strategy: strategySpy
         }
       }
-      const next = () => {
-        test.ok(strategySpy.calledWith(AccountStrategy.name, AccountStrategy.scheme, Sinon.match({ validate: AccountStrategy.validate })))
-        test.end()
-      }
-
-      AuthModule.register(server, {}, next)
+      await AuthModule.plugin.register(server, {})
+      test.ok(strategySpy.calledWith(AccountStrategy.scheme, 'basic', Sinon.match({ validate: AccountStrategy.validate })))
+      test.end()
     })
 
-    registerTest.test('add TokenStrategy to server auth strategies', test => {
+    registerTest.test('add TokenStrategy to server auth strategies', async function (test) {
       const strategySpy = Sinon.spy()
       const server = {
         auth: {
@@ -38,12 +35,9 @@ Test('Auth module', authTest => {
         }
       }
 
-      const next = () => {
-        test.ok(strategySpy.calledWith(TokenStrategy.name, TokenStrategy.scheme, Sinon.match({ validate: TokenStrategy.validate })))
-        test.end()
-      }
-
-      AuthModule.register(server, {}, next)
+      AuthModule.plugin.register(server, {})
+      test.ok(strategySpy.calledWith(TokenStrategy.scheme, TokenStrategy.name, Sinon.match({ validate: TokenStrategy.validate })))
+      test.end()
     })
 
     registerTest.end()
@@ -53,21 +47,21 @@ Test('Auth module', authTest => {
     strategyTest.test('return token if ENABLE_TOKEN_AUTH true', test => {
       Config.ENABLE_TOKEN_AUTH = true
       Config.ENABLE_BASIC_AUTH = false
-      test.deepEqual(AuthModule.strategy(), { strategy: 'token', mode: 'required' })
+      test.deepEqual(AuthModule.strategy(), { strategy: 'bearer-access-token', mode: 'required' })
       test.end()
     })
 
     strategyTest.test('return account if ENABLE_BASIC_AUTH true', test => {
       Config.ENABLE_TOKEN_AUTH = false
       Config.ENABLE_BASIC_AUTH = true
-      test.deepEqual(AuthModule.strategy(), { strategy: 'account', mode: 'required' })
+      test.deepEqual(AuthModule.strategy(), { strategy: 'simple', mode: 'required' })
       test.end()
     })
 
     strategyTest.test('return account if ENABLE_TOKEN_AUTH and ENABLE_BASIC_AUTH true', test => {
       Config.ENABLE_TOKEN_AUTH = true
       Config.ENABLE_BASIC_AUTH = true
-      test.deepEqual(AuthModule.strategy(), { strategy: 'token', mode: 'required' })
+      test.deepEqual(AuthModule.strategy(), { strategy: 'bearer-access-token', mode: 'required' })
       test.end()
     })
 
@@ -81,7 +75,7 @@ Test('Auth module', authTest => {
     strategyTest.test('return try if optional', test => {
       Config.ENABLE_TOKEN_AUTH = false
       Config.ENABLE_BASIC_AUTH = true
-      test.deepEqual(AuthModule.strategy(true), { strategy: 'account', mode: 'try' })
+      test.deepEqual(AuthModule.strategy(true), { strategy: 'simple', mode: 'try' })
       test.end()
     })
 

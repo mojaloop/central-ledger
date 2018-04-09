@@ -3,31 +3,24 @@
 const SecurityService = require('../../domain/security')
 const Sidecar = require('../../lib/sidecar')
 
-const getRoles = (request, reply) => {
-  SecurityService.getAllRoles()
-    .then(reply)
-    .catch(reply)
+const getRoles = function (request, h) {
+  return SecurityService.getAllRoles()
 }
 
-const createRole = (request, reply) => {
+const createRole = function (request, h) {
   Sidecar.logRequest(request)
-  SecurityService.createRole(request.payload)
-    .then(reply)
-    .catch(reply)
+  return SecurityService.createRole(request.payload)
 }
 
-const updateRole = (request, reply) => {
+const updateRole = function (request, h) {
   Sidecar.logRequest(request)
-  SecurityService.updateRole(request.params.id, request.payload)
-    .then(reply)
-    .catch(reply)
+  return SecurityService.updateRole(request.params.id, request.payload)
 }
 
-const deleteRole = (request, reply) => {
+const deleteRole = async function (request, h) {
   Sidecar.logRequest(request)
-  SecurityService.deleteRole(request.params.id)
-    .then(() => reply().code(204))
-    .catch(reply)
+  await SecurityService.deleteRole(request.params.id)
+  return h.response().code(204)
 }
 
 module.exports = {

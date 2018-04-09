@@ -26,19 +26,21 @@ Test('positions handler', (handlerTest) => {
   })
 
   handlerTest.test('calculateForAllAccounts should', (performTest) => {
-    performTest.test('return no positions if there are no settleable transfers', test => {
+    performTest.test('return no positions if there are no settleable transfers', async function (test) {
       PositionService.calculateForAllAccounts.returns(P.resolve([]))
 
-      let expectedResponse = { positions: [] }
-      let reply = function (response) {
-        test.ok(PositionService.calculateForAllAccounts.calledOnce)
-        test.deepEqual(response, expectedResponse)
-        test.end()
+      let expectedResponse = {positions: []}
+      let reply = {
+        response: (response) => {
+          test.ok(PositionService.calculateForAllAccounts.calledOnce)
+          test.deepEqual(response, expectedResponse)
+          test.end()
+        }
       }
-      Handler.calculateForAllAccounts('', reply)
+      await Handler.calculateForAllAccounts('', reply)
     })
 
-    performTest.test('return expected positions if settleable transfers exist', test => {
+    performTest.test('return expected positions if settleable transfers exist', async function (test) {
       let positions = [{
         account: `${hostname}/accounts/account1`,
         payments: '5',
@@ -60,32 +62,31 @@ Test('positions handler', (handlerTest) => {
       ]
 
       PositionService.calculateForAllAccounts.returns(P.resolve(positions))
-      let expectedResponse = { positions: positions }
+      let expectedResponse = {positions: positions}
 
-      let reply = function (response) {
-        test.ok(PositionService.calculateForAllAccounts.calledOnce)
-        test.deepEqual(response, expectedResponse)
-        test.end()
+      let reply = {
+        response: (response) => {
+          test.ok(PositionService.calculateForAllAccounts.calledOnce)
+          test.deepEqual(response, expectedResponse)
+          test.end()
+        }
       }
-      Handler.calculateForAllAccounts('', reply)
+      await Handler.calculateForAllAccounts('', reply)
     })
     performTest.end()
   })
 
   handlerTest.test('calculateForAccount should', (performTest) => {
-    performTest.test('return positions if there are no settleable transfers or fees', test => {
+    performTest.test('return positions if there are no settleable transfers or fees', async function (test) {
       PositionService.calculateForAccount.returns(P.resolve({}))
-      Account.getByName.returns(P.resolve({ accountId: 11 }))
-
-      let reply = function (response) {
-        test.ok(PositionService.calculateForAccount.calledOnce)
-        test.deepEqual(response, [])
-        test.end()
-      }
-      Handler.calculateForAccount({ params: { name: 'dfsp1' } }, reply)
+      Account.getByName.returns(P.resolve({accountId: 11}))
+      const response = await Handler.calculateForAccount({params: {name: 'dfsp1'}}, {})
+      test.ok(PositionService.calculateForAccount.calledOnce)
+      test.deepEqual(response, [])
+      test.end()
     })
 
-    performTest.test('return expected position if settleable transfers and fees exist', test => {
+    performTest.test('return expected position if settleable transfers and fees exist', async function (test) {
       let positions = {
         account: `${hostname}/accounts/dfsp1`,
         fees: {
@@ -102,14 +103,11 @@ Test('positions handler', (handlerTest) => {
       }
 
       PositionService.calculateForAccount.returns(P.resolve(positions))
-      Account.getByName.returns(P.resolve({ accountId: 11 }))
-
-      let reply = function (response) {
-        test.ok(PositionService.calculateForAccount.calledOnce)
-        test.deepEqual(response, positions)
-        test.end()
-      }
-      Handler.calculateForAccount({ params: { name: 'dfsp1' } }, reply)
+      Account.getByName.returns(P.resolve({accountId: 11}))
+      const response = await Handler.calculateForAccount({params: {name: 'dfsp1'}}, {})
+      test.ok(PositionService.calculateForAccount.calledOnce)
+      test.deepEqual(response, positions)
+      test.end()
     })
     performTest.end()
   })

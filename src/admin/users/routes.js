@@ -12,15 +12,17 @@ module.exports = [
     method: 'GET',
     path: '/users',
     handler: Handler.getAll,
-    config: RouteConfig.config(tags, Permissions.USERS_LIST)
+    options: RouteConfig.config(tags, Permissions.USERS_LIST)
   },
   {
     method: 'GET',
     path: '/users/{id}',
     handler: Handler.getById,
-    config: RouteConfig.config(tags, Permissions.USERS_VIEW, {
-      params: {
-        id: Joi.string().guid().description('User Id')
+    options: RouteConfig.config(tags, Permissions.USERS_VIEW, {
+      validate: {
+        params: {
+          id: Joi.string().guid().description('User Id')
+        }
       }
     })
   },
@@ -28,16 +30,22 @@ module.exports = [
     method: 'PUT',
     path: '/users/{id}',
     handler: Handler.update,
-    config: RouteConfig.config(tags, Permissions.USERS_UPDATE, {
-      params: {
-        id: Joi.string().guid().description('User Id')
-      },
+    options: RouteConfig.config(tags, Permissions.USERS_UPDATE, {
       payload: {
-        firstName: Joi.string().description('First name'),
-        lastName: Joi.string().description('Last name'),
-        key: Joi.string().description('Login key'),
-        email: Joi.string().description('Email address'),
-        isActive: Joi.bool().description('Active user')
+        allow: 'application/json',
+        failAction: 'error'
+      },
+      validate: {
+        params: {
+          id: Joi.string().guid().description('User Id')
+        },
+        payload: {
+          firstName: Joi.string().description('First name'),
+          lastName: Joi.string().description('Last name'),
+          key: Joi.string().description('Login key'),
+          email: Joi.string().description('Email address'),
+          isActive: Joi.bool().description('Active user')
+        }
       }
     })
   },
@@ -45,12 +53,18 @@ module.exports = [
     method: 'POST',
     path: '/users',
     handler: Handler.create,
-    config: RouteConfig.config(tags, Permissions.USERS_CREATE, {
+    options: RouteConfig.config(tags, Permissions.USERS_CREATE, {
       payload: {
-        firstName: Joi.string().required().description('First name'),
-        lastName: Joi.string().required().description('Last name'),
-        key: Joi.string().required().description('Login key'),
-        email: Joi.string().required().description('Email address')
+        allow: 'application/json',
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          firstName: Joi.string().required().description('First name'),
+          lastName: Joi.string().required().description('Last name'),
+          key: Joi.string().required().description('Login key'),
+          email: Joi.string().required().description('Email address')
+        }
       }
     })
   },
@@ -58,9 +72,11 @@ module.exports = [
     method: 'DELETE',
     path: '/users/{id}',
     handler: Handler.remove,
-    config: RouteConfig.config(tags, Permissions.USERS_DELETE, {
-      params: {
-        id: Joi.string().guid().description('user id')
+    options: RouteConfig.config(tags, Permissions.USERS_DELETE, {
+      validate: {
+        params: {
+          id: Joi.string().guid().description('User Id')
+        }
       }
     })
   },
@@ -68,9 +84,11 @@ module.exports = [
     method: 'GET',
     path: '/users/{id}/roles',
     handler: Handler.getRoles,
-    config: RouteConfig.config(tags, Permissions.USERS_ROLES_LIST, {
-      params: {
-        id: Joi.string().guid().description('user id')
+    options: RouteConfig.config(tags, Permissions.USERS_ROLES_LIST, {
+      validate: {
+        params: {
+          id: Joi.string().guid().description('User Id')
+        }
       }
     })
   },
@@ -78,11 +96,17 @@ module.exports = [
     method: 'POST',
     path: '/users/{id}/roles',
     handler: Handler.updateRoles,
-    config: RouteConfig.config(tags, Permissions.USERS_ROLES_UPDATE, {
-      params: {
-        id: Joi.string().guid().description('user id')
+    options: RouteConfig.config(tags, Permissions.USERS_ROLES_UPDATE, {
+      payload: {
+        allow: 'application/json',
+        failAction: 'error'
       },
-      payload: Joi.array().items(Joi.string().guid()).required().description('Role ids')
+      validate: {
+        params: {
+          id: Joi.string().guid().description('User Id')
+        },
+        payload: Joi.array().items(Joi.string().guid()).required().description('Role ids')
+      }
     })
   }
 ]

@@ -12,8 +12,8 @@ const Sidecar = require('../../../../src/lib/sidecar')
 
 const createGet = (name, credentials = null) => {
   return {
-    params: { name: name || 'name' },
-    server: { log: () => { } },
+    params: {name: name || 'name'},
+    server: {log: () => { }},
     auth: {
       credentials
     }
@@ -22,8 +22,8 @@ const createGet = (name, credentials = null) => {
 
 const createPut = (name, credentials = null) => {
   return {
-    params: { name: name || 'name' },
-    server: { log: () => { } },
+    params: {name: name || 'name'},
+    server: {log: () => { }},
     auth: {
       credentials
     }
@@ -33,12 +33,12 @@ const createPut = (name, credentials = null) => {
 const createPost = payload => {
   return {
     payload: payload || {},
-    server: { log: () => { } }
+    server: {log: () => { }}
   }
 }
 
 const createAccount = (name, accountId = 1, isDisabled = true) => {
-  return { accountId: 1, name: name, createdDate: new Date(), isDisabled: isDisabled }
+  return {accountId: 1, name: name, createdDate: new Date(), isDisabled: isDisabled}
 }
 
 Test('accounts handler', handlerTest => {
@@ -76,180 +76,158 @@ Test('accounts handler', handlerTest => {
   }
 
   handlerTest.test('getByName should', getByNameTest => {
-    getByNameTest.test('get account by name and set balance to position', test => {
+    getByNameTest.test('get account by name and set balance to position', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
       PositionService.calculateForAccount.withArgs(account).returns(P.resolve(buildPosition(account.name, '50', '0', '-50')))
 
-      const request = createGet(name, { name })
-      const reply = response => {
-        test.equal(response.id, `${hostname}/accounts/${response.name}`)
-        test.equal(response.name, name)
-        test.equal(response.created, account.createdDate)
-        test.equal(response.balance, '-50')
-        test.equal(response.is_disabled, true)
-        test.equal(response.ledger, hostname)
-        test.notOk(response.hasOwnProperty('key'))
-        test.notOk(response.hasOwnProperty('secret'))
-        test.notOk(response.hasOwnProperty('credentials'))
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.getByName(request, reply)
+      const request = createGet(name, {name})
+      const response = await Handler.getByName(request, {})
+      test.equal(response.id, `${hostname}/accounts/${response.name}`)
+      test.equal(response.name, name)
+      test.equal(response.created, account.createdDate)
+      test.equal(response.balance, '-50')
+      test.equal(response.is_disabled, true)
+      test.equal(response.ledger, hostname)
+      test.notOk(response.hasOwnProperty('key'))
+      test.notOk(response.hasOwnProperty('secret'))
+      test.notOk(response.hasOwnProperty('credentials'))
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
-    getByNameTest.test('get account by name and set balance to position if admin', test => {
+    getByNameTest.test('get account by name and set balance to position if admin', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
       PositionService.calculateForAccount.withArgs(account).returns(P.resolve(buildPosition(account.name, '50', '0', '-50')))
-
-      const reply = response => {
-        test.equal(response.id, `${hostname}/accounts/${response.name}`)
-        test.equal(response.name, name)
-        test.equal(response.created, account.createdDate)
-        test.equal(response.balance, '-50')
-        test.equal(response.is_disabled, true)
-        test.equal(response.ledger, hostname)
-        test.notOk(response.hasOwnProperty('key'))
-        test.notOk(response.hasOwnProperty('secret'))
-        test.notOk(response.hasOwnProperty('credentials'))
-        test.end()
-      }
-
-      Handler.getByName(createGet(name, { name: 'not' + name, is_admin: true }), reply)
+      const response = await Handler.getByName(createGet(name, {name: 'not' + name, is_admin: true}), {})
+      test.equal(response.id, `${hostname}/accounts/${response.name}`)
+      test.equal(response.name, name)
+      test.equal(response.created, account.createdDate)
+      test.equal(response.balance, '-50')
+      test.equal(response.is_disabled, true)
+      test.equal(response.ledger, hostname)
+      test.notOk(response.hasOwnProperty('key'))
+      test.notOk(response.hasOwnProperty('secret'))
+      test.notOk(response.hasOwnProperty('credentials'))
+      test.end()
     })
 
-    getByNameTest.test('get account by name and set balance to position and default is_disabled to false', test => {
+    getByNameTest.test('get account by name and set balance to position and default is_disabled to false', async function (test) {
       const name = 'somename'
-      const account = { accountId: 1, name: name, createdDate: new Date() }
+      const account = {accountId: 1, name: name, createdDate: new Date()}
       Account.getByName.returns(P.resolve(account))
       PositionService.calculateForAccount.withArgs(account).returns(P.resolve(buildPosition(account.name, '50', '0', '-50')))
-
-      const reply = response => {
-        test.equal(response.id, `${hostname}/accounts/${response.name}`)
-        test.equal(response.is_disabled, false)
-        test.end()
-      }
-
-      Handler.getByName(createGet(name, { name }), reply)
+      const response = await Handler.getByName(createGet(name, {name}), {})
+      test.equal(response.id, `${hostname}/accounts/${response.name}`)
+      test.equal(response.is_disabled, false)
+      test.end()
     })
 
-    getByNameTest.test('reply with limited fields if requesting account is not account', test => {
+    getByNameTest.test('reply with limited fields if requesting account is not account', async function (test) {
       const name = 'dfsp1'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
-
-      const reply = response => {
-        test.equal(response.id, `${hostname}/accounts/${response.name}`)
-        test.equal(response.name, name)
-        test.equal(response.ledger, hostname)
-        test.equal(PositionService.calculateForAccount.callCount, 0)
-        test.notOk(response.hasOwnProperty('created'))
-        test.notOk(response.hasOwnProperty('balance'))
-        test.notOk(response.hasOwnProperty('is_disabled'))
-        test.notOk(response.hasOwnProperty('key'))
-        test.notOk(response.hasOwnProperty('secret'))
-        test.notOk(response.hasOwnProperty('credentials'))
-        test.end()
-      }
-
-      Handler.getByName(createGet(name), reply)
+      const response = await Handler.getByName(createGet(name), {})
+      test.equal(response.id, `${hostname}/accounts/${response.name}`)
+      test.equal(response.name, name)
+      test.equal(response.ledger, hostname)
+      test.equal(PositionService.calculateForAccount.callCount, 0)
+      test.notOk(response.hasOwnProperty('created'))
+      test.notOk(response.hasOwnProperty('balance'))
+      test.notOk(response.hasOwnProperty('is_disabled'))
+      test.notOk(response.hasOwnProperty('key'))
+      test.notOk(response.hasOwnProperty('secret'))
+      test.notOk(response.hasOwnProperty('credentials'))
+      test.end()
     })
 
-    getByNameTest.test('reply with NotFoundError if account null', test => {
+    getByNameTest.test('reply with NotFoundError if account null', async function (test) {
       Account.getByName.returns(P.resolve(null))
-
-      const reply = response => {
-        test.ok(response instanceof Errors.NotFoundError)
-        test.equal(response.message, 'The requested resource could not be found.')
+      try {
+        await Handler.getByName(createGet(), {})
+      } catch (e) {
+        test.ok(e instanceof Errors.NotFoundError)
+        test.equal(e.message, 'The requested resource could not be found.')
         test.end()
       }
-
-      Handler.getByName(createGet(), reply)
     })
 
-    getByNameTest.test('reply with error if Account throws error', test => {
+    getByNameTest.test('reply with error if Account throws error', async function (test) {
       const error = new Error()
       Account.getByName.returns(P.reject(error))
-
-      const reply = e => {
+      try {
+        await Handler.getByName(createGet(), {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-
-      Handler.getByName(createGet(), reply)
     })
 
-    getByNameTest.test('reply with NotFoundError if position null', test => {
+    getByNameTest.test('reply with NotFoundError if position null', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
 
       PositionService.calculateForAccount.withArgs(account).returns(P.resolve(null))
-
-      const reply = response => {
-        test.ok(response instanceof Errors.NotFoundError)
-        test.equal(response.message, 'The requested resource could not be found.')
+      try {
+        await Handler.getByName(createGet(name, {name}), {})
+      } catch (e) {
+        test.ok(e instanceof Errors.NotFoundError)
+        test.equal(e.message, 'The requested resource could not be found.')
         test.end()
       }
-
-      Handler.getByName(createGet(name, { name }), reply)
     })
 
-    getByNameTest.test('reply with error if PositionService throws error', test => {
+    getByNameTest.test('reply with error if PositionService throws error', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
 
       const error = new Error()
       PositionService.calculateForAccount.withArgs(account).returns(P.reject(error))
-
-      const reply = e => {
+      try {
+        await Handler.getByName(createGet(name, {name}), {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-
-      Handler.getByName(createGet(name, { name }), reply)
     })
 
     getByNameTest.end()
   })
 
   handlerTest.test('updateUserCredentials should', updateUserCredentialsTest => {
-    updateUserCredentialsTest.test('update a users credentials', test => {
+    updateUserCredentialsTest.test('update a users credentials', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
       Account.updateUserCredentials.returns(P.resolve(account))
 
-      const request = createPut(name, { name })
-      request.payload = { password: '1234' }
-      const reply = response => {
-        test.equal(response.id, `${hostname}/accounts/${response.name}`)
-        test.equal(response.name, name)
-        test.equal(response.ledger, hostname)
-        test.notOk(response.hasOwnProperty('key'))
-        test.notOk(response.hasOwnProperty('secret'))
-        test.notOk(response.hasOwnProperty('credentials'))
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.updateUserCredentials(request, reply)
+      const request = createPut(name, {name})
+      request.payload = {password: '1234'}
+      const response = await Handler.updateUserCredentials(request, {})
+      test.equal(response.id, `${hostname}/accounts/${response.name}`)
+      test.equal(response.name, name)
+      test.equal(response.ledger, hostname)
+      test.notOk(response.hasOwnProperty('key'))
+      test.notOk(response.hasOwnProperty('secret'))
+      test.notOk(response.hasOwnProperty('credentials'))
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
-    updateUserCredentialsTest.test('reply with unauthorized error if user credentials do not match', test => {
+    updateUserCredentialsTest.test('reply with unauthorized error if user credentials do not match', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
 
-      const request = createPut(name, { name: '1234' })
-      request.payload = { password: '1234' }
+      const request = createPut(name, {name: '1234'})
+      request.payload = {password: '1234'}
       try {
-        Handler.updateUserCredentials(request)
+        await Handler.updateUserCredentials(request)
       } catch (error) {
         test.assert(error instanceof Errors.UnauthorizedError)
         test.equal(error.message, 'Invalid attempt updating the password.')
@@ -261,9 +239,9 @@ Test('accounts handler', handlerTest => {
   })
 
   handlerTest.test('create should', createTest => {
-    createTest.test('return created account', assert => {
-      const payload = { name: 'dfsp1' }
-      const credentials = { key: 'key', secret: 'secret' }
+    createTest.test('return created account', async function (assert) {
+      const payload = {name: 'dfsp1'}
+      const credentials = {key: 'key', secret: 'secret'}
       const account = createAccount(payload.name)
       account.credentials = credentials
 
@@ -271,148 +249,145 @@ Test('accounts handler', handlerTest => {
       Account.create.withArgs(payload).returns(P.resolve(account))
 
       const request = createPost(payload)
-      const reply = response => {
-        assert.equal(response.id, `${hostname}/accounts/${account.name}`)
-        assert.equal(response.name, account.name)
-        assert.equal(response.created, account.createdDate)
-        assert.equal(response.balance, '0')
-        assert.equal(response.is_disabled, account.isDisabled)
-        assert.equal(response.ledger, hostname)
-        assert.equal(response.credentials.key, credentials.key)
-        assert.equal(response.credentials.secret, credentials.secret)
-        assert.ok(Sidecar.logRequest.calledWith(request))
-        return {
-          code: (statusCode) => {
-            assert.equal(statusCode, 201)
-            assert.end()
+      const reply = {
+        response: (output) => {
+          assert.equal(output.id, `${hostname}/accounts/${account.name}`)
+          assert.equal(output.name, account.name)
+          assert.equal(output.created, account.createdDate)
+          assert.equal(output.balance, '0')
+          assert.equal(output.is_disabled, account.isDisabled)
+          assert.equal(output.ledger, hostname)
+          assert.equal(output.credentials.key, credentials.key)
+          assert.equal(output.credentials.secret, credentials.secret)
+          assert.ok(Sidecar.logRequest.calledWith(request))
+          return {
+            code: (statusCode) => {
+              assert.equal(statusCode, 201)
+              assert.end()
+            }
           }
         }
       }
 
-      Handler.create(request, reply)
+      await Handler.create(request, reply)
     })
 
-    createTest.test('return RecordExistsError if name already registered', test => {
-      const payload = { name: 'dfsp1' }
-      const account = { name: payload.name, createdDate: new Date() }
+    createTest.test('return RecordExistsError if name already registered', async function (test) {
+      const payload = {name: 'dfsp1'}
+      const account = {name: payload.name, createdDate: new Date()}
 
       Account.getByName.withArgs(payload.name).returns(P.resolve(account))
-
-      const reply = response => {
-        test.ok(response instanceof Errors.RecordExistsError)
-        test.equal(response.message, 'The account has already been registered')
+      try {
+        await Handler.create(createPost(payload), {})
+      } catch (e) {
+        test.ok(e instanceof Errors.RecordExistsError)
+        test.equal(e.message, 'An error has occurred: The account has already been registered')
         test.end()
       }
-
-      Handler.create(createPost(payload), reply)
     })
 
-    createTest.test('return error if Account throws error on checking for existing account', test => {
-      const payload = { name: 'dfsp1' }
+    createTest.test('return error if Account throws error on checking for existing account', async function (test) {
+      const payload = {name: 'dfsp1'}
       const error = new Error()
 
       Account.getByName.returns(P.reject(error))
-
-      const reply = e => {
+      try {
+        await Handler.create(createPost(payload), {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-
-      Handler.create(createPost(payload), reply)
     })
 
-    createTest.test('return error if Account throws error on register', test => {
-      const payload = { name: 'dfsp1' }
+    createTest.test('return error if Account throws error on register', async function (test) {
+      const payload = {name: 'dfsp1'}
       const error = new Error()
 
       Account.getByName.returns(P.resolve(null))
       Account.create.returns(P.reject(error))
-
-      const reply = e => {
+      try {
+        await Handler.create(createPost(payload), {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-
-      Handler.create(createPost(payload), reply)
     })
 
     createTest.end()
   })
 
   handlerTest.test('update settlement should', updateSettlementTest => {
-    updateSettlementTest.test('return updated settlement', assert => {
+    updateSettlementTest.test('return updated settlement', async function (assert) {
       const name = 'dfsp1'
-      const payload = { account_number: '123', routing_number: '456' }
-      const credentials = { key: 'key', secret: 'secret' }
+      const payload = {account_number: '123', routing_number: '456'}
+      const credentials = {key: 'key', secret: 'secret'}
       const account = createAccount(name)
       account.credentials = credentials
-      const settlement = { accountName: account.name, accountNumber: payload.account_number, routingNumber: payload.routing_number }
+      const settlement = {
+        accountName: account.name,
+        accountNumber: payload.account_number,
+        routingNumber: payload.routing_number
+      }
 
       Account.getByName.withArgs(name).returns(P.resolve(account))
       Account.updateAccountSettlement.withArgs(account, payload).returns(P.resolve(settlement))
 
-      const request = createPut(name, { name })
+      const request = createPut(name, {name})
       request.payload = payload
-      const reply = response => {
-        assert.equal(response.account_id, `${hostname}/accounts/${account.name}`)
-        assert.equal(response.account_number, payload.account_number)
-        assert.equal(response.routing_number, payload.routing_number)
-        assert.ok(Sidecar.logRequest.calledWith(request))
-        assert.end()
-      }
-
-      Handler.updateAccountSettlement(request, reply)
+      const response = await Handler.updateAccountSettlement(request, {})
+      assert.equal(response.account_id, `${hostname}/accounts/${account.name}`)
+      assert.equal(response.account_number, payload.account_number)
+      assert.equal(response.routing_number, payload.routing_number)
+      assert.ok(Sidecar.logRequest.calledWith(request))
+      assert.end()
     })
 
-    updateSettlementTest.test('return error if Account throws error on checking for existing account', test => {
+    updateSettlementTest.test('return error if Account throws error on checking for existing account', async function (test) {
       const name = 'dfsp1'
-      const payload = { account_number: '123', routing_number: '456' }
-      const credentials = { key: 'key', secret: 'secret' }
+      const payload = {account_number: '123', routing_number: '456'}
+      const credentials = {key: 'key', secret: 'secret'}
       const account = createAccount(name)
       account.credentials = credentials
       const error = new Error()
-
       Account.getByName.returns(P.reject(error))
-
-      const reply = e => {
+      const request = createPut(name, {name})
+      request.payload = payload
+      try {
+        await Handler.updateAccountSettlement(request, {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-
-      const request = createPut(name, { name })
-      request.payload = payload
-      Handler.updateAccountSettlement(request, reply)
     })
 
-    updateSettlementTest.test('return error if Account throws error on updateAccountSettlement', test => {
+    updateSettlementTest.test('return error if Account throws error on updateAccountSettlement', async function (test) {
       const name = 'dfsp1'
-      const payload = { account_number: '123', routing_number: '456' }
-      const credentials = { key: 'key', secret: 'secret' }
+      const payload = {account_number: '123', routing_number: '456'}
+      const credentials = {key: 'key', secret: 'secret'}
       const account = createAccount(name)
       account.credentials = credentials
       const error = new Error()
 
       Account.getByName.returns(P.resolve(account))
       Account.updateAccountSettlement.returns(P.reject(error))
-
-      const reply = e => {
+      const request = createPut(name, {name})
+      request.payload = payload
+      try {
+        await Handler.updateAccountSettlement(request, {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-
-      const request = createPut(name, { name })
-      request.payload = payload
-      Handler.updateAccountSettlement(request, reply)
     })
 
-    updateSettlementTest.test('return error if not authenticated', test => {
+    updateSettlementTest.test('return error if not authenticated', async function (test) {
       const name = 'dfsp1'
-      const payload = { account_number: '123', routing_number: '456' }
+      const payload = {account_number: '123', routing_number: '456'}
 
-      const request = createPut(name, { name: '1234' })
+      const request = createPut(name, {name: '1234'})
       request.payload = payload
       try {
-        Handler.updateAccountSettlement(request)
+        await Handler.updateAccountSettlement(request)
       } catch (error) {
         test.assert(error instanceof Errors.UnauthorizedError)
         test.equal(error.message, 'Invalid attempt updating the settlement.')

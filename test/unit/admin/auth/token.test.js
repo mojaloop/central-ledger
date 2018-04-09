@@ -22,32 +22,33 @@ Test('token auth strategy', tokenTest => {
   })
 
   tokenTest.test('validate should', validateTest => {
-    validateTest.test('should yield error if token verification fails', test => {
-      JWT.verify.returns(Promise.reject(new Error('Invalid token')))
-      const cb = (err, verified) => {
-        test.equal(err.message, 'Invalid token')
-        test.equal(verified, false)
-        test.end()
-      }
-
-      TokenAuth.validate({}, '', cb)
+    validateTest.test('should yield error if token verification fails', async function (test) {
+      await JWT.verify.returns(Promise.reject(new Error('Invalid token')))
+      const response = await TokenAuth.validate({}, '', {})
+      test.equal(response.e.message, 'Invalid token')
+      test.equal(response.verified, false)
+      test.end()
     })
 
-    validateTest.test('should pass if token verification passes', test => {
+    validateTest.test('should yield error if token verification fails', async function (test) {
+      await JWT.verify.returns(Promise.resolve(null))
+      const response = await TokenAuth.validate({}, '', {})
+      test.equal(response.e.message, 'Invalid token')
+      test.equal(response.verified, false)
+      test.end()
+    })
+
+    validateTest.test('should pass if token verification passes', async function (test) {
       const userId = Uuid()
       const user = { userId }
       const roles = [{ permissions: ['ONE', 'TWO', 'THREE'] }, { permissions: ['ONE', 'FOUR', 'FIVE'] }]
       const token = 'some.jwt.token'
-      JWT.verify.withArgs(token).returns(Promise.resolve({ user, roles }))
+      await JWT.verify.withArgs(token).returns(Promise.resolve({ user, roles }))
 
-      const cb = (err, verified, credentials) => {
-        test.notOk(err)
-        test.equal(verified, true)
-        test.deepEqual(credentials, { userId, scope: [ 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE' ] })
-        test.end()
-      }
-
-      TokenAuth.validate({}, token, cb)
+      const response = await TokenAuth.validate({}, token, {})
+      test.equal(response.isValid, true)
+      test.deepEqual(response.credentials, { userId, scope: [ 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE' ] })
+      test.end()
     })
 
     validateTest.end()

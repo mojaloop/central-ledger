@@ -4,11 +4,11 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Hapi = require('hapi')
 const P = require('bluebird')
-const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const Migrator = require('../../../src/lib/migrator')
 const Db = require('../../../src/db')
 const Config = require('../../../src/lib/config')
 const Eventric = require('../../../src/eventric')
+const Account = require('../../../src/domain/account')
 const Plugins = require('../../../src/shared/plugins')
 const RequestLogger = require('../../../src/lib/request-logger')
 const UrlParser = require('../../../src/lib/urlparser')
@@ -30,6 +30,7 @@ Test('setup', setupTest => {
     sandbox.stub(Plugins, 'registerPlugins')
     sandbox.stub(Migrator)
     sandbox.stub(Eventric)
+    sandbox.stub(Account)
     sandbox.stub(UrlParser, 'idFromTransferUri')
     sandbox.stub(RequestLogger, 'logRequest')
     sandbox.stub(RequestLogger, 'logResponse')
@@ -60,144 +61,31 @@ Test('setup', setupTest => {
     const server = {
       connection: sandbox.stub(),
       register: sandbox.stub(),
-      ext: sandbox.stub()
+      ext: sandbox.stub(),
+      start: sandbox.stub(),
+      info: {
+        uri: sandbox.stub()
+      }
     }
     Hapi.Server.returns(server)
     return server
   }
 
-  setupTest.test('createServer should', createServerTest => {
-    createServerTest.test('return Hapi Server', test => {
-      const server = createServer()
-
-      Setup.createServer().then(s => {
-        test.deepEqual(s, server)
-        test.end()
-      })
-    })
-
-    createServerTest.test('setup connection', test => {
-      const server = createServer()
-      const port = 1234
-
-      Setup.createServer(port).then(() => {
-        test.ok(server.connection.calledWith(Sinon.match({
-          port,
-          routes: {
-            validate: ErrorHandling.validateRoutes()
-          }
-        })))
-        test.end()
-      })
-    })
-
-    createServerTest.test('log request and traceid', test => {
-      const server = createServer()
-      const port = 1234
-
-      let request = { headers: { traceid: '1234' }, url: { path: '/test' } }
-      let reply = { continue: sandbox.stub() }
-      server.ext.onFirstCall().callsArgWith(1, request, reply)
-
-      Setup.createServer(port).then(() => {
-        test.ok(RequestLogger.logRequest.calledWith(request))
-        test.ok(reply.continue.calledOnce)
-        test.end()
-      })
-    })
-
-    createServerTest.test('use transfer id if traceid not found', test => {
-      const server = createServer()
-      const port = 1234
-      const transferId = 'transfer-id'
-      const path = '/test'
-
-      UrlParser.idFromTransferUri.returns(transferId)
-
-      let request = { headers: { }, url: { path } }
-      let reply = { continue: sandbox.stub() }
-      server.ext.onFirstCall().callsArgWith(1, request, reply)
-
-      Setup.createServer(port).then(() => {
-        test.ok(RequestLogger.logRequest.calledWith(sandbox.match({
-          headers: {
-            traceid: transferId
-          }
-        })))
-        test.ok(UrlParser.idFromTransferUri.calledWith(`${hostName}${path}`))
-        test.ok(reply.continue.calledOnce)
-        test.end()
-      })
-    })
-
-    createServerTest.test('create new uuid if traceid and transfer id not found', test => {
-      const server = createServer()
-      const port = 1234
-      const uuid = 'new-trace-id'
-
-      uuidStub.returns(uuid)
-
-      let request = { headers: { }, url: { path: '/' } }
-      let reply = { continue: sandbox.stub() }
-      server.ext.onFirstCall().callsArgWith(1, request, reply)
-
-      Setup.createServer(port).then(() => {
-        test.ok(RequestLogger.logRequest.calledWith(sandbox.match({
-          headers: {
-            traceid: uuid
-          }
-        })))
-        test.ok(reply.continue.calledOnce)
-        test.end()
-      })
-    })
-
-    createServerTest.test('log response', test => {
-      const server = createServer()
-      const port = 1234
-
-      let request = { headers: { traceid: '1234' } }
-      let reply = { continue: sandbox.stub() }
-      server.ext.onSecondCall().callsArgWith(1, request, reply)
-
-      Setup.createServer(port).then(() => {
-        test.ok(RequestLogger.logResponse.calledWith(request))
-        test.ok(reply.continue.calledOnce)
-        test.end()
-      })
-    })
-
-    createServerTest.test('register shared plugins', test => {
-      const server = createServer()
-      Setup.createServer().then(() => {
-        test.ok(Plugins.registerPlugins.calledWith(server))
-        test.end()
-      })
-    })
-
-    createServerTest.test('register provide modules', test => {
-      const server = createServer()
-      const modules = ['one', 'two']
-      Setup.createServer(1234, modules).then(() => {
-        test.ok(server.register.calledWith(modules))
-        test.end()
-      })
-    })
-
-    createServerTest.end()
-  })
-
   setupTest.test('initialize should', initializeTest => {
-    const setupPromises = () => {
+    const setupPromises = ({service}) => {
       Migrator.migrate.returns(P.resolve())
       Db.connect.returns(P.resolve())
-      Eventric.getContext.returns(P.resolve())
       Sidecar.connect.returns(P.resolve())
-      return createServer()
+      Eventric.getContext.returns(P.resolve())
+      const server = createServer()
+      if (service === 'api') {
+        Account.createLedgerAccount().returns(P.resolve())
+      }
+      return server
     }
 
     initializeTest.test('connect to sidecar', test => {
-      const server = setupPromises()
+      const server = setupPromises({})
 
       const service = 'test'
       Setup.initialize({ service }).then(s => {
@@ -211,7 +99,7 @@ Test('setup', setupTest => {
     })
 
     initializeTest.test('connect to db and return hapi server', test => {
-      const server = setupPromises()
+      const server = setupPromises({})
 
       Setup.initialize({}).then(s => {
         test.ok(Db.connect.calledWith(databaseUri))
@@ -223,7 +111,7 @@ Test('setup', setupTest => {
     })
 
     initializeTest.test('run migrations if runMigrations flag enabled', test => {
-      setupPromises()
+      setupPromises({})
 
       Setup.initialize({ runMigrations: true }).then(() => {
         test.ok(Db.connect.called)
@@ -234,7 +122,7 @@ Test('setup', setupTest => {
     })
 
     initializeTest.test('setup eventric context if loadEventric flag enabled', test => {
-      setupPromises()
+      setupPromises({})
 
       Setup.initialize({ loadEventric: true }).then(() => {
         test.ok(Db.connect.called)
@@ -244,20 +132,10 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('cleanup on error and rethrow', test => {
-      setupPromises()
-
-      let err = new Error('bad stuff')
-      Sidecar.connect.returns(P.reject(err))
-
-      const service = 'test'
-      Setup.initialize({ service }).then(s => {
-        test.fail('Should have thrown error')
-        test.end()
-      })
-      .catch(e => {
-        test.ok(Db.disconnect.calledOnce)
-        test.equal(e, err)
+    initializeTest.test('create ledger account on api service call', (test) => {
+      setupPromises({})
+      Setup.initialize({ service: 'api' }).then(() => {
+        test.ok(Account.createLedgerAccount.called)
         test.end()
       })
     })

@@ -15,17 +15,19 @@ module.exports = [
     method: 'GET',
     path: '/roles',
     handler: Handler.getRoles,
-    config: RouteConfig.config(tags, Permissions.ROLES_LIST)
+    options: RouteConfig.config(tags, Permissions.ROLES_LIST)
   },
   {
     method: 'POST',
     path: '/roles',
     handler: Handler.createRole,
-    config: RouteConfig.config(tags, Permissions.ROLES_CREATE, {
-      payload: {
-        name: nameValidator.required(),
-        description: descriptionValidator,
-        permissions: permissionsValidator.required()
+    options: RouteConfig.config(tags, Permissions.ROLES_CREATE, {
+      validate: {
+        payload: {
+          name: nameValidator.required(),
+          description: descriptionValidator,
+          permissions: permissionsValidator.required()
+        }
       }
     })
   },
@@ -34,13 +36,17 @@ module.exports = [
     path: '/roles/{id}',
     handler: Handler.updateRole,
     config: RouteConfig.config(tags, Permissions.ROLES_UPDATE, {
-      params: {
-        id: Joi.string().guid().required().description('Id of role to update')
-      },
-      payload: {
-        name: nameValidator,
-        description: descriptionValidator,
-        permissions: permissionsValidator
+      options: {
+        validate: {
+          params: {
+            id: Joi.string().guid().required().description('Id of role to update')
+          },
+          payload: {
+            name: nameValidator,
+            description: descriptionValidator,
+            permissions: permissionsValidator
+          }
+        }
       }
     })
   },
@@ -49,8 +55,12 @@ module.exports = [
     path: '/roles/{id}',
     handler: Handler.deleteRole,
     config: RouteConfig.config(tags, Permissions.ROLES_DELETE, {
-      params: {
-        id: Joi.string().guid().required().description('Id of role to delete')
+      options: {
+        validate: {
+          params: {
+            id: Joi.string().guid().required().description('Id of role to delete')
+          }
+        }
       }
     })
   }

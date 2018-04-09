@@ -33,14 +33,14 @@ Test('routeConfig', routeConfigTest => {
     configTest.test('populate tags', test => {
       const result = RouteConfig.config(tags)
 
-      test.deepEqual(result, { tags })
+      test.deepEqual(result, {tags})
       test.end()
     })
 
     configTest.test('set description', test => {
       const description = 'some description'
       const result = RouteConfig.config(tags, description)
-      test.deepEqual(result, { tags, description })
+      test.deepEqual(result, {tags, description})
       test.end()
     })
 
@@ -53,7 +53,7 @@ Test('routeConfig', routeConfigTest => {
 
     configTest.test('set auth from permission', test => {
       const permission = Permissions.ACCOUNTS_LIST
-      const auth = { strategy: 'test', prop2: 'prop2' }
+      const auth = {strategy: 'test', prop2: 'prop2'}
       Auth.tokenAuth.withArgs(permission).returns(auth)
       const result = RouteConfig.config(tags, permission)
 
@@ -61,11 +61,20 @@ Test('routeConfig', routeConfigTest => {
       test.end()
     })
 
-    configTest.test('set validation', test => {
-      const validation = { params: { id: 'test' }, payload: { id: 'test' } }
+    configTest.test('set validation', async function (test) {
+      const validation = {
+        payload: {allow: 'application/json', failAction: 'error', output: 'data'},
+        validate: {params: {id: 'test'}, payload: {id: 'test'}}
+      }
+      const validatedConfig = {
+        description: 'description',
+        payload: {allow: 'application/json', failAction: 'error', output: 'data'},
+        tags: ['tag1', 'tag2'],
+        validate: {params: {id: 'test'}, payload: {id: 'test'}}
+      }
       const result = RouteConfig.config(tags, 'description', validation)
 
-      test.deepEqual(result.validate, validation)
+      test.deepEqual(result, validatedConfig)
       test.end()
     })
 

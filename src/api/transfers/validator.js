@@ -51,6 +51,8 @@ exports.validate = (transfer, transferId) => {
     if (!transfer) {
       throw new ValidationError('Transfer must be provided')
     }
+    Logger.info('transfer')
+    Logger.info(transfer)
     const id = UrlParser.idFromTransferUri(transfer.id)
     if (!id || id !== transferId) {
       throw new ValidationError('transfer.id: Invalid URI')
