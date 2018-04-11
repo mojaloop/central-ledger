@@ -2,6 +2,7 @@
 
 const UrlParser = require('../../lib/urlparser')
 const Util = require('../../lib/util')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const transferProperties = [
   'additional_info',
@@ -66,8 +67,10 @@ const fromTransferReadModel = (t) => fromTransferAggregate({
 
 const toTransfer = (t) => {
   if (t.id) {
+    Logger.info('In aggregate transfer translator')
     return fromTransferAggregate(t)
   } else if (t.transferUuid) {
+    Logger.info('In read model transfer translator')
     return fromTransferReadModel(t)
   } else throw new Error(`Unable to translate to transfer: ${t}`)
 }

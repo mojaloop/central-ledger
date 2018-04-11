@@ -45,7 +45,6 @@ Test('Api index', indexTest => {
         service: 'api',
         port: Config.PORT,
         modules: [Auth, Routes, Sockets, Worker],
-        loadEventric: true,
         runMigrations: true
       }))
       test.end()
