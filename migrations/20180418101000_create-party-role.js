@@ -2,12 +2,12 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.createTableIfNotExists('partyRole', (t) => {
-        t.increments('partyRoleId').primary()
+        t.bigIncrements('partyRoleId').primary()
 
-        t.integer('partyId').unsigned().notNullable()
+        t.bigInteger('partyId').unsigned().notNullable()
         t.foreign('partyId').references('partyId').inTable('party')
 
-        t.integer('roleId').unsigned().notNullable()
+        t.bigInteger('roleId').unsigned().notNullable()
         t.foreign('roleId').references('roleId').inTable('role')
     })
 }

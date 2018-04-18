@@ -3,9 +3,9 @@
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('participantParty', (t) => {
     t.bigIncrements('participantPartyId').unsigned().primary()
-    t.big('participantId').unsigned().notNullable()
+    t.bigInteger('participantId').unsigned().notNullable()
     t.foreign('participantId').references('participant.participantId')
-    t.big('partyId').unsigned().notNullable()
+    t.bigInteger('partyId').unsigned().notNullable()
     t.foreign('partyId').references('party.partyId')
   })
 }
