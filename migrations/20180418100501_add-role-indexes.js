@@ -2,12 +2,12 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.table('role', (t) => {
-        t.unique('name', 'role_name_unique')
+        t.unique('name')
     })
 }
 
 exports.down = function(knex, Promise) {
     return knex.schema.table('role', (t) => {
-        t.dropUnique('name', 'role_name_unique')
+        t.dropUnique('name')
     })
 }

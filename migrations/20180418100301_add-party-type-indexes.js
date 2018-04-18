@@ -2,12 +2,12 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.table('partyType', (t) => {
-        t.unique('name', 'partytype_name_unique')
+        t.unique('name')
     })
 }
 
 exports.down = function(knex, Promise) {
     return knex.schema.table('partyType', (t) => {
-        t.dropUnique('name', 'partytype_name_unique')
+        t.dropUnique('name')
     })
 }

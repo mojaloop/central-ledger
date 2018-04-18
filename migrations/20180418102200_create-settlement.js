@@ -1,15 +1,17 @@
 'use strict'
 
 exports.up = function(knex, Promise) {
-  return knex.schema.createTableIfNotExists('settlements', (t) => {
-    t.increments('settlementId').primary().unsigned().defaultTo(1)
+  return knex.schema.createTableIfNotExists('settlement', (t) => {
+    t.increments('settlementId').primary()
+
     t.integer('transferBatchId').unsigned().notNullable()
     t.foreign('transferBatchId').references('transferBatchId').inTable('transferBatch')
+
     t.string('settlementType', 16).notNullable()
-    t.timestamp('settledDate').notNullable().defaultTo(knex.fn.now())
+    t.dateTime('settledDate').defaultTo(knex.fn.now()).notNullable()
   })
 }
 
 exports.down = function(knex, Promise) {
-  return knex.schema.dropTableIfExists('settlements')
+  return knex.schema.dropTableIfExists('settlement')
 }

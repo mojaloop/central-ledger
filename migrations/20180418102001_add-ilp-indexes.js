@@ -2,14 +2,12 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.table('ilp', (t) => {
-    t.index('fulfillment')
-    t.unique('fulfillment')
+    t.index('transferId')
   })
 }
 
 exports.down = function(knex, Promise) {
   return knex.schema.table('ilp', (t) => {
-    t.dropIndex('fulfillment')
-    t.dropUnique('fulfillment')
+    t.dropIndex('transferId')
   })
 }

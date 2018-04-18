@@ -2,10 +2,10 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('messageStream', (t) => {
-    t.bigIncrements('messageStreamId').unsigned().primary()
+    t.increments('messageStreamId').primary()
     t.string('topicName', 128).notNullable()
-    t.decimal('topicIndex', 10, 2).notNullable()
-    t.timestamp('changedDate').notNullable().defaultTo(knex.fn.now())
+    t.integer('topicIndex').notNullable()
+    t.dateTime('changedDate').defaultTo(knex.fn.now()).notNullable()
     t.string('changedBy', 128).notNullable()
   })
 }

@@ -2,12 +2,12 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.table('ledgerDomainEvent', (t) => {
-    t.index('name')
+    t.unique(['aggregateId', 'sequenceNumber'])
   })
 }
 
 exports.down = function(knex, Promise) {
   return knex.schema.table('ledgerDomainEvent', (t) => {
-    t.dropIndex('name')
+    t.dropUnique(['aggregateId', 'sequenceNumber'])
   })
 }

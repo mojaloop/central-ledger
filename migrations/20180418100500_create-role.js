@@ -2,11 +2,11 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.createTableIfNotExists('role', (t) => {
-        t.bigIncrements('roleId').primary()
+        t.increments('roleId').primary()
         t.string('name', 256).notNullable()
         t.string('description', 1000).nullable()
         t.text('permissions').notNullable()
-        t.timestamp('createdDate').defaultTo(knex.fn.now()).notNullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
     })
 }
 

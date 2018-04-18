@@ -3,10 +3,13 @@
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('ilp', (t) => {
     t.increments('ilpId').primary()
-    t.uuid('transferId').notNullable()
-    t.longtext('packet').notNullable()
-    t.string('condition',48).notNullable()
-    t.string('fulfillment',48).notNullable()
+    
+    t.string('transferId', 36).notNullable()
+    t.foreign('transferId').references('transferId').inTable('transfer')
+
+    t.text('packet').notNullable()
+    t.string('condition', 48).notNullable()
+    t.string('fulfillment', 48).nullable()
   })
 }
 

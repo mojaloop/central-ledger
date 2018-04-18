@@ -2,13 +2,13 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('ledgerDomainEvent', (t) => {
-    t.uuid('eventId').notNullable()
+    t.string('eventId', 36).primary()
     t.string('name', 128).notNullable()
     t.json('payload').notNullable()
-    t.uuid('aggregateId').notNullable()
+    t.string('aggregateId', 36).notNullable()
     t.string('aggregateName', 128).notNullable()
     t.integer('sequenceNumber').notNullable()
-    t.timestamp('timeStamp').notNullable().defaultTo(knex.fn.now())
+    t.dateTime('timestamp').defaultTo(knex.fn.now()).notNullable()
   })
 }
 

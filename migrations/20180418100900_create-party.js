@@ -2,7 +2,7 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.createTableIfNotExists('party', (t) => {
-        t.bigIncrements('partyId').primary()
+        t.increments('partyId').primary()
 
         t.integer('partyTypeId').unsigned().nullable()
         t.foreign('partyTypeId').references('partyTypeId').inTable('partyType')
@@ -21,7 +21,7 @@ exports.up = function(knex, Promise) {
         t.string('identifierOther', 50).nullable()
         t.string('identifierValue', 50).nullable()
         t.dateTime('dateOfBirth').nullable()
-        t.timestamp('createdDate').defaultTo(knex.fn.now()).notNullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
     })
 }
 

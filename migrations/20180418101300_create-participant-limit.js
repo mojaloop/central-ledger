@@ -2,14 +2,17 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('participantLimit', (t) => {
-    t.bigIncrements('participantLimitId').unsigned().primary()
-    t.bigInteger('participantId').unsigned().notNullable()
-    t.foreign('participantId').references('participant.participantId')
-    t.bigInteger('partyRoleId').unsigned().notNullable()
-    t.foreign('partyRoleId').references('partyRole.partyRoleId')
-    t.decimal('netDebitCap', 10, 2).notNullable().default(0)
-    t.integer('thresholdAlarmPercent').notNullable().default(10)
-    t.timestamp('changedDate').notNullable().defaultTo(knex.fn.now())
+    t.increments('participantLimitId').primary()
+
+    t.integer('participantId').unsigned().notNullable()
+    t.foreign('participantId').references('participantId').inTable('participant')
+
+    t.integer('partyRoleId').unsigned().notNullable()
+    t.foreign('partyRoleId').references('partyRoleId').inTable('partyRole')
+
+    t.decimal('netDebitCap', 10, 2).default(0).notNullable()
+    t.integer('thresholdAlarmPercent').default(10).notNullable()
+    t.dateTime('changedDate').defaultTo(knex.fn.now()).notNullable()
   })
 }
 

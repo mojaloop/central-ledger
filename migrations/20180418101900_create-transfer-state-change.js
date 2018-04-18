@@ -2,9 +2,13 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('transferStateChange', (t) => {
-    t.uuid('transferId').notNullable()
-    t.integer('transferStateId').notNullable()
-    t.timestamp('changedDate').notNullable().defaultTo(knex.fn.now())
+    t.string('transferId', 36).primary()
+    t.foreign('transferId').references('transferId').inTable('transfer')
+
+    t.integer('transferStateId').unsigned().notNullable()
+    t.foreign('transferStateId').references('transferStateId').inTable('transferState')
+    
+    t.dateTime('changedDate').defaultTo(knex.fn.now()).notNullable()
   })
 }
 

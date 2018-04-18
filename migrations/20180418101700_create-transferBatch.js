@@ -2,8 +2,8 @@
 
 exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('transferBatch', (t) => {
-    t.increments('transferBatchId').primary().unsigned().defaultTo(1)
-    t.timestamp('createdDate').notNullable().defaultTo(knex.fn.now())
+    t.increments('transferBatchId').primary()
+    t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
     t.string('state', 20).nullable()
   })
 }
