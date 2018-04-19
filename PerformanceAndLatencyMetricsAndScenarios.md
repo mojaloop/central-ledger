@@ -55,7 +55,8 @@ A baseline was established for 200 DFSP users (threads in this case) achieving a
 
 A linear increase with the increase in central-ledger instances on Kubernetes and the throughput (TPS) was observed. With five central-ledger instances the graph was starting to "flatten". More investigation is needed to identify the root case of this, whether that is system resources or JMeter limitations or something else.
 
-![Below is a chart that shows the performance metrics.][.\metrics-images\PoC_DB_Performance_HA_Scalability.jpg]
+![Here is a chart that shows the performance metrics](/metrics-images/PoC_DB_Performance_HA_Scalability.jpg)
+Format: ![Alt Text](url)
 
 ## Scenario-2
 This section deals with the PoC for durable Message Stream Processing. This describes the activities done to establish **reliability** (error rate), **Scalability** and **Performance** of the system that uses the code from the PoC. For the performance aspect, a comaprision is also provided with the base code (pre PI-1).
