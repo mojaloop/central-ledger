@@ -2,7 +2,7 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.createTableIfNotExists('participantSettlement', (t) => {
-        t.increments('participantSettlementId').primary()
+        t.bigIncrements('participantSettlementId').primary().notNullable()
 
         t.integer('participantId').unsigned().notNullable()
         t.foreign('participantId').references('participantId').inTable('participant')

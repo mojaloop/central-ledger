@@ -1,15 +1,13 @@
 'use strict'
 
 exports.up = function(knex, Promise) {
-    return knex.schema.table('currency', (t) => {
-        t.unique('code')
+    return knex.schema.table('transferState', (t) => {
         t.unique('name')
     })
 }
 
 exports.down = function(knex, Promise) {
-    return knex.schema.table('currency', (t) => {
-        t.dropUnique('code')
+    return knex.schema.table('transferState', (t) => {
         t.dropUnique('name')
     })
 }

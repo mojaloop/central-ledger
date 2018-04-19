@@ -2,8 +2,8 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.createTableIfNotExists('partyType', (t) => {
-        t.increments('partyTypeId').primary()
-        t.string('name', 20).notNullable()
+        t.increments('partyTypeId').primary().notNullable()
+        t.string('name', 128).notNullable()
     })
 }
 

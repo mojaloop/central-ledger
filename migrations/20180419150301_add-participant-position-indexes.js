@@ -1,15 +1,13 @@
 'use strict'
 
 exports.up = function(knex, Promise) {
-    return knex.schema.table('token', (t) => {
+    return knex.schema.table('participantPosition', (t) => {
         t.index('participantId')
-        t.unique('value')
     })
 }
 
 exports.down = function(knex, Promise) {
-    return knex.schema.table('token', (t) => {
+    return knex.schema.table('participantPosition', (t) => {
         t.dropIndex('participantId')
-        t.dropUnique('value')
     })
 }

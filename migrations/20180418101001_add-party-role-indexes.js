@@ -2,12 +2,16 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.table('partyRole', (t) => {
-        t.unique(['partyId', 'roleId'], 'partyrole_partyid_roleid_unique')
+        t.index('partyId')
+        t.index('roleId')
+        t.unique(['partyId', 'roleId'])
     })
 }
 
 exports.down = function(knex, Promise) {
     return knex.schema.table('partyRole', (t) => {
-        t.dropUnique(['partyId', 'roleId'], 'partyrole_partyid_roleid_unique')
+        t.dropIndex('partyId')
+        t.dropIndex('roleId')
+        t.dropUnique(['partyId', 'roleId'])
     })
 }
