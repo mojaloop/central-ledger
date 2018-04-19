@@ -69,7 +69,7 @@ Below is a chart that shows the Stream Processing Performance comparision as-is 
 ![Here is a chart that shows the performance metrics](/metrics-images/StreamProcessing–PerformanceComparisonToAs-Is.jpg)
 
 ## Conclusion
-With the above actions during the testing and verification process on the transactional database, we were able to prove the database to be highly available (HA) and highly scalable (HS) in order for the solution to be robust and scale based on demand
+Following the above steps during the testing and verification process on the transactional database, **High Availability (HA)**, **Scalability (HS)**, **Resiliency** and **Data-Integrity** were established and also the advantages and factors in favor of implementing the PoCs that were done.
 
 ## Notes
 - For future performance analysis runs (in Sprints 2.3, 2.4), Charting needs to include Latency and scenarios with average latency not greater than 1second or 1.5seconds need to be charted.
