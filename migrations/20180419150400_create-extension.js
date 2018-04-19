@@ -9,7 +9,7 @@ exports.up = function(knex, Promise) {
 
         t.string('key', 128).notNullable()
         t.text('value').notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+        t.dateTime('changedDate').defaultTo(knex.fn.now()).notNullable()
         t.string('changedBy', 128).notNullable()
     })
 }
