@@ -53,10 +53,8 @@ A baseline was established for 200 DFSP users (threads in this case) achieving a
 - With four central-ledger instances and 200 concurrent DFSP users, an average throughput of **725.3** TPS was observed.
 - With five central-ledger instances and 200 concurrent DFSP users, an average throughput of **732** TPS was observed.
 
-A linear increase with the increase in central-ledger instances on Kubernetes and the throughput (TPS) was observed. With five central-ledger instances the graph was starting to "flatten". More investigation is needed to identify the root case of this, whether that is system resources or JMeter limitations or something else.
-
+A linear increase with the increase in central-ledger instances on Kubernetes and the throughput (TPS) was observed. With five central-ledger instances the graph was starting to "flatten". More investigation is needed to identify the root case of this, whether that is system resources or JMeter limitations or something else. Below is a chart that shows the performance metrics charted with TPS against number of central-services instances.
 ![Here is a chart that shows the performance metrics](/metrics-images/PoC_DB_Performance_HA_Scalability.jpg)
-Format: ![Alt Text](url)
 
 ## Scenario-2
 This section deals with the PoC for durable Message Stream Processing. This describes the activities done to establish **reliability** (error rate), **Scalability** and **Performance** of the system that uses the code from the PoC. For the performance aspect, a comaprision is also provided with the base code (pre PI-1).
