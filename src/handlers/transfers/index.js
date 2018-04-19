@@ -30,11 +30,37 @@
  ******/
 
 'use strict'
+const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
+const Logger = require('@mojaloop/central-services-shared').Logger
+const Commands = require('../../domain/transfer/commands')
+const Translator = require('../lib/translator')
 
-const Consumer = require('../../../../central-services-shared/src/index').Kafka.Consumer
-const Prepare = require('./prepare/handler')
+const TRANSFER = 'transfer'
+const PREPARE = 'prepare'
+const FULFILL = 'fulfill'
 
-exports.allHandlers = function (dfspName) {
-  const prepare = Prepare.createPrepareHandler(dfspName)
-  return [prepare]
+const createPrepareHandler = (dfspName) => {
+  return {
+    command: Commands.prepareExecute,
+    topicName: Translator.tansformAccountToTopicName(dfspName, TRANSFER, PREPARE),
+    consumerMode: Consumer.ENUMS.CONSUMER_MODES.poll
+  }
+}
+
+const createFulfillHandler = (dfspName) => {
+  return {
+    command: Commands.fulfill(),
+    topicName: Translator.tansformAccountToTopicName(dfspName, TRANSFER, FULFILL),
+    consumerMode: Consumer.ENUMS.CONSUMER_MODES.poll
+  }
+}
+
+function allHandlers (dfspName) {
+  return [createPrepareHandler(dfspName), createFulfillHandler(dfspName)]
+}
+
+module.exports = {
+  createPrepareHandler,
+  createFulfillHandler,
+  allHandlers
 }

@@ -21,12 +21,8 @@
   "EMAIL_PASSWORD": "April2o0%",
   "EMAIL_SMTP": "smtp.gmail.com",
   "TOPICS_TEMPLATE": {
-    "TRANSFER": {
-      "PREPARE":{
-        "TEMPLATE": "topic-{{dfspName}}-prepare-tx",
-        "REGEX": "topic-(.*)-prepare-tx"
-      }
-    }
+    "TEMPLATE": "topic-{{dfspName}}-{{functionality}}-{{action}}",
+    "REGEX": "topic-(.*)-(.*)-(.*)"
   },
   "DFSPS": [
     "rajiv",

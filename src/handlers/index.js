@@ -39,10 +39,23 @@ const config = {
   rdkafkaConf: Config.KAFKA_CONSUMER_CONFIG_RDKAFKACONF,
   logger: Logger
 }
-async function test () {
+async function testAll () {
   await Handlers.registerAllHandlers(config)
 }
 
-test().then(() => {
+async function testTransfers (dfspName = 'dfsp4') {
+  await Handlers.transfersHandlers(config, dfspName)
+}
+
+async function testPrepare (dfspName = 'dfsp5') {
+  await Handlers.prepareHandler(config, dfspName)
+}
+
+async function testFulfill (dfspName = 'dfsp6') {
+  await Handlers.fulFillHandler(config, dfspName)
+}
+
+
+testFulfill().then(() => {
   Logger.info('over')
 })

@@ -35,24 +35,22 @@ const Config = require('../../lib/config')
 const UrlParser = require('../../lib/urlparser')
 const Mustache = require('mustache')
 
-const topicTemplate = {
-  prepare: {
-    tx: (dfspName) => { return Mustache.render(Config.TOPICS_TEMPLATE_TRANSFER_PREPARE_TEMPLATE, {dfspName: dfspName}) }
-  }
+const topicTemplate = (dfspName, functionality, action) => {
+  return Mustache.render(Config.TOPICS_TEMPLATE_TEMPLATE, {dfspName: dfspName, functionality, action})
 }
 
 const getDfspName = (accountUri) => {
   return UrlParser.nameFromAccountUri(accountUri)
 }
 
-const getPrepareTxTopicName = (transfer) => {
+const getTopicNameFromURI = (transfer, functionality, action) => {
   const dfspName = getDfspName(transfer.debits[0].account)
-  return topicTemplate.prepare.tx(dfspName)
+  return topicTemplate(dfspName, functionality, action)
 }
 
-const tansformAccountToPrepareTxTopicName = (dfspName) => {
-  return topicTemplate.prepare.tx(dfspName)
+const tansformAccountToTopicName = (dfspName, functionality, action) => {
+  return topicTemplate(dfspName, functionality, action)
 }
 
-exports.getPrepareTxTopicName = getPrepareTxTopicName
-exports.tansformAccountToPrepareTxTopicName = tansformAccountToPrepareTxTopicName
+exports.getTopicNameFromURI = getTopicNameFromURI
+exports.tansformAccountToTopicName = tansformAccountToTopicName
