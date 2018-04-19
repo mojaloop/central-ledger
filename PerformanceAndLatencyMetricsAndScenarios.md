@@ -29,6 +29,9 @@ As part of the Program Increment - 1 (PI-1) of the Mojaloop Productionization pr
 - Get a deployment ready with the updated codebase to be used for testing.
 - Configure the scripts to point to the appropriate central services api end-points in the target system (kubernetes cluster on AWS).
 
+Below is the system overview:
+![System Overview](/metrics-images/SystemOverview_PoC_HA_Scalability.jpg)
+
 ## Scenario-1
 This section deals with the PoC for HA/Scalability for Transactional DB. This describes the activities done to establish **data integrity**, **resiliency** and **scalability** of the system that uses the code from the PoC. For the performance aspect, a comaprision is also provided with the base code (pre PI-1). There are three parts to this scenario, as described in the following three sub-sections - **Failover Testing**, **Scalability Testing** and **Performance Testing**.
 
@@ -53,11 +56,17 @@ A baseline was established for 200 DFSP users (threads in this case) achieving a
 - With four central-ledger instances and 200 concurrent DFSP users, an average throughput of **725.3** TPS was observed.
 - With five central-ledger instances and 200 concurrent DFSP users, an average throughput of **732** TPS was observed.
 
-A linear increase with the increase in central-ledger instances on Kubernetes and the throughput (TPS) was observed. With five central-ledger instances the graph was starting to "flatten". More investigation is needed to identify the root case of this, whether that is system resources or JMeter limitations or something else. Below is a chart that shows the performance metrics charted with TPS against number of central-services instances.
+A linear increase with the increase in central-ledger instances on Kubernetes and the throughput (TPS) was observed. With five central-ledger instances the graph was starting to "flatten". More investigation is needed to identify the root case of this, whether that is system resources or JMeter limitations or something else. Below is a chart that shows the performance metrics charted with TPS against number of central-services instances.  
 ![Here is a chart that shows the performance metrics](/metrics-images/PoC_DB_Performance_HA_Scalability.jpg)
 
 ## Scenario-2
 This section deals with the PoC for durable Message Stream Processing. This describes the activities done to establish **reliability** (error rate), **Scalability** and **Performance** of the system that uses the code from the PoC. For the performance aspect, a comaprision is also provided with the base code (pre PI-1).
+
+Below is a chart that shows the Stream Processing Performance Scenarios with TPS against the number of DFSPs and number of central-ledger services separately. 
+![Here is a chart that shows the performance metrics](/metrics-images/StreamProcessing–PerformanceScenarios.jpg)
+
+Below is a chart that shows the Stream Processing Performance comparision as-is with TPS against number of DFSPs. 
+![Here is a chart that shows the performance metrics](/metrics-images/StreamProcessing–PerformanceComparisonToAs-Is.jpg)
 
 #### Performance Testing
 Base performance was established to understand the baseline using 3 Percona DB cluster setup in the Master/Master/Master configuration, using one central-ledger service.
