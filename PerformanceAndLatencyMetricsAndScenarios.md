@@ -4,54 +4,71 @@ Percona XtraDB high availability cluster with MySQL database.
 
 ## Contents
 
+* [**Introduction**](#introduction)
 * [**Getting Started**](#getting-started)
-* [**Base line before embarking on this test**](#base-line-before-embarking-on-this-test)
 * [**Running the tests**](#running-the-tests)
-* [**Categories of testing done as during this phase**](#categories-of-testing-done-as-during-this-phase)
+* [**Scenario-1**](#scenario-1)
+* [**Scenario-2**](#scenario-2)
+* [**Conclusion**](#conclusion)
+* [**Notes**](#notes)
 
+## Introduction
+As part of the Program Increment - 1 (PI-1) of the Mojaloop Productionization project, two major Proof of Concept items were done; one a PoC for HA/Scalability for Transactional DB and another PoC for durable Message Stream Processing. This document gives a brief account of the approach taken to do performance, scalability and resiliency testing and the scenarios involved. There are also charts and numbers provided based on the results of these tests done towards the end of PI-1. The metrics recorded during this exercise could serve as a baseline for comparision during future performance tests.
 
 ## Getting Started
-Please read and follow instructions in the [README.md](https://github.com/mojaloop/central-ledger/blob/develop-baseline/README.md) for setting up a local environment.
-Download and install JMeter.
-
-Control tests were executed on the Amazon Web Services Cluster specifically setup to establish a baseline.
-
-Additional setup required.
-[KUBERNETES.md](https://github.com/mojaloop/central-ledger/blob/develop-baseline/KUBERNETES.md).
-
-## Base line before embarking on this test
-The base line performance for the 'Prepare functionality' was previously established at 202 transactions per second.
+- Please follow the instructions in the [README.md](https://github.com/mojaloop/central-ledger/blob/develop-baseline/README.md) for setting up a local environment.
+- Download and install JMeter.
+- Setup JMeter with test scripts as required. For this exercise, scripts used are from the [test-scripts repo](https://github.com/mojaloop/test-scripts).
+- Additional setup required is detailed here: [KUBERNETES.md](https://github.com/mojaloop/central-ledger/blob/develop-baseline/KUBERNETES.md).
+- Review the Transfers process: [TransferGuide](https://github.com/mojaloop/central-ledger/blob/develop-baseline/TransferGuide.md).
+- The baseline performance for the **'Prepare step'** with postgres database and pre-PI1 codebase was established at **202** transactions (TPS) per second.
 
 ## Running the tests
-[TransferGuide](https://github.com/mojaloop/central-ledger/blob/develop-baseline/TransferGuide.md).
-- First action required to create the DSFP's for the transfers.
-- Second action is required for the prepare statement, as used for the testing results below. Test scripts to be use during this process is available on this project(https://github.com/mojaloop/test-scripts).
+- The first step is to get the JMeter scripts ready that can execute the prepare step of the Transfers process (as mentioned under the [getting-started](#getting-started) section) and as necessary do some validation (or log results for verification).
+- The second step required is to create the data necessary for executing transfers.
+- Get a deployment ready with the updated codebase to be used for testing.
+- Configure the scripts to point to the appropriate central services api end-points in the target system (kubernetes cluster on AWS).
 
-## Categories of testing done as during this phase
-#### Performance testing
-Base performance was established to understand the baseline using 3 Percona clusters setup in the Master/Master/Master configuration, using one central-ledger service.
+## Scenario-1
+This section deals with the PoC for HA/Scalability for Transactional DB. This describes the activities done to establish **data integrity**, **resiliency** and **scalability** of the system that uses the code from the PoC. For the performance aspect, a comaprision is also provided with the base code (pre PI-1). There are three parts to this scenario, as described in the following three sub-sections - **Failover Testing**, **Scalability Testing** and **Performance Testing**.
+
+#### Testing Failover
+To provide conclusive proof of the Percona XtraDB cluster's ability to recover seamlessly from a disaster on a host, the following actions were taken:
+- Ensure all required services of the setup and the database instances are running and stable.
+- From the Kubernetes UI, "delete" one of the database pod's.
+- Monitor the UI to ensure the pod is "killed".
+- After confirming the pod is unavailable, monitor automated recovery (self-healing).
+- Once automated recovery of the effected pod is completed, and the JMeter process is completed, a dump is made of all 3 database clusters individually, as well as the accessible database point via the ingress load balancer.
+- A report is obtained from the JMeter process containing all the prepare statements (and the UUIDs) made during this test.
+- Data fron the 3 Databases in the DB cluster is compared to ensure data integrity, resiliency and seamless recovery.
+- The Jmeter report is also compared with the database dumps to ensure no data was lost during the process, thereby establishing **high availability** and **data integrity**.
+
+#### Scalability/Performance Testing
+Base performance was established to understand the baseline using three Percona DB cluster setup in the Master/Master/Master configuration, using one central-ledger service.
+A baseline was established for 200 DFSP users (threads in this case) achieving an average throughput of **211.5** TPS. The following figures for the below benchmark to indicate the scalability of the Percona cluster, using 200 concurrent DFSP users and increase the number of central-directory services.
+
+- With one central-ledger instance and 200 concurrent DFSP users, an average throughput of **211.50** Transactions Per Second (TPS) was observed, whereas for this same scenario with the base code (postgres), the throughput was **202** TPS.
+- With two central-ledger instances and 200 concurrent DFSP users, an average throughput of **456.8** TPS was observed.
+- With three central-ledger instances and 200 concurrent DFSP users, an average throughput of **646.03** TPS was observed.
+- With four central-ledger instances and 200 concurrent DFSP users, an average throughput of **725.3** TPS was observed.
+- With five central-ledger instances and 200 concurrent DFSP users, an average throughput of **732** TPS was observed.
+
+A linear increase with the increase in central-ledger instances on Kubernetes and the throughput (TPS) was observed. With five central-ledger instances the graph was starting to "flatten". More investigation is needed to identify the root case of this, whether that is system resources or JMeter limitations or something else.
+
+![Below is a chart that shows the performance metrics.][.\metrics-images\PoC_DB_Performance_HA_Scalability.jpg]
+
+## Scenario-2
+This section deals with the PoC for durable Message Stream Processing. This describes the activities done to establish **reliability** (error rate), **Scalability** and **Performance** of the system that uses the code from the PoC. For the performance aspect, a comaprision is also provided with the base code (pre PI-1).
+
+#### Performance Testing
+Base performance was established to understand the baseline using 3 Percona DB cluster setup in the Master/Master/Master configuration, using one central-ledger service.
 A baseline was established for 200 DFSP users achieving an average throughput of 211.5 transactions per second.
-
-#### Scalability testing
-The following figures for the below benchmark to indicate the scalability of the Percona cluster, using 200 concurrent DFSP users and increase the number of central-directory services.
-1.  central-service pod with 200 concurrent DFSP users achieved an average throughput of 211.50 transactions per second.
-2. central-service pod's with 200 concurrent DFSP users achieved an average throughput of 456.80 transactions per second.
-3. central-service pod's with 200 concurrent DFSP users achieved an average throughput of 464.03 transactions per second.
-4. central-service pod's with 200 concurrent DFSP users achieved an average throughput of 725.30 transactions per second.
-5. central-service pod's with 200 concurrent DFSP users achieved an average throughput of 732.00 transactions per second.
-
-We notice a linear increase between the increase in central-ledger service pod's on Kubernetes and the throughput. On the last test we noticed a graph is starting to "flattened". This is most likely due to system resources limitations.
-
-#### Failover testing
-To provide conclusive prove of the Percona XtraDB cluster ability to recover seamlessly from a disaster on a pod, the following actions were taken:
-- ensure service is running and stable.
-- on Kubernetes, "delete" one of the database pod's.
-- monitor the system to insure the pod is "killed".
-- after confirming the pod is unavailable, monitor automated recovery.
-- once automated recovery of the effects pod is completed, and the JMeter process is completed, a dump is made of all 3 database clusters individually, as well as the accessible database point via the ingress load balancer.
-- a report is obtained from the JMeter process containing all the prepare statements made during this test.
-- the 3 DB clusters data is compared to insure data integrity and seamless recovery and restoration of the effected pod.
-- the Jmeter report is also compared with the database dumps to insure no data was lost during the process and thereby proving high availability and insuring integrity of the system.
 
 ## Conclusion
 With the above actions during the testing and verification process on the transactional database, we were able to prove the database to be highly available (HA) and highly scalable (HS) in order for the solution to be robust and scale based on demand
+
+## Notes
+- For future performance analysis runs (in Sprints 2.3, 2.4), Charting needs to include Latency and scenarios with average latency not greater than 1second or 1.5seconds need to be charted.
+- The JMeter scripts were run from a AWS VM that was on the same Data Center as that of the target system to ensure consistent numbers.
+- Control tests were executed on the Amazon Web Services Cluster specifically setup to establish a baseline.
+- There is a need to identify the range that is relevant for this project for variables such as *'number of threads'*, *'loop count'*, *'scalability factor'* and such others.
