@@ -19,5 +19,39 @@
   },
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",
-  "EMAIL_SMTP": "smtp.gmail.com"
+  "EMAIL_SMTP": "smtp.gmail.com",
+  "TOPICS_TEMPLATE": {
+    "TRANSFER": {
+      "PREPARE":{
+        "TEMPLATE": "topic-{{dfspName}}-prepare-tx",
+        "REGEX": "topic-(.*)-prepare-tx"
+      }
+    }
+  },
+  "DFSPS": [
+    "rajiv",
+    "dfsp2",
+    "dfsp3"
+  ],
+  "KAFKA": {
+    "CONSUMER": {
+      "CONFIG": {
+        "OPTIONS": {
+          "mode": "",
+          "batchSize": 1,
+          "pollFrequency": 10,
+          "recursiveTimeout": 100,
+          "messageCharset": "utf8",
+          "messageAsJSON": true,
+          "sync": false,
+          "consumeTimeout": 1000
+        },
+        "RDKAFKACONF": {
+          "group.id": "central-ledger-kafka",
+          "metadata.broker.list": "localhost:9092",
+          "enable.auto.commit": true
+        }
+      }
+    }
+  }
 }
