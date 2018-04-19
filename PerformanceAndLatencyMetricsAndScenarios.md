@@ -68,10 +68,6 @@ Below is a chart that shows the Stream Processing Performance Scenarios with TPS
 Below is a chart that shows the Stream Processing Performance comparision as-is with TPS against number of DFSPs. 
 ![Here is a chart that shows the performance metrics](/metrics-images/StreamProcessing–PerformanceComparisonToAs-Is.jpg)
 
-#### Performance Testing
-Base performance was established to understand the baseline using 3 Percona DB cluster setup in the Master/Master/Master configuration, using one central-ledger service.
-A baseline was established for 200 DFSP users achieving an average throughput of 211.5 transactions per second.
-
 ## Conclusion
 With the above actions during the testing and verification process on the transactional database, we were able to prove the database to be highly available (HA) and highly scalable (HS) in order for the solution to be robust and scale based on demand
 
