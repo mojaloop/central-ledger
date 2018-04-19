@@ -48,13 +48,13 @@ To provide conclusive proof of the Percona XtraDB cluster's ability to recover s
 
 #### Scalability/Performance Testing
 Base performance was established to understand the baseline using three Percona DB cluster setup in the Master/Master/Master configuration, using one central-ledger service.
-A baseline was established for 200 DFSP users (threads in this case) achieving an average throughput of **211.5** TPS. The following figures for the below benchmark to indicate the scalability of the Percona cluster, using 200 concurrent DFSP users and increase the number of central-directory services.
+A baseline was established for 200 DFSP users (threads in this case) achieving an average throughput of **211.5** TPS. The following figures for the below benchmark to indicate the scalability of the Percona cluster, using 150-500 concurrent DFSP users and increase the number of central-directory services. The below numbers are achieved by running 150-500 threads on JMeter which simulates a corresponding number of concurrent DFSP users
 
-- With one central-ledger instance and 200 concurrent DFSP users, an average throughput of **211.50** Transactions Per Second (TPS) was observed, whereas for this same scenario with the base code (postgres), the throughput was **202** TPS.
-- With two central-ledger instances and 200 concurrent DFSP users, an average throughput of **456.8** TPS was observed.
-- With three central-ledger instances and 200 concurrent DFSP users, an average throughput of **646.03** TPS was observed.
-- With four central-ledger instances and 200 concurrent DFSP users, an average throughput of **725.3** TPS was observed.
-- With five central-ledger instances and 200 concurrent DFSP users, an average throughput of **732** TPS was observed.
+- With one central-ledger instance, an average throughput of **211.50** Transactions Per Second (TPS) was observed, whereas for this same scenario with the base code (postgres), the throughput was **202** TPS.
+- With two central-ledger instances, an average throughput of **456.8** TPS was observed.
+- With three central-ledger instances, an average throughput of **646.03** TPS was observed.
+- With four central-ledger instances, an average throughput of **725.3** TPS was observed.
+- With five central-ledger instances, an average throughput of **732** TPS was observed.
 
 A linear increase with the increase in central-ledger instances on Kubernetes and the throughput (TPS) was observed. With five central-ledger instances the graph was starting to "flatten". More investigation is needed to identify the root case of this, whether that is system resources or JMeter limitations or something else. Below is a chart that shows the performance metrics charted with TPS against number of central-services instances.  
 ![Here is a chart that shows the performance metrics](/metrics-images/PoC_DB_Performance_HA_Scalability.jpg)
@@ -75,4 +75,4 @@ With the above actions during the testing and verification process on the transa
 - For future performance analysis runs (in Sprints 2.3, 2.4), Charting needs to include Latency and scenarios with average latency not greater than 1second or 1.5seconds need to be charted.
 - The JMeter scripts were run from a AWS VM that was on the same Data Center as that of the target system to ensure consistent numbers.
 - Control tests were executed on the Amazon Web Services Cluster specifically setup to establish a baseline.
-- There is a need to identify the range that is relevant for this project for variables such as *'number of threads'*, *'loop count'*, *'scalability factor'* and such others.
+- There is a need to identify the range that is relevant for this project for variables such as *'number of threads'* (10-500?), *'loop count'*, *'scalability factor'* and such others.
