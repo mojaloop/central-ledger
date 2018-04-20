@@ -28,39 +28,60 @@
 
  --------------
  ******/
-
 'use strict'
-const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Commands = require('../../domain/transfer/commands')
-const Translator = require('../lib/translator')
+const Utility = require('../lib/utility')
+const DAO = require('../lib/dao')
+const ConsumerUtility = require('../lib/consumer')
+
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFILL = 'fulfill'
 
-const createPrepareHandler = (dfspName) => {
-  return {
-    command: Commands.prepareExecute,
-    topicName: Translator.tansformAccountToTopicName(dfspName, TRANSFER, PREPARE),
-    consumerMode: Consumer.ENUMS.CONSUMER_MODES.poll
+const createPrepareHandler = async function (dfspName) {
+  try {
+
+    const prepareHandler = {
+      command: Commands.prepareExecute,
+      topicName: Utility.transformAccountToTopicName(dfspName, TRANSFER, PREPARE),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
+    }
+    await ConsumerUtility.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+  } catch (e) {
+    Logger.info(e)
   }
 }
 
-const createFulfillHandler = (dfspName) => {
-  return {
-    command: Commands.fulfill(),
-    topicName: Translator.tansformAccountToTopicName(dfspName, TRANSFER, FULFILL),
-    consumerMode: Consumer.ENUMS.CONSUMER_MODES.poll
+const createFulfillHandler = async function () {
+  try {
+    const fulfillHandler =  {
+      command: Commands.fulfilling,
+      topicName: Utility.transformGeneralTopicName(TRANSFER, FULFILL),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
+    }
+    await ConsumerUtility.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
+  } catch (e) {
+    Logger.info(e)
   }
 }
 
-function allHandlers (dfspName) {
-  return [createPrepareHandler(dfspName), createFulfillHandler(dfspName)]
+const registerPrepareHandlers = async function () {
+  const dfspNames = await DAO.retrieveAllAccounts()
+  for (var key in dfspNames) {
+    await createPrepareHandler(dfspNames[key])
+  }
+}
+
+const registerAllHandlers = async function () {
+  await registerPrepareHandlers()
+  await createFulfillHandler()
+  return true
 }
 
 module.exports = {
-  createPrepareHandler,
+  registerPrepareHandlers,
   createFulfillHandler,
-  allHandlers
+  registerAllHandlers,
 }

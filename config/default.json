@@ -20,32 +20,63 @@
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",
   "EMAIL_SMTP": "smtp.gmail.com",
-  "TOPICS_TEMPLATE": {
-    "TEMPLATE": "topic-{{dfspName}}-{{functionality}}-{{action}}",
-    "REGEX": "topic-(.*)-(.*)-(.*)"
-  },
   "DFSPS": [
-    "rajiv",
-    "dfsp2",
-    "dfsp3"
+    "993",
+    "992",
+    "991",
+    "990",
+    "989"
   ],
   "KAFKA": {
+    "TOPIC_TEMPLATES": {
+      "DFSP_TOPIC_TEMPLATE": {
+        "TEMPLATE": "topic-{{dfspName}}-{{functionality}}-{{action}}",
+        "REGEX": "topic-(.*)-(.*)-(.*)"
+      },
+      "GENERAL_TOPIC_TEMPLATE": {
+        "TEMPLATE": "topic-{{functionality}}-{{action}}",
+        "REGEX": "topic-(.*)-(.*)"
+      }
+    },
     "CONSUMER": {
-      "CONFIG": {
-        "OPTIONS": {
-          "mode": "",
-          "batchSize": 1,
-          "pollFrequency": 10,
-          "recursiveTimeout": 100,
-          "messageCharset": "utf8",
-          "messageAsJSON": true,
-          "sync": false,
-          "consumeTimeout": 1000
+      "TRANSFER": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "mode": 1,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": false,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaconf": {
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": true
+            }
+          }
         },
-        "RDKAFKACONF": {
-          "group.id": "central-ledger-kafka",
-          "metadata.broker.list": "localhost:9092",
-          "enable.auto.commit": true
+        "FULFILL": {
+          "config": {
+            "options": {
+              "mode": 1,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": false,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaconf": {
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": true
+            }
+          }
         }
       }
     }

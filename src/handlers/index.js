@@ -34,28 +34,23 @@ const Config = require('../lib/config')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Handlers = require('./handlers')
 
-const config = {
-  options: Config.KAFKA_CONSUMER_CONFIG_OPTIONS,
-  rdkafkaConf: Config.KAFKA_CONSUMER_CONFIG_RDKAFKACONF,
-  logger: Logger
-}
 async function testAll () {
-  await Handlers.registerAllHandlers(config)
+  await Handlers.registerAllHandlers()
 }
 
-async function testTransfers (dfspName = 'dfsp4') {
-  await Handlers.transfersHandlers(config, dfspName)
+async function testTransfers (dfspName = 'dfsp7') {
+  await Handlers.transfersHandlers(dfspName)
 }
 
-async function testPrepare (dfspName = 'dfsp5') {
-  await Handlers.prepareHandler(config, dfspName)
+async function testPrepare (dfspName = 'dfsp8') {
+  await Handlers.prepareHandler(dfspName)
 }
 
-async function testFulfill (dfspName = 'dfsp6') {
-  await Handlers.fulFillHandler(config, dfspName)
+async function testFulfill (dfspName = 'harry') {
+  await Handlers.fulfillHandler(dfspName)
 }
 
 
-testFulfill().then(() => {
+testAll().then(() => {
   Logger.info('over')
 })

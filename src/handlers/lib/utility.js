@@ -34,9 +34,18 @@
 const Config = require('../../lib/config')
 const UrlParser = require('../../lib/urlparser')
 const Mustache = require('mustache')
+const KafkaConfig = Config.KAFKA_CONFIG
+const Logger = require('@mojaloop/central-services-shared').Logger
 
-const topicTemplate = (dfspName, functionality, action) => {
-  return Mustache.render(Config.TOPICS_TEMPLATE_TEMPLATE, {dfspName: dfspName, functionality, action})
+const PRODUCER = 'PRODUCER'
+const CONSUMER = 'CONSUMER'
+
+const dfspTopicTemplate = (dfspName, functionality, action) => {
+  return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.DFSP_TOPIC_TEMPLATE.TEMPLATE, {dfspName: dfspName, functionality, action})
+}
+
+const generalTopicTemplate = (functionality, action) => {
+  return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, {functionality, action})
 }
 
 const getDfspName = (accountUri) => {
@@ -45,12 +54,34 @@ const getDfspName = (accountUri) => {
 
 const getTopicNameFromURI = (transfer, functionality, action) => {
   const dfspName = getDfspName(transfer.debits[0].account)
-  return topicTemplate(dfspName, functionality, action)
+  return dfspTopicTemplate(dfspName, functionality, action)
 }
 
-const tansformAccountToTopicName = (dfspName, functionality, action) => {
-  return topicTemplate(dfspName, functionality, action)
+const transformGeneralTopicName = (functionality, action) => {
+  return generalTopicTemplate(functionality, action)
+}
+
+const transformAccountToTopicName = (dfspName, functionality, action) => {
+  return dfspTopicTemplate(dfspName, functionality, action)
+}
+
+const getKafkaConfig = (flow, functionality, action) => {
+  try {
+    const flowObject = KafkaConfig[flow]
+    const functionalityObject = flowObject[functionality]
+    const actionObject = functionalityObject[action]
+    actionObject.config.logger = Logger
+    return actionObject.config
+  } catch (e) {
+    throw new Error('No config found for those parameters')
+  }
 }
 
 exports.getTopicNameFromURI = getTopicNameFromURI
-exports.tansformAccountToTopicName = tansformAccountToTopicName
+exports.transformAccountToTopicName = transformAccountToTopicName
+exports.transformGeneralTopicName = transformGeneralTopicName
+exports.getKafkaConfig = getKafkaConfig
+exports.ENUMS = {
+  PRODUCER,
+  CONSUMER
+}

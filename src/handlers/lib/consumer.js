@@ -33,11 +33,12 @@
 const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-exports.createHandler = async (topicName, config, consumerMode, command) => {
-  config.options.mode = consumerMode
+exports.createHandler = async (topicName, config, command) => {
   const consumer = new Consumer([topicName], config)
   await consumer.connect().then(() => {
-    Logger.info('CreateHandle::connect successful')
+    Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
     consumer.consume(command)
+  }).catch((e) => {
+    Logger.error(e)
   })
 }

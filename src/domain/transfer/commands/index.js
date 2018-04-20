@@ -70,10 +70,15 @@ const prepareExecute = () => {
   return true
 }
 
+const fulfilling = () => {
+  return true
+}
+
 module.exports = {
   fulfill,
   prepare,
   reject,
   settle,
-  prepareExecute
+  prepareExecute,
+  fulfilling
 }

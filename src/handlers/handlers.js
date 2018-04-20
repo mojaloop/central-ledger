@@ -30,53 +30,17 @@
  ******/
 'use strict'
 
-
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Transfers = require('./transfers')
-const DAO = require("./lib/dao")
-const Consumer = require('./lib/consumer')
+const requireGlob = require('require-glob')
 
-exports.registerAllHandlers = async function (config) {
+exports.registerAllHandlers = async function () {
   try {
-    const dfspNames = DAO.retrieveAllAccounts()
-    Logger.info(dfspNames)
-    for (var i = 0; i < dfspNames.length; i++) {
-      const transfersList = Transfers.allHandlers(dfspNames[i])
-      for (var k = 0; k < transfersList.length; k++) {
-        const handlerDetails = transfersList[k]
-        await Consumer.createHandler(handlerDetails.topicName, config, handlerDetails.consumerMode, handlerDetails.command)
-      }
+    const modules = await requireGlob(['**/handler.js'])
+    for (var key in modules) {
+      Logger.info(`Registering handler module: ${modules[key]}`)
+      const handlerObject = modules[key]
+      await handlerObject.handler.registerAllHandlers()
     }
-  } catch (e) {
-    Logger.error(e)
-  }
-}
-
-exports.transfersHandlers = async function (config, dfspName) {
-  try {
-    const transfersList = Transfers.allHandlers(dfspName)
-    for (var k = 0; k < transfersList.length; k++) {
-      const handlerDetails = transfersList[k]
-      await Consumer.createHandler(handlerDetails.topicName, config, handlerDetails.consumerMode, handlerDetails.command)
-    }
-  } catch (e) {
-    Logger.error(e)
-  }
-}
-
-exports.prepareHandler = async function (config, dfspName) {
-  try {
-    const prepareHandler = Transfers.createPrepareHandler(dfspName)
-    await Consumer.createHandler(prepareHandler.topicName, config, prepareHandler.consumerMode, prepareHandler.command)
-  } catch (e) {
-    Logger.error(e)
-  }
-}
-
-exports.fulFillHandler = async function (config, dfspName) {
-  try {
-    const fulFillHandler = Transfers.createFulfillHandler(dfspName)
-    await Consumer.createHandler(fulFillHandler.topicName, config, fulFillHandler.consumerMode, fulFillHandler.command)
   } catch (e) {
     Logger.error(e)
   }
