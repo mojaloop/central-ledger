@@ -1,8 +1,8 @@
 'use strict'
 
 exports.up = function(knex, Promise) {
-    return knex.schema.createTableIfNotExists('topicName', (t) => {
-        t.bigIncrements('topicNameId').primary().notNullable()
+    return knex.schema.createTableIfNotExists('eventName', (t) => {
+        t.bigIncrements('eventNameId').primary().notNullable()
 
         t.string('value', 128).notNullable()
         t.string('description', 1024).defaultTo(null).nullable()
@@ -10,5 +10,5 @@ exports.up = function(knex, Promise) {
 }
 
 exports.down = function(knex, Promise) {
-    return knex.schema.dropTableIfExists('topicName')
+    return knex.schema.dropTableIfExists('eventName')
 }

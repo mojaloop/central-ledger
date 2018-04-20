@@ -1,11 +1,11 @@
 'use strict'
 
 exports.up = function(knex, Promise) {
-    return knex.schema.createTableIfNotExists('transferTopicIndex', (t) => {
-        t.bigIncrements('transferTopicIndexId').primary().notNullable()
+    return knex.schema.createTableIfNotExists('transferEventIndex', (t) => {
+        t.bigIncrements('transferEventIndexId').primary().notNullable()
 
-        t.bigInteger('topicNameId').unsigned().notNullable()
-        t.foreign('topicNameId').references('topicNameId').inTable('topicName')
+        t.bigInteger('eventNameId').unsigned().notNullable()
+        t.foreign('eventNameId').references('eventNameId').inTable('eventName')
 
         t.string('transferId', 36).notNullable()
         t.foreign('transferId').references('transferId').inTable('transfer')
@@ -16,5 +16,5 @@ exports.up = function(knex, Promise) {
 }
 
 exports.down = function(knex, Promise) {
-    return knex.schema.dropTableIfExists('transferTopicIndex')
+    return knex.schema.dropTableIfExists('transferEventIndex')
 }
