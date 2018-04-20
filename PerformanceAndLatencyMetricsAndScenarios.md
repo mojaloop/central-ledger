@@ -6,6 +6,7 @@ Percona XtraDB high availability cluster with MySQL database.
 
 * [**Introduction**](#introduction)
 * [**Getting Started**](#getting-started)
+* [**Target Metrics**](#target-metrics)
 * [**Running the tests**](#running-the-tests)
 * [**Scenario-1**](#scenario-1)
 * [**Scenario-2**](#scenario-2)
@@ -13,7 +14,7 @@ Percona XtraDB high availability cluster with MySQL database.
 * [**Notes**](#notes)
 
 ## Introduction
-As part of the Program Increment - 1 (PI-1) of the Mojaloop Productionization project, two major Proof of Concept items were done; one a PoC for HA/Scalability for Transactional DB and another PoC for durable Message Stream Processing. This document gives a brief account of the approach taken to do performance, scalability and resiliency testing and the scenarios involved. There are also charts and numbers provided based on the results of these tests done towards the end of PI-1. The metrics recorded during this exercise could serve as a baseline for comparision during future performance tests.
+As part of the Program Increment - 1 (PI-1) of the Mojaloop Productionization project, two major Proof of Concept(PoC) items were done; one a PoC for HA/Scalability for Transactional DB and another PoC for durable Message Stream Processing. This document gives a brief account of the approach taken to do performance, scalability and resiliency testing and the scenarios involved. There are also charts and numbers provided based on the results of these tests done towards the end of PI-1. The metrics recorded during this exercise could serve as a baseline for comparision during future performance tests.
 
 ## Getting Started
 - Please follow the instructions in the [README.md](https://github.com/mojaloop/central-ledger/blob/develop-baseline/README.md) for setting up a local environment.
@@ -21,7 +22,14 @@ As part of the Program Increment - 1 (PI-1) of the Mojaloop Productionization pr
 - Setup JMeter with test scripts as required. For this exercise, scripts used are from the [test-scripts repo](https://github.com/mojaloop/test-scripts).
 - Additional setup required is detailed here: [KUBERNETES.md](https://github.com/mojaloop/central-ledger/blob/develop-baseline/KUBERNETES.md).
 - Review the Transfers process: [TransferGuide](https://github.com/mojaloop/central-ledger/blob/develop-baseline/TransferGuide.md).
-- The baseline performance for the **'Prepare step'** with postgres database and pre-PI1 codebase was established at **202** transactions (TPS) per second.
+- The baseline performance for the **'Prepare step'** with postgres database and pre-PI1 codebase was established at **202** transactions (TPS) per second. Point of note here is that this system was not scalable and as can be seen in the charts below, the comparision is provided for the scenario with only one central-ledger component as that is the only applicable case for the base code.
+
+## Target Metrics
+- **Response time** (Latency): This is one of the most important metric that greatly impacts user experience. Response time is the total time it takes after the client sends a request till it gets a response. For PI-1, only the 'Prepare' part of the transfer is calibrated and the Latency or Response time for this indicates the 
+- **Throughput**: In the current context Throughput refers to the Transactions per Second (TPS) handled by the central processes.
+- **Load size**: This includes the number of threads (simulataneous requests) and the loop count or the time regarding how many total reqeusts need to be made. The current exercise is not a pure load testing effort but more of performance testing, so this is just the total number of records.
+- **Scalability**: This is a factor of the number of target services so that correlation between scaling and Throughput, Latency and such other related metrics. In the current scenario, scaling was charted for number of central-ledger services and DFSPs separately as part of relevant scenarios.
+- **Error rate**: This metric indicates the percentage of requests that had an error response and this gives an insight into relibility and availability.
 
 ## Running the tests
 - The first step is to get the JMeter scripts ready that can execute the prepare step of the Transfers process (as mentioned under the [getting-started](#getting-started) section) and as necessary do some validation (or log results for verification).
