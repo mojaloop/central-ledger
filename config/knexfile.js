@@ -7,7 +7,7 @@ module.exports = {
   connection: Config.DATABASE_URI,
   migrations: {
     directory: migrationsDirectory,
-    tableName: 'migrations',
+    tableName: 'migration',
     stub: `${migrationsDirectory}/migration.template`
   }
 }
