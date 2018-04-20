@@ -12,7 +12,7 @@ const RequestLogger = require('../lib/request-logger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlparser')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Account = require('../domain/account')
+// git const Account = require('../domain/account')
 const Boom = require('boom')
 
 const migrate = (runMigrations) => {
