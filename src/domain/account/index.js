@@ -78,34 +78,34 @@ const update = (name, payload) => {
   })
 }
 
-const updateUserCredentials = (account, payload) => {
+const updatePartyCredentials = (account, payload) => {
   return Crypto.hash(payload.password).then(hashedPassword => {
-    return Model.updateUserCredentials(account, hashedPassword).then(() => account)
+    return Model.updatePartyCredentials(account, hashedPassword).then(() => account)
   })
 }
 const updateAccountSettlement = (account, payload) => {
   return Model.updateAccountSettlement(account, payload)
 }
 
-const retrieveUserCredentials = (account) => {
-  return Model.retrieveUserCredentials(account)
+const retrievePartyCredentials = (account) => {
+  return Model.retrievePartyCredentials(account)
 }
 
-const verifyUserCredentials = (account, userCredentials, password) => {
+const verifyPartyCredentials = (account, userCredentials, password) => {
   return Crypto.verifyHash(userCredentials.password, password)
     .then(match => {
       if (match) {
         return account
       }
-      throw new Error('Username and password are invalid')
+      throw new Error('Partyname and password are invalid')
     })
 }
 
 const verify = async function (name, password) {
   const account = await Model.getByName(name)
   accountExists(account)
-  const userCredentials = await retrieveUserCredentials(account)
-  return verifyUserCredentials(account, userCredentials, password)
+  const userCredentials = await retrievePartyCredentials(account)
+  return verifyPartyCredentials(account, userCredentials, password)
 }
 
 module.exports = {
@@ -117,6 +117,6 @@ module.exports = {
   getByName,
   verify,
   update,
-  updateUserCredentials,
+  updatePartyCredentials,
   updateAccountSettlement
 }

@@ -114,13 +114,13 @@ Test('accounts model', modelTest => {
     updateTest.end()
   })
 
-  modelTest.test('updateUserCredentials should', updateUserCredentialsTest => {
-    updateUserCredentialsTest.test('update user credentials for a given account', test => {
+  modelTest.test('updatePartyCredentials should', updatePartyCredentialsTest => {
+    updatePartyCredentialsTest.test('update party credentials for a given account', test => {
       const account = Fixtures.generateAccountName()
       const password = 'password'
       const updatedPassword = 'password2'
       createAccount(account, password)
-        .then((createdAccount) => Model.updateUserCredentials(createdAccount, updatedPassword)
+        .then((createdAccount) => Model.updatePartyCredentials(createdAccount, updatedPassword)
           .then((userCredentials) => {
             test.equal(userCredentials.accountId, createdAccount.accountId)
             test.equal(userCredentials.password, updatedPassword)
@@ -128,15 +128,15 @@ Test('accounts model', modelTest => {
           }))
     })
 
-    updateUserCredentialsTest.end()
+    updatePartyCredentialsTest.end()
   })
 
-  modelTest.test('retrieveUserCredentials should', retrieveUserCredentialsTest => {
-    retrieveUserCredentialsTest.test('return user credentials for a given account', test => {
+  modelTest.test('retrievePartyCredentials should', retrievePartyCredentialsTest => {
+    retrievePartyCredentialsTest.test('return party credentials for a given account', test => {
       const account = Fixtures.generateAccountName()
       const password = 'password'
       createAccount(account, password)
-        .then((createdAccount) => Model.retrieveUserCredentials(createdAccount)
+        .then((createdAccount) => Model.retrievePartyCredentials(createdAccount)
           .then((userCredentials) => {
             test.equal(userCredentials.accountId, createdAccount.accountId)
             test.equal(userCredentials.password, password)
@@ -144,7 +144,7 @@ Test('accounts model', modelTest => {
           }))
     })
 
-    retrieveUserCredentialsTest.end()
+    retrievePartyCredentialsTest.end()
   })
 
   modelTest.test('updateAccountSettlement should', updateAccountSettlementTest => {

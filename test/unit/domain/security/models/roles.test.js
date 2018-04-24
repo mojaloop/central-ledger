@@ -70,13 +70,13 @@ Test('Roles model', modelTest => {
     getByIdTest.end()
   })
 
-  modelTest.test('addUserRole should', addUserRoleTest => {
-    addUserRoleTest.test('insert userRole in db', test => {
-      const userRole = { userId: Uuid(), roleId: Uuid() }
+  modelTest.test('addPartyRole should', addPartyRoleTest => {
+    addPartyRoleTest.test('insert userRole in db', test => {
+      const userRole = { partyId: Uuid(), roleId: Uuid() }
 
       Db.userRoles.insert.returns(P.resolve(userRole))
 
-      RolesModel.addUserRole(userRole)
+      RolesModel.addPartyRole(userRole)
         .then(result => {
           test.deepEqual(result, userRole)
           test.ok(Db.userRoles.insert.calledWith(userRole))
@@ -84,7 +84,7 @@ Test('Roles model', modelTest => {
         })
     })
 
-    addUserRoleTest.end()
+    addPartyRoleTest.end()
   })
 
   modelTest.test('save should', saveTest => {
@@ -134,25 +134,25 @@ Test('Roles model', modelTest => {
     removeTest.end()
   })
 
-  modelTest.test('removeUserRoles should', removeUserRolesTest => {
-    removeUserRolesTest.test('delete userRoles by userId in db', test => {
-      const userId = Uuid()
+  modelTest.test('removePartyRoles should', removePartyRolesTest => {
+    removePartyRolesTest.test('delete userRoles by partyId in db', test => {
+      const partyId = Uuid()
 
       Db.userRoles.destroy.returns(P.resolve(1))
 
-      RolesModel.removeUserRoles(userId)
+      RolesModel.removePartyRoles(partyId)
         .then(result => {
           test.equal(result, 1)
-          test.ok(Db.userRoles.destroy.calledWith({ userId }))
+          test.ok(Db.userRoles.destroy.calledWith({ partyId }))
           test.end()
         })
     })
-    removeUserRolesTest.end()
+    removePartyRolesTest.end()
   })
 
-  modelTest.test('getUserRoles should', getUserRolesTest => {
-    getUserRolesTest.test('find roles by userId', test => {
-      const userId = Uuid()
+  modelTest.test('getPartyRoles should', getPartyRolesTest => {
+    getPartyRolesTest.test('find roles by partyId', test => {
+      const partyId = Uuid()
       const roles = [{}, {}]
 
       const builderStub = sandbox.stub()
@@ -165,17 +165,17 @@ Test('Roles model', modelTest => {
       Db.roles.query.callsArgWith(0, builderStub)
       Db.roles.query.returns(P.resolve(roles))
 
-      RolesModel.getUserRoles(userId)
+      RolesModel.getPartyRoles(partyId)
         .then(results => {
           test.equal(results, roles)
           test.ok(builderStub.innerJoin.calledWith('userRoles as ur', 'roles.roleId', 'ur.roleId'))
-          test.ok(whereStub.calledWith('ur.userId', userId))
+          test.ok(whereStub.calledWith('ur.partyId', partyId))
           test.ok(selectStub.calledWith('roles.*'))
           test.end()
         })
     })
 
-    getUserRolesTest.end()
+    getPartyRolesTest.end()
   })
 
   modelTest.end()

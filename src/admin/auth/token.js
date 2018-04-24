@@ -23,7 +23,7 @@ const validate = async (request, token, h) => {
     if (result) {
       isValid = true
       const scope = reducePermissions(result.roles)
-      const credentials = Util.merge(result.user, {scope: scope})
+      const credentials = Util.merge(result.party, {scope: scope})
       return {isValid, credentials}
     } else {
       throw new Errors.UnauthorizedError('Invalid token')

@@ -26,13 +26,13 @@ const permissions = {
   TRANSFERS_REJECT_EXPIRED: new Permission('TRANSFSER_REJECT_EXPIRED', 'Reject expired transfers'),
   TRANSFERS_SETTLE: new Permission('TRANSFERS_SETTLE', 'Settle fulfilled transfers'),
   TRANSFERS_LIST: new Permission('TRANSFERS_LIST', 'List all transfers'),
-  USERS_CREATE: new Permission('USERS_CREATE', 'Create new user'),
-  USERS_DELETE: new Permission('USERS_DELETE', 'Delete user'),
-  USERS_LIST: new Permission('USERS_LIST', 'List users'),
-  USERS_VIEW: new Permission('USERS_VIEW', 'View users details'),
-  USERS_UPDATE: new Permission('USERS_UPDATE', 'Update user details'),
-  USERS_ROLES_LIST: new Permission('USERS_ROLES_LIST', 'Get users roles'),
-  USERS_ROLES_UPDATE: new Permission('USERS_ROLES_UPDATE', 'Update users roles')
+  PARTIES_CREATE: new Permission('PARTIES_CREATE', 'Create new party'),
+  PARTIES_DELETE: new Permission('PARTIES_DELETE', 'Delete party'),
+  PARTIES_LIST: new Permission('PARTIES_LIST', 'List party'),
+  PARTIES_VIEW: new Permission('PARTIES_VIEW', 'View party details'),
+  PARTIES_UPDATE: new Permission('PARTIES_UPDATE', 'Update party details'),
+  PARTIES_ROLES_LIST: new Permission('PARTIES_ROLES_LIST', 'Get party roles'),
+  PARTIES_ROLES_UPDATE: new Permission('PARTIES_ROLES_UPDATE', 'Update party roles')
 }
 
 module.exports = permissions

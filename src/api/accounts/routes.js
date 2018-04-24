@@ -50,11 +50,11 @@ module.exports = [{
 {
   method: 'PUT',
   path: '/accounts/{name}',
-  handler: Handler.updateUserCredentials,
+  handler: Handler.updatePartyCredentials,
   options: {
     id: 'account_update_user_credentials',
     tags: tags,
-    description: 'Update an accounts user credentials',
+    description: 'Update an accounts party credentials',
     auth: Auth.strategy(),
     payload: {
       allow: 'application/json',
@@ -78,7 +78,7 @@ module.exports = [{
   options: {
     id: 'account_update_account_settlement',
     tags: tags,
-    description: 'Update an accounts user credentials',
+    description: 'Update an accounts party credentials',
     auth: Auth.strategy(),
     payload: {
       allow: 'application/json',

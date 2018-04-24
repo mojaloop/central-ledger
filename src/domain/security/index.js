@@ -3,13 +3,13 @@
 const Errors = require('../../errors')
 const Util = require('../../lib/util')
 const RolesModel = require('./models/roles')
-const UsersModel = require('./models/users')
+const PartyModel = require('./models/party')
 
-const ensureUserExists = (user) => {
-  if (!user) {
-    throw new Errors.NotFoundError('User does not exist')
+const ensurePartyExists = (party) => {
+  if (!party) {
+    throw new Errors.NotFoundError('Party does not exist')
   }
-  return user
+  return party
 }
 
 const expandRole = (role) => {
@@ -22,27 +22,27 @@ const compactRole = (role) => {
 
 const getAllRoles = () => RolesModel.getAll().map(expandRole)
 
-const getAllUsers = () => UsersModel.getAll()
+const getAllParty = () => PartyModel.getAll()
 
-const getUserById = (userId) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
+const getPartyById = (partyId) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
 }
 
-const getUserByKey = (key) => {
-  return UsersModel.getByKey(key)
-    .then(ensureUserExists)
+const getPartyByKey = (key) => {
+  return PartyModel.getByKey(key)
+    .then(ensurePartyExists)
 }
 
-const getUserRoles = (userId) => RolesModel.getUserRoles(userId).map(expandRole)
+const getPartyRoles = (partyId) => RolesModel.getPartyRoles(partyId).map(expandRole)
 
 const createRole = (role) => {
   return RolesModel.save(compactRole(role))
     .then(expandRole)
 }
 
-const createUser = (user) => {
-  return UsersModel.save(user)
+const createParty = (party) => {
+  return PartyModel.save(party)
 }
 
 const deleteRole = (roleId) => {
@@ -55,11 +55,11 @@ const deleteRole = (roleId) => {
     })
 }
 
-const deleteUser = (userId) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
-    .then(() => RolesModel.removeUserRoles(userId))
-    .then(() => UsersModel.remove(userId))
+const deleteParty = (partyId) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
+    .then(() => RolesModel.removePartyRoles(partyId))
+    .then(() => PartyModel.remove(partyId))
 }
 
 const updateRole = (roleId, newRole) => {
@@ -73,31 +73,31 @@ const updateRole = (roleId, newRole) => {
     })
 }
 
-const updateUser = (userId, details) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
-    .then(user => UsersModel.save(Util.merge(user, details)))
+const updateParty = (partyId, details) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
+    .then(party => PartyModel.save(Util.merge(party, details)))
 }
 
-const updateUserRoles = (userId, roles) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
-    .then(user => RolesModel.removeUserRoles(userId))
-    .then(() => roles.forEach(roleId => RolesModel.addUserRole({ userId, roleId: roleId })))
-    .then(() => getUserRoles(userId))
+const updatePartyRoles = (partyId, roles) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
+    .then(party => RolesModel.removePartyRoles(partyId))
+    .then(() => roles.forEach(roleId => RolesModel.addPartyRole({ partyId, roleId: roleId })))
+    .then(() => getPartyRoles(partyId))
 }
 
 module.exports = {
   createRole,
-  createUser,
+  createParty,
   deleteRole,
-  deleteUser,
+  deleteParty,
   getAllRoles,
-  getUserById,
-  getUserByKey,
-  getAllUsers,
-  getUserRoles,
+  getPartyById,
+  getPartyByKey,
+  getAllParty,
+  getPartyRoles,
   updateRole,
-  updateUser,
-  updateUserRoles
+  updateParty,
+  updatePartyRoles
 }

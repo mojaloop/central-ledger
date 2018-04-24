@@ -53,7 +53,7 @@ Test('accounts handler', handlerTest => {
     sandbox.stub(Account, 'create')
     sandbox.stub(Account, 'getByName')
     sandbox.stub(Account, 'getAll')
-    sandbox.stub(Account, 'updateUserCredentials')
+    sandbox.stub(Account, 'updatePartyCredentials')
     sandbox.stub(Account, 'updateAccountSettlement')
     sandbox.stub(PositionService, 'calculateForAccount')
     sandbox.stub(Sidecar, 'logRequest')
@@ -199,16 +199,16 @@ Test('accounts handler', handlerTest => {
     getByNameTest.end()
   })
 
-  handlerTest.test('updateUserCredentials should', updateUserCredentialsTest => {
-    updateUserCredentialsTest.test('update a users credentials', async function (test) {
+  handlerTest.test('updatePartyCredentials should', updatePartyCredentialsTest => {
+    updatePartyCredentialsTest.test('update a party credentials', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
-      Account.updateUserCredentials.returns(P.resolve(account))
+      Account.updatePartyCredentials.returns(P.resolve(account))
 
       const request = createPut(name, {name})
       request.payload = {password: '1234'}
-      const response = await Handler.updateUserCredentials(request, {})
+      const response = await Handler.updatePartyCredentials(request, {})
       test.equal(response.id, `${hostname}/accounts/${response.name}`)
       test.equal(response.name, name)
       test.equal(response.ledger, hostname)
@@ -219,7 +219,7 @@ Test('accounts handler', handlerTest => {
       test.end()
     })
 
-    updateUserCredentialsTest.test('reply with unauthorized error if user credentials do not match', async function (test) {
+    updatePartyCredentialsTest.test('reply with unauthorized error if party credentials do not match', async function (test) {
       const name = 'somename'
       const account = createAccount(name)
       Account.getByName.returns(P.resolve(account))
@@ -227,7 +227,7 @@ Test('accounts handler', handlerTest => {
       const request = createPut(name, {name: '1234'})
       request.payload = {password: '1234'}
       try {
-        await Handler.updateUserCredentials(request)
+        await Handler.updatePartyCredentials(request)
       } catch (error) {
         test.assert(error instanceof Errors.UnauthorizedError)
         test.equal(error.message, 'Invalid attempt updating the password.')
@@ -235,7 +235,7 @@ Test('accounts handler', handlerTest => {
       }
     })
 
-    updateUserCredentialsTest.end()
+    updatePartyCredentialsTest.end()
   })
 
   handlerTest.test('create should', createTest => {

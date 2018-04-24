@@ -167,21 +167,21 @@ Test('Account service', serviceTest => {
     getByNameTest.end()
   })
 
-  serviceTest.test('updateUserCredentials should', updateUserCredentialsTest => {
-    updateUserCredentialsTest.test('updateUserCredentials from Model', test => {
+  serviceTest.test('updatePartyCredentials should', updatePartyCredentialsTest => {
+    updatePartyCredentialsTest.test('updatePartyCredentials from Model', test => {
       const name = 'name'
       const password = '12345'
-      Model.updateUserCredentials.returns(P.resolve({ name }))
+      Model.updatePartyCredentials.returns(P.resolve({ name }))
       Crypto.hash.withArgs(password).returns(P.resolve('123456'))
 
-      AccountService.updateUserCredentials({ name }, { password })
+      AccountService.updatePartyCredentials({ name }, { password })
         .then(result => {
           test.deepEqual(result, { name })
           test.end()
         })
     })
 
-    updateUserCredentialsTest.end()
+    updatePartyCredentialsTest.end()
   })
 
   serviceTest.test('updateAccountSettlement should', updateAccountSettlementTest => {
@@ -249,12 +249,12 @@ Test('Account service', serviceTest => {
       const account = { name, accountId }
       const userCredentials = { accountId, password }
       Model.getByName.withArgs(name).returns(P.resolve(account))
-      Model.retrieveUserCredentials.returns(P.resolve(userCredentials))
+      Model.retrievePartyCredentials.returns(P.resolve(userCredentials))
       Crypto.verifyHash.withArgs(password, userCredentials.password).returns(P.resolve(false))
 
       AccountService.verify(name, password)
         .catch(result => {
-          test.equal(result.message, 'Username and password are invalid')
+          test.equal(result.message, 'Partyname and password are invalid')
           test.end()
         })
     })
@@ -266,7 +266,7 @@ Test('Account service', serviceTest => {
       const account = { name, accountId }
       const userCredentials = { accountId, password }
       Model.getByName.withArgs(name).returns(P.resolve(account))
-      Model.retrieveUserCredentials.returns(P.resolve(userCredentials))
+      Model.retrievePartyCredentials.returns(P.resolve(userCredentials))
       Crypto.verifyHash.withArgs(password, userCredentials.password).returns(P.resolve(true))
 
       AccountService.verify(name, password)

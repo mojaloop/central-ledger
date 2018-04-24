@@ -8,7 +8,7 @@ const Uuid = require('uuid4')
 const Errors = require('../../../../src/errors')
 const Util = require('../../../../src/lib/util')
 const RolesModel = require('../../../../src/domain/security/models/roles')
-const UsersModel = require('../../../../src/domain/security/models/users')
+const PartyModel = require('../../../../src/domain/security/models/party')
 const SecurityService = require('../../../../src/domain/security')
 
 Test('SecurityService test', serviceTest => {
@@ -17,7 +17,7 @@ Test('SecurityService test', serviceTest => {
   serviceTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(RolesModel)
-    sandbox.stub(UsersModel)
+    sandbox.stub(PartyModel)
     test.end()
   })
 
@@ -151,237 +151,237 @@ Test('SecurityService test', serviceTest => {
     deleteTest.end()
   })
 
-  serviceTest.test('getAllUsers should', getAllUsersTest => {
-    getAllUsersTest.test('return users from model', test => {
-      const users = []
-      UsersModel.getAll.returns(P.resolve(users))
-      SecurityService.getAllUsers()
+  serviceTest.test('getAllParty should', getAllPartyTest => {
+    getAllPartyTest.test('return party from model', test => {
+      const party = []
+      PartyModel.getAll.returns(P.resolve(party))
+      SecurityService.getAllParty()
         .then(results => {
-          test.deepEqual(results, users)
+          test.deepEqual(results, party)
           test.end()
         })
     })
 
-    getAllUsersTest.end()
+    getAllPartyTest.end()
   })
 
-  serviceTest.test('getUserById should', getUserByIdTest => {
-    getUserByIdTest.test('return user from model', test => {
-      const userId = Uuid()
-      const user = {}
-      UsersModel.getById.withArgs(userId).returns(P.resolve(user))
+  serviceTest.test('getPartyById should', getPartyByIdTest => {
+    getPartyByIdTest.test('return party from model', test => {
+      const partyId = Uuid()
+      const party = {}
+      PartyModel.getById.withArgs(partyId).returns(P.resolve(party))
 
-      SecurityService.getUserById(userId)
+      SecurityService.getPartyById(partyId)
         .then(result => {
-          test.equal(result, user)
+          test.equal(result, party)
           test.end()
         })
     })
 
-    getUserByIdTest.test('throw not found error if user null', test => {
-      const userId = Uuid()
-      UsersModel.getById.returns(P.resolve(null))
+    getPartyByIdTest.test('throw not found error if party null', test => {
+      const partyId = Uuid()
+      PartyModel.getById.returns(P.resolve(null))
 
-      SecurityService.getUserById(userId)
+      SecurityService.getPartyById(partyId)
         .then(() => test.fail('Expected NotFoundError'))
         .catch(Errors.NotFoundError, e => {
-          test.equal(e.message, 'User does not exist')
+          test.equal(e.message, 'Party does not exist')
           test.end()
         })
         .catch(() => test.fail('Expected NotFoundError'))
     })
-    getUserByIdTest.end()
+    getPartyByIdTest.end()
   })
 
-  serviceTest.test('getUserByKey should', getUserByKeyTest => {
-    getUserByKeyTest.test('return user from model', test => {
+  serviceTest.test('getPartyByKey should', getPartyByKeyTest => {
+    getPartyByKeyTest.test('return party from model', test => {
       const userKey = 'key'
-      const user = {}
-      UsersModel.getByKey.withArgs(userKey).returns(P.resolve(user))
+      const party = {}
+      PartyModel.getByKey.withArgs(userKey).returns(P.resolve(party))
 
-      SecurityService.getUserByKey(userKey)
+      SecurityService.getPartyByKey(userKey)
         .then(result => {
-          test.equal(result, user)
+          test.equal(result, party)
           test.end()
         })
     })
 
-    getUserByKeyTest.test('throw not found error if user null', test => {
+    getPartyByKeyTest.test('throw not found error if party null', test => {
       const userKey = 'key'
-      UsersModel.getByKey.returns(P.resolve(null))
+      PartyModel.getByKey.returns(P.resolve(null))
 
-      SecurityService.getUserByKey(userKey)
+      SecurityService.getPartyByKey(userKey)
         .then(() => test.fail('Expected NotFoundError'))
         .catch(Errors.NotFoundError, e => {
-          test.equal(e.message, 'User does not exist')
+          test.equal(e.message, 'Party does not exist')
           test.end()
         })
         .catch(() => test.fail('Expected NotFoundError'))
     })
 
-    getUserByKeyTest.end()
+    getPartyByKeyTest.end()
   })
 
-  serviceTest.test('getUserRoles should', getUsersRolesTest => {
-    getUsersRolesTest.test('return users roles from model', test => {
+  serviceTest.test('getPartyRoles should', getPartyRolesTest => {
+    getPartyRolesTest.test('return party roles from model', test => {
       const roles = [{ permissions: '' }, { permissions: '' }]
-      const userId = Uuid()
-      RolesModel.getUserRoles.withArgs(userId).returns(P.resolve(roles))
+      const partyId = Uuid()
+      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
 
-      SecurityService.getUserRoles(userId)
+      SecurityService.getPartyRoles(partyId)
         .then(result => {
           test.deepEqual(result, roles)
           test.end()
         })
     })
 
-    getUsersRolesTest.end()
+    getPartyRolesTest.end()
   })
 
-  serviceTest.test('createUser should', createUserTest => {
-    createUserTest.test('save user to model', test => {
-      const savedUser = {}
-      UsersModel.save.returns(P.resolve(savedUser))
-      const user = {}
-      SecurityService.createUser(user)
+  serviceTest.test('createParty should', createPartyTest => {
+    createPartyTest.test('save party to model', test => {
+      const savedParty = {}
+      PartyModel.save.returns(P.resolve(savedParty))
+      const party = {}
+      SecurityService.createParty(party)
         .then(result => {
-          test.equal(result, savedUser)
-          test.ok(UsersModel.save.calledWith(user))
+          test.equal(result, savedParty)
+          test.ok(PartyModel.save.calledWith(party))
           test.end()
         })
     })
-    createUserTest.end()
+    createPartyTest.end()
   })
 
-  serviceTest.test('deleteUser should', deleteUserTest => {
-    deleteUserTest.test('throw NotFoundError if user does not exist', test => {
-      const userId = Uuid()
-      UsersModel.getById.withArgs(userId).returns(P.resolve(null))
+  serviceTest.test('deleteParty should', deletePartyTest => {
+    deletePartyTest.test('throw NotFoundError if party does not exist', test => {
+      const partyId = Uuid()
+      PartyModel.getById.withArgs(partyId).returns(P.resolve(null))
 
-      SecurityService.deleteUser(userId)
+      SecurityService.deleteParty(partyId)
         .then(() => test.fail('Expected exception'))
         .catch(Errors.NotFoundError, e => {
-          test.equal(e.message, 'User does not exist')
+          test.equal(e.message, 'Party does not exist')
           test.end()
         })
         .catch(() => test.fail('Expected NotFoundError'))
     })
 
-    deleteUserTest.test('remove users roles', test => {
-      const userId = Uuid()
-      UsersModel.getById.returns(P.resolve({}))
+    deletePartyTest.test('remove party roles', test => {
+      const partyId = Uuid()
+      PartyModel.getById.returns(P.resolve({}))
 
-      SecurityService.deleteUser(userId)
+      SecurityService.deleteParty(partyId)
         .then(() => {
-          test.ok(RolesModel.removeUserRoles.calledWith(userId))
+          test.ok(RolesModel.removePartyRoles.calledWith(partyId))
           test.end()
         })
     })
 
-    deleteUserTest.test('remove user from model', test => {
-      const userId = Uuid()
-      UsersModel.getById.returns(P.resolve({}))
+    deletePartyTest.test('remove party from model', test => {
+      const partyId = Uuid()
+      PartyModel.getById.returns(P.resolve({}))
 
-      SecurityService.deleteUser(userId)
+      SecurityService.deleteParty(partyId)
         .then(() => {
-          test.ok(UsersModel.remove.calledWith(userId))
+          test.ok(PartyModel.remove.calledWith(partyId))
           test.end()
         })
     })
 
-    deleteUserTest.end()
+    deletePartyTest.end()
   })
 
-  serviceTest.test('updateUser should', updateUserTest => {
-    updateUserTest.test('throw not NotFoundError if user does not exist', test => {
-      const userId = Uuid()
-      UsersModel.getById.withArgs(userId).returns(P.resolve(null))
+  serviceTest.test('updateParty should', updatePartyTest => {
+    updatePartyTest.test('throw not NotFoundError if party does not exist', test => {
+      const partyId = Uuid()
+      PartyModel.getById.withArgs(partyId).returns(P.resolve(null))
 
-      SecurityService.updateUser(userId, {})
+      SecurityService.updateParty(partyId, {})
         .then(() => test.fail('Expected exception'))
         .catch(Errors.NotFoundError, e => {
-          test.equal(e.message, 'User does not exist')
+          test.equal(e.message, 'Party does not exist')
           test.end()
         })
         .catch(() => test.fail('Expected NotFoundError'))
     })
 
-    updateUserTest.test('merge details with user and save to model', test => {
-      const userId = Uuid()
-      const user = { lastName: 'SuperUser' }
+    updatePartyTest.test('merge details with party and save to model', test => {
+      const partyId = Uuid()
+      const party = { lastName: 'SuperParty' }
       const details = { firstName: 'Dave' }
-      UsersModel.getById.returns(P.resolve(user))
+      PartyModel.getById.returns(P.resolve(party))
 
-      const expected = Util.merge(user, details)
-      UsersModel.save.returns(P.resolve(expected))
-      SecurityService.updateUser(userId, details)
+      const expected = Util.merge(party, details)
+      PartyModel.save.returns(P.resolve(expected))
+      SecurityService.updateParty(partyId, details)
         .then(result => {
           test.deepEqual(result, expected)
-          test.ok(UsersModel.save.calledWith(expected))
+          test.ok(PartyModel.save.calledWith(expected))
           test.end()
         })
     })
 
-    updateUserTest.end()
+    updatePartyTest.end()
   })
 
-  serviceTest.test('updateUserRoles should', updateUserRolesTest => {
-    updateUserRolesTest.test('throw NotFoundError if user does not exist', test => {
-      const userId = Uuid()
-      UsersModel.getById.withArgs(userId).returns(P.resolve(null))
+  serviceTest.test('updatePartyRoles should', updatePartyRolesTest => {
+    updatePartyRolesTest.test('throw NotFoundError if party does not exist', test => {
+      const partyId = Uuid()
+      PartyModel.getById.withArgs(partyId).returns(P.resolve(null))
 
-      SecurityService.updateUserRoles(userId, [])
+      SecurityService.updatePartyRoles(partyId, [])
         .then(() => test.fail('Expected error'))
         .catch(Errors.NotFoundError, e => {
-          test.equal(e.message, 'User does not exist')
+          test.equal(e.message, 'Party does not exist')
           test.end()
         })
         .catch(() => test.fail('Expected NotFoundError'))
     })
 
-    updateUserRolesTest.test('remove existing user roles', test => {
-      const userId = Uuid()
-      UsersModel.getById.returns(P.resolve({}))
+    updatePartyRolesTest.test('remove existing party roles', test => {
+      const partyId = Uuid()
+      PartyModel.getById.returns(P.resolve({}))
       const roles = [{ permissions: '' }, { permissions: '' }]
-      RolesModel.getUserRoles.withArgs(userId).returns(P.resolve(roles))
+      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
 
-      SecurityService.updateUserRoles(userId, [])
+      SecurityService.updatePartyRoles(partyId, [])
         .then(() => {
-          test.ok(RolesModel.removeUserRoles.calledWith(userId))
+          test.ok(RolesModel.removePartyRoles.calledWith(partyId))
           test.end()
         })
     })
 
-    updateUserRolesTest.test('add each new role to userRoles', test => {
-      const userId = Uuid()
+    updatePartyRolesTest.test('add each new role to partyRole', test => {
+      const partyId = Uuid()
       const role1 = Uuid()
       const role2 = Uuid()
 
-      UsersModel.getById.returns(P.resolve({}))
+      PartyModel.getById.returns(P.resolve({}))
       const roles = [{ permissions: '' }, { permissions: '' }]
-      RolesModel.getUserRoles.withArgs(userId).returns(P.resolve(roles))
+      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
 
-      SecurityService.updateUserRoles(userId, [ role1, role2 ])
+      SecurityService.updatePartyRoles(partyId, [ role1, role2 ])
         .then(() => {
-          test.ok(RolesModel.addUserRole.calledWith({ userId, roleId: role1 }))
-          test.ok(RolesModel.addUserRole.calledWith({ userId, roleId: role2 }))
+          test.ok(RolesModel.addPartyRole.calledWith({ partyId, roleId: role1 }))
+          test.ok(RolesModel.addPartyRole.calledWith({ partyId, roleId: role2 }))
           test.end()
         })
     })
 
-    updateUserRolesTest.test('return users roles', test => {
-      const userId = Uuid()
-      UsersModel.getById.returns(P.resolve({}))
+    updatePartyRolesTest.test('return party roles', test => {
+      const partyId = Uuid()
+      PartyModel.getById.returns(P.resolve({}))
       const roles = [{ permissions: '' }, { permissions: '' }]
-      RolesModel.getUserRoles.withArgs(userId).returns(P.resolve(roles))
-      SecurityService.updateUserRoles(userId, [])
+      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
+      SecurityService.updatePartyRoles(partyId, [])
         .then(result => {
           test.deepEqual(result, roles)
           test.end()
         })
     })
 
-    updateUserRolesTest.end()
+    updatePartyRolesTest.end()
   })
   serviceTest.end()
 })

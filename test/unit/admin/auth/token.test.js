@@ -39,15 +39,15 @@ Test('token auth strategy', tokenTest => {
     })
 
     validateTest.test('should pass if token verification passes', async function (test) {
-      const userId = Uuid()
-      const user = { userId }
+      const partyId = Uuid()
+      const party = { partyId }
       const roles = [{ permissions: ['ONE', 'TWO', 'THREE'] }, { permissions: ['ONE', 'FOUR', 'FIVE'] }]
       const token = 'some.jwt.token'
-      await JWT.verify.withArgs(token).returns(Promise.resolve({ user, roles }))
+      await JWT.verify.withArgs(token).returns(Promise.resolve({ party, roles }))
 
       const response = await TokenAuth.validate({}, token, {})
       test.equal(response.isValid, true)
-      test.deepEqual(response.credentials, { userId, scope: [ 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE' ] })
+      test.deepEqual(response.credentials, { partyId, scope: [ 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE' ] })
       test.end()
     })
 

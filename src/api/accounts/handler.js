@@ -68,7 +68,7 @@ exports.create = async function (request, h) {
   }
 }
 
-exports.updateUserCredentials = async function (request, h) {
+exports.updatePartyCredentials = async function (request, h) {
   Sidecar.logRequest(request)
   const accountName = request.params.name
   const credentials = request.auth.credentials
@@ -79,7 +79,7 @@ exports.updateUserCredentials = async function (request, h) {
   }
   const account = await Account.getByName(request.params.name)
   handleMissingRecord(account)
-  const updatedAccount = await Account.updateUserCredentials(account, request.payload)
+  const updatedAccount = await Account.updatePartyCredentials(account, request.payload)
   return buildAccount(updatedAccount)
 }
 

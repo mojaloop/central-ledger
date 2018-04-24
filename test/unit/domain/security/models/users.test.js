@@ -5,15 +5,15 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
 const Db = require('../../../../../src/db')
-const Model = require('../../../../../src/domain/security/models/users')
+const Model = require('../../../../../src/domain/security/models/party')
 
-Test('Users model', modelTest => {
+Test('Party model', modelTest => {
   let sandbox
 
   modelTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
 
-    Db.users = {
+    Db.party = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
       find: sandbox.stub(),
@@ -30,14 +30,14 @@ Test('Users model', modelTest => {
   })
 
   modelTest.test('getAll should', getAllTest => {
-    getAllTest.test('find all users in db', test => {
-      const users = [{}, {}]
-      Db.users.find.returns(P.resolve(users))
+    getAllTest.test('find all party in db', test => {
+      const party = [{}, {}]
+      Db.party.find.returns(P.resolve(party))
 
       Model.getAll()
         .then(result => {
-          test.deepEqual(result, users)
-          test.ok(Db.users.find.calledWith({}))
+          test.deepEqual(result, party)
+          test.ok(Db.party.find.calledWith({}))
           test.end()
         })
     })
@@ -46,16 +46,16 @@ Test('Users model', modelTest => {
   })
 
   modelTest.test('getById should', getByIdTest => {
-    getByIdTest.test('select first user by id', test => {
-      const userId = Uuid()
-      const user = { firstName: 'Dave' }
+    getByIdTest.test('select first party by id', test => {
+      const partyId = Uuid()
+      const party = { firstName: 'Dave' }
 
-      Db.users.findOne.returns(P.resolve(user))
+      Db.party.findOne.returns(P.resolve(party))
 
-      Model.getById(userId)
+      Model.getById(partyId)
         .then(result => {
-          test.equal(result, user)
-          test.ok(Db.users.findOne.calledWith({ userId }))
+          test.equal(result, party)
+          test.ok(Db.party.findOne.calledWith({ partyId }))
           test.end()
         })
     })
@@ -64,16 +64,16 @@ Test('Users model', modelTest => {
   })
 
   modelTest.test('getByKey should', getByKeyTest => {
-    getByKeyTest.test('select first user by key', test => {
+    getByKeyTest.test('select first party by key', test => {
       const key = Uuid()
-      const user = { firstName: 'Dave' }
+      const party = { firstName: 'Dave' }
 
-      Db.users.findOne.returns(P.resolve(user))
+      Db.party.findOne.returns(P.resolve(party))
 
       Model.getByKey(key)
         .then(result => {
-          test.equal(result, user)
-          test.ok(Db.users.findOne.calledWith({ key }))
+          test.equal(result, party)
+          test.ok(Db.party.findOne.calledWith({ key }))
           test.end()
         })
     })
@@ -82,15 +82,15 @@ Test('Users model', modelTest => {
   })
 
   modelTest.test('remove should', removeTest => {
-    removeTest.test('destroy user in db', test => {
-      const userId = Uuid()
+    removeTest.test('destroy party in db', test => {
+      const partyId = Uuid()
 
-      Db.users.destroy.returns(P.resolve(1))
+      Db.party.destroy.returns(P.resolve(1))
 
-      Model.remove(userId)
+      Model.remove(partyId)
         .then(result => {
           test.equal(result, 1)
-          test.ok(Db.users.destroy.calledWith({ userId }))
+          test.ok(Db.party.destroy.calledWith({ partyId }))
           test.end()
         })
     })
@@ -99,29 +99,29 @@ Test('Users model', modelTest => {
   })
 
   modelTest.test('save should', saveTest => {
-    saveTest.test('insert user in db if userId not defined', test => {
-      const user = { firstName: 'Dave' }
+    saveTest.test('insert party in db if partyId not defined', test => {
+      const party = { firstName: 'Dave' }
 
-      Db.users.insert.returns(P.resolve(user))
+      Db.party.insert.returns(P.resolve(party))
 
-      Model.save(user)
+      Model.save(party)
         .then(result => {
-          test.deepEqual(result, user)
-          test.ok(Db.users.insert.calledWith(sandbox.match(user)))
+          test.deepEqual(result, party)
+          test.ok(Db.party.insert.calledWith(sandbox.match(party)))
           test.end()
         })
     })
 
-    saveTest.test('update user in db if userId defined', test => {
-      const userId = Uuid()
-      const user = { userId, firstName: 'Dave' }
+    saveTest.test('update party in db if partyId defined', test => {
+      const partyId = Uuid()
+      const party = { partyId, firstName: 'Dave' }
 
-      Db.users.update.returns(P.resolve(user))
+      Db.party.update.returns(P.resolve(party))
 
-      Model.save(user)
+      Model.save(party)
         .then(result => {
-          test.deepEqual(result, user)
-          test.ok(Db.users.update.calledWith({ userId }, user))
+          test.deepEqual(result, party)
+          test.ok(Db.party.update.calledWith({ partyId }, party))
           test.end()
         })
     })

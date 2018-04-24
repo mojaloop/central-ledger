@@ -12,13 +12,13 @@ const sendEmail = () => {
       port: 465,
       secure: true, // use SSL
       auth: {
-        user: Config.EMAIL_USER,
+        party: Config.EMAIL_PARTY,
         pass: Config.EMAIL_PASSWORD
       }
     })
 
     const mailOptions = {
-      from: Config.EMAIL_USER, // sender address
+      from: Config.EMAIL_PARTY, // sender address
       to: mailInformation.email, // receiver
       subject: 'Settlements', // Subject line
       text: 'Please see attached settlements', // plaintext body

@@ -10,7 +10,7 @@ exports.getByName = (name) => {
   return Db.accounts.findOne({ name })
 }
 
-exports.retrieveUserCredentials = (account) => {
+exports.retrievePartyCredentials = (account) => {
   return Db.userCredentials.findOne({ accountId: account.accountId })
 }
 
@@ -22,7 +22,7 @@ exports.update = (account, isDisabled) => {
   return Db.accounts.update({ accountId: account.accountId }, { isDisabled })
 }
 
-exports.updateUserCredentials = (account, hashedPassword) => {
+exports.updatePartyCredentials = (account, hashedPassword) => {
   return Db.userCredentials.update({ accountId: account.accountId }, { password: hashedPassword })
 }
 

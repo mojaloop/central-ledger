@@ -1,5 +1,5 @@
 #!/bin/bash
-export POSTGRES_USER=${POSTGRES_USER:-'postgres'}
+export POSTGRES_PARTY=${POSTGRES_PARTY:-'postgres'}
 export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-'postgres'}
 export LEDGER_HOST=${HOST_IP:-'localhost'}
 export CLEDG_HOSTNAME='http://localhost:3000'
@@ -23,7 +23,7 @@ fpsql() {
 		-e PGPASSWORD=$POSTGRES_PASSWORD \
 		"postgres:9.4" \
     --host postgres \
-		--username $POSTGRES_USER \
+		--username $POSTGRES_PARTY \
     --dbname postgres \
 		--quiet --no-align --tuples-only \
 		"$@"

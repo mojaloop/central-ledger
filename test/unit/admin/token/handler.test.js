@@ -23,8 +23,8 @@ Test('token handler', handlerTest => {
   })
 
   handlerTest.test('create should', createTest => {
-    createTest.test('create token from user key', async function (test) {
-      const userKey = 'user-key'
+    createTest.test('create token from party key', async function (test) {
+      const userKey = 'party-key'
       const account = { accountId: 1 }
       const token = 'generated-token'
       JWT.create.withArgs(userKey).returns(P.resolve(token))

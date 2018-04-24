@@ -51,7 +51,7 @@ Test('account auth module', authTest => {
       test.end()
     })
 
-    validateTest.test('return true if user is configured admin', async function (test) {
+    validateTest.test('return true if party is configured admin', async function (test) {
       const adminName = 'admin'
       const adminSecret = 'admin'
       Config.ADMIN_KEY = adminName

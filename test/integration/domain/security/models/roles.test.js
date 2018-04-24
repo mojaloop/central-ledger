@@ -4,12 +4,12 @@ const Test = require('tape')
 const Uuid = require('uuid4')
 const Promise = require('bluebird')
 const Fixtures = require('../../../../fixtures')
-const UserModel = require('../../../../../src/domain/security/models/users')
+const PartyModel = require('../../../../../src/domain/security/models/party')
 const Model = require('../../../../../src/domain/security/models/roles')
 
 const createRole = (name = Fixtures.generateRandomName(), permissions = 'test|test2') => ({ name, permissions })
 
-const createUser = (key = Fixtures.generateRandomName()) => ({
+const createParty = (key = Fixtures.generateRandomName()) => ({
   key,
   firstName: 'Dave',
   lastName: 'Super',
@@ -106,14 +106,14 @@ Test('roles model', rolesTest => {
     removeTest.end()
   })
 
-  rolesTest.test('addUserRole should', addUserRoleTest => {
-    addUserRoleTest.test('add user role', test => {
-      UserModel.save(createUser())
+  rolesTest.test('addPartyRole should', addPartyRoleTest => {
+    addPartyRoleTest.test('add party role', test => {
+      PartyModel.save(createParty())
       .then(userResult => Model.save(createRole())
-          .then(role => ({ userId: userResult.userId, roleId: role.roleId }))
+          .then(role => ({ partyId: userResult.partyId, roleId: role.roleId }))
       )
       .then(userRole => {
-        Model.addUserRole(userRole)
+        Model.addPartyRole(userRole)
         .then(result => {
           test.deepEqual(result, userRole)
           test.end()
@@ -121,21 +121,21 @@ Test('roles model', rolesTest => {
       })
     })
 
-    addUserRoleTest.end()
+    addPartyRoleTest.end()
   })
 
-  rolesTest.test('getUserRoles should', getUserRolesTest => {
-    getUserRolesTest.test('get roles belonging to user', test => {
+  rolesTest.test('getPartyRoles should', getPartyRolesTest => {
+    getPartyRolesTest.test('get roles belonging to party', test => {
       Promise.props({
-        user: UserModel.save(createUser()),
+        party: PartyModel.save(createParty()),
         role1: Model.save(createRole()),
         role2: Model.save(createRole()),
         role3: Model.save(createRole())
       })
       .then(result => {
-        const user = result.user
-        Model.addUserRole({ userId: user.userId, roleId: result.role2.roleId })
-          .then(userRole => Model.getUserRoles(user.userId))
+        const party = result.party
+        Model.addPartyRole({ partyId: party.partyId, roleId: result.role2.roleId })
+          .then(userRole => Model.getPartyRoles(party.partyId))
           .then(results => {
             test.deepEqual(results, [ result.role2 ])
             test.end()
@@ -143,22 +143,22 @@ Test('roles model', rolesTest => {
       })
     })
 
-    getUserRolesTest.end()
+    getPartyRolesTest.end()
   })
 
-  rolesTest.test('removeUserRoles should', removeUserRolesTest => {
-    removeUserRolesTest.test('destroy roles for user', test => {
-      UserModel.save(createUser())
+  rolesTest.test('removePartyRoles should', removePartyRolesTest => {
+    removePartyRolesTest.test('destroy roles for party', test => {
+      PartyModel.save(createParty())
         .then(userResult => Model.save(createRole())
-          .then(role => ({ userId: userResult.userId, roleId: role.roleId }))
+          .then(role => ({ partyId: userResult.partyId, roleId: role.roleId }))
         )
         .then(userRole => {
-          Model.addUserRole(userRole)
+          Model.addPartyRole(userRole)
             .then(result => {
-              return Model.removeUserRoles(userRole.userId)
+              return Model.removePartyRoles(userRole.partyId)
                 .then(removed => {
                   test.ok(removed)
-                  test.equal(removed.userId, userRole.userId)
+                  test.equal(removed.partyId, userRole.partyId)
                   test.equal(removed.roleId, userRole.roleId)
                   test.end()
                 })
@@ -166,7 +166,7 @@ Test('roles model', rolesTest => {
         })
     })
 
-    removeUserRolesTest.end()
+    removePartyRolesTest.end()
   })
 
   rolesTest.end()

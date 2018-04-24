@@ -18,25 +18,25 @@ const getAll = () => Db.roles.find({})
 
 const getById = (roleId) => Db.roles.findOne({ roleId })
 
-const addUserRole = (userRole) => Db.userRoles.insert(userRole)
+const addPartyRole = (userRole) => Db.partyRole.insert(userRole)
 
-const getUserRoles = (userId) => {
+const getPartyRoles = (partyId) => {
   return Db.roles.query(builder => {
     return builder
-      .innerJoin('userRoles as ur', 'roles.roleId', 'ur.roleId')
-      .where('ur.userId', userId)
+      .innerJoin('partyRole as ur', 'roles.roleId', 'ur.roleId')
+      .where('ur.partyId', partyId)
       .select('roles.*')
   })
 }
 
-const removeUserRoles = (userId) => Db.userRoles.destroy({ userId })
+const removePartyRoles = (partyId) => Db.partyRole.destroy({ partyId })
 
 module.exports = {
-  addUserRole,
+  addPartyRole,
   getAll,
   getById,
-  getUserRoles,
+  getPartyRoles,
   remove,
-  removeUserRoles,
+  removePartyRoles,
   save
 }
