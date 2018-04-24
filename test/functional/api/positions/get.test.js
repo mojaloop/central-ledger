@@ -76,9 +76,9 @@ Test('GET /positions/{name}', getTestAccount => {
           .expect('Content-Type', /json/)
           .then(res => {
             test.equal(res.body.account, `http://central-ledger/accounts/${account1Name}`)
-            test.equal(res.body.fees.payments, '1')
-            test.equal(res.body.fees.receipts, '0')
-            test.equal(res.body.fees.net, '-1')
+            test.equal(res.body.fee.payments, '1')
+            test.equal(res.body.fee.receipts, '0')
+            test.equal(res.body.fee.net, '-1')
             test.equal(res.body.transfers.payments, '20')
             test.equal(res.body.transfers.receipts, '0')
             test.equal(res.body.transfers.net, '-20')

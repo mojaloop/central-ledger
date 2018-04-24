@@ -2,20 +2,20 @@ const Handler = require('./handler')
 const Joi = require('joi')
 const Permissions = require('../../domain/security/permissions')
 const RouteConfig = require('../route-config')
-const tags = ['api', 'charges']
+const tags = ['api', 'charge']
 
 module.exports = [
   {
     method: 'GET',
-    path: '/charges',
+    path: '/charge',
     handler: Handler.getAll,
-    options: RouteConfig.config(tags, Permissions.CHARGES_LIST)
+    options: RouteConfig.config(tags, Permissions.CHARGE_LIST)
   },
   {
     method: 'POST',
-    path: '/charges',
+    path: '/charge',
     handler: Handler.create,
-    options: RouteConfig.config(tags, Permissions.CHARGES_CREATE, {
+    options: RouteConfig.config(tags, Permissions.CHARGE_CREATE, {
       payload: {
         allow: ['application/json'],
         failAction: 'error'
@@ -30,17 +30,17 @@ module.exports = [
           maximum: Joi.number().optional().description('Maximum amount for the charge'),
           code: Joi.string().token().max(256).required().description('Code for the charger'),
           is_active: Joi.boolean().required().description('Status for charge'),
-          payer: Joi.string().required().valid('sender', 'receiver', 'ledger').description('Payer of the charged fee'),
-          payee: Joi.string().required().valid('sender', 'receiver', 'ledger').description('Payee of the charged fee')
+          payerParticipantId: Joi.string().required().valid('sender', 'receiver', 'ledger').description('Payer of the charged fee'),
+          payeeParticipantId: Joi.string().required().valid('sender', 'receiver', 'ledger').description('Payee of the charged fee')
         }
       }
     })
   },
   {
     method: 'PUT',
-    path: '/charges/{name}',
+    path: '/charge/{name}',
     handler: Handler.update,
-    options: RouteConfig.config(tags, Permissions.CHARGES_UPDATE, {
+    options: RouteConfig.config(tags, Permissions.CHARGE_UPDATE, {
       payload: {
         allow: ['application/json'],
         failAction: 'error'

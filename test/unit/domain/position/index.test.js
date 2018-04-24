@@ -43,7 +43,7 @@ Test('Position Service tests', (serviceTest) => {
   function buildPosition (accountName, tPayments, tReceipts, tNet, fPayments, fReceipts, fNet, net) {
     return {
       account: `${hostname}/accounts/${accountName}`,
-      fees: {
+      fee: {
         payments: fPayments,
         receipts: fReceipts,
         net: fNet
@@ -124,13 +124,13 @@ Test('Position Service tests', (serviceTest) => {
         buildTransfer(accounts[0].name, 3, accounts[1].name, 3),
         buildTransfer(accounts[0].name, 2, accounts[2].name, 2)
       ]
-      let fees = [
+      let fee = [
         buildFee(accounts[0].name, 1, accounts[1].name, 1),
         buildFee(accounts[2].name, 6, accounts[0].name, 6)
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfers.returns(P.resolve(transfers))
-      Fee.getUnsettledFee.returns(P.resolve(fees))
+      Fee.getUnsettledFee.returns(P.resolve(fee))
 
       let expected = [
         buildPosition(accounts[0].name, '5', '0', '-5', '1', '6', '5', '0'),
@@ -153,10 +153,10 @@ Test('Position Service tests', (serviceTest) => {
   })
 
   serviceTest.test('calculateForAccount should', (calcAccountTest) => {
-    calcAccountTest.test('return empty positions for account if no settleable transfers or fees', (test) => {
+    calcAccountTest.test('return empty positions for account if no settleable transfers or fee', (test) => {
       const expected = {
         account: `${hostname}/accounts/${accounts[0].name}`,
-        fees: {
+        fee: {
           payments: '0',
           receipts: '0',
           net: '0'
@@ -184,22 +184,22 @@ Test('Position Service tests', (serviceTest) => {
         })
     })
 
-    calcAccountTest.test('return expected positions if settleable transfers and fees exist', (test) => {
+    calcAccountTest.test('return expected positions if settleable transfers and fee exist', (test) => {
       let transfers = [
         buildTransfer(accounts[0].name, 10, accounts[1].name, 10),
         buildTransfer(accounts[1].name, 5, accounts[0].name, 5)
       ]
-      let fees = [
+      let fee = [
         buildFee(accounts[0].name, 1, accounts[1].name, 1),
         buildFee(accounts[2].name, 6, accounts[0].name, 6)
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfersByAccount.returns(P.resolve(transfers))
-      Fee.getUnsettledFeeByAccount.returns(P.resolve(fees))
+      Fee.getUnsettledFeeByAccount.returns(P.resolve(fee))
 
       let expected = {
         account: `${hostname}/accounts/${accounts[0].name}`,
-        fees: {
+        fee: {
           payments: '1',
           receipts: '6',
           net: '5'

@@ -18,8 +18,8 @@ function createChargePayload (name) {
   }
 }
 
-Test('GET /charges', getTest => {
-  getTest.test('should return all charges', test => {
+Test('GET /charge', getTest => {
+  getTest.test('should return all charge', test => {
     const charge1Name = 'a' + Fixtures.generateRandomName()
     const charge2Name = 'b' + Fixtures.generateRandomName()
 

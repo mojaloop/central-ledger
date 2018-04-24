@@ -22,7 +22,7 @@ Test('return metadata', async function (assert) {
   assert.equal(res.body.urls.transfer_rejection, `http://${Fixtures.hostname}/transfers/:id/rejection`)
   assert.equal(res.body.urls.websocket, `ws://${Fixtures.hostname}/websocket`)
   assert.equal(res.body.urls.message, `http://${Fixtures.hostname}/messages`)
-  assert.equal(res.body.urls.charges, `http://${Fixtures.hostname}/charges/quote`)
+  assert.equal(res.body.urls.charge, `http://${Fixtures.hostname}/charge/quote`)
   assert.equal(res.body.urls.positions, `http://${Fixtures.hostname}/positions`)
   assert.equal(res.body.urls.positions_account, `http://${Fixtures.hostname}/positions/:name`)
   assert.equal(res.body.urls.auth_token, `http://${Fixtures.hostname}/auth_token`)

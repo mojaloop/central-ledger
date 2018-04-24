@@ -4,10 +4,10 @@ const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const P = require('bluebird')
 const Config = require('../../../../src/lib/config')
-const Handler = require('../../../../src/api/charges/handler')
+const Handler = require('../../../../src/api/charge/handler')
 const Charge = require('../../../../src/domain/charge')
 
-Test('charges handler', handlerTest => {
+Test('charge handler', handlerTest => {
   let sandbox
   let originalHostName
   let hostname = 'http://some-host'
@@ -40,9 +40,9 @@ Test('charges handler', handlerTest => {
         code: '002',
         amount: '1.50'
       }
-      const charges = [chargeQuote1, chargeQuote2]
+      const charge = [chargeQuote1, chargeQuote2]
 
-      Charge.quote.returns(P.resolve(charges))
+      Charge.quote.returns(P.resolve(charge))
       const response = await Handler.chargeQuote({}, {})
       test.equal(response.length, 2)
       const item1 = response[0]

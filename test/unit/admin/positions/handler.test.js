@@ -77,7 +77,7 @@ Test('positions handler', (handlerTest) => {
   })
 
   handlerTest.test('calculateForAccount should', (performTest) => {
-    performTest.test('return positions if there are no settleable transfers or fees', async function (test) {
+    performTest.test('return positions if there are no settleable transfers or fee', async function (test) {
       PositionService.calculateForAccount.returns(P.resolve({}))
       Account.getByName.returns(P.resolve({ accountId: 11 }))
 
@@ -91,10 +91,10 @@ Test('positions handler', (handlerTest) => {
       await Handler.calculateForAccount({ params: { name: 'dfsp1' } }, reply)
     })
 
-    performTest.test('return expected position if settleable transfers and fees exist', async function (test) {
+    performTest.test('return expected position if settleable transfers and fee exist', async function (test) {
       let positions = {
         account: `${hostname}/accounts/dfsp1`,
-        fees: {
+        fee: {
           payments: 4,
           receipts: 0,
           net: -4

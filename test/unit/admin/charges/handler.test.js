@@ -4,7 +4,7 @@ const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const P = require('bluebird')
 const Config = require('../../../../src/lib/config')
-const Handler = require('../../../../src/admin/charges/handler')
+const Handler = require('../../../../src/admin/charge/handler')
 const Charge = require('../../../../src/domain/charge')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Errors = require('../../../../src/errors')
@@ -19,12 +19,12 @@ function createCharge (name = 'charge') {
     maximum: '100.00',
     code: '001',
     is_active: true,
-    payer: 'ledger',
-    payee: 'sender'
+    payerParticipantId: 'ledger',
+    payeeParticipantId: 'sender'
   }
 }
 
-Test('charges handler', handlerTest => {
+Test('charge handler', handlerTest => {
   let sandbox
   let originalHostName
   let hostname = 'http://some-host'
@@ -48,13 +48,13 @@ Test('charges handler', handlerTest => {
   })
 
   handlerTest.test('getAll should', getAllTest => {
-    getAllTest.test('get all charges and format list', async function (test) {
+    getAllTest.test('get all charge and format list', async function (test) {
       const charge1 = createCharge('charge1')
       const charge2 = createCharge('charge2')
 
-      const charges = [charge1, charge2]
+      const charge = [charge1, charge2]
 
-      Charge.getAll.returns(P.resolve(charges))
+      Charge.getAll.returns(P.resolve(charge))
 
       const output = await Handler.getAll({}, {})
       test.equal(output.length, 2)
@@ -110,8 +110,8 @@ Test('charges handler', handlerTest => {
         maximum: '100',
         code: '1',
         is_active: true,
-        payer: 'ledger',
-        payee: 'sender'
+        payerParticipantId: 'ledger',
+        payeeParticipantId: 'sender'
       }
 
       Charge.getByName.withArgs(payload.name).returns(P.resolve(null))
@@ -152,8 +152,8 @@ Test('charges handler', handlerTest => {
         maximum: '100.00',
         code: '001',
         is_active: true,
-        payer: 'ledger',
-        payee: 'sender'
+        payerParticipantId: 'ledger',
+        payeeParticipantId: 'sender'
       }
 
       Charge.getByName.withArgs(payload.name).returns(P.resolve(null))
@@ -169,10 +169,10 @@ Test('charges handler', handlerTest => {
       }
     })
 
-    createTest.test('reply with validation error if payer and payee match', async function (test) {
+    createTest.test('reply with validation error if payerParticipantId and payeeParticipantId match', async function (test) {
       const charge = createCharge('charge')
-      charge.payer = 'ledger'
-      charge.payee = 'ledger'
+      charge.payerParticipantId = 'ledger'
+      charge.payeeParticipantId = 'ledger'
 
       const payload = {
         name: 'charge',
@@ -183,8 +183,8 @@ Test('charges handler', handlerTest => {
         maximum: '100.00',
         code: '001',
         is_active: true,
-        payer: 'ledger',
-        payee: 'ledger'
+        payerParticipantId: 'ledger',
+        payeeParticipantId: 'ledger'
       }
 
       Charge.getByName.withArgs(payload.name).returns(P.resolve(null))
@@ -194,15 +194,15 @@ Test('charges handler', handlerTest => {
         await Handler.create({payload}, {})
       } catch (e) {
         test.equal(e.name, 'ValidationError')
-        test.equal(e.payload.message, 'Payer and payee should be set to \'sender\', \'receiver\', or \'ledger\' and should not have the same value.')
+        test.equal(e.payload.message, 'Payer and payeeParticipantId should be set to \'sender\', \'receiver\', or \'ledger\' and should not have the same value.')
         test.end()
       }
     })
 
     createTest.test('reply with already exists error if a charge with the given name already exists', async function (test) {
       const charge = createCharge('charge')
-      charge.payer = 'sender'
-      charge.payee = 'receiver'
+      charge.payerParticipantId = 'sender'
+      charge.payeeParticipantId = 'receiver'
 
       const payload = {
         name: 'charge',
@@ -213,8 +213,8 @@ Test('charges handler', handlerTest => {
         maximum: '100.00',
         code: '001',
         is_active: true,
-        payer: 'sender',
-        payee: 'receiver'
+        payerParticipantId: 'sender',
+        payeeParticipantId: 'receiver'
       }
 
       Charge.getByName.withArgs(payload.name).returns(P.resolve(charge))
@@ -241,8 +241,8 @@ Test('charges handler', handlerTest => {
         maximum: '5',
         code: '2',
         is_active: false,
-        payer: 'ledger',
-        payee: 'sender'
+        payerParticipantId: 'ledger',
+        payeeParticipantId: 'sender'
       }
 
       const payload = {
@@ -290,8 +290,8 @@ Test('charges handler', handlerTest => {
         maximum: '5',
         code: '2',
         is_active: false,
-        payer: 'ledger',
-        payee: 'sender'
+        payerParticipantId: 'ledger',
+        payeeParticipantId: 'sender'
       }
 
       const payload = {
@@ -331,8 +331,8 @@ Test('charges handler', handlerTest => {
         maximum: '100.00',
         code: '001',
         is_active: true,
-        payer: 'ledger',
-        payee: 'sender'
+        payerParticipantId: 'ledger',
+        payeeParticipantId: 'sender'
       }
 
       const request = {
@@ -362,8 +362,8 @@ Test('charges handler', handlerTest => {
         maximum: '100.00',
         code: '001',
         is_active: true,
-        payer: 'ledger',
-        payee: 'sender'
+        payerParticipantId: 'ledger',
+        payeeParticipantId: 'sender'
       }
 
       const request = {
@@ -383,8 +383,8 @@ Test('charges handler', handlerTest => {
 
     updateTest.test('reply with already exists error if a charge with the given name already exists', async function (test) {
       const charge = createCharge('charge')
-      charge.payer = 'sender'
-      charge.payee = 'receiver'
+      charge.payerParticipantId = 'sender'
+      charge.payeeParticipantId = 'receiver'
 
       const payload = {
         name: 'charge',
@@ -395,8 +395,8 @@ Test('charges handler', handlerTest => {
         maximum: '100.00',
         code: '001',
         is_active: true,
-        payer: 'sender',
-        payee: 'receiver'
+        payerParticipantId: 'sender',
+        payeeParticipantId: 'receiver'
       }
 
       const request = {

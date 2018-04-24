@@ -86,9 +86,9 @@ const fulfillTransfer = (transferId, fulfillment, auth) => putApi(`/transfers/${
 
 const rejectTransfer = (transferId, reason, auth) => putApi(`/transfers/${transferId}/rejection`, reason, auth)
 
-const createCharge = (payload) => postAdmin('/charges', payload)
+const createCharge = (payload) => postAdmin('/charge', payload)
 
-const updateCharge = (name, payload) => putAdmin(`/charges/${name}`, payload)
+const updateCharge = (name, payload) => putAdmin(`/charge/${name}`, payload)
 
 module.exports = {
   account1Name: account1().name,

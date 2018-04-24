@@ -2,14 +2,14 @@
 
 const Test = require('tape')
 const Uuid = require('uuid4')
-const Model = require('../../../src/models/settled-fees')
+const Model = require('../../../src/models/settled-fee')
 const Db = require('../../../src/db')
 
 const getSettledFeeCount = () => {
   return Db.settledFee.count({}, '*')
 }
 
-Test('settled-fees model', modelTest => {
+Test('settled-fee model', modelTest => {
   modelTest.test('create should', createTest => {
     createTest.test('create a new settledFee', test => {
       let payload = { feeId: 1, settlementId: Uuid() }

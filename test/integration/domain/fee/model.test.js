@@ -7,8 +7,8 @@ const Uuid = require('uuid4')
 const Fixtures = require('../../../fixtures')
 const ExecutedTransfersModel = require(`${src}/models/executed-transfers`)
 const SettledTransfersModel = require(`${src}/models/settled-transfers`)
-const SettledFeeModel = require(`${src}/models/settled-fees`)
-const FeesModel = require(`${src}/domain/fee/model`)
+const SettledFeeModel = require(`${src}/models/settled-fee`)
+const FeeModel = require(`${src}/domain/fee/model`)
 const Account = require(`${src}/domain/account`)
 
 function generateFeePayload (data) {
@@ -21,12 +21,12 @@ function generateFeePayload (data) {
   }
 }
 
-Test('fees model', modelTest => {
+Test('fee model', modelTest => {
   modelTest.test('create should', createTest => {
     createTest.test('create a new fee', test => {
       const payload = generateFeePayload({ chargeId: 1 })
 
-      FeesModel.create(payload)
+      FeeModel.create(payload)
         .then((fee) => {
           test.equal(fee.transferId, payload.transferId)
           test.equal(fee.amount, payload.amount)
@@ -43,7 +43,7 @@ Test('fees model', modelTest => {
   })
 
   modelTest.test('getAllForTransfer should', getAllForTransferTest => {
-    getAllForTransferTest.test('return all fees for a transfer', test => {
+    getAllForTransferTest.test('return all fee for a transfer', test => {
       let transferId = Uuid()
       const feePayload1 = generateFeePayload({ transferId, chargeId: 1 })
       const feePayload2 = generateFeePayload({ transferId, chargeId: 2 })
@@ -51,13 +51,13 @@ Test('fees model', modelTest => {
         transferId: transferId
       }
 
-      FeesModel.create(feePayload1)
-        .then(() => FeesModel.create(feePayload2))
-        .then(() => FeesModel.getAllForTransfer(transfer))
-        .then((fees) => {
-          test.ok(fees.length >= 2)
-          test.ok(fees.find(a => a.chargeId === feePayload1.chargeId))
-          test.ok(fees.find(a => a.chargeId === feePayload2.chargeId))
+      FeeModel.create(feePayload1)
+        .then(() => FeeModel.create(feePayload2))
+        .then(() => FeeModel.getAllForTransfer(transfer))
+        .then((fee) => {
+          test.ok(fee.length >= 2)
+          test.ok(fee.find(a => a.chargeId === feePayload1.chargeId))
+          test.ok(fee.find(a => a.chargeId === feePayload2.chargeId))
           test.end()
         })
     })
@@ -76,9 +76,9 @@ Test('fees model', modelTest => {
         transferId: transferId
       }
 
-      FeesModel.create(feePayload1)
-        .then(() => FeesModel.create(feePayload2))
-        .then(() => FeesModel.doesExist(charge, transfer))
+      FeeModel.create(feePayload1)
+        .then(() => FeeModel.create(feePayload2))
+        .then(() => FeeModel.doesExist(charge, transfer))
         .then(fee => {
           test.ok(fee)
           test.equal(fee.chargeId, charge.chargeId)
@@ -96,8 +96,8 @@ Test('fees model', modelTest => {
         transferId: transferId
       }
 
-      FeesModel.create(feePayload)
-        .then(() => FeesModel.doesExist(charge, transfer))
+      FeeModel.create(feePayload)
+        .then(() => FeeModel.doesExist(charge, transfer))
         .then(fee => {
           test.notOk(fee)
           test.end()
@@ -107,8 +107,8 @@ Test('fees model', modelTest => {
     doesExistTest.end()
   })
 
-  modelTest.test('getSettleableFeesByAccount should', getSettleableFeesByAccountTest => {
-    getSettleableFeesByAccountTest.test('retrieve fee ids for a specified account that are attached to transfers that are executed but not settled', test => {
+  modelTest.test('getSettleableFeeByAccount should', getSettleableFeeByAccountTest => {
+    getSettleableFeeByAccountTest.test('retrieve fee ids for a specified account that are attached to transfers that are executed but not settled', test => {
       const account1Name = Fixtures.generateAccountName()
       const account2Name = Fixtures.generateAccountName()
       const account3Name = Fixtures.generateAccountName()
@@ -127,10 +127,10 @@ Test('fees model', modelTest => {
           .then(() => ExecutedTransfersModel.create({ id: unsettledOtherTransferId }))
           .then(() => ExecutedTransfersModel.create({ id: settledTransferId }))
           .then(() => SettledTransfersModel.create({ id: settledTransferId, settlementId }))
-          .then(() => P.all([FeesModel.create(unsettledFee), FeesModel.create(settledFee), FeesModel.create(otherUnsettledFee)]))
+          .then(() => P.all([FeeModel.create(unsettledFee), FeeModel.create(settledFee), FeeModel.create(otherUnsettledFee)]))
           .then(([fee1, fee2, fee3]) => {
             return SettledFeeModel.create({ feeId: fee2.feeId, settlementId }).then(() => {
-              return FeesModel.getUnsettledFeeByAccount(account1).then(result => {
+              return FeeModel.getUnsettledFeeByAccount(account1).then(result => {
                 test.notOk(result.find(x => x.feeId === fee3.feeId))
                 test.notOk(result.find(x => x.feeId === fee2.feeId))
                 test.ok(result.find(x => x.feeId === fee1.feeId))
@@ -141,11 +141,11 @@ Test('fees model', modelTest => {
       })
     })
 
-    getSettleableFeesByAccountTest.end()
+    getSettleableFeeByAccountTest.end()
   })
 
-  modelTest.test('getSettleableFeesForTransfer should', getSettleableFeesForTransferTest => {
-    getSettleableFeesForTransferTest.test('retrieve all fee ids that are attached to transfers that are executed but not settled', test => {
+  modelTest.test('getSettleableFeeForTransfer should', getSettleableFeeForTransferTest => {
+    getSettleableFeeForTransferTest.test('retrieve all fee ids that are attached to transfers that are executed but not settled', test => {
       const account1Name = Fixtures.generateAccountName()
       const account2Name = Fixtures.generateAccountName()
       const account3Name = Fixtures.generateAccountName()
@@ -164,10 +164,10 @@ Test('fees model', modelTest => {
           .then(() => ExecutedTransfersModel.create({ id: unsettledOtherTransferId }))
           .then(() => ExecutedTransfersModel.create({ id: settledTransferId }))
           .then(() => SettledTransfersModel.create({ id: settledTransferId, settlementId }))
-          .then(() => P.all([FeesModel.create(unsettledFee), FeesModel.create(settledFee), FeesModel.create(otherUnsettledFee)]))
+          .then(() => P.all([FeeModel.create(unsettledFee), FeeModel.create(settledFee), FeeModel.create(otherUnsettledFee)]))
           .then(([fee1, fee2, fee3]) => {
             return SettledFeeModel.create({ feeId: fee2.feeId, settlementId }).then(() => {
-              return FeesModel.getUnsettledFee().then(result => {
+              return FeeModel.getUnsettledFee().then(result => {
                 test.ok(result.find(x => x.feeId === fee3.feeId))
                 test.notOk(result.find(x => x.feeId === fee2.feeId))
                 test.ok(result.find(x => x.feeId === fee1.feeId))
@@ -177,7 +177,7 @@ Test('fees model', modelTest => {
           })
       })
 
-      getSettleableFeesForTransferTest.end()
+      getSettleableFeeForTransferTest.end()
     })
   })
 

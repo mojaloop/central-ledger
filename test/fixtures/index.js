@@ -144,8 +144,8 @@ const buildCharge = (name, rateType, code) => {
     'minimum': '16.00',
     'maximum': '100.00',
     'is_active': true,
-    'payer': 'sender',
-    'payee': 'receiver'
+    'payerParticipantId': 'sender',
+    'payeeParticipantId': 'receiver'
   }
 }
 
@@ -162,7 +162,7 @@ const buildAccountUrl = (accountName) => {
 function buildAccountPosition (accountName, tPayments, tReceipts, fPayments, fReceipts) {
   return {
     account: buildAccountUrl(accountName),
-    fees: {
+    fee: {
       payments: fPayments.toString(),
       receipts: fReceipts.toString(),
       net: (fReceipts - fPayments).toString()

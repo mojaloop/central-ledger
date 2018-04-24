@@ -74,7 +74,7 @@ const settledTransfersInverse = [{
 
 const mockedCompletedSettlement = {
   transfers: settledTransfers,
-  fees: settledFee
+  fee: settledFee
 }
 
 Test('Settlement Test', settlementTest => {
@@ -94,58 +94,58 @@ Test('Settlement Test', settlementTest => {
   })
 
   settlementTest.test('performSettlement should', performSettlementTest => {
-    performSettlementTest.test('return flattened transfers and fees', test => {
+    performSettlementTest.test('return flattened transfers and fee', test => {
       let transfers = [
         generateTransfer(account1, account2, '10.00')
       ]
-      let fees = [
+      let fee = [
         generateFee(account1, account2, '5.00')
       ]
-      const settledPosition = Settlement.performSettlement(transfers, fees)
+      const settledPosition = Settlement.performSettlement(transfers, fee)
       test.deepEqual(mockedCompletedSettlement, settledPosition)
       test.end()
     })
 
-    performSettlementTest.test('return flattened empty transfers and fees when amounts cancel each other', test => {
+    performSettlementTest.test('return flattened empty transfers and fee when amounts cancel each other', test => {
       let transfers = [
         generateTransfer(account1, account2, '10.00'),
         generateTransfer(account2, account1, '10.00')
       ]
-      let fees = [
+      let fee = [
         generateFee(account1, account2, '5.00'),
         generateFee(account2, account1, '5.00')
       ]
-      const settledPosition = Settlement.performSettlement(transfers, fees)
-      test.deepEqual({fees: [], transfers: []}, settledPosition)
+      const settledPosition = Settlement.performSettlement(transfers, fee)
+      test.deepEqual({fee: [], transfers: []}, settledPosition)
       test.end()
     })
 
-    performSettlementTest.test('return flattened transfers and fees when amounts are inverse but initial is higher', test => {
+    performSettlementTest.test('return flattened transfers and fee when amounts are inverse but initial is higher', test => {
       let transfers = [
         generateTransfer(account1, account2, '11.00'),
         generateTransfer(account2, account1, '10.00')
       ]
-      let fees = [
+      let fee = [
         generateFee(account1, account2, '5.00'),
         generateFee(account2, account1, '5.00')
       ]
-      const settledPosition = Settlement.performSettlement(transfers, fees)
-      test.deepEqual({fees: [], transfers: settledTransfersInverse}, settledPosition)
+      const settledPosition = Settlement.performSettlement(transfers, fee)
+      test.deepEqual({fee: [], transfers: settledTransfersInverse}, settledPosition)
       test.end()
     })
 
-    performSettlementTest.test('return flattened empty transfers and fees when amounts cancel each other', test => {
+    performSettlementTest.test('return flattened empty transfers and fee when amounts cancel each other', test => {
       let transfers = [
         generateTransfer(account1, account2, '10.00'),
         generateTransfer(account1, account2, '5.00'),
         generateTransfer(account2, account1, '15.00')
       ]
-      let fees = [
+      let fee = [
         generateFee(account1, account2, '5.00'),
         generateFee(account2, account1, '5.00')
       ]
-      const settledPosition = Settlement.performSettlement(transfers, fees)
-      test.deepEqual({fees: [], transfers: []}, settledPosition)
+      const settledPosition = Settlement.performSettlement(transfers, fee)
+      test.deepEqual({fee: [], transfers: []}, settledPosition)
       test.end()
     })
 

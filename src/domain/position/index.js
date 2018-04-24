@@ -69,7 +69,7 @@ const generatePosition = (accountUri, transferPositions, feePositions) => {
 
   return {
     account: accountUri,
-    fees: feePositions,
+    fee: feePositions,
     transfers: transferPositions,
     net: transferAmount.plus(feeAmount).valueOf()
   }
@@ -80,9 +80,9 @@ exports.calculateForAccount = (account) => {
   const transferPositionMap = new Map().set(accountUri, buildEmptyPosition())
   const feePositionMap = new Map().set(accountUri, buildEmptyPosition())
 
-  return P.all([SettleableTransfersReadmodel.getUnsettledTransfersByAccount(account.accountId), Fee.getUnsettledFeeByAccount(account)]).then(([transfers, fees]) => {
+  return P.all([SettleableTransfersReadmodel.getUnsettledTransfersByAccount(account.accountId), Fee.getUnsettledFeeByAccount(account)]).then(([transfers, fee]) => {
     const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap)).find(x => x.account === accountUri)
-    const feePositions = buildResponse(calculatePositions(fees.map(mapFeeToExecuted), feePositionMap)).find(x => x.account === accountUri)
+    const feePositions = buildResponse(calculatePositions(fee.map(mapFeeToExecuted), feePositionMap)).find(x => x.account === accountUri)
 
     return generatePosition(accountUri, transferPositions, feePositions)
   })
@@ -101,9 +101,9 @@ exports.calculateForAllAccounts = () => {
         transferPositionMap.set(UrlParser.toAccountUri(account.name), buildEmptyPosition())
         feePositionMap.set(UrlParser.toAccountUri(account.name), buildEmptyPosition())
       })
-      return P.all([SettleableTransfersReadmodel.getUnsettledTransfers(), Fee.getUnsettledFee()]).then(([transfers, fees]) => {
+      return P.all([SettleableTransfersReadmodel.getUnsettledTransfers(), Fee.getUnsettledFee()]).then(([transfers, fee]) => {
         const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap))
-        const feePositions = buildResponse(calculatePositions(fees.map(mapFeeToExecuted), feePositionMap))
+        const feePositions = buildResponse(calculatePositions(fee.map(mapFeeToExecuted), feePositionMap))
         var positions = []
         accounts.forEach(account => {
           const accountUri = UrlParser.toAccountUri(account.name)

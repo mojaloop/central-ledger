@@ -7,7 +7,7 @@ const P = require('bluebird')
 const Model = require(`${src}/models/settled-fee`)
 const Db = require(`${src}/db`)
 
-Test('settled-fees model', function (modelTest) {
+Test('settled-fee model', function (modelTest) {
   let sandbox
 
   modelTest.beforeEach((t) => {

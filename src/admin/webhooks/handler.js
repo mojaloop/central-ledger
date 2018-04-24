@@ -14,7 +14,7 @@ exports.rejectExpired = async function (request, h) {
 exports.settle = async function (request, h) {
   Sidecar.logRequest(request)
   const settledTransfers = await TransferService.settle()
-  const settledFee = await FeeService.settleFeesForTransfers(settledTransfers)
+  const settledFee = await FeeService.settleFeeForTransfers(settledTransfers)
   return SettlementService.performSettlement(settledTransfers, settledFee)
 }
 

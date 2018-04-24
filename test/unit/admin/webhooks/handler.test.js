@@ -54,7 +54,7 @@ Test('Handler Test', handlerTest => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(TransferService, 'rejectExpired')
     sandbox.stub(TransferService, 'settle')
-    sandbox.stub(FeeService, 'settleFeesForTransfers')
+    sandbox.stub(FeeService, 'settleFeeForTransfers')
     sandbox.stub(TokenService, 'removeExpired')
     sandbox.stub(Sidecar, 'logRequest')
     sandbox.stub(SettlementService)
@@ -103,7 +103,7 @@ Test('Handler Test', handlerTest => {
         generateTransfer(account1, account3, '10.00'),
         generateTransfer(account3, account1, '10.00')
       ]
-      let fees = [
+      let fee = [
         generateFee(account1, account2, '5.00'),
         generateFee(account1, account2, '5.00'),
         generateFee(account1, account2, '5.00'),
@@ -112,7 +112,7 @@ Test('Handler Test', handlerTest => {
         generateFee(account3, account1, '15.00')
       ]
       TransferService.settle.returns(P.resolve(transfers))
-      FeeService.settleFeesForTransfers.returns(P.resolve(fees))
+      FeeService.settleFeeForTransfers.returns(P.resolve(fee))
 
       const settledTransfers = [{
         amount: {

@@ -38,7 +38,7 @@ const fulfill = async (fulfillment) => {
   await Projection.saveTransferExecuted({payload: record.payload, timestamp: record.timestamp})
   await Projection.saveExecutedTransfer(record)
   const fulfilledTransfer = await Query.getById(fulfillment.id)
-  await FeeProjection.generateFeesForTransfer(fulfilledTransfer)
+  await FeeProjection.generateFeeForTransfer(fulfilledTransfer)
   return fulfilledTransfer
 }
 

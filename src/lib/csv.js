@@ -18,11 +18,11 @@ module.exports = {
   flattenedTransfersJson: function flattendTransfersJson (settleTransfers) {
     return flattenJsonObjectList(settleTransfers)
   },
-  flattenedFeesJson: function flattendFeesJson (settleFees) {
-    return flattenJsonObjectList(settleFees)
+  flattenedFeeJson: function flattendFeeJson (settleFee) {
+    return flattenJsonObjectList(settleFee)
   },
-  joinedSettlementJson: function joinedSettlementJson (flattenedTransfersJson, flattenedFeesJson) {
-    return flattenedTransfersJson.concat(flattenedFeesJson)
+  joinedSettlementJson: function joinedSettlementJson (flattenedTransfersJson, flattenedFeeJson) {
+    return flattenedTransfersJson.concat(flattenedFeeJson)
   },
   keys: function keys (joinedSettlementJson) {
     return Object.keys(joinedSettlementJson[0])

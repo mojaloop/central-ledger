@@ -122,16 +122,16 @@ const mailDetails = (settledTransfers, settledFee) => {
   settledTransfersMap = transfersMap(settledTransfers)
   Logger.info('out of map')
   for (const [key, value] of settledTransfersMap.entries()) {
-    const feesArray = []
+    const feeArray = []
     settledFee.forEach(settledFee => {
       const debitKey = settledFee.payerAccountName
       const creditKey = settledFee.payeeAccountName
       if (key === debitKey || key === creditKey) {
-        feesArray.push(settledFee)
+        feeArray.push(settledFee)
       }
     })
     Logger.info('iterating map' + key)
-    const joinedSettlementJson = csv.joinedSettlementJson(csv.flattenedTransfersJson(value), csv.flattenedFeesJson(feesArray))
+    const joinedSettlementJson = csv.joinedSettlementJson(csv.flattenedTransfersJson(value), csv.flattenedFeeJson(feeArray))
     const keys = csv.keys(joinedSettlementJson)
     const csvFile = csv.convertJsonToCsv(joinedSettlementJson, keys)
     const mailInformation = {
@@ -154,7 +154,7 @@ const performSettlement = (settledTransfers, settledFee) => {
   mailDetails(settledTransfers, settledFee)
   const transferSettlement = flattenSettlement(calculateSettlement(settledTransfers.map(settledTransfers => mapToSettlement(settledTransfers)), new Map()))
   const feeSettlement = flattenSettlement(calculateSettlement(settledFee.map(settledFee => mapToSettlement(settledFee)), new Map()))
-  return {transfers: transferSettlement, fees: feeSettlement}
+  return {transfers: transferSettlement, fee: feeSettlement}
 }
 
 module.exports = {
