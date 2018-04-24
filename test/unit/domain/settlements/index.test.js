@@ -2,8 +2,8 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Settlements = require('../../../../src/domain/settlements')
-const SettlementEventListener = require('../../../../src/domain/settlements/settlementEventListener')
+const Settlement = require('../../../../src/domain/settlement')
+const SettlementEventListener = require('../../../../src/domain/settlement/settlementEventListener')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Events = require('../../../../src/lib/events')
 
@@ -50,7 +50,7 @@ const settledTransfers = [{
   }
 }]
 
-const settledFees = [{
+const settledFee = [{
   amount: {
     currency_code: 'TZS',
     description: account1.name,
@@ -74,10 +74,10 @@ const settledTransfersInverse = [{
 
 const mockedCompletedSettlement = {
   transfers: settledTransfers,
-  fees: settledFees
+  fees: settledFee
 }
 
-Test('Settlements Test', settlementTest => {
+Test('Settlement Test', settlementTest => {
   let sandbox
 
   settlementTest.beforeEach(t => {
@@ -101,7 +101,7 @@ Test('Settlements Test', settlementTest => {
       let fees = [
         generateFee(account1, account2, '5.00')
       ]
-      const settledPosition = Settlements.performSettlement(transfers, fees)
+      const settledPosition = Settlement.performSettlement(transfers, fees)
       test.deepEqual(mockedCompletedSettlement, settledPosition)
       test.end()
     })
@@ -115,7 +115,7 @@ Test('Settlements Test', settlementTest => {
         generateFee(account1, account2, '5.00'),
         generateFee(account2, account1, '5.00')
       ]
-      const settledPosition = Settlements.performSettlement(transfers, fees)
+      const settledPosition = Settlement.performSettlement(transfers, fees)
       test.deepEqual({fees: [], transfers: []}, settledPosition)
       test.end()
     })
@@ -129,7 +129,7 @@ Test('Settlements Test', settlementTest => {
         generateFee(account1, account2, '5.00'),
         generateFee(account2, account1, '5.00')
       ]
-      const settledPosition = Settlements.performSettlement(transfers, fees)
+      const settledPosition = Settlement.performSettlement(transfers, fees)
       test.deepEqual({fees: [], transfers: settledTransfersInverse}, settledPosition)
       test.end()
     })
@@ -144,7 +144,7 @@ Test('Settlements Test', settlementTest => {
         generateFee(account1, account2, '5.00'),
         generateFee(account2, account1, '5.00')
       ]
-      const settledPosition = Settlements.performSettlement(transfers, fees)
+      const settledPosition = Settlement.performSettlement(transfers, fees)
       test.deepEqual({fees: [], transfers: []}, settledPosition)
       test.end()
     })

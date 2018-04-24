@@ -24,8 +24,8 @@ Test('Position Service tests', (serviceTest) => {
     sandbox.stub(Account, 'getById')
     sandbox.stub(SettleableTransfersReadModel, 'getUnsettledTransfers')
     sandbox.stub(SettleableTransfersReadModel, 'getUnsettledTransfersByAccount')
-    sandbox.stub(Fee, 'getUnsettledFeesByAccount')
-    sandbox.stub(Fee, 'getUnsettledFees')
+    sandbox.stub(Fee, 'getUnsettledFeeByAccount')
+    sandbox.stub(Fee, 'getUnsettledFee')
     Account.getAll.returns(P.resolve(accounts))
     t.end()
   })
@@ -84,14 +84,14 @@ Test('Position Service tests', (serviceTest) => {
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfers.returns(P.resolve(transfers))
-      Fee.getUnsettledFees.returns(P.resolve([]))
+      Fee.getUnsettledFee.returns(P.resolve([]))
 
       let expected = []
       Service.calculateForAllAccounts()
         .then(positions => {
           test.ok(Account.getAll.called)
           test.notOk(SettleableTransfersReadModel.getUnsettledTransfers.called)
-          test.notOk(Fee.getUnsettledFees.called)
+          test.notOk(Fee.getUnsettledFee.called)
           test.deepEqual(positions, expected)
           test.end()
         })
@@ -106,13 +106,13 @@ Test('Position Service tests', (serviceTest) => {
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfers.returns(P.resolve([]))
-      Fee.getUnsettledFees.returns(P.resolve([]))
+      Fee.getUnsettledFee.returns(P.resolve([]))
 
       Service.calculateForAllAccounts()
         .then(positions => {
           assert.ok(Account.getAll.called)
           assert.ok(SettleableTransfersReadModel.getUnsettledTransfers.called)
-          assert.ok(Fee.getUnsettledFees.called)
+          assert.ok(Fee.getUnsettledFee.called)
           assert.equal(positions.length, accounts.length)
           assert.deepEqual(positions, expected)
           assert.end()
@@ -130,7 +130,7 @@ Test('Position Service tests', (serviceTest) => {
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfers.returns(P.resolve(transfers))
-      Fee.getUnsettledFees.returns(P.resolve(fees))
+      Fee.getUnsettledFee.returns(P.resolve(fees))
 
       let expected = [
         buildPosition(accounts[0].name, '5', '0', '-5', '1', '6', '5', '0'),
@@ -143,7 +143,7 @@ Test('Position Service tests', (serviceTest) => {
         .then(positions => {
           assert.ok(Account.getAll.called)
           assert.ok(SettleableTransfersReadModel.getUnsettledTransfers.calledOnce)
-          assert.ok(Fee.getUnsettledFees.calledOnce)
+          assert.ok(Fee.getUnsettledFee.calledOnce)
           assert.deepEqual(positions, expected)
           assert.end()
         })
@@ -173,12 +173,12 @@ Test('Position Service tests', (serviceTest) => {
         id: 11
       }
       SettleableTransfersReadModel.getUnsettledTransfersByAccount.returns(P.resolve([]))
-      Fee.getUnsettledFeesByAccount.returns(P.resolve([]))
+      Fee.getUnsettledFeeByAccount.returns(P.resolve([]))
 
       Service.calculateForAccount(account)
         .then(positions => {
           test.ok(SettleableTransfersReadModel.getUnsettledTransfersByAccount.called)
-          test.ok(Fee.getUnsettledFeesByAccount.called)
+          test.ok(Fee.getUnsettledFeeByAccount.called)
           test.deepEqual(positions, expected)
           test.end()
         })
@@ -195,7 +195,7 @@ Test('Position Service tests', (serviceTest) => {
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfersByAccount.returns(P.resolve(transfers))
-      Fee.getUnsettledFeesByAccount.returns(P.resolve(fees))
+      Fee.getUnsettledFeeByAccount.returns(P.resolve(fees))
 
       let expected = {
         account: `${hostname}/accounts/${accounts[0].name}`,
@@ -218,7 +218,7 @@ Test('Position Service tests', (serviceTest) => {
       Service.calculateForAccount(account)
         .then(positions => {
           test.ok(SettleableTransfersReadModel.getUnsettledTransfersByAccount.calledOnce)
-          test.ok(Fee.getUnsettledFeesByAccount.calledOnce)
+          test.ok(Fee.getUnsettledFeeByAccount.calledOnce)
           test.deepEqual(positions, expected)
           test.end()
         })

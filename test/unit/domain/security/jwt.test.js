@@ -122,20 +122,20 @@ Test('JWT', jwtTest => {
         .catch(() => test.fail('Expected exception'))
     })
 
-    verifyTest.test('return party and roles for party', test => {
+    verifyTest.test('return party and role for party', test => {
       const token = 'token'
       const partyId = Uuid()
       const decoded = { userInfo: { partyId } }
       WebToken.verify.withArgs(token, Config.ADMIN_SECRET).yields(null, decoded)
       const party = { partyId }
       SecurityService.getPartyById.withArgs(partyId).returns(Promise.resolve(party))
-      const roles = [{}, {}]
-      SecurityService.getPartyRoles.withArgs(partyId).returns(Promise.resolve(roles))
+      const role = [{}, {}]
+      SecurityService.getPartyRole.withArgs(partyId).returns(Promise.resolve(role))
 
       JWT.verify(token)
         .then(result => {
           test.deepEqual(result.party, party)
-          test.deepEqual(result.roles, roles)
+          test.deepEqual(result.role, role)
           test.end()
         })
     })

@@ -3,8 +3,8 @@
 const SecurityService = require('../../domain/security')
 const Sidecar = require('../../lib/sidecar')
 
-const getRoles = function (request, h) {
-  return SecurityService.getAllRoles()
+const getRole = function (request, h) {
+  return SecurityService.getAllRole()
 }
 
 const createRole = function (request, h) {
@@ -26,6 +26,6 @@ const deleteRole = async function (request, h) {
 module.exports = {
   createRole,
   deleteRole,
-  getRoles,
+  getRole,
   updateRole
 }

@@ -26,13 +26,13 @@ const update = async function (request, h) {
   return await SecurityService.updateParty(request.params.id, request.payload)
 }
 
-const getRoles = async function (request, h) {
-  return await SecurityService.getPartyRoles(request.params.id)
+const getRole = async function (request, h) {
+  return await SecurityService.getPartyRole(request.params.id)
 }
 
-const updateRoles = async function (request, h) {
+const updateRole = async function (request, h) {
   Sidecar.logRequest(request)
-  return await SecurityService.updatePartyRoles(request.params.id, request.payload)
+  return await SecurityService.updatePartyRole(request.params.id, request.payload)
 }
 
 module.exports = {
@@ -40,7 +40,7 @@ module.exports = {
   remove,
   getAll,
   getById,
-  getRoles,
+  getRole,
   update,
-  updateRoles
+  updateRole
 }

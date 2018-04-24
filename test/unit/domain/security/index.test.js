@@ -7,7 +7,7 @@ const Uuid = require('uuid4')
 
 const Errors = require('../../../../src/errors')
 const Util = require('../../../../src/lib/util')
-const RolesModel = require('../../../../src/domain/security/models/roles')
+const RoleModel = require('../../../../src/domain/security/models/role')
 const PartyModel = require('../../../../src/domain/security/models/party')
 const SecurityService = require('../../../../src/domain/security')
 
@@ -16,7 +16,7 @@ Test('SecurityService test', serviceTest => {
 
   serviceTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(RolesModel)
+    sandbox.stub(RoleModel)
     sandbox.stub(PartyModel)
     test.end()
   })
@@ -26,40 +26,40 @@ Test('SecurityService test', serviceTest => {
     test.end()
   })
 
-  serviceTest.test('getAllRoles should', getAllRolesTest => {
-    getAllRolesTest.test('return all roles from model', test => {
-      const roles = [{ name: 'role1' }, { name: 'role2' }]
-      RolesModel.getAll.returns(P.resolve(roles))
+  serviceTest.test('getAllRole should', getAllRoleTest => {
+    getAllRoleTest.test('return all role from model', test => {
+      const role = [{ name: 'role1' }, { name: 'role2' }]
+      RoleModel.getAll.returns(P.resolve(role))
 
-      SecurityService.getAllRoles()
+      SecurityService.getAllRole()
         .then(result => {
-          test.deepEqual(result, roles)
+          test.deepEqual(result, role)
           test.end()
         })
     })
 
-    getAllRolesTest.test('remove createdDate and expand permissions', test => {
-      const roles = [{ name: 'role1', createdDate: new Date(), permissions: 'PERMISSION1|PERMISSION2' }]
-      RolesModel.getAll.returns(P.resolve(roles))
+    getAllRoleTest.test('remove createdDate and expand permissions', test => {
+      const role = [{ name: 'role1', createdDate: new Date(), permissions: 'PERMISSION1|PERMISSION2' }]
+      RoleModel.getAll.returns(P.resolve(role))
 
-      SecurityService.getAllRoles()
+      SecurityService.getAllRole()
         .then(result => {
           test.deepEqual(result[0], { name: 'role1', permissions: ['PERMISSION1', 'PERMISSION2'] })
           test.end()
         })
     })
 
-    getAllRolesTest.end()
+    getAllRoleTest.end()
   })
 
   serviceTest.test('createRole should', createTest => {
     createTest.test('save role to model', test => {
       const role = { name: 'role1' }
-      RolesModel.save.returns(P.resolve(role))
+      RoleModel.save.returns(P.resolve(role))
 
       SecurityService.createRole(role)
         .then(result => {
-          test.ok(RolesModel.save.calledWith(Sinon.match(role)))
+          test.ok(RoleModel.save.calledWith(Sinon.match(role)))
           test.deepEqual(result, role)
           test.end()
         })
@@ -67,18 +67,18 @@ Test('SecurityService test', serviceTest => {
 
     createTest.test('convert permissions array to string', test => {
       const role = { name: 'role1', permissions: ['PERMISSION1', 'PERMISSION2'] }
-      RolesModel.save.returns(P.resolve({}))
+      RoleModel.save.returns(P.resolve({}))
 
       SecurityService.createRole(role)
         .then(result => {
-          test.ok(RolesModel.save.calledWith(Sinon.match({ name: 'role1', permissions: 'PERMISSION1|PERMISSION2' })))
+          test.ok(RoleModel.save.calledWith(Sinon.match({ name: 'role1', permissions: 'PERMISSION1|PERMISSION2' })))
           test.end()
         })
     })
 
     createTest.test('remove createdDate and expand permissions', test => {
       const role = { name: 'role1', createdDate: new Date(), permissions: 'PERMISSION1|PERMISSION2' }
-      RolesModel.save.returns(P.resolve(role))
+      RoleModel.save.returns(P.resolve(role))
 
       SecurityService.createRole({})
         .then(result => {
@@ -94,13 +94,13 @@ Test('SecurityService test', serviceTest => {
     updateTest.test('find existing role and update properties', test => {
       const roleId = Uuid()
       const role = { roleId, name: 'role1', permissions: 'PERMISSION1|PERMISSION2', description: 'Some role' }
-      RolesModel.getById.withArgs(roleId).returns(P.resolve(role))
-      RolesModel.save.returns(P.resolve({}))
+      RoleModel.getById.withArgs(roleId).returns(P.resolve(role))
+      RoleModel.save.returns(P.resolve({}))
       const newRole = { name: 'role2', permissions: ['PERMISSION3'] }
       SecurityService.updateRole(roleId, newRole)
         .then(result => {
-          test.equal(RolesModel.save.callCount, 1)
-          const savedRole = RolesModel.save.firstCall.args[0]
+          test.equal(RoleModel.save.callCount, 1)
+          const savedRole = RoleModel.save.firstCall.args[0]
           test.equal(savedRole.roleId, roleId)
           test.equal(savedRole.name, newRole.name)
           test.equal(savedRole.permissions, newRole.permissions[0])
@@ -111,7 +111,7 @@ Test('SecurityService test', serviceTest => {
 
     updateTest.test('return NotFoundError if role does not exist', test => {
       const roleId = Uuid()
-      RolesModel.getById.withArgs(roleId).returns(P.resolve(null))
+      RoleModel.getById.withArgs(roleId).returns(P.resolve(null))
       SecurityService.updateRole(roleId, { name: 'test' })
         .then(() => test.fail('Expected exception'))
         .catch(Errors.NotFoundError, e => {
@@ -127,18 +127,18 @@ Test('SecurityService test', serviceTest => {
   serviceTest.test('deleteRole should', deleteTest => {
     deleteTest.test('remove role from model', test => {
       const roleId = Uuid()
-      RolesModel.remove.withArgs(roleId).returns(P.resolve([{ name: 'role1' }]))
+      RoleModel.remove.withArgs(roleId).returns(P.resolve([{ name: 'role1' }]))
       SecurityService.deleteRole(roleId)
         .then(result => {
-          test.equal(RolesModel.remove.callCount, 1)
-          test.ok(RolesModel.remove.calledWith(roleId))
+          test.equal(RoleModel.remove.callCount, 1)
+          test.ok(RoleModel.remove.calledWith(roleId))
           test.end()
         })
     })
 
     deleteTest.test('throw NotFoundError if no rows deleted', test => {
       const roleId = Uuid()
-      RolesModel.remove.returns(P.resolve([]))
+      RoleModel.remove.returns(P.resolve([]))
       SecurityService.deleteRole(roleId)
         .then(() => test.fail('expected exception'))
         .catch(Errors.NotFoundError, e => {
@@ -222,20 +222,20 @@ Test('SecurityService test', serviceTest => {
     getPartyByKeyTest.end()
   })
 
-  serviceTest.test('getPartyRoles should', getPartyRolesTest => {
-    getPartyRolesTest.test('return party roles from model', test => {
-      const roles = [{ permissions: '' }, { permissions: '' }]
+  serviceTest.test('getPartyRole should', getPartyRoleTest => {
+    getPartyRoleTest.test('return party role from model', test => {
+      const role = [{ permissions: '' }, { permissions: '' }]
       const partyId = Uuid()
-      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
+      RoleModel.getPartyRole.withArgs(partyId).returns(P.resolve(role))
 
-      SecurityService.getPartyRoles(partyId)
+      SecurityService.getPartyRole(partyId)
         .then(result => {
-          test.deepEqual(result, roles)
+          test.deepEqual(result, role)
           test.end()
         })
     })
 
-    getPartyRolesTest.end()
+    getPartyRoleTest.end()
   })
 
   serviceTest.test('createParty should', createPartyTest => {
@@ -267,13 +267,13 @@ Test('SecurityService test', serviceTest => {
         .catch(() => test.fail('Expected NotFoundError'))
     })
 
-    deletePartyTest.test('remove party roles', test => {
+    deletePartyTest.test('remove party role', test => {
       const partyId = Uuid()
       PartyModel.getById.returns(P.resolve({}))
 
       SecurityService.deleteParty(partyId)
         .then(() => {
-          test.ok(RolesModel.removePartyRoles.calledWith(partyId))
+          test.ok(RoleModel.removePartyRole.calledWith(partyId))
           test.end()
         })
     })
@@ -325,12 +325,12 @@ Test('SecurityService test', serviceTest => {
     updatePartyTest.end()
   })
 
-  serviceTest.test('updatePartyRoles should', updatePartyRolesTest => {
-    updatePartyRolesTest.test('throw NotFoundError if party does not exist', test => {
+  serviceTest.test('updatePartyRole should', updatePartyRoleTest => {
+    updatePartyRoleTest.test('throw NotFoundError if party does not exist', test => {
       const partyId = Uuid()
       PartyModel.getById.withArgs(partyId).returns(P.resolve(null))
 
-      SecurityService.updatePartyRoles(partyId, [])
+      SecurityService.updatePartyRole(partyId, [])
         .then(() => test.fail('Expected error'))
         .catch(Errors.NotFoundError, e => {
           test.equal(e.message, 'Party does not exist')
@@ -339,49 +339,49 @@ Test('SecurityService test', serviceTest => {
         .catch(() => test.fail('Expected NotFoundError'))
     })
 
-    updatePartyRolesTest.test('remove existing party roles', test => {
+    updatePartyRoleTest.test('remove existing party role', test => {
       const partyId = Uuid()
       PartyModel.getById.returns(P.resolve({}))
-      const roles = [{ permissions: '' }, { permissions: '' }]
-      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
+      const role = [{ permissions: '' }, { permissions: '' }]
+      RoleModel.getPartyRole.withArgs(partyId).returns(P.resolve(role))
 
-      SecurityService.updatePartyRoles(partyId, [])
+      SecurityService.updatePartyRole(partyId, [])
         .then(() => {
-          test.ok(RolesModel.removePartyRoles.calledWith(partyId))
+          test.ok(RoleModel.removePartyRole.calledWith(partyId))
           test.end()
         })
     })
 
-    updatePartyRolesTest.test('add each new role to partyRole', test => {
+    updatePartyRoleTest.test('add each new role to partyRole', test => {
       const partyId = Uuid()
       const role1 = Uuid()
       const role2 = Uuid()
 
       PartyModel.getById.returns(P.resolve({}))
-      const roles = [{ permissions: '' }, { permissions: '' }]
-      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
+      const role = [{ permissions: '' }, { permissions: '' }]
+      RoleModel.getPartyRole.withArgs(partyId).returns(P.resolve(role))
 
-      SecurityService.updatePartyRoles(partyId, [ role1, role2 ])
+      SecurityService.updatePartyRole(partyId, [ role1, role2 ])
         .then(() => {
-          test.ok(RolesModel.addPartyRole.calledWith({ partyId, roleId: role1 }))
-          test.ok(RolesModel.addPartyRole.calledWith({ partyId, roleId: role2 }))
+          test.ok(RoleModel.addPartyRole.calledWith({ partyId, roleId: role1 }))
+          test.ok(RoleModel.addPartyRole.calledWith({ partyId, roleId: role2 }))
           test.end()
         })
     })
 
-    updatePartyRolesTest.test('return party roles', test => {
+    updatePartyRoleTest.test('return party role', test => {
       const partyId = Uuid()
       PartyModel.getById.returns(P.resolve({}))
-      const roles = [{ permissions: '' }, { permissions: '' }]
-      RolesModel.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
-      SecurityService.updatePartyRoles(partyId, [])
+      const role = [{ permissions: '' }, { permissions: '' }]
+      RoleModel.getPartyRole.withArgs(partyId).returns(P.resolve(role))
+      SecurityService.updatePartyRole(partyId, [])
         .then(result => {
-          test.deepEqual(result, roles)
+          test.deepEqual(result, role)
           test.end()
         })
     })
 
-    updatePartyRolesTest.end()
+    updatePartyRoleTest.end()
   })
   serviceTest.end()
 })

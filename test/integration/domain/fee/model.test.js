@@ -7,7 +7,7 @@ const Uuid = require('uuid4')
 const Fixtures = require('../../../fixtures')
 const ExecutedTransfersModel = require(`${src}/models/executed-transfers`)
 const SettledTransfersModel = require(`${src}/models/settled-transfers`)
-const SettledFeesModel = require(`${src}/models/settled-fees`)
+const SettledFeeModel = require(`${src}/models/settled-fees`)
 const FeesModel = require(`${src}/domain/fee/model`)
 const Account = require(`${src}/domain/account`)
 
@@ -15,8 +15,8 @@ function generateFeePayload (data) {
   return {
     transferId: data.transferId || Uuid(),
     amount: data.amount || '10.00',
-    payerAccountId: data.payerAccountId || 1,
-    payeeAccountId: data.payeeAccountId || 2,
+    payerParticipantId: data.payerParticipantId || 1,
+    payeeParticipantId: data.payeeParticipantId || 2,
     chargeId: data.chargeId || 1
   }
 }
@@ -30,8 +30,8 @@ Test('fees model', modelTest => {
         .then((fee) => {
           test.equal(fee.transferId, payload.transferId)
           test.equal(fee.amount, payload.amount)
-          test.equal(fee.payerAccountId, payload.payerAccountId)
-          test.equal(fee.payeeAccountId, payload.payeeAccountId)
+          test.equal(fee.payerParticipantId, payload.payerParticipantId)
+          test.equal(fee.payeeParticipantId, payload.payeeParticipantId)
           test.equal(fee.chargeId, payload.chargeId)
           test.ok(fee.createdDate)
           test.ok(fee.feeId)
@@ -118,9 +118,9 @@ Test('fees model', modelTest => {
         const settledTransferId = Fixtures.generateTransferId()
         const unsettledOtherTransferId = Fixtures.generateTransferId()
 
-        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerAccountId: account1.accountId, payeeAccountId: account2.accountId })
-        const settledFee = generateFeePayload({ transferId: settledTransferId, payerAccountId: account2.accountId, payeeAccountId: account1.accountId })
-        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerAccountId: account2.accountId, payeeAccountId: account3.accountId })
+        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerParticipantId: account1.accountId, payeeParticipantId: account2.accountId })
+        const settledFee = generateFeePayload({ transferId: settledTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account1.accountId })
+        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account3.accountId })
         const settlementId = Uuid()
 
         return ExecutedTransfersModel.create({ id: unsettledTransferId })
@@ -129,8 +129,8 @@ Test('fees model', modelTest => {
           .then(() => SettledTransfersModel.create({ id: settledTransferId, settlementId }))
           .then(() => P.all([FeesModel.create(unsettledFee), FeesModel.create(settledFee), FeesModel.create(otherUnsettledFee)]))
           .then(([fee1, fee2, fee3]) => {
-            return SettledFeesModel.create({ feeId: fee2.feeId, settlementId }).then(() => {
-              return FeesModel.getUnsettledFeesByAccount(account1).then(result => {
+            return SettledFeeModel.create({ feeId: fee2.feeId, settlementId }).then(() => {
+              return FeesModel.getUnsettledFeeByAccount(account1).then(result => {
                 test.notOk(result.find(x => x.feeId === fee3.feeId))
                 test.notOk(result.find(x => x.feeId === fee2.feeId))
                 test.ok(result.find(x => x.feeId === fee1.feeId))
@@ -155,9 +155,9 @@ Test('fees model', modelTest => {
         const settledTransferId = Fixtures.generateTransferId()
         const unsettledOtherTransferId = Fixtures.generateTransferId()
 
-        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerAccountId: account1.accountId, payeeAccountId: account2.accountId })
-        const settledFee = generateFeePayload({ transferId: settledTransferId, payerAccountId: account2.accountId, payeeAccountId: account1.accountId })
-        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerAccountId: account2.accountId, payeeAccountId: account3.accountId })
+        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerParticipantId: account1.accountId, payeeParticipantId: account2.accountId })
+        const settledFee = generateFeePayload({ transferId: settledTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account1.accountId })
+        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account3.accountId })
         const settlementId = Uuid()
 
         return ExecutedTransfersModel.create({ id: unsettledTransferId })
@@ -166,8 +166,8 @@ Test('fees model', modelTest => {
           .then(() => SettledTransfersModel.create({ id: settledTransferId, settlementId }))
           .then(() => P.all([FeesModel.create(unsettledFee), FeesModel.create(settledFee), FeesModel.create(otherUnsettledFee)]))
           .then(([fee1, fee2, fee3]) => {
-            return SettledFeesModel.create({ feeId: fee2.feeId, settlementId }).then(() => {
-              return FeesModel.getUnsettledFees().then(result => {
+            return SettledFeeModel.create({ feeId: fee2.feeId, settlementId }).then(() => {
+              return FeesModel.getUnsettledFee().then(result => {
                 test.ok(result.find(x => x.feeId === fee3.feeId))
                 test.notOk(result.find(x => x.feeId === fee2.feeId))
                 test.ok(result.find(x => x.feeId === fee1.feeId))

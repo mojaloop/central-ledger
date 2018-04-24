@@ -33,7 +33,7 @@ const addToSettlement = (settlement1, settlement2) => {
   return settlement1
 }
 
-const calculateSettlements = (settlement, settlementMap) => {
+const calculateSettlement = (settlement, settlementMap) => {
   if (settlement.length === 0) {
     return settlementMap
   } else {
@@ -47,12 +47,12 @@ const calculateSettlements = (settlement, settlementMap) => {
     } else {
       settlementMap.set(key, head)
     }
-    return calculateSettlements(tail, settlementMap)
+    return calculateSettlement(tail, settlementMap)
   }
 }
 
-const flattenSettlements = (settlementMap) => {
-  const flattenedSettlements = []
+const flattenSettlement = (settlementMap) => {
+  const flattenedSettlement = []
   settlementMap.forEach(settlement => {
     const inverseKey = `${settlement.destination.account_number}${settlement.destination.routing_number}to${settlement.source.account_number}${settlement.source.routing_number}`
     const inverseSettlement = settlementMap.get(inverseKey)
@@ -71,10 +71,10 @@ const flattenSettlements = (settlementMap) => {
     }
 
     if (!val.equals(inverseVal)) {
-      flattenedSettlements.push(settlement)
+      flattenedSettlement.push(settlement)
     }
   })
-  return flattenedSettlements
+  return flattenedSettlement
 }
 
 function transfersMap (settledTransfers) {
@@ -116,14 +116,14 @@ function transfersMap (settledTransfers) {
   return settledTransfersMap
 }
 
-const mailDetails = (settledTransfers, settledFees) => {
+const mailDetails = (settledTransfers, settledFee) => {
   var settledTransfersMap
   Logger.info('Entering transfers')
   settledTransfersMap = transfersMap(settledTransfers)
   Logger.info('out of map')
   for (const [key, value] of settledTransfersMap.entries()) {
     const feesArray = []
-    settledFees.forEach(settledFee => {
+    settledFee.forEach(settledFee => {
       const debitKey = settledFee.payerAccountName
       const creditKey = settledFee.payeeAccountName
       if (key === debitKey || key === creditKey) {
@@ -149,12 +149,12 @@ const registerEvents = () => {
   Events.onEmailSettlementCsv(settlementEventListener.sendEmail())
 }
 
-const performSettlement = (settledTransfers, settledFees) => {
+const performSettlement = (settledTransfers, settledFee) => {
   registerEvents()
-  mailDetails(settledTransfers, settledFees)
-  const transferSettlements = flattenSettlements(calculateSettlements(settledTransfers.map(settledTransfers => mapToSettlement(settledTransfers)), new Map()))
-  const feeSettlements = flattenSettlements(calculateSettlements(settledFees.map(settledFees => mapToSettlement(settledFees)), new Map()))
-  return {transfers: transferSettlements, fees: feeSettlements}
+  mailDetails(settledTransfers, settledFee)
+  const transferSettlement = flattenSettlement(calculateSettlement(settledTransfers.map(settledTransfers => mapToSettlement(settledTransfers)), new Map()))
+  const feeSettlement = flattenSettlement(calculateSettlement(settledFee.map(settledFee => mapToSettlement(settledFee)), new Map()))
+  return {transfers: transferSettlement, fees: feeSettlement}
 }
 
 module.exports = {

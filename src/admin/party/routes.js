@@ -82,9 +82,9 @@ module.exports = [
   },
   {
     method: 'GET',
-    path: '/parties/{id}/roles',
-    handler: Handler.getRoles,
-    options: RouteConfig.config(tags, Permissions.PARTIES_ROLES_LIST, {
+    path: '/parties/{id}/role',
+    handler: Handler.getRole,
+    options: RouteConfig.config(tags, Permissions.PARTIES_ROLE_LIST, {
       validate: {
         params: {
           id: Joi.string().guid().description('Party Id')
@@ -94,9 +94,9 @@ module.exports = [
   },
   {
     method: 'POST',
-    path: '/parties/{id}/roles',
-    handler: Handler.updateRoles,
-    options: RouteConfig.config(tags, Permissions.PARTIES_ROLES_UPDATE, {
+    path: '/parties/{id}/role',
+    handler: Handler.updateRole,
+    options: RouteConfig.config(tags, Permissions.PARTIES_ROLE_UPDATE, {
       payload: {
         allow: 'application/json',
         failAction: 'error'

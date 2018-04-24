@@ -9,7 +9,7 @@ const FeeService = require('../../../../src/domain/fee')
 const TokenService = require('../../../../src/domain/token')
 const Handler = require('../../../../src/admin/webhooks/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
-const SettlementService = require('../../../../src/domain/settlements')
+const SettlementService = require('../../../../src/domain/settlement')
 
 function createRequest (id, payload) {
   let requestId = id || Uuid()
@@ -130,7 +130,7 @@ Test('Handler Test', handlerTest => {
         }
       }]
 
-      const settledFees = [{
+      const settledFee = [{
         amount: {
           currency_code: 'TZS',
           description: account1.name,
@@ -146,7 +146,7 @@ Test('Handler Test', handlerTest => {
         }
       }]
       await Handler.settle({}, {})
-      test.deepEqual(settledTransfers, settledFees)
+      test.deepEqual(settledTransfers, settledFee)
       test.ok(Sidecar.logRequest.calledWith({}))
       test.end()
     })

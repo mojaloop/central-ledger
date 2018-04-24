@@ -8,9 +8,9 @@ exports.generateId = () => {
 }
 
 exports.create = (id, settlementType) => {
-  return Db.settlements.insert({ settlementId: id, settlementType })
+  return Db.settlement.insert({ settlementId: id, settlementType })
 }
 
 exports.findById = (id) => {
-  return Db.settlements.findOne({settlementId: id})
+  return Db.settlement.findOne({settlementId: id})
 }

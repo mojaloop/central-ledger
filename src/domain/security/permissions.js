@@ -18,10 +18,10 @@ const permissions = {
   CHARGES_CREATE: new Permission('CHARGES_CREATE', 'Create a new charge'),
   CHARGES_UPDATE: new Permission('CHARGES_UPDATE', 'Update a charge'),
   PERMISSIONS_LIST: new Permission('PERMISSIONS_LIST', 'List available permissions'),
-  ROLES_CREATE: new Permission('ROLES_CREATE', 'Create a new role'),
-  ROLES_DELETE: new Permission('ROLES_DELETE', 'Delete role'),
-  ROLES_LIST: new Permission('ROLES_LIST', 'List all roles'),
-  ROLES_UPDATE: new Permission('ROLES_UPDATE', 'Update a role'),
+  ROLE_CREATE: new Permission('ROLE_CREATE', 'Create a new role'),
+  ROLE_DELETE: new Permission('ROLE_DELETE', 'Delete role'),
+  ROLE_LIST: new Permission('ROLE_LIST', 'List all role'),
+  ROLE_UPDATE: new Permission('ROLE_UPDATE', 'Update a role'),
   TOKENS_REJECT_EXPIRED: new Permission('TOKENS_REJECT_EXPIRED', 'Reject expired tokens'),
   TRANSFERS_REJECT_EXPIRED: new Permission('TRANSFSER_REJECT_EXPIRED', 'Reject expired transfers'),
   TRANSFERS_SETTLE: new Permission('TRANSFERS_SETTLE', 'Settle fulfilled transfers'),
@@ -31,8 +31,8 @@ const permissions = {
   PARTIES_LIST: new Permission('PARTIES_LIST', 'List party'),
   PARTIES_VIEW: new Permission('PARTIES_VIEW', 'View party details'),
   PARTIES_UPDATE: new Permission('PARTIES_UPDATE', 'Update party details'),
-  PARTIES_ROLES_LIST: new Permission('PARTIES_ROLES_LIST', 'Get party roles'),
-  PARTIES_ROLES_UPDATE: new Permission('PARTIES_ROLES_UPDATE', 'Update party roles')
+  PARTIES_ROLE_LIST: new Permission('PARTIES_ROLE_LIST', 'Get party role'),
+  PARTIES_ROLE_UPDATE: new Permission('PARTIES_ROLE_UPDATE', 'Update party role')
 }
 
 module.exports = permissions

@@ -25,7 +25,7 @@ const verify = (token) => {
     const partyId = decoded.userInfo.partyId
     return Promise.props({
       party: SecurityService.getPartyById(partyId),
-      roles: SecurityService.getPartyRoles(partyId)
+      role: SecurityService.getPartyRole(partyId)
     })
   })
   .catch(Errors.NotFoundError, () => {

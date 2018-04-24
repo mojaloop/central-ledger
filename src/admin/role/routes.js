@@ -4,7 +4,7 @@ const Joi = require('joi')
 const Handler = require('./handler')
 const Permissions = require('../../domain/security/permissions')
 const RouteConfig = require('../route-config')
-const tags = ['api', 'roles']
+const tags = ['api', 'role']
 
 const nameValidator = Joi.string().max(256).description('Name of role')
 const descriptionValidator = Joi.string().max(1000).optional().description('Description of role')
@@ -13,15 +13,15 @@ const permissionsValidator = Joi.array().items(Joi.string().valid(Object.keys(Pe
 module.exports = [
   {
     method: 'GET',
-    path: '/roles',
-    handler: Handler.getRoles,
-    options: RouteConfig.config(tags, Permissions.ROLES_LIST)
+    path: '/role',
+    handler: Handler.getRole,
+    options: RouteConfig.config(tags, Permissions.ROLE_LIST)
   },
   {
     method: 'POST',
-    path: '/roles',
+    path: '/role',
     handler: Handler.createRole,
-    options: RouteConfig.config(tags, Permissions.ROLES_CREATE, {
+    options: RouteConfig.config(tags, Permissions.ROLE_CREATE, {
       validate: {
         payload: {
           name: nameValidator.required(),
@@ -33,9 +33,9 @@ module.exports = [
   },
   {
     method: 'PUT',
-    path: '/roles/{id}',
+    path: '/role/{id}',
     handler: Handler.updateRole,
-    config: RouteConfig.config(tags, Permissions.ROLES_UPDATE, {
+    config: RouteConfig.config(tags, Permissions.ROLE_UPDATE, {
       options: {
         validate: {
           params: {
@@ -52,9 +52,9 @@ module.exports = [
   },
   {
     method: 'DELETE',
-    path: '/roles/{id}',
+    path: '/role/{id}',
     handler: Handler.deleteRole,
-    config: RouteConfig.config(tags, Permissions.ROLES_DELETE, {
+    config: RouteConfig.config(tags, Permissions.ROLE_DELETE, {
       options: {
         validate: {
           params: {

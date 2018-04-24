@@ -5,8 +5,8 @@ const Uuid = require('uuid4')
 const Model = require('../../../src/models/settled-fees')
 const Db = require('../../../src/db')
 
-const getSettledFeesCount = () => {
-  return Db.settledFees.count({}, '*')
+const getSettledFeeCount = () => {
+  return Db.settledFee.count({}, '*')
 }
 
 Test('settled-fees model', modelTest => {
@@ -26,10 +26,10 @@ Test('settled-fees model', modelTest => {
   })
 
   modelTest.test('truncate should', truncateTest => {
-    truncateTest.test('truncate settledFees table', test => {
+    truncateTest.test('truncate settledFee table', test => {
       Model.truncate()
         .then((executedFee) => {
-          getSettledFeesCount()
+          getSettledFeeCount()
             .then((result) => {
               test.equals(result, 0)
               test.end()

@@ -89,29 +89,29 @@ Test('Party handler', handlerTest => {
     test.end()
   })
 
-  handlerTest.test('getRoles should return roles from service', async function (test) {
-    const roles = [{}, {}]
+  handlerTest.test('getRole should return role from service', async function (test) {
+    const role = [{}, {}]
     const partyId = Uuid()
-    SecurityService.getPartyRoles.withArgs(partyId).returns(P.resolve(roles))
+    SecurityService.getPartyRole.withArgs(partyId).returns(P.resolve(role))
 
-    const response = await Handler.getRoles({params: {id: partyId}}, {})
-    test.deepEqual(response, roles)
+    const response = await Handler.getRole({params: {id: partyId}}, {})
+    test.deepEqual(response, role)
     test.end()
   })
 
-  handlerTest.test('updateRoles should update roles in service', async function (test) {
-    const updatedRoles = [{}, {}]
+  handlerTest.test('updateRole should update role in service', async function (test) {
+    const updatedRole = [{}, {}]
     const roleIds = [Uuid(), Uuid()]
     const partyId = Uuid()
 
-    SecurityService.updatePartyRoles.withArgs(partyId, roleIds).returns(P.resolve(updatedRoles))
+    SecurityService.updatePartyRole.withArgs(partyId, roleIds).returns(P.resolve(updatedRole))
     const request = {
       params: {id: partyId},
       payload: roleIds
     }
 
-    const response = await Handler.updateRoles(request, {})
-    test.deepEqual(response, updatedRoles)
+    const response = await Handler.updateRole(request, {})
+    test.deepEqual(response, updatedRole)
     test.ok(Sidecar.logRequest.calledWith(request))
     test.end()
   })
