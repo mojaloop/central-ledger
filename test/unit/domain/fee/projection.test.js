@@ -45,11 +45,11 @@ Test('Fee-Projection', feeProjectionTest => {
       payload: {
         ledger: `${hostname}`,
         debits: [{
-          account: `${hostname}/accounts/dfsp1`,
+          participant: `${hostname}/participants/dfsp1`,
           amount: '50'
         }],
         credits: [{
-          account: `${hostname}/accounts/dfsp2`,
+          participant: `${hostname}/participants/dfsp2`,
           amount: '50'
         }],
         execution_condition: executionCondition,

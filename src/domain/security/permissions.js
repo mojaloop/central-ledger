@@ -8,12 +8,12 @@ class Permission {
 }
 
 const permissions = {
-  ACCOUNTS_CREATE: new Permission('ACCOUNTS_CREATE', 'Create an account'),
-  ACCOUNTS_LIST: new Permission('ACCOUNTS_LIST', 'List all accounts'),
-  ACCOUNTS_VIEW: new Permission('ACCOUNTS_VIEW', 'View account details'),
-  ACCOUNTS_UPDATE: new Permission('ACCOUNTS_UPDATE', 'Update account'),
-  POSITIONS_LIST: new Permission('POSITIONS_LIST', 'List positions for all Accounts'),
-  POSITIONS_VIEW: new Permission('POSITIONS_VIEW', 'View position for an Account'),
+  ACCOUNTS_CREATE: new Permission('ACCOUNTS_CREATE', 'Create an participant'),
+  ACCOUNTS_LIST: new Permission('ACCOUNTS_LIST', 'List all participant'),
+  ACCOUNTS_VIEW: new Permission('ACCOUNTS_VIEW', 'View participant details'),
+  ACCOUNTS_UPDATE: new Permission('ACCOUNTS_UPDATE', 'Update participant'),
+  POSITIONS_LIST: new Permission('POSITIONS_LIST', 'List positions for all Participants'),
+  POSITIONS_VIEW: new Permission('POSITIONS_VIEW', 'View position for an Participant'),
   CHARGE_LIST: new Permission('CHARGE_GET', 'List all charges'),
   CHARGE_CREATE: new Permission('CHARGE_CREATE', 'Create a new charge'),
   CHARGE_UPDATE: new Permission('CHARGE_UPDATE', 'Update a charge'),

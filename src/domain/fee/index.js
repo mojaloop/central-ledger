@@ -3,7 +3,7 @@
 const P = require('bluebird')
 const Model = require('./model')
 const Charge = require('../charge')
-const Account = require('../account')
+const Participant = require('../participant')
 const SettlementModel = require('../../models/settlement')
 const SettledFee = require('../../models/settled-fee.js')
 const Util = require('../../../src/lib/util')
@@ -24,14 +24,14 @@ const generateFeeAmount = (charge, transfer) => {
   }
 }
 
-const getAccountIdFromTransferForCharge = (account, transfer) => {
-  switch (account) {
+const getParticipantIdFromTransferForCharge = (participant, transfer) => {
+  switch (participant) {
     case SENDER:
       return P.resolve(transfer.payeeParticipantId)
     case RECEIVER:
       return P.resolve(transfer.payerParticipantId)
     case LEDGER:
-      return Account.getByName(Config.LEDGER_ACCOUNT_NAME).then(account => account.accountId)
+      return Participant.getByName(Config.LEDGER_ACCOUNT_NAME).then(participant => participant.participantId)
   }
 }
 
@@ -45,7 +45,7 @@ const create = (charge, transfer) => {
       return existingFee
     }
 
-    return P.all([getAccountIdFromTransferForCharge(charge.payerParticipantId, transfer), getAccountIdFromTransferForCharge(charge.payeeParticipantId, transfer)]).then(([payerParticipantId, payeeParticipantId]) => {
+    return P.all([getParticipantIdFromTransferForCharge(charge.payerParticipantId, transfer), getParticipantIdFromTransferForCharge(charge.payeeParticipantId, transfer)]).then(([payerParticipantId, payeeParticipantId]) => {
       const amount = generateFeeAmount(charge, transfer)
       const fee = {
         transferId: transfer.transferId,
@@ -73,8 +73,8 @@ const getUnsettledFee = () => {
   return Model.getUnsettledFee()
 }
 
-const getUnsettledFeeByAccount = (account) => {
-  return Model.getUnsettledFeeByAccount(account)
+const getUnsettledFeeByParticipant = (participant) => {
+  return Model.getUnsettledFeeByParticipant(participant)
 }
 
 const settleFee = (fee, settlement) => {
@@ -110,6 +110,6 @@ module.exports = {
   getAllForTransfer,
   generateFeeForTransfer,
   getUnsettledFee,
-  getUnsettledFeeByAccount,
+  getUnsettledFeeByParticipant,
   settleFeeForTransfers
 }

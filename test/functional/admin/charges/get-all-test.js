@@ -28,7 +28,7 @@ Test('GET /charge', getTest => {
 
     bluebird.all([Base.createCharge(chargePayload1), Base.createCharge(chargePayload2)])
     .then(([charge1Res, charge2Res]) => {
-      Base.getAdmin('/accounts')
+      Base.getAdmin('/participants')
         .expect(200)
         .expect('Content-Type', /json/)
         .then(res => {

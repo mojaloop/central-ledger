@@ -11,7 +11,7 @@ const amount = '25.00'
 Test('PUT /transfer/:id/fulfillment', putTest => {
   putTest.test('should fulfill a transfer', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
@@ -21,9 +21,9 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
           .then(res => {
             test.equal(res.body.id, transfer.id)
             test.equal(res.body.ledger, transfer.ledger)
-            test.equal(res.body.debits[0].account, transfer.debits[0].account)
+            test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
             test.equal(res.body.debits[0].amount, amount)
-            test.equal(res.body.credits[0].account, transfer.credits[0].account)
+            test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
             test.equal(res.body.credits[0].amount, amount)
             test.equal(res.body.execution_condition, transfer.execution_condition)
             test.equal(res.body.expires_at, transfer.expires_at)
@@ -50,7 +50,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
 
   putTest.test('should return fulfillment when fulfilling already fulfilled transfer', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => Base.fulfillTransfer(transferId, fulfillment))
@@ -61,9 +61,9 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
           .then(res => {
             test.equal(res.body.id, transfer.id)
             test.equal(res.body.ledger, transfer.ledger)
-            test.equal(res.body.debits[0].account, transfer.debits[0].account)
+            test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
             test.equal(res.body.debits[0].amount, amount)
-            test.equal(res.body.credits[0].account, transfer.credits[0].account)
+            test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
             test.equal(res.body.credits[0].amount, amount)
             test.equal(res.body.execution_condition, transfer.execution_condition)
             test.equal(res.body.expires_at, transfer.expires_at)
@@ -78,7 +78,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
 
   putTest.test('should return error when fulfilling expired transfer', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount), Fixtures.getMomentToExpire())
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount), Fixtures.getMomentToExpire())
 
     Base.prepareTransfer(transferId, transfer)
       .delay(1000)
@@ -96,7 +96,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
 
   putTest.test('should return error when fulfilling unconditional transfer', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
@@ -113,10 +113,10 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
 
   putTest.test('should return error when fulfilling rejected transfer', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount), Fixtures.getMomentToExpire())
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount), Fixtures.getMomentToExpire())
 
     Base.prepareTransfer(transferId, transfer)
-      .then(() => Base.rejectTransfer(transferId, Fixtures.rejectionMessage(), { name: Base.account2Password, password: Base.account2Password }))
+      .then(() => Base.rejectTransfer(transferId, Fixtures.rejectionMessage(), { name: Base.participant2Password, password: Base.participant2Password }))
       .then(() => {
         Base.fulfillTransfer(transferId, fulfillment)
           .expect(400)
@@ -131,7 +131,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
 
   putTest.test('should return error when fulfillment is invalid', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
@@ -147,7 +147,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
 
   putTest.test('should return error when fulfullment is incorrect', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {

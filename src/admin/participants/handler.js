@@ -1,12 +1,12 @@
 'use strict'
 
-const Account = require('../../domain/account')
+const Participant = require('../../domain/participant')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlparser')
 const Sidecar = require('../../lib/sidecar')
 
 const entityItem = ({name, createdDate, isDisabled}) => {
-  const link = UrlParser.toAccountUri(name)
+  const link = UrlParser.toParticipantUri(name)
   return {
     name,
     id: link,
@@ -35,26 +35,26 @@ const handleMissingRecord = (entity) => {
 
 const create = async function (request, h) {
   Sidecar.logRequest(request)
-  const entity = await Account.getByName(request.payload.name)
+  const entity = await Participant.getByName(request.payload.name)
   await handleExistingRecord(entity)
-  const account = await Account.create(request.payload)
-  return h.response(entityItem(account)).code(201)
+  const participant = await Participant.create(request.payload)
+  return h.response(entityItem(participant)).code(201)
 }
 
 const getAll = async function (request, h) {
-  const results = await Account.getAll()
+  const results = await Participant.getAll()
   return results.map(entityItem)
 }
 
 const getByName = async function (request, h) {
-  const entity = await Account.getByName(request.params.name)
+  const entity = await Participant.getByName(request.params.name)
   handleMissingRecord(entity)
   return entityItem(entity)
 }
 
 const update = async function (request, h) {
   Sidecar.logRequest(request)
-  const updatedEntity = await Account.update(request.params.name, request.payload)
+  const updatedEntity = await Participant.update(request.params.name, request.payload)
   return entityItem(updatedEntity)
 }
 

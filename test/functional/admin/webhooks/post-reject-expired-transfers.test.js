@@ -9,7 +9,7 @@ const RejectionType = require('../../../../src/domain/transfer/rejection-type')
 Test('POST /webhooks/reject-expired-transfers', rejectTest => {
   rejectTest.test('should reject expired transfers', test => {
     let transferId = Fixtures.generateTransferId()
-    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '50'), Fixtures.buildDebitOrCredit(Base.account2Name, '50'), Fixtures.getMomentToExpire())
+    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'), Fixtures.getMomentToExpire())
 
     Base.prepareTransfer(transferId, transfer)
       .delay(1000)
@@ -26,7 +26,7 @@ Test('POST /webhooks/reject-expired-transfers', rejectTest => {
 
   rejectTest.test('should set rejection_reason to expired', test => {
     let transferId = Fixtures.generateTransferId()
-    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '50'), Fixtures.buildDebitOrCredit(Base.account2Name, '50'), Fixtures.getMomentToExpire())
+    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'), Fixtures.getMomentToExpire())
 
     Base.prepareTransfer(transferId, transfer)
       .delay(1000)

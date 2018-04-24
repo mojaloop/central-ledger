@@ -9,7 +9,7 @@ const ExecutedTransfersModel = require(`${src}/models/executed-transfers`)
 const SettledTransfersModel = require(`${src}/models/settled-transfers`)
 const SettledFeeModel = require(`${src}/models/settled-fee`)
 const FeeModel = require(`${src}/domain/fee/model`)
-const Account = require(`${src}/domain/account`)
+const Participant = require(`${src}/domain/participant`)
 
 function generateFeePayload (data) {
   return {
@@ -107,20 +107,20 @@ Test('fee model', modelTest => {
     doesExistTest.end()
   })
 
-  modelTest.test('getSettleableFeeByAccount should', getSettleableFeeByAccountTest => {
-    getSettleableFeeByAccountTest.test('retrieve fee ids for a specified account that are attached to transfers that are executed but not settled', test => {
-      const account1Name = Fixtures.generateAccountName()
-      const account2Name = Fixtures.generateAccountName()
-      const account3Name = Fixtures.generateAccountName()
+  modelTest.test('getSettleableFeeByParticipant should', getSettleableFeeByParticipantTest => {
+    getSettleableFeeByParticipantTest.test('retrieve fee ids for a specified participant that are attached to transfers that are executed but not settled', test => {
+      const participant1Name = Fixtures.generateParticipantName()
+      const participant2Name = Fixtures.generateParticipantName()
+      const participant3Name = Fixtures.generateParticipantName()
 
-      P.all([Account.create({ name: account1Name, password: '1234', emailAddress: account1Name + '@test.com' }), Account.create({ name: account2Name, password: '1234', emailAddress: account2Name + '@test.com' }), Account.create({ name: account3Name, password: '1234', emailAddress: account3Name + '@test.com' })]).then(([account1, account2, account3]) => {
+      P.all([Participant.create({ name: participant1Name, password: '1234', emailAddress: participant1Name + '@test.com' }), Participant.create({ name: participant2Name, password: '1234', emailAddress: participant2Name + '@test.com' }), Participant.create({ name: participant3Name, password: '1234', emailAddress: participant3Name + '@test.com' })]).then(([participant1, participant2, participant3]) => {
         const unsettledTransferId = Fixtures.generateTransferId()
         const settledTransferId = Fixtures.generateTransferId()
         const unsettledOtherTransferId = Fixtures.generateTransferId()
 
-        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerParticipantId: account1.accountId, payeeParticipantId: account2.accountId })
-        const settledFee = generateFeePayload({ transferId: settledTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account1.accountId })
-        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account3.accountId })
+        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerParticipantId: participant1.participantId, payeeParticipantId: participant2.participantId })
+        const settledFee = generateFeePayload({ transferId: settledTransferId, payerParticipantId: participant2.participantId, payeeParticipantId: participant1.participantId })
+        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerParticipantId: participant2.participantId, payeeParticipantId: participant3.participantId })
         const settlementId = Uuid()
 
         return ExecutedTransfersModel.create({ id: unsettledTransferId })
@@ -130,7 +130,7 @@ Test('fee model', modelTest => {
           .then(() => P.all([FeeModel.create(unsettledFee), FeeModel.create(settledFee), FeeModel.create(otherUnsettledFee)]))
           .then(([fee1, fee2, fee3]) => {
             return SettledFeeModel.create({ feeId: fee2.feeId, settlementId }).then(() => {
-              return FeeModel.getUnsettledFeeByAccount(account1).then(result => {
+              return FeeModel.getUnsettledFeeByParticipant(participant1).then(result => {
                 test.notOk(result.find(x => x.feeId === fee3.feeId))
                 test.notOk(result.find(x => x.feeId === fee2.feeId))
                 test.ok(result.find(x => x.feeId === fee1.feeId))
@@ -141,23 +141,23 @@ Test('fee model', modelTest => {
       })
     })
 
-    getSettleableFeeByAccountTest.end()
+    getSettleableFeeByParticipantTest.end()
   })
 
   modelTest.test('getSettleableFeeForTransfer should', getSettleableFeeForTransferTest => {
     getSettleableFeeForTransferTest.test('retrieve all fee ids that are attached to transfers that are executed but not settled', test => {
-      const account1Name = Fixtures.generateAccountName()
-      const account2Name = Fixtures.generateAccountName()
-      const account3Name = Fixtures.generateAccountName()
+      const participant1Name = Fixtures.generateParticipantName()
+      const participant2Name = Fixtures.generateParticipantName()
+      const participant3Name = Fixtures.generateParticipantName()
 
-      P.all([Account.create({ name: account1Name, password: '1234', emailAddress: account1Name + '@test.com' }), Account.create({ name: account2Name, password: '1234', emailAddress: account2Name + '@test.com' }), Account.create({ name: account3Name, password: '1234', emailAddress: account1Name + '@test.com' })]).then(([account1, account2, account3]) => {
+      P.all([Participant.create({ name: participant1Name, password: '1234', emailAddress: participant1Name + '@test.com' }), Participant.create({ name: participant2Name, password: '1234', emailAddress: participant2Name + '@test.com' }), Participant.create({ name: participant3Name, password: '1234', emailAddress: participant1Name + '@test.com' })]).then(([participant1, participant2, participant3]) => {
         const unsettledTransferId = Fixtures.generateTransferId()
         const settledTransferId = Fixtures.generateTransferId()
         const unsettledOtherTransferId = Fixtures.generateTransferId()
 
-        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerParticipantId: account1.accountId, payeeParticipantId: account2.accountId })
-        const settledFee = generateFeePayload({ transferId: settledTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account1.accountId })
-        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerParticipantId: account2.accountId, payeeParticipantId: account3.accountId })
+        const unsettledFee = generateFeePayload({ transferId: unsettledTransferId, payerParticipantId: participant1.participantId, payeeParticipantId: participant2.participantId })
+        const settledFee = generateFeePayload({ transferId: settledTransferId, payerParticipantId: participant2.participantId, payeeParticipantId: participant1.participantId })
+        const otherUnsettledFee = generateFeePayload({ transferId: unsettledOtherTransferId, payerParticipantId: participant2.participantId, payeeParticipantId: participant3.participantId })
         const settlementId = Uuid()
 
         return ExecutedTransfersModel.create({ id: unsettledTransferId })

@@ -13,8 +13,8 @@ const initialize = (socket, socketManager) => {
         socket.send(JSON.stringify(err.payload))
         socket.close()
       } else {
-        socket.send(JSON.stringify({ id: result.id, jsonrpc: result.jsonrpc, result: result.accountUris.length }))
-        socketManager.add(socket, ...result.accountUris)
+        socket.send(JSON.stringify({ id: result.id, jsonrpc: result.jsonrpc, result: result.participantUris.length }))
+        socketManager.add(socket, ...result.participantUris)
       }
     })
   })

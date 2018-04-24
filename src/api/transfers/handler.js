@@ -44,7 +44,7 @@ exports.rejectTransfer = async function (request, h) {
     id: request.params.id,
     rejection_reason: TransferRejectionType.CANCELLED,
     message: request.payload.reason,
-    requestingAccount: request.auth.credentials
+    requestingParticipant: request.auth.credentials
   }
   const result = await TransferService.reject(rejection)
   return h.response(rejection.message).code(result.alreadyRejected ? 200 : 201)

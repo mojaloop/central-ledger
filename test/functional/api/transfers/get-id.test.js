@@ -17,7 +17,7 @@ Test('GET /transfers/:id', getTest => {
         nested: 'value'
       }
     }
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount, memo), Fixtures.buildDebitOrCredit(Base.account2Name, amount, memo))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount, memo), Fixtures.buildDebitOrCredit(Base.participant2Name, amount, memo))
 
     Base.prepareTransfer(transferId, transfer)
     .delay(500)
@@ -28,10 +28,10 @@ Test('GET /transfers/:id', getTest => {
         .then(res => {
           test.equal(res.body.id, transfer.id)
           test.equal(res.body.ledger, transfer.ledger)
-          test.equal(res.body.debits[0].account, transfer.debits[0].account)
+          test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
           test.equal(res.body.debits[0].amount, amount)
           test.deepEqual(res.body.debits[0].memo, memo)
-          test.equal(res.body.credits[0].account, transfer.credits[0].account)
+          test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
           test.equal(res.body.credits[0].amount, amount)
           test.deepEqual(res.body.credits[0].memo, memo)
           test.equal(res.body.execution_condition, transfer.execution_condition)
@@ -47,7 +47,7 @@ Test('GET /transfers/:id', getTest => {
 
   getTest.test('should return executed transfer details', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
     .then(() => Base.fulfillTransfer(transferId, 'oAKAAA'))
@@ -58,9 +58,9 @@ Test('GET /transfers/:id', getTest => {
         .then(res => {
           test.equal(res.body.id, transfer.id)
           test.equal(res.body.ledger, transfer.ledger)
-          test.equal(res.body.debits[0].account, transfer.debits[0].account)
+          test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
           test.equal(res.body.debits[0].amount, amount)
-          test.equal(res.body.credits[0].account, transfer.credits[0].account)
+          test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
           test.equal(res.body.credits[0].amount, amount)
           test.equal(res.body.execution_condition, transfer.execution_condition)
           test.equal(res.body.expires_at, transfer.expires_at)
@@ -76,11 +76,11 @@ Test('GET /transfers/:id', getTest => {
 
   getTest.test('should return manually rejected transfer details', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
     const message = Fixtures.rejectionMessage()
 
     Base.prepareTransfer(transferId, transfer)
-    .then(() => Base.rejectTransfer(transferId, message, { name: Base.account2Name, password: Base.account2Password }))
+    .then(() => Base.rejectTransfer(transferId, message, { name: Base.participant2Name, password: Base.participant2Password }))
     .then(() => {
       Base.getTransfer(transferId)
         .expect(200)
@@ -88,9 +88,9 @@ Test('GET /transfers/:id', getTest => {
         .then(res => {
           test.equal(res.body.id, transfer.id)
           test.equal(res.body.ledger, transfer.ledger)
-          test.equal(res.body.debits[0].account, transfer.debits[0].account)
+          test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
           test.equal(res.body.debits[0].amount, amount)
-          test.equal(res.body.credits[0].account, transfer.credits[0].account)
+          test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
           test.equal(res.body.credits[0].amount, amount)
           test.equal(res.body.credits[0].rejected, true)
           test.deepEqual(res.body.credits[0].rejection_message, message)
@@ -109,7 +109,7 @@ Test('GET /transfers/:id', getTest => {
 
   getTest.test('should return expired transfer details', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount), Fixtures.getMomentToExpire())
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount), Fixtures.getMomentToExpire())
 
     Base.prepareTransfer(transferId, transfer)
     .delay(1000)
@@ -121,9 +121,9 @@ Test('GET /transfers/:id', getTest => {
         .then(res => {
           test.equal(res.body.id, transfer.id)
           test.equal(res.body.ledger, transfer.ledger)
-          test.equal(res.body.debits[0].account, transfer.debits[0].account)
+          test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
           test.equal(res.body.debits[0].amount, amount)
-          test.equal(res.body.credits[0].account, transfer.credits[0].account)
+          test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
           test.equal(res.body.credits[0].amount, amount)
           test.equal(res.body.credits[0].rejected, false)
           test.equal(res.body.credits[0].hasOwnProperty('rejection_message'), false)
@@ -142,7 +142,7 @@ Test('GET /transfers/:id', getTest => {
 
   getTest.test('should return unconditional transfer details', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
     .then(() => {
@@ -152,9 +152,9 @@ Test('GET /transfers/:id', getTest => {
         .then(res => {
           test.equal(res.body.id, transfer.id)
           test.equal(res.body.ledger, transfer.ledger)
-          test.equal(res.body.debits[0].account, transfer.debits[0].account)
+          test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
           test.equal(res.body.debits[0].amount, amount)
-          test.equal(res.body.credits[0].account, transfer.credits[0].account)
+          test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
           test.equal(res.body.credits[0].amount, amount)
           test.notOk(res.body.hasOwnProperty('execution_condition'))
           test.notOk(res.body.hasOwnProperty('expires_at'))

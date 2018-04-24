@@ -5,23 +5,23 @@ const Util = require('../../../src/lib/util')
 const Events = require('../../lib/events')
 const csv = require('../../lib/csv')
 const settlementEventListener = require('./settlementEventListener')
-// const AccountDatabase = require('../../domain/account')
+// const ParticipantDatabase = require('../../domain/participant')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 const mapToSettlement = (settlement) => {
   return {
     source: {
-      account_number: settlement.sourceAccountNumber,
+      participant_number: settlement.sourceParticipantNumber,
       routing_number: settlement.sourceRoutingNumber
     },
     destination: {
-      account_number: settlement.destinationAccountNumber,
+      participant_number: settlement.destinationParticipantNumber,
       routing_number: settlement.destinationRoutingNumber
     },
     amount: {
       currency_code: 'TZS',
       value: settlement.payerAmount || settlement.payerAmount,
-      description: settlement.debitAccountName || settlement.payerAccountName
+      description: settlement.debitParticipantName || settlement.payerParticipantName
     }
   }
 }
@@ -40,7 +40,7 @@ const calculateSettlement = (settlement, settlementMap) => {
     const head = settlement[0]
     const tail = (settlement.length > 1) ? settlement.slice(1) : []
 
-    const key = `${head.source.account_number}${head.source.routing_number}to${head.destination.account_number}${head.destination.routing_number}`
+    const key = `${head.source.participant_number}${head.source.routing_number}to${head.destination.participant_number}${head.destination.routing_number}`
 
     if (settlementMap.has(key)) {
       settlementMap.set(key, addToSettlement(settlementMap.get(key), head))
@@ -54,7 +54,7 @@ const calculateSettlement = (settlement, settlementMap) => {
 const flattenSettlement = (settlementMap) => {
   const flattenedSettlement = []
   settlementMap.forEach(settlement => {
-    const inverseKey = `${settlement.destination.account_number}${settlement.destination.routing_number}to${settlement.source.account_number}${settlement.source.routing_number}`
+    const inverseKey = `${settlement.destination.participant_number}${settlement.destination.routing_number}to${settlement.source.participant_number}${settlement.source.routing_number}`
     const inverseSettlement = settlementMap.get(inverseKey)
     const val = new Decimal(settlement.amount.value)
     let inverseVal = new Decimal('0')
@@ -81,8 +81,8 @@ function transfersMap (settledTransfers) {
   const settledTransfersMap = new Map()
   settledTransfers.forEach(settledTransfer => {
     Logger.info('in loop')
-    const debitKey = settledTransfer.debitAccountName
-    const creditKey = settledTransfer.creditAccountName
+    const debitKey = settledTransfer.debitParticipantName
+    const creditKey = settledTransfer.creditParticipantName
     let debitKeyFound = false
     let creditKeyFound = false
 
@@ -124,8 +124,8 @@ const mailDetails = (settledTransfers, settledFee) => {
   for (const [key, value] of settledTransfersMap.entries()) {
     const feeArray = []
     settledFee.forEach(settledFee => {
-      const debitKey = settledFee.payerAccountName
-      const creditKey = settledFee.payeeAccountName
+      const debitKey = settledFee.payerParticipantName
+      const creditKey = settledFee.payeeParticipantName
       if (key === debitKey || key === creditKey) {
         feeArray.push(settledFee)
       }
@@ -138,7 +138,7 @@ const mailDetails = (settledTransfers, settledFee) => {
       csvFile: csvFile,
       email: String
     }
-    // const account = AccountDatabase.getByName(key).catch(account)
+    // const participant = ParticipantDatabase.getByName(key).catch(participant)
     mailInformation.email = 'modusboxemailtest@gmail.com' // this will change to email once nico has the email in database
     Logger.info('calling email')
     Events.emailSettlementCsv(mailInformation)

@@ -16,7 +16,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         'ledger': 'http://central-ledger',
         'credits': [
           {
-            'account': 'http://central-ledger/accounts/bob',
+            'participant': 'http://central-ledger/participants/bob',
             'amount': 50,
             'memo': {
               'some_property': 'value'
@@ -26,7 +26,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         ],
         'debits': [
           {
-            'account': 'http://central-ledger/accounts/alice',
+            'participant': 'http://central-ledger/participants/alice',
             'amount': 50,
             'memo': {
               'some_property': 'value'
@@ -49,7 +49,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         ledger: 'http://central-ledger',
         credits: [
           {
-            account: 'http://central-ledger/accounts/bob',
+            participant: 'http://central-ledger/participants/bob',
             amount: '50.00',
             memo: {
               'some_property': 'value'
@@ -58,7 +58,7 @@ Test('TransferTranslator', transferTranslatorTest => {
           }
         ],
         debits: [
-          { account: 'http://central-ledger/accounts/alice',
+          { participant: 'http://central-ledger/participants/alice',
             amount: '50.00',
             memo: {
               'some_property': 'value'
@@ -112,20 +112,20 @@ Test('TransferTranslator', transferTranslatorTest => {
         'rejectedDate': null,
         'payerParticipantId': 2,
         'payeeParticipantId': 1,
-        'creditAccountName': 'bob',
-        'debitAccountName': 'alice'
+        'creditParticipantName': 'bob',
+        'debitParticipantName': 'alice'
       }
       const expected = {
         id: 'http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
         ledger: 'http://central-ledger',
         credits: [
-          { account: 'http://central-ledger/accounts/bob',
+          { participant: 'http://central-ledger/participants/bob',
             amount: '50.00',
             rejected: false
           }
         ],
         debits: [
-          { account: 'http://central-ledger/accounts/alice',
+          { participant: 'http://central-ledger/participants/alice',
             amount: '50.00',
             memo: {
               'source_transfer_id': 'f17f52d9-e8b2-4bff-9f01-18c4d388c27a',
@@ -170,14 +170,14 @@ Test('TransferTranslator', transferTranslatorTest => {
         'payeeRejected': 1,
         'payerParticipantId': 2,
         'payeeParticipantId': 1,
-        'creditAccountName': 'bob',
-        'debitAccountName': 'alice'
+        'creditParticipantName': 'bob',
+        'debitParticipantName': 'alice'
       }
       const expected = {
         id: 'http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
         ledger: 'http://central-ledger',
         credits: [
-          { account: 'http://central-ledger/accounts/bob',
+          { participant: 'http://central-ledger/participants/bob',
             amount: '50.00',
             memo: 'a credit memo',
             rejected: true,
@@ -185,7 +185,7 @@ Test('TransferTranslator', transferTranslatorTest => {
           }
         ],
         debits: [
-          { account: 'http://central-ledger/accounts/alice',
+          { participant: 'http://central-ledger/participants/alice',
             amount: '50.00',
             memo: 'a debit memo'
           }

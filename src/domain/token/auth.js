@@ -2,7 +2,7 @@
 
 const P = require('bluebird')
 const UnauthorizedError = require('@mojaloop/central-services-auth').UnauthorizedError
-const AccountService = require('../account')
+const ParticipantService = require('../participant')
 const TokenService = require('./index')
 const Config = require('../../lib/config')
 const Crypto = require('../../lib/crypto')
@@ -13,11 +13,11 @@ const validateToken = (token, bearer) => {
   return !expired && Crypto.verifyHash(token.token, bearer)
 }
 
-const getAccount = (name) => {
+const getParticipant = (name) => {
   if (Config.ADMIN_KEY && Config.ADMIN_KEY === name) {
-    return P.resolve({is_admin: true, accountId: null})
+    return P.resolve({is_admin: true, participantId: null})
   } else {
-    return AccountService.getByName(name)
+    return ParticipantService.getByName(name)
   }
 }
 
@@ -27,20 +27,20 @@ const validate = async function (request, token, h) {
   if (!apiKey) {
     throw new UnauthorizedError('"Ledger-Api-Key" header is required')
   }
-  const account = await getAccount(apiKey)
-  if (!account) {
+  const participant = await getParticipant(apiKey)
+  if (!participant) {
     throw new UnauthorizedError('"Ledger-Api-Key" header is not valid')
   }
-  if (!account.is_admin) {
+  if (!participant.is_admin) {
     return h.response({credentials: null, isValid: false})
   }
-  const results = await TokenService.byAccount(account)
+  const results = await TokenService.byParticipant(participant)
   if (!results || results.length === 0) {
     return h.response({credentials: null, isValid: false})
   }
   return await P.all(results.map(x => validateToken(x, token)))
     .then((verifications) => verifications.some(x => x))
-    .then(verified => h.response({isValid: verified, credentials: account}))
+    .then(verified => h.response({isValid: verified, credentials: participant}))
 }
 
 module.exports = {

@@ -20,22 +20,22 @@ class SocketManager {
     }
   }
 
-  _findSocketsForAccount (name) {
-    return this._sockets.filter(x => x.accounts.includes(name))
+  _findSocketsForParticipant (name) {
+    return this._sockets.filter(x => x.participant.includes(name))
   }
 
-  add (ws, ...accounts) {
-    if (accounts.length <= 0) {
+  add (ws, ...participant) {
+    if (participant.length <= 0) {
       ws.close()
     } else {
-      ws.accounts = accounts
+      ws.participant = participant
       this._addSocket(ws)
     }
   }
 
   send (name, message) {
     const jsonMessage = JSON.stringify(message)
-    this._findSocketsForAccount(name)
+    this._findSocketsForParticipant(name)
       .forEach(s => {
         RequestLogger.logWebsocket(JSON.stringify({ name, message }))
         s.send(jsonMessage)

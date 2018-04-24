@@ -25,25 +25,25 @@ function createRequest (id, payload) {
 
 function generateTransfer (source, destination, amount) {
   return {
-    sourceAccountNumber: source.accountNumber,
+    sourceParticipantNumber: source.participantNumber,
     sourceRoutingNumber: source.routingNumber,
-    destinationAccountNumber: destination.accountNumber,
+    destinationParticipantNumber: destination.participantNumber,
     destinationRoutingNumber: destination.routingNumber,
     payerAmount: amount,
-    debitAccountName: source.name,
-    creditAccountName: destination.name
+    debitParticipantName: source.name,
+    creditParticipantName: destination.name
   }
 }
 
 function generateFee (source, destination, amount) {
   return {
-    sourceAccountNumber: source.accountNumber,
+    sourceParticipantNumber: source.participantNumber,
     sourceRoutingNumber: source.routingNumber,
-    destinationAccountNumber: destination.accountNumber,
+    destinationParticipantNumber: destination.participantNumber,
     destinationRoutingNumber: destination.routingNumber,
     payerAmount: amount,
-    payerAccountName: source.name,
-    payeeAccountName: destination.name
+    payerParticipantName: source.name,
+    payeeParticipantName: destination.name
   }
 }
 
@@ -92,24 +92,24 @@ Test('Handler Test', handlerTest => {
 
   handlerTest.test('settle should', settleTest => {
     settleTest.test('return settled transfer and fee ids', async function (test) {
-      const account1 = {accountNumber: '1234', routingNumber: '5678', name: 'Bill'}
-      const account2 = {accountNumber: '2345', routingNumber: '6789', name: 'Will'}
-      const account3 = {accountNumber: '3456', routingNumber: '7890', name: 'Rob'}
+      const participant1 = {participantNumber: '1234', routingNumber: '5678', name: 'Bill'}
+      const participant2 = {participantNumber: '2345', routingNumber: '6789', name: 'Will'}
+      const participant3 = {participantNumber: '3456', routingNumber: '7890', name: 'Rob'}
       let transfers = [
-        generateTransfer(account1, account2, '10.00'),
-        generateTransfer(account1, account2, '10.00'),
-        generateTransfer(account1, account2, '5.00'),
-        generateTransfer(account2, account1, '10.00'),
-        generateTransfer(account1, account3, '10.00'),
-        generateTransfer(account3, account1, '10.00')
+        generateTransfer(participant1, participant2, '10.00'),
+        generateTransfer(participant1, participant2, '10.00'),
+        generateTransfer(participant1, participant2, '5.00'),
+        generateTransfer(participant2, participant1, '10.00'),
+        generateTransfer(participant1, participant3, '10.00'),
+        generateTransfer(participant3, participant1, '10.00')
       ]
       let fee = [
-        generateFee(account1, account2, '5.00'),
-        generateFee(account1, account2, '5.00'),
-        generateFee(account1, account2, '5.00'),
-        generateFee(account2, account1, '10.00'),
-        generateFee(account1, account3, '10.00'),
-        generateFee(account3, account1, '15.00')
+        generateFee(participant1, participant2, '5.00'),
+        generateFee(participant1, participant2, '5.00'),
+        generateFee(participant1, participant2, '5.00'),
+        generateFee(participant2, participant1, '10.00'),
+        generateFee(participant1, participant3, '10.00'),
+        generateFee(participant3, participant1, '15.00')
       ]
       TransferService.settle.returns(P.resolve(transfers))
       FeeService.settleFeeForTransfers.returns(P.resolve(fee))
@@ -117,32 +117,32 @@ Test('Handler Test', handlerTest => {
       const settledTransfers = [{
         amount: {
           currency_code: 'TZS',
-          description: account1.name,
+          description: participant1.name,
           value: '15.00'
         },
         destination: {
-          account_number: account2.accountNumber,
-          routing_number: account2.routingNumber
+          participant_number: participant2.participantNumber,
+          routing_number: participant2.routingNumber
         },
         source: {
-          account_number: account1.accountNumber,
-          routing_number: account1.routingNumber
+          participant_number: participant1.participantNumber,
+          routing_number: participant1.routingNumber
         }
       }]
 
       const settledFee = [{
         amount: {
           currency_code: 'TZS',
-          description: account1.name,
+          description: participant1.name,
           value: '15.00'
         },
         destination: {
-          account_number: account2.accountNumber,
-          routing_number: account2.routingNumber
+          participant_number: participant2.participantNumber,
+          routing_number: participant2.routingNumber
         },
         source: {
-          account_number: account1.accountNumber,
-          routing_number: account1.routingNumber
+          participant_number: participant1.participantNumber,
+          routing_number: participant1.routingNumber
         }
       }]
       await Handler.settle({}, {})
