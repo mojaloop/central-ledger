@@ -18,7 +18,7 @@ const LEDGER = 'ledger'
 const generateFeeAmount = (charge, transfer) => {
   switch (charge.rateType) {
     case PERCENTAGE:
-      return Util.formatAmount(charge.rate * transfer.creditAmount)
+      return Util.formatAmount(charge.rate * transfer.payerAmount)
     case FLAT:
       return charge.rate
   }
@@ -27,9 +27,9 @@ const generateFeeAmount = (charge, transfer) => {
 const getAccountIdFromTransferForCharge = (account, transfer) => {
   switch (account) {
     case SENDER:
-      return P.resolve(transfer.debitAccountId)
+      return P.resolve(transfer.payeeParticipantId)
     case RECEIVER:
-      return P.resolve(transfer.creditAccountId)
+      return P.resolve(transfer.payerParticipantId)
     case LEDGER:
       return Account.getByName(Config.LEDGER_ACCOUNT_NAME).then(account => account.accountId)
   }
@@ -48,7 +48,7 @@ const create = (charge, transfer) => {
     return P.all([getAccountIdFromTransferForCharge(charge.payer, transfer), getAccountIdFromTransferForCharge(charge.payee, transfer)]).then(([payerAccountId, payeeAccountId]) => {
       const amount = generateFeeAmount(charge, transfer)
       const fee = {
-        transferId: transfer.transferUuid,
+        transferId: transfer.transferId,
         amount,
         payerAccountId,
         payeeAccountId,

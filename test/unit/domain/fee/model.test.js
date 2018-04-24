@@ -38,7 +38,7 @@ Test('fees model', modelTest => {
 
       Db.fees.find.returns(P.reject(error))
 
-      Model.getAllForTransfer({ transferUuid: '1234' })
+      Model.getAllForTransfer({ transferId: '1234' })
         .then(() => {
           test.fail('Should have thrown error')
         })
@@ -52,14 +52,14 @@ Test('fees model', modelTest => {
       const feeId1 = '1'
       const feeId2 = '2'
       const fees = [{ feeId: feeId1 }, { feeId: feeId2 }]
-      const transfer = { transferUuid: '1234' }
+      const transfer = { transferId: '1234' }
 
       Db.fees.find.returns(P.resolve(fees))
 
       Model.getAllForTransfer(transfer)
         .then((found) => {
           test.equal(found, fees)
-          test.ok(Db.fees.find.calledWith({ transferId: transfer.transferUuid }))
+          test.ok(Db.fees.find.calledWith({ transferId: transfer.transferId }))
           test.end()
         })
     })
@@ -109,14 +109,14 @@ Test('fees model', modelTest => {
       const fee = { transferId, amount, chargeId }
 
       const charge = { chargeId }
-      const transfer = { transferUuid: transferId }
+      const transfer = { transferId: transferId }
 
       Db.fees.findOne.returns(P.resolve(fee))
 
       Model.doesExist(charge, transfer)
         .then(existing => {
           test.equal(existing, fee)
-          test.ok(Db.fees.findOne.calledWith({ transferId: transfer.transferUuid, chargeId: charge.chargeId }))
+          test.ok(Db.fees.findOne.calledWith({ transferId: transfer.transferId, chargeId: charge.chargeId }))
           test.end()
         })
     })

@@ -20,7 +20,7 @@ const mapToSettlement = (settlement) => {
     },
     amount: {
       currency_code: 'TZS',
-      value: settlement.creditAmount || settlement.payerAmount,
+      value: settlement.payerAmount || settlement.payerAmount,
       description: settlement.debitAccountName || settlement.payerAccountName
     }
   }

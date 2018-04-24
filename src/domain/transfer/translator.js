@@ -39,23 +39,23 @@ const fromTransferAggregate = (t) => {
 }
 
 const fromTransferReadModel = (t) => fromTransferAggregate({
-  id: t.transferUuid,
+  id: t.transferId,
   ledger: t.ledger,
   debits: [{
     account: t.debitAccountName,
-    amount: t.debitAmount,
-    memo: t.debitMemo
+    amount: t.payeeAmount,
+    memo: t.payeeNote
   }],
   credits: [{
     account: t.creditAccountName,
-    amount: t.creditAmount,
-    memo: t.creditMemo,
-    rejected: t.creditRejected === 1,
-    rejection_message: t.creditRejectionMessage
+    amount: t.payerAmount,
+    memo: t.payerNote,
+    rejected: t.payeeRejected === 1,
+    rejection_message: t.payeeRejectionMessage
   }],
   cancellation_condition: t.cancellationCondition,
   execution_condition: t.executionCondition,
-  expires_at: t.expiresAt,
+  expires_at: t.expirationDate,
   state: t.state,
   timeline: Util.omitNil({
     prepared_at: t.preparedDate,
@@ -69,7 +69,7 @@ const toTransfer = (t) => {
   if (t.id) {
     Logger.info('In aggregate transfer translator')
     return fromTransferAggregate(t)
-  } else if (t.transferUuid) {
+  } else if (t.transferId) {
     Logger.info('In read model transfer translator')
     return fromTransferReadModel(t)
   } else throw new Error(`Unable to translate to transfer: ${t}`)

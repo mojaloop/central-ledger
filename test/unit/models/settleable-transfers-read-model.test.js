@@ -27,7 +27,7 @@ Test('settleable-transfers-read-model', function (modelTest) {
 
   modelTest.test('getSettleableTransfers should', getSettleableTransfersTest => {
     getSettleableTransfersTest.test('return settleable transfers', test => {
-      let settleableTransfers = [{ transferId: 1, creditAccountName: 'dfsp1', debitAccountName: 'dfsp2', creditAmount: 1.00, debitAmount: 1.00 }]
+      let settleableTransfers = [{ transferId: 1, creditAccountName: 'dfsp1', debitAccountName: 'dfsp2', payerAmount: 1.00, payeeAmount: 1.00 }]
 
       let builderStub = sandbox.stub()
       let joinTransfersStub = sandbox.stub()
@@ -63,11 +63,11 @@ Test('settleable-transfers-read-model', function (modelTest) {
         .then(found => {
           test.equal(found, settleableTransfers)
           test.ok(builderStub.leftJoin.withArgs('settledTransfers AS st', 'executedTransfers.transferId', 'st.transferId').calledOnce)
-          test.ok(joinTransfersStub.withArgs('transfers AS t', 'executedTransfers.transferId', 't.transferUuid').calledOnce)
-          test.ok(joinCreditStub.withArgs('accounts AS ca', 't.creditAccountId', 'ca.accountId').calledOnce)
-          test.ok(joinDebitStub.withArgs('accounts AS da', 't.debitAccountId', 'da.accountId').calledOnce)
+          test.ok(joinTransfersStub.withArgs('transfers AS t', 'executedTransfers.transferId', 't.transferId').calledOnce)
+          test.ok(joinCreditStub.withArgs('accounts AS ca', 't.payerParticipantId', 'ca.accountId').calledOnce)
+          test.ok(joinDebitStub.withArgs('accounts AS da', 't.payeeParticipantId', 'da.accountId').calledOnce)
           test.ok(whereNullStub.withArgs('st.transferId').calledOnce)
-          test.ok(distinctStub.withArgs('executedTransfers.transferId AS transferId', 'ca.name AS creditAccountName', 'da.name AS debitAccountName', 't.creditAmount AS creditAmount', 't.debitAmount AS debitAmount').calledOnce)
+          test.ok(distinctStub.withArgs('executedTransfers.transferId AS transferId', 'ca.name AS creditAccountName', 'da.name AS debitAccountName', 't.payerAmount AS payerAmount', 't.payeeAmount AS payeeAmount').calledOnce)
           test.end()
         })
     })
@@ -77,7 +77,7 @@ Test('settleable-transfers-read-model', function (modelTest) {
 
   modelTest.test('getUnsettledTransfers should', getUnsettledTransfersTest => {
     getUnsettledTransfersTest.test('return settleable transfers', test => {
-      let settleableTransfers = [{ transferId: 1, creditAccountName: 'dfsp1', debitAccountName: 'dfsp2', creditAmount: 1.00, debitAmount: 1.00 }]
+      let settleableTransfers = [{ transferId: 1, creditAccountName: 'dfsp1', debitAccountName: 'dfsp2', payerAmount: 1.00, payeeAmount: 1.00 }]
 
       let builderStub = sandbox.stub()
       let joinTransfersStub = sandbox.stub()
@@ -107,11 +107,11 @@ Test('settleable-transfers-read-model', function (modelTest) {
         .then(found => {
           test.equal(found, settleableTransfers)
           test.ok(builderStub.leftJoin.withArgs('settledTransfers AS st', 'executedTransfers.transferId', 'st.transferId').calledOnce)
-          test.ok(joinTransfersStub.withArgs('transfers AS t', 'executedTransfers.transferId', 't.transferUuid').calledOnce)
-          test.ok(joinCreditStub.withArgs('accounts AS ca', 't.creditAccountId', 'ca.accountId').calledOnce)
-          test.ok(joinDebitStub.withArgs('accounts AS da', 't.debitAccountId', 'da.accountId').calledOnce)
+          test.ok(joinTransfersStub.withArgs('transfers AS t', 'executedTransfers.transferId', 't.transferId').calledOnce)
+          test.ok(joinCreditStub.withArgs('accounts AS ca', 't.payerParticipantId', 'ca.accountId').calledOnce)
+          test.ok(joinDebitStub.withArgs('accounts AS da', 't.payeeParticipantId', 'da.accountId').calledOnce)
           test.ok(whereNullStub.withArgs('st.transferId').calledOnce)
-          test.ok(distinctStub.withArgs('executedTransfers.transferId AS transferId', 'ca.name AS creditAccountName', 'da.name AS debitAccountName', 't.creditAmount AS creditAmount', 't.debitAmount AS debitAmount').calledOnce)
+          test.ok(distinctStub.withArgs('executedTransfers.transferId AS transferId', 'ca.name AS creditAccountName', 'da.name AS debitAccountName', 't.payerAmount AS payerAmount', 't.payeeAmount AS payeeAmount').calledOnce)
           test.end()
         })
     })
@@ -122,7 +122,7 @@ Test('settleable-transfers-read-model', function (modelTest) {
   modelTest.test('getUnsettledTransfersByAccount should', getUnsettledTransfersByAccountTest => {
     getUnsettledTransfersByAccountTest.test('return settleable transfers by account', test => {
       let accountId = 1
-      let settleableTransfers = [{ transferId: 1, creditAccountName: 'dfsp1', debitAccountName: 'dfsp2', creditAmount: 1.00, debitAmount: 1.00 }]
+      let settleableTransfers = [{ transferId: 1, creditAccountName: 'dfsp1', debitAccountName: 'dfsp2', payerAmount: 1.00, payeeAmount: 1.00 }]
 
       let builderStub = sandbox.stub()
       let joinTransfersStub = sandbox.stub()
@@ -162,13 +162,13 @@ Test('settleable-transfers-read-model', function (modelTest) {
         .then(found => {
           test.equal(found, settleableTransfers)
           test.ok(builderStub.leftJoin.withArgs('settledTransfers AS st', 'executedTransfers.transferId', 'st.transferId').calledOnce)
-          test.ok(joinTransfersStub.withArgs('transfers AS t', 'executedTransfers.transferId', 't.transferUuid').calledOnce)
-          test.ok(joinCreditStub.withArgs('accounts AS ca', 't.creditAccountId', 'ca.accountId').calledOnce)
-          test.ok(joinDebitStub.withArgs('accounts AS da', 't.debitAccountId', 'da.accountId').calledOnce)
+          test.ok(joinTransfersStub.withArgs('transfers AS t', 'executedTransfers.transferId', 't.transferId').calledOnce)
+          test.ok(joinCreditStub.withArgs('accounts AS ca', 't.payerParticipantId', 'ca.accountId').calledOnce)
+          test.ok(joinDebitStub.withArgs('accounts AS da', 't.payeeParticipantId', 'da.accountId').calledOnce)
           test.ok(whereNullStub.withArgs('st.transferId').calledOnce)
-          test.ok(distinctStub.withArgs('executedTransfers.transferId AS transferId', 'ca.name AS creditAccountName', 'da.name AS debitAccountName', 't.creditAmount AS creditAmount', 't.debitAmount AS debitAmount').calledOnce)
-          test.ok(groupWhereStub.withArgs('t.creditAccountId', accountId).calledOnce)
-          test.ok(groupOrWhereStub.withArgs('t.debitAccountId', accountId).calledOnce)
+          test.ok(distinctStub.withArgs('executedTransfers.transferId AS transferId', 'ca.name AS creditAccountName', 'da.name AS debitAccountName', 't.payerAmount AS payerAmount', 't.payeeAmount AS payeeAmount').calledOnce)
+          test.ok(groupWhereStub.withArgs('t.payerParticipantId', accountId).calledOnce)
+          test.ok(groupOrWhereStub.withArgs('t.payeeParticipantId', accountId).calledOnce)
           test.end()
         })
     })

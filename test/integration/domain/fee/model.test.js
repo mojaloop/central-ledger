@@ -48,7 +48,7 @@ Test('fees model', modelTest => {
       const feePayload1 = generateFeePayload({ transferId, chargeId: 1 })
       const feePayload2 = generateFeePayload({ transferId, chargeId: 2 })
       const transfer = {
-        transferUuid: transferId
+        transferId: transferId
       }
 
       FeesModel.create(feePayload1)
@@ -73,7 +73,7 @@ Test('fees model', modelTest => {
       const charge = { chargeId: feePayload2.chargeId }
 
       const transfer = {
-        transferUuid: transferId
+        transferId: transferId
       }
 
       FeesModel.create(feePayload1)
@@ -82,7 +82,7 @@ Test('fees model', modelTest => {
         .then(fee => {
           test.ok(fee)
           test.equal(fee.chargeId, charge.chargeId)
-          test.equal(fee.transferId, transfer.transferUuid)
+          test.equal(fee.transferId, transfer.transferId)
           test.end()
         })
     })
@@ -93,7 +93,7 @@ Test('fees model', modelTest => {
       const charge = { chargeId: 3 }
 
       const transfer = {
-        transferUuid: transferId
+        transferId: transferId
       }
 
       FeesModel.create(feePayload)

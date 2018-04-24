@@ -83,7 +83,7 @@ const fulfill = (fulfillment) => {
 }
 
 const rejectExpired = () => {
-  const rejections = TransferQueries.findExpired().then(expired => expired.map(x => expire(x.transferUuid)))
+  const rejections = TransferQueries.findExpired().then(expired => expired.map(x => expire(x.transferId)))
   return P.all(rejections).then(rejections => {
     return rejections.map(r => r.transfer.id)
   })

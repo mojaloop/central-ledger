@@ -31,14 +31,14 @@ Test('transfers handler', handlerTest => {
   handlerTest.test('getAll should', getAllTest => {
     getAllTest.test('get all transfers and format list', async function (test) {
       const transfer1 = {
-        transferUuid: '90b5af57-256c-4b85-b2e1-cf6975c1a4b8',
+        transferId: '90b5af57-256c-4b85-b2e1-cf6975c1a4b8',
         state: 'executed',
-        debitAmount: '1200'
+        payeeAmount: '1200'
       }
       const transfer2 = {
-        transferUuid: '90b5af57-256c-4b85-b2e1-cf6975c1a4b9',
+        transferId: '90b5af57-256c-4b85-b2e1-cf6975c1a4b9',
         state: 'executed',
-        debitAmount: '1300'
+        payeeAmount: '1300'
       }
       const transfers = [transfer1, transfer2]
 
@@ -47,10 +47,10 @@ Test('transfers handler', handlerTest => {
       const response = await Handler.getAll({}, {})
       test.equal(response.length, 2)
       const item1 = response[0]
-      test.equal(item1.transferUuid, transfer1.transferUuid)
+      test.equal(item1.transferId, transfer1.transferId)
       test.equal(item1.state, transfer1.state)
       const item2 = response[1]
-      test.equal(item2.transferUuid, transfer2.transferUuid)
+      test.equal(item2.transferId, transfer2.transferId)
       test.equal(item2.state, transfer2.state)
       test.end()
     })

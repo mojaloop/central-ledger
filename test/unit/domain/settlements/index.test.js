@@ -16,7 +16,7 @@ function generateTransfer (source, destination, amount) {
     sourceRoutingNumber: source.routingNumber,
     destinationAccountNumber: destination.accountNumber,
     destinationRoutingNumber: destination.routingNumber,
-    creditAmount: amount,
+    payerAmount: amount,
     debitAccountName: source.name,
     creditAccountName: destination.name
   }

@@ -28,8 +28,8 @@ const buildResponse = (positionMap) => {
 const mapFeeToExecuted = (fee) => {
   return {
     account: fee.account,
-    debitAmount: fee.payerAmount,
-    creditAmount: fee.payeeAmount,
+    payeeAmount: fee.payerAmount,
+    payerAmount: fee.payeeAmount,
     debitAccountName: fee.payerAccountName,
     creditAccountName: fee.payeeAccountName
   }
@@ -53,8 +53,8 @@ const calculatePositions = (executed, positionMap) => {
     const debitAccount = UrlParser.toAccountUri(head.debitAccountName)
     const creditAccount = UrlParser.toAccountUri(head.creditAccountName)
 
-    addToExistingPositionFor(debitAccount)(buildPosition(new Decimal(head.debitAmount), new Decimal('0'), (new Decimal(head.debitAmount)).times(-1)))
-    addToExistingPositionFor(creditAccount)(buildPosition(new Decimal('0'), new Decimal(head.creditAmount), new Decimal(head.creditAmount)))
+    addToExistingPositionFor(debitAccount)(buildPosition(new Decimal(head.payeeAmount), new Decimal('0'), (new Decimal(head.payeeAmount)).times(-1)))
+    addToExistingPositionFor(creditAccount)(buildPosition(new Decimal('0'), new Decimal(head.payerAmount), new Decimal(head.payerAmount)))
 
     return calculatePositions(tail, positionMap)
   }

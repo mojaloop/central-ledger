@@ -37,9 +37,9 @@ const validateConditionalTransfer = (transfer) => {
   if (!executionCondition) return
   CryptoConditions.validateCondition(executionCondition)
   if (transfer.expires_at) {
-    const expiresAt = Moment(transfer.expires_at)
-    if (expiresAt.isBefore(Moment.utc())) {
-      throw new ValidationError(`expires_at date: ${expiresAt.toISOString()} has already expired.`)
+    const expirationDate = Moment(transfer.expires_at)
+    if (expirationDate.isBefore(Moment.utc())) {
+      throw new ValidationError(`expires_at date: ${expirationDate.toISOString()} has already expired.`)
     }
   } else {
     throw new ValidationError('expires_at: required for conditional transfer')

@@ -15,10 +15,10 @@ const Config = require('../../../../src/lib/config')
 
 const createFee = (transfer, charge) => {
   return {
-    transferId: transfer.transferUuid,
-    amount: Util.formatAmount(charge.rate * transfer.creditAmount),
-    payerAccountId: transfer.debitAccountId,
-    payeeAccountId: transfer.creditAccountId,
+    transferId: transfer.transferId,
+    amount: Util.formatAmount(charge.rate * transfer.payerAmount),
+    payerAccountId: transfer.payeeParticipantId,
+    payeeAccountId: transfer.payerParticipantId,
     chargeId: charge.chargeId
   }
 }
@@ -79,11 +79,11 @@ Test('Fee service', serviceTest => {
         payee: 'ledger'
       }
       const transfer = {
-        transferUuid: '012',
-        debitAccountId: '1',
-        creditAccountId: '2',
-        creditAmount: '1.00',
-        debitAmount: '1.00'
+        transferId: '012',
+        payeeParticipantId: '1',
+        payerParticipantId: '2',
+        payerAmount: '1.00',
+        payeeAmount: '1.00'
       }
       const fee = createFee(transfer, charge)
       const fee2 = createFee(transfer, charge2)
@@ -128,11 +128,11 @@ Test('Fee service', serviceTest => {
         payee: 'receiver'
       }
       const transfer = {
-        transferUuid: '012',
-        debitAccountId: '1',
-        creditAccountId: '2',
-        creditAmount: '1.00',
-        debitAmount: '1.00'
+        transferId: '012',
+        payeeParticipantId: '1',
+        payerParticipantId: '2',
+        payerAmount: '1.00',
+        payeeAmount: '1.00'
       }
       const fee = createFee(transfer, charge)
       const event = {
@@ -176,11 +176,11 @@ Test('Fee service', serviceTest => {
         payee: 'receiver'
       }
       const transfer = {
-        transferUuid: '012',
-        debitAccountId: '1',
-        creditAccountId: '2',
-        creditAmount: '1.00',
-        debitAmount: '1.00'
+        transferId: '012',
+        payeeParticipantId: '1',
+        payerParticipantId: '2',
+        payerAmount: '1.00',
+        payeeAmount: '1.00'
       }
       const fee1 = createFee(transfer, charge)
       fee1.feeId = 0
@@ -232,11 +232,11 @@ Test('Fee service', serviceTest => {
         payee: 'receiver'
       }
       const transfer = {
-        transferUuid: '012',
-        debitAccountId: '1',
-        creditAccountId: '2',
-        creditAmount: '1.00',
-        debitAmount: '1.00'
+        transferId: '012',
+        payeeParticipantId: '1',
+        payerParticipantId: '2',
+        payerAmount: '1.00',
+        payeeAmount: '1.00'
       }
       const fee1 = createFee(transfer, charge)
       fee1.feeId = 0
@@ -291,11 +291,11 @@ Test('Fee service', serviceTest => {
         accountId: 11
       }
       const transfer = {
-        transferUuid: '012',
-        debitAccountId: '1',
-        creditAccountId: '2',
-        creditAmount: '1.00',
-        debitAmount: '1.00'
+        transferId: '012',
+        payeeParticipantId: '1',
+        payerParticipantId: '2',
+        payerAmount: '1.00',
+        payeeAmount: '1.00'
       }
       const fee1 = createFee(transfer, charge)
       fee1.feeId = 0
@@ -338,11 +338,11 @@ Test('Fee service', serviceTest => {
         payee: 'receiver'
       }
       const transfer = {
-        transferUuid: '012',
-        debitAccountId: '1',
-        creditAccountId: '2',
-        creditAmount: '1.00',
-        debitAmount: '1.00'
+        transferId: '012',
+        payeeParticipantId: '1',
+        payerParticipantId: '2',
+        payerAmount: '1.00',
+        payeeAmount: '1.00'
       }
       const fee = createFee(transfer, charge)
       fee.feeId = 6

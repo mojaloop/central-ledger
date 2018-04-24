@@ -33,15 +33,15 @@ const futureDate = () => {
   return d
 }
 
-const buildTransfer = (transferId, debit, credit, expiresAt) => {
-  expiresAt = (expiresAt || futureDate()).toISOString()
+const buildTransfer = (transferId, debit, credit, expirationDate) => {
+  expirationDate = (expirationDate || futureDate()).toISOString()
   return {
     id: `http://${hostname}/transfers/${transferId}`,
     ledger: `http://${hostname}`,
     debits: [debit],
     credits: [credit],
     execution_condition: executionCondition,
-    expires_at: expiresAt
+    expires_at: expirationDate
   }
 }
 
@@ -54,8 +54,8 @@ const buildUnconditionalTransfer = (transferId, debit, credit) => {
   }
 }
 
-const buildTransferPreparedEvent = (transferId, debit, credit, expiresAt) => {
-  expiresAt = (expiresAt || futureDate()).toISOString()
+const buildTransferPreparedEvent = (transferId, debit, credit, expirationDate) => {
+  expirationDate = (expirationDate || futureDate()).toISOString()
   return {
     id: 1,
     name: 'TransferPrepared',
@@ -64,7 +64,7 @@ const buildTransferPreparedEvent = (transferId, debit, credit, expiresAt) => {
       debits: [debit],
       credits: [credit],
       execution_condition: executionCondition,
-      expires_at: expiresAt
+      expires_at: expirationDate
     },
     aggregate: {
       id: transferId,
@@ -75,8 +75,8 @@ const buildTransferPreparedEvent = (transferId, debit, credit, expiresAt) => {
   }
 }
 
-const buildTransferExecutedEvent = (transferId, debit, credit, expiresAt) => {
-  expiresAt = (expiresAt || futureDate()).toISOString()
+const buildTransferExecutedEvent = (transferId, debit, credit, expirationDate) => {
+  expirationDate = (expirationDate || futureDate()).toISOString()
   return {
     id: 2,
     name: 'TransferExecuted',
@@ -85,7 +85,7 @@ const buildTransferExecutedEvent = (transferId, debit, credit, expiresAt) => {
       debits: [debit],
       credits: [credit],
       execution_condition: executionCondition,
-      expires_at: expiresAt,
+      expires_at: expirationDate,
       fulfillment: 'oAKAAA'
     },
     aggregate: {
@@ -113,23 +113,23 @@ const buildTransferRejectedEvent = (transferId, rejectionReason) => {
   }
 }
 
-const buildReadModelTransfer = (transferId, debit, credit, state, expiresAt, preparedDate, rejectionReason) => {
+const buildReadModelTransfer = (transferId, debit, credit, state, expirationDate, preparedDate, rejectionReason) => {
   state = state || 'prepared'
-  expiresAt = (expiresAt || futureDate()).toISOString()
+  expirationDate = (expirationDate || futureDate()).toISOString()
   preparedDate = (preparedDate || new Date()).toISOString()
   return {
-    transferUuid: transferId,
+    transferId: transferId,
     state: state,
     ledger: `${hostname}`,
-    debitAccountId: debit.accountId,
-    debitAmount: debit.amount,
-    debitMemo: debit.memo,
-    creditAccountId: credit.accountId,
-    creditAmount: credit.amount,
-    creditMemo: credit.memo,
+    payeeParticipantId: debit.accountId,
+    payeeAmount: debit.amount,
+    payeeNote: debit.memo,
+    payerParticipantId: credit.accountId,
+    payerAmount: credit.amount,
+    payerNote: credit.memo,
     executionCondition: executionCondition,
     rejectionReason: rejectionReason,
-    expiresAt: expiresAt,
+    expirationDate: expirationDate,
     preparedDate: preparedDate
   }
 }

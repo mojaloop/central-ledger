@@ -15,40 +15,40 @@ Test('transfers read model', function (modelTest) {
   modelTest.test('getSettleableTransfers should', function (getSettleableTransfersTest) {
     getSettleableTransfersTest.test('retrieve transfer ids that are executed but not settled', function (assert) {
       let settledTransferId = Fixtures.generateTransferId()
-      let settledCreditAccountId
+      let settledpayerParticipantId
       let settledCreditAccountName = Fixtures.generateAccountName()
-      let settledDebitAccountId
+      let settledpayeeParticipantId
       let settledDebitAccountName = Fixtures.generateAccountName()
-      let settledCreditAmount = '11'
-      let settledDebitAmount = '-11'
+      let settledpayerAmount = '11'
+      let settledpayeeAmount = '-11'
 
       let unSettledTransferId = Fixtures.generateTransferId()
-      let unSettledCreditAccountId
+      let unSettledpayerParticipantId
       let unSettledCreditAccountName = Fixtures.generateAccountName()
-      let unSettledDebitAccountId
+      let unSettledpayeeParticipantId
       let unSettledDebitAccountName = Fixtures.generateAccountName()
-      let unSettledCreditAmount = '50'
-      let unSettledDebitAmount = '-50'
+      let unSettledpayerAmount = '50'
+      let unSettledpayeeAmount = '-50'
 
       ExecutedTransfersModel.create({ id: unSettledTransferId })
         .then(() => ExecutedTransfersModel.create({ id: settledTransferId }))
         .then(() => SettledTransfersModel.create({ id: settledTransferId, settlementId: Uuid() }))
-        .then(() => Account.create({ name: unSettledCreditAccountName, password: '1234', emailAddress: unSettledCreditAccountName + '@test.com' }).then(account => { unSettledCreditAccountId = account.accountId }))
-        .then(() => Account.create({ name: unSettledDebitAccountName, password: '1234', emailAddress: unSettledDebitAccountName + '@test.com' }).then(account => { unSettledDebitAccountId = account.accountId }))
-        .then(() => Account.create({ name: settledCreditAccountName, password: '1234', emailAddress: settledCreditAccountName + '@test.com' }).then(account => { settledCreditAccountId = account.accountId }))
-        .then(() => Account.create({ name: settledDebitAccountName, password: '1234', emailAddress: settledDebitAccountName + '@test.com' }).then(account => { settledDebitAccountId = account.accountId }))
+        .then(() => Account.create({ name: unSettledCreditAccountName, password: '1234', emailAddress: unSettledCreditAccountName + '@test.com' }).then(account => { unSettledpayerParticipantId = account.accountId }))
+        .then(() => Account.create({ name: unSettledDebitAccountName, password: '1234', emailAddress: unSettledDebitAccountName + '@test.com' }).then(account => { unSettledpayeeParticipantId = account.accountId }))
+        .then(() => Account.create({ name: settledCreditAccountName, password: '1234', emailAddress: settledCreditAccountName + '@test.com' }).then(account => { settledpayerParticipantId = account.accountId }))
+        .then(() => Account.create({ name: settledDebitAccountName, password: '1234', emailAddress: settledDebitAccountName + '@test.com' }).then(account => { settledpayeeParticipantId = account.accountId }))
         .then(() => {
-          let credit = Fixtures.buildDebitOrCredit(unSettledCreditAccountName, unSettledCreditAmount)
-          credit.accountId = unSettledCreditAccountId
-          let debit = Fixtures.buildDebitOrCredit(unSettledDebitAccountName, unSettledDebitAmount)
-          debit.accountId = unSettledDebitAccountId
+          let credit = Fixtures.buildDebitOrCredit(unSettledCreditAccountName, unSettledpayerAmount)
+          credit.accountId = unSettledpayerParticipantId
+          let debit = Fixtures.buildDebitOrCredit(unSettledDebitAccountName, unSettledpayeeAmount)
+          debit.accountId = unSettledpayeeParticipantId
           return TransfersReadModel.saveTransfer(Fixtures.buildReadModelTransfer(unSettledTransferId, credit, debit, TransferState.EXECUTED)).catch(e => { assert.equals(e, '') })
         })
         .then(() => {
-          let credit = Fixtures.buildDebitOrCredit(settledCreditAccountName, settledCreditAmount)
-          credit.accountId = settledCreditAccountId
-          let debit = Fixtures.buildDebitOrCredit(settledDebitAccountName, settledDebitAmount)
-          debit.accountId = settledDebitAccountId
+          let credit = Fixtures.buildDebitOrCredit(settledCreditAccountName, settledpayerAmount)
+          credit.accountId = settledpayerParticipantId
+          let debit = Fixtures.buildDebitOrCredit(settledDebitAccountName, settledpayeeAmount)
+          debit.accountId = settledpayeeParticipantId
           return TransfersReadModel.saveTransfer(Fixtures.buildReadModelTransfer(settledTransferId, credit, debit, TransferState.EXECUTED))
         })
         .then(() =>
@@ -73,16 +73,16 @@ Test('transfers read model', function (modelTest) {
       let account3Id
 
       let settledTransferId = Fixtures.generateTransferId()
-      let settledCreditAmount = '11'
-      let settledDebitAmount = '-11'
+      let settledpayerAmount = '11'
+      let settledpayeeAmount = '-11'
 
       let unSettledTransferId = Fixtures.generateTransferId()
-      let unSettledCreditAmount = '50'
-      let unSettledDebitAmount = '-50'
+      let unSettledpayerAmount = '50'
+      let unSettledpayeeAmount = '-50'
 
       let unSettledOtherTransferId = Fixtures.generateTransferId()
-      let unSettledOtherCreditAmount = '5'
-      let unSettledOtherDebitAmount = '-5'
+      let unSettledOtherpayerAmount = '5'
+      let unSettledOtherpayeeAmount = '-5'
 
       ExecutedTransfersModel.create({ id: unSettledTransferId })
         .then(() => ExecutedTransfersModel.create({ id: unSettledOtherTransferId }))
@@ -92,23 +92,23 @@ Test('transfers read model', function (modelTest) {
         .then(() => Account.create({ name: account2Name, password: '1234', emailAddress: account2Name + '@test.com' }).then(account => { account2Id = account.accountId }))
         .then(() => Account.create({ name: account3Name, password: '1234', emailAddress: account3Name + '@test.com' }).then(account => { account3Id = account.accountId }))
         .then(() => {
-          let credit = Fixtures.buildDebitOrCredit(account1Name, unSettledCreditAmount)
+          let credit = Fixtures.buildDebitOrCredit(account1Name, unSettledpayerAmount)
           credit.accountId = account1Id
-          let debit = Fixtures.buildDebitOrCredit(account2Name, unSettledDebitAmount)
+          let debit = Fixtures.buildDebitOrCredit(account2Name, unSettledpayeeAmount)
           debit.accountId = account2Id
           return TransfersReadModel.saveTransfer(Fixtures.buildReadModelTransfer(unSettledTransferId, credit, debit, TransferState.EXECUTED)).catch(e => { assert.equals(e, '') })
         })
         .then(() => {
-          let credit = Fixtures.buildDebitOrCredit(account2Name, unSettledOtherCreditAmount)
+          let credit = Fixtures.buildDebitOrCredit(account2Name, unSettledOtherpayerAmount)
           credit.accountId = account2Id
-          let debit = Fixtures.buildDebitOrCredit(account3Name, unSettledOtherDebitAmount)
+          let debit = Fixtures.buildDebitOrCredit(account3Name, unSettledOtherpayeeAmount)
           debit.accountId = account3Id
           return TransfersReadModel.saveTransfer(Fixtures.buildReadModelTransfer(unSettledOtherTransferId, credit, debit, TransferState.EXECUTED)).catch(e => { assert.equals(e, '') })
         })
         .then(() => {
-          let credit = Fixtures.buildDebitOrCredit(account3Name, settledCreditAmount)
+          let credit = Fixtures.buildDebitOrCredit(account3Name, settledpayerAmount)
           credit.accountId = account3Id
-          let debit = Fixtures.buildDebitOrCredit(account1Name, settledDebitAmount)
+          let debit = Fixtures.buildDebitOrCredit(account1Name, settledpayeeAmount)
           debit.accountId = account1Id
           return TransfersReadModel.saveTransfer(Fixtures.buildReadModelTransfer(settledTransferId, credit, debit, TransferState.EXECUTED))
         })

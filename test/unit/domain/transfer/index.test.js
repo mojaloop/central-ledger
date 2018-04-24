@@ -165,18 +165,18 @@ Test('Transfer Service tests', serviceTest => {
 
   serviceTest.test('rejectExpired should', rejectTest => {
     rejectTest.test('find expired transfers and reject them', test => {
-      const transfers = [{ transferUuid: 1 }, { transferUuid: 2 }]
+      const transfers = [{ transferId: 1 }, { transferId: 2 }]
       TransferQueries.findExpired.returns(P.resolve(transfers))
       transfers.forEach((x, i) => {
         Commands.reject.onCall(i).returns(P.resolve({ alreadyRejected: false, transfer: x }))
-        TransferTranslator.toTransfer.onCall(i).returns({ id: x.transferUuid })
+        TransferTranslator.toTransfer.onCall(i).returns({ id: x.transferId })
       })
       Service.rejectExpired()
         .then(x => {
           transfers.forEach(t => {
-            test.ok(Commands.reject.calledWith({ id: t.transferUuid, rejection_reason: RejectionType.EXPIRED }))
+            test.ok(Commands.reject.calledWith({ id: t.transferId, rejection_reason: RejectionType.EXPIRED }))
           })
-          test.deepEqual(x, transfers.map(t => t.transferUuid))
+          test.deepEqual(x, transfers.map(t => t.transferId))
           test.end()
         })
     })

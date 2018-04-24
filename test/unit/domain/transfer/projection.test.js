@@ -102,19 +102,19 @@ Test('Transfers-Projection', transfersProjectionTest => {
 
       TransfersProjection.handleTransferPrepared(event)
       test.ok(TransfersReadModel.saveTransfer.calledWith(Sinon.match({
-        transferUuid: event.aggregate.id,
+        transferId: event.aggregate.id,
         state: TransferState.PREPARED,
         ledger: event.payload.ledger,
-        debitAccountId: dfsp1Account.accountId,
-        debitAmount: event.payload.debits[0].amount,
-        debitMemo: JSON.stringify(undefined),
-        creditAccountId: dfsp2Account.accountId,
-        creditAmount: event.payload.credits[0].amount,
-        creditMemo: JSON.stringify(undefined),
+        payeeParticipantId: dfsp1Account.accountId,
+        payeeAmount: event.payload.debits[0].amount,
+        payeeNote: JSON.stringify(undefined),
+        payerParticipantId: dfsp2Account.accountId,
+        payerAmount: event.payload.credits[0].amount,
+        payerNote: JSON.stringify(undefined),
         executionCondition: event.payload.execution_condition,
         cancellationCondition: undefined,
         rejectReason: undefined,
-        expiresAt: new Date(event.payload.expires_at),
+        expirationDate: new Date(event.payload.expires_at),
         additionalInfo: undefined,
         preparedDate: new Date(event.timestamp)
       })))
@@ -215,8 +215,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.equal(fields.state, TransferState.REJECTED)
       test.equal(fields.rejectionReason, TransferRejectionType.EXPIRED)
       test.equal(fields.rejectedDate.toISOString(), Moment(event.timestamp).toISOString())
-      test.equal(fields.hasOwnProperty('creditRejected'), false)
-      test.equal(fields.hasOwnProperty('creditRejectionMessage'), false)
+      test.equal(fields.hasOwnProperty('payeeRejected'), false)
+      test.equal(fields.hasOwnProperty('payeeRejectionMessage'), false)
       test.end()
     })
 
@@ -236,8 +236,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.equal(fields.state, TransferState.REJECTED)
       test.equal(fields.rejectionReason, TransferRejectionType.CANCELLED)
       test.equal(fields.rejectedDate.toISOString(), Moment(event.timestamp).toISOString())
-      test.equal(fields.creditRejected, 1)
-      test.equal(fields.creditRejectionMessage, message)
+      test.equal(fields.payeeRejected, 1)
+      test.equal(fields.payeeRejectionMessage, message)
       test.end()
     })
 
@@ -255,8 +255,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.equal(fields.state, TransferState.REJECTED)
       test.equal(fields.rejectionReason, TransferRejectionType.CANCELLED)
       test.equal(fields.rejectedDate.toISOString(), Moment(event.timestamp).toISOString())
-      test.equal(fields.creditRejected, 1)
-      test.equal(fields.creditRejectionMessage, '')
+      test.equal(fields.payeeRejected, 1)
+      test.equal(fields.payeeRejectionMessage, '')
       test.end()
     })
 

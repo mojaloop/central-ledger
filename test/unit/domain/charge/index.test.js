@@ -140,7 +140,7 @@ Test('Charge service', serviceTest => {
 
       Model.getAll.returns(P.resolve(charges))
       const transfer = {
-        creditAmount: '1.00'
+        payerAmount: '1.00'
       }
       ChargeService.getAllForTransfer(transfer)
         .then(result => {

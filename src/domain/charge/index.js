@@ -65,7 +65,7 @@ const getAllSenderAsPayer = () => {
 }
 
 const getAllForTransfer = (transfer) => {
-  return getAll().then(charges => charges.filter(charge => filterCharges(charge, transfer.creditAmount)))
+  return getAll().then(charges => charges.filter(charge => filterCharges(charge, transfer.payerAmount)))
 }
 
 const quote = (transaction) => {

@@ -21,22 +21,22 @@ const saveTransferPrepared = async (payload) => {
   }
   const accountIds = await _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {})
   const record = {
-    transferUuid: payload.id,
+    transferId: payload.id,
     state: TransferState.PREPARED,
     ledger: payload.ledger,
-    debitAccountId: accountIds[debitAccount],
-    debitAmount: payload.debits[0].amount,
-    debitMemo: JSON.stringify(payload.debits[0].memo),
-    creditAccountId: accountIds[creditAccount],
-    creditAmount: payload.credits[0].amount,
-    creditMemo: JSON.stringify(payload.credits[0].memo),
-    creditRejected: 0,
-    creditRejectionMessage: null,
+    payeeParticipantId: accountIds[debitAccount],
+    payeeAmount: payload.debits[0].amount,
+    payeeNote: JSON.stringify(payload.debits[0].memo),
+    payerParticipantId: accountIds[creditAccount],
+    payerAmount: payload.credits[0].amount,
+    payerNote: JSON.stringify(payload.credits[0].memo),
+    payeeRejected: 0,
+    payeeRejectionMessage: null,
     executionCondition: payload.execution_condition,
     cancellationCondition: payload.cancellation_condition,
     fulfillment: null,
     rejectionReason: payload.rejection_reason,
-    expiresAt: new Date(payload.expires_at),
+    expirationDate: new Date(payload.expires_at),
     additionalInfo: payload.additional_info,
     preparedDate: payload.timeline.prepared_at,
     executedDate: null,
@@ -67,8 +67,8 @@ const saveTransferRejected = async ({aggregate, payload, timestamp}) => {
   }
   if (payload.rejection_reason === TransferRejectionType.CANCELLED) {
     Util.assign(fields, {
-      creditRejected: 1,
-      creditRejectionMessage: payload.message || ''
+      payeeRejected: 1,
+      payeeRejectionMessage: payload.message || ''
     })
   }
   return await TransfersReadModel.updateTransfer(aggregate.id, fields)

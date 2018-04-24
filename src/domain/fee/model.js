@@ -7,7 +7,7 @@ exports.create = (fee) => {
 }
 
 exports.getAllForTransfer = (transfer) => {
-  return Db.fees.find({ transferId: transfer.transferUuid })
+  return Db.fees.find({ transferId: transfer.transferId })
 }
 
 exports.getSettleableFeesForTransfer = (transfer) => {
@@ -17,7 +17,7 @@ exports.getSettleableFeesForTransfer = (transfer) => {
 }
 
 exports.doesExist = (charge, transfer) => {
-  return Db.fees.findOne({ transferId: transfer.transferUuid, chargeId: charge.chargeId })
+  return Db.fees.findOne({ transferId: transfer.transferId, chargeId: charge.chargeId })
 }
 
 exports.getUnsettledFees = () => {

@@ -57,12 +57,12 @@ Test('Position Service tests', (serviceTest) => {
     }
   }
 
-  function buildTransfer (debitAccount, debitAmount, creditAccount, creditAmount) {
+  function buildTransfer (debitAccount, payeeAmount, creditAccount, payerAmount) {
     return {
       debitAccountName: debitAccount,
-      debitAmount: debitAmount,
+      payeeAmount: payeeAmount,
       creditAccountName: creditAccount,
-      creditAmount: creditAmount
+      payerAmount: payerAmount
     }
   }
 
