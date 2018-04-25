@@ -4,7 +4,7 @@ exports.up = function(knex, Promise) {
     return knex.schema.createTableIfNotExists('participant', (t) => {
         t.increments('participantId').primary().notNullable()
 
-        t.integer('currencyId').unsigned().notNullable()
+        t.string('currencyId', 3).notNullable()
         t.foreign('currencyId').references('currencyId').inTable('currency')
 
         t.string('name', 256).notNullable()
