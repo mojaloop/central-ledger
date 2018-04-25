@@ -29,75 +29,43 @@
  --------------
  ******/
 'use strict'
+
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Commands = require('../../domain/transfer/commands')
+const Commands = require('../../domain/position')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const ConsumerUtility = require('../lib/consumer')
 
-
-const TRANSFER = 'transfer'
+const POSITION = 'position'
 const PREPARE = 'prepare'
-const FULFILL = 'fulfill'
-const REJECT = 'reject'
 
-const createPrepareHandler = async function (dfspName) {
+const createPositionHandler = async function (dfspName) {
   try {
 
-    const prepareHandler = {
+    const positionHandler = {
       command: Commands.prepareExecute,
-      topicName: Utility.transformAccountToTopicName(dfspName, TRANSFER, PREPARE),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
+      topicName: Utility.transformAccountToTopicName(dfspName, POSITION, PREPARE),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }
-    await ConsumerUtility.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+    await ConsumerUtility.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
   } catch (e) {
     Logger.info(e)
   }
 }
 
-const createFulfillHandler = async function () {
-  try {
-    const fulfillHandler =  {
-      command: Commands.fulfilling,
-      topicName: Utility.transformGeneralTopicName(TRANSFER, FULFILL),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
-    }
-    await ConsumerUtility.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
-  } catch (e) {
-    Logger.info(e)
-  }
-}
-
-const createRejectHandler = async function () {
-  try {
-    const rejectHandler =  {
-      command: Commands.rejecting(),
-      topicName: Utility.transformGeneralTopicName(TRANSFER, REJECT),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), REJECT.toUpperCase())
-    }
-    await ConsumerUtility.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
-  } catch (e) {
-    Logger.info(e)
-  }
-}
-
-const registerPrepareHandlers = async function () {
+const registerPositionHandlers = async function () {
   const dfspNames = await DAO.retrieveAllAccounts()
   for (var key in dfspNames) {
-    await createPrepareHandler(dfspNames[key])
+    await createPositionHandler(dfspNames[key])
   }
 }
 
 const registerAllHandlers = async function () {
-  await registerPrepareHandlers()
-  await createFulfillHandler()
-  await createRejectHandler()
+  await registerPositionHandlers()
   return true
 }
 
 module.exports = {
-  registerPrepareHandlers,
-  createFulfillHandler,
-  createRejectHandler,
+  registerPositionHandlers,
   registerAllHandlers
 }

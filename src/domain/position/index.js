@@ -116,3 +116,7 @@ exports.calculateForAllAccounts = () => {
       })
     })
 }
+
+exports.generatePositionPlaceHolder = () => {
+  return true
+}

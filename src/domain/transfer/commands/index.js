@@ -74,11 +74,16 @@ const fulfilling = () => {
   return true
 }
 
+const rejecting = () => {
+  return true
+}
+
 module.exports = {
   fulfill,
   prepare,
   reject,
   settle,
   prepareExecute,
-  fulfilling
+  fulfilling,
+  rejecting
 }
