@@ -29,20 +29,34 @@
  --------------
  ******/
 'use strict'
-
 const Logger = require('@mojaloop/central-services-shared').Logger
-const requireGlob = require('require-glob')
+const Commands = require('../../domain/position')
+const Utility = require('../lib/utility')
+const ConsumerUtility = require('../lib/consumer')
 
-exports.registerAllHandlers = async function (request, h) {
+
+const NOTIFICATION = 'notification'
+const EVENT = 'event'
+
+const registerNotificationHandler = async function () {
   try {
-    const modules = await requireGlob(['**/handler.js'])
-    for (var key in modules) {
-      Logger.info(`Registering handler module: ${JSON.stringify(modules[key])}`)
-      const handlerObject = modules[key]
-      await handlerObject.handler.registerAllHandlers()
+    const notificationHandler =  {
+      command: Commands.generatePositionPlaceHolder, // to be changed once notifications are added
+      topicName: Utility.transformGeneralTopicName(NOTIFICATION, EVENT),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, NOTIFICATION.toUpperCase(), EVENT.toUpperCase())
     }
-    return h.response(true)
+    await ConsumerUtility.createHandler(notificationHandler.topicName, notificationHandler.config, notificationHandler.command)
   } catch (e) {
-    Logger.error(e)
+    Logger.info(e)
   }
+}
+
+const registerAllHandlers = async function () {
+  await registerNotificationHandler()
+  return true
+}
+
+module.exports = {
+  registerNotificationHandler,
+  registerAllHandlers
 }

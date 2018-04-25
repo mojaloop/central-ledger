@@ -43,7 +43,7 @@ const createPositionHandler = async function (dfspName) {
   try {
 
     const positionHandler = {
-      command: Commands.prepareExecute,
+      command: Commands.generatePositionPlaceHolder(),
       topicName: Utility.transformAccountToTopicName(dfspName, POSITION, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }

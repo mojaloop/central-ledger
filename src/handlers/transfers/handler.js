@@ -55,7 +55,7 @@ const createPrepareHandler = async function (dfspName) {
   }
 }
 
-const createFulfillHandler = async function () {
+const registerFulfillHandler = async function () {
   try {
     const fulfillHandler =  {
       command: Commands.fulfilling,
@@ -68,7 +68,7 @@ const createFulfillHandler = async function () {
   }
 }
 
-const createRejectHandler = async function () {
+const registerRejectHandler = async function () {
   try {
     const rejectHandler =  {
       command: Commands.rejecting(),
@@ -90,14 +90,14 @@ const registerPrepareHandlers = async function () {
 
 const registerAllHandlers = async function () {
   await registerPrepareHandlers()
-  await createFulfillHandler()
-  await createRejectHandler()
+  await registerFulfillHandler()
+  await registerRejectHandler()
   return true
 }
 
 module.exports = {
   registerPrepareHandlers,
-  createFulfillHandler,
-  createRejectHandler,
+  registerFulfillHandler,
+  registerRejectHandler,
   registerAllHandlers
 }

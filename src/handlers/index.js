@@ -30,7 +30,6 @@
  ******/
 
 
-const Config = require('../lib/config')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Handlers = require('./handlers')
 

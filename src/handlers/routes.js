@@ -1,99 +1,70 @@
 const RegisterAllHandler = require('./handlers')
-const Handler = require('transfers/handler')
-const Joi = require('joi')
-const Auth = require('../auth')
-// const Boom = require('boom')
+const TransferHandler = require('./transfers/handler')
+const PositionHandler = require('./positions/handler')
+const NotificationHandler = require('./notification/handler')
 
-const tags = ['api', 'accounts']
-const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the account')
-const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the account')
-// const emailAddressValidator = Joi.string().email()
-
-module.exports = [{
-  method: 'POST',
-  path: '/accounts',
-  handler: Handler.registerAllHandlers(),
-  options: {
-    id: 'accounts',
-    tags: tags,
-    auth: Auth.strategy(),
-    description: 'Create an account.',
-    payload: {
-      allow: 'application/json',
-      failAction: 'error',
-      output: 'data'
-    },
-    validate: {
-      payload: {
-        name: Joi.string().alphanum().min(3).max(30).required().description('Name of the account'),
-        password: Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the account'),
-        emailAddress: Joi.string().email().required()
-      }
-    }
-  }
-},
+module.exports = [
   {
-    method: 'GET',
-    path: '/accounts/{name}',
-    handler: Handler.getByName,
+    method: 'POST',
+    path: '/register/all',
+    handler: RegisterAllHandler.registerAllHandlers,
     options: {
-      id: 'account',
-      tags: tags,
-      description: 'Retrieve an accounts details by name',
-      auth: Auth.strategy(true),
-      validate: {
-        params: {
-          name: nameValidator
-        }
-      }
+      id: 'handlers',
+      description: 'Register all Kafka consumer handlers'
     }
   },
   {
-    method: 'PUT',
-    path: '/accounts/{name}',
-    handler: Handler.updateUserCredentials,
+    method: 'POST',
+    path: '/register/transfer/all',
+    handler: TransferHandler.registerAllHandlers,
     options: {
-      id: 'account_update_user_credentials',
-      tags: tags,
-      description: 'Update an accounts user credentials',
-      auth: Auth.strategy(),
-      payload: {
-        allow: 'application/json',
-        failAction: 'error'
-      },
-      validate: {
-        params: {
-          name: nameValidator
-        },
-        payload: {
-          password: passwordValidator,
-          emailAddress: Joi.string().email().required()
-        }
-      }
+      id: 'transfer',
+      description: 'Register all transfer Kafka consumer handlers'
     }
   },
   {
-    method: 'PUT',
-    path: '/accounts/{name}/settlement',
-    handler: Handler.updateAccountSettlement,
+    method: 'POST',
+    path: '/register/transfer/prepare',
+    handler: TransferHandler.registerPrepareHandlers,
     options: {
-      id: 'account_update_account_settlement',
-      tags: tags,
-      description: 'Update an accounts user credentials',
-      auth: Auth.strategy(),
-      payload: {
-        allow: 'application/json',
-        failAction: 'error'
-      },
-      validate: {
-        params: {
-          name: nameValidator
-        },
-        payload: {
-          account_number: Joi.string().token().max(16).required().description('Account number for the settlement'),
-          routing_number: Joi.string().token().max(16).required().description('Routing number for the settlement')
-        }
-      }
+      id: 'prepare',
+      description: 'Register prepare transfer Kafka consumer handler'
+    }
+  },
+  {
+    method: 'POST',
+    path: '/register/transfer/fulfill',
+    handler: TransferHandler.registerFulfillHandler,
+    options: {
+      id: 'fulfill',
+      description: 'Register ful;fill transfer Kafka consumer handler'
+    }
+  },
+  {
+    method: 'POST',
+    path: '/register/transfer/reject',
+    handler: TransferHandler.registerRejectHandler,
+    options: {
+      id: 'reject',
+      description: 'Register reject transfer Kafka consumer handler'
+    }
+  },
+  {
+    method: 'POST',
+    path: '/register/position',
+    handler: PositionHandler.registerPositionHandlers,
+    options: {
+      id: 'position',
+      description: 'Register position Kafka consumer handler'
+    }
+  },
+  {
+    method: 'POST',
+    path: '/register/notification',
+    handler: NotificationHandler.registerNotificationHandler,
+    options: {
+      id: 'notification',
+      description: 'Register prepare transfer Kafka consumer handler'
     }
   }
 ]
