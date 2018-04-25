@@ -2,12 +2,10 @@
 
 const Handler = require('./handler')
 const Joi = require('joi')
+const tags = ['api', 'currency']
 const Permissions = require('../../domain/security/permissions')
 const RouteConfig = require('../route-config')
 
-const tags = ['api', 'participants']
-const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the participant')
-const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
 const currencyCodeValidator = Joi.string().allow([
   'ALL', 'AFN', 'ARS', 'AWG', 'AUD', 'AZN',
   'BSD', 'BBD', 'BYN', 'BZD', 'BMD', 'BOB', 'BAM', 'BWP', 'BGN', 'BRL', 'BND',
@@ -38,7 +36,7 @@ const currencyCodeValidator = Joi.string().allow([
 module.exports = [
   {
     method: 'GET',
-    path: '/participants',
+    path: '/currencies',
     handler: Handler.getAll,
     options: RouteConfig.config(tags, Permissions.ACCOUNTS_LIST)
   },
@@ -65,7 +63,7 @@ module.exports = [
         payload: {
           name: nameValidator,
           password: passwordValidator,
-          currency: currencyCodeValidator
+          currencyCode: currencyCodeValidator
         }
       }
     })

@@ -18,11 +18,11 @@ const generateRandomName = () => {
   return `dfsp${Uuid().replace(/-/g, '')}`.substr(0, 25)
 }
 
-const buildDebitOrCredit = (participantName, amount, memo) => {
+const buildDebitOrCredit = (participantName, amount, note) => {
   return {
     participant: `http://${hostname}/participants/${participantName}`,
     amount: amount,
-    memo: memo,
+    note: note,
     authorized: true
   }
 }

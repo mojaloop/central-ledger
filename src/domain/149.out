@@ -1,0 +1,1370 @@
+
+> @mojaloop/central-ledger@1.86.2 pretest /home/vgenev/mojaloop/PI2/central-ledger
+> standard
+
+
+> @mojaloop/central-ledger@1.86.2 test /home/vgenev/mojaloop/PI2/central-ledger
+> npm run test:unit | faucet
+
+# accounts handler[K
+[1A[1G[1m[32m✓ accounts handler[0m[1B[1G# admin auth module[K
+[1A[1G[1m[32m✓ admin auth module[0m[1B[1G# Auth module[K
+[1A[1G[1m[32m✓ Auth module[0m[1B[1G# token auth strategy[K
+[1A[1G[1m[32m✓ token auth strategy[0m[1B[1G# charges handler[K
+[1A[1G[1m[32m✓ charges handler[0m[1B[1G# Admin index[K
+[1A[1G[1m[32m✓ Admin index[0m[1B[1G# Permissions handler[K
+[1A[1G[1m[32m✓ Permissions handler[0m[1B[1G# positions handler[K
+[1A[1G[1m[32m✓ positions handler[0m[1B[1G# Security handler[K
+[1A[1G[1m[32m✓ Security handler[0m[1B[1G# health handler should[K
+[1A[1G[1m[32m✓ health handler should[0m[1B[1G# return status OK[K
+  ok [1m[32m1[0m should be equivalent[K  ok [1m[32m2[0m should be equal[K[1A[1G[1m[32m✓ return status OK[0m[1B[1G# return status OK[K
+  ok [1m[32m3[0m should be equivalent[K  ok [1m[32m4[0m should be equal[K[1A[1G[1m[32m✓ return status OK[0m[1B[1G# routeConfig[K
+[1A[1G[1m[32m✓ routeConfig[0m[1B[1G# admin routes[K
+[1A[1G[1m[32m✓ admin routes[0m[1B[1G# register should[K
+[1A[1G[1m[32m✓ register should[0m[1B[1G# register route files[K
+  ok [1m[32m5[0m should be truthy[K[1A[1G[1m[32m✓ register route files[0m[1B[1G# token handler[K
+[1A[1G[1m[32m✓ token handler[0m[1B[1G# transfers handler[K
+[1A[1G[1m[32m✓ transfers handler[0m[1B[1G# User handler[K
+[1A[1G[1m[32m✓ User handler[0m[1B[1G# Handler Test[K
+[1A[1G[1m[32m✓ Handler Test[0m[1B[1G# accounts handler[K
+[1A[1G[1m[32m✓ accounts handler[0m[1B[1G# return error if required field missing[K
+  ok [1m[32m6[0m should be equal[K  ok [1m[32m7[0m should be equal[K  ok [1m[32m8[0m should be equal[K[1A[1G[1m[32m✓ return error if required field missing[0m[1B[1G# return error if name contains spaces[K
+  ok [1m[32m9[0m should be equal[K  ok [1m[32m10[0m should be equal[K  ok [1m[32m11[0m should be equal[K[1A[1G[1m[32m✓ return error if name contains spaces[0m[1B[1G# return error if name is not a token[K
+  ok [1m[32m12[0m should be equal[K  ok [1m[32m13[0m should be equal[K  ok [1m[32m14[0m should be equal[K[1A[1G[1m[32m✓ return error if name is not a token[0m[1B[1G# account auth module[K
+[1A[1G[1m[32m✓ account auth module[0m[1B[1G# Auth module[K
+[1A[1G[1m[32m✓ Auth module[0m[1B[1G# should be named "auth"[K
+  ok [1m[32m15[0m should be equal[K[1A[1G[1m[32m✓ should be named "auth"[0m[1B[1G# register should[K
+[1A[1G[1m[32m✓ register should[0m[1B[1G# add AccountStrategy to server auth strategies[K
+  ok [1m[32m16[0m should be truthy[K[1A[1G[1m[32m✓ add AccountStrategy to server auth strategies[0m[1B[1G# add TokenStrategy to server auth strategies[K
+  ok [1m[32m17[0m should be truthy[K[1A[1G[1m[32m✓ add TokenStrategy to server auth strategies[0m[1B[1G# strategy should[K
+[1A[1G[1m[32m✓ strategy should[0m[1B[1G# return token if ENABLE_TOKEN_AUTH true[K
+  ok [1m[32m18[0m should be equivalent[K[1A[1G[1m[32m✓ return token if ENABLE_TOKEN_AUTH true[0m[1B[1G# return account if ENABLE_BASIC_AUTH true[K
+  ok [1m[32m19[0m should be equivalent[K[1A[1G[1m[32m✓ return account if ENABLE_BASIC_AUTH true[0m[1B[1G# return account if ENABLE_TOKEN_AUTH and ENABLE_BASIC_AUTH true[K
+  ok [1m[32m20[0m should be equivalent[K[1A[1G[1m[32m✓ return account if ENABLE_TOKEN_AUTH and ENABLE_BASIC_AUTH true[0m[1B[1G# return false if ENABLE_TOKEN_AUTH and ENABLE_BASIC_AUTH is false[K
+  ok [1m[32m21[0m should be equal[K[1A[1G[1m[32m✓ return false if ENABLE_TOKEN_AUTH and ENABLE_BASIC_AUTH is false[0m[1B[1G# return try if optional[K
+  ok [1m[32m22[0m should be equivalent[K[1A[1G[1m[32m✓ return try if optional[0m[1B[1G# charges handler[K
+[1A[1G[1m[32m✓ charges handler[0m[1B[1G# return error if required field missing[K
+  ok [1m[32m23[0m should be equal[K  ok [1m[32m24[0m should be equal[K  ok [1m[32m25[0m should be equal[K[1A[1G[1m[32m✓ return error if required field missing[0m[1B[1G# Api index[K
+[1A[1G[1m[32m✓ Api index[0m[1B[1G# Message Handler[K
+[1A[1G[1m[32m✓ Message Handler[0m[1B[1G# POST /messages[K
+[1A[1G[1m[32m✓ POST /messages[0m[1B[1G# messages request validator[K
+[1A[1G[1m[32m✓ messages request validator[0m[1B[1G# metadata handler[K
+[1A[1G[1m[32m✓ metadata handler[0m[1B[1G# positions handler[K
+[1A[1G[1m[32m✓ positions handler[0m[1B[1G# AccountTransfers[K
+[1A[1G[1m[32m✓ AccountTransfers[0m[1B[1G# Socket Module[K
+[1A[1G[1m[32m✓ Socket Module[0m[1B[1G# SocketManager[K
+[1A[1G[1m[32m✓ SocketManager[0m[1B[1G# subscription validator[K
+[1A[1G[1m[32m✓ subscription validator[0m[1B[1G# WebSocket[K
+[1A[1G[1m[32m✓ WebSocket[0m[1B[1G# token handler[K
+[1A[1G[1m[32m✓ token handler[0m[1B[1G# transfer handler[K
+[1A[1G[1m[32m✓ transfer handler[0m[1B[1G# return error if required field missing on prepare[K
+  ok [1m[32m26[0m should be equal[K  ok [1m[32m27[0m should be equal[K  ok [1m[32m28[0m should be equal[K[1A[1G[1m[32m✓ return error if required field missing on prepare[0m[1B[1G# return error if id is not a guid on prepare[K
+  ok [1m[32m29[0m should be equal[K  ok [1m[32m30[0m should be equal[K  ok [1m[32m31[0m should be equal[K[1A[1G[1m[32m✓ return error if id is not a guid on prepare[0m[1B[1G# return error if id is not a guid on get prepare[K
+  ok [1m[32m32[0m should be equal[K  ok [1m[32m33[0m should be equal[K  ok [1m[32m34[0m should be equal[K[1A[1G[1m[32m✓ return error if id is not a guid on get prepare[0m[1B[1G# return error if invalid content type on fulfillment[K
+  ok [1m[32m35[0m should be equal[K  ok [1m[32m36[0m should be equal[K  ok [1m[32m37[0m should be equal[K[1A[1G[1m[32m✓ return error if invalid content type on fulfillment[0m[1B[1G# return error if fulfillment missing[K
+  ok [1m[32m38[0m should be equal[K  ok [1m[32m39[0m should be equal[K  ok [1m[32m40[0m should be equal[K[1A[1G[1m[32m✓ return error if fulfillment missing[0m[1B[1G# return error if id is not a guid on fulfill[K
+  ok [1m[32m41[0m should be equal[K  ok [1m[32m42[0m should be equal[K  ok [1m[32m43[0m should be equal[K[1A[1G[1m[32m✓ return error if id is not a guid on fulfill[0m[1B[1G# return error if id is not a guid on rejection[K
+  ok [1m[32m44[0m should be equal[K  ok [1m[32m45[0m should be equal[K  ok [1m[32m46[0m should be equal[K[1A[1G[1m[32m✓ return error if id is not a guid on rejection[0m[1B[1G# return error if rejection reason missing[K
+  ok [1m[32m47[0m should be equal[K  ok [1m[32m48[0m should be equal[K  ok [1m[32m49[0m should be equal[K[1A[1G[1m[32m✓ return error if rejection reason missing[0m[1B[1G# return error if id is not a guid on get fulfillment[K
+  ok [1m[32m50[0m should be equal[K  ok [1m[32m51[0m should be equal[K  ok [1m[32m52[0m should be equal[K[1A[1G[1m[32m✓ return error if id is not a guid on get fulfillment[0m[1B[1G# transfer validator[K
+[1A[1G[1m[32m✓ transfer validator[0m[1B[1G# Worker test[K
+[1A[1G[1m[32m✓ Worker test[0m[1B[1G# crypto conditions[K
+[1A[1G[1m[32m✓ crypto conditions[0m[1B[1G# Account service[K
+[1A[1G[1m[32m✓ Account service[0m[1B[1G# accounts model[K
+[1A[1G[1m[32m✓ accounts model[0m[1B[1G# Charge service[K
+[1A[1G[1m[32m✓ Charge service[0m[1B[1G# charges model[K
+[1A[1G[1m[32m✓ charges model[0m[1B[1G# Fee service[K
+[1A[1G[1m[32m✓ Fee service[0m[1B[1G# fees model[K
+[1A[1G[1m[32m✓ fees model[0m[1B[1G# Fees-Projection[K
+[1A[1G[1m[32m✓ Fees-Projection[0m[1B[1G# Position Service tests[K
+[1A[1G[1m[32m✓ Position Service tests[0m[1B[1G# SecurityService test[K
+[1A[1G[1m[32m✓ SecurityService test[0m[1B[1G# JWT[K
+[1A[1G[1m[32m✓ JWT[0m[1B[1G# Roles model[K
+[1A[1G[1m[32m✓ Roles model[0m[1B[1G# Users model[K
+[1A[1G[1m[32m✓ Users model[0m[1B[1G# Permissions[K
+[1A[1G[1m[32m✓ Permissions[0m[1B[1G# should contain Account permissions[K
+  ok [1m[32m53[0m should be equal[K  ok [1m[32m54[0m should be equal[K[1A[1G[1m[32m✓ should contain Account permissions[0m[1B[1G# Settlements Test[K
+[1A[1G[1m[32m✓ Settlements Test[0m[1B[1G# Token Auth[K
+[1A[1G[1m[32m✓ Token Auth[0m[1B[1G# Token Service[K
+[1A[1G[1m[32m✓ Token Service[0m[1B[1G# tokens model[K
+[1A[1G[1m[32m✓ tokens model[0m[1B[1G# Transfer index test[K
+[1A[1G[1m[32m✓ Transfer index test[0m[1B[1G# Transfer Service tests[K
+[1A[1G[1m[32m✓ Transfer Service tests[0m[1B[1G# transfer model[K
+[1A[1G[1m[32m✓ transfer model[0m[1B[1G# Transfers-Projection[K
+[1A[1G[1m[32m✓ Transfers-Projection[0m[1B[1G# Transfer Queries tests[K
+[1A[1G[1m[32m✓ Transfer Queries tests[0m[1B[1G# Rejection Type values[K
+  ok [1m[32m55[0m should be equal[K  ok [1m[32m56[0m should be equal[K  ok [1m[32m57[0m should be equal[K[1A[1G[1m[32m✓ Rejection Type values[0m[1B[1G# State values[K
+  ok [1m[32m58[0m should be equal[K  ok [1m[32m59[0m should be equal[K  ok [1m[32m60[0m should be equal[K  ok [1m[32m61[0m should be equal[K  ok [1m[32m62[0m should be equal[K[1A[1G[1m[32m✓ State values[0m[1B[1G# TransferTranslator[K
+[1A[1G[1m[32m✓ TransferTranslator[0m[1B[1G# toTransfer should[K
+[1A[1G[1m[32m✓ toTransfer should[0m[1B[1G# translate an argument containing a "id" field[K
+  ok [1m[32m63[0m should be equivalent[K[1A[1G[1m[32m✓ translate an argument containing a "id" field[0m[1B[1G# not include properties that start with $[K
+  ok [1m[32m64[0m should be equivalent[K[1A[1G[1m[32m✓ not include properties that start with $[0m[1B[1G# translate an argument containing a "transferUuid" field[K
+  ok [1m[32m65[0m should be equivalent[K[1A[1G[1m[32m✓ translate an argument containing a "transferUuid" field[0m[1B[1G# translate all properties containing a "transferUuid" field[K
+  ok [1m[32m66[0m should be equivalent[K[1A[1G[1m[32m✓ translate all properties containing a "transferUuid" field[0m[1B[1G# throw an exception if argument does not contain "id" or "transferUuid" field[K
+  ok [1m[32m67[0m should throw[K[1A[1G[1m[32m✓ throw an exception if argument does not contain "id" or "transferUuid" field[0m[1B[1G# fromPayload should[K
+[1A[1G[1m[32m✓ fromPayload should[0m[1B[1G# convert it from uri to UUID[K
+  ok [1m[32m68[0m should not be equal[K  ok [1m[32m69[0m should be equal[K[1A[1G[1m[32m✓ convert it from uri to UUID[0m[1B[1G# crypto[K
+[1A[1G[1m[32m✓ crypto[0m[1B[1G# events[K
+[1A[1G[1m[32m✓ events[0m[1B[1G# migrator[K
+[1A[1G[1m[32m✓ migrator[0m[1B[1G# logger[K
+[1A[1G[1m[32m✓ logger[0m[1B[1G# Sidecar[K
+[1A[1G[1m[32m✓ Sidecar[0m[1B[1G# Null SidecarClient[K
+[1A[1G[1m[32m✓ Null SidecarClient[0m[1B[1G# nameFromAccountUri[K
+[1A[1G[1m[32m✓ nameFromAccountUri[0m[1B[1G# return null if not url[K
+  ok [1m[32m70[0m should be equal[K  ok [1m[32m71[0m should be equal[K[1A[1G[1m[32m✓ return null if not url[0m[1B[1G# return null if url not start with hostname[K
+  ok [1m[32m72[0m should be equal[K  ok [1m[32m73[0m should be equal[K[1A[1G[1m[32m✓ return null if url not start with hostname[0m[1B[1G# return name if url matches pattern[K
+  ok [1m[32m74[0m should be falsy[K  ok [1m[32m75[0m should be equal[K[1A[1G[1m[32m✓ return name if url matches pattern[0m[1B[1G# return value if no callback provided[K
+  ok [1m[32m76[0m should be equal[K[1A[1G[1m[32m✓ return value if no callback provided[0m[1B[1G# return null if no callback provided[K
+  ok [1m[32m77[0m should be equal[K[1A[1G[1m[32m✓ return null if no callback provided[0m[1B[1G# accountNameFromTransfersRoute[K
+[1A[1G[1m[32m✓ accountNameFromTransfersRoute[0m[1B[1G# return null if not url[K
+  ok [1m[32m78[0m should be equal[K[1A[1G[1m[32m✓ return null if not url[0m[1B[1G# return name if url matches pattern[K
+  ok [1m[32m79[0m should be equal[K[1A[1G[1m[32m✓ return name if url matches pattern[0m[1B[1G# idFromTransferUri[K
+[1A[1G[1m[32m✓ idFromTransferUri[0m[1B[1G# err if not uri[K
+  ok [1m[32m80[0m should be equal[K  ok [1m[32m81[0m should be equal[K[1A[1G[1m[32m✓ err if not uri[0m[1B[1G# err if not begins with hostname[K
+  ok [1m[32m82[0m should be equal[K  ok [1m[32m83[0m should be equal[K[1A[1G[1m[32m✓ err if not begins with hostname[0m[1B[1G# id if uri contains hostname and uuid[K
+  ok [1m[32m84[0m should be equal[K  ok [1m[32m85[0m should be equal[K[1A[1G[1m[32m✓ id if uri contains hostname and uuid[0m[1B[1G# return id if no callback provided[K
+  ok [1m[32m86[0m should be equal[K[1A[1G[1m[32m✓ return id if no callback provided[0m[1B[1G# return null if no callback provided[K
+  ok [1m[32m87[0m should be equal[K[1A[1G[1m[32m✓ return null if no callback provided[0m[1B[1G# toTransferUri[K
+[1A[1G[1m[32m✓ toTransferUri[0m[1B[1G# return path[K
+  ok [1m[32m88[0m should be equal[K[1A[1G[1m[32m✓ return path[0m[1B[1G# return value if already transfer uri[K
+  ok [1m[32m89[0m should be equal[K[1A[1G[1m[32m✓ return value if already transfer uri[0m[1B[1G# toAccountUri[K
+[1A[1G[1m[32m✓ toAccountUri[0m[1B[1G# return path[K
+  ok [1m[32m90[0m should be equal[K[1A[1G[1m[32m✓ return path[0m[1B[1G# return value if already account uri[K
+  ok [1m[32m91[0m should be equal[K[1A[1G[1m[32m✓ return value if already account uri[0m[1B[1G# util[K
+[1A[1G[1m[32m✓ util[0m[1B[1G# formatAmount should[K
+[1A[1G[1m[32m✓ formatAmount should[0m[1B[1G# format integer[K
+  ok [1m[32m92[0m should be equal[K[1A[1G[1m[32m✓ format integer[0m[1B[1G# format decimal[K
+  ok [1m[32m93[0m should be equal[K[1A[1G[1m[32m✓ format decimal[0m[1B[1G# format string[K
+  ok [1m[32m94[0m should be equal[K[1A[1G[1m[32m✓ format string[0m[1B[1G# parseJson should[K
+[1A[1G[1m[32m✓ parseJson should[0m[1B[1G# return null if value null[K
+  ok [1m[32m95[0m should be falsy[K[1A[1G[1m[32m✓ return null if value null[0m[1B[1G# return value if value not string[K
+  ok [1m[32m96[0m should be equal[K[1A[1G[1m[32m✓ return value if value not string[0m[1B[1G# return value if number[K
+  ok [1m[32m97[0m should be equal[K[1A[1G[1m[32m✓ return value if number[0m[1B[1G# return value if string that is not json[K
+  ok [1m[32m98[0m should be equal[K[1A[1G[1m[32m✓ return value if string that is not json[0m[1B[1G# return object if value is json string[K
+  ok [1m[32m99[0m should not be equal[K  ok [1m[32m100[0m should be equivalent[K[1A[1G[1m[32m✓ return object if value is json string[0m[1B[1G# filterUndefined should[K
+[1A[1G[1m[32m✓ filterUndefined should[0m[1B[1G# return map with undefined values stripped out[K
+  ok [1m[32m101[0m should be equivalent[K[1A[1G[1m[32m✓ return map with undefined values stripped out[0m[1B[1G# executed-transfers model[K
+[1A[1G[1m[32m✓ executed-transfers model[0m[1B[1G# settleable-transfers-read-model[K
+[1A[1G[1m[32m✓ settleable-transfers-read-model[0m[1B[1G# settled-fees model[K
+[1A[1G[1m[32m✓ settled-fees model[0m[1B[1G# settled-transfers model[K
+[1A[1G[1m[32m✓ settled-transfers model[0m[1B[1G# settlements model[K
+[1A[1G[1m[32m✓ settlements model[0m[1B[1G# registerPlugins should[K
+[1A[1G[1m[32m✓ registerPlugins should[0m[1B[1G# registers base modules[K
+  ok [1m[32m102[0m should be truthy[K  ok [1m[32m103[0m should be truthy[K  ok [1m[32m104[0m should be truthy[K  ok [1m[32m105[0m should be truthy[K[1A[1G[1m[32m✓ registers base modules[0m[1B[1G# setup[K
+[1A[1G[1m[32m✓ setup[0m[1B[1G# accounts handler getAll should[K
+[1A[1G[1m[32m✓ accounts handler getAll should[0m[1B[1G# accounts handler getByName should[K
+[1A[1G[1m[32m✓ accounts handler getByName should[0m[1B[1G# accounts handler updateAccount should[K
+[1A[1G[1m[32m✓ accounts handler updateAccount should[0m[1B[1G# accounts handler create should[K
+[1A[1G[1m[32m✓ accounts handler create should[0m[1B[1G# admin auth module name should be admin[K
+  ok [1m[32m106[0m should be equal[K[1A[1G[1m[32m✓ admin auth module name should be admin[0m[1B[1G# admin auth module scheme should be simple[K
+  ok [1m[32m107[0m should be equal[K[1A[1G[1m[32m✓ admin auth module scheme should be simple[0m[1B[1G# admin auth module validate should[K
+[1A[1G[1m[32m✓ admin auth module validate should[0m[1B[1G# Auth module should be named "admin auth"[K
+  ok [1m[32m108[0m should be equal[K[1A[1G[1m[32m✓ Auth module should be named "admin auth"[0m[1B[1G# Auth module register should[K
+[1A[1G[1m[32m✓ Auth module register should[0m[1B[1G# Auth module tokenAuth should[K
+[1A[1G[1m[32m✓ Auth module tokenAuth should[0m[1B[1G# token auth strategy validate should[K
+[1A[1G[1m[32m✓ token auth strategy validate should[0m[1B[1G# charges handler getAll should[K
+[1A[1G[1m[32m✓ charges handler getAll should[0m[1B[1G# charges handler create should[K
+[1A[1G[1m[32m✓ charges handler create should[0m[1B[1G# charges handler update should[K
+[1A[1G[1m[32m✓ charges handler update should[0m[1B[1G# Admin index export should[K
+[1A[1G[1m[32m✓ Admin index export should[0m[1B[1G# Permissions handler getPermissions should[K
+[1A[1G[1m[32m✓ Permissions handler getPermissions should[0m[1B[1G# positions handler calculateForAllAccounts should[K
+[1A[1G[1m[32m✓ positions handler calculateForAllAccounts should[0m[1B[1G# positions handler calculateForAccount should[K
+[1A[1G[1m[32m✓ positions handler calculateForAccount should[0m[1B[1G# Security handler getRoles should[K
+[1A[1G[1m[32m✓ Security handler getRoles should[0m[1B[1G# Security handler createRole should[K
+[1A[1G[1m[32m✓ Security handler createRole should[0m[1B[1G# Security handler updateRole should[K
+[1A[1G[1m[32m✓ Security handler updateRole should[0m[1B[1G# Security handler deleteRole should[K
+[1A[1G[1m[32m✓ Security handler deleteRole should[0m[1B[1G# routeConfig config should[K
+[1A[1G[1m[32m✓ routeConfig config should[0m[1B[1G# token handler create should[K
+[1A[1G[1m[32m✓ token handler create should[0m[1B[1G# transfers handler getAll should[K
+[1A[1G[1m[32m✓ transfers handler getAll should[0m[1B[1G# User handler create should createUser in service[K
+  ok [1m[32m109[0m should be equal[K  ok [1m[32m110[0m should be truthy[K[1A[1G[1m[32m✓ User handler create should createUser in service[0m[1B[1G# User handler getAll should get all users from service[K
+  ok [1m[32m111[0m should be equal[K[1A[1G[1m[32m✓ User handler getAll should get all users from service[0m[1B[1G# User handler getById should get user by id from service[K
+  ok [1m[32m112[0m should be equal[K[1A[1G[1m[32m✓ User handler getById should get user by id from service[0m[1B[1G# User handler remove should deleteUser in service and return empty[K
+  ok [1m[32m113[0m should be equivalent[K  ok [1m[32m114[0m should be truthy[K  ok [1m[32m115[0m should be truthy[K[1A[1G[1m[32m✓ User handler remove should deleteUser in service and return empty[0m[1B[1G# User handler update should update user by id[K
+  ok [1m[32m116[0m should be equivalent[K  ok [1m[32m117[0m should be truthy[K  ok [1m[32m118[0m should be truthy[K[1A[1G[1m[32m✓ User handler update should update user by id[0m[1B[1G# User handler getRoles should return roles from service[K
+  ok [1m[32m119[0m should be equivalent[K[1A[1G[1m[32m✓ User handler getRoles should return roles from service[0m[1B[1G# User handler updateRoles should update roles in service[K
+  ok [1m[32m120[0m should be equivalent[K  ok [1m[32m121[0m should be truthy[K[1A[1G[1m[32m✓ User handler updateRoles should update roles in service[0m[1B[1G# Handler Test rejectExpired should[K
+[1A[1G[1m[32m✓ Handler Test rejectExpired should[0m[1B[1G# Handler Test settle should[K
+[1A[1G[1m[32m✓ Handler Test settle should[0m[1B[1G# Handler Test removeExpired should[K
+[1A[1G[1m[32m✓ Handler Test removeExpired should[0m[1B[1G# accounts handler getByName should[K
+[1A[1G[1m[32m✓ accounts handler getByName should[0m[1B[1G# accounts handler updateUserCredentials should[K
+[1A[1G[1m[32m✓ accounts handler updateUserCredentials should[0m[1B[1G# accounts handler create should[K
+[1A[1G[1m[32m✓ accounts handler create should[0m[1B[1G# accounts handler update settlement should[K
+[1A[1G[1m[32m✓ accounts handler update settlement should[0m[1B[1G# account auth module name should be account[K
+  ok [1m[32m122[0m should be equal[K[1A[1G[1m[32m✓ account auth module name should be account[0m[1B[1G# account auth module scheme should be simple[K
+  ok [1m[32m123[0m should be equal[K[1A[1G[1m[32m✓ account auth module scheme should be simple[0m[1B[1G# account auth module validate should[K
+[1A[1G[1m[32m✓ account auth module validate should[0m[1B[1G# charges handler chargeQuote should[K
+[1A[1G[1m[32m✓ charges handler chargeQuote should[0m[1B[1G# Api index export should[K
+[1A[1G[1m[32m✓ Api index export should[0m[1B[1G# Message Handler sendMessage should[K
+[1A[1G[1m[32m✓ Message Handler sendMessage should[0m[1B[1G# POST /messages return error if required fields are missing[K
+  ok [1m[32m124[0m should be equal[K  ok [1m[32m125[0m should be equal[K  ok [1m[32m126[0m should be equal[K[1A[1G[1m[32m✓ POST /messages return error if required fields are missing[0m[1B[1G# POST /messages return error if ledger is not url[K
+  ok [1m[32m127[0m should be equal[K  ok [1m[32m128[0m should be equal[K  ok [1m[32m129[0m should be equal[K[1A[1G[1m[32m✓ POST /messages return error if ledger is not url[0m[1B[1G# POST /messages return error if ledger is not valid[K
+  ok [1m[32m130[0m should be equal[K  ok [1m[32m131[0m should be equal[K  ok [1m[32m132[0m should be equal[K[1A[1G[1m[32m✓ POST /messages return error if ledger is not valid[0m[1B[1G# messages request validator validate should[K
+[1A[1G[1m[32m✓ messages request validator validate should[0m[1B[1G# metadata handler health should[K
+[1A[1G[1m[32m✓ metadata handler health should[0m[1B[1G# metadata handler metadata should[K
+[1A[1G[1m[32m✓ metadata handler metadata should[0m[1B[1G# positions handler calculateForAllAccounts should[K
+[1A[1G[1m[32m✓ positions handler calculateForAllAccounts should[0m[1B[1G# positions handler calculateForAccount should[K
+[1A[1G[1m[32m✓ positions handler calculateForAccount should[0m[1B[1G# AccountTransfers initialize should[K
+[1A[1G[1m[32m✓ AccountTransfers initialize should[0m[1B[1G# Socket Module register should[K
+[1A[1G[1m[32m✓ Socket Module register should[0m[1B[1G# Socket Module on socket connection should[K
+[1A[1G[1m[32m✓ Socket Module on socket connection should[0m[1B[1G# Socket Module Events should[K
+[1A[1G[1m[32m✓ Socket Module Events should[0m[1B[1G# SocketManager add should[K
+[1A[1G[1m[32m✓ SocketManager add should[0m[1B[1G# SocketManager send should[K
+[1A[1G[1m[32m✓ SocketManager send should[0m[1B[1G# subscription validator validateSubscriptionRequest should[K
+[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should[0m[1B[1G# WebSocket initialize should[K
+[1A[1G[1m[32m✓ WebSocket initialize should[0m[1B[1G# token handler create should[K
+[1A[1G[1m[32m✓ token handler create should[0m[1B[1G# transfer handler prepareTransfer should[K
+[1A[1G[1m[32m✓ transfer handler prepareTransfer should[0m[1B[1G# transfer handler fulfillTransfer should[K
+[1A[1G[1m[32m✓ transfer handler fulfillTransfer should[0m[1B[1G# transfer handler reject transfer[K
+[1A[1G[1m[32m✓ transfer handler reject transfer[0m[1B[1G# transfer handler getTransferById should[K
+[1A[1G[1m[32m✓ transfer handler getTransferById should[0m[1B[1G# transfer handler getTransferFulfillment should[K
+[1A[1G[1m[32m✓ transfer handler getTransferFulfillment should[0m[1B[1G# transfer validator reject if transfer null[K
+  ok [1m[32m133[0m should be truthy[K  ok [1m[32m134[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer null[0m[1B[1G# transfer validator reject if transfer.ledger is not hostname[K
+  ok [1m[32m135[0m should be truthy[K  ok [1m[32m136[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.ledger is not hostname[0m[1B[1G# transfer validator reject if transfer.credits.account is not parseable[K
+  ok [1m[32m137[0m should be truthy[K  ok [1m[32m138[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.credits.account is not parseable[0m[1B[1G# transfer validator reject if transfer.debits.account is not parseable[K
+  ok [1m[32m139[0m should be truthy[K  ok [1m[32m140[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.debits.account is not parseable[0m[1B[1G# transfer validator reject if transfer.credits.account name does not exist[K
+  ok [1m[32m141[0m should be truthy[K  ok [1m[32m142[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.credits.account name does not exist[0m[1B[1G# transfer validator reject if transfer.debits.account name does not exist[K
+  ok [1m[32m143[0m should be truthy[K  ok [1m[32m144[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.debits.account name does not exist[0m[1B[1G# transfer validator reject if transfer.credits.account name is the ledger account name[K
+  ok [1m[32m145[0m should be truthy[K  ok [1m[32m146[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.credits.account name is the ledger account name[0m[1B[1G# transfer validator reject if transfer.debits.account name is the ledger account name[K
+  ok [1m[32m147[0m should be truthy[K  ok [1m[32m148[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.debits.account name is the ledger account name[0m[1B[1G# transfer validator reject if transfer.id is not url[K
+  ok [1m[32m149[0m should be truthy[K  ok [1m[32m150[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.id is not url[0m[1B[1G# transfer validator reject if transfer.id uuid does not match provided transferId[K
+  ok [1m[32m151[0m should be truthy[K  ok [1m[32m152[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.id uuid does not match provided transferId[0m[1B[1G# transfer validator reject if transfer.credits.amount precision is too high[K
+  ok [1m[32m153[0m should be truthy[K  ok [1m[32m154[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.credits.amount precision is too high[0m[1B[1G# transfer validator reject if transfer.credits.amount scale is too high[K
+  ok [1m[32m155[0m should be truthy[K  ok [1m[32m156[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.credits.amount scale is too high[0m[1B[1G# transfer validator reject if transfer.debits.amount precision is too high[K
+  ok [1m[32m157[0m should be truthy[K  ok [1m[32m158[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.debits.amount precision is too high[0m[1B[1G# transfer validator reject if transfer.debits.amount scale is too high[K
+  ok [1m[32m159[0m should be truthy[K  ok [1m[32m160[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.debits.amount scale is too high[0m[1B[1G# transfer validator reject if transfer.execution_condition is invalid[K
+  ok [1m[32m161[0m should be truthy[K  ok [1m[32m162[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.execution_condition is invalid[0m[1B[1G# transfer validator reject if expires_at is null when execution_condition populated[K
+  ok [1m[32m163[0m should be truthy[K  ok [1m[32m164[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if expires_at is null when execution_condition populated[0m[1B[1G# transfer validator reject if transfer.expires_at has already passed[K
+  ok [1m[32m165[0m should be truthy[K  ok [1m[32m166[0m should be equal[K[1A[1G[1m[32m✓ transfer validator reject if transfer.expires_at has already passed[0m[1B[1G# transfer validator return transfer if all checks pass[K
+  ok [1m[32m167[0m should be truthy[K  ok [1m[32m168[0m should be equal[K[1A[1G[1m[32m✓ transfer validator return transfer if all checks pass[0m[1B[1G# transfer validator return unconditional transfer if all checks pass[K
+  ok [1m[32m169[0m should be truthy[K  ok [1m[32m170[0m should be equal[K[1A[1G[1m[32m✓ transfer validator return unconditional transfer if all checks pass[0m[1B[1G# transfer validator call Account.getByName once if same account name[K
+  ok [1m[32m171[0m should be truthy[K  ok [1m[32m172[0m should be equal[K[1A[1G[1m[32m✓ transfer validator call Account.getByName once if same account name[0m[1B[1G# Worker test setup[K
+[1A[1G[1m[32m✓ Worker test setup[0m[1B[1G# Worker test run[K
+[1A[1G[1m[32m✓ Worker test run[0m[1B[1G# Worker test rejectExpiredTransfers should[K
+[1A[1G[1m[32m✓ Worker test rejectExpiredTransfers should[0m[1B[1G# Worker test rejectExpiredTokens should[K
+[1A[1G[1m[32m✓ Worker test rejectExpiredTokens should[0m[1B[1G# crypto conditions validateCondition should[K
+[1A[1G[1m[32m✓ crypto conditions validateCondition should[0m[1B[1G# crypto conditions validateFulfillment should[K
+[1A[1G[1m[32m✓ crypto conditions validateFulfillment should[0m[1B[1G# Account service create should[K
+[1A[1G[1m[32m✓ Account service create should[0m[1B[1G# Account service createLedgerAccount should[K
+[1A[1G[1m[32m✓ Account service createLedgerAccount should[0m[1B[1G# Account service exists should[K
+[1A[1G[1m[32m✓ Account service exists should[0m[1B[1G# Account service getAll should[K
+[1A[1G[1m[32m✓ Account service getAll should[0m[1B[1G# Account service getById should[K
+[1A[1G[1m[32m✓ Account service getById should[0m[1B[1G# Account service getByName should[K
+[1A[1G[1m[32m✓ Account service getByName should[0m[1B[1G# Account service updateUserCredentials should[K
+[1A[1G[1m[32m✓ Account service updateUserCredentials should[0m[1B[1G# Account service updateAccountSettlement should[K
+[1A[1G[1m[32m✓ Account service updateAccountSettlement should[0m[1B[1G# Account service update should[K
+[1A[1G[1m[32m✓ Account service update should[0m[1B[1G# Account service verify should[K
+[1A[1G[1m[32m✓ Account service verify should[0m[1B[1G# accounts model getAll should[K
+[1A[1G[1m[32m✓ accounts model getAll should[0m[1B[1G# accounts model getById should[K
+[1A[1G[1m[32m✓ accounts model getById should[0m[1B[1G# accounts model getByName should[K
+[1A[1G[1m[32m✓ accounts model getByName should[0m[1B[1G# accounts model update should[K
+[1A[1G[1m[32m✓ accounts model update should[0m[1B[1G# accounts model create should[K
+[1A[1G[1m[32m✓ accounts model create should[0m[1B[1G# accounts model updateUserCredentials should[K
+[1A[1G[1m[32m✓ accounts model updateUserCredentials should[0m[1B[1G# accounts model retrieveUserCredentials should[K
+[1A[1G[1m[32m✓ accounts model retrieveUserCredentials should[0m[1B[1G# accounts model updateAccountSettlement should[K
+[1A[1G[1m[32m✓ accounts model updateAccountSettlement should[0m[1B[1G# Charge service create should[K
+[1A[1G[1m[32m✓ Charge service create should[0m[1B[1G# Charge service update should[K
+[1A[1G[1m[32m✓ Charge service update should[0m[1B[1G# Charge service getByName should[K
+[1A[1G[1m[32m✓ Charge service getByName should[0m[1B[1G# Charge service getAll should[K
+[1A[1G[1m[32m✓ Charge service getAll should[0m[1B[1G# Charge service getAllForTransfer should[K
+[1A[1G[1m[32m✓ Charge service getAllForTransfer should[0m[1B[1G# Charge service quote should[K
+[1A[1G[1m[32m✓ Charge service quote should[0m[1B[1G# charges model getAll should[K
+[1A[1G[1m[32m✓ charges model getAll should[0m[1B[1G# charges model getByName should[K
+[1A[1G[1m[32m✓ charges model getByName should[0m[1B[1G# charges model getAllSenderAsPayer should[K
+[1A[1G[1m[32m✓ charges model getAllSenderAsPayer should[0m[1B[1G# charges model create should[K
+[1A[1G[1m[32m✓ charges model create should[0m[1B[1G# charges model update should[K
+[1A[1G[1m[32m✓ charges model update should[0m[1B[1G# Fee service generateFeesForTransfer should[K
+[1A[1G[1m[32m✓ Fee service generateFeesForTransfer should[0m[1B[1G# Fee service getAllForTransfer should[K
+[1A[1G[1m[32m✓ Fee service getAllForTransfer should[0m[1B[1G# Fee service getUnsettledFees should[K
+[1A[1G[1m[32m✓ Fee service getUnsettledFees should[0m[1B[1G# Fee service getUnsettledFeesByAccount should[K
+[1A[1G[1m[32m✓ Fee service getUnsettledFeesByAccount should[0m[1B[1G# Fee service settleFee should[K
+[1A[1G[1m[32m✓ Fee service settleFee should[0m[1B[1G# fees model getAllForTransfer should[K
+[1A[1G[1m[32m✓ fees model getAllForTransfer should[0m[1B[1G# fees model create should[K
+[1A[1G[1m[32m✓ fees model create should[0m[1B[1G# fees model doesExist should[K
+[1A[1G[1m[32m✓ fees model doesExist should[0m[1B[1G# fees model getUnsettledFeesByAccount should[K
+[1A[1G[1m[32m✓ fees model getUnsettledFeesByAccount should[0m[1B[1G# fees model getSettleableFeesForTransfer should[K
+[1A[1G[1m[32m✓ fees model getSettleableFeesForTransfer should[0m[1B[1G# fees model getUnsettledFees should[K
+[1A[1G[1m[32m✓ fees model getUnsettledFees should[0m[1B[1G# Fees-Projection Initialize should[K
+[1A[1G[1m[32m✓ Fees-Projection Initialize should[0m[1B[1G# Fees-Projection handleTransferExecuted should[K
+[1A[1G[1m[32m✓ Fees-Projection handleTransferExecuted should[0m[1B[1G# Position Service tests calculateForAllAccounts should[K
+[1A[1G[1m[32m✓ Position Service tests calculateForAllAccounts should[0m[1B[1G# Position Service tests calculateForAccount should[K
+[1A[1G[1m[32m✓ Position Service tests calculateForAccount should[0m[1B[1G# SecurityService test getAllRoles should[K
+[1A[1G[1m[32m✓ SecurityService test getAllRoles should[0m[1B[1G# SecurityService test createRole should[K
+[1A[1G[1m[32m✓ SecurityService test createRole should[0m[1B[1G# SecurityService test updateRole should[K
+[1A[1G[1m[32m✓ SecurityService test updateRole should[0m[1B[1G# SecurityService test deleteRole should[K
+[1A[1G[1m[32m✓ SecurityService test deleteRole should[0m[1B[1G# SecurityService test getAllUsers should[K
+[1A[1G[1m[32m✓ SecurityService test getAllUsers should[0m[1B[1G# SecurityService test getUserById should[K
+[1A[1G[1m[32m✓ SecurityService test getUserById should[0m[1B[1G# SecurityService test getUserByKey should[K
+[1A[1G[1m[32m✓ SecurityService test getUserByKey should[0m[1B[1G# SecurityService test getUserRoles should[K
+[1A[1G[1m[32m✓ SecurityService test getUserRoles should[0m[1B[1G# SecurityService test createUser should[K
+[1A[1G[1m[32m✓ SecurityService test createUser should[0m[1B[1G# SecurityService test deleteUser should[K
+[1A[1G[1m[32m✓ SecurityService test deleteUser should[0m[1B[1G# SecurityService test updateUser should[K
+[1A[1G[1m[32m✓ SecurityService test updateUser should[0m[1B[1G# SecurityService test updateUserRoles should[K
+[1A[1G[1m[32m✓ SecurityService test updateUserRoles should[0m[1B[1G# JWT create should[K
+[1A[1G[1m[32m✓ JWT create should[0m[1B[1G# JWT verify should[K
+[1A[1G[1m[32m✓ JWT verify should[0m[1B[1G# Roles model getAll should[K
+[1A[1G[1m[32m✓ Roles model getAll should[0m[1B[1G# Roles model getById should[K
+[1A[1G[1m[32m✓ Roles model getById should[0m[1B[1G# Roles model addUserRole should[K
+[1A[1G[1m[32m✓ Roles model addUserRole should[0m[1B[1G# Roles model save should[K
+[1A[1G[1m[32m✓ Roles model save should[0m[1B[1G# Roles model remove should[K
+[1A[1G[1m[32m✓ Roles model remove should[0m[1B[1G# Roles model removeUserRoles should[K
+[1A[1G[1m[32m✓ Roles model removeUserRoles should[0m[1B[1G# Roles model getUserRoles should[K
+[1A[1G[1m[32m✓ Roles model getUserRoles should[0m[1B[1G# Users model getAll should[K
+[1A[1G[1m[32m✓ Users model getAll should[0m[1B[1G# Users model getById should[K
+[1A[1G[1m[32m✓ Users model getById should[0m[1B[1G# Users model getByKey should[K
+[1A[1G[1m[32m✓ Users model getByKey should[0m[1B[1G# Users model remove should[K
+[1A[1G[1m[32m✓ Users model remove should[0m[1B[1G# Users model save should[K
+[1A[1G[1m[32m✓ Users model save should[0m[1B[1G# Settlements Test performSettlement should[K
+[1A[1G[1m[32m✓ Settlements Test performSettlement should[0m[1B[1G# Token Auth all token validate should[K
+[1A[1G[1m[32m✓ Token Auth all token validate should[0m[1B[1G# Token Auth admin token validate should[K
+[1A[1G[1m[32m✓ Token Auth admin token validate should[0m[1B[1G# Token Service create should[K
+[1A[1G[1m[32m✓ Token Service create should[0m[1B[1G# Token Service create should[K
+[1A[1G[1m[32m✓ Token Service create should[0m[1B[1G# Token Service byAccount should[K
+[1A[1G[1m[32m✓ Token Service byAccount should[0m[1B[1G# Token Service removeExpired should[K
+[1A[1G[1m[32m✓ Token Service removeExpired should[0m[1B[1G# tokens model create should[K
+[1A[1G[1m[32m✓ tokens model create should[0m[1B[1G# tokens model byAccount should[K
+[1A[1G[1m[32m✓ tokens model byAccount should[0m[1B[1G# tokens model removeExpired should[K
+[1A[1G[1m[32m✓ tokens model removeExpired should[0m[1B[1G# Transfer index test prepare should[K
+[1A[1G[1m[32m✓ Transfer index test prepare should[0m[1B[1G# Transfer index test fulfill should[K
+[1A[1G[1m[32m✓ Transfer index test fulfill should[0m[1B[1G# Transfer index test reject should[K
+[1A[1G[1m[32m✓ Transfer index test reject should[0m[1B[1G# Transfer index test settle should[K
+[1A[1G[1m[32m✓ Transfer index test settle should[0m[1B[1G# Transfer Service tests getById should[K
+[1A[1G[1m[32m✓ Transfer Service tests getById should[0m[1B[1G# Transfer Service tests getAll should[K
+[1A[1G[1m[32m✓ Transfer Service tests getAll should[0m[1B[1G# Transfer Service tests getFulfillment should[K
+[1A[1G[1m[32m✓ Transfer Service tests getFulfillment should[0m[1B[1G# Transfer Service tests rejectExpired should[K
+[1A[1G[1m[32m✓ Transfer Service tests rejectExpired should[0m[1B[1G# Transfer Service tests settle should[K
+[1A[1G[1m[32m✓ Transfer Service tests settle should[0m[1B[1G# Transfer Service tests prepare should[K
+[1A[1G[1m[32m✓ Transfer Service tests prepare should[0m[1B[1G# Transfer Service tests fulfill should[K
+[1A[1G[1m[32m✓ Transfer Service tests fulfill should[0m[1B[1G# Transfer Service tests reject should[K
+[1A[1G[1m[32m✓ Transfer Service tests reject should[0m[1B[1G# transfer model saveTransfer should[K
+[1A[1G[1m[32m✓ transfer model saveTransfer should[0m[1B[1G# transfer model updateTransfer should[K
+[1A[1G[1m[32m✓ transfer model updateTransfer should[0m[1B[1G# transfer model truncateTransfers should[K
+[1A[1G[1m[32m✓ transfer model truncateTransfers should[0m[1B[1G# transfer model getByIdShould[K
+[1A[1G[1m[32m✓ transfer model getByIdShould[0m[1B[1G# transfer model getAllShould[K
+[1A[1G[1m[32m✓ transfer model getAllShould[0m[1B[1G# transfer model findExpired should[K
+[1A[1G[1m[32m✓ transfer model findExpired should[0m[1B[1G# Transfers-Projection Initialize should[K
+[1A[1G[1m[32m✓ Transfers-Projection Initialize should[0m[1B[1G# Transfers-Projection handleTransferPrepared should[K
+[1A[1G[1m[32m✓ Transfers-Projection handleTransferPrepared should[0m[1B[1G# Transfers-Projection handleTransferExecuted should[K
+[1A[1G[1m[32m✓ Transfers-Projection handleTransferExecuted should[0m[1B[1G# Transfers-Projection handleTransferRejected should[K
+[1A[1G[1m[32m✓ Transfers-Projection handleTransferRejected should[0m[1B[1G# Transfer Queries tests getById should[K
+[1A[1G[1m[32m✓ Transfer Queries tests getById should[0m[1B[1G# Transfer Queries tests getAll should[K
+[1A[1G[1m[32m✓ Transfer Queries tests getAll should[0m[1B[1G# Transfer Queries tests findExpired should[K
+[1A[1G[1m[32m✓ Transfer Queries tests findExpired should[0m[1B[1G# crypto generateKey should[K
+[1A[1G[1m[32m✓ crypto generateKey should[0m[1B[1G# crypto generateSecret should[K
+[1A[1G[1m[32m✓ crypto generateSecret should[0m[1B[1G# crypto generateToken should[K
+[1A[1G[1m[32m✓ crypto generateToken should[0m[1B[1G# crypto hash should[K
+[1A[1G[1m[32m✓ crypto hash should[0m[1B[1G# crypto verify should[K
+[1A[1G[1m[32m✓ crypto verify should[0m[1B[1G# events emitTransferPrepared should[K
+[1A[1G[1m[32m✓ events emitTransferPrepared should[0m[1B[1G# events emitTransferExecuted should[K
+[1A[1G[1m[32m✓ events emitTransferExecuted should[0m[1B[1G# events emitTransferRejected should[K
+[1A[1G[1m[32m✓ events emitTransferRejected should[0m[1B[1G# events sendMessage should[K
+[1A[1G[1m[32m✓ events sendMessage should[0m[1B[1G# events emailSettlementCsv should[K
+[1A[1G[1m[32m✓ events emailSettlementCsv should[0m[1B[1G# migrator migrate should[K
+[1A[1G[1m[32m✓ migrator migrate should[0m[1B[1G# logger request should[K
+[1A[1G[1m[32m✓ logger request should[0m[1B[1G# logger response should[K
+[1A[1G[1m[32m✓ logger response should[0m[1B[1G# logger websocket should[K
+[1A[1G[1m[32m✓ logger websocket should[0m[1B[1G# Sidecar import should[K
+[1A[1G[1m[32m✓ Sidecar import should[0m[1B[1G# Sidecar connect should[K
+[1A[1G[1m[32m✓ Sidecar connect should[0m[1B[1G# Sidecar write should[K
+[1A[1G[1m[32m✓ Sidecar write should[0m[1B[1G# Sidecar logRequest should[K
+[1A[1G[1m[32m✓ Sidecar logRequest should[0m[1B[1G# Sidecar receiving close event should[K
+[1A[1G[1m[32m✓ Sidecar receiving close event should[0m[1B[1G# Null SidecarClient create should[K
+[1A[1G[1m[32m✓ Null SidecarClient create should[0m[1B[1G# Null SidecarClient connect should[K
+[1A[1G[1m[32m✓ Null SidecarClient connect should[0m[1B[1G# Null SidecarClient write should[K
+[1A[1G[1m[32m✓ Null SidecarClient write should[0m[1B[1G# executed-transfers model create should[K
+[1A[1G[1m[32m✓ executed-transfers model create should[0m[1B[1G# executed-transfers model truncate should[K
+[1A[1G[1m[32m✓ executed-transfers model truncate should[0m[1B[1G# settleable-transfers-read-model getSettleableTransfers should[K
+[1A[1G[1m[32m✓ settleable-transfers-read-model getSettleableTransfers should[0m[1B[1G# settleable-transfers-read-model getUnsettledTransfers should[K
+[1A[1G[1m[32m✓ settleable-transfers-read-model getUnsettledTransfers should[0m[1B[1G# settleable-transfers-read-model getUnsettledTransfersByAccount should[K
+[1A[1G[1m[32m✓ settleable-transfers-read-model getUnsettledTransfersByAccount should[0m[1B[1G# settled-fees model create should[K
+[1A[1G[1m[32m✓ settled-fees model create should[0m[1B[1G# settled-fees model truncate should[K
+[1A[1G[1m[32m✓ settled-fees model truncate should[0m[1B[1G# settled-transfers model create should[K
+[1A[1G[1m[32m✓ settled-transfers model create should[0m[1B[1G# settled-transfers model truncate should[K
+[1A[1G[1m[32m✓ settled-transfers model truncate should[0m[1B[1G# settlements model create should[K
+[1A[1G[1m[32m✓ settlements model create should[0m[1B[1G# settlements model create should[K
+[1A[1G[1m[32m✓ settlements model create should[0m[1B[1G# settlements model generateId should[K
+[1A[1G[1m[32m✓ settlements model generateId should[0m[1B[1G# setup initialize should[K
+[1A[1G[1m[32m✓ setup initialize should[0m[1B[1G# accounts handler getAll should get all accounts and format list[K
+  ok [1m[32m173[0m should be equal[K  ok [1m[32m174[0m should be equal[K  ok [1m[32m175[0m should be equal[K  ok [1m[32m176[0m should be equal[K  ok [1m[32m177[0m should be equal[K  ok [1m[32m178[0m should be equal[K  ok [1m[32m179[0m should be equal[K  ok [1m[32m180[0m should be equal[K  ok [1m[32m181[0m should be equal[K  ok [1m[32m182[0m should be equal[K  ok [1m[32m183[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getAll should get all accounts and format list[0m[1B[1G# accounts handler getAll should reply with error if Account services throws[K
+  ok [1m[32m184[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getAll should reply with error if Account services throws[0m[1B[1G# accounts handler getByName should get and format an account[K
+  ok [1m[32m185[0m should be equal[K  ok [1m[32m186[0m should be equal[K  ok [1m[32m187[0m should be equal[K  ok [1m[32m188[0m should be equal[K  ok [1m[32m189[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getByName should get and format an account[0m[1B[1G# accounts handler getByName should reply with not found error if Account does not exist[K
+  ok [1m[32m190[0m should be equivalent[K[1A[1G[1m[32m✓ accounts handler getByName should reply with not found error if Account does not exist[0m[1B[1G# accounts handler getByName should reply with error if Account services throws[K
+  ok [1m[32m191[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getByName should reply with error if Account services throws[0m[1B[1G# accounts handler updateAccount should update an account to disabled[K
+  ok [1m[32m192[0m should be equal[K  ok [1m[32m193[0m should be equal[K  ok [1m[32m194[0m should be equal[K  ok [1m[32m195[0m should be equal[K  ok [1m[32m196[0m should be truthy[K[1A[1G[1m[32m✓ accounts handler updateAccount should update an account to disabled[0m[1B[1G# accounts handler updateAccount should reply with error if Account services throws[K
+  ok [1m[32m197[0m should be equal[K[1A[1G[1m[32m✓ accounts handler updateAccount should reply with error if Account services throws[0m[1B[1G# accounts handler create should return created account[K
+  ok [1m[32m198[0m should be equal[K  ok [1m[32m199[0m should be equal[K  ok [1m[32m200[0m should be equal[K  ok [1m[32m201[0m should be truthy[K  ok [1m[32m202[0m should be equal[K[1A[1G[1m[32m✓ accounts handler create should return created account[0m[1B[1G# accounts handler create should return RecordExistsError if name already registered[K
+  ok [1m[32m203[0m should be truthy[K  ok [1m[32m204[0m should be equal[K[1A[1G[1m[32m✓ accounts handler create should return RecordExistsError if name already registered[0m[1B[1G# admin auth module validate should return false if config admin_key not set[K
+  ok [1m[32m205[0m should be falsy[K  ok [1m[32m206[0m should be equal[K[1A[1G[1m[32m✓ admin auth module validate should return false if config admin_key not set[0m[1B[1G# admin auth module validate should return false if config admin_secret not set[K
+  ok [1m[32m207[0m should be falsy[K  ok [1m[32m208[0m should be equal[K[1A[1G[1m[32m✓ admin auth module validate should return false if config admin_secret not set[0m[1B[1G# admin auth module validate should return false if admin key or secret is empty string[K
+  ok [1m[32m209[0m should be falsy[K  ok [1m[32m210[0m should be equal[K[1A[1G[1m[32m✓ admin auth module validate should return false if admin key or secret is empty string[0m[1B[1G# admin auth module validate should return false if username does not equal admin key[K
+  ok [1m[32m211[0m should be falsy[K  ok [1m[32m212[0m should be equal[K[1A[1G[1m[32m✓ admin auth module validate should return false if username does not equal admin key[0m[1B[1G# admin auth module validate should return false if username does not equal admin key[K
+  ok [1m[32m213[0m should be falsy[K  ok [1m[32m214[0m should be equal[K[1A[1G[1m[32m✓ admin auth module validate should return false if username does not equal admin key[0m[1B[1G# admin auth module validate should return is_admin if username matches admin key and password matches admin secret[K
+  ok [1m[32m215[0m should be equal[K  ok [1m[32m216[0m should be truthy[K  ok [1m[32m217[0m should be equal[K[1A[1G[1m[32m✓ admin auth module validate should return is_admin if username matches admin key and password matches admin secret[0m[1B[1G# Auth module register should add AdminStrategy to server auth strategies[K
+  ok [1m[32m218[0m should be truthy[K[1A[1G[1m[32m✓ Auth module register should add AdminStrategy to server auth strategies[0m[1B[1G# Auth module register should add TokenStrategy to server auth strategies[K
+  ok [1m[32m219[0m should be truthy[K[1A[1G[1m[32m✓ Auth module register should add TokenStrategy to server auth strategies[0m[1B[1G# Auth module tokenAuth should return token if ENABLE_TOKEN_AUTH true and no permission[K
+  ok [1m[32m220[0m should be equal[K[1A[1G[1m[32m✓ Auth module tokenAuth should return token if ENABLE_TOKEN_AUTH true and no permission[0m[1B[1G# Auth module tokenAuth should return false if ENABLE_TOKEN_AUTH is false[K
+  ok [1m[32m221[0m should be equal[K[1A[1G[1m[32m✓ Auth module tokenAuth should return false if ENABLE_TOKEN_AUTH is false[0m[1B[1G# Auth module tokenAuth should return token auth and permission scope if permission provided[K
+  ok [1m[32m222[0m should be equivalent[K[1A[1G[1m[32m✓ Auth module tokenAuth should return token auth and permission scope if permission provided[0m[1B[1G# token auth strategy validate should should yield error if token verification fails[K
+  ok [1m[32m223[0m should be equal[K  ok [1m[32m224[0m should be equal[K[1A[1G[1m[32m✓ token auth strategy validate should should yield error if token verification fails[0m[1B[1G# token auth strategy validate should should yield error if token verification fails[K
+  ok [1m[32m225[0m should be equal[K  ok [1m[32m226[0m should be equal[K[1A[1G[1m[32m✓ token auth strategy validate should should yield error if token verification fails[0m[1B[1G# token auth strategy validate should should pass if token verification passes[K
+  ok [1m[32m227[0m should be equal[K  ok [1m[32m228[0m should be equivalent[K[1A[1G[1m[32m✓ token auth strategy validate should should pass if token verification passes[0m[1B[1G# charges handler getAll should get all charges and format list[K
+  ok [1m[32m229[0m should be equal[K  ok [1m[32m230[0m should be equal[K  ok [1m[32m231[0m should be equal[K  ok [1m[32m232[0m should be equal[K  ok [1m[32m233[0m should be equal[K  ok [1m[32m234[0m should be equal[K  ok [1m[32m235[0m should be equal[K  ok [1m[32m236[0m should be equal[K  ok [1m[32m237[0m should be equal[K  ok [1m[32m238[0m should be equal[K  ok [1m[32m239[0m should be equal[K  ok [1m[32m240[0m should be equal[K  ok [1m[32m241[0m should be equal[K  ok [1m[32m242[0m should be equal[K  ok [1m[32m243[0m should be equal[K  ok [1m[32m244[0m should be equal[K  ok [1m[32m245[0m should be equal[K  ok [1m[32m246[0m should be equal[K  ok [1m[32m247[0m should be equal[K  ok [1m[32m248[0m should be equal[K  ok [1m[32m249[0m should be equal[K[1A[1G[1m[32m✓ charges handler getAll should get all charges and format list[0m[1B[1G# charges handler getAll should reply with error if Charge services throws an error[K
+  ok [1m[32m250[0m should be equal[K[1A[1G[1m[32m✓ charges handler getAll should reply with error if Charge services throws an error[0m[1B[1G# charges handler create should create a charge[K
+  ok [1m[32m251[0m should be equal[K  ok [1m[32m252[0m should be equal[K  ok [1m[32m253[0m should be equal[K  ok [1m[32m254[0m should be equal[K  ok [1m[32m255[0m should be equal[K  ok [1m[32m256[0m should be equal[K  ok [1m[32m257[0m should be equal[K  ok [1m[32m258[0m should be equal[K  ok [1m[32m259[0m should be equal[K  ok [1m[32m260[0m should be equal[K  ok [1m[32m261[0m should be truthy[K  ok [1m[32m262[0m should be equal[K[1A[1G[1m[32m✓ charges handler create should create a charge[0m[1B[1G# charges handler create should reply with error if Charge services throws[K
+  ok [1m[32m263[0m should be equal[K[1A[1G[1m[32m✓ charges handler create should reply with error if Charge services throws[0m[1B[1G# charges handler create should reply with validation error if payer and payee match[K
+  ok [1m[32m264[0m should be equal[K  ok [1m[32m265[0m should be equal[K[1A[1G[1m[32m✓ charges handler create should reply with validation error if payer and payee match[0m[1B[1G# charges handler create should reply with already exists error if a charge with the given name already exists[K
+  ok [1m[32m266[0m should be equal[K  ok [1m[32m267[0m should be equal[K[1A[1G[1m[32m✓ charges handler create should reply with already exists error if a charge with the given name already exists[0m[1B[1G# charges handler update should update a charge[K
+  ok [1m[32m268[0m should be equal[K  ok [1m[32m269[0m should be equal[K  ok [1m[32m270[0m should be equal[K  ok [1m[32m271[0m should be equal[K  ok [1m[32m272[0m should be equal[K  ok [1m[32m273[0m should be equal[K  ok [1m[32m274[0m should be equal[K  ok [1m[32m275[0m should be equal[K  ok [1m[32m276[0m should be equal[K  ok [1m[32m277[0m should be equal[K  ok [1m[32m278[0m should be truthy[K[1A[1G[1m[32m✓ charges handler update should update a charge[0m[1B[1G# charges handler update should reply with error if Charge services throws Validation Error[K
+  ok [1m[32m279[0m should be equivalent[K[1A[1G[1m[32m✓ charges handler update should reply with error if Charge services throws Validation Error[0m[1B[1G# charges handler update should reply with error if Charge services throws Record Exists Error[K
+  ok [1m[32m280[0m should be equivalent[K[1A[1G[1m[32m✓ charges handler update should reply with error if Charge services throws Record Exists Error[0m[1B[1G# charges handler update should reply with error if Charge services throws Record Exists Error[K
+  ok [1m[32m281[0m should be equivalent[K[1A[1G[1m[32m✓ charges handler update should reply with error if Charge services throws Record Exists Error[0m[1B[1G# charges handler update should reply with already exists error if a charge with the given name already exists[K
+  ok [1m[32m282[0m should be equal[K  ok [1m[32m283[0m should be equal[K[1A[1G[1m[32m✓ charges handler update should reply with already exists error if a charge with the given name already exists[0m[1B[1G# Admin index export should initialize server[K
+  ok [1m[32m284[0m should be truthy[K[1A[1G[1m[32m✓ Admin index export should initialize server[0m[1B[1G# Permissions handler getPermissions should return defined permissions[K
+  ok [1m[32m285[0m should be equivalent[K[1A[1G[1m[32m✓ Permissions handler getPermissions should return defined permissions[0m[1B[1G# positions handler calculateForAllAccounts should return no positions if there are no settleable transfers[K
+  ok [1m[32m286[0m should be truthy[K  ok [1m[32m287[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAllAccounts should return no positions if there are no settleable transfers[0m[1B[1G# positions handler calculateForAllAccounts should return expected positions if settleable transfers exist[K
+  ok [1m[32m288[0m should be truthy[K  ok [1m[32m289[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAllAccounts should return expected positions if settleable transfers exist[0m[1B[1G# positions handler calculateForAccount should return positions if there are no settleable transfers or fees[K
+  ok [1m[32m290[0m should be truthy[K  ok [1m[32m291[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAccount should return positions if there are no settleable transfers or fees[0m[1B[1G# positions handler calculateForAccount should return expected position if settleable transfers and fees exist[K
+  ok [1m[32m292[0m should be truthy[K  ok [1m[32m293[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAccount should return expected position if settleable transfers and fees exist[0m[1B[1G# Security handler getRoles should return roles from SecurityService[K
+  ok [1m[32m294[0m should be equivalent[K[1A[1G[1m[32m✓ Security handler getRoles should return roles from SecurityService[0m[1B[1G# Security handler getRoles should return error if SecurityService getAllRoles throws[K
+  ok [1m[32m295[0m should be equivalent[K[1A[1G[1m[32m✓ Security handler getRoles should return error if SecurityService getAllRoles throws[0m[1B[1G# Security handler createRole should create role in SecurityService[K
+  ok [1m[32m296[0m should be equivalent[K  ok [1m[32m297[0m should be truthy[K[1A[1G[1m[32m✓ Security handler createRole should create role in SecurityService[0m[1B[1G# Security handler updateRole should update role in SecurityService[K
+  ok [1m[32m298[0m should be equivalent[K  ok [1m[32m299[0m should be truthy[K[1A[1G[1m[32m✓ Security handler updateRole should update role in SecurityService[0m[1B[1G# Security handler deleteRole should delete role in security service and return 204[K
+  ok [1m[32m300[0m should be falsy[K  ok [1m[32m301[0m should be truthy[K  ok [1m[32m302[0m should be equal[K[1A[1G[1m[32m✓ Security handler deleteRole should delete role in security service and return 204[0m[1B[1G# Security handler deleteRole should reply with error if SecurityService throws[K
+  ok [1m[32m303[0m should be equal[K[1A[1G[1m[32m✓ Security handler deleteRole should reply with error if SecurityService throws[0m[1B[1G# routeConfig config should return empty config by default[K
+  ok [1m[32m304[0m should be equivalent[K[1A[1G[1m[32m✓ routeConfig config should return empty config by default[0m[1B[1G# routeConfig config should populate tags[K
+  ok [1m[32m305[0m should be equivalent[K[1A[1G[1m[32m✓ routeConfig config should populate tags[0m[1B[1G# routeConfig config should set description[K
+  ok [1m[32m306[0m should be equivalent[K[1A[1G[1m[32m✓ routeConfig config should set description[0m[1B[1G# routeConfig config should use permission to set description[K
+  ok [1m[32m307[0m should be equal[K[1A[1G[1m[32m✓ routeConfig config should use permission to set description[0m[1B[1G# routeConfig config should set auth from permission[K
+  ok [1m[32m308[0m should be equivalent[K[1A[1G[1m[32m✓ routeConfig config should set auth from permission[0m[1B[1G# routeConfig config should set validation[K
+  ok [1m[32m309[0m should be equivalent[K[1A[1G[1m[32m✓ routeConfig config should set validation[0m[1B[1G# token handler create should create token from user key[K
+  ok [1m[32m310[0m should be equivalent[K  ok [1m[32m311[0m should be truthy[K[1A[1G[1m[32m✓ token handler create should create token from user key[0m[1B[1G# token handler create should reply with error if thrown[K
+  ok [1m[32m312[0m should be equal[K[1A[1G[1m[32m✓ token handler create should reply with error if thrown[0m[1B[1G# transfers handler getAll should get all transfers and format list[K
+  ok [1m[32m313[0m should be equal[K  ok [1m[32m314[0m should be equal[K  ok [1m[32m315[0m should be equal[K  ok [1m[32m316[0m should be equal[K  ok [1m[32m317[0m should be equal[K[1A[1G[1m[32m✓ transfers handler getAll should get all transfers and format list[0m[1B[1G# transfers handler getAll should reply with error if Transfer service throws[K
+  ok [1m[32m318[0m should be equal[K[1A[1G[1m[32m✓ transfers handler getAll should reply with error if Transfer service throws[0m[1B[1G# Handler Test rejectExpired should return rejected transfer ids[K
+  ok [1m[32m319[0m should be equal[K  ok [1m[32m320[0m should be truthy[K[1A[1G[1m[32m✓ Handler Test rejectExpired should return rejected transfer ids[0m[1B[1G# Handler Test rejectExpired should return error if rejectExpired fails[K
+  ok [1m[32m321[0m should be equal[K[1A[1G[1m[32m✓ Handler Test rejectExpired should return error if rejectExpired fails[0m[1B[1G# Handler Test settle should return settled transfer and fee ids[K
+  ok [1m[32m322[0m should be equivalent[K  ok [1m[32m323[0m should be truthy[K[1A[1G[1m[32m✓ Handler Test settle should return settled transfer and fee ids[0m[1B[1G# Handler Test settle should return error if settlement failed[K
+  ok [1m[32m324[0m should be equal[K[1A[1G[1m[32m✓ Handler Test settle should return error if settlement failed[0m[1B[1G# Handler Test removeExpired should return expired tokens[K
+  ok [1m[32m325[0m should be equal[K  ok [1m[32m326[0m should be truthy[K[1A[1G[1m[32m✓ Handler Test removeExpired should return expired tokens[0m[1B[1G# Handler Test removeExpired should return error if removeExpired fails[K
+  ok [1m[32m327[0m should be equal[K[1A[1G[1m[32m✓ Handler Test removeExpired should return error if removeExpired fails[0m[1B[1G# accounts handler getByName should get account by name and set balance to position[K
+  ok [1m[32m328[0m should be equal[K  ok [1m[32m329[0m should be equal[K  ok [1m[32m330[0m should be equal[K  ok [1m[32m331[0m should be equal[K  ok [1m[32m332[0m should be equal[K  ok [1m[32m333[0m should be equal[K  ok [1m[32m334[0m should be falsy[K  ok [1m[32m335[0m should be falsy[K  ok [1m[32m336[0m should be falsy[K  ok [1m[32m337[0m should be truthy[K[1A[1G[1m[32m✓ accounts handler getByName should get account by name and set balance to position[0m[1B[1G# accounts handler getByName should get account by name and set balance to position if admin[K
+  ok [1m[32m338[0m should be equal[K  ok [1m[32m339[0m should be equal[K  ok [1m[32m340[0m should be equal[K  ok [1m[32m341[0m should be equal[K  ok [1m[32m342[0m should be equal[K  ok [1m[32m343[0m should be equal[K  ok [1m[32m344[0m should be falsy[K  ok [1m[32m345[0m should be falsy[K  ok [1m[32m346[0m should be falsy[K[1A[1G[1m[32m✓ accounts handler getByName should get account by name and set balance to position if admin[0m[1B[1G# accounts handler getByName should get account by name and set balance to position and default is_disabled to false[K
+  ok [1m[32m347[0m should be equal[K  ok [1m[32m348[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getByName should get account by name and set balance to position and default is_disabled to false[0m[1B[1G# accounts handler getByName should reply with limited fields if requesting account is not account[K
+  ok [1m[32m349[0m should be equal[K  ok [1m[32m350[0m should be equal[K  ok [1m[32m351[0m should be equal[K  ok [1m[32m352[0m should be equal[K  ok [1m[32m353[0m should be falsy[K  ok [1m[32m354[0m should be falsy[K  ok [1m[32m355[0m should be falsy[K  ok [1m[32m356[0m should be falsy[K  ok [1m[32m357[0m should be falsy[K  ok [1m[32m358[0m should be falsy[K[1A[1G[1m[32m✓ accounts handler getByName should reply with limited fields if requesting account is not account[0m[1B[1G# accounts handler getByName should reply with NotFoundError if account null[K
+  ok [1m[32m359[0m should be truthy[K  ok [1m[32m360[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getByName should reply with NotFoundError if account null[0m[1B[1G# accounts handler getByName should reply with error if Account throws error[K
+  ok [1m[32m361[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getByName should reply with error if Account throws error[0m[1B[1G# accounts handler getByName should reply with NotFoundError if position null[K
+  ok [1m[32m362[0m should be truthy[K  ok [1m[32m363[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getByName should reply with NotFoundError if position null[0m[1B[1G# accounts handler getByName should reply with error if PositionService throws error[K
+  ok [1m[32m364[0m should be equal[K[1A[1G[1m[32m✓ accounts handler getByName should reply with error if PositionService throws error[0m[1B[1G# accounts handler updateUserCredentials should update a users credentials[K
+  ok [1m[32m365[0m should be equal[K  ok [1m[32m366[0m should be equal[K  ok [1m[32m367[0m should be equal[K  ok [1m[32m368[0m should be falsy[K  ok [1m[32m369[0m should be falsy[K  ok [1m[32m370[0m should be falsy[K  ok [1m[32m371[0m should be truthy[K[1A[1G[1m[32m✓ accounts handler updateUserCredentials should update a users credentials[0m[1B[1G# accounts handler updateUserCredentials should reply with unauthorized error if user credentials do not match[K
+  ok [1m[32m372[0m should be truthy[K  ok [1m[32m373[0m should be equal[K[1A[1G[1m[32m✓ accounts handler updateUserCredentials should reply with unauthorized error if user credentials do not match[0m[1B[1G# accounts handler create should return created account[K
+  ok [1m[32m374[0m should be equal[K  ok [1m[32m375[0m should be equal[K  ok [1m[32m376[0m should be equal[K  ok [1m[32m377[0m should be equal[K  ok [1m[32m378[0m should be equal[K  ok [1m[32m379[0m should be equal[K  ok [1m[32m380[0m should be equal[K  ok [1m[32m381[0m should be equal[K  ok [1m[32m382[0m should be truthy[K  ok [1m[32m383[0m should be equal[K[1A[1G[1m[32m✓ accounts handler create should return created account[0m[1B[1G# accounts handler create should return RecordExistsError if name already registered[K
+  ok [1m[32m384[0m should be truthy[K  ok [1m[32m385[0m should be equal[K[1A[1G[1m[32m✓ accounts handler create should return RecordExistsError if name already registered[0m[1B[1G# accounts handler create should return error if Account throws error on checking for existing account[K
+  ok [1m[32m386[0m should be equal[K[1A[1G[1m[32m✓ accounts handler create should return error if Account throws error on checking for existing account[0m[1B[1G# accounts handler create should return error if Account throws error on register[K
+  ok [1m[32m387[0m should be equal[K[1A[1G[1m[32m✓ accounts handler create should return error if Account throws error on register[0m[1B[1G# accounts handler update settlement should return updated settlement[K
+  ok [1m[32m388[0m should be equal[K  ok [1m[32m389[0m should be equal[K  ok [1m[32m390[0m should be equal[K  ok [1m[32m391[0m should be truthy[K[1A[1G[1m[32m✓ accounts handler update settlement should return updated settlement[0m[1B[1G# accounts handler update settlement should return error if Account throws error on checking for existing account[K
+  ok [1m[32m392[0m should be equal[K[1A[1G[1m[32m✓ accounts handler update settlement should return error if Account throws error on checking for existing account[0m[1B[1G# accounts handler update settlement should return error if Account throws error on updateAccountSettlement[K
+  ok [1m[32m393[0m should be equal[K[1A[1G[1m[32m✓ accounts handler update settlement should return error if Account throws error on updateAccountSettlement[0m[1B[1G# accounts handler update settlement should return error if not authenticated[K
+  ok [1m[32m394[0m should be truthy[K  ok [1m[32m395[0m should be equal[K[1A[1G[1m[32m✓ accounts handler update settlement should return error if not authenticated[0m[1B[1G# account auth module validate should return false if password missing[K
+  ok [1m[32m396[0m should be falsy[K  ok [1m[32m397[0m should be equal[K[1A[1G[1m[32m✓ account auth module validate should return false if password missing[0m[1B[1G# account auth module validate should return false if password cannot be verified[K
+  ok [1m[32m398[0m should be falsy[K  ok [1m[32m399[0m should be equal[K[1A[1G[1m[32m✓ account auth module validate should return false if password cannot be verified[0m[1B[1G# account auth module validate should return true if user is configured admin[K
+  ok [1m[32m400[0m should be equal[K  ok [1m[32m401[0m should be equal[K  ok [1m[32m402[0m should be equal[K  ok [1m[32m403[0m should be equal[K[1A[1G[1m[32m✓ account auth module validate should return true if user is configured admin[0m[1B[1G# account auth module validate should return true and account if password verified[K
+  ok [1m[32m404[0m should be equal[K  ok [1m[32m405[0m should be equal[K[1A[1G[1m[32m✓ account auth module validate should return true and account if password verified[0m[1B[1G# charges handler chargeQuote should get all charge quotes and format charge quote list[K
+  ok [1m[32m406[0m should be equal[K  ok [1m[32m407[0m should be equal[K  ok [1m[32m408[0m should be equal[K  ok [1m[32m409[0m should be equal[K  ok [1m[32m410[0m should be equal[K  ok [1m[32m411[0m should be equal[K  ok [1m[32m412[0m should be equal[K  ok [1m[32m413[0m should be equal[K  ok [1m[32m414[0m should be equal[K[1A[1G[1m[32m✓ charges handler chargeQuote should get all charge quotes and format charge quote list[0m[1B[1G# charges handler chargeQuote should reply with error if Charge services throws[K
+  ok [1m[32m415[0m should be equal[K[1A[1G[1m[32m✓ charges handler chargeQuote should reply with error if Charge services throws[0m[1B[1G# Api index export should initialize server[K
+  ok [1m[32m416[0m should be truthy[K[1A[1G[1m[32m✓ Api index export should initialize server[0m[1B[1G# Message Handler sendMessage should respond with error if validator fails[K
+  ok [1m[32m417[0m should be equal[K[1A[1G[1m[32m✓ Message Handler sendMessage should respond with error if validator fails[0m[1B[1G# Message Handler sendMessage should send message[K
+  ok [1m[32m418[0m should be truthy[K  ok [1m[32m419[0m should be truthy[K[1A[1G[1m[32m✓ Message Handler sendMessage should send message[0m[1B[1G# Message Handler sendMessage should reply with 201[K
+  ok [1m[32m420[0m should be falsy[K  ok [1m[32m421[0m should be equal[K[1A[1G[1m[32m✓ Message Handler sendMessage should reply with 201[0m[1B[1G# messages request validator validate should return InvalidBodyError if ledger does not match Config.HOSTNAME[K
+  ok [1m[32m422[0m should be equivalent[K[1A[1G[1m[32m✓ messages request validator validate should return InvalidBodyError if ledger does not match Config.HOSTNAME[0m[1B[1G# messages request validator validate should return InvalidBodyError if to account not found[K
+  ok [1m[32m423[0m should be equivalent[K[1A[1G[1m[32m✓ messages request validator validate should return InvalidBodyError if to account not found[0m[1B[1G# messages request validator validate should return InvalidBodyError if from account not found[K
+  ok [1m[32m424[0m should be equivalent[K[1A[1G[1m[32m✓ messages request validator validate should return InvalidBodyError if from account not found[0m[1B[1G# messages request validator validate should return request[K
+  ok [1m[32m425[0m should be equivalent[K[1A[1G[1m[32m✓ messages request validator validate should return request[0m[1B[1G# metadata handler health should return status ok[K
+  ok [1m[32m426[0m should be equal[K  ok [1m[32m427[0m should be equal[K[1A[1G[1m[32m✓ metadata handler health should return status ok[0m[1B[1G# metadata handler metadata should return 200 httpStatus[K
+  ok [1m[32m428[0m should be equal[K[1A[1G[1m[32m✓ metadata handler metadata should return 200 httpStatus[0m[1B[1G# metadata handler metadata should return default values[K
+  ok [1m[32m429[0m should be equal[K  ok [1m[32m430[0m should be equal[K  ok [1m[32m431[0m should be equal[K  ok [1m[32m432[0m should be equal[K  ok [1m[32m433[0m should be equal[K  ok [1m[32m434[0m should be equal[K  ok [1m[32m435[0m should be equivalent[K[1A[1G[1m[32m✓ metadata handler metadata should return default values[0m[1B[1G# metadata handler metadata should return urls from request.server and append hostname[K
+  ok [1m[32m436[0m should be equal[K[1A[1G[1m[32m✓ metadata handler metadata should return urls from request.server and append hostname[0m[1B[1G# metadata handler metadata should only return urls with id[K
+  ok [1m[32m437[0m should be equal[K  ok [1m[32m438[0m should be equal[K[1A[1G[1m[32m✓ metadata handler metadata should only return urls with id[0m[1B[1G# metadata handler metadata should only return urls tagged with api[K
+  ok [1m[32m439[0m should be equal[K  ok [1m[32m440[0m should be equal[K  ok [1m[32m441[0m should be falsy[K[1A[1G[1m[32m✓ metadata handler metadata should only return urls tagged with api[0m[1B[1G# metadata handler metadata should format url parameters with colons[K
+  ok [1m[32m442[0m should be equal[K  ok [1m[32m443[0m should be equal[K[1A[1G[1m[32m✓ metadata handler metadata should format url parameters with colons[0m[1B[1G# positions handler calculateForAllAccounts should return no positions if there are no settleable transfers[K
+  ok [1m[32m444[0m should be truthy[K  ok [1m[32m445[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAllAccounts should return no positions if there are no settleable transfers[0m[1B[1G# positions handler calculateForAllAccounts should return expected positions if settleable transfers exist[K
+  ok [1m[32m446[0m should be truthy[K  ok [1m[32m447[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAllAccounts should return expected positions if settleable transfers exist[0m[1B[1G# positions handler calculateForAccount should return positions if there are no settleable transfers or fees[K
+  ok [1m[32m448[0m should be truthy[K  ok [1m[32m449[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAccount should return positions if there are no settleable transfers or fees[0m[1B[1G# positions handler calculateForAccount should return expected position if settleable transfers and fees exist[K
+  ok [1m[32m450[0m should be truthy[K  ok [1m[32m451[0m should be equivalent[K[1A[1G[1m[32m✓ positions handler calculateForAccount should return expected position if settleable transfers and fees exist[0m[1B[1G# AccountTransfers initialize should use default message if no message found on error[K
+  ok [1m[32m452[0m should be truthy[K  ok [1m[32m453[0m should be truthy[K[1A[1G[1m[32m✓ AccountTransfers initialize should use default message if no message found on error[0m[1B[1G# AccountTransfers initialize should send error and close socket if account is not valid url[K
+  ok [1m[32m454[0m should be truthy[K  ok [1m[32m455[0m should be truthy[K[1A[1G[1m[32m✓ AccountTransfers initialize should send error and close socket if account is not valid url[0m[1B[1G# AccountTransfers initialize should send error and close socket if account does not exist[K
+  ok [1m[32m456[0m should be equal[K  ok [1m[32m457[0m should be truthy[K[1A[1G[1m[32m✓ AccountTransfers initialize should send error and close socket if account does not exist[0m[1B[1G# AccountTransfers initialize should add socket and url to socketManager[K
+  ok [1m[32m458[0m should be truthy[K  ok [1m[32m459[0m should be falsy[K[1A[1G[1m[32m✓ AccountTransfers initialize should add socket and url to socketManager[0m[1B[1G# Socket Module register should create new instance of WS.Server[K
+  ok [1m[32m460[0m should be truthy[K[1A[1G[1m[32m✓ Socket Module register should create new instance of WS.Server[0m[1B[1G# Socket Module register should listen for WS connection events[K
+  ok [1m[32m461[0m should be truthy[K[1A[1G[1m[32m✓ Socket Module register should listen for WS connection events[0m[1B[1G# Socket Module register should Wire up event handlers[K
+  ok [1m[32m462[0m should be truthy[K  ok [1m[32m463[0m should be truthy[K[1A[1G[1m[32m✓ Socket Module register should Wire up event handlers[0m[1B[1G# Socket Module on socket connection should initialize WebSocket if url is /websocket[K
+  ok [1m[32m464[0m should be truthy[K  ok [1m[32m465[0m should be falsy[K[1A[1G[1m[32m✓ Socket Module on socket connection should initialize WebSocket if url is /websocket[0m[1B[1G# Socket Module on socket connection should initialize AccountTransfers if url is not /websocket[K
+  ok [1m[32m466[0m should be truthy[K  ok [1m[32m467[0m should be falsy[K[1A[1G[1m[32m✓ Socket Module on socket connection should initialize AccountTransfers if url is not /websocket[0m[1B[1G# Socket Module Events should onTransferPrepared should do nothing if transfer credits and debits are empty[K
+  ok [1m[32m468[0m should be equal[K[1A[1G[1m[32m✓ Socket Module Events should onTransferPrepared should do nothing if transfer credits and debits are empty[0m[1B[1G# Socket Module Events should onTransferPrepared should send message to socket manager for each account[K
+  ok [1m[32m469[0m should be equal[K  ok [1m[32m470[0m should be equal[K  ok [1m[32m471[0m should be equal[K  ok [1m[32m472[0m should be equal[K  ok [1m[32m473[0m should be equal[K  ok [1m[32m474[0m should be truthy[K  ok [1m[32m475[0m should be equivalent[K  ok [1m[32m476[0m should be equal[K  ok [1m[32m477[0m should be equal[K  ok [1m[32m478[0m should be equal[K  ok [1m[32m479[0m should be equal[K  ok [1m[32m480[0m should be equal[K  ok [1m[32m481[0m should be equal[K  ok [1m[32m482[0m should be truthy[K  ok [1m[32m483[0m should be equivalent[K  ok [1m[32m484[0m should be equal[K[1A[1G[1m[32m✓ Socket Module Events should onTransferPrepared should send message to socket manager for each account[0m[1B[1G# Socket Module Events should onTransferExecuted should do nothing if transfer credits and debits are empty[K
+  ok [1m[32m485[0m should be equal[K[1A[1G[1m[32m✓ Socket Module Events should onTransferExecuted should do nothing if transfer credits and debits are empty[0m[1B[1G# Socket Module Events should onTransferExecuted should send message to socket manager for each account[K
+  ok [1m[32m486[0m should be equal[K  ok [1m[32m487[0m should be equal[K  ok [1m[32m488[0m should be equal[K  ok [1m[32m489[0m should be equal[K  ok [1m[32m490[0m should be equal[K  ok [1m[32m491[0m should be truthy[K  ok [1m[32m492[0m should be equivalent[K  ok [1m[32m493[0m should be equivalent[K  ok [1m[32m494[0m should be equal[K  ok [1m[32m495[0m should be equal[K  ok [1m[32m496[0m should be equal[K  ok [1m[32m497[0m should be equal[K  ok [1m[32m498[0m should be equal[K  ok [1m[32m499[0m should be truthy[K  ok [1m[32m500[0m should be equivalent[K  ok [1m[32m501[0m should be equivalent[K[1A[1G[1m[32m✓ Socket Module Events should onTransferExecuted should send message to socket manager for each account[0m[1B[1G# Socket Module Events should onTransferRejected should do nothing if transfer credits and debits are empty[K
+  ok [1m[32m502[0m should be equal[K[1A[1G[1m[32m✓ Socket Module Events should onTransferRejected should do nothing if transfer credits and debits are empty[0m[1B[1G# Socket Module Events should onTransferRejected should send message to socket manager for each account[K
+  ok [1m[32m503[0m should be equal[K  ok [1m[32m504[0m should be equal[K  ok [1m[32m505[0m should be equal[K  ok [1m[32m506[0m should be equal[K  ok [1m[32m507[0m should be equal[K  ok [1m[32m508[0m should be truthy[K  ok [1m[32m509[0m should be equivalent[K  ok [1m[32m510[0m should be equal[K  ok [1m[32m511[0m should be equal[K  ok [1m[32m512[0m should be equal[K  ok [1m[32m513[0m should be equal[K  ok [1m[32m514[0m should be equal[K  ok [1m[32m515[0m should be equal[K  ok [1m[32m516[0m should be truthy[K  ok [1m[32m517[0m should be equivalent[K  ok [1m[32m518[0m should be equal[K[1A[1G[1m[32m✓ Socket Module Events should onTransferRejected should send message to socket manager for each account[0m[1B[1G# Socket Module Events should onMessageSent should send message to socket manager for to account[K
+  ok [1m[32m519[0m should be equal[K  ok [1m[32m520[0m should be equal[K  ok [1m[32m521[0m should be equal[K  ok [1m[32m522[0m should be equal[K  ok [1m[32m523[0m should be equal[K  ok [1m[32m524[0m should be truthy[K  ok [1m[32m525[0m should be equivalent[K  ok [1m[32m526[0m should be equal[K[1A[1G[1m[32m✓ Socket Module Events should onMessageSent should send message to socket manager for to account[0m[1B[1G# SocketManager add should add socket to socket listeners[K
+  ok [1m[32m527[0m should be equivalent[K  ok [1m[32m528[0m should be equivalent[K[1A[1G[1m[32m✓ SocketManager add should add socket to socket listeners[0m[1B[1G# SocketManager add should add multiple accounts to socket[K
+  ok [1m[32m529[0m should be equivalent[K  ok [1m[32m530[0m should be falsy[K  ok [1m[32m531[0m should be equivalent[K  ok [1m[32m532[0m should be equivalent[K[1A[1G[1m[32m✓ SocketManager add should add multiple accounts to socket[0m[1B[1G# SocketManager add should close socket if accounts length is 0[K
+  ok [1m[32m533[0m should be equivalent[K  ok [1m[32m534[0m should be equivalent[K  ok [1m[32m535[0m should be equivalent[K  ok [1m[32m536[0m should be equal[K[1A[1G[1m[32m✓ SocketManager add should close socket if accounts length is 0[0m[1B[1G# SocketManager add should not add socket if previously added[K
+  ok [1m[32m537[0m should be equivalent[K  ok [1m[32m538[0m should be equivalent[K  ok [1m[32m539[0m should be equivalent[K[1A[1G[1m[32m✓ SocketManager add should not add socket if previously added[0m[1B[1G# SocketManager add should listen to close event of added socket[K
+  ok [1m[32m540[0m should be truthy[K[1A[1G[1m[32m✓ SocketManager add should listen to close event of added socket[0m[1B[1G# SocketManager add should remove socket when closed[K
+  ok [1m[32m541[0m should be equivalent[K  ok [1m[32m542[0m should be equivalent[K[1A[1G[1m[32m✓ SocketManager add should remove socket when closed[0m[1B[1G# SocketManager send should send message to each connected socket[K
+  ok [1m[32m543[0m should be equal[K  ok [1m[32m544[0m should be truthy[K[1A[1G[1m[32m✓ SocketManager send should send message to each connected socket[0m[1B[1G# SocketManager send should not send message to wrong account[K
+  ok [1m[32m545[0m should be equal[K  ok [1m[32m546[0m should be equal[K[1A[1G[1m[32m✓ SocketManager send should not send message to wrong account[0m[1B[1G# SocketManager send should log sent message[K
+  ok [1m[32m547[0m should be equal[K  ok [1m[32m548[0m should be equal[K[1A[1G[1m[32m✓ SocketManager send should log sent message[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if request is not valid json[K
+  ok [1m[32m549[0m should be equal[K  ok [1m[32m550[0m should be equal[K  ok [1m[32m551[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if request is not valid json[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if id is not present[K
+  ok [1m[32m552[0m should be equal[K  ok [1m[32m553[0m should be equal[K  ok [1m[32m554[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if id is not present[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if jsonrpc is not present[K
+  ok [1m[32m555[0m should be equal[K  ok [1m[32m556[0m should be equal[K  ok [1m[32m557[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if jsonrpc is not present[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if jsonrpc is not 2.0[K
+  ok [1m[32m558[0m should be equal[K  ok [1m[32m559[0m should be equal[K  ok [1m[32m560[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if jsonrpc is not 2.0[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if method is not present[K
+  ok [1m[32m561[0m should be equal[K  ok [1m[32m562[0m should be equal[K  ok [1m[32m563[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if method is not present[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if method is not "subscribe_account"[K
+  ok [1m[32m564[0m should be equal[K  ok [1m[32m565[0m should be equal[K  ok [1m[32m566[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if method is not "subscribe_account"[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if params is not present[K
+  ok [1m[32m567[0m should be equal[K  ok [1m[32m568[0m should be equal[K  ok [1m[32m569[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if params is not present[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if params.accounts is not present[K
+  ok [1m[32m570[0m should be equal[K  ok [1m[32m571[0m should be equal[K  ok [1m[32m572[0m should be equal[K  ok [1m[32m573[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if params.accounts is not present[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if account not parseable uri[K
+  ok [1m[32m574[0m should be equal[K  ok [1m[32m575[0m should be equal[K  ok [1m[32m576[0m should be equal[K  ok [1m[32m577[0m should be equal[K  ok [1m[32m578[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if account not parseable uri[0m[1B[1G# subscription validator validateSubscriptionRequest should throw error if account does not exist[K
+  ok [1m[32m579[0m should be equal[K  ok [1m[32m580[0m should be equal[K  ok [1m[32m581[0m should be equal[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should throw error if account does not exist[0m[1B[1G# subscription validator validateSubscriptionRequest should return id, jsonrpc and accounts if valid[K
+  ok [1m[32m582[0m should be falsy[K  ok [1m[32m583[0m should be equal[K  ok [1m[32m584[0m should be equal[K  ok [1m[32m585[0m should be equivalent[K[1A[1G[1m[32m✓ subscription validator validateSubscriptionRequest should return id, jsonrpc and accounts if valid[0m[1B[1G# WebSocket initialize should respond with connect message[K
+  ok [1m[32m586[0m should be equal[K  ok [1m[32m587[0m should be equal[K  ok [1m[32m588[0m should be equal[K[1A[1G[1m[32m✓ WebSocket initialize should respond with connect message[0m[1B[1G# WebSocket initialize should listen for incoming messages on socket[K
+  ok [1m[32m589[0m should be truthy[K[1A[1G[1m[32m✓ WebSocket initialize should listen for incoming messages on socket[0m[1B[1G# WebSocket initialize should send error and close socket if subscription request is not valid[K
+  ok [1m[32m590[0m should be truthy[K  ok [1m[32m591[0m should be truthy[K[1A[1G[1m[32m✓ WebSocket initialize should send error and close socket if subscription request is not valid[0m[1B[1G# WebSocket initialize should reply to socket on valid request[K
+  ok [1m[32m592[0m should be truthy[K  ok [1m[32m593[0m should be falsy[K[1A[1G[1m[32m✓ WebSocket initialize should reply to socket on valid request[0m[1B[1G# WebSocket initialize should add socket to account listener if more than on account listed[K
+  ok [1m[32m594[0m should be truthy[K[1A[1G[1m[32m✓ WebSocket initialize should add socket to account listener if more than on account listed[0m[1B[1G# WebSocket initialize should log out websocket request[K
+  ok [1m[32m595[0m should be equal[K[1A[1G[1m[32m✓ WebSocket initialize should log out websocket request[0m[1B[1G# token handler create should create token from auth credentials[K
+  ok [1m[32m596[0m should be equal[K  ok [1m[32m597[0m should be truthy[K[1A[1G[1m[32m✓ token handler create should create token from auth credentials[0m[1B[1G# token handler create should reply with error if thrown[K
+  ok [1m[32m598[0m should be equal[K[1A[1G[1m[32m✓ token handler create should reply with error if thrown[0m[1B[1G# transfer handler prepareTransfer should reply with status code 200 if transfer exists[K
+  ok [1m[32m599[0m should be equal[K  ok [1m[32m600[0m should be equal[K  ok [1m[32m601[0m should be truthy[K[1A[1G[1m[32m✓ transfer handler prepareTransfer should reply with status code 200 if transfer exists[0m[1B[1G# transfer handler prepareTransfer should reply with status code 201 if transfer does not exist[K
+  ok [1m[32m602[0m should be equal[K  ok [1m[32m603[0m should be equal[K[1A[1G[1m[32m✓ transfer handler prepareTransfer should reply with status code 201 if transfer does not exist[0m[1B[1G# transfer handler prepareTransfer should return error if transfer not validated[K
+  ok [1m[32m604[0m should be equal[K  ok [1m[32m605[0m should be truthy[K[1A[1G[1m[32m✓ transfer handler prepareTransfer should return error if transfer not validated[0m[1B[1G# transfer handler prepareTransfer should return error if transfer prepare throws[K
+  ok [1m[32m606[0m should be equal[K[1A[1G[1m[32m✓ transfer handler prepareTransfer should return error if transfer prepare throws[0m[1B[1G# transfer handler fulfillTransfer should return fulfilled transfer[K
+  ok [1m[32m607[0m should be equal[K  ok [1m[32m608[0m should be truthy[K  ok [1m[32m609[0m should be equal[K[1A[1G[1m[32m✓ transfer handler fulfillTransfer should return fulfilled transfer[0m[1B[1G# transfer handler fulfillTransfer should return error if transfer service fulfill throws[K
+  ok [1m[32m610[0m should be equal[K[1A[1G[1m[32m✓ transfer handler fulfillTransfer should return error if transfer service fulfill throws[0m[1B[1G# transfer handler reject transfer should reject transfer[K
+  not ok [1m[31m611[0m should be equivalent[K
+[2A[1G[1m[31m⨯ transfer handler reject transfer should reject transfer[0m[2B[1G    ---
+      operator: deepEqual
+      expected: |-
+        { additional_info: {}, code: 'S00', message: 'destination transfer failed', name: 'Bad Request', triggered_by: 'example.red.bob' }
+      actual: |-
+        undefined
+      at: Object.response (/home/vgenev/mojaloop/PI2/central-ledger/test/unit/api/transfers/handler.test.js:278:16)
+    ...
+  not ok [1m[31m612[0m should be truthy[K
+    ---
+      operator: ok
+      expected: true
+      actual:   false
+      at: Object.response (/home/vgenev/mojaloop/PI2/central-ledger/test/unit/api/transfers/handler.test.js:279:16)
+    ...
+  ok [1m[32m613[0m should be truthy[K  ok [1m[32m614[0m should be equal[K# transfer handler reject transfer should reject rejected transfer[K
+  not ok [1m[31m615[0m should be equivalent[K
+[2A[1G[1m[31m⨯ transfer handler reject transfer should reject rejected transfer[0m[2B[1G    ---
+      operator: deepEqual
+      expected: |-
+        { additional_info: {}, code: 'S00', message: 'destination transfer failed', name: 'Bad Request', triggered_by: 'example.red.bob' }
+      actual: |-
+        undefined
+      at: Object.response (/home/vgenev/mojaloop/PI2/central-ledger/test/unit/api/transfers/handler.test.js:309:16)
+    ...
+  not ok [1m[31m616[0m should be truthy[K
+    ---
+      operator: ok
+      expected: true
+      actual:   false
+      at: Object.response (/home/vgenev/mojaloop/PI2/central-ledger/test/unit/api/transfers/handler.test.js:310:16)
+    ...
+  ok [1m[32m617[0m should be equal[K# transfer handler reject transfer return error if transfer server reject throws[K
+  ok [1m[32m618[0m should be equal[K[1A[1G[1m[32m✓ transfer handler reject transfer return error if transfer server reject throws[0m[1B[1G# transfer handler getTransferById should get transfer by transfer id[K
+  ok [1m[32m619[0m should be equal[K  ok [1m[32m620[0m should be equal[K  ok [1m[32m621[0m should be equal[K  ok [1m[32m622[0m should be equal[K  ok [1m[32m623[0m should be equal[K  ok [1m[32m624[0m should be equal[K  ok [1m[32m625[0m should be equal[K  ok [1m[32m626[0m should be equal[K  ok [1m[32m627[0m should be falsy[K  ok [1m[32m628[0m should be falsy[K  ok [1m[32m629[0m should be equal[K  ok [1m[32m630[0m should be equal[K  ok [1m[32m631[0m should be equal[K  ok [1m[32m632[0m should be truthy[K  ok [1m[32m633[0m should be equal[K[1A[1G[1m[32m✓ transfer handler getTransferById should get transfer by transfer id[0m[1B[1G# transfer handler getTransferById should reply with NotFoundError if transfer null[K
+  ok [1m[32m634[0m should be truthy[K  ok [1m[32m635[0m should be equal[K[1A[1G[1m[32m✓ transfer handler getTransferById should reply with NotFoundError if transfer null[0m[1B[1G# transfer handler getTransferById should return error if model throws error[K
+  ok [1m[32m636[0m should be equal[K[1A[1G[1m[32m✓ transfer handler getTransferById should return error if model throws error[0m[1B[1G# transfer handler getTransferFulfillment should get fulfillment by transfer id[K
+  ok [1m[32m637[0m should be equal[K  ok [1m[32m638[0m should be equal[K[1A[1G[1m[32m✓ transfer handler getTransferFulfillment should get fulfillment by transfer id[0m[1B[1G# transfer handler getTransferFulfillment should reply with error if service throws[K
+  ok [1m[32m639[0m should be equal[K[1A[1G[1m[32m✓ transfer handler getTransferFulfillment should reply with error if service throws[0m[1B[1G# Worker test setup should not set timeout when EXPIRES_TIMEOUT config value undefined[K
+  ok [1m[32m640[0m should be falsy[K[1A[1G[1m[32m✓ Worker test setup should not set timeout when EXPIRES_TIMEOUT config value undefined[0m[1B[1G# Worker test setup should setTimeout when EXPIRES_TIMEOUT config value set[K
+  ok [1m[32m641[0m should be truthy[K[1A[1G[1m[32m✓ Worker test setup should setTimeout when EXPIRES_TIMEOUT config value set[0m[1B[1G# Worker test setup should not set tokenExpiration when TOKEN_EXPIRATION config value undefined[K
+  ok [1m[32m642[0m should be falsy[K[1A[1G[1m[32m✓ Worker test setup should not set tokenExpiration when TOKEN_EXPIRATION config value undefined[0m[1B[1G# Worker test setup should set tokenExpiration when TOKEN_EXPIRATION config value set[K
+  ok [1m[32m643[0m should be truthy[K[1A[1G[1m[32m✓ Worker test setup should set tokenExpiration when TOKEN_EXPIRATION config value set[0m[1B[1G# Worker test run should call Worker.rejectExpiredTransfers after interval elapse[K
+  ok [1m[32m644[0m should be falsy[K  ok [1m[32m645[0m should be truthy[K  ok [1m[32m646[0m should be truthy[K[1A[1G[1m[32m✓ Worker test run should call Worker.rejectExpiredTransfers after interval elapse[0m[1B[1G# Worker test run should call Worker.rejectExpiredTokens after interval elapse[K
+  ok [1m[32m647[0m should be falsy[K  ok [1m[32m648[0m should be truthy[K  ok [1m[32m649[0m should be truthy[K[1A[1G[1m[32m✓ Worker test run should call Worker.rejectExpiredTokens after interval elapse[0m[1B[1G# Worker test rejectExpiredTransfers should call TransferService.rejectExpired and log results[K
+  ok [1m[32m650[0m should be equal[K  ok [1m[32m651[0m should be truthy[K  ok [1m[32m652[0m should be truthy[K[1A[1G[1m[32m✓ Worker test rejectExpiredTransfers should call TransferService.rejectExpired and log results[0m[1B[1G# Worker test rejectExpiredTransfers should call TransferService.rejectExpired and log error if thrown[K
+  ok [1m[32m653[0m should be falsy[K  ok [1m[32m654[0m should be truthy[K  ok [1m[32m655[0m should be truthy[K[1A[1G[1m[32m✓ Worker test rejectExpiredTransfers should call TransferService.rejectExpired and log error if thrown[0m[1B[1G# Worker test rejectExpiredTokens should call TokenService.removeExpired and log results[K
+  ok [1m[32m656[0m should be equal[K  ok [1m[32m657[0m should be truthy[K  ok [1m[32m658[0m should be truthy[K[1A[1G[1m[32m✓ Worker test rejectExpiredTokens should call TokenService.removeExpired and log results[0m[1B[1G# Worker test rejectExpiredTokens should call TokenService.removeExpired and log error if thrown[K
+  ok [1m[32m659[0m should be falsy[K  ok [1m[32m660[0m should be truthy[K  ok [1m[32m661[0m should be truthy[K[1A[1G[1m[32m✓ Worker test rejectExpiredTokens should call TokenService.removeExpired and log error if thrown[0m[1B[1G# crypto conditions validateCondition should throw error if five-bell check throws error[K
+  ok [1m[32m662[0m should be truthy[K  ok [1m[32m663[0m should be equal[K[1A[1G[1m[32m✓ crypto conditions validateCondition should throw error if five-bell check throws error[0m[1B[1G# crypto conditions validateCondition should return true if five-bell condition returns true[K
+  ok [1m[32m664[0m should be equal[K[1A[1G[1m[32m✓ crypto conditions validateCondition should return true if five-bell condition returns true[0m[1B[1G# crypto conditions validateFulfillment should throw InvalidBodyError if five-bells fulfillmentToCondition throws[K
+  ok [1m[32m665[0m should be truthy[K  ok [1m[32m666[0m should be equal[K[1A[1G[1m[32m✓ crypto conditions validateFulfillment should throw InvalidBodyError if five-bells fulfillmentToCondition throws[0m[1B[1G# crypto conditions validateFulfillment should throw InvalidBodyError if five-bell validateFulfillment throws error[K
+  ok [1m[32m667[0m should be truthy[K  ok [1m[32m668[0m should be equal[K[1A[1G[1m[32m✓ crypto conditions validateFulfillment should throw InvalidBodyError if five-bell validateFulfillment throws error[0m[1B[1G# crypto conditions validateFulfillment should throw UnmetConditionError if fulfillmentCondition does not equal condition[K
+  ok [1m[32m669[0m should be truthy[K  ok [1m[32m670[0m should be equal[K[1A[1G[1m[32m✓ crypto conditions validateFulfillment should throw UnmetConditionError if fulfillmentCondition does not equal condition[0m[1B[1G# crypto conditions validateFulfillment should return true if five-bell fulfillment returns true[K
+  ok [1m[32m671[0m should be equal[K[1A[1G[1m[32m✓ crypto conditions validateFulfillment should return true if five-bell fulfillment returns true[0m[1B[1G# Account service create should add username and hashed password to account in model[K
+  ok [1m[32m672[0m should be equal[K  ok [1m[32m673[0m should be equal[K  ok [1m[32m674[0m should be equal[K  ok [1m[32m675[0m should be equal[K  ok [1m[32m676[0m should be equal[K[1A[1G[1m[32m✓ Account service create should add username and hashed password to account in model[0m[1B[1G# Account service createLedgerAccount should check if a ledger account exists and add it if it does not[K
+  ok [1m[32m677[0m should be equal[K  ok [1m[32m678[0m should be equal[K  ok [1m[32m679[0m should be equal[K  ok [1m[32m680[0m should be equal[K  ok [1m[32m681[0m should be equal[K[1A[1G[1m[32m✓ Account service createLedgerAccount should check if a ledger account exists and add it if it does not[0m[1B[1G# Account service createLedgerAccount should check if a ledger account exists and return if it does[K
+  ok [1m[32m682[0m should be equal[K  ok [1m[32m683[0m should be equal[K  ok [1m[32m684[0m should be equal[K  ok [1m[32m685[0m should be equal[K[1A[1G[1m[32m✓ Account service createLedgerAccount should check if a ledger account exists and return if it does[0m[1B[1G# Account service exists should reject if url is not parseable url[K
+  ok [1m[32m686[0m should be equal[K[1A[1G[1m[32m✓ Account service exists should reject if url is not parseable url[0m[1B[1G# Account service exists should reject if account does not exist[K
+  ok [1m[32m687[0m should be equal[K[1A[1G[1m[32m✓ Account service exists should reject if account does not exist[0m[1B[1G# Account service exists should return error if exists[K
+  ok [1m[32m688[0m should be equal[K[1A[1G[1m[32m✓ Account service exists should return error if exists[0m[1B[1G# Account service getAll should getAll from Model[K
+  ok [1m[32m689[0m should be equal[K[1A[1G[1m[32m✓ Account service getAll should getAll from Model[0m[1B[1G# Account service getById should getById from Model[K
+  ok [1m[32m690[0m should be equal[K[1A[1G[1m[32m✓ Account service getById should getById from Model[0m[1B[1G# Account service getByName should getByName from Model[K
+  ok [1m[32m691[0m should be equal[K[1A[1G[1m[32m✓ Account service getByName should getByName from Model[0m[1B[1G# Account service updateUserCredentials should updateUserCredentials from Model[K
+  ok [1m[32m692[0m should be equivalent[K[1A[1G[1m[32m✓ Account service updateUserCredentials should updateUserCredentials from Model[0m[1B[1G# Account service updateAccountSettlement should updateAccountSettlement from Model[K
+  ok [1m[32m693[0m should be equivalent[K[1A[1G[1m[32m✓ Account service updateAccountSettlement should updateAccountSettlement from Model[0m[1B[1G# Account service update should update from Model[K
+  ok [1m[32m694[0m should be equal[K  ok [1m[32m695[0m should be equal[K[1A[1G[1m[32m✓ Account service update should update from Model[0m[1B[1G# Account service verify should return false if account not found[K
+  ok [1m[32m696[0m should be equal[K[1A[1G[1m[32m✓ Account service verify should return false if account not found[0m[1B[1G# Account service verify should return error if passwords do not match[K
+  ok [1m[32m697[0m should be equal[K[1A[1G[1m[32m✓ Account service verify should return error if passwords do not match[0m[1B[1G# Account service verify should return account if passwords match[K
+  ok [1m[32m698[0m should be equal[K[1A[1G[1m[32m✓ Account service verify should return account if passwords match[0m[1B[1G# accounts model getAll should return exception if db query throws[K
+  ok [1m[32m699[0m should be equal[K[1A[1G[1m[32m✓ accounts model getAll should return exception if db query throws[0m[1B[1G# accounts model getAll should return all accounts ordered by name[K
+  ok [1m[32m700[0m should be equal[K  ok [1m[32m701[0m should be truthy[K[1A[1G[1m[32m✓ accounts model getAll should return all accounts ordered by name[0m[1B[1G# accounts model getById should return exception if db query throws[K
+  ok [1m[32m702[0m should be equal[K[1A[1G[1m[32m✓ accounts model getById should return exception if db query throws[0m[1B[1G# accounts model getById should finds account by id[K
+  ok [1m[32m703[0m should be equal[K  ok [1m[32m704[0m should be truthy[K[1A[1G[1m[32m✓ accounts model getById should finds account by id[0m[1B[1G# accounts model getByName should return exception if db query throws[K
+  ok [1m[32m705[0m should be equal[K[1A[1G[1m[32m✓ accounts model getByName should return exception if db query throws[0m[1B[1G# accounts model getByName should finds account by name[K
+  ok [1m[32m706[0m should be equal[K  ok [1m[32m707[0m should be truthy[K[1A[1G[1m[32m✓ accounts model getByName should finds account by name[0m[1B[1G# accounts model update should return exception if db query throws[K
+  ok [1m[32m708[0m should be truthy[K  ok [1m[32m709[0m should be equal[K[1A[1G[1m[32m✓ accounts model update should return exception if db query throws[0m[1B[1G# accounts model update should update an account[K
+  ok [1m[32m710[0m should be truthy[K  ok [1m[32m711[0m should be equal[K[1A[1G[1m[32m✓ accounts model update should update an account[0m[1B[1G# accounts model create should save payload and return new account[K
+  ok [1m[32m712[0m should be truthy[K  ok [1m[32m713[0m should be truthy[K  ok [1m[32m714[0m should be truthy[K  ok [1m[32m715[0m should be equal[K[1A[1G[1m[32m✓ accounts model create should save payload and return new account[0m[1B[1G# accounts model updateUserCredentials should return user credentials for a given account[K
+  ok [1m[32m716[0m should be truthy[K  ok [1m[32m717[0m should be equal[K[1A[1G[1m[32m✓ accounts model updateUserCredentials should return user credentials for a given account[0m[1B[1G# accounts model retrieveUserCredentials should return user credentials for a given account[K
+  ok [1m[32m718[0m should be equal[K  ok [1m[32m719[0m should be equal[K  ok [1m[32m720[0m should be truthy[K[1A[1G[1m[32m✓ accounts model retrieveUserCredentials should return user credentials for a given account[0m[1B[1G# accounts model updateAccountSettlement should return created settlement for a given account[K
+  ok [1m[32m721[0m should be truthy[K  ok [1m[32m722[0m should be equivalent[K[1A[1G[1m[32m✓ accounts model updateAccountSettlement should return created settlement for a given account[0m[1B[1G# accounts model updateAccountSettlement should return updated settlement for a given account[K
+  ok [1m[32m723[0m should be truthy[K  ok [1m[32m724[0m should be equivalent[K[1A[1G[1m[32m✓ accounts model updateAccountSettlement should return updated settlement for a given account[0m[1B[1G# Charge service create should add charge in model[K
+  ok [1m[32m725[0m should be truthy[K[1A[1G[1m[32m✓ Charge service create should add charge in model[0m[1B[1G# Charge service update should update charge in model[K
+  ok [1m[32m726[0m should be truthy[K[1A[1G[1m[32m✓ Charge service update should update charge in model[0m[1B[1G# Charge service update should throw a not found error when charge does not exist[K
+  ok [1m[32m727[0m should be equal[K[1A[1G[1m[32m✓ Charge service update should throw a not found error when charge does not exist[0m[1B[1G# Charge service getByName should getByName from Model[K
+  ok [1m[32m728[0m should be equal[K[1A[1G[1m[32m✓ Charge service getByName should getByName from Model[0m[1B[1G# Charge service getAll should getAll from Model[K
+  ok [1m[32m729[0m should be equal[K[1A[1G[1m[32m✓ Charge service getAll should getAll from Model[0m[1B[1G# Charge service getAllForTransfer should getAllForTransfer from Model[K
+  ok [1m[32m730[0m should be equivalent[K[1A[1G[1m[32m✓ Charge service getAllForTransfer should getAllForTransfer from Model[0m[1B[1G# Charge service quote should return charge quotes from Model[K
+  ok [1m[32m731[0m should be equal[K  ok [1m[32m732[0m should be equal[K  ok [1m[32m733[0m should be equal[K  ok [1m[32m734[0m should be equal[K  ok [1m[32m735[0m should be equal[K  ok [1m[32m736[0m should be equal[K  ok [1m[32m737[0m should be equal[K  ok [1m[32m738[0m should be equal[K  ok [1m[32m739[0m should be equal[K[1A[1G[1m[32m✓ Charge service quote should return charge quotes from Model[0m[1B[1G# charges model getAll should return exception if db query throws[K
+  ok [1m[32m740[0m should be equal[K  ok [1m[32m741[0m should be truthy[K[1A[1G[1m[32m✓ charges model getAll should return exception if db query throws[0m[1B[1G# charges model getAll should return all charges ordered by name[K
+  ok [1m[32m742[0m should be equal[K  ok [1m[32m743[0m should be truthy[K[1A[1G[1m[32m✓ charges model getAll should return all charges ordered by name[0m[1B[1G# charges model getByName should return exception if db query throws[K
+  ok [1m[32m744[0m should be equal[K  ok [1m[32m745[0m should be truthy[K[1A[1G[1m[32m✓ charges model getByName should return exception if db query throws[0m[1B[1G# charges model getByName should returns a charge with the given name[K
+  ok [1m[32m746[0m should be equal[K  ok [1m[32m747[0m should be truthy[K[1A[1G[1m[32m✓ charges model getByName should returns a charge with the given name[0m[1B[1G# charges model getAllSenderAsPayer should return exception if db query throws[K
+  ok [1m[32m748[0m should be equal[K  ok [1m[32m749[0m should be truthy[K[1A[1G[1m[32m✓ charges model getAllSenderAsPayer should return exception if db query throws[0m[1B[1G# charges model getAllSenderAsPayer should return all charges ordered by name[K
+  ok [1m[32m750[0m should be equal[K  ok [1m[32m751[0m should be truthy[K[1A[1G[1m[32m✓ charges model getAllSenderAsPayer should return all charges ordered by name[0m[1B[1G# charges model create should save payload and return new charge[K
+  ok [1m[32m752[0m should not be equal[K  ok [1m[32m753[0m should be equal[K[1A[1G[1m[32m✓ charges model create should save payload and return new charge[0m[1B[1G# charges model update should save everything but name and return updated charge[K
+  ok [1m[32m754[0m should be truthy[K  ok [1m[32m755[0m should be equal[K[1A[1G[1m[32m✓ charges model update should save everything but name and return updated charge[0m[1B[1G# Fee service generateFeesForTransfer should add fee in model[K
+  not ok [1m[31m756[0m should be equivalent[K
+[2A[1G[1m[31m⨯ Fee service generateFeesForTransfer should add fee in model[0m[2B[1G    ---
+      operator: deepEqual
+      expected: |-
+        { amount: '1.00', chargeId: '1', payeeAccountId: '2', payerAccountId: '1', transferId: '012' }
+      actual: |-
+        { amount: '1.00', chargeId: '1', payeeAccountId: undefined, payerAccountId: undefined, transferId: undefined }
+      at: FeeService.generateFeesForTransfer.then.result (/home/vgenev/mojaloop/PI2/central-ledger/test/unit/domain/fee/index.test.js:112:16)
+    ...
+  not ok [1m[31m757[0m should be equivalent[K
+    ---
+      operator: deepEqual
+      expected: |-
+        { amount: '0.50', chargeId: '2', payeeAccountId: '2', payerAccountId: '1', transferId: '012' }
+      actual: |-
+        { amount: 'NaN', chargeId: '2', payeeAccountId: undefined, payerAccountId: undefined, transferId: undefined }
+      at: FeeService.generateFeesForTransfer.then.result (/home/vgenev/mojaloop/PI2/central-ledger/test/unit/domain/fee/index.test.js:113:16)
+    ...
+  not ok [1m[31m758[0m should be equivalent[K
+    ---
+      operator: deepEqual
+      expected: |-
+        { amount: '1.00', chargeId: '3', payeeAccountId: '4', payerAccountId: '1', transferId: '012' }
+      actual: |-
+        { amount: '1.00', chargeId: '3', payeeAccountId: '4', payerAccountId: undefined, transferId: undefined }
+      at: FeeService.generateFeesForTransfer.then.result (/home/vgenev/mojaloop/PI2/central-ledger/test/unit/domain/fee/index.test.js:114:16)
+    ...
+  ok [1m[32m759[0m should be equivalent[K# Fee service generateFeesForTransfer should not add fee in model if it already exists[K
+  ok [1m[32m760[0m should be truthy[K[1A[1G[1m[32m✓ Fee service generateFeesForTransfer should not add fee in model if it already exists[0m[1B[1G# Fee service getAllForTransfer should return fees from Model[K
+  ok [1m[32m761[0m should be equal[K  ok [1m[32m762[0m should be equal[K  ok [1m[32m763[0m should be equal[K  ok [1m[32m764[0m should be equal[K  ok [1m[32m765[0m should be equal[K  ok [1m[32m766[0m should be equal[K  ok [1m[32m767[0m should be equal[K  ok [1m[32m768[0m should be equal[K  ok [1m[32m769[0m should be equal[K  ok [1m[32m770[0m should be equal[K  ok [1m[32m771[0m should be equal[K  ok [1m[32m772[0m should be equal[K  ok [1m[32m773[0m should be equal[K[1A[1G[1m[32m✓ Fee service getAllForTransfer should return fees from Model[0m[1B[1G# Fee service getUnsettledFees should return fees from Model[K
+  ok [1m[32m774[0m should be equal[K  ok [1m[32m775[0m should be equal[K  ok [1m[32m776[0m should be equal[K  ok [1m[32m777[0m should be equal[K  ok [1m[32m778[0m should be equal[K  ok [1m[32m779[0m should be equal[K  ok [1m[32m780[0m should be equal[K  ok [1m[32m781[0m should be equal[K  ok [1m[32m782[0m should be equal[K  ok [1m[32m783[0m should be equal[K  ok [1m[32m784[0m should be equal[K  ok [1m[32m785[0m should be equal[K  ok [1m[32m786[0m should be equal[K[1A[1G[1m[32m✓ Fee service getUnsettledFees should return fees from Model[0m[1B[1G# Fee service getUnsettledFeesByAccount should return settleable fees from Model by account[K
+  ok [1m[32m787[0m should be equal[K  ok [1m[32m788[0m should be equal[K  ok [1m[32m789[0m should be equal[K  ok [1m[32m790[0m should be equal[K  ok [1m[32m791[0m should be equal[K  ok [1m[32m792[0m should be equal[K  ok [1m[32m793[0m should be equal[K  ok [1m[32m794[0m should be equal[K  ok [1m[32m795[0m should be equal[K  ok [1m[32m796[0m should be equal[K  ok [1m[32m797[0m should be equal[K  ok [1m[32m798[0m should be equal[K  ok [1m[32m799[0m should be equal[K[1A[1G[1m[32m✓ Fee service getUnsettledFeesByAccount should return settleable fees from Model by account[0m[1B[1G# Fee service settleFee should return settled fee from Model[K
+  not ok [1m[31m800[0m test exited without ending[K
+[2A[1G[1m[31m⨯ Fee service settleFee should return settled fee from Model[0m[2B[1G    ---
+      operator: fail
+    ...
+  not ok [1m[31m801[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m802[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m803[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m804[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m805[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m806[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m807[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m808[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m809[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m810[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m811[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m812[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m813[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m814[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m815[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m816[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m817[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m818[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m819[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m820[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m821[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m822[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m823[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m824[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m825[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m826[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m827[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m828[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m829[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m830[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m831[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m832[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m833[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m834[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m835[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m836[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m837[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m838[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m839[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m840[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m841[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m842[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m843[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m844[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m845[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m846[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m847[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m848[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m849[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m850[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m851[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m852[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m853[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m854[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m855[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m856[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m857[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m858[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m859[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m860[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m861[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m862[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m863[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m864[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m865[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m866[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m867[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m868[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m869[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m870[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m871[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m872[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m873[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m874[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m875[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m876[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m877[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m878[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m879[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m880[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m881[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m882[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m883[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m884[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m885[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m886[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m887[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m888[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m889[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m890[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m891[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m892[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m893[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m894[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m895[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m896[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m897[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m898[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m899[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m900[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m901[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m902[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m903[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m904[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m905[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m906[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m907[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m908[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m909[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m910[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m911[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m912[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m913[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m914[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m915[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m916[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m917[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m918[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m919[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m920[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m921[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m922[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m923[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m924[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m925[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m926[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m927[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m928[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m929[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m930[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m931[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m932[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m933[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m934[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m935[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m936[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m937[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m938[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m939[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m940[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m941[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m942[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m943[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m944[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m945[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m946[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m947[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m948[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m949[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m950[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m951[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m952[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m953[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m954[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m955[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m956[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m957[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m958[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m959[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m960[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m961[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m962[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m963[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m964[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m965[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m966[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m967[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m968[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m969[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m970[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m971[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  not ok [1m[31m972[0m test exited without ending[K
+    ---
+      operator: fail
+    ...
+  
+# tests 972[K
+tests 972# pass  792[K
+pass  792# fail  180[K
+[1A[1G[1m[31m⨯ fail  180[0m[1B[1G

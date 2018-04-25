@@ -8,10 +8,10 @@ class Permission {
 }
 
 const permissions = {
-  ACCOUNTS_CREATE: new Permission('ACCOUNTS_CREATE', 'Create an participant'),
-  ACCOUNTS_LIST: new Permission('ACCOUNTS_LIST', 'List all participant'),
-  ACCOUNTS_VIEW: new Permission('ACCOUNTS_VIEW', 'View participant details'),
-  ACCOUNTS_UPDATE: new Permission('ACCOUNTS_UPDATE', 'Update participant'),
+  PARTICIPANTS_CREATE: new Permission('PARTICIPANTS_CREATE', 'Create an participant'),
+  PARTICIPANTS_LIST: new Permission('PARTICIPANTS_LIST', 'List all participant'),
+  PARTICIPANTS_VIEW: new Permission('PARTICIPANTS_VIEW', 'View participant details'),
+  PARTICIPANTS_UPDATE: new Permission('PARTICIPANTS_UPDATE', 'Update participant'),
   POSITIONS_LIST: new Permission('POSITIONS_LIST', 'List positions for all Participants'),
   POSITIONS_VIEW: new Permission('POSITIONS_VIEW', 'View position for an Participant'),
   CHARGE_LIST: new Permission('CHARGE_GET', 'List all charges'),
@@ -32,7 +32,10 @@ const permissions = {
   PARTIES_VIEW: new Permission('PARTIES_VIEW', 'View party details'),
   PARTIES_UPDATE: new Permission('PARTIES_UPDATE', 'Update party details'),
   PARTIES_ROLE_LIST: new Permission('PARTIES_ROLE_LIST', 'Get party role'),
-  PARTIES_ROLE_UPDATE: new Permission('PARTIES_ROLE_UPDATE', 'Update party role')
+  PARTIES_ROLE_UPDATE: new Permission('PARTIES_ROLE_UPDATE', 'Update party role'),
+  CURRENCY_LIST: new Permission('CURRENCY_LIST', 'List all currencies'),
+  CURRENCY_CREATE: new Permission('CURRENCY_CREATE', 'Create new currency'),
+  CURRENCY_UPDATE: new Permission('CURRENCY_UPDATE', 'Update currency')
 }
 
 module.exports = permissions

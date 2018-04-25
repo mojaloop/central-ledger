@@ -49,10 +49,12 @@ exports.updateParticipantSettlement = (participant, settlement) => {
 }
 
 exports.create = (participant) => {
-  return Db.participant.insert({ name: participant.name, emailAddress: participant.emailAddress })
+  return Db.participant.insert({ name: participant.name })
   .then(insertedParticipant => {
     const newparticipant = Db.participant.findOne({ participantId: insertedParticipant })
     return Db.userCredentials.insert({ participantId: insertedParticipant, password: participant.hashedPassword })
       .then(() => newparticipant)
+  }).catch(e => {
+    console.error(e)
   })
 }

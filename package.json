@@ -25,7 +25,7 @@
     "start:api": "CLEDG_HOSTNAME=http://localhost:3000 node src/api/index.js",
     "start:admin": "CLEDG_ADMIN_KEY=admin CLEDG_ADMIN_SECRET=admin CLEDG_HOSTNAME=http://localhost:3001 node src/admin/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
-    "test": "npm run test:unit | faucet",
+    "test": "npm run test:unit | faucet --inspect-brk",
     "pretest": "standard",
     "standard": "standard",
     "test:unit": "tape 'test/unit/**/*.test.js'",
