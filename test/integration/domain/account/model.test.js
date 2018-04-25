@@ -3,30 +3,30 @@
 const Test = require('tape')
 const Fixtures = require('../../../fixtures')
 const Db = require('../../../../src/db')
-const Model = require('../../../../src/domain/account/model')
+const Model = require('../../../../src/domain/participant/model')
 
-function createAccount (name, hashedPassword = 'password', emailAddress = name + '@test.com') {
+function createParticipant (name, hashedPassword = 'password', emailAddress = name + '@test.com') {
   const payload = { name, hashedPassword, emailAddress }
   return Model.create(payload)
 }
 
-function deleteAccounts () {
-  return Db.from('accounts').destroy()
+function deleteParticipants () {
+  return Db.from('participant').destroy()
 }
 
-Test('accounts model', modelTest => {
+Test('participant model', modelTest => {
   modelTest.test('create should', createTest => {
-    createTest.test('create a new account', test => {
-      const accountName = Fixtures.generateAccountName()
+    createTest.test('create a new participant', test => {
+      const participantName = Fixtures.generateParticipantName()
       const hashedPassword = 'some-password'
-      const emailAddress = accountName + '@test.com'
-      createAccount(accountName, hashedPassword, emailAddress)
-        .then((account) => {
-          test.equal(account.name, accountName)
-          test.ok(account.createdDate)
-          test.ok(account.accountId)
-          test.ok(account.emailAddress)
-          test.equal(account.isDisabled, false)
+      const emailAddress = participantName + '@test.com'
+      createParticipant(participantName, hashedPassword, emailAddress)
+        .then((participant) => {
+          test.equal(participant.name, participantName)
+          test.ok(participant.createdDate)
+          test.ok(participant.participantId)
+          test.ok(participant.emailAddress)
+          test.equal(participant.isDisabled, false)
           test.ok
           test.end()
         })
@@ -36,16 +36,16 @@ Test('accounts model', modelTest => {
   })
 
   modelTest.test('getByName should', getByNameTest => {
-    getByNameTest.test('get account by name', test => {
-      const accountName = Fixtures.generateAccountName()
-      createAccount(accountName)
-        .then((account) => {
-          Model.getByName(account.name)
+    getByNameTest.test('get participant by name', test => {
+      const participantName = Fixtures.generateParticipantName()
+      createParticipant(participantName)
+        .then((participant) => {
+          Model.getByName(participant.name)
             .then((found) => {
-              test.notEqual(found, account)
-              test.equal(found.name, account.name)
-              test.deepEqual(found.createdDate, account.createdDate)
-              test.equal(found.emailAddress, account.emailAddress)
+              test.notEqual(found, participant)
+              test.equal(found.name, participant.name)
+              test.deepEqual(found.createdDate, participant.createdDate)
+              test.equal(found.emailAddress, participant.emailAddress)
               test.equal(found.isDisabled, false)
               test.end()
             })
@@ -56,15 +56,15 @@ Test('accounts model', modelTest => {
   })
 
   modelTest.test('getById should', getByIdTest => {
-    getByIdTest.test('get account by id', test => {
-      const accountName = Fixtures.generateAccountName()
-      createAccount(accountName)
-        .then((account) => {
-          Model.getById(account.accountId)
+    getByIdTest.test('get participant by id', test => {
+      const participantName = Fixtures.generateParticipantName()
+      createParticipant(participantName)
+        .then((participant) => {
+          Model.getById(participant.participantId)
             .then((found) => {
-              test.notEqual(found, account)
-              test.equal(found.accountId, account.accountId)
-              test.deepEqual(found.createdDate, account.createdDate)
+              test.notEqual(found, participant)
+              test.equal(found.participantId, participant.participantId)
+              test.deepEqual(found.createdDate, participant.createdDate)
               test.equal(found.isDisabled, false)
               test.end()
             })
@@ -75,18 +75,18 @@ Test('accounts model', modelTest => {
   })
 
   modelTest.test('getAll should', getAllTest => {
-    getAllTest.test('return all accounts and order by name ascending', test => {
-      const account1Name = 'zzz' + Fixtures.generateAccountName()
-      const account2Name = 'aaa' + Fixtures.generateAccountName()
+    getAllTest.test('return all participant and order by name ascending', test => {
+      const participant1Name = 'zzz' + Fixtures.generateParticipantName()
+      const participant2Name = 'aaa' + Fixtures.generateParticipantName()
 
-      deleteAccounts()
-        .then(() => createAccount(account1Name))
-        .then(() => createAccount(account2Name))
+      deleteParticipants()
+        .then(() => createParticipant(participant1Name))
+        .then(() => createParticipant(participant2Name))
         .then(() => Model.getAll())
-        .then(accounts => {
-          test.equal(accounts.length, 2)
-          test.equal(accounts[0].name, account2Name)
-          test.equal(accounts[1].name, account1Name)
+        .then(participant => {
+          test.equal(participant.length, 2)
+          test.equal(participant[0].name, participant2Name)
+          test.equal(participant[1].name, participant1Name)
           test.end()
         })
     })
@@ -95,16 +95,16 @@ Test('accounts model', modelTest => {
   })
 
   modelTest.test('update should', updateTest => {
-    updateTest.test('update account isDisabled field', test => {
-      const accountName = Fixtures.generateAccountName()
+    updateTest.test('update participant isDisabled field', test => {
+      const participantName = Fixtures.generateParticipantName()
       const isDisabled = true
-      createAccount(accountName)
-        .then((account) => {
-          Model.update(account, isDisabled)
+      createParticipant(participantName)
+        .then((participant) => {
+          Model.update(participant, isDisabled)
             .then((updated) => {
-              test.notEqual(updated, account)
-              test.equal(updated.name, account.name)
-              test.deepEqual(updated.createdDate, account.createdDate)
+              test.notEqual(updated, participant)
+              test.equal(updated.name, participant.name)
+              test.deepEqual(updated.createdDate, participant.createdDate)
               test.equal(updated.isDisabled, isDisabled)
               test.end()
             })
@@ -114,57 +114,57 @@ Test('accounts model', modelTest => {
     updateTest.end()
   })
 
-  modelTest.test('updateUserCredentials should', updateUserCredentialsTest => {
-    updateUserCredentialsTest.test('update user credentials for a given account', test => {
-      const account = Fixtures.generateAccountName()
+  modelTest.test('updatePartyCredentials should', updatePartyCredentialsTest => {
+    updatePartyCredentialsTest.test('update party credentials for a given participant', test => {
+      const participant = Fixtures.generateParticipantName()
       const password = 'password'
       const updatedPassword = 'password2'
-      createAccount(account, password)
-        .then((createdAccount) => Model.updateUserCredentials(createdAccount, updatedPassword)
+      createParticipant(participant, password)
+        .then((createdParticipant) => Model.updatePartyCredentials(createdParticipant, updatedPassword)
           .then((userCredentials) => {
-            test.equal(userCredentials.accountId, createdAccount.accountId)
+            test.equal(userCredentials.participantId, createdParticipant.participantId)
             test.equal(userCredentials.password, updatedPassword)
             test.end()
           }))
     })
 
-    updateUserCredentialsTest.end()
+    updatePartyCredentialsTest.end()
   })
 
-  modelTest.test('retrieveUserCredentials should', retrieveUserCredentialsTest => {
-    retrieveUserCredentialsTest.test('return user credentials for a given account', test => {
-      const account = Fixtures.generateAccountName()
+  modelTest.test('retrievePartyCredentials should', retrievePartyCredentialsTest => {
+    retrievePartyCredentialsTest.test('return party credentials for a given participant', test => {
+      const participant = Fixtures.generateParticipantName()
       const password = 'password'
-      createAccount(account, password)
-        .then((createdAccount) => Model.retrieveUserCredentials(createdAccount)
+      createParticipant(participant, password)
+        .then((createdParticipant) => Model.retrievePartyCredentials(createdParticipant)
           .then((userCredentials) => {
-            test.equal(userCredentials.accountId, createdAccount.accountId)
+            test.equal(userCredentials.participantId, createdParticipant.participantId)
             test.equal(userCredentials.password, password)
             test.end()
           }))
     })
 
-    retrieveUserCredentialsTest.end()
+    retrievePartyCredentialsTest.end()
   })
 
-  modelTest.test('updateAccountSettlement should', updateAccountSettlementTest => {
-    updateAccountSettlementTest.test('update settlement for a given account', test => {
-      const account = Fixtures.generateAccountName()
+  modelTest.test('updateParticipantSettlement should', updateParticipantSettlementTest => {
+    updateParticipantSettlementTest.test('update settlement for a given participant', test => {
+      const participant = Fixtures.generateParticipantName()
       const settlement = {
-        account_number: '12345',
+        participant_number: '12345',
         routing_number: '67890'
       }
-      createAccount(account, '1234')
-        .then((createdAccount) => Model.updateAccountSettlement(createdAccount, settlement)
-          .then((accountSettlement) => {
-            test.equal(accountSettlement.accountName, account)
-            test.equal(accountSettlement.accountNumber, settlement.account_number)
-            test.equal(accountSettlement.routingNumber, settlement.routing_number)
+      createParticipant(participant, '1234')
+        .then((createdParticipant) => Model.updateParticipantSettlement(createdParticipant, settlement)
+          .then((participantSettlement) => {
+            test.equal(participantSettlement.participantName, participant)
+            test.equal(participantSettlement.participantNumber, settlement.participant_number)
+            test.equal(participantSettlement.routingNumber, settlement.routing_number)
             test.end()
           }))
     })
 
-    updateAccountSettlementTest.end()
+    updateParticipantSettlementTest.end()
   })
 
   modelTest.end()

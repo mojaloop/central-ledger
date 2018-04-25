@@ -5,69 +5,69 @@ const Uuid = require('uuid4')
 const Config = require('../../../src/lib/config')
 const UrlParser = require('../../../src/lib/urlparser')
 
-Test('nameFromAccountUri', nameFromAccountUriTest => {
-  nameFromAccountUriTest.test('return null if not url', t => {
-    UrlParser.nameFromAccountUri('fjdklsjfld', (err, name) => {
+Test('nameFromParticipantUri', nameFromParticipantUriTest => {
+  nameFromParticipantUriTest.test('return null if not url', t => {
+    UrlParser.nameFromParticipantUri('fjdklsjfld', (err, name) => {
       t.equal(err, 'no match')
       t.equal(name, null)
       t.end()
     })
   })
 
-  nameFromAccountUriTest.test('return null if url not start with hostname', t => {
-    UrlParser.nameFromAccountUri('http://test/accounts/name', (err, name) => {
+  nameFromParticipantUriTest.test('return null if url not start with hostname', t => {
+    UrlParser.nameFromParticipantUri('http://test/participants/name', (err, name) => {
       t.equal(err, 'no match')
       t.equal(name, null)
       t.end()
     })
   })
 
-  nameFromAccountUriTest.test('return name if url matches pattern', t => {
+  nameFromParticipantUriTest.test('return name if url matches pattern', t => {
     const hostName = Config.HOSTNAME
-    const accountName = 'account1'
-    UrlParser.nameFromAccountUri(`${hostName}/accounts/${accountName}`, (err, name) => {
+    const participantName = 'participant1'
+    UrlParser.nameFromParticipantUri(`${hostName}/participants/${participantName}`, (err, name) => {
       t.notOk(err)
-      t.equal(name, accountName)
+      t.equal(name, participantName)
       t.end()
     })
   })
 
-  nameFromAccountUriTest.test('return value if no callback provided', t => {
+  nameFromParticipantUriTest.test('return value if no callback provided', t => {
     const hostName = Config.HOSTNAME
-    const accountName = 'account1'
-    const result = UrlParser.nameFromAccountUri(`${hostName}/accounts/${accountName}`)
-    t.equal(result, accountName)
+    const participantName = 'participant1'
+    const result = UrlParser.nameFromParticipantUri(`${hostName}/participants/${participantName}`)
+    t.equal(result, participantName)
     t.end()
   })
 
-  nameFromAccountUriTest.test('return null if no callback provided', t => {
-    const result = UrlParser.nameFromAccountUri('not match')
+  nameFromParticipantUriTest.test('return null if no callback provided', t => {
+    const result = UrlParser.nameFromParticipantUri('not match')
     t.equal(result, null)
     t.end()
   })
 
-  nameFromAccountUriTest.end()
+  nameFromParticipantUriTest.end()
 })
 
-Test('accountNameFromTransfersRoute', accountNameFromTransfersRouteTest => {
-  accountNameFromTransfersRouteTest.test('return null if not url', t => {
-    UrlParser.accountNameFromTransfersRoute('fjdklsjfld')
+Test('participantNameFromTransfersRoute', participantNameFromTransfersRouteTest => {
+  participantNameFromTransfersRouteTest.test('return null if not url', t => {
+    UrlParser.participantNameFromTransfersRoute('fjdklsjfld')
     .catch(e => {
-      t.equal(e.message, 'No matching account found in url')
+      t.equal(e.message, 'No matching participant found in url')
       t.end()
     })
   })
 
-  accountNameFromTransfersRouteTest.test('return name if url matches pattern', t => {
-    const accountName = 'account1'
-    UrlParser.accountNameFromTransfersRoute(`/accounts/${accountName}/transfers`)
+  participantNameFromTransfersRouteTest.test('return name if url matches pattern', t => {
+    const participantName = 'participant1'
+    UrlParser.participantNameFromTransfersRoute(`/participants/${participantName}/transfers`)
     .then(name => {
-      t.equal(name, accountName)
+      t.equal(name, participantName)
       t.end()
     })
   })
 
-  accountNameFromTransfersRouteTest.end()
+  participantNameFromTransfersRouteTest.end()
 })
 
 Test('idFromTransferUri', idFromTransferUriTest => {
@@ -131,19 +131,19 @@ Test('toTransferUri', toTransferUriTest => {
   toTransferUriTest.end()
 })
 
-Test('toAccountUri', toAccountUriTest => {
-  toAccountUriTest.test('return path', t => {
+Test('toParticipantUri', toParticipantUriTest => {
+  toParticipantUriTest.test('return path', t => {
     const hostName = Config.HOSTNAME
-    const name = 'account-name'
-    t.equal(UrlParser.toAccountUri(name), hostName + '/accounts/' + name)
+    const name = 'participant-name'
+    t.equal(UrlParser.toParticipantUri(name), hostName + '/participants/' + name)
     t.end()
   })
 
-  toAccountUriTest.test('return value if already account uri', test => {
+  toParticipantUriTest.test('return value if already participant uri', test => {
     const hostName = Config.HOSTNAME
-    const name = `${hostName}/accounts/account-name`
-    test.equal(UrlParser.toAccountUri(name), name)
+    const name = `${hostName}/participants/participant-name`
+    test.equal(UrlParser.toParticipantUri(name), name)
     test.end()
   })
-  toAccountUriTest.end()
+  toParticipantUriTest.end()
 })

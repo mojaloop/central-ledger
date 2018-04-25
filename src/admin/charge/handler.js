@@ -1,13 +1,13 @@
 'use strict'
 
-const Charges = require('../../domain/charge')
+const Charge = require('../../domain/charge')
 const Errors = require('../../errors')
 const Sidecar = require('../../lib/sidecar')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 
 const validateRequest = (request) => {
-  return Charges.getByName(request.payload.name).then(charge => {
-    if (request.payload.payer && request.payload.payee && request.payload.payer === request.payload.payee) {
+  return Charge.getByName(request.payload.name).then(charge => {
+    if (request.payload.payerParticipantId && request.payload.payeeParticipantId && request.payload.payerParticipantId === request.payload.payeeParticipantId) {
       throw new Errors.ValidationError('Payer and payee should be set to \'sender\', \'receiver\', or \'ledger\' and should not have the same value.')
     }
     if (charge) {
@@ -18,7 +18,7 @@ const validateRequest = (request) => {
 }
 
 const validateExistingRecord = (request) => {
-  return Charges.getByName(request.payload.name).then(charge => {
+  return Charge.getByName(request.payload.name).then(charge => {
     if (!charge) {
       throw new Errors.RecordExistsError('No record currently exists with the name ' + request.payload.name)
     }
@@ -41,26 +41,26 @@ function entityItem (charge) {
     code: charge.code,
     is_active: charge.isActive,
     created: charge.createdDate,
-    payer: charge.payer,
-    payee: charge.payee
+    payerParticipantId: charge.payerParticipantId,
+    payeeParticipantId: charge.payeeParticipantId
   }
 }
 
 exports.create = async function (request, h) {
   Sidecar.logRequest(request)
   const validatedRequest = await validateRequest(request)
-  const result = await Charges.create(validatedRequest.payload)
+  const result = await Charge.create(validatedRequest.payload)
   return h.response(entityItem(result)).code(201)
 }
 
 exports.update = async function (request, h) {
   Sidecar.logRequest(request)
   const validatedRequest = await validateExistingRecord(request)
-  const updatedCharge = await Charges.update(request.params.name, validatedRequest.payload)
+  const updatedCharge = await Charge.update(request.params.name, validatedRequest.payload)
   return entityItem(updatedCharge)
 }
 
 exports.getAll = async function (request, h) {
-  const results = await Charges.getAll()
+  const results = await Charge.getAll()
   return await results.map(entityItem)
 }

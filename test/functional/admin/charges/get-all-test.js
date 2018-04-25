@@ -18,8 +18,8 @@ function createChargePayload (name) {
   }
 }
 
-Test('GET /charges', getTest => {
-  getTest.test('should return all charges', test => {
+Test('GET /charge', getTest => {
+  getTest.test('should return all charge', test => {
     const charge1Name = 'a' + Fixtures.generateRandomName()
     const charge2Name = 'b' + Fixtures.generateRandomName()
 
@@ -28,7 +28,7 @@ Test('GET /charges', getTest => {
 
     bluebird.all([Base.createCharge(chargePayload1), Base.createCharge(chargePayload2)])
     .then(([charge1Res, charge2Res]) => {
-      Base.getAdmin('/accounts')
+      Base.getAdmin('/participants')
         .expect(200)
         .expect('Content-Type', /json/)
         .then(res => {

@@ -4,9 +4,9 @@ const Util = require('../../lib/util')
 const JWT = require('../../domain/security/jwt')
 const Errors = require('../../errors')
 
-const reducePermissions = (roles) => {
+const reducePermissions = (role) => {
   const flattened = []
-  roles.map(x => x.permissions).forEach(p => {
+  role.map(x => x.permissions).forEach(p => {
     p.forEach(permission => {
       if (!flattened.includes(permission)) {
         flattened.push(permission)
@@ -22,8 +22,8 @@ const validate = async (request, token, h) => {
     const result = await JWT.verify(token)
     if (result) {
       isValid = true
-      const scope = reducePermissions(result.roles)
-      const credentials = Util.merge(result.user, {scope: scope})
+      const scope = reducePermissions(result.role)
+      const credentials = Util.merge(result.party, {scope: scope})
       return {isValid, credentials}
     } else {
       throw new Errors.UnauthorizedError('Invalid token')

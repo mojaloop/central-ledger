@@ -1,6 +1,6 @@
 'use strict'
 
-const Charges = require('../../domain/charge')
+const Charge = require('../../domain/charge')
 const Util = require('../../lib/util')
 
 function entityItem (charge) {
@@ -16,7 +16,7 @@ function entityItem (charge) {
 
 exports.chargeQuote = async function (request, h) {
   try {
-    const charges = await Charges.quote(request.payload)
+    const charges = await Charge.quote(request.payload)
     return charges.map(entityItem)
   } catch (err) {
     throw err

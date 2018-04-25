@@ -1,5 +1,5 @@
 #!/bin/bash
-export POSTGRES_USER=${POSTGRES_USER:-'postgres'}
+export POSTGRES_PARTY=${POSTGRES_PARTY:-'postgres'}
 export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-'postgres'}
 export LEDGER_HOST=${HOST_IP:-'localhost'}
 export CLEDG_HOSTNAME='http://localhost:3000'
@@ -23,7 +23,7 @@ fpsql() {
 		-e PGPASSWORD=$POSTGRES_PASSWORD \
 		"postgres:9.4" \
     --host postgres \
-		--username $POSTGRES_USER \
+		--username $POSTGRES_PARTY \
     --dbname postgres \
 		--quiet --no-align --tuples-only \
 		"$@"
@@ -70,7 +70,7 @@ run_test_command()
     --name $CENRRALLEDGER_TEST_HOST \
     --env API_HOST_IP="centralledger_central-ledger_1" \
     --env ADMIN_HOST_IP="centralledger_central-ledger-admin_1" \
-    --env API_URI="http://centralledger_central-ledger_1:3000/accounts" \
+    --env API_URI="http://centralledger_central-ledger_1:3000/participants" \
 		$API_IMAGE:test \
     /bin/sh \
     -c "$TEST_CMD"

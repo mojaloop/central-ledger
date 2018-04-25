@@ -6,7 +6,7 @@ const P = require('bluebird')
 const Config = require('../../../../src/lib/config')
 const InvalidBodyError = require('@mojaloop/central-services-error-handling').InvalidBodyError
 const ValidationError = require('../../../../src/errors').ValidationError
-const Accounts = require('../../../../src/domain/account')
+const Participants = require('../../../../src/domain/participant')
 const Validator = require('../../../../src/api/messages/validator')
 
 Test('messages request validator', validatorTest => {
@@ -14,8 +14,8 @@ Test('messages request validator', validatorTest => {
 
   validatorTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(Accounts, 'exists')
-    Accounts.exists.returns(P.resolve({}))
+    sandbox.stub(Participants, 'exists')
+    Participants.exists.returns(P.resolve({}))
     test.end()
   })
 
@@ -35,36 +35,36 @@ Test('messages request validator', validatorTest => {
         })
     })
 
-    validateTest.test('return InvalidBodyError if to account not found', test => {
-      const toAccount = 'http://to-account'
-      const fromAccount = 'http://from-account'
-      const request = { ledger: Config.HOSTNAME, to: toAccount, from: fromAccount }
-      Accounts.exists.withArgs(toAccount).returns(P.reject(new ValidationError('Account does not exist')))
+    validateTest.test('return InvalidBodyError if to participant not found', test => {
+      const toParticipant = 'http://to-participant'
+      const fromParticipant = 'http://from-participant'
+      const request = { ledger: Config.HOSTNAME, to: toParticipant, from: fromParticipant }
+      Participants.exists.withArgs(toParticipant).returns(P.reject(new ValidationError('Participant does not exist')))
 
       Validator.validate(request)
         .catch(InvalidBodyError, e => {
-          test.deepEqual(e.payload.validationErrors, [{ message: 'Account does not exist', params: { key: 'to', value: toAccount } }])
+          test.deepEqual(e.payload.validationErrors, [{ message: 'Participant does not exist', params: { key: 'to', value: toParticipant } }])
           test.end()
         })
     })
 
-    validateTest.test('return InvalidBodyError if from account not found', test => {
-      const toAccount = 'http://to-account'
-      const fromAccount = 'http://from-account'
-      const request = { ledger: Config.HOSTNAME, to: toAccount, from: fromAccount }
-      Accounts.exists.withArgs(fromAccount).returns(P.reject(new ValidationError('Account does not exist')))
+    validateTest.test('return InvalidBodyError if from participant not found', test => {
+      const toParticipant = 'http://to-participant'
+      const fromParticipant = 'http://from-participant'
+      const request = { ledger: Config.HOSTNAME, to: toParticipant, from: fromParticipant }
+      Participants.exists.withArgs(fromParticipant).returns(P.reject(new ValidationError('Participant does not exist')))
 
       Validator.validate(request)
         .catch(InvalidBodyError, e => {
-          test.deepEqual(e.payload.validationErrors, [{ message: 'Account does not exist', params: { key: 'from', value: fromAccount } }])
+          test.deepEqual(e.payload.validationErrors, [{ message: 'Participant does not exist', params: { key: 'from', value: fromParticipant } }])
           test.end()
         })
     })
 
     validateTest.test('return request', test => {
-      const toAccount = 'http://to-account'
-      const fromAccount = 'http://from-account'
-      const request = { ledger: Config.HOSTNAME, to: toAccount, from: fromAccount }
+      const toParticipant = 'http://to-participant'
+      const fromParticipant = 'http://from-participant'
+      const request = { ledger: Config.HOSTNAME, to: toParticipant, from: fromParticipant }
       Validator.validate(request)
         .then(r => {
           test.deepEqual(r, request)

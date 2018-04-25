@@ -6,7 +6,7 @@ const Fixtures = require('../../../fixtures')
 const Config = require('../../../../src/lib/config')
 const Util = require('../../../../src/lib/util')
 
-Test('return the list of charges in a charge quote', test => {
+Test('return the list of charge in a charge quote', test => {
   const charge1Name = 'a' + Fixtures.generateRandomName()
   const charge2Name = 'b' + Fixtures.generateRandomName()
   const charge3Name = 'c' + Fixtures.generateRandomName()
@@ -14,8 +14,8 @@ Test('return the list of charges in a charge quote', test => {
   const charge = Fixtures.buildCharge(charge1Name, 'percent', '001')
   const charge2 = Fixtures.buildCharge(charge2Name, 'flat', '002')
   const charge3 = Fixtures.buildCharge(charge3Name, 'flat', '003')
-  charge3.payer = 'ledger'
-  charge3.payee = 'sender'
+  charge3.payerParticipantId = 'ledger'
+  charge3.payeeParticipantId = 'sender'
 
   Config.AMOUNT.SCALE = 2
 
@@ -24,7 +24,7 @@ Test('return the list of charges in a charge quote', test => {
   Base.createCharge(charge)
         .then(() => Base.createCharge(charge2))
         .then(() => {
-          Base.postApi('/charges/quote', { amount: amount })
+          Base.postApi('/charge/quote', { amount: amount })
                 .expect(200)
                 .expect('Content-Type', /json/)
                 .then(res => {

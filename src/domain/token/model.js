@@ -3,16 +3,16 @@
 const Db = require('../../db')
 const Time = require('../../lib/time')
 
-const create = ({ accountId, token, expiration }) => {
+const create = ({ participantId, token, expiration }) => {
   return Db.tokens.insert({
-    accountId,
+    participantId,
     token,
     expiration
   })
 }
 
-const byAccount = ({ accountId }) => {
-  return Db.tokens.find({ accountId: accountId })
+const byParticipant = ({ participantId }) => {
+  return Db.tokens.find({ participantId: participantId })
 }
 
 const removeExpired = () => {
@@ -21,6 +21,6 @@ const removeExpired = () => {
 
 module.exports = {
   create,
-  byAccount,
+  byParticipant,
   removeExpired
 }

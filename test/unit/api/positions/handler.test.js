@@ -6,7 +6,7 @@ const Test = require('tapes')(require('tape'))
 const P = require('bluebird')
 const Handler = require(`${src}/api/positions/handler`)
 const PositionService = require(`${src}/domain/position`)
-const Account = require(`${src}/domain/account`)
+const Participant = require(`${src}/domain/participant`)
 
 Test('positions handler', (handlerTest) => {
   let sandbox
@@ -14,9 +14,9 @@ Test('positions handler', (handlerTest) => {
 
   handlerTest.beforeEach(t => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(PositionService, 'calculateForAllAccounts')
-    sandbox.stub(PositionService, 'calculateForAccount')
-    sandbox.stub(Account, 'getByName')
+    sandbox.stub(PositionService, 'calculateForAllParticipants')
+    sandbox.stub(PositionService, 'calculateForParticipant')
+    sandbox.stub(Participant, 'getByName')
     t.end()
   })
 
@@ -25,71 +25,71 @@ Test('positions handler', (handlerTest) => {
     t.end()
   })
 
-  handlerTest.test('calculateForAllAccounts should', (performTest) => {
+  handlerTest.test('calculateForAllParticipants should', (performTest) => {
     performTest.test('return no positions if there are no settleable transfers', async function (test) {
-      PositionService.calculateForAllAccounts.returns(P.resolve([]))
+      PositionService.calculateForAllParticipants.returns(P.resolve([]))
 
       let expectedResponse = {positions: []}
       let reply = {
         response: (response) => {
-          test.ok(PositionService.calculateForAllAccounts.calledOnce)
+          test.ok(PositionService.calculateForAllParticipants.calledOnce)
           test.deepEqual(response, expectedResponse)
           test.end()
         }
       }
-      await Handler.calculateForAllAccounts('', reply)
+      await Handler.calculateForAllParticipants('', reply)
     })
 
     performTest.test('return expected positions if settleable transfers exist', async function (test) {
       let positions = [{
-        account: `${hostname}/accounts/account1`,
+        participant: `${hostname}/participants/participant1`,
         payments: '5',
         receipts: '0',
         net: '-5'
       },
         {
-          account: `${hostname}/accounts/account2`,
+          participant: `${hostname}/participants/participant2`,
           payments: '0',
           receipts: '3',
           net: '3'
         },
         {
-          account: `${hostname}/accounts/account3`,
+          participant: `${hostname}/participants/participant3`,
           payments: '0',
           receipts: '2',
           net: '2'
         }
       ]
 
-      PositionService.calculateForAllAccounts.returns(P.resolve(positions))
+      PositionService.calculateForAllParticipants.returns(P.resolve(positions))
       let expectedResponse = {positions: positions}
 
       let reply = {
         response: (response) => {
-          test.ok(PositionService.calculateForAllAccounts.calledOnce)
+          test.ok(PositionService.calculateForAllParticipants.calledOnce)
           test.deepEqual(response, expectedResponse)
           test.end()
         }
       }
-      await Handler.calculateForAllAccounts('', reply)
+      await Handler.calculateForAllParticipants('', reply)
     })
     performTest.end()
   })
 
-  handlerTest.test('calculateForAccount should', (performTest) => {
-    performTest.test('return positions if there are no settleable transfers or fees', async function (test) {
-      PositionService.calculateForAccount.returns(P.resolve({}))
-      Account.getByName.returns(P.resolve({accountId: 11}))
-      const response = await Handler.calculateForAccount({params: {name: 'dfsp1'}}, {})
-      test.ok(PositionService.calculateForAccount.calledOnce)
+  handlerTest.test('calculateForParticipant should', (performTest) => {
+    performTest.test('return positions if there are no settleable transfers or fee', async function (test) {
+      PositionService.calculateForParticipant.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({participantId: 11}))
+      const response = await Handler.calculateForParticipant({params: {name: 'dfsp1'}}, {})
+      test.ok(PositionService.calculateForParticipant.calledOnce)
       test.deepEqual(response, [])
       test.end()
     })
 
-    performTest.test('return expected position if settleable transfers and fees exist', async function (test) {
+    performTest.test('return expected position if settleable transfers and fee exist', async function (test) {
       let positions = {
-        account: `${hostname}/accounts/dfsp1`,
-        fees: {
+        participant: `${hostname}/participants/dfsp1`,
+        fee: {
           payments: 4,
           receipts: 0,
           net: -4
@@ -102,10 +102,10 @@ Test('positions handler', (handlerTest) => {
         net: -44
       }
 
-      PositionService.calculateForAccount.returns(P.resolve(positions))
-      Account.getByName.returns(P.resolve({accountId: 11}))
-      const response = await Handler.calculateForAccount({params: {name: 'dfsp1'}}, {})
-      test.ok(PositionService.calculateForAccount.calledOnce)
+      PositionService.calculateForParticipant.returns(P.resolve(positions))
+      Participant.getByName.returns(P.resolve({participantId: 11}))
+      const response = await Handler.calculateForParticipant({params: {name: 'dfsp1'}}, {})
+      test.ok(PositionService.calculateForParticipant.calledOnce)
       test.deepEqual(response, positions)
       test.end()
     })

@@ -10,7 +10,7 @@ if [ $# -ne 1 ]; then
     echo " - DOCKER_TAG: Tag/Version of Image"
     echo " - DOCKER_FILE: Recipe to be used for Docker build"
     echo " - DOCKER_WORKING_DIR: Docker working directory"
-    echo " - POSTGRES_USER: Posgres user"
+    echo " - POSTGRES_PARTY: Posgres party"
     echo " - POSTGRES_PASSWORD: Posgres password"
     echo " - POSTGRES_HOST: Posgres host name"
     echo " - POSTGRES_PORT: Posgres container port"
@@ -41,13 +41,13 @@ fpsql() {
 	docker run --rm -i \
 		--entrypoint psql \
     --link $POSTGRES_HOST \
-    -e PGUSER=$POSTGRES_USER \
+    -e PGPARTY=$POSTGRES_PARTY \
 		-e PGPASSWORD=$POSTGRES_PASSWORD \
     -e PGDATABASE=$POSTGRES_DB \
     -e POSTGRES_DB=$POSTGRES_DBNAME \
 		"$POSTGRES_IMAGE:$POSTGRES_TAG" \
     --host $POSTGRES_HOST \
-		--username $POSTGRES_USER \
+		--username $POSTGRES_PARTY \
     --dbname $POSTGRES_DB \
 		--quiet --no-align --tuples-only \
 		"$@"
@@ -56,12 +56,12 @@ fpsql() {
 ftest() {
 	docker run --rm -i \
     --link $POSTGRES_HOST \
-    --env POSTGRES_USER="$POSTGRES_USER" \
+    --env POSTGRES_PARTY="$POSTGRES_PARTY" \
     --env POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
     --env POSTGRES_HOST="$POSTGRES_HOST" \
     --env POSTGRES_PORT="$POSTGRES_PORT" \
     --env POSTGRES_DB="$POSTGRES_DB" \
-    --env CLEDG_DATABASE_URI="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}" \
+    --env CLEDG_DATABASE_URI="postgres://${POSTGRES_PARTY}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}" \
 		"$DOCKER_IMAGE:$DOCKER_TAG" \
     /bin/sh \
     -c \
@@ -91,7 +91,7 @@ run_test_command()
   docker run -i \
     --link $POSTGRES_HOST \
     --name $APP_HOST \
-    --env POSTGRES_USER="$POSTGRES_USER" \
+    --env POSTGRES_PARTY="$POSTGRES_PARTY" \
     --env POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
     --env POSTGRES_HOST="$POSTGRES_HOST" \
     --env POSTGRES_PORT="$POSTGRES_PORT" \
@@ -115,7 +115,7 @@ fi
 
 >&2 echo "Postgres is starting"
 stop_docker
-docker run --name $POSTGRES_HOST -d -p $POSTGRES_PORT:$POSTGRES_PORT -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD -e POSTGRES_USER=$POSTGRES_USER -e POSTGRES_DB=$POSTGRES_DB "$POSTGRES_IMAGE:$POSTGRES_TAG" > /dev/null 2>&1
+docker run --name $POSTGRES_HOST -d -p $POSTGRES_PORT:$POSTGRES_PORT -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD -e POSTGRES_PARTY=$POSTGRES_PARTY -e POSTGRES_DB=$POSTGRES_DB "$POSTGRES_IMAGE:$POSTGRES_TAG" > /dev/null 2>&1
 
 if [ "$?" != 0 ]
 then

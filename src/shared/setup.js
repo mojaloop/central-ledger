@@ -12,7 +12,7 @@ const RequestLogger = require('../lib/request-logger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlparser')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// git const Account = require('../domain/account')
+// const Participant = require('../domain/participant')
 const Boom = require('boom')
 
 const migrate = (runMigrations) => {
@@ -59,7 +59,7 @@ const initialize = async function ({service, port, modules = [], runMigrations =
   await Sidecar.connect(service)
   const server = await createServer(port, modules)
   /* if (service === 'api') {
-    await Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
+    await Participant.createLedgerParticipant(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
   } */
   return server
 }

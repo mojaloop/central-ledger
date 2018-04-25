@@ -16,7 +16,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         'ledger': 'http://central-ledger',
         'credits': [
           {
-            'account': 'http://central-ledger/accounts/bob',
+            'participant': 'http://central-ledger/participants/bob',
             'amount': 50,
             'memo': {
               'some_property': 'value'
@@ -26,7 +26,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         ],
         'debits': [
           {
-            'account': 'http://central-ledger/accounts/alice',
+            'participant': 'http://central-ledger/participants/alice',
             'amount': 50,
             'memo': {
               'some_property': 'value'
@@ -49,7 +49,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         ledger: 'http://central-ledger',
         credits: [
           {
-            account: 'http://central-ledger/accounts/bob',
+            participant: 'http://central-ledger/participants/bob',
             amount: '50.00',
             memo: {
               'some_property': 'value'
@@ -58,7 +58,7 @@ Test('TransferTranslator', transferTranslatorTest => {
           }
         ],
         debits: [
-          { account: 'http://central-ledger/accounts/alice',
+          { participant: 'http://central-ledger/participants/alice',
             amount: '50.00',
             memo: {
               'some_property': 'value'
@@ -90,42 +90,42 @@ Test('TransferTranslator', transferTranslatorTest => {
       test.end()
     })
 
-    toTransferTest.test('translate an argument containing a "transferUuid" field', function (t) {
+    toTransferTest.test('translate an argument containing a "transferId" field', function (t) {
       const from = {
-        'transferUuid': '3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
+        'transferId': '3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
         'state': 'prepared',
         'ledger': 'http://central-ledger',
-        'debitAmount': 50.00,
-        'debitMemo': '{"source_transfer_id":"f17f52d9-e8b2-4bff-9f01-18c4d388c27a","source_transfer_amount":"12.00","source_transfer_ledger":"levelone.dfsp1."}',
-        'creditAmount': 50.00,
-        'creditMemo': null,
+        'payeeAmount': 50.00,
+        'payeeNote': '{"source_transfer_id":"f17f52d9-e8b2-4bff-9f01-18c4d388c27a","source_transfer_amount":"12.00","source_transfer_ledger":"levelone.dfsp1."}',
+        'payerAmount': 50.00,
+        'payerNote': null,
         'executionCondition': executionCondition,
         'cancellationCondition': null,
         'rejectionReason': null,
-        'expiresAt': '2016-12-16T00:00:01.000Z',
+        'expirationDate': '2016-12-16T00:00:01.000Z',
         'additionalInfo': null,
         'preparedDate': '2016-11-16T20:02:19.363Z',
         'executedDate': '2016-11-17T20:02:19.363Z',
         'fulfillment': null,
-        'creditRejected': 0,
-        'creditRejectionMessage': null,
+        'payeeRejected': 0,
+        'payeeRejectionMessage': null,
         'rejectedDate': null,
-        'creditAccountId': 2,
-        'debitAccountId': 1,
-        'creditAccountName': 'bob',
-        'debitAccountName': 'alice'
+        'payerParticipantId': 2,
+        'payeeParticipantId': 1,
+        'creditParticipantName': 'bob',
+        'debitParticipantName': 'alice'
       }
       const expected = {
         id: 'http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
         ledger: 'http://central-ledger',
         credits: [
-          { account: 'http://central-ledger/accounts/bob',
+          { participant: 'http://central-ledger/participants/bob',
             amount: '50.00',
             rejected: false
           }
         ],
         debits: [
-          { account: 'http://central-ledger/accounts/alice',
+          { participant: 'http://central-ledger/participants/alice',
             amount: '50.00',
             memo: {
               'source_transfer_id': 'f17f52d9-e8b2-4bff-9f01-18c4d388c27a',
@@ -147,37 +147,37 @@ Test('TransferTranslator', transferTranslatorTest => {
       t.end()
     })
 
-    toTransferTest.test('translate all properties containing a "transferUuid" field', function (t) {
+    toTransferTest.test('translate all properties containing a "transferId" field', function (t) {
       const rejectionMessage = Fixtures.rejectionMessage()
       const from = {
-        'transferUuid': '3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
+        'transferId': '3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
         'state': 'prepared',
         'ledger': 'http://central-ledger',
-        'debitAmount': 50.00,
-        'debitMemo': 'a debit memo',
-        'creditAmount': 50.00,
-        'creditMemo': 'a credit memo',
-        'creditRejectionMessage': JSON.stringify(rejectionMessage),
+        'payeeAmount': 50.00,
+        'payeeNote': 'a debit memo',
+        'payerAmount': 50.00,
+        'payerNote': 'a credit memo',
+        'payeeRejectionMessage': JSON.stringify(rejectionMessage),
         'executionCondition': executionCondition,
         'cancellationCondition': 'cancellation condition',
         'rejectionReason': 'rejection reason',
-        'expiresAt': '2016-12-16T00:00:01.000Z',
+        'expirationDate': '2016-12-16T00:00:01.000Z',
         'additionalInfo': '{}',
         'preparedDate': '2016-11-16T20:02:19.363Z',
         'executedDate': '2016-11-17T20:02:19.363Z',
         'rejectedDate': '2016-11-17T20:02:19.363Z',
         'fulfillment': 'fulfillment',
-        'creditRejected': 1,
-        'creditAccountId': 2,
-        'debitAccountId': 1,
-        'creditAccountName': 'bob',
-        'debitAccountName': 'alice'
+        'payeeRejected': 1,
+        'payerParticipantId': 2,
+        'payeeParticipantId': 1,
+        'creditParticipantName': 'bob',
+        'debitParticipantName': 'alice'
       }
       const expected = {
         id: 'http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
         ledger: 'http://central-ledger',
         credits: [
-          { account: 'http://central-ledger/accounts/bob',
+          { participant: 'http://central-ledger/participants/bob',
             amount: '50.00',
             memo: 'a credit memo',
             rejected: true,
@@ -185,7 +185,7 @@ Test('TransferTranslator', transferTranslatorTest => {
           }
         ],
         debits: [
-          { account: 'http://central-ledger/accounts/alice',
+          { participant: 'http://central-ledger/participants/alice',
             amount: '50.00',
             memo: 'a debit memo'
           }
@@ -206,7 +206,7 @@ Test('TransferTranslator', transferTranslatorTest => {
       t.end()
     })
 
-    toTransferTest.test('throw an exception if argument does not contain "id" or "transferUuid" field', function (t) {
+    toTransferTest.test('throw an exception if argument does not contain "id" or "transferId" field', function (t) {
       t.throws(() => TransferTranslator.toTransfer({}), new Error('Unable to translate to transfer: {}'))
       t.end()
     })

@@ -4,7 +4,7 @@ const Db = require('../../db')
 const Util = require('../../lib/util')
 
 exports.create = (charge) => {
-  return Db.charges.insert({
+  return Db.charge.insert({
     name: charge.name,
     chargeType: charge.charge_type,
     rateType: charge.rate_type,
@@ -13,8 +13,8 @@ exports.create = (charge) => {
     maximum: charge.maximum,
     code: charge.code,
     isActive: charge.is_active,
-    payer: charge.payer,
-    payee: charge.payee
+    payerParticipantId: charge.payerParticipantId,
+    payeeParticipantId: charge.payeeParticipantId
   })
 }
 
@@ -27,17 +27,17 @@ exports.update = (charge, payload) => {
     code: payload.code,
     isActive: payload.is_active
   }
-  return Db.charges.update({ chargeId: charge.chargeId }, Util.filterUndefined(fields))
+  return Db.charge.update({ chargeId: charge.chargeId }, Util.filterUndefined(fields))
 }
 
 exports.getByName = (name) => {
-  return Db.charges.findOne({ name })
+  return Db.charge.findOne({ name })
 }
 
 exports.getAll = () => {
-  return Db.charges.find({ isActive: true }, { order: 'name asc' })
+  return Db.charge.find({ isActive: true }, { order: 'name asc' })
 }
 
 exports.getAllSenderAsPayer = () => {
-  return Db.charges.find({ payer: 'sender', isActive: true }, { order: 'name asc' })
+  return Db.charge.find({ payerParticipantId: 'sender', isActive: true }, { order: 'name asc' })
 }

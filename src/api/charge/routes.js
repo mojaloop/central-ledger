@@ -2,15 +2,15 @@ const Handler = require('./handler')
 const Joi = require('joi')
 const Auth = require('../auth')
 
-const tags = ['api', 'charges']
+const tags = ['api', 'charge']
 
 module.exports = [
   {
     method: 'POST',
-    path: '/charges/quote',
+    path: '/charge/quote',
     handler: Handler.chargeQuote,
     options: {
-      id: 'charges',
+      id: 'charge',
       tags: tags,
       auth: Auth.strategy(),
       description: 'Quote a charge for a transaction amount',

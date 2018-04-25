@@ -3,20 +3,20 @@ const Joi = require('joi')
 const Auth = require('../auth')
 // const Boom = require('boom')
 
-const tags = ['api', 'accounts']
-const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the account')
-const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the account')
+const tags = ['api', 'participants']
+const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the participant')
+const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
 // const emailAddressValidator = Joi.string().email()
 
 module.exports = [{
   method: 'POST',
-  path: '/accounts',
+  path: '/participants',
   handler: Handler.create,
   options: {
-    id: 'accounts',
+    id: 'participants',
     tags: tags,
     auth: Auth.strategy(),
-    description: 'Create an account.',
+    description: 'Create an participant.',
     payload: {
       allow: 'application/json',
       failAction: 'error',
@@ -24,8 +24,8 @@ module.exports = [{
     },
     validate: {
       payload: {
-        name: Joi.string().alphanum().min(3).max(30).required().description('Name of the account'),
-        password: Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the account'),
+        name: Joi.string().alphanum().min(3).max(30).required().description('Name of the participant'),
+        password: Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant'),
         emailAddress: Joi.string().email().required()
       }
     }
@@ -33,12 +33,12 @@ module.exports = [{
 },
 {
   method: 'GET',
-  path: '/accounts/{name}',
+  path: '/participants/{name}',
   handler: Handler.getByName,
   options: {
-    id: 'account',
+    id: 'participant',
     tags: tags,
-    description: 'Retrieve an accounts details by name',
+    description: 'Retrieve an participants details by name',
     auth: Auth.strategy(true),
     validate: {
       params: {
@@ -49,12 +49,12 @@ module.exports = [{
 },
 {
   method: 'PUT',
-  path: '/accounts/{name}',
-  handler: Handler.updateUserCredentials,
+  path: '/participants/{name}',
+  handler: Handler.updatePartyCredentials,
   options: {
-    id: 'account_update_user_credentials',
+    id: 'participant_update_user_credentials',
     tags: tags,
-    description: 'Update an accounts user credentials',
+    description: 'Update an participants party credentials',
     auth: Auth.strategy(),
     payload: {
       allow: 'application/json',
@@ -73,12 +73,12 @@ module.exports = [{
 },
 {
   method: 'PUT',
-  path: '/accounts/{name}/settlement',
-  handler: Handler.updateAccountSettlement,
+  path: '/participants/{name}/settlement',
+  handler: Handler.updateParticipantSettlement,
   options: {
-    id: 'account_update_account_settlement',
+    id: 'participant_update_participant_settlement',
     tags: tags,
-    description: 'Update an accounts user credentials',
+    description: 'Update an participants party credentials',
     auth: Auth.strategy(),
     payload: {
       allow: 'application/json',
@@ -89,7 +89,7 @@ module.exports = [{
         name: nameValidator
       },
       payload: {
-        account_number: Joi.string().token().max(16).required().description('Account number for the settlement'),
+        participant_number: Joi.string().token().max(16).required().description('Participant number for the settlement'),
         routing_number: Joi.string().token().max(16).required().description('Routing number for the settlement')
       }
     }

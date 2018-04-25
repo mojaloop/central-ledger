@@ -7,13 +7,13 @@ const P = require('bluebird')
 const Model = require(`${src}/domain/charge/model`)
 const Db = require(`${src}/db`)
 
-Test('charges model', modelTest => {
+Test('charge model', modelTest => {
   let sandbox
 
   modelTest.beforeEach((t) => {
     sandbox = Sinon.sandbox.create()
 
-    Db.charges = {
+    Db.charge = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
       find: sandbox.stub(),
@@ -32,7 +32,7 @@ Test('charges model', modelTest => {
     getAllTest.test('return exception if db query throws', test => {
       const error = new Error()
 
-      Db.charges.find.returns(P.reject(error))
+      Db.charge.find.returns(P.reject(error))
 
       Model.getAll()
         .then(() => {
@@ -40,22 +40,22 @@ Test('charges model', modelTest => {
         })
         .catch(err => {
           test.equal(err, error)
-          test.ok(Db.charges.find.calledWith({ isActive: true }, { order: 'name asc' }))
+          test.ok(Db.charge.find.calledWith({ isActive: true }, { order: 'name asc' }))
           test.end()
         })
     })
 
-    getAllTest.test('return all charges ordered by name', test => {
+    getAllTest.test('return all charge ordered by name', test => {
       const charge1Name = 'charge1'
       const charge2Name = 'charge2'
-      const charges = [{ name: charge1Name }, { name: charge2Name }]
+      const charge = [{ name: charge1Name }, { name: charge2Name }]
 
-      Db.charges.find.returns(P.resolve(charges))
+      Db.charge.find.returns(P.resolve(charge))
 
       Model.getAll()
         .then((found) => {
-          test.equal(found, charges)
-          test.ok(Db.charges.find.calledWith({ isActive: true }, { order: 'name asc' }))
+          test.equal(found, charge)
+          test.ok(Db.charge.find.calledWith({ isActive: true }, { order: 'name asc' }))
           test.end()
         })
         .catch(err => {
@@ -71,7 +71,7 @@ Test('charges model', modelTest => {
       const error = new Error()
       const name = 'charge1'
 
-      Db.charges.findOne.returns(P.reject(error))
+      Db.charge.findOne.returns(P.reject(error))
 
       Model.getByName(name)
         .then(() => {
@@ -79,7 +79,7 @@ Test('charges model', modelTest => {
         })
         .catch(err => {
           test.equal(err, error)
-          test.ok(Db.charges.findOne.calledWith({ name }))
+          test.ok(Db.charge.findOne.calledWith({ name }))
           test.end()
         })
     })
@@ -88,12 +88,12 @@ Test('charges model', modelTest => {
       const name = 'charge1'
       const charge = { name }
 
-      Db.charges.findOne.returns(P.resolve(charge))
+      Db.charge.findOne.returns(P.resolve(charge))
 
       Model.getByName(name)
         .then((found) => {
           test.equal(found, charge)
-          test.ok(Db.charges.findOne.calledWith({ name }))
+          test.ok(Db.charge.findOne.calledWith({ name }))
           test.end()
         })
         .catch(err => {
@@ -108,7 +108,7 @@ Test('charges model', modelTest => {
     getAllSenderAsPayerTest.test('return exception if db query throws', test => {
       const error = new Error()
 
-      Db.charges.find.returns(P.reject(error))
+      Db.charge.find.returns(P.reject(error))
 
       Model.getAllSenderAsPayer()
         .then(() => {
@@ -116,20 +116,20 @@ Test('charges model', modelTest => {
         })
         .catch(err => {
           test.equal(err, error)
-          test.ok(Db.charges.find.calledWith({ payer: 'sender', isActive: true }, { order: 'name asc' }))
+          test.ok(Db.charge.find.calledWith({ payerParticipantId: 'sender', isActive: true }, { order: 'name asc' }))
           test.end()
         })
     })
 
-    getAllSenderAsPayerTest.test('return all charges ordered by name', test => {
-      const charges = [{ name: 'charge1' }, { name: 'charge2' }, { name: 'charge3' }]
+    getAllSenderAsPayerTest.test('return all charge ordered by name', test => {
+      const charge = [{ name: 'charge1' }, { name: 'charge2' }, { name: 'charge3' }]
 
-      Db.charges.find.returns(P.resolve(charges))
+      Db.charge.find.returns(P.resolve(charge))
 
       Model.getAllSenderAsPayer()
         .then((found) => {
-          test.equal(found, charges)
-          test.ok(Db.charges.find.calledWith({ payer: 'sender', isActive: true }, { order: 'name asc' }))
+          test.equal(found, charge)
+          test.ok(Db.charge.find.calledWith({ payerParticipantId: 'sender', isActive: true }, { order: 'name asc' }))
           test.end()
         })
         .catch(err => {
@@ -145,13 +145,13 @@ Test('charges model', modelTest => {
       let name = 'charge'
       let charge = { name }
 
-      Db.charges.insert.returns(P.resolve(charge))
+      Db.charge.insert.returns(P.resolve(charge))
 
       const payload = { name }
 
       Model.create(payload)
         .then(created => {
-          const insertArg = Db.charges.insert.firstCall.args[0]
+          const insertArg = Db.charge.insert.firstCall.args[0]
           test.notEqual(insertArg, payload)
           test.equal(created, charge)
           test.end()
@@ -190,11 +190,11 @@ Test('charges model', modelTest => {
         name: payload.name
       }
 
-      Db.charges.update.returns(P.resolve(updatedCharge))
+      Db.charge.update.returns(P.resolve(updatedCharge))
 
       Model.update(charge, payload)
         .then(updated => {
-          test.ok(Db.charges.update.calledWith({ chargeId: charge.chargeId }, fields))
+          test.ok(Db.charge.update.calledWith({ chargeId: charge.chargeId }, fields))
           test.equal(updated, updatedCharge)
           test.end()
         })

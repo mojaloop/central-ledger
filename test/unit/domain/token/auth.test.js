@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
 const TokenService = require('../../../../src/domain/token')
-const AccountService = require('../../../../src/domain/account')
+const ParticipantService = require('../../../../src/domain/participant')
 const UnauthorizedError = require('@mojaloop/central-services-auth').UnauthorizedError
 const Crypto = require('../../../../src/lib/crypto')
 const Config = require('../../../../src/lib/config')
@@ -27,8 +27,8 @@ Test('Token Auth', tokenTest => {
 
   tokenTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(AccountService, 'getByName')
-    sandbox.stub(TokenService, 'byAccount')
+    sandbox.stub(ParticipantService, 'getByName')
+    sandbox.stub(TokenService, 'byParticipant')
     sandbox.stub(Crypto, 'verifyHash')
     originalAdminKey = Config.ADMIN_KEY
     originalTokenExpiration = Config.TOKEN_EXPIRATION
@@ -57,7 +57,7 @@ Test('Token Auth', tokenTest => {
 
     validateTest.test('be unauthorized if Ledger-Api-Key not found', async function (test) {
       const name = 'some-name'
-      AccountService.getByName.withArgs(name).returns(P.resolve(null))
+      ParticipantService.getByName.withArgs(name).returns(P.resolve(null))
       const request = createRequest(name)
       try {
         await TokenAuth.validate(request, 'token', {})
@@ -69,12 +69,12 @@ Test('Token Auth', tokenTest => {
       }
     })
 
-    validateTest.test('be invalid if token not found by account', async function (test) {
+    validateTest.test('be invalid if token not found by participant', async function (test) {
       const name = 'some-name'
-      const accountId = Uuid().toString()
-      const account = {accountId}
-      AccountService.getByName.withArgs(name).returns(P.resolve(account))
-      TokenService.byAccount.withArgs(account).returns(P.resolve([]))
+      const participantId = Uuid().toString()
+      const participant = {participantId}
+      ParticipantService.getByName.withArgs(name).returns(P.resolve(participant))
+      TokenService.byParticipant.withArgs(participant).returns(P.resolve([]))
       const request = createRequest(name)
 
       const reply = {
@@ -87,12 +87,12 @@ Test('Token Auth', tokenTest => {
       await TokenAuth.validate(request, 'token', reply)
     })
 
-    validateTest.test('be invalid if token not found by account and is admin', async function (test) {
+    validateTest.test('be invalid if token not found by participant and is admin', async function (test) {
       const name = 'admin'
-      const accountId = Uuid().toString()
-      const account = {accountId, is_admin: true}
-      AccountService.getByName.withArgs(name).returns(P.resolve(account))
-      TokenService.byAccount.withArgs(account).returns(P.resolve(null))
+      const participantId = Uuid().toString()
+      const participant = {participantId, is_admin: true}
+      ParticipantService.getByName.withArgs(name).returns(P.resolve(participant))
+      TokenService.byParticipant.withArgs(participant).returns(P.resolve(null))
       const request = createRequest(name)
 
       const reply = {
@@ -105,18 +105,18 @@ Test('Token Auth', tokenTest => {
       await TokenAuth.validate(request, 'token', reply)
     })
 
-    validateTest.test('be invalid if no account tokens can be verified', async function (test) {
+    validateTest.test('be invalid if no participant tokens can be verified', async function (test) {
       const name = 'some-name'
       const token = 'token'
-      const accountId = Uuid().toString()
-      const account = {accountId}
-      AccountService.getByName.withArgs(name).returns(P.resolve(account))
+      const participantId = Uuid().toString()
+      const participant = {participantId}
+      ParticipantService.getByName.withArgs(name).returns(P.resolve(participant))
       const tokens = [
         {token: 'bad-token1'},
         {token: 'bad-token2'}
       ]
       Crypto.verifyHash.returns(P.resolve(false))
-      TokenService.byAccount.withArgs(account).returns(P.resolve(tokens))
+      TokenService.byParticipant.withArgs(participant).returns(P.resolve(tokens))
       const request = createRequest(name)
 
       const cb = {
@@ -129,12 +129,12 @@ Test('Token Auth', tokenTest => {
       await TokenAuth.validate(request, token, cb)
     })
 
-    validateTest.test('pass with account if one token can be verified', async function (test) {
+    validateTest.test('pass with participant if one token can be verified', async function (test) {
       const name = 'some-name'
       const token = 'token'
-      const accountId = Uuid().toString()
-      const account = {accountId, is_admin: true}
-      AccountService.getByName.withArgs(name).returns(P.resolve(account))
+      const participantId = Uuid().toString()
+      const participant = {participantId, is_admin: true}
+      ParticipantService.getByName.withArgs(name).returns(P.resolve(participant))
       const tokens = [
         {token: 'bad-token1'},
         {token: 'bad-token2'},
@@ -142,12 +142,12 @@ Test('Token Auth', tokenTest => {
       ]
       Crypto.verifyHash.returns(P.resolve(false))
       Crypto.verifyHash.withArgs(token).returns(P.resolve(true))
-      TokenService.byAccount.withArgs(account).returns(P.resolve(tokens))
+      TokenService.byParticipant.withArgs(participant).returns(P.resolve(tokens))
       const request = createRequest(name)
       const cb = {
         response: (response) => {
           test.equal(response.isValid, true)
-          test.equal(response.credentials, account)
+          test.equal(response.credentials, participant)
           test.end()
         }
       }
@@ -160,22 +160,22 @@ Test('Token Auth', tokenTest => {
       const expiration = 1
       const token = {token: tokenVal, expiration}
       const bearer = 'bearer'
-      const accountId = Uuid().toString()
-      const account = {accountId, is_admin: true}
-      AccountService.getByName.withArgs(name).returns(P.resolve(account))
+      const participantId = Uuid().toString()
+      const participant = {participantId, is_admin: true}
+      ParticipantService.getByName.withArgs(name).returns(P.resolve(participant))
       const tokens = [
         token
       ]
       Crypto.verifyHash.returns(P.resolve(false))
       Crypto.verifyHash.withArgs(token.token, bearer).returns(P.resolve(true))
-      TokenService.byAccount.withArgs(account).returns(P.resolve(tokens))
+      TokenService.byParticipant.withArgs(participant).returns(P.resolve(tokens))
       const request = createRequest(name)
       Config.TOKEN_EXPIRATION = 1
 
       const cb = {
         response: (response) => {
           test.equal(response.isValid, false)
-          test.equal(response.credentials, account)
+          test.equal(response.credentials, participant)
           test.end()
         }
       }
@@ -208,7 +208,7 @@ Test('Token Auth', tokenTest => {
       const request = createRequest(adminKey)
       const token = 'token'
 
-      TokenService.byAccount.returns(P.resolve([{token}]))
+      TokenService.byParticipant.returns(P.resolve([{token}]))
       Crypto.verifyHash.returns(P.resolve(false))
       Crypto.verifyHash.withArgs(token).returns(P.resolve(true))
 
@@ -216,7 +216,7 @@ Test('Token Auth', tokenTest => {
         response: (response) => {
           test.equal(response.isValid, true)
           test.equal(response.credentials.is_admin, true)
-          test.notOk(response.credentials.accountId)
+          test.notOk(response.credentials.participantId)
           test.end()
         }
       }

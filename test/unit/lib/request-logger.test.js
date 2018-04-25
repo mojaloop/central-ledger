@@ -27,7 +27,7 @@ Test('logger', loggerTest => {
       const request = {
         headers: { traceid: '123456' },
         method: 'post',
-        url: { path: '/accounts' },
+        url: { path: '/participants' },
         query: { token: '1234' },
         body: 'this is the body'
       }
@@ -46,7 +46,7 @@ Test('logger', loggerTest => {
       const request = {
         headers: { traceid: '123456' },
         method: 'post',
-        url: { path: '/accounts' },
+        url: { path: '/participants' },
         query: { token: '1234' }
       }
       RequestLogger.logRequest(request)

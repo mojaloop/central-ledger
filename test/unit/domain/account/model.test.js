@@ -4,16 +4,16 @@ const src = '../../../../src'
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
-const Model = require(`${src}/domain/account/model`)
+const Model = require(`${src}/domain/participant/model`)
 const Db = require(`${src}/db`)
 
-Test('accounts model', modelTest => {
+Test('participant model', modelTest => {
   let sandbox
 
   modelTest.beforeEach((t) => {
     sandbox = Sinon.sandbox.create()
 
-    Db.accounts = {
+    Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
       findOne: sandbox.stub(),
@@ -24,7 +24,7 @@ Test('accounts model', modelTest => {
       findOne: sandbox.stub(),
       update: sandbox.stub()
     }
-    Db.accountsSettlement = {
+    Db.participantSettlement = {
       insert: sandbox.stub(),
       findOne: sandbox.stub(),
       update: sandbox.stub()
@@ -42,7 +42,7 @@ Test('accounts model', modelTest => {
     getAllTest.test('return exception if db query throws', test => {
       const error = new Error()
 
-      Db.accounts.find.returns(P.reject(error))
+      Db.participant.find.returns(P.reject(error))
 
       Model.getAll()
         .then(() => {
@@ -54,17 +54,17 @@ Test('accounts model', modelTest => {
         })
     })
 
-    getAllTest.test('return all accounts ordered by name', test => {
-      const account1Name = 'dfsp1'
-      const account2Name = 'dfsp2'
-      const accounts = [{ name: account1Name }, { name: account2Name }]
+    getAllTest.test('return all participant ordered by name', test => {
+      const participant1Name = 'dfsp1'
+      const participant2Name = 'dfsp2'
+      const participant = [{ name: participant1Name }, { name: participant2Name }]
 
-      Db.accounts.find.returns(P.resolve(accounts))
+      Db.participant.find.returns(P.resolve(participant))
 
       Model.getAll()
         .then((found) => {
-          test.equal(found, accounts)
-          test.ok(Db.accounts.find.calledWith({}, { order: 'name asc' }))
+          test.equal(found, participant)
+          test.ok(Db.participant.find.calledWith({}, { order: 'name asc' }))
           test.end()
         })
         .catch(err => {
@@ -79,7 +79,7 @@ Test('accounts model', modelTest => {
     getByIdTest.test('return exception if db query throws', test => {
       const error = new Error()
 
-      Db.accounts.findOne.returns(P.reject(error))
+      Db.participant.findOne.returns(P.reject(error))
 
       Model.getById(1)
         .then(() => {
@@ -91,16 +91,16 @@ Test('accounts model', modelTest => {
         })
     })
 
-    getByIdTest.test('finds account by id', test => {
+    getByIdTest.test('finds participant by id', test => {
       const id = 1
-      const account = { accountId: id }
+      const participant = { participantId: id }
 
-      Db.accounts.findOne.returns(P.resolve(account))
+      Db.participant.findOne.returns(P.resolve(participant))
 
       Model.getById(id)
         .then(r => {
-          test.equal(r, account)
-          test.ok(Db.accounts.findOne.calledWith({ accountId: id }))
+          test.equal(r, participant)
+          test.ok(Db.participant.findOne.calledWith({ participantId: id }))
           test.end()
         })
         .catch(err => {
@@ -116,7 +116,7 @@ Test('accounts model', modelTest => {
       let name = 'dfsp1'
       let error = new Error()
 
-      Db.accounts.findOne.returns(P.reject(error))
+      Db.participant.findOne.returns(P.reject(error))
 
       Model.getByName(name)
         .then(() => {
@@ -128,16 +128,16 @@ Test('accounts model', modelTest => {
         })
     })
 
-    getByNameTest.test('finds account by name', test => {
+    getByNameTest.test('finds participant by name', test => {
       let name = 'dfsp1'
-      let account = { name: name }
+      let participant = { name: name }
 
-      Db.accounts.findOne.returns(P.resolve(account))
+      Db.participant.findOne.returns(P.resolve(participant))
 
       Model.getByName(name)
         .then(r => {
-          test.equal(r, account)
-          test.ok(Db.accounts.findOne.calledWith({ name }))
+          test.equal(r, participant)
+          test.ok(Db.participant.findOne.calledWith({ name }))
           test.end()
         })
         .catch(err => {
@@ -152,45 +152,45 @@ Test('accounts model', modelTest => {
     updateTest.test('return exception if db query throws', test => {
       let error = new Error()
       const id = 1
-      const account = { accountId: id }
+      const participant = { participantId: id }
       const isDisabled = false
 
-      Db.accounts.update.returns(P.reject(error))
+      Db.participant.update.returns(P.reject(error))
 
-      Model.update(account, isDisabled)
+      Model.update(participant, isDisabled)
         .then(() => {
           test.fail('Should have thrown error')
         })
         .catch(err => {
-          test.ok(Db.accounts.update.withArgs({ accountId: id }, { isDisabled }).calledOnce)
+          test.ok(Db.participant.update.withArgs({ participantId: id }, { isDisabled }).calledOnce)
           test.equal(err, error)
           test.end()
         })
     })
 
-    updateTest.test('update an account', test => {
+    updateTest.test('update an participant', test => {
       let name = 'dfsp1'
       const isDisabled = true
       const id = 1
 
-      let account = {
-        accountId: id,
+      let participant = {
+        participantId: id,
         name: name,
         isDisabled: false
       }
 
-      let updatedAccount = {
-        accountId: id,
+      let updatedParticipant = {
+        participantId: id,
         name: name,
         isDisabled: isDisabled
       }
 
-      Db.accounts.update.returns(P.resolve(updatedAccount))
+      Db.participant.update.returns(P.resolve(updatedParticipant))
 
-      Model.update(account, isDisabled)
+      Model.update(participant, isDisabled)
         .then(r => {
-          test.ok(Db.accounts.update.withArgs({ accountId: id }, { isDisabled }).calledOnce)
-          test.equal(r, updatedAccount)
+          test.ok(Db.participant.update.withArgs({ participantId: id }, { isDisabled }).calledOnce)
+          test.equal(r, updatedParticipant)
           test.end()
         })
         .catch(err => {
@@ -202,23 +202,23 @@ Test('accounts model', modelTest => {
   })
 
   modelTest.test('create should', createTest => {
-    createTest.test('save payload and return new account', test => {
+    createTest.test('save payload and return new participant', test => {
       let name = 'dfsp1'
       let emailAddress = 'dfsp1@test.com'
       let payload = { name: name, hashedPassword: 'hashedPassword', emailAddress: emailAddress }
-      let insertedAccount = { accountId: 1, name: name, emailAddress: emailAddress }
-      let accountId = 1
+      let insertedParticipant = { participantId: 1, name: name, emailAddress: emailAddress }
+      let participantId = 1
 
-      Db.accounts.insert.returns(P.resolve(accountId))
-      Db.accounts.findOne.returns(P.resolve(insertedAccount))
+      Db.participant.insert.returns(P.resolve(participantId))
+      Db.participant.findOne.returns(P.resolve(insertedParticipant))
       Db.userCredentials.insert.returns(P.resolve({}))
 
       Model.create(payload)
         .then(s => {
-          test.ok(Db.accounts.insert.withArgs({ name: name, emailAddress: payload.emailAddress }).calledOnce)
-          test.ok(Db.accounts.findOne.withArgs({ accountId: accountId }).calledOnce)
-          test.ok(Db.userCredentials.insert.withArgs({ accountId: accountId, password: payload.hashedPassword }).calledOnce)
-          test.equal(s, insertedAccount)
+          test.ok(Db.participant.insert.withArgs({ name: name, emailAddress: payload.emailAddress }).calledOnce)
+          test.ok(Db.participant.findOne.withArgs({ participantId: participantId }).calledOnce)
+          test.ok(Db.userCredentials.insert.withArgs({ participantId: participantId, password: payload.hashedPassword }).calledOnce)
+          test.equal(s, insertedParticipant)
           test.end()
         })
     })
@@ -226,17 +226,17 @@ Test('accounts model', modelTest => {
     createTest.end()
   })
 
-  modelTest.test('updateUserCredentials should', updateUserCredentialsTest => {
-    updateUserCredentialsTest.test('return user credentials for a given account', test => {
-      let account = { name: 'dfsp1', accountId: '1234' }
+  modelTest.test('updatePartyCredentials should', updatePartyCredentialsTest => {
+    updatePartyCredentialsTest.test('return party credentials for a given participant', test => {
+      let participant = { name: 'dfsp1', participantId: '1234' }
       let password = '1234'
-      let userCredentials = { accountId: account.accountId, password }
+      let userCredentials = { participantId: participant.participantId, password }
 
       Db.userCredentials.update.returns(P.resolve(userCredentials))
 
-      Model.updateUserCredentials(account, password)
+      Model.updatePartyCredentials(participant, password)
         .then(r => {
-          test.ok(Db.userCredentials.update.withArgs({ accountId: account.accountId }, { password }).calledOnce)
+          test.ok(Db.userCredentials.update.withArgs({ participantId: participant.participantId }, { password }).calledOnce)
           test.equal(r, userCredentials)
           test.end()
         })
@@ -245,42 +245,42 @@ Test('accounts model', modelTest => {
         })
     })
 
-    updateUserCredentialsTest.end()
+    updatePartyCredentialsTest.end()
   })
 
-  modelTest.test('retrieveUserCredentials should', retrieverUserCredsTest => {
-    retrieverUserCredsTest.test('return user credentials for a given account', test => {
-      let account = { name: 'dfsp1', accountId: '1234' }
-      let userCredentials = { accountId: account.accountId, password: 'password' }
+  modelTest.test('retrievePartyCredentials should', retrieverPartyCredsTest => {
+    retrieverPartyCredsTest.test('return party credentials for a given participant', test => {
+      let participant = { name: 'dfsp1', participantId: '1234' }
+      let userCredentials = { participantId: participant.participantId, password: 'password' }
 
       Db.userCredentials.findOne.returns(P.resolve(userCredentials))
 
-      Model.retrieveUserCredentials(account)
+      Model.retrievePartyCredentials(participant)
         .then(r => {
-          test.equal(r.accountId, userCredentials.accountId)
+          test.equal(r.participantId, userCredentials.participantId)
           test.equal(r.password, userCredentials.password)
-          test.ok(Db.userCredentials.findOne.calledWith({ accountId: account.accountId }))
+          test.ok(Db.userCredentials.findOne.calledWith({ participantId: participant.participantId }))
           test.end()
         })
     })
 
-    retrieverUserCredsTest.end()
+    retrieverPartyCredsTest.end()
   })
 
-  modelTest.test('updateAccountSettlement should', updateAccountSettlementTest => {
-    updateAccountSettlementTest.test('return created settlement for a given account', test => {
-      let accountId = '1234'
-      let accountNumber = '12345'
+  modelTest.test('updateParticipantSettlement should', updateParticipantSettlementTest => {
+    updateParticipantSettlementTest.test('return created settlement for a given participant', test => {
+      let participantId = '1234'
+      let participantNumber = '12345'
       let routingNumber = '67890'
       let name = 'name'
 
-      Db.accountsSettlement.findOne.returns(P.resolve(null))
-      Db.accountsSettlement.insert.returns(P.resolve({ accountId, accountNumber, routingNumber }))
+      Db.participantSettlement.findOne.returns(P.resolve(null))
+      Db.participantSettlement.insert.returns(P.resolve({ participantId, participantNumber, routingNumber }))
 
-      Model.updateAccountSettlement({ accountId, name }, { account_number: accountNumber, routing_number: routingNumber })
+      Model.updateParticipantSettlement({ participantId, name }, { participant_number: participantNumber, routing_number: routingNumber })
         .then(r => {
-          test.ok(Db.accountsSettlement.insert.withArgs({ accountId, accountNumber, routingNumber }).calledOnce)
-          test.deepEqual(r, { accountName: name, accountNumber, routingNumber })
+          test.ok(Db.participantSettlement.insert.withArgs({ participantId, participantNumber, routingNumber }).calledOnce)
+          test.deepEqual(r, { participantName: name, participantNumber, routingNumber })
           test.end()
         })
         .catch(err => {
@@ -288,19 +288,19 @@ Test('accounts model', modelTest => {
         })
     })
 
-    updateAccountSettlementTest.test('return updated settlement for a given account', test => {
-      let accountId = '1234'
-      let accountNumber = '12345'
+    updateParticipantSettlementTest.test('return updated settlement for a given participant', test => {
+      let participantId = '1234'
+      let participantNumber = '12345'
       let routingNumber = '67890'
       let name = 'name'
 
-      Db.accountsSettlement.findOne.returns(P.resolve({ accountId, accountNumber, routingNumber }))
-      Db.accountsSettlement.update.returns(P.resolve({ accountId, accountNumber, routingNumber }))
+      Db.participantSettlement.findOne.returns(P.resolve({ participantId, participantNumber, routingNumber }))
+      Db.participantSettlement.update.returns(P.resolve({ participantId, participantNumber, routingNumber }))
 
-      Model.updateAccountSettlement({ accountId, name }, { account_number: accountNumber, routing_number: routingNumber })
+      Model.updateParticipantSettlement({ participantId, name }, { participant_number: participantNumber, routing_number: routingNumber })
         .then(r => {
-          test.ok(Db.accountsSettlement.update.withArgs({ accountId }, { accountNumber, routingNumber }).calledOnce)
-          test.deepEqual(r, { accountName: name, accountNumber, routingNumber })
+          test.ok(Db.participantSettlement.update.withArgs({ participantId }, { participantNumber, routingNumber }).calledOnce)
+          test.deepEqual(r, { participantName: name, participantNumber, routingNumber })
           test.end()
         })
         .catch(err => {
@@ -308,7 +308,7 @@ Test('accounts model', modelTest => {
         })
     })
 
-    updateAccountSettlementTest.end()
+    updateParticipantSettlementTest.end()
   })
 
   modelTest.end()

@@ -2,10 +2,10 @@
 
 const P = require('bluebird')
 const Model = require('./model')
-const Charges = require('../charge')
-const Account = require('../account')
-const SettlementsModel = require('../../models/settlements')
-const SettledFee = require('../../models/settled-fees.js')
+const Charge = require('../charge')
+const Participant = require('../participant')
+const SettlementModel = require('../../models/settlement')
+const SettledFee = require('../../models/settled-fee.js')
 const Util = require('../../../src/lib/util')
 const Config = require('../../../src/lib/config')
 
@@ -18,20 +18,20 @@ const LEDGER = 'ledger'
 const generateFeeAmount = (charge, transfer) => {
   switch (charge.rateType) {
     case PERCENTAGE:
-      return Util.formatAmount(charge.rate * transfer.creditAmount)
+      return Util.formatAmount(charge.rate * transfer.payerAmount)
     case FLAT:
       return charge.rate
   }
 }
 
-const getAccountIdFromTransferForCharge = (account, transfer) => {
-  switch (account) {
+const getParticipantIdFromTransferForCharge = (participant, transfer) => {
+  switch (participant) {
     case SENDER:
-      return P.resolve(transfer.debitAccountId)
+      return P.resolve(transfer.payeeParticipantId)
     case RECEIVER:
-      return P.resolve(transfer.creditAccountId)
+      return P.resolve(transfer.payerParticipantId)
     case LEDGER:
-      return Account.getByName(Config.LEDGER_ACCOUNT_NAME).then(account => account.accountId)
+      return Participant.getByName(Config.LEDGER_ACCOUNT_NAME).then(participant => participant.participantId)
   }
 }
 
@@ -45,13 +45,13 @@ const create = (charge, transfer) => {
       return existingFee
     }
 
-    return P.all([getAccountIdFromTransferForCharge(charge.payer, transfer), getAccountIdFromTransferForCharge(charge.payee, transfer)]).then(([payerAccountId, payeeAccountId]) => {
+    return P.all([getParticipantIdFromTransferForCharge(charge.payerParticipantId, transfer), getParticipantIdFromTransferForCharge(charge.payeeParticipantId, transfer)]).then(([payerParticipantId, payeeParticipantId]) => {
       const amount = generateFeeAmount(charge, transfer)
       const fee = {
-        transferId: transfer.transferUuid,
+        transferId: transfer.transferId,
         amount,
-        payerAccountId,
-        payeeAccountId,
+        payerParticipantId,
+        payeeParticipantId,
         chargeId: charge.chargeId
       }
       return Model.create(fee)
@@ -63,28 +63,28 @@ const getAllForTransfer = (transfer) => {
   return Model.getAllForTransfer(transfer)
 }
 
-const generateFeesForTransfer = (transfer) => {
-  return Charges.getAllForTransfer(transfer).then(charges => {
+const generateFeeForTransfer = (transfer) => {
+  return Charge.getAllForTransfer(transfer).then(charges => {
     return P.all(charges.map(charge => create(charge, transfer)))
   })
 }
 
-const getUnsettledFees = () => {
-  return Model.getUnsettledFees()
+const getUnsettledFee = () => {
+  return Model.getUnsettledFee()
 }
 
-const getUnsettledFeesByAccount = (account) => {
-  return Model.getUnsettledFeesByAccount(account)
+const getUnsettledFeeByParticipant = (participant) => {
+  return Model.getUnsettledFeeByParticipant(participant)
 }
 
 const settleFee = (fee, settlement) => {
   return SettledFee.create({ feeId: fee.feeId, settlementId: settlement.settlementId }).then(settledFee => fee)
 }
 
-const reduceFees = (unflattenedFees) => {
+const reduceFee = (unflattenedFee) => {
   const flattened = []
-  unflattenedFees.forEach(fees => {
-    fees.forEach(fee => {
+  unflattenedFee.forEach(fee => {
+    fee.forEach(fee => {
       if (!flattened.includes(fee)) {
         flattened.push(fee)
       }
@@ -93,23 +93,23 @@ const reduceFees = (unflattenedFees) => {
   return flattened
 }
 
-const settleFeesForTransfers = async (transfers) => {
-  const settlementId = SettlementsModel.generateId()
-  await SettlementsModel.create(settlementId, 'fee')
-  const settlement = await SettlementsModel.findById(settlementId)
+const settleFeeForTransfers = async (transfers) => {
+  const settlementId = SettlementModel.generateId()
+  await SettlementModel.create(settlementId, 'fee')
+  const settlement = await SettlementModel.findById(settlementId)
   return P.all(transfers.map(transfer => {
-    return Model.getSettleableFeesForTransfer(transfer).then(fees => {
-      return P.all(fees.map(fee => settleFee(fee, settlement)))
+    return Model.getSettleableFeeForTransfer(transfer).then(fee => {
+      return P.all(fee.map(fee => settleFee(fee, settlement)))
     })
-  })).then(unflattenedFees => {
-    return reduceFees(unflattenedFees)
+  })).then(unflattenedFee => {
+    return reduceFee(unflattenedFee)
   })
 }
 
 module.exports = {
   getAllForTransfer,
-  generateFeesForTransfer,
-  getUnsettledFees,
-  getUnsettledFeesByAccount,
-  settleFeesForTransfers
+  generateFeeForTransfer,
+  getUnsettledFee,
+  getUnsettledFeeByParticipant,
+  settleFeeForTransfers
 }

@@ -1,5 +1,5 @@
 #!/bin/bash
-export POSTGRES_USER=${POSTGRES_USER:-'postgres'}
+export POSTGRES_PARTY=${POSTGRES_PARTY:-'postgres'}
 export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-'postgres'}
 export LEDGER_HOST=${HOST_IP:-'localhost'}
 export API_IMAGE=${API_IMAGE:-'central-ledger'}
@@ -29,7 +29,7 @@ fpsql() {
 		-e PGPASSWORD=$POSTGRES_PASSWORD \
 		"postgres:9.4" \
     --host postgres \
-		--username $POSTGRES_USER \
+		--username $POSTGRES_PARTY \
     --dbname postgres \
 		--quiet --no-align --tuples-only \
 		"$@"
@@ -52,7 +52,7 @@ fcurl() {
 ftest() {
 	docker run --rm -i \
     --net centralledger_back \
-    --env CLEDG_DATABASE_URI="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/central_ledger_integration" \
+    --env CLEDG_DATABASE_URI="postgres://${POSTGRES_PARTY}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/central_ledger_integration" \
 		$API_IMAGE:test \
     /bin/sh \
     -c \

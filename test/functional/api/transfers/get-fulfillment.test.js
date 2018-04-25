@@ -8,7 +8,7 @@ Test('GET /transfers/:id/fulfillment', getTest => {
   getTest.test('should return fulfillment for transfer', async function (test) {
     const fulfillment = 'oAKAAA'
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '25'), Fixtures.buildDebitOrCredit(Base.account2Name, '25'))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '25'), Fixtures.buildDebitOrCredit(Base.participant2Name, '25'))
 
     await Base.prepareTransfer(transferId, transfer)
     await Base.fulfillTransfer(transferId, fulfillment)
@@ -31,7 +31,7 @@ Test('GET /transfers/:id/fulfillment', getTest => {
 
   getTest.test('should return error when retrieving fulfillment if transfer not executed', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '50'), Fixtures.buildDebitOrCredit(Base.account2Name, '50'))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
@@ -47,10 +47,10 @@ Test('GET /transfers/:id/fulfillment', getTest => {
 
   getTest.test('should return error when retrieving fulfillment of rejected transfer', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '50'), Fixtures.buildDebitOrCredit(Base.account2Name, '50'))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'))
 
     Base.prepareTransfer(transferId, transfer)
-      .then(() => Base.rejectTransfer(transferId, Fixtures.rejectionMessage(), { name: Base.account2Name, password: Base.account2Password }))
+      .then(() => Base.rejectTransfer(transferId, Fixtures.rejectionMessage(), { name: Base.participant2Name, password: Base.participant2Password }))
       .then(() => {
         Base.getFulfillment(transferId)
           .expect(422)
@@ -65,7 +65,7 @@ Test('GET /transfers/:id/fulfillment', getTest => {
 
   getTest.test('should return error if transfer not conditional', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '50'), Fixtures.buildDebitOrCredit(Base.account2Name, '50'))
+    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
