@@ -20,7 +20,7 @@ const transferProperties = [
 ]
 
 const formatAsset = (asset) => Util.mergeAndOmitNil(asset, {
-  account: UrlParser.toAccountUri(asset.account),
+  participant: UrlParser.toParticipantUri(asset.participant),
   amount: Util.formatAmount(asset.amount),
   memo: Util.parseJson(asset.memo),
   rejection_message: Util.parseJson(asset.rejection_message)
@@ -42,12 +42,12 @@ const fromTransferReadModel = (t) => fromTransferAggregate({
   id: t.transferId,
   ledger: t.ledger,
   debits: [{
-    account: t.debitAccountName,
+    participant: t.debitParticipantName,
     amount: t.payeeAmount,
     memo: t.payeeNote
   }],
   credits: [{
-    account: t.creditAccountName,
+    participant: t.creditParticipantName,
     amount: t.payerAmount,
     memo: t.payerNote,
     rejected: t.payeeRejected === 1,

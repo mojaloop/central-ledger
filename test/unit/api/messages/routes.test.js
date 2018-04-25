@@ -5,13 +5,13 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Base = require('../../base')
 const Config = require('../../../../src/lib/config')
-const Accounts = require('../../../../src/domain/account')
+const Participants = require('../../../../src/domain/participant')
 const Sidecar = require('../../../../src/lib/sidecar')
 
-const toAccount = 'http://central-ledger/accounts/to'
-const fromAccount = 'http://central-ledger/accounts/from'
+const toParticipant = 'http://central-ledger/participants/to'
+const fromParticipant = 'http://central-ledger/participants/from'
 
-const createPayload = ({ledger = Config.HOSTNAME, from = fromAccount, to = toAccount, data = {}}) => {
+const createPayload = ({ledger = Config.HOSTNAME, from = fromParticipant, to = toParticipant, data = {}}) => {
   return {
     ledger,
     from,
@@ -29,9 +29,9 @@ Test('POST /messages', postTest => {
 
   postTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(Accounts, 'exists')
+    sandbox.stub(Participants, 'exists')
     sandbox.stub(Sidecar, 'logRequest')
-    Accounts.exists.returns(P.resolve({}))
+    Participants.exists.returns(P.resolve({}))
     test.end()
   })
 

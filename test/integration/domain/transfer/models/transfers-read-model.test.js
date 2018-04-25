@@ -6,7 +6,7 @@ const P = require('bluebird')
 const Test = require('tape')
 const Moment = require('moment')
 const Db = require(`${src}/db`)
-const Account = require(`${src}/domain/account`)
+const Participant = require(`${src}/domain/participant`)
 const ReadModel = require(`${src}/domain/transfer/models/transfers-read-model`)
 const Fixtures = require('../../../../fixtures')
 const TransferState = require('../../../../../src/domain/transfer/state')
@@ -21,25 +21,25 @@ const getTransfersCount = () => {
   return Db.transfer.count({}, '*')
 }
 
-const createAccounts = (accountNames) => {
-  return P.all(accountNames.map(name => Account.create({ name: name, password: '1234', emailAddress: name + '@test.com' }))).then(accounts => _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {}))
+const createParticipants = (participantNames) => {
+  return P.all(participantNames.map(name => Participant.create({ name: name, password: '1234', emailAddress: name + '@test.com' }))).then(participant => _.reduce(participant, (m, acct) => _.set(m, acct.name, acct.participantId), {}))
 }
 
-const buildReadModelDebitOrCredit = (accountName, amount, accountMap) => {
-  let record = Fixtures.buildDebitOrCredit(accountName, amount)
-  record.accountId = accountMap[accountName]
+const buildReadModelDebitOrCredit = (participantName, amount, participantMap) => {
+  let record = Fixtures.buildDebitOrCredit(participantName, amount)
+  record.participantId = participantMap[participantName]
   return record
 }
 
 Test('transfers read model', modelTest => {
   modelTest.test('saveTransfer should', saveTransferTest => {
     saveTransferTest.test('save a transfer to the read model', test => {
-      let debitAccountName = Fixtures.generateAccountName()
-      let creditAccountName = Fixtures.generateAccountName()
+      let debitParticipantName = Fixtures.generateParticipantName()
+      let creditParticipantName = Fixtures.generateParticipantName()
 
-      createAccounts([debitAccountName, creditAccountName])
-        .then(accountMap => {
-          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED)
+      createParticipants([debitParticipantName, creditParticipantName])
+        .then(participantMap => {
+          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitParticipantName, '50', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '50', participantMap), TransferState.PREPARED)
           ReadModel.saveTransfer(transfer)
             .then(savedTransfer => {
               test.ok(savedTransfer)
@@ -55,14 +55,14 @@ Test('transfers read model', modelTest => {
 
   modelTest.test('updateTransfer should', updateTransferTest => {
     updateTransferTest.test('update a transfer in the read model', test => {
-      let debitAccountName = Fixtures.generateAccountName()
-      let creditAccountName = Fixtures.generateAccountName()
+      let debitParticipantName = Fixtures.generateParticipantName()
+      let creditParticipantName = Fixtures.generateParticipantName()
 
       let transferId = Fixtures.generateTransferId()
 
-      createAccounts([debitAccountName, creditAccountName])
-        .then(accountMap => {
-          let transfer = Fixtures.buildReadModelTransfer(transferId, buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED)
+      createParticipants([debitParticipantName, creditParticipantName])
+        .then(participantMap => {
+          let transfer = Fixtures.buildReadModelTransfer(transferId, buildReadModelDebitOrCredit(debitParticipantName, '50', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '50', participantMap), TransferState.PREPARED)
           ReadModel.saveTransfer(transfer)
             .then(() => {
               let updatedFields = { state: TransferState.EXECUTED, fulfillment: 'oAKAAA', executedDate: Moment(1474471284081) }
@@ -101,25 +101,25 @@ Test('transfers read model', modelTest => {
   })
 
   modelTest.test('getById should', getByIdTest => {
-    getByIdTest.test('retrieve transfer from read model by id and set account fields', test => {
-      let debitAccountName = Fixtures.generateAccountName()
-      let creditAccountName = Fixtures.generateAccountName()
+    getByIdTest.test('retrieve transfer from read model by id and set participant fields', test => {
+      let debitParticipantName = Fixtures.generateParticipantName()
+      let creditParticipantName = Fixtures.generateParticipantName()
 
-      createAccounts([debitAccountName, creditAccountName])
-        .then(accountMap => {
-          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED)
+      createParticipants([debitParticipantName, creditParticipantName])
+        .then(participantMap => {
+          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitParticipantName, '50', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '50', participantMap), TransferState.PREPARED)
           ReadModel.saveTransfer(transfer)
             .then(saved => {
               ReadModel.getById(saved.transferId)
                 .then(found => {
                   test.notEqual(found, saved)
-                  test.notOk(saved.creditAccountName)
-                  test.notOk(saved.debitAccountName)
+                  test.notOk(saved.creditParticipantName)
+                  test.notOk(saved.debitParticipantName)
                   test.equal(found.transferId, saved.transferId)
-                  test.equal(found.payerParticipantId, accountMap[creditAccountName])
-                  test.equal(found.creditAccountName, creditAccountName)
-                  test.equal(found.payeeParticipantId, accountMap[debitAccountName])
-                  test.equal(found.debitAccountName, debitAccountName)
+                  test.equal(found.payerParticipantId, participantMap[creditParticipantName])
+                  test.equal(found.creditParticipantName, creditParticipantName)
+                  test.equal(found.payeeParticipantId, participantMap[debitParticipantName])
+                  test.equal(found.debitParticipantName, debitParticipantName)
                   test.end()
                 })
             })
@@ -131,14 +131,14 @@ Test('transfers read model', modelTest => {
 
   modelTest.test('getAll should', getAllTest => {
     getAllTest.test('retrieve all transfers from read model', test => {
-      let debitAccountName = Fixtures.generateAccountName()
-      let creditAccountName = Fixtures.generateAccountName()
+      let debitParticipantName = Fixtures.generateParticipantName()
+      let creditParticipantName = Fixtures.generateParticipantName()
 
-      createAccounts([debitAccountName, creditAccountName])
-        .then(accountMap => {
-          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED)
-          let transfer2 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '40', accountMap), buildReadModelDebitOrCredit(creditAccountName, '40', accountMap), TransferState.PREPARED)
-          let transfer3 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitAccountName, '30', accountMap), buildReadModelDebitOrCredit(creditAccountName, '30', accountMap), TransferState.PREPARED)
+      createParticipants([debitParticipantName, creditParticipantName])
+        .then(participantMap => {
+          let transfer = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitParticipantName, '50', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '50', participantMap), TransferState.PREPARED)
+          let transfer2 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitParticipantName, '40', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '40', participantMap), TransferState.PREPARED)
+          let transfer3 = Fixtures.buildReadModelTransfer(Fixtures.generateTransferId(), buildReadModelDebitOrCredit(debitParticipantName, '30', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '30', participantMap), TransferState.PREPARED)
 
           ReadModel.truncateTransfers()
             .then(() => ReadModel.saveTransfer(transfer))
@@ -158,16 +158,16 @@ Test('transfers read model', modelTest => {
 
   modelTest.test('findExpired should', expiredTest => {
     expiredTest.test('retrieve prepared transfers with past expires at', test => {
-      let debitAccountName = Fixtures.generateAccountName()
-      let creditAccountName = Fixtures.generateAccountName()
+      let debitParticipantName = Fixtures.generateParticipantName()
+      let creditParticipantName = Fixtures.generateParticipantName()
 
       let pastTransferId = Fixtures.generateTransferId()
       let futureTransferId = Fixtures.generateTransferId()
 
-      createAccounts([debitAccountName, creditAccountName])
-        .then(accountMap => {
-          let pastTransfer = Fixtures.buildReadModelTransfer(pastTransferId, buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED, pastDate())
-          let futureTransfer = Fixtures.buildReadModelTransfer(futureTransferId, buildReadModelDebitOrCredit(debitAccountName, '50', accountMap), buildReadModelDebitOrCredit(creditAccountName, '50', accountMap), TransferState.PREPARED)
+      createParticipants([debitParticipantName, creditParticipantName])
+        .then(participantMap => {
+          let pastTransfer = Fixtures.buildReadModelTransfer(pastTransferId, buildReadModelDebitOrCredit(debitParticipantName, '50', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '50', participantMap), TransferState.PREPARED, pastDate())
+          let futureTransfer = Fixtures.buildReadModelTransfer(futureTransferId, buildReadModelDebitOrCredit(debitParticipantName, '50', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '50', participantMap), TransferState.PREPARED)
           ReadModel.saveTransfer(pastTransfer)
             .then(() => ReadModel.saveTransfer(futureTransfer))
             .then(() => {
@@ -175,8 +175,8 @@ Test('transfers read model', modelTest => {
                 .then(found => {
                   test.equal(found.length, 1)
                   test.equal(found[0].transferId, pastTransferId)
-                  test.notOk(found[0].debitAccountName)
-                  test.notOk(found[0].creditAccountName)
+                  test.notOk(found[0].debitParticipantName)
+                  test.notOk(found[0].creditParticipantName)
                   test.end()
                 })
             })

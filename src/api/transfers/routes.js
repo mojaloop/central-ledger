@@ -25,16 +25,16 @@ module.exports = [{
         id: Joi.string().uri().required().description('Id of transfer'),
         ledger: Joi.string().uri().required().description('Ledger of transfer'),
         debits: Joi.array().items(Joi.object().keys({
-          account: Joi.string().uri().required().description('Debit account of the transfer'),
+          participant: Joi.string().uri().required().description('Debit participant of the transfer'),
           amount: Joi.number().required().description('Debit amount of the transfer'),
           memo: Joi.object().optional().unknown().description('Additional information related to the debit'),
-          authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by account holder')
+          authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by participant holder')
         })).required().description('Debits of the transfer'),
         credits: Joi.array().items(Joi.object().keys({
-          account: Joi.string().uri().required().description('Credit account of the transfer'),
+          participant: Joi.string().uri().required().description('Credit participant of the transfer'),
           amount: Joi.number().required().description('Credit amount of the transfer'),
           memo: Joi.object().optional().unknown().description('Additional information related to the credit'),
-          authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by account holder')
+          authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by participant holder')
         })).required().description('Credits of the transfer'),
         execution_condition: Joi.string().trim().max(65535).optional().description('Execution condition of transfer'),
         expires_at: Joi.string().isoDate().optional().description('When the transfer expires')

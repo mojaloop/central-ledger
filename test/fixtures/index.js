@@ -10,7 +10,7 @@ const generateTransferId = () => {
   return Uuid()
 }
 
-const generateAccountName = () => {
+const generateParticipantName = () => {
   return generateRandomName()
 }
 
@@ -18,9 +18,9 @@ const generateRandomName = () => {
   return `dfsp${Uuid().replace(/-/g, '')}`.substr(0, 25)
 }
 
-const buildDebitOrCredit = (accountName, amount, memo) => {
+const buildDebitOrCredit = (participantName, amount, memo) => {
   return {
-    account: `http://${hostname}/accounts/${accountName}`,
+    participant: `http://${hostname}/participants/${participantName}`,
     amount: amount,
     memo: memo,
     authorized: true
@@ -121,10 +121,10 @@ const buildReadModelTransfer = (transferId, debit, credit, state, expirationDate
     transferId: transferId,
     state: state,
     ledger: `${hostname}`,
-    payeeParticipantId: debit.accountId,
+    payeeParticipantId: debit.participantId,
     payeeAmount: debit.amount,
     payeeNote: debit.memo,
-    payerParticipantId: credit.accountId,
+    payerParticipantId: credit.participantId,
     payerAmount: credit.amount,
     payerNote: credit.memo,
     executionCondition: executionCondition,
@@ -149,19 +149,19 @@ const buildCharge = (name, rateType, code) => {
   }
 }
 
-const findAccountPositions = (positions, accountName) => {
+const findParticipantPositions = (positions, participantName) => {
   return positions.find(function (p) {
-    return p.account === buildAccountUrl(accountName)
+    return p.participant === buildParticipantUrl(participantName)
   })
 }
 
-const buildAccountUrl = (accountName) => {
-  return `http://${hostname}/accounts/${accountName}`
+const buildParticipantUrl = (participantName) => {
+  return `http://${hostname}/participants/${participantName}`
 }
 
-function buildAccountPosition (accountName, tPayments, tReceipts, fPayments, fReceipts) {
+function buildParticipantPosition (participantName, tPayments, tReceipts, fPayments, fReceipts) {
   return {
-    account: buildAccountUrl(accountName),
+    participant: buildParticipantUrl(participantName),
     fee: {
       payments: fPayments.toString(),
       receipts: fReceipts.toString(),
@@ -196,7 +196,7 @@ const rejectionMessage = () => {
 
 module.exports = {
   hostname,
-  buildAccountPosition,
+  buildParticipantPosition,
   buildCharge,
   buildDebitOrCredit,
   buildTransfer,
@@ -205,9 +205,9 @@ module.exports = {
   buildTransferExecutedEvent,
   buildTransferRejectedEvent,
   buildReadModelTransfer,
-  findAccountPositions,
+  findParticipantPositions,
   generateRandomName,
-  generateAccountName,
+  generateParticipantName,
   generateTransferId,
   getMomentToExpire,
   getCurrentUTCTimeInMilliseconds,

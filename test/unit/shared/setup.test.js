@@ -7,7 +7,7 @@ const P = require('bluebird')
 const Migrator = require('../../../src/lib/migrator')
 const Db = require('../../../src/db')
 const Config = require('../../../src/lib/config')
-const Account = require('../../../src/domain/account')
+const Participant = require('../../../src/domain/participant')
 const Plugins = require('../../../src/shared/plugins')
 const RequestLogger = require('../../../src/lib/request-logger')
 const UrlParser = require('../../../src/lib/urlparser')
@@ -28,7 +28,7 @@ Test('setup', setupTest => {
     sandbox.stub(Hapi, 'Server')
     sandbox.stub(Plugins, 'registerPlugins')
     sandbox.stub(Migrator)
-    sandbox.stub(Account)
+    sandbox.stub(Participant)
     sandbox.stub(UrlParser, 'idFromTransferUri')
     sandbox.stub(RequestLogger, 'logRequest')
     sandbox.stub(RequestLogger, 'logResponse')
@@ -76,7 +76,7 @@ Test('setup', setupTest => {
       Sidecar.connect.returns(P.resolve())
       const server = createServer()
       if (service === 'api') {
-        Account.createLedgerAccount().returns(P.resolve())
+        Participant.createLedgerParticipant().returns(P.resolve())
       }
       return server
     }
@@ -115,10 +115,10 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('create ledger account on api service call', (test) => {
+    initializeTest.test('create ledger participant on api service call', (test) => {
       setupPromises({})
       Setup.initialize({ service: 'api' }).then(() => {
-        test.ok(Account.createLedgerAccount.called)
+        test.ok(Participant.createLedgerParticipant.called)
         test.end()
       })
     })

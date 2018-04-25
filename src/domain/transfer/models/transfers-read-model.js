@@ -20,9 +20,9 @@ const saveTransfer = (record) => {
 const getAll = () => {
   return Db.transfer.query(builder => {
     return builder
-      .innerJoin('accounts AS ca', 'transfer.payerParticipantId', 'ca.accountId')
-      .innerJoin('accounts AS da', 'transfer.payeeParticipantId', 'da.accountId')
-      .select('transfer.*', 'ca.name AS creditAccountName', 'da.name AS debitAccountName')
+      .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
+      .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
+      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
   })
 }
 
@@ -41,9 +41,9 @@ const getById = (id) => {
   return Db.transfer.query(builder => {
     return builder
       .where({ transferId: id })
-      .innerJoin('accounts AS ca', 'transfer.payerParticipantId', 'ca.accountId')
-      .innerJoin('accounts AS da', 'transfer.payeeParticipantId', 'da.accountId')
-      .select('transfer.*', 'ca.name AS creditAccountName', 'da.name AS debitAccountName')
+      .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
+      .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
+      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
       .first()
   })
 }

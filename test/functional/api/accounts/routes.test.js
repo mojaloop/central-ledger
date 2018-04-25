@@ -5,23 +5,23 @@ const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
 const Config = require('../../../../src/lib/config')
 
-Test('post and get an account', assert => {
-  const accountName = Fixtures.generateAccountName()
+Test('post and get an participant', assert => {
+  const participantName = Fixtures.generateParticipantName()
   const password = '1234'
 
-  Base.createAccount(accountName, password)
+  Base.createParticipant(participantName, password)
     .expect(201)
     .expect('Content-Type', /json/)
     .then(res => {
       let expectedCreated = res.body.created
       assert.notEqual(expectedCreated, undefined)
-      assert.equal(res.body.name, accountName)
+      assert.equal(res.body.name, participantName)
 
-      Base.getAccount(accountName)
+      Base.getParticipant(participantName)
         .expect(200)
         .expect('Content-Type', /json/)
         .then(getRes => {
-          assert.equal(accountName, getRes.body.name)
+          assert.equal(participantName, getRes.body.name)
           assert.equal(expectedCreated, getRes.body.created)
           assert.equal('0', getRes.body.balance)
           assert.equal(false, getRes.body.is_disabled)
@@ -31,72 +31,72 @@ Test('post and get an account', assert => {
     })
 })
 
-Test('return the net position for the account as the balance', async function (assert) {
+Test('return the net position for the participant as the balance', async function (assert) {
   let fulfillment = 'oAKAAA'
-  Config.LEDGER_ACCOUNT_NAME = 'LedgerAccountName'
+  Config.LEDGER_ACCOUNT_NAME = 'LedgerParticipantName'
   let transferId = Fixtures.generateTransferId()
-  let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, '50'), Fixtures.buildDebitOrCredit(Base.account2Name, '50'))
+  let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'))
 
   let transfer2Id = Fixtures.generateTransferId()
-  let transfer2 = Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(Base.account2Name, '15'), Fixtures.buildDebitOrCredit(Base.account1Name, '15'))
+  let transfer2 = Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(Base.participant2Name, '15'), Fixtures.buildDebitOrCredit(Base.participant1Name, '15'))
 
   await Base.prepareTransfer(transferId, transfer)
   await Base.fulfillTransfer(transferId, fulfillment)
   await Base.prepareTransfer(transfer2Id, transfer2)
   await Base.fulfillTransfer(transfer2Id, fulfillment)
-  const res = await Base.getAccount(Base.account1Name)
-  assert.equal(Base.account1Name, res.body.name)
+  const res = await Base.getParticipant(Base.participant1Name)
+  assert.equal(Base.participant1Name, res.body.name)
   assert.equal('-35', res.body.balance)
   assert.end()
 })
 
-Test('ensure an account name can only be registered once', assert => {
-  const accountName = Fixtures.generateAccountName()
+Test('ensure an participant name can only be registered once', assert => {
+  const participantName = Fixtures.generateParticipantName()
   const password = '1234'
 
-  Base.createAccount(accountName, password)
+  Base.createParticipant(participantName, password)
     .expect(201)
     .expect('Content-Type', /json/)
     .then(() => {
-      Base.createAccount(accountName, password)
+      Base.createParticipant(participantName, password)
         .expect(422)
         .expect('Content-Type', /json/)
         .then(res => {
           assert.equal(res.body.id, 'RecordExistsError')
-          assert.equal(res.body.message, 'The account has already been registered')
+          assert.equal(res.body.message, 'The participant has already been registered')
           assert.end()
         })
     })
 })
 
-Test('update an accounts password', async function (test) {
-  const accountName = Fixtures.generateAccountName()
+Test('update an participants password', async function (test) {
+  const participantName = Fixtures.generateParticipantName()
   const password = '1234'
 
-  await Base.createAccount(accountName, password)
-  const res = await Base.putApi(`/accounts/${accountName}`, {password, emailAddress: accountName + '@test.com'})
-  test.equal(res.body.id, `http://central-ledger/accounts/${accountName}`)
-  test.equal(res.body.name, accountName)
+  await Base.createParticipant(participantName, password)
+  const res = await Base.putApi(`/participants/${participantName}`, {password, emailAddress: participantName + '@test.com'})
+  test.equal(res.body.id, `http://central-ledger/participants/${participantName}`)
+  test.equal(res.body.name, participantName)
   test.equal(res.body.ledger, 'http://central-ledger')
   test.end()
 })
 
-Test('update an accounts settlement', test => {
-  const accountName = Fixtures.generateAccountName()
+Test('update an participants settlement', test => {
+  const participantName = Fixtures.generateParticipantName()
   const password = '1234'
-  const accountNumber = '1234'
+  const participantNumber = '1234'
   const routingNumber = '5678'
 
-  Base.createAccount(accountName, password)
+  Base.createParticipant(participantName, password)
     .expect(201)
     .expect('Content-Type', /json/)
     .then(() => {
-      Base.putApi(`/accounts/${accountName}/settlement`, {account_number: accountNumber, routing_number: routingNumber})
+      Base.putApi(`/participants/${participantName}/settlement`, {participant_number: participantNumber, routing_number: routingNumber})
         .expect(200)
         .expect('Content-Type', /json/)
         .then(res => {
-          test.ok(res.body.account_id)
-          test.equal(res.body.account_number, accountNumber)
+          test.ok(res.body.participant_id)
+          test.equal(res.body.participant_number, participantNumber)
           test.equal(res.body.routing_number, routingNumber)
           test.end()
         })

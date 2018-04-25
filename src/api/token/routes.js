@@ -1,7 +1,7 @@
 'use strict'
 
 const Handler = require('./handler')
-const AccountAuthStrategy = require('../auth/account')
+const ParticipantAuthStrategy = require('../auth/participant')
 const tags = ['api', 'token']
 
 module.exports = [
@@ -11,7 +11,7 @@ module.exports = [
     handler: Handler.create,
     options: {
       tags,
-      auth: AccountAuthStrategy.scheme,
+      auth: ParticipantAuthStrategy.scheme,
       description: 'Get a token that can be used to authenticate future requests',
       id: 'auth_token'
     }

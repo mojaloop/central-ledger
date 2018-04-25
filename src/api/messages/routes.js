@@ -12,7 +12,7 @@ module.exports = [
     handler: Handler.sendMessage,
     options: {
       tags,
-      description: 'Send a notification to another account',
+      description: 'Send a notification to another participant',
       id: 'message',
       auth: Auth.strategy(),
       payload: {

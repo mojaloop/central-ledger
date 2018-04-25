@@ -25,8 +25,8 @@ function entityItem (transfer) {
     preparedDate: transfer.preparedDate,
     executedDate: transfer.executedDate,
     rejectedDate: transfer.rejectedDate,
-    creditAccountName: transfer.creditAccountName,
-    debitAccountName: transfer.debitAccountName
+    creditParticipantName: transfer.creditParticipantName,
+    debitParticipantName: transfer.debitParticipantName
   }
 }
 

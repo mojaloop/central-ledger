@@ -8,7 +8,7 @@ const FeeService = require('../../../../src/domain/fee')
 const SettledFeeService = require('../../../../src/models/settled-fee')
 const SettlementModel = require('../../../../src/models/settlement')
 const Charge = require('../../../../src/domain/charge')
-const Account = require('../../../../src/domain/account')
+const Participant = require('../../../../src/domain/participant')
 const TransferQueries = require('../../../../src/domain/transfer/queries')
 const Util = require('../../../../src/lib/util')
 const Config = require('../../../../src/lib/config')
@@ -31,13 +31,13 @@ Test('Fee service', serviceTest => {
     sandbox.stub(Model, 'create')
     sandbox.stub(Model, 'doesExist')
     sandbox.stub(Model, 'getAllForTransfer')
-    sandbox.stub(Model, 'getUnsettledFeeByAccount')
+    sandbox.stub(Model, 'getUnsettledFeeByParticipant')
     sandbox.stub(Model, 'getSettleableFeeForTransfer')
     sandbox.stub(Model, 'getUnsettledFee')
     sandbox.stub(SettlementModel, 'create')
     sandbox.stub(SettledFeeService, 'create')
     sandbox.stub(Charge, 'getAllForTransfer')
-    sandbox.stub(Account, 'getByName')
+    sandbox.stub(Participant, 'getByName')
     sandbox.stub(TransferQueries, 'getById')
     Config.LEDGER_ACCOUNT_NAME = 'LEDGER_ACCOUNT_NAME'
     test.end()
@@ -88,9 +88,9 @@ Test('Fee service', serviceTest => {
       const fee = createFee(transfer, charge)
       const fee2 = createFee(transfer, charge2)
 
-      const ledgerAccountId = '4'
+      const ledgerParticipantId = '4'
       const fee3 = createFee(transfer, charge3)
-      fee3.payeeParticipantId = ledgerAccountId
+      fee3.payeeParticipantId = ledgerParticipantId
 
       const event = {
         aggregate: {
@@ -98,15 +98,15 @@ Test('Fee service', serviceTest => {
         }
       }
 
-      const account = {
-        accountId: ledgerAccountId
+      const participant = {
+        participantId: ledgerParticipantId
       }
 
       Charge.getAllForTransfer.returns(P.resolve([charge, charge2, charge3]))
       TransferQueries.getById.returns(P.resolve(transfer))
       Model.create.returns(P.resolve(fee))
       Model.doesExist.returns(P.resolve(null))
-      Account.getByName.withArgs(Config.LEDGER_ACCOUNT_NAME).returns(P.resolve(account))
+      Participant.getByName.withArgs(Config.LEDGER_ACCOUNT_NAME).returns(P.resolve(participant))
       FeeService.generateFeeForTransfer(event)
         .then(result => {
           test.deepEqual(Model.create.firstCall.args[0], fee)
@@ -267,8 +267,8 @@ Test('Fee service', serviceTest => {
     getUnsettledFeeTest.end()
   })
 
-  serviceTest.test('getUnsettledFeeByAccount should', getUnsettledFeeByAccountTest => {
-    getUnsettledFeeByAccountTest.test('return settleable fee from Model by account', test => {
+  serviceTest.test('getUnsettledFeeByParticipant should', getUnsettledFeeByParticipantTest => {
+    getUnsettledFeeByParticipantTest.test('return settleable fee from Model by participant', test => {
       const charge = {
         name: 'charge',
         chargeId: '1',
@@ -287,8 +287,8 @@ Test('Fee service', serviceTest => {
         payerParticipantId: 'sender',
         payeeParticipantId: 'receiver'
       }
-      const account = {
-        accountId: 11
+      const participant = {
+        participantId: 11
       }
       const transfer = {
         transferId: '012',
@@ -303,8 +303,8 @@ Test('Fee service', serviceTest => {
       fee2.feeId = 1
       const fee = [fee1, fee2]
 
-      Model.getUnsettledFeeByAccount.returns(P.resolve(fee))
-      FeeService.getUnsettledFeeByAccount(account)
+      Model.getUnsettledFeeByParticipant.returns(P.resolve(fee))
+      FeeService.getUnsettledFeeByParticipant(participant)
         .then(result => {
           test.equal(result.length, 2)
           test.equal(result[0].feeId, fee1.feeId)
@@ -323,7 +323,7 @@ Test('Fee service', serviceTest => {
         })
     })
 
-    getUnsettledFeeByAccountTest.end()
+    getUnsettledFeeByParticipantTest.end()
   })
 
   serviceTest.test('settleFee should', settleTest => {

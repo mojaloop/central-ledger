@@ -5,30 +5,30 @@ const Joi = require('joi')
 const Permissions = require('../../domain/security/permissions')
 const RouteConfig = require('../route-config')
 
-const tags = ['api', 'accounts']
-const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the account')
-const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the account')
+const tags = ['api', 'participants']
+const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the participant')
+const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
 
 module.exports = [
   {
     method: 'GET',
-    path: '/accounts',
+    path: '/participants',
     handler: Handler.getAll,
     options: RouteConfig.config(tags, Permissions.ACCOUNTS_LIST)
   },
   {
     method: 'GET',
-    path: '/accounts/{name}',
+    path: '/participants/{name}',
     handler: Handler.getByName,
     options: RouteConfig.config(tags, Permissions.ACCOUNTS_VIEW, {
       params: {
-        name: Joi.string().required().description('Account name')
+        name: Joi.string().required().description('Participant name')
       }
     })
   },
   {
     method: 'POST',
-    path: '/accounts',
+    path: '/participants',
     handler: Handler.create,
     options: RouteConfig.config(tags, Permissions.ACCOUNTS_CREATE, {
       payload: {
@@ -46,7 +46,7 @@ module.exports = [
   },
   {
     method: 'PUT',
-    path: '/accounts/{name}',
+    path: '/participants/{name}',
     handler: Handler.update,
     options: RouteConfig.config(tags, Permissions.ACCOUNTS_UPDATE, {
       payload: {
@@ -55,10 +55,10 @@ module.exports = [
       },
       validate: {
         payload: {
-          is_disabled: Joi.boolean().required().description('Account is_disabled boolean')
+          is_disabled: Joi.boolean().required().description('Participant is_disabled boolean')
         },
         params: {
-          name: Joi.string().required().description('Account name')
+          name: Joi.string().required().description('Participant name')
         }
       }
     })

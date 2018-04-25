@@ -70,7 +70,7 @@ run_test_command()
     --name $CENRRALLEDGER_TEST_HOST \
     --env API_HOST_IP="centralledger_central-ledger_1" \
     --env ADMIN_HOST_IP="centralledger_central-ledger-admin_1" \
-    --env API_URI="http://centralledger_central-ledger_1:3000/accounts" \
+    --env API_URI="http://centralledger_central-ledger_1:3000/participants" \
 		$API_IMAGE:test \
     /bin/sh \
     -c "$TEST_CMD"

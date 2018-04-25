@@ -124,14 +124,14 @@ Test('fee model', modelTest => {
     doesExist.end()
   })
 
-  modelTest.test('getUnsettledFeeByAccount should', getUnsettledFeeByAccountTest => {
-    getUnsettledFeeByAccountTest.test('return settleable fee for account', test => {
+  modelTest.test('getUnsettledFeeByParticipant should', getUnsettledFeeByParticipantTest => {
+    getUnsettledFeeByParticipantTest.test('return settleable fee for participant', test => {
       const transferId = '1'
       const chargeId = '1'
       const amount = '1.00'
       const fee = [{ transferId, amount, chargeId }]
 
-      const account = { accountId: 11 }
+      const participant = { participantId: 11 }
 
       let builderStub = sandbox.stub()
       let joinPayerStub = sandbox.stub()
@@ -164,23 +164,23 @@ Test('fee model', modelTest => {
         })
       })
 
-      Model.getUnsettledFeeByAccount(account)
+      Model.getUnsettledFeeByParticipant(participant)
         .then(foundFee => {
           test.equal(foundFee, fee)
           test.ok(builderStub.leftJoin.withArgs('settledFee AS sf', 'fee.feeId', 'sf.feeId').calledOnce)
-          test.ok(joinPayerStub.withArgs('accounts AS pr', 'fee.payerParticipantId', 'pr.accountId').calledOnce)
-          test.ok(joinPayeeStub.withArgs('accounts AS pe', 'fee.payeeParticipantId', 'pe.accountId').calledOnce)
+          test.ok(joinPayerStub.withArgs('participant AS pr', 'fee.payerParticipantId', 'pr.participantId').calledOnce)
+          test.ok(joinPayeeStub.withArgs('participant AS pe', 'fee.payeeParticipantId', 'pe.participantId').calledOnce)
           test.ok(whereNullStub.withArgs('sf.feeId').calledOnce)
-          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeAccountName', 'pr.name AS payerAccountName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
+          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeParticipantName', 'pr.name AS payerParticipantName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
           test.end()
         })
     })
 
-    getUnsettledFeeByAccountTest.end()
+    getUnsettledFeeByParticipantTest.end()
   })
 
   modelTest.test('getSettleableFeeForTransfer should', getSettleableFeeForTransferTest => {
-    getSettleableFeeForTransferTest.test('return settleable fee for account', test => {
+    getSettleableFeeForTransferTest.test('return settleable fee for participant', test => {
       const transferId = '1'
       const chargeId = '1'
       const amount = '1.00'
@@ -191,8 +191,8 @@ Test('fee model', modelTest => {
       let builderStub = sandbox.stub()
       let joinPayerStub = sandbox.stub()
       let joinPayeeStub = sandbox.stub()
-      let joinAccountSettlementSourceStub = sandbox.stub()
-      let joinAccountSettlemenetDestinationStub = sandbox.stub()
+      let joinParticipantSettlementSourceStub = sandbox.stub()
+      let joinParticipantSettlemenetDestinationStub = sandbox.stub()
       let whereNullStub = sandbox.stub()
       let distinctStub = sandbox.stub()
       let whereStub = sandbox.stub()
@@ -205,8 +205,8 @@ Test('fee model', modelTest => {
       builderStub.leftJoin.returns({
         innerJoin: joinPayeeStub.returns({
           innerJoin: joinPayerStub.returns({
-            innerJoin: joinAccountSettlementSourceStub.returns({
-              innerJoin: joinAccountSettlemenetDestinationStub.returns({
+            innerJoin: joinParticipantSettlementSourceStub.returns({
+              innerJoin: joinParticipantSettlemenetDestinationStub.returns({
                 whereNull: whereNullStub.returns({
                   distinct: distinctStub.returns({
                     where: whereStub
@@ -222,10 +222,10 @@ Test('fee model', modelTest => {
         .then(foundFee => {
           test.equal(foundFee, fee)
           test.ok(builderStub.leftJoin.withArgs('settledFee AS sf', 'fee.feeId', 'sf.feeId').calledOnce)
-          test.ok(joinPayerStub.withArgs('accounts AS pr', 'fee.payerParticipantId', 'pr.accountId').calledOnce)
-          test.ok(joinPayeeStub.withArgs('accounts AS pe', 'fee.payeeParticipantId', 'pe.accountId').calledOnce)
+          test.ok(joinPayerStub.withArgs('participant AS pr', 'fee.payerParticipantId', 'pr.participantId').calledOnce)
+          test.ok(joinPayeeStub.withArgs('participant AS pe', 'fee.payeeParticipantId', 'pe.participantId').calledOnce)
           test.ok(whereNullStub.withArgs('sf.feeId').calledOnce)
-          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeAccountName', 'pr.name AS payerAccountName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
+          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeParticipantName', 'pr.name AS payerParticipantName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
           test.end()
         })
     })
@@ -265,10 +265,10 @@ Test('fee model', modelTest => {
         .then(foundFee => {
           test.equal(foundFee, fee)
           test.ok(builderStub.leftJoin.withArgs('settledFee AS sf', 'fee.feeId', 'sf.feeId').calledOnce)
-          test.ok(joinPayerStub.withArgs('accounts AS pr', 'fee.payerParticipantId', 'pr.accountId').calledOnce)
-          test.ok(joinPayeeStub.withArgs('accounts AS pe', 'fee.payeeParticipantId', 'pe.accountId').calledOnce)
+          test.ok(joinPayerStub.withArgs('participant AS pr', 'fee.payerParticipantId', 'pr.participantId').calledOnce)
+          test.ok(joinPayeeStub.withArgs('participant AS pe', 'fee.payeeParticipantId', 'pe.participantId').calledOnce)
           test.ok(whereNullStub.withArgs('sf.feeId').calledOnce)
-          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeAccountName', 'pr.name AS payerAccountName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
+          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeParticipantName', 'pr.name AS payerParticipantName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
           test.end()
         })
     })

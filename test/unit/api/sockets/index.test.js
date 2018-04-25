@@ -8,7 +8,7 @@ const Index = require('../../../../src/api/sockets')
 const SocketManager = require('../../../../src/api/sockets/socket-manager')
 const Events = require('../../../../src/lib/events')
 const WebSocket = require('../../../../src/api/sockets/websocket')
-const AccountTransfers = require('../../../../src/api/sockets/account-transfers')
+const ParticipantTransfers = require('../../../../src/api/sockets/participant-transfers')
 
 const assertEvent = (assert, message, event, resource, relatedResources) => {
   assert.equal(message.jsonrpc, '2.0')
@@ -46,7 +46,7 @@ Test('Socket Module', moduleTest => {
     sandbox.stub(Events)
     SocketManager.create.returns(socketManager)
     sandbox.stub(WebSocket, 'initialize')
-    sandbox.stub(AccountTransfers, 'initialize')
+    sandbox.stub(ParticipantTransfers, 'initialize')
     test.end()
   })
 
@@ -100,11 +100,11 @@ Test('Socket Module', moduleTest => {
       Index.plugin.register(mockServer(), {}, {})
       wsServer.emit('connection', ws)
       test.ok(WebSocket.initialize.calledWith(ws, Sinon.match(socketManager)))
-      test.notOk(AccountTransfers.initialize.called)
+      test.notOk(ParticipantTransfers.initialize.called)
       test.end()
     })
 
-    connectionTest.test('initialize AccountTransfers if url is not /websocket', async function (test) {
+    connectionTest.test('initialize ParticipantTransfers if url is not /websocket', async function (test) {
       const url = '/notwebsocket'
       const ws = {
         upgradeReq: {
@@ -116,7 +116,7 @@ Test('Socket Module', moduleTest => {
 
       Index.plugin.register(mockServer(), {}, {})
       wsServer.emit('connection', ws)
-      test.ok(AccountTransfers.initialize.calledWith(ws, url, Sinon.match(socketManager)))
+      test.ok(ParticipantTransfers.initialize.calledWith(ws, url, Sinon.match(socketManager)))
       test.notOk(WebSocket.initialize.called)
       test.end()
     })
@@ -138,27 +138,27 @@ Test('Socket Module', moduleTest => {
       test.end()
     })
 
-    eventsTest.test('onTransferPrepared should send message to socket manager for each account', async function (test) {
-      const creditAccount = 'http://credit-account'
-      const debitAccount = 'http://debit-account'
+    eventsTest.test('onTransferPrepared should send message to socket manager for each participant', async function (test) {
+      const creditParticipant = 'http://credit-participant'
+      const debitParticipant = 'http://debit-participant'
       const transfer = {
         credits: [
-          { account: creditAccount }
+          { participant: creditParticipant }
         ],
         debits: [
-          { account: debitAccount }
+          { participant: debitParticipant }
         ]
       }
       const message = { resource: transfer }
       Events.onTransferPrepared.yields(message)
       Index.plugin.register(mockServer(), {}, {})
-      const creditAccountSendArgs = socketManager.send.firstCall.args
-      test.equal(creditAccountSendArgs[0], creditAccount)
-      assertEvent(test, creditAccountSendArgs[1], 'transfer.create', transfer)
+      const creditParticipantSendArgs = socketManager.send.firstCall.args
+      test.equal(creditParticipantSendArgs[0], creditParticipant)
+      assertEvent(test, creditParticipantSendArgs[1], 'transfer.create', transfer)
 
-      const debitAccountSendArgs = socketManager.send.secondCall.args
-      test.equal(debitAccountSendArgs[0], debitAccount)
-      assertEvent(test, debitAccountSendArgs[1], 'transfer.create', transfer)
+      const debitParticipantSendArgs = socketManager.send.secondCall.args
+      test.equal(debitParticipantSendArgs[0], debitParticipant)
+      assertEvent(test, debitParticipantSendArgs[1], 'transfer.create', transfer)
       test.end()
     })
 
@@ -170,28 +170,28 @@ Test('Socket Module', moduleTest => {
       test.end()
     })
 
-    eventsTest.test('onTransferExecuted should send message to socket manager for each account', async function (test) {
-      const creditAccount = 'http://credit-account'
-      const debitAccount = 'http://debit-account'
+    eventsTest.test('onTransferExecuted should send message to socket manager for each participant', async function (test) {
+      const creditParticipant = 'http://credit-participant'
+      const debitParticipant = 'http://debit-participant'
       const transfer = {
         credits: [
-          { account: creditAccount }
+          { participant: creditParticipant }
         ],
         debits: [
-          { account: debitAccount }
+          { participant: debitParticipant }
         ]
       }
       const relatedResources = { execution_condition_fulfillment: 'aaaa' }
       const message = { resource: transfer, related_resources: relatedResources }
       Events.onTransferExecuted.yields(message)
       Index.plugin.register(mockServer(), {}, {})
-      const creditAccountSendArgs = socketManager.send.firstCall.args
-      test.equal(creditAccountSendArgs[0], creditAccount)
-      assertEvent(test, creditAccountSendArgs[1], 'transfer.update', transfer, relatedResources)
+      const creditParticipantSendArgs = socketManager.send.firstCall.args
+      test.equal(creditParticipantSendArgs[0], creditParticipant)
+      assertEvent(test, creditParticipantSendArgs[1], 'transfer.update', transfer, relatedResources)
 
-      const debitAccountSendArgs = socketManager.send.secondCall.args
-      test.equal(debitAccountSendArgs[0], debitAccount)
-      assertEvent(test, debitAccountSendArgs[1], 'transfer.update', transfer, relatedResources)
+      const debitParticipantSendArgs = socketManager.send.secondCall.args
+      test.equal(debitParticipantSendArgs[0], debitParticipant)
+      assertEvent(test, debitParticipantSendArgs[1], 'transfer.update', transfer, relatedResources)
       test.end()
     })
 
@@ -203,43 +203,43 @@ Test('Socket Module', moduleTest => {
       test.end()
     })
 
-    eventsTest.test('onTransferRejected should send message to socket manager for each account', async function (test) {
-      const creditAccount = 'http://credit-account'
-      const debitAccount = 'http://debit-account'
+    eventsTest.test('onTransferRejected should send message to socket manager for each participant', async function (test) {
+      const creditParticipant = 'http://credit-participant'
+      const debitParticipant = 'http://debit-participant'
       const transfer = {
         credits: [
-          { account: creditAccount }
+          { participant: creditParticipant }
         ],
         debits: [
-          { account: debitAccount }
+          { participant: debitParticipant }
         ]
       }
       const message = { resource: transfer }
       Events.onTransferRejected.yields(message)
       Index.plugin.register(mockServer(), {}, {})
-      const creditAccountSendArgs = socketManager.send.firstCall.args
-      test.equal(creditAccountSendArgs[0], creditAccount)
-      assertEvent(test, creditAccountSendArgs[1], 'transfer.update', transfer)
+      const creditParticipantSendArgs = socketManager.send.firstCall.args
+      test.equal(creditParticipantSendArgs[0], creditParticipant)
+      assertEvent(test, creditParticipantSendArgs[1], 'transfer.update', transfer)
 
-      const debitAccountSendArgs = socketManager.send.secondCall.args
-      test.equal(debitAccountSendArgs[0], debitAccount)
-      assertEvent(test, debitAccountSendArgs[1], 'transfer.update', transfer)
+      const debitParticipantSendArgs = socketManager.send.secondCall.args
+      test.equal(debitParticipantSendArgs[0], debitParticipant)
+      assertEvent(test, debitParticipantSendArgs[1], 'transfer.update', transfer)
       test.end()
     })
 
-    eventsTest.test('onMessageSent should send message to socket manager for to account', async function (test) {
-      const toAccount = 'http://to-account'
-      const fromAccount = 'http://from-account'
+    eventsTest.test('onMessageSent should send message to socket manager for to participant', async function (test) {
+      const toParticipant = 'http://to-participant'
+      const fromParticipant = 'http://from-participant'
       const data = { something: 'test' }
       const message = {
-        to: toAccount,
-        from: fromAccount,
+        to: toParticipant,
+        from: fromParticipant,
         data
       }
       Events.onMessageSent.yields(message)
       Index.plugin.register(mockServer(), {}, {})
       const args = socketManager.send.firstCall.args
-      test.equal(args[0], toAccount)
+      test.equal(args[0], toParticipant)
       assertEvent(test, args[1], 'message.send', message)
       test.end()
     })

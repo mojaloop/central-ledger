@@ -3,7 +3,7 @@
 const Test = require('tape')
 const Sinon = require('sinon')
 const Config = require('../../../../src/lib/config')
-const AccountStrategy = require('../../../../src/api/auth/account')
+const ParticipantStrategy = require('../../../../src/api/auth/participant')
 const TokenStrategy = require('../../../../src/api/auth/token')
 
 const AuthModule = require('../../../../src/api/auth')
@@ -15,7 +15,7 @@ Test('Auth module', authTest => {
   })
 
   authTest.test('register should', registerTest => {
-    registerTest.test('add AccountStrategy to server auth strategies', async function (test) {
+    registerTest.test('add ParticipantStrategy to server auth strategies', async function (test) {
       const strategySpy = Sinon.spy()
       const server = {
         auth: {
@@ -23,7 +23,7 @@ Test('Auth module', authTest => {
         }
       }
       await AuthModule.plugin.register(server, {})
-      test.ok(strategySpy.calledWith(AccountStrategy.scheme, 'basic', Sinon.match({ validate: AccountStrategy.validate })))
+      test.ok(strategySpy.calledWith(ParticipantStrategy.scheme, 'basic', Sinon.match({ validate: ParticipantStrategy.validate })))
       test.end()
     })
 
@@ -51,14 +51,14 @@ Test('Auth module', authTest => {
       test.end()
     })
 
-    strategyTest.test('return account if ENABLE_BASIC_AUTH true', test => {
+    strategyTest.test('return participant if ENABLE_BASIC_AUTH true', test => {
       Config.ENABLE_TOKEN_AUTH = false
       Config.ENABLE_BASIC_AUTH = true
       test.deepEqual(AuthModule.strategy(), { strategy: 'simple', mode: 'required' })
       test.end()
     })
 
-    strategyTest.test('return account if ENABLE_TOKEN_AUTH and ENABLE_BASIC_AUTH true', test => {
+    strategyTest.test('return participant if ENABLE_TOKEN_AUTH and ENABLE_BASIC_AUTH true', test => {
       Config.ENABLE_TOKEN_AUTH = true
       Config.ENABLE_BASIC_AUTH = true
       test.deepEqual(AuthModule.strategy(), { strategy: 'bearer-access-token', mode: 'required' })

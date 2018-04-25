@@ -81,30 +81,30 @@ Test('WebSocket', socketTest => {
       const socket = new EventEmitter()
       const id = 100
       const jsonrpc = 'jsonrpc'
-      const accountUris = ['', '']
+      const participantUris = ['', '']
       socket.send = sandbox.spy()
       socket.close = sandbox.spy()
       const request = 'some request'
-      SocketValidator.validateSubscriptionRequest.withArgs(request).yields(null, { id, jsonrpc, accountUris })
+      SocketValidator.validateSubscriptionRequest.withArgs(request).yields(null, { id, jsonrpc, participantUris })
 
       WebSocket.initialize(socket, socketManager)
       socket.emit('message', request)
 
-      test.ok(socket.send.calledWith(JSON.stringify({ id, jsonrpc, result: accountUris.length })))
+      test.ok(socket.send.calledWith(JSON.stringify({ id, jsonrpc, result: participantUris.length })))
       test.notOk(socket.close.called)
       test.end()
     })
 
-    initializeTest.test('add socket to account listener if more than on account listed', test => {
+    initializeTest.test('add socket to participant listener if more than on participant listed', test => {
       const socket = new EventEmitter()
       socket.send = sandbox.spy()
-      const accountUris = ['', '']
-      SocketValidator.validateSubscriptionRequest.yields(null, { id: 1, jsonrpc: '2.0', accountUris })
+      const participantUris = ['', '']
+      SocketValidator.validateSubscriptionRequest.yields(null, { id: 1, jsonrpc: '2.0', participantUris })
 
       WebSocket.initialize(socket, socketManager)
       socket.emit('message', 'some request')
 
-      test.ok(socketManager.add.calledWith(socket, ...accountUris))
+      test.ok(socketManager.add.calledWith(socket, ...participantUris))
       test.end()
     })
 
@@ -112,11 +112,11 @@ Test('WebSocket', socketTest => {
       const socket = new EventEmitter()
       const id = 100
       const jsonrpc = 'jsonrpc'
-      const accountUris = ['', '']
+      const participantUris = ['', '']
       socket.send = sandbox.spy()
       socket.close = sandbox.spy()
       const request = 'some request'
-      SocketValidator.validateSubscriptionRequest.withArgs(request).yields(null, { id, jsonrpc, accountUris })
+      SocketValidator.validateSubscriptionRequest.withArgs(request).yields(null, { id, jsonrpc, participantUris })
 
       WebSocket.initialize(socket, socketManager)
       socket.emit('message', request)
