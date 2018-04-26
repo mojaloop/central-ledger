@@ -5,17 +5,18 @@ const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlparser')
 const Sidecar = require('../../lib/sidecar')
 
-const entityItem = ({name, createdDate, isDisabled}) => {
+const entityItem = ({name, createdDate, isDisabled, currencyId}) => {
   const link = UrlParser.toParticipantUri(name)
   return {
     name,
     id: link,
+    currency: currencyId,
     created: createdDate,
     is_disabled: isDisabled,
     '_links': {
       self: link
-    },
-    emailAddress: name + '@test.com'
+    } // ,
+    // emailAddress: name + '@test.com'
   }
 }
 

@@ -48,11 +48,20 @@ exports.updateParticipantSettlement = (participant, settlement) => {
     })
 }
 
-exports.create = (participant) => {
-  return Db.participant.insert({ name: participant.name, emailAddress: participant.emailAddress })
-  .then(insertedParticipant => {
-    const newparticipant = Db.participant.findOne({ participantId: insertedParticipant })
-    return Db.userCredentials.insert({ participantId: insertedParticipant, password: participant.hashedPassword })
-      .then(() => newparticipant)
-  })
+exports.create = async (participant) => {
+  try {
+    const insertedParticipant = await Db.participant.insert({
+      name: participant.name,
+//    emailAddress: participant.emailAddress,
+      currencyId: participant.currency
+    })
+  // .then(insertedParticipant => {
+  //   const newparticipant = Db.participant.findOne({ participantId: insertedParticipant })
+  //   return Db.userCredentials.insert({ participantId: insertedParticipant, password: participant.hashedPassword })
+  //     .then(() => newparticipant)
+  // })
+    return await Db.participant.findOne({ participantId: insertedParticipant })
+  } catch (e) {
+    console.log(e)
+  }
 }

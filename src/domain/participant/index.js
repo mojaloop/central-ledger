@@ -6,21 +6,24 @@ const ValidationError = require('../../errors').ValidationError
 const UrlParser = require('../../lib/urlparser')
 const Crypto = require('../../lib/crypto')
 
-const createParticipant = (name, hashedPassword, emailAddress) => {
-  return Model.create({ name, hashedPassword, emailAddress })
+const createParticipant = (name, currency) => {
+  return Model.create({ name, currency }) // hashedPassword, emailAddress })
 }
 
 const create = (payload) => {
-  return Crypto.hash(payload.password)
-    .then(hashedPassword => {
-      return createParticipant(payload.name, hashedPassword, payload.emailAddress)
-      .then(participant => ({
-        participantId: participant.participantId,
-        name: participant.name,
-        createdDate: participant.createdDate,
-        emailAddress: participant.emailAddress
-      }))
+// return Crypto.hash(payload.password)
+//   .then(hashedPassword => {
+  return createParticipant(payload.name, payload.currency) // hashedPassword,
+  .then(participant => {
+    return ({
+      participantId: participant.participantId,
+      name: participant.name,
+      createdDate: participant.createdDate,
+    //        emailAddress: participant.emailAddress
+      currency: participant.currencyId
     })
+  })
+// })
 }
 
 const createLedgerParticipant = (name, password, emailAddress) => {

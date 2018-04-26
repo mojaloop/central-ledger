@@ -660,6 +660,6 @@ exports.seed = function (knex, Promise) {
   return knex('currency').del()
     .then(function () {
       // Inserts seed entries
-      return knex('currency').insert(currencies)
+      return knex('currency').insert(currencies).then(() => {})
     })
 }

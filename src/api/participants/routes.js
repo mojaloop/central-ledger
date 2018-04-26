@@ -16,7 +16,7 @@ module.exports = [{
     id: 'participants',
     tags: tags,
     auth: Auth.strategy(),
-    description: 'Create an participant.',
+    description: 'Create a participant.',
     payload: {
       allow: 'application/json',
       failAction: 'error',
@@ -38,7 +38,7 @@ module.exports = [{
   options: {
     id: 'participant',
     tags: tags,
-    description: 'Retrieve an participants details by name',
+    description: 'Retrieve a participants details by name',
     auth: Auth.strategy(true),
     validate: {
       params: {
@@ -78,7 +78,7 @@ module.exports = [{
   options: {
     id: 'participant_update_participant_settlement',
     tags: tags,
-    description: 'Update an participants party credentials',
+    description: 'Update a participants party credentials',
     auth: Auth.strategy(),
     payload: {
       allow: 'application/json',
