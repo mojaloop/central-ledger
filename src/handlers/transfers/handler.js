@@ -29,6 +29,7 @@
  --------------
  ******/
 'use strict'
+
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Commands = require('../../domain/transfer/commands')
 const Utility = require('../lib/utility')

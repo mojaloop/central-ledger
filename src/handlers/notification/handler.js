@@ -34,13 +34,12 @@ const Commands = require('../../domain/position')
 const Utility = require('../lib/utility')
 const ConsumerUtility = require('../lib/consumer')
 
-
 const NOTIFICATION = 'notification'
 const EVENT = 'event'
 
 const registerNotificationHandler = async function () {
   try {
-    const notificationHandler =  {
+    const notificationHandler = {
       command: Commands.generatePositionPlaceHolder, // to be changed once notifications are added
       topicName: Utility.transformGeneralTopicName(NOTIFICATION, EVENT),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, NOTIFICATION.toUpperCase(), EVENT.toUpperCase())
