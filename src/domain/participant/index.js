@@ -77,7 +77,7 @@ const participantExists = (participant) => {
 
 const update = (name, payload) => {
   return Model.getByName(name).then(participant => {
-    return Model.update(participant, payload.is_disabled)
+    return Model.update(participant, payload.is_disabled).then(participantId => participant)
   })
 }
 
