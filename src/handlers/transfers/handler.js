@@ -35,64 +35,71 @@ const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const ConsumerUtility = require('../lib/consumer')
 
-
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFILL = 'fulfill'
 const REJECT = 'reject'
 
-const createPrepareHandler = async function (dfspName) {
+const createPrepareHandler = async function (participantName) {
   try {
-
     const prepareHandler = {
       command: Commands.prepareExecute,
-      topicName: Utility.transformAccountToTopicName(dfspName, TRANSFER, PREPARE),
+      topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
     }
     await ConsumerUtility.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
   } catch (e) {
-    Logger.info(e)
+    Logger.error(e)
   }
 }
 
 const registerFulfillHandler = async function () {
   try {
-    const fulfillHandler =  {
+    const fulfillHandler = {
       command: Commands.fulfilling,
       topicName: Utility.transformGeneralTopicName(TRANSFER, FULFILL),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
     }
     await ConsumerUtility.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
   } catch (e) {
-    Logger.info(e)
+    Logger.error(e)
   }
 }
 
 const registerRejectHandler = async function () {
   try {
-    const rejectHandler =  {
+    const rejectHandler = {
       command: Commands.rejecting(),
       topicName: Utility.transformGeneralTopicName(TRANSFER, REJECT),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), REJECT.toUpperCase())
     }
     await ConsumerUtility.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
   } catch (e) {
-    Logger.info(e)
+    Logger.error(e)
   }
 }
 
 const registerPrepareHandlers = async function () {
-  const dfspNames = await DAO.retrieveAllAccounts()
-  for (var key in dfspNames) {
-    await createPrepareHandler(dfspNames[key])
+  try {
+    const participantNames = await DAO.retrieveAllParticipants()
+    for (var key in participantNames) {
+      await createPrepareHandler(participantNames[key])
+    }
+  } catch (e) {
+    Logger.error(e)
+    throw e
   }
 }
 
 const registerAllHandlers = async function () {
-  await registerPrepareHandlers()
-  await registerFulfillHandler()
-  await registerRejectHandler()
-  return true
+  try {
+    await registerPrepareHandlers()
+    await registerFulfillHandler()
+    await registerRejectHandler()
+    return true
+  } catch (e) {
+    throw e
+  }
 }
 
 module.exports = {

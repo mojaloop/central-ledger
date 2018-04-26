@@ -32,7 +32,7 @@
 
 const Config = require('../../lib/config')
 
-exports.retrieveAllAccounts = () => {
+exports.retrieveAllParticipants = () => {
   // to be replaced by call to database to retrieve all accountNames
   const accountNames = Config.DFSPS
   return accountNames

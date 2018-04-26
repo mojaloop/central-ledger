@@ -41,28 +41,37 @@ const PREPARE = 'prepare'
 
 const createPositionHandler = async function (dfspName) {
   try {
-
     const positionHandler = {
       command: Commands.generatePositionPlaceHolder(),
       topicName: Utility.transformAccountToTopicName(dfspName, POSITION, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }
     await ConsumerUtility.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
-  } catch (e) {
-    Logger.info(e)
+  } catch (error) {
+    Logger.error(error)
+    throw error
   }
 }
 
 const registerPositionHandlers = async function () {
-  const dfspNames = await DAO.retrieveAllAccounts()
-  for (var key in dfspNames) {
-    await createPositionHandler(dfspNames[key])
+  try {
+    const participantList = await DAO.retrieveAllParticipants()
+    for (var key in participantList) {
+      await createPositionHandler(participantList[key])
+    }
+  } catch (error) {
+    Logger.error(error)
+    throw error
   }
 }
 
 const registerAllHandlers = async function () {
-  await registerPositionHandlers()
-  return true
+  try {
+    await registerPositionHandlers()
+    return true
+  } catch (error) {
+    throw error
+  }
 }
 
 module.exports = {

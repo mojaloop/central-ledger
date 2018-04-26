@@ -52,8 +52,12 @@ const registerNotificationHandler = async function () {
 }
 
 const registerAllHandlers = async function () {
-  await registerNotificationHandler()
-  return true
+  try {
+    await registerNotificationHandler()
+    return true
+  } catch (e) {
+    throw e
+  }
 }
 
 module.exports = {
