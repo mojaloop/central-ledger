@@ -39,11 +39,11 @@ const ConsumerUtility = require('../lib/consumer')
 const POSITION = 'position'
 const PREPARE = 'prepare'
 
-const createPositionHandler = async function (dfspName) {
+const createPositionHandler = async function (participantName) {
   try {
     const positionHandler = {
       command: Commands.generatePositionPlaceHolder(),
-      topicName: Utility.transformAccountToTopicName(dfspName, POSITION, PREPARE),
+      topicName: Utility.transformAccountToTopicName(participantName, POSITION, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }
     await ConsumerUtility.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)

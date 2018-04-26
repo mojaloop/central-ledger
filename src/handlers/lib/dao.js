@@ -31,9 +31,15 @@
 'use strict'
 
 const Config = require('../../lib/config')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 exports.retrieveAllParticipants = () => {
-  // to be replaced by call to database to retrieve all accountNames
-  const accountNames = Config.DFSPS
-  return accountNames
+  try {
+    // to be replaced by call to database to retrieve all accountNames
+    const accountNames = Config.DFSPS
+    return accountNames
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
 }

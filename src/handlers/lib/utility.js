@@ -40,29 +40,43 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const PRODUCER = 'PRODUCER'
 const CONSUMER = 'CONSUMER'
 
-const dfspTopicTemplate = (dfspName, functionality, action) => {
-  return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.DFSP_TOPIC_TEMPLATE.TEMPLATE, {dfspName: dfspName, functionality, action})
+const participantTopicTemplate = (participantName, functionality, action) => {
+  try {
+    return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.PARTICIPANT_TOPIC_TEMPLATE.TEMPLATE, {
+      participantName,
+      functionality,
+      action
+    })
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
 }
 
 const generalTopicTemplate = (functionality, action) => {
-  return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, {functionality, action})
+  try {
+    return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, {functionality, action})
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
 }
 
-const getDfspName = (accountUri) => {
+const getParticipantName = (accountUri) => {
   return UrlParser.nameFromAccountUri(accountUri)
 }
 
 const getTopicNameFromURI = (transfer, functionality, action) => {
-  const dfspName = getDfspName(transfer.debits[0].account)
-  return dfspTopicTemplate(dfspName, functionality, action)
+  const participantName = getParticipantName(transfer.debits[0].account)
+  return participantTopicTemplate(participantName, functionality, action)
 }
 
 const transformGeneralTopicName = (functionality, action) => {
   return generalTopicTemplate(functionality, action)
 }
 
-const transformAccountToTopicName = (dfspName, functionality, action) => {
-  return dfspTopicTemplate(dfspName, functionality, action)
+const transformAccountToTopicName = (participantName, functionality, action) => {
+  return participantTopicTemplate(participantName, functionality, action)
 }
 
 const getKafkaConfig = (flow, functionality, action) => {

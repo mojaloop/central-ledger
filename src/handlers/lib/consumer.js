@@ -40,5 +40,6 @@ exports.createHandler = async (topicName, config, command) => {
     consumer.consume(command)
   }).catch((e) => {
     Logger.error(e)
+    throw e
   })
 }
