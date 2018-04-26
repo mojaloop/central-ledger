@@ -37,9 +37,50 @@ const Mustache = require('mustache')
 const KafkaConfig = Config.KAFKA_CONFIG
 const Logger = require('@mojaloop/central-services-shared').Logger
 
+/**
+ * The Producer config required
+ *
+ * This ENUM is for the PRODUCER of the topic being created
+ *
+ * @typedef {object} ENUMS~PRODUCER
+ * @property {string} PRODUCER - PRODUCER config to be fetched
+ */
 const PRODUCER = 'PRODUCER'
+/**
+ * The Consumer config required
+ *
+ * This ENUM is for the CONSUMER of the topic being created
+ *
+ * @typedef {object} ENUMS~CONSUMER
+ * @property {string} CONSUMER - CONSUMER config to be fetched
+ */
 const CONSUMER = 'CONSUMER'
 
+/**
+ * ENUMS
+ *
+ * Global ENUMS object
+ *
+ * @typedef {object} ENUMS
+ * @property {object} PRODUCER - This ENUM is for the PRODUCER
+ * @property {object} CONSUMER - This ENUM is for the CONSUMER
+ */
+exports.ENUMS = {
+  PRODUCER,
+  CONSUMER
+}
+
+/**
+ * @method ParticipantTopicTemplate
+ *
+ * @param {string} participantName - participant name, retrieved from database. Example: 'dfsp1'
+ * @param {string} functionality - the functionality flow. Example: 'transfer'
+ * @param {string} action - the action that applies to the flow. Example: 'prepare'
+ *
+ * Generates a participant topic name from the 3 inputs which are used in the placeholder topic template for participants found in the default.json
+ *
+ * @returns {string} - Returns topic name to be created, throws error if failure occurs
+ */
 const participantTopicTemplate = (participantName, functionality, action) => {
   try {
     return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.PARTICIPANT_TOPIC_TEMPLATE.TEMPLATE, {
@@ -53,6 +94,16 @@ const participantTopicTemplate = (participantName, functionality, action) => {
   }
 }
 
+/**
+ * @method GeneralTopicTemplate
+ *
+ * @param {string} functionality - the functionality flow. Example: 'transfer'
+ * @param {string} action - the action that applies to the flow. Example: 'prepare'
+ *
+ * Generates a general topic name from the 2 inputs, which are used in the placeholder general topic template found in the default.json
+ *
+ * @returns {string} - Returns topic name to be created, throws error if failure occurs
+ */
 const generalTopicTemplate = (functionality, action) => {
   try {
     return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, {functionality, action})
@@ -62,23 +113,96 @@ const generalTopicTemplate = (functionality, action) => {
   }
 }
 
+/**
+ * @method GetParticipantName
+ *
+ * @param {string} accountUri - the accountUri
+ *
+ * Parses the accountUri into a participant name from the uri string
+ *
+ * @returns {string} - Returns participant name, throws error if failure occurs
+ */
 const getParticipantName = (accountUri) => {
-  return UrlParser.nameFromAccountUri(accountUri)
+  try {
+    return UrlParser.nameFromAccountUri(accountUri)
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
 }
 
+/**
+ * @method GetTopicNameFromURI
+ *
+ * @param {object} transfer - the transfer object used to get the accountUri from
+ * @param {string} functionality - the functionality flow. Example: 'transfer'
+ * @param {string} action - the action that applies to the flow. Example: 'prepare'
+ *
+ * Parses the accountUri into a participant name from the uri string
+ *
+ * @returns {string} - Returns participant name, throws error if failure occurs
+ */
 const getTopicNameFromURI = (transfer, functionality, action) => {
-  const participantName = getParticipantName(transfer.debits[0].account)
-  return participantTopicTemplate(participantName, functionality, action)
+  try {
+    const participantName = getParticipantName(transfer.debits[0].account)
+    return participantTopicTemplate(participantName, functionality, action)
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
 }
 
+/**
+ * @method TransformGeneralTopicName
+ *
+ * @param {string} functionality - the functionality flow. Example: 'transfer'
+ * @param {string} action - the action that applies to the flow. Example: 'prepare'
+ *
+ * @function generalTopicTemplate called which generates a general topic name from the 2 inputs,
+ * which are used in the placeholder general topic template found in the default.json
+ *
+ * @returns {string} - Returns topic name to be created, throws error if failure occurs
+ */
 const transformGeneralTopicName = (functionality, action) => {
-  return generalTopicTemplate(functionality, action)
+  try {
+    return generalTopicTemplate(functionality, action)
+  } catch (e) {
+    throw e
+  }
 }
 
+/**
+ * @method TransformGeneralTopicName
+ *
+ * @param {string} participantName - participant name, retrieved from database. Example: 'dfsp1'
+ * @param {string} functionality - the functionality flow. Example: 'transfer'
+ * @param {string} action - the action that applies to the flow. Example: 'prepare'
+ *
+ * @function participantTopicTemplate called which generates a participant topic name from the 3 inputs,
+ * which are used in the placeholder participant topic template found in the default.json
+ *
+ * @returns {string} - Returns topic name to be created, throws error if failure occurs
+ */
 const transformAccountToTopicName = (participantName, functionality, action) => {
-  return participantTopicTemplate(participantName, functionality, action)
+  try {
+    return participantTopicTemplate(participantName, functionality, action)
+  } catch (e) {
+    throw e
+  }
 }
 
+/**
+ * @method GetKafkaConfig
+ *
+ * @param {string} flow - This is required for the config for the Stream Processing API. Example: 'CONSUMER' ie: note the case of text
+ * @param {string} functionality - the functionality flow. Example: 'TRANSFER' ie: note the case of text
+ * @param {string} action - the action that applies to the flow. Example: 'PREPARE' ie: note the case of text
+ *
+ * @function participantTopicTemplate called which generates a participant topic name from the 3 inputs,
+ * which are used in the placeholder participant topic template found in the default.json
+ *
+ * @returns {string} - Returns topic name to be created, throws error if failure occurs
+ */
 const getKafkaConfig = (flow, functionality, action) => {
   try {
     const flowObject = KafkaConfig[flow]
@@ -95,7 +219,3 @@ exports.getTopicNameFromURI = getTopicNameFromURI
 exports.transformAccountToTopicName = transformAccountToTopicName
 exports.transformGeneralTopicName = transformGeneralTopicName
 exports.getKafkaConfig = getKafkaConfig
-exports.ENUMS = {
-  PRODUCER,
-  CONSUMER
-}

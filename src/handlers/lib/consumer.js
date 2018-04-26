@@ -33,6 +33,17 @@
 const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
+/**
+ * @method CreateHandler
+ *
+ * @param {string} topicName - the topic name to be registered for the required handler. Example: 'topic-dfsp1-transfer-prepare'
+ * @param {object} config - the config for the consumer for the specific functionality and action, retrieved from the default.json. Example: found in default.json 'KAFKA.CONSUMER.TRANSFER.PREPARE'
+ * @param {function} command - the callback handler for the topic. Will be called when the topic is produced against. Example: Command.prepareHandler()
+ *
+ * Parses the accountUri into a participant name from the uri string
+ *
+ * @returns {string} - Returns participant name, throws error if failure occurs
+ */
 exports.createHandler = async (topicName, config, command) => {
   const consumer = new Consumer([topicName], config)
   await consumer.connect().then(() => {

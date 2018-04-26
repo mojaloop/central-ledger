@@ -30,6 +30,14 @@
  ******/
 'use strict'
 
+/**
+ * @method Plugin
+ *
+ * @async
+ * Registers registers plugins on HAPI server. This retrieves all routes to be exposed from the routes.js file
+ * @returns {Promise} - Returns a promise: resolve if successful, or rejection if failed
+ */
+
 exports.plugin = {
   name: 'handler routes',
   register: function (server, options) {

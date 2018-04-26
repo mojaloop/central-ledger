@@ -41,6 +41,15 @@ const PREPARE = 'prepare'
 const FULFILL = 'fulfill'
 const REJECT = 'reject'
 
+/**
+ * @method CreatePrepareHandler
+ *
+ * @async
+ * Registers the handler for each participant topic created. Gets Kafka config from default.json
+ *
+ * @function Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const createPrepareHandler = async function (participantName) {
   try {
     const prepareHandler = {
@@ -54,6 +63,14 @@ const createPrepareHandler = async function (participantName) {
   }
 }
 
+/**
+ * @method RegisterFulfillHandler
+ *
+ * @async
+ * Registers the one handler for fulfill transfer. Gets Kafka config from default.json
+ * @function Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerFulfillHandler = async function () {
   try {
     const fulfillHandler = {
@@ -67,6 +84,14 @@ const registerFulfillHandler = async function () {
   }
 }
 
+/**
+ * @method RegisterRejectHandler
+ *
+ * @async
+ * Registers the one handler for reject transfer. Gets Kafka config from default.json
+ * @function Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerRejectHandler = async function () {
   try {
     const rejectHandler = {
@@ -80,6 +105,14 @@ const registerRejectHandler = async function () {
   }
 }
 
+/**
+ * @method RegisterPrepareHandlers
+ *
+ * @async
+ * Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
+ * @function createPrepareHandler called to create the handler for each participant
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerPrepareHandlers = async function () {
   try {
     const participantNames = await DAO.retrieveAllParticipants()
@@ -92,6 +125,14 @@ const registerPrepareHandlers = async function () {
   }
 }
 
+/**
+ * @method RegisterAllHandlers
+ *
+ * @async
+ * Registers all handlers in transfers ie: prepare, fulfill and reject
+ *
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerAllHandlers = async function () {
   try {
     await registerPrepareHandlers()

@@ -37,6 +37,14 @@ const ConsumerUtility = require('../lib/consumer')
 const NOTIFICATION = 'notification'
 const EVENT = 'event'
 
+/**
+ * @method RegisterNotificationHandler
+ *
+ * @async
+ * Registers the one handler for notifications. Gets Kafka config from default.json
+ * @function Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerNotificationHandler = async function () {
   try {
     const notificationHandler = {
@@ -50,6 +58,14 @@ const registerNotificationHandler = async function () {
   }
 }
 
+/**
+ * @method RegisterAllHandlers
+ *
+ * @async
+ * Registers all handlers in notifications
+ *
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const registerAllHandlers = async function () {
   try {
     await registerNotificationHandler()
