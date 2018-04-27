@@ -10,11 +10,12 @@ const createParticipant = (name, currency) => {
   return Model.create({ name, currency }) // hashedPassword, emailAddress })
 }
 
-const create = (payload) => {
+const create = async (payload) => {
 // return Crypto.hash(payload.password)
 //   .then(hashedPassword => {
-  return createParticipant(payload.name, payload.currency) // hashedPassword,
-  .then(participant => {
+  try {
+    const participant = await createParticipant(payload.name, payload.currency)
+    if (!participant) throw new Error('Something went wrond. Participant cannot be created');
     return ({
       participantId: participant.participantId,
       name: participant.name,
@@ -22,38 +23,37 @@ const create = (payload) => {
     //        emailAddress: participant.emailAddress
       currency: participant.currencyId
     })
-  })
-// })
+  } catch (err) {
+    throw err
+  }
 }
 
-const createLedgerParticipant = (name, password, emailAddress) => {
-  return Model.getByName(name)
-    .then(participant => {
-      if (!participant) {
-        return create({ name, password, emailAddress })
-      }
+const createLedgerParticipant = async (name, password, emailAddress) => {
+  try {
+    const participant = await Model.getByName(name)
+    if (!participant) {
+      return await create({ name, password, emailAddress })
+    }
+    return participant
+  } catch (err) {
+    throw err
+  }
+}
+
+const exists = async (participantUri) => {
+  try {
+    const name = UrlParser.nameFromParticipantUri(participantUri)
+    if (!name) {
+      return new ValidationError(`Invalid participant URI: ${participantUri}`)
+    }
+    const participant = await Model.getByName(name)
+    if (participant) {
       return participant
-    })
-}
-
-const exists = (participantUri) => {
-  return new P((resolve, reject) => {
-    UrlParser.nameFromParticipantUri(participantUri, (err, result) => {
-      if (err) {
-        reject(new ValidationError(`Invalid participant URI: ${participantUri}`))
-      }
-      resolve(result)
-    })
-  })
-    .then(name => {
-      return Model.getByName(name)
-        .then(participant => {
-          if (participant) {
-            return participant
-          }
-          throw new ValidationError(`Participant ${name} not found`)
-        })
-    })
+    }
+    throw new ValidationError(`Participant ${name} not found`)
+  } catch (err) {
+    throw err
+  }
 }
 
 const getAll = () => {
@@ -75,10 +75,15 @@ const participantExists = (participant) => {
   throw new Error('Participant does not exist')
 }
 
-const update = (name, payload) => {
-  return Model.getByName(name).then(participant => {
-    return Model.update(participant, payload.is_disabled).then(participantId => participant)
-  })
+const update = async (name, payload) => {
+  try {
+    const participant = await Model.getByName(name)
+    participantExists(participant)
+    await Model.update(participant, payload.is_disabled)
+    return participant
+  } catch (err) {
+    throw err
+  }
 }
 
 const updatePartyCredentials = (participant, payload) => {
