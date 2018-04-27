@@ -4,8 +4,8 @@ exports.up = function(knex, Promise) {
   return knex.schema.createTableIfNotExists('settlement', (t) => {
     t.bigIncrements('settlementId').primary().notNullable()
 
-    t.bigInteger('transferBatchId').unsigned().notNullable()
-    t.foreign('transferBatchId').references('transferBatchId').inTable('transferBatch')
+    t.bigInteger('transferSettlementBatchId').unsigned().notNullable()
+    t.foreign('transferSettlementBatchId').references('transferSettlementBatchId').inTable('transferSettlementBatch')
 
     t.string('settlementType', 16).notNullable()
     t.dateTime('settledDate').defaultTo(knex.fn.now()).notNullable()

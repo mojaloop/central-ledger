@@ -2,7 +2,7 @@
 
 exports.up = function(knex, Promise) {
     return knex.schema.table('transfer', (t) => {
-        t.index('transferBatchId')
+        t.index('transferSettlementBatchId')
         t.index('payerParticipantId')
         t.index('payeeParticipantId')
     })
@@ -10,7 +10,7 @@ exports.up = function(knex, Promise) {
 
 exports.down = function(knex, Promise) {
     return knex.schema.table('transfer', (t) => {
-        t.dropIndex('transferBatchId')
+        t.dropIndex('transferSettlementBatchId')
         t.dropIndex('payerParticipantId')
         t.dropIndex('payeeParticipantId')
     })
