@@ -4,8 +4,8 @@ exports.up = function(knex, Promise) {
     return knex.schema.createTableIfNotExists('transfer', (t) => {
         t.string('transferId', 36).primary().notNullable()
 
-        t.bigInteger('transferBatchId').unsigned().notNullable()
-        t.foreign('transferBatchId').references('transferBatchId').inTable('transferBatch')
+        t.bigInteger('transferSettlementBatchId').unsigned().notNullable()
+        t.foreign('transferSettlementBatchId').references('transferSettlementBatchId').inTable('transferSettlementBatch')
 
         t.integer('payerParticipantId').unsigned().defaultTo(null).nullable()
         t.foreign('payerParticipantId').references('participantId').inTable('participant')
