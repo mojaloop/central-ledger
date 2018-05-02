@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "@mojaloop/central-services-auth": "0.2.0",
-    "@mojaloop/central-services-database": "1.2.3-snapshotMYSQL",
+    "@mojaloop/central-services-database": "^1.2.4-snapshotMYSQL",
     "@mojaloop/central-services-error-handling": "0.5.1",
     "@mojaloop/central-services-shared": "file:../central-services-shared",
     "@mojaloop/forensic-logging-client": "0.5.1",
