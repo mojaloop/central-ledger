@@ -29,7 +29,8 @@ exports.retrievePartyCredentials = async (participant) => {
 
 exports.getAll = async () => {
   try {
-    return await Db.participant.find({}, { order: 'name asc' })
+    const participants = await Db.participant.find({}, { order: 'name asc' })
+    return participants
   } catch (err) {
     throw new Error(err.message)
   }

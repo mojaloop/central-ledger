@@ -1,6 +1,6 @@
 'use strict'
 
-const P = require('bluebird')
+// const P = require('bluebird')
 const Model = require('./model')
 const ValidationError = require('../../errors').ValidationError
 const UrlParser = require('../../lib/urlparser')
@@ -15,7 +15,7 @@ const create = async (payload) => {
 //   .then(hashedPassword => {
   try {
     const participant = await createParticipant(payload.name, payload.currency)
-    if (!participant) throw new Error('Something went wrond. Participant cannot be created');
+    if (!participant) throw new Error('Something went wrond. Participant cannot be created')
     return ({
       participantId: participant.participantId,
       name: participant.name,
@@ -56,8 +56,13 @@ const exists = async (participantUri) => {
   }
 }
 
-const getAll = () => {
-  return Model.getAll()
+const getAll = async () => {
+  try {
+    const all = await Model.getAll()
+    return all
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
 const getById = (id) => {

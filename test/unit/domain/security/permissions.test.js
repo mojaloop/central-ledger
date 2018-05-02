@@ -5,8 +5,8 @@ const Permissions = require('../../../../src/domain/security/permissions')
 
 Test('Permissions', permissionsTest => {
   permissionsTest.test('should contain Participant permissions', test => {
-    test.equal(Permissions.ACCOUNTS_LIST.key, 'ACCOUNTS_LIST')
-    test.equal(Permissions.ACCOUNTS_UPDATE.key, 'ACCOUNTS_UPDATE')
+    test.equal(Permissions.PARTICIPANTS_LIST.key, 'PARTICIPANTS_LIST')
+    test.equal(Permissions.PARTICIPANTS_UPDATE.key, 'PARTICIPANTS_UPDATE')
     test.end()
   })
 })

@@ -7,21 +7,17 @@ const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
 const entityItem = ({name, createdDate, isDisabled, currencyId}) => {
-  try {
-    const link = UrlParser.toParticipantUri(name)
-    return Promise.resolve({
-      name,
-      id: link,
-      currency: currencyId,
-      created: createdDate,
-      is_disabled: isDisabled,
-      '_links': {
-        self: link
-      } // ,
-      // emailAddress: name + '@test.com'
-    })
-  } catch (err) {
-    Promise.reject(err)
+  const link = UrlParser.toParticipantUri(name)
+  return {
+    name,
+    id: link,
+    currency: currencyId,
+    created: createdDate,
+    is_disabled: isDisabled,
+    '_links': {
+      self: link
+    } // ,
+    // emailAddress: name + '@test.com'
   }
 }
 
@@ -53,7 +49,8 @@ const create = async function (request, h) {
 
 const getAll = async function (request, h) {
   const results = await Participant.getAll()
-  return results.map(entityItem)
+  const result = results.map(entityItem)
+  return result
 }
 
 const getByName = async function (request, h) {
@@ -68,7 +65,7 @@ const update = async function (request, h) {
     const updatedEntity = await Participant.update(request.params.name, request.payload)
     return await entityItem(updatedEntity)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw Boom.badRequest()
   }
 }
 
