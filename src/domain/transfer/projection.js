@@ -3,7 +3,7 @@
 const _ = require('lodash')
 const UrlParser = require('../../lib/urlparser')
 const Util = require('../../lib/util')
-const AccountService = require('../../domain/account')
+const ParticipantService = require('../../domain/participant')
 const TransferState = require('./state')
 const TransferRejectionType = require('./rejection-type')
 const TransfersReadModel = require('./models/transfers-read-model')
@@ -11,32 +11,32 @@ const ExecuteTransfersModel = require('../../models/executed-transfers')
 const SettledTransfersModel = require('../../models/settled-transfers')
 
 const saveTransferPrepared = async (payload) => {
-  const debitAccount = await UrlParser.nameFromAccountUri(payload.debits[0].account)
-  const creditAccount = await UrlParser.nameFromAccountUri(payload.credits[0].account)
-  const names = [debitAccount, creditAccount]
-  const accounts = []
+  const debitParticipant = await UrlParser.nameFromParticipantUri(payload.debits[0].participant)
+  const creditParticipant = await UrlParser.nameFromParticipantUri(payload.credits[0].participant)
+  const names = [debitParticipant, creditParticipant]
+  const participants = []
   for (var i = 0, len = names.length; i < len; i++) {
-    const account = await AccountService.getByName(names[i])
-    accounts.push(account)
+    const participant = await ParticipantService.getByName(names[i])
+    participants.push(participant)
   }
-  const accountIds = await _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {})
+  const participantIds = await _.reduce(participants, (m, acct) => _.set(m, acct.name, acct.participantId), {})
   const record = {
-    transferUuid: payload.id,
+    transferId: payload.id,
     state: TransferState.PREPARED,
     ledger: payload.ledger,
-    debitAccountId: accountIds[debitAccount],
-    debitAmount: payload.debits[0].amount,
-    debitMemo: JSON.stringify(payload.debits[0].memo),
-    creditAccountId: accountIds[creditAccount],
-    creditAmount: payload.credits[0].amount,
-    creditMemo: JSON.stringify(payload.credits[0].memo),
-    creditRejected: 0,
-    creditRejectionMessage: null,
+    payeeParticipantId: participantIds[debitParticipant],
+    payeeAmount: payload.debits[0].amount,
+    payeeNote: JSON.stringify(payload.debits[0].memo),
+    payerParticipantId: participantIds[creditParticipant],
+    payerAmount: payload.credits[0].amount,
+    payerNote: JSON.stringify(payload.credits[0].memo),
+    payeeRejected: 0,
+    payeeRejectionMessage: null,
     executionCondition: payload.execution_condition,
     cancellationCondition: payload.cancellation_condition,
     fulfillment: null,
     rejectionReason: payload.rejection_reason,
-    expiresAt: new Date(payload.expires_at),
+    expirationDate: new Date(payload.expires_at),
     additionalInfo: payload.additional_info,
     preparedDate: payload.timeline.prepared_at,
     executedDate: null,
@@ -45,8 +45,8 @@ const saveTransferPrepared = async (payload) => {
   await TransfersReadModel.saveTransfer(record).catch(err => {
     throw new Error(err.message)
   })
-  record.creditAccountName = creditAccount
-  record.debitAccountName = debitAccount
+  record.creditParticipantName = creditParticipant
+  record.debitParticipantName = debitParticipant
   return record
 }
 
@@ -67,8 +67,8 @@ const saveTransferRejected = async ({aggregate, payload, timestamp}) => {
   }
   if (payload.rejection_reason === TransferRejectionType.CANCELLED) {
     Util.assign(fields, {
-      creditRejected: 1,
-      creditRejectionMessage: payload.message || ''
+      payeeRejected: 1,
+      payeeRejectionMessage: payload.message || ''
     })
   }
   return await TransfersReadModel.updateTransfer(aggregate.id, fields)

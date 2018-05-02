@@ -3,12 +3,12 @@
 const P = require('bluebird')
 const Config = require('./config')
 
-const accountRegex = new RegExp(`${Config.HOSTNAME}/accounts/([A-Za-z0-9_]*)/?`, 'i')
+const participantRegex = new RegExp(`${Config.HOSTNAME}/participants/([A-Za-z0-9_]*)/?`, 'i')
 const transfersRegex = new RegExp(`${Config.HOSTNAME}/transfers/([a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12})`, 'i')
-const accountsTransfersRouteRegex = new RegExp(/\/accounts\/([A-Za-z0-9_]*)\/transfers/, 'i')
+const participantTransfersRouteRegex = new RegExp(/\/participants\/([A-Za-z0-9_]*)\/transfers/, 'i')
 
-const nameFromAccountUri = (uri, callback) => {
-  const matches = uri.match(accountRegex)
+const nameFromParticipantUri = (uri, callback) => {
+  const matches = uri.match(participantRegex)
   const hasCallback = (typeof callback === 'function')
   if (matches) {
     return (hasCallback) ? callback(null, matches[1]) : matches[1]
@@ -17,13 +17,13 @@ const nameFromAccountUri = (uri, callback) => {
   }
 }
 
-const accountNameFromTransfersRoute = (url) => {
+const participantNameFromTransfersRoute = (url) => {
   return new P((resolve, reject) => {
-    const matches = url.match(accountsTransfersRouteRegex)
+    const matches = url.match(participantTransfersRouteRegex)
     if (matches) {
       resolve(matches[1])
     } else {
-      reject(new Error('No matching account found in url'))
+      reject(new Error('No matching participant found in url'))
     }
   })
 }
@@ -43,15 +43,15 @@ const toTransferUri = (id) => {
   return (matches ? id : `${Config.HOSTNAME}/transfers/${id}`)
 }
 
-const toAccountUri = (name) => {
-  const matches = name.match(accountRegex)
-  return (matches ? name : `${Config.HOSTNAME}/accounts/${name}`)
+const toParticipantUri = (name) => {
+  const matches = name.match(participantRegex)
+  return (matches ? name : `${Config.HOSTNAME}/participants/${name}`)
 }
 
 module.exports = {
-  accountNameFromTransfersRoute,
-  nameFromAccountUri,
+  participantNameFromTransfersRoute,
+  nameFromParticipantUri,
   idFromTransferUri,
   toTransferUri,
-  toAccountUri
+  toParticipantUri
 }

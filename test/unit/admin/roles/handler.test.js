@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
 const SecurityService = require('../../../../src/domain/security')
-const Handler = require('../../../../src/admin/roles/handler')
+const Handler = require('../../../../src/admin/role/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 
 Test('Security handler', handlerTest => {
@@ -23,27 +23,27 @@ Test('Security handler', handlerTest => {
     test.end()
   })
 
-  handlerTest.test('getRoles should', getRolesTest => {
-    getRolesTest.test('return roles from SecurityService', async function (test) {
-      const roles = [{name: 'role1'}, {name: 'role2'}]
-      SecurityService.getAllRoles.returns(P.resolve(roles))
-      const response = await Handler.getRoles({}, {})
-      test.deepEqual(response, roles)
+  handlerTest.test('getRole should', getRoleTest => {
+    getRoleTest.test('return role from SecurityService', async function (test) {
+      const role = [{name: 'role1'}, {name: 'role2'}]
+      SecurityService.getAllRole.returns(P.resolve(role))
+      const response = await Handler.getRole({}, {})
+      test.deepEqual(response, role)
       test.end()
     })
 
-    getRolesTest.test('return error if SecurityService getAllRoles throws', async function (test) {
+    getRoleTest.test('return error if SecurityService getAllRole throws', async function (test) {
       const error = new Error()
-      SecurityService.getAllRoles.returns(P.reject(error))
+      SecurityService.getAllRole.returns(P.reject(error))
       try {
-        await Handler.getRoles({}, {})
+        await Handler.getRole({}, {})
       } catch (e) {
         test.deepEqual(e, error)
         test.end()
       }
     })
 
-    getRolesTest.end()
+    getRoleTest.end()
   })
 
   handlerTest.test('createRole should', createTest => {

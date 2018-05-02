@@ -5,7 +5,7 @@ const Decimal = require('decimal.js')
 const Moment = require('moment')
 const Config = require('../../lib/config')
 const UrlParser = require('../../lib/urlparser')
-const Account = require('../../domain/account')
+const Participant = require('../../domain/participant')
 const ValidationError = require('../../errors').ValidationError
 const CryptoConditions = require('../../crypto-conditions')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -14,9 +14,9 @@ const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
 
 const validateEntry = (entry) => {
-  const accountName = UrlParser.nameFromAccountUri(entry.account)
-  if (!accountName) {
-    throw new ValidationError(`Invalid account URI: ${entry.account}`)
+  const participantName = UrlParser.nameFromParticipantUri(entry.participant)
+  if (!participantName) {
+    throw new ValidationError(`Invalid participant URI: ${entry.participant}`)
   }
 
   const decimalAmount = new Decimal(entry.amount)
@@ -29,7 +29,7 @@ const validateEntry = (entry) => {
     throw new ValidationError(`Amount ${entry.amount} exceeds allowed precision of ${allowedPrecision}`)
   }
 
-  return { accountName, decimalAmount }
+  return { participantName, decimalAmount }
 }
 
 const validateConditionalTransfer = (transfer) => {
@@ -37,9 +37,9 @@ const validateConditionalTransfer = (transfer) => {
   if (!executionCondition) return
   CryptoConditions.validateCondition(executionCondition)
   if (transfer.expires_at) {
-    const expiresAt = Moment(transfer.expires_at)
-    if (expiresAt.isBefore(Moment.utc())) {
-      throw new ValidationError(`expires_at date: ${expiresAt.toISOString()} has already expired.`)
+    const expirationDate = Moment(transfer.expires_at)
+    if (expirationDate.isBefore(Moment.utc())) {
+      throw new ValidationError(`expires_at date: ${expirationDate.toISOString()} has already expired.`)
     }
   } else {
     throw new ValidationError('expires_at: required for conditional transfer')
@@ -66,19 +66,19 @@ exports.validate = (transfer, transferId) => {
     const credit = validateEntry(transfer.credits[0])
     const debit = validateEntry(transfer.debits[0])
 
-    if (debit.accountName === Config.LEDGER_ACCOUNT_NAME || credit.accountName === Config.LEDGER_ACCOUNT_NAME) {
-      throw new ValidationError(`Account ${Config.LEDGER_ACCOUNT_NAME} not found`)
+    if (debit.participantName === Config.LEDGER_ACCOUNT_NAME || credit.participantName === Config.LEDGER_ACCOUNT_NAME) {
+      throw new ValidationError(`Participant ${Config.LEDGER_ACCOUNT_NAME} not found`)
     }
 
-    return Array.from(new Set([credit.accountName, debit.accountName]))
+    return Array.from(new Set([credit.participantName, debit.participantName]))
   })
-    .then(accountNames => {
-      return P.all(accountNames.map(n => {
-        return Account.getByName(n).then(a => {
+    .then(participantNames => {
+      return P.all(participantNames.map(n => {
+        return Participant.getByName(n).then(a => {
           if (a) {
             return a
           } else {
-            throw new ValidationError(`Account ${n} not found`)
+            throw new ValidationError(`Participant ${n} not found`)
           }
         })
       }))

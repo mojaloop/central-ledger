@@ -2,14 +2,14 @@
 
 const Errors = require('../../errors')
 const Util = require('../../lib/util')
-const RolesModel = require('./models/roles')
-const UsersModel = require('./models/users')
+const RoleModel = require('./models/role')
+const PartyModel = require('./models/party')
 
-const ensureUserExists = (user) => {
-  if (!user) {
-    throw new Errors.NotFoundError('User does not exist')
+const ensurePartyExists = (party) => {
+  if (!party) {
+    throw new Errors.NotFoundError('Party does not exist')
   }
-  return user
+  return party
 }
 
 const expandRole = (role) => {
@@ -20,33 +20,33 @@ const compactRole = (role) => {
   return Util.mergeAndOmitNil(role, { permissions: Util.squish(role.permissions) })
 }
 
-const getAllRoles = () => RolesModel.getAll().map(expandRole)
+const getAllRole = () => RoleModel.getAll().map(expandRole)
 
-const getAllUsers = () => UsersModel.getAll()
+const getAllParty = () => PartyModel.getAll()
 
-const getUserById = (userId) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
+const getPartyById = (partyId) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
 }
 
-const getUserByKey = (key) => {
-  return UsersModel.getByKey(key)
-    .then(ensureUserExists)
+const getPartyByKey = (key) => {
+  return PartyModel.getByKey(key)
+    .then(ensurePartyExists)
 }
 
-const getUserRoles = (userId) => RolesModel.getUserRoles(userId).map(expandRole)
+const getPartyRole = (partyId) => RoleModel.getPartyRole(partyId).map(expandRole)
 
 const createRole = (role) => {
-  return RolesModel.save(compactRole(role))
+  return RoleModel.save(compactRole(role))
     .then(expandRole)
 }
 
-const createUser = (user) => {
-  return UsersModel.save(user)
+const createParty = (party) => {
+  return PartyModel.save(party)
 }
 
 const deleteRole = (roleId) => {
-  return RolesModel.remove(roleId)
+  return RoleModel.remove(roleId)
     .then(results => {
       if (!results || results.length === 0) {
         throw new Errors.NotFoundError('Role does not exist')
@@ -55,49 +55,49 @@ const deleteRole = (roleId) => {
     })
 }
 
-const deleteUser = (userId) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
-    .then(() => RolesModel.removeUserRoles(userId))
-    .then(() => UsersModel.remove(userId))
+const deleteParty = (partyId) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
+    .then(() => RoleModel.removePartyRole(partyId))
+    .then(() => PartyModel.remove(partyId))
 }
 
 const updateRole = (roleId, newRole) => {
-  return RolesModel.getById(roleId)
+  return RoleModel.getById(roleId)
     .then(existing => {
       if (!existing) {
         throw new Errors.NotFoundError('Role does not exist')
       }
-      return RolesModel.save(compactRole(Util.merge(existing, newRole)))
+      return RoleModel.save(compactRole(Util.merge(existing, newRole)))
         .then(expandRole)
     })
 }
 
-const updateUser = (userId, details) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
-    .then(user => UsersModel.save(Util.merge(user, details)))
+const updateParty = (partyId, details) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
+    .then(party => PartyModel.save(Util.merge(party, details)))
 }
 
-const updateUserRoles = (userId, roles) => {
-  return UsersModel.getById(userId)
-    .then(ensureUserExists)
-    .then(user => RolesModel.removeUserRoles(userId))
-    .then(() => roles.forEach(roleId => RolesModel.addUserRole({ userId, roleId: roleId })))
-    .then(() => getUserRoles(userId))
+const updatePartyRole = (partyId, role) => {
+  return PartyModel.getById(partyId)
+    .then(ensurePartyExists)
+    .then(party => RoleModel.removePartyRole(partyId))
+    .then(() => role.forEach(roleId => RoleModel.addPartyRole({ partyId, roleId: roleId })))
+    .then(() => getPartyRole(partyId))
 }
 
 module.exports = {
   createRole,
-  createUser,
+  createParty,
   deleteRole,
-  deleteUser,
-  getAllRoles,
-  getUserById,
-  getUserByKey,
-  getAllUsers,
-  getUserRoles,
+  deleteParty,
+  getAllRole,
+  getPartyById,
+  getPartyByKey,
+  getAllParty,
+  getPartyRole,
   updateRole,
-  updateUser,
-  updateUserRoles
+  updateParty,
+  updatePartyRole
 }

@@ -3,15 +3,15 @@
 const Joi = require('joi')
 const P = require('bluebird')
 const ValidationError = require('@mojaloop/central-services-shared').ValidationError
-const AccountService = require('../../domain/account')
+const ParticipantService = require('../../domain/participant')
 
 const validationOptions = { abortEarly: false, language: { key: '{{!key}} ' } }
 const requestSchema = Joi.object().keys({
   id: Joi.any().required(),
   jsonrpc: Joi.string().valid('2.0').required(),
-  method: Joi.string().valid('subscribe_account').required(),
+  method: Joi.string().valid('subscribe_participant').required(),
   params: Joi.object({
-    accounts: Joi.array().items(Joi.string().uri()).required()
+    participant: Joi.array().items(Joi.string().uri()).required()
   }).unknown().required()
 })
 
@@ -33,8 +33,8 @@ const validateSubscriptionRequest = (data, cb) => {
       if (err) {
         return cb(reformatValidationError(err))
       }
-      P.all(result.params.accounts.map(accountUri => AccountService.exists(accountUri)))
-      .then(() => cb(null, { id: result.id, jsonrpc: result.jsonrpc, accountUris: result.params.accounts }))
+      P.all(result.params.participant.map(participantUri => ParticipantService.exists(participantUri)))
+      .then(() => cb(null, { id: result.id, jsonrpc: result.jsonrpc, participantUris: result.params.participant }))
       .catch(e => {
         cb(new InvalidSubscriptionRequestError({ message: e.message }))
       })

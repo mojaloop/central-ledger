@@ -7,7 +7,7 @@ const P = require('bluebird')
 const Uuid = require('uuid4')
 const TransferQueries = require('../../../../src/domain/transfer/queries')
 const SettleableTransfersReadModel = require(`${src}/models/settleable-transfers-read-model`)
-const SettlementsModel = require(`${src}/models/settlements`)
+const SettlementModel = require(`${src}/models/settlement`)
 const Events = require('../../../../src/lib/events')
 const Commands = require('../../../../src/domain/transfer/commands')
 const Service = require('../../../../src/domain/transfer')
@@ -36,8 +36,8 @@ Test('Transfer Service tests', serviceTest => {
     sandbox.stub(TransferQueries, 'getById')
     sandbox.stub(TransferQueries, 'getAll')
     sandbox.stub(SettleableTransfersReadModel, 'getSettleableTransfers')
-    sandbox.stub(SettlementsModel, 'generateId')
-    sandbox.stub(SettlementsModel, 'create')
+    sandbox.stub(SettlementModel, 'generateId')
+    sandbox.stub(SettlementModel, 'create')
     sandbox.stub(TransferTranslator, 'toTransfer')
     sandbox.stub(TransferTranslator, 'fromPayload')
     sandbox.stub(Events, 'emitTransferRejected')
@@ -165,18 +165,18 @@ Test('Transfer Service tests', serviceTest => {
 
   serviceTest.test('rejectExpired should', rejectTest => {
     rejectTest.test('find expired transfers and reject them', test => {
-      const transfers = [{ transferUuid: 1 }, { transferUuid: 2 }]
+      const transfers = [{ transferId: 1 }, { transferId: 2 }]
       TransferQueries.findExpired.returns(P.resolve(transfers))
       transfers.forEach((x, i) => {
         Commands.reject.onCall(i).returns(P.resolve({ alreadyRejected: false, transfer: x }))
-        TransferTranslator.toTransfer.onCall(i).returns({ id: x.transferUuid })
+        TransferTranslator.toTransfer.onCall(i).returns({ id: x.transferId })
       })
       Service.rejectExpired()
         .then(x => {
           transfers.forEach(t => {
-            test.ok(Commands.reject.calledWith({ id: t.transferUuid, rejection_reason: RejectionType.EXPIRED }))
+            test.ok(Commands.reject.calledWith({ id: t.transferId, rejection_reason: RejectionType.EXPIRED }))
           })
-          test.deepEqual(x, transfers.map(t => t.transferUuid))
+          test.deepEqual(x, transfers.map(t => t.transferId))
           test.end()
         })
     })
@@ -186,8 +186,8 @@ Test('Transfer Service tests', serviceTest => {
   serviceTest.test('settle should', settleTest => {
     settleTest.test('find settalble transfers and settle them', test => {
       let settlementId = Uuid()
-      SettlementsModel.generateId.returns(settlementId)
-      SettlementsModel.create.withArgs(settlementId).returns(P.resolve({ settlementId: settlementId, settledAt: 0 }))
+      SettlementModel.generateId.returns(settlementId)
+      SettlementModel.create.withArgs(settlementId).returns(P.resolve({ settlementId: settlementId, settledDate: 0 }))
 
       let transfers = [{ transferId: 1 }, { transferId: 2 }]
       SettleableTransfersReadModel.getSettleableTransfers.returns(P.resolve(transfers))
@@ -208,8 +208,8 @@ Test('Transfer Service tests', serviceTest => {
 
     settleTest.test('return empty array if no settleable transfers exist', test => {
       let settlementId = Uuid()
-      SettlementsModel.generateId.returns(settlementId)
-      SettlementsModel.create.withArgs(settlementId).returns(P.resolve({ settlementId: settlementId, settledAt: 0 }))
+      SettlementModel.generateId.returns(settlementId)
+      SettlementModel.create.withArgs(settlementId).returns(P.resolve({ settlementId: settlementId, settledDate: 0 }))
 
       SettleableTransfersReadModel.getSettleableTransfers.returns(P.resolve([]))
 

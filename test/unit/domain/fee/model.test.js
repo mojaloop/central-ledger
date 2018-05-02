@@ -7,13 +7,13 @@ const P = require('bluebird')
 const Model = require(`${src}/domain/fee/model`)
 const Db = require(`${src}/db`)
 
-Test('fees model', modelTest => {
+Test('fee model', modelTest => {
   let sandbox
 
   modelTest.beforeEach((t) => {
     sandbox = Sinon.sandbox.create()
 
-    Db.fees = {
+    Db.fee = {
       insert: sandbox.stub(),
       find: sandbox.stub(),
       findOne: sandbox.stub(),
@@ -36,9 +36,9 @@ Test('fees model', modelTest => {
     getAllForTransferTest.test('return exception if db query throws', test => {
       const error = new Error()
 
-      Db.fees.find.returns(P.reject(error))
+      Db.fee.find.returns(P.reject(error))
 
-      Model.getAllForTransfer({ transferUuid: '1234' })
+      Model.getAllForTransfer({ transferId: '1234' })
         .then(() => {
           test.fail('Should have thrown error')
         })
@@ -48,18 +48,18 @@ Test('fees model', modelTest => {
         })
     })
 
-    getAllForTransferTest.test('return all fees ordered by feeId', test => {
+    getAllForTransferTest.test('return all fee ordered by feeId', test => {
       const feeId1 = '1'
       const feeId2 = '2'
-      const fees = [{ feeId: feeId1 }, { feeId: feeId2 }]
-      const transfer = { transferUuid: '1234' }
+      const fee = [{ feeId: feeId1 }, { feeId: feeId2 }]
+      const transfer = { transferId: '1234' }
 
-      Db.fees.find.returns(P.resolve(fees))
+      Db.fee.find.returns(P.resolve(fee))
 
       Model.getAllForTransfer(transfer)
         .then((found) => {
-          test.equal(found, fees)
-          test.ok(Db.fees.find.calledWith({ transferId: transfer.transferUuid }))
+          test.equal(found, fee)
+          test.ok(Db.fee.find.calledWith({ transferId: transfer.transferId }))
           test.end()
         })
     })
@@ -75,25 +75,25 @@ Test('fees model', modelTest => {
       const fee = {
         transferId: transferId,
         amount: amount,
-        payerAccountId: 1,
-        payeeAccountId: 2,
+        payerParticipantId: 1,
+        payeeParticipantId: 2,
         chargeId: 3
       }
 
       const payload = {
         transferId: transferId,
         amount: amount,
-        payerAccountId: 1,
-        payeeAccountId: 2,
+        payerParticipantId: 1,
+        payeeParticipantId: 2,
         chargeId: 3
       }
 
-      Db.fees.insert.returns(P.resolve(fee))
+      Db.fee.insert.returns(P.resolve(fee))
 
       Model.create(payload)
         .then(c => {
           test.equal(c, fee)
-          test.ok(Db.fees.insert.calledWith(payload))
+          test.ok(Db.fee.insert.calledWith(payload))
           test.end()
         })
     })
@@ -109,14 +109,14 @@ Test('fees model', modelTest => {
       const fee = { transferId, amount, chargeId }
 
       const charge = { chargeId }
-      const transfer = { transferUuid: transferId }
+      const transfer = { transferId: transferId }
 
-      Db.fees.findOne.returns(P.resolve(fee))
+      Db.fee.findOne.returns(P.resolve(fee))
 
       Model.doesExist(charge, transfer)
         .then(existing => {
           test.equal(existing, fee)
-          test.ok(Db.fees.findOne.calledWith({ transferId: transfer.transferUuid, chargeId: charge.chargeId }))
+          test.ok(Db.fee.findOne.calledWith({ transferId: transfer.transferId, chargeId: charge.chargeId }))
           test.end()
         })
     })
@@ -124,14 +124,14 @@ Test('fees model', modelTest => {
     doesExist.end()
   })
 
-  modelTest.test('getUnsettledFeesByAccount should', getUnsettledFeesByAccountTest => {
-    getUnsettledFeesByAccountTest.test('return settleable fees for account', test => {
+  modelTest.test('getUnsettledFeeByParticipant should', getUnsettledFeeByParticipantTest => {
+    getUnsettledFeeByParticipantTest.test('return settleable fee for participant', test => {
       const transferId = '1'
       const chargeId = '1'
       const amount = '1.00'
-      const fees = [{ transferId, amount, chargeId }]
+      const fee = [{ transferId, amount, chargeId }]
 
-      const account = { accountId: 11 }
+      const participant = { participantId: 11 }
 
       let builderStub = sandbox.stub()
       let joinPayerStub = sandbox.stub()
@@ -149,8 +149,8 @@ Test('fees model', modelTest => {
 
       builderStub.leftJoin = sandbox.stub()
 
-      Db.fees.query.callsArgWith(0, builderStub)
-      Db.fees.query.returns(P.resolve(fees))
+      Db.fee.query.callsArgWith(0, builderStub)
+      Db.fee.query.returns(P.resolve(fee))
 
       builderStub.leftJoin.returns({
         innerJoin: joinPayeeStub.returns({
@@ -164,49 +164,49 @@ Test('fees model', modelTest => {
         })
       })
 
-      Model.getUnsettledFeesByAccount(account)
+      Model.getUnsettledFeeByParticipant(participant)
         .then(foundFee => {
-          test.equal(foundFee, fees)
-          test.ok(builderStub.leftJoin.withArgs('settledFees AS sf', 'fees.feeId', 'sf.feeId').calledOnce)
-          test.ok(joinPayerStub.withArgs('accounts AS pr', 'fees.payerAccountId', 'pr.accountId').calledOnce)
-          test.ok(joinPayeeStub.withArgs('accounts AS pe', 'fees.payeeAccountId', 'pe.accountId').calledOnce)
+          test.equal(foundFee, fee)
+          test.ok(builderStub.leftJoin.withArgs('settledFee AS sf', 'fee.feeId', 'sf.feeId').calledOnce)
+          test.ok(joinPayerStub.withArgs('participant AS pr', 'fee.payerParticipantId', 'pr.participantId').calledOnce)
+          test.ok(joinPayeeStub.withArgs('participant AS pe', 'fee.payeeParticipantId', 'pe.participantId').calledOnce)
           test.ok(whereNullStub.withArgs('sf.feeId').calledOnce)
-          test.ok(distinctStub.withArgs('fees.feeId AS feeId', 'pe.name AS payeeAccountName', 'pr.name AS payerAccountName', 'fees.amount AS payeeAmount', 'fees.amount AS payerAmount').calledOnce)
+          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeParticipantName', 'pr.name AS payerParticipantName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
           test.end()
         })
     })
 
-    getUnsettledFeesByAccountTest.end()
+    getUnsettledFeeByParticipantTest.end()
   })
 
-  modelTest.test('getSettleableFeesForTransfer should', getSettleableFeesForTransferTest => {
-    getSettleableFeesForTransferTest.test('return settleable fees for account', test => {
+  modelTest.test('getSettleableFeeForTransfer should', getSettleableFeeForTransferTest => {
+    getSettleableFeeForTransferTest.test('return settleable fee for participant', test => {
       const transferId = '1'
       const chargeId = '1'
       const amount = '1.00'
-      const fees = [{ transferId, amount, chargeId }]
+      const fee = [{ transferId, amount, chargeId }]
 
-      Db.fees.find.returns(P.resolve(fees))
+      Db.fee.find.returns(P.resolve(fee))
 
       let builderStub = sandbox.stub()
       let joinPayerStub = sandbox.stub()
       let joinPayeeStub = sandbox.stub()
-      let joinAccountSettlementSourceStub = sandbox.stub()
-      let joinAccountSettlemenetDestinationStub = sandbox.stub()
+      let joinParticipantSettlementSourceStub = sandbox.stub()
+      let joinParticipantSettlemenetDestinationStub = sandbox.stub()
       let whereNullStub = sandbox.stub()
       let distinctStub = sandbox.stub()
       let whereStub = sandbox.stub()
 
       builderStub.leftJoin = sandbox.stub()
 
-      Db.fees.query.callsArgWith(0, builderStub)
-      Db.fees.query.returns(P.resolve(fees))
+      Db.fee.query.callsArgWith(0, builderStub)
+      Db.fee.query.returns(P.resolve(fee))
 
       builderStub.leftJoin.returns({
         innerJoin: joinPayeeStub.returns({
           innerJoin: joinPayerStub.returns({
-            innerJoin: joinAccountSettlementSourceStub.returns({
-              innerJoin: joinAccountSettlemenetDestinationStub.returns({
+            innerJoin: joinParticipantSettlementSourceStub.returns({
+              innerJoin: joinParticipantSettlemenetDestinationStub.returns({
                 whereNull: whereNullStub.returns({
                   distinct: distinctStub.returns({
                     where: whereStub
@@ -218,27 +218,27 @@ Test('fees model', modelTest => {
         })
       })
 
-      Model.getSettleableFeesForTransfer(transferId)
+      Model.getSettleableFeeForTransfer(transferId)
         .then(foundFee => {
-          test.equal(foundFee, fees)
-          test.ok(builderStub.leftJoin.withArgs('settledFees AS sf', 'fees.feeId', 'sf.feeId').calledOnce)
-          test.ok(joinPayerStub.withArgs('accounts AS pr', 'fees.payerAccountId', 'pr.accountId').calledOnce)
-          test.ok(joinPayeeStub.withArgs('accounts AS pe', 'fees.payeeAccountId', 'pe.accountId').calledOnce)
+          test.equal(foundFee, fee)
+          test.ok(builderStub.leftJoin.withArgs('settledFee AS sf', 'fee.feeId', 'sf.feeId').calledOnce)
+          test.ok(joinPayerStub.withArgs('participant AS pr', 'fee.payerParticipantId', 'pr.participantId').calledOnce)
+          test.ok(joinPayeeStub.withArgs('participant AS pe', 'fee.payeeParticipantId', 'pe.participantId').calledOnce)
           test.ok(whereNullStub.withArgs('sf.feeId').calledOnce)
-          test.ok(distinctStub.withArgs('fees.feeId AS feeId', 'pe.name AS payeeAccountName', 'pr.name AS payerAccountName', 'fees.amount AS payeeAmount', 'fees.amount AS payerAmount').calledOnce)
+          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeParticipantName', 'pr.name AS payerParticipantName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
           test.end()
         })
     })
 
-    getSettleableFeesForTransferTest.end()
+    getSettleableFeeForTransferTest.end()
   })
 
-  modelTest.test('getUnsettledFees should', getUnsettledFeesTest => {
-    getUnsettledFeesTest.test('return settleable fees', test => {
+  modelTest.test('getUnsettledFee should', getUnsettledFeeTest => {
+    getUnsettledFeeTest.test('return settleable fee', test => {
       const transferId = '1'
       const chargeId = '1'
       const amount = '1.00'
-      const fees = [{ transferId, amount, chargeId }]
+      const fee = [{ transferId, amount, chargeId }]
 
       let builderStub = sandbox.stub()
       let joinPayerStub = sandbox.stub()
@@ -248,8 +248,8 @@ Test('fees model', modelTest => {
 
       builderStub.leftJoin = sandbox.stub()
 
-      Db.fees.query.callsArgWith(0, builderStub)
-      Db.fees.query.returns(P.resolve(fees))
+      Db.fee.query.callsArgWith(0, builderStub)
+      Db.fee.query.returns(P.resolve(fee))
 
       builderStub.leftJoin.returns({
         innerJoin: joinPayeeStub.returns({
@@ -261,19 +261,19 @@ Test('fees model', modelTest => {
         })
       })
 
-      Model.getUnsettledFees()
+      Model.getUnsettledFee()
         .then(foundFee => {
-          test.equal(foundFee, fees)
-          test.ok(builderStub.leftJoin.withArgs('settledFees AS sf', 'fees.feeId', 'sf.feeId').calledOnce)
-          test.ok(joinPayerStub.withArgs('accounts AS pr', 'fees.payerAccountId', 'pr.accountId').calledOnce)
-          test.ok(joinPayeeStub.withArgs('accounts AS pe', 'fees.payeeAccountId', 'pe.accountId').calledOnce)
+          test.equal(foundFee, fee)
+          test.ok(builderStub.leftJoin.withArgs('settledFee AS sf', 'fee.feeId', 'sf.feeId').calledOnce)
+          test.ok(joinPayerStub.withArgs('participant AS pr', 'fee.payerParticipantId', 'pr.participantId').calledOnce)
+          test.ok(joinPayeeStub.withArgs('participant AS pe', 'fee.payeeParticipantId', 'pe.participantId').calledOnce)
           test.ok(whereNullStub.withArgs('sf.feeId').calledOnce)
-          test.ok(distinctStub.withArgs('fees.feeId AS feeId', 'pe.name AS payeeAccountName', 'pr.name AS payerAccountName', 'fees.amount AS payeeAmount', 'fees.amount AS payerAmount').calledOnce)
+          test.ok(distinctStub.withArgs('fee.feeId AS feeId', 'pe.name AS payeeParticipantName', 'pr.name AS payerParticipantName', 'fee.amount AS payeeAmount', 'fee.amount AS payerAmount').calledOnce)
           test.end()
         })
     })
 
-    getUnsettledFeesTest.end()
+    getUnsettledFeeTest.end()
   })
 
   modelTest.end()

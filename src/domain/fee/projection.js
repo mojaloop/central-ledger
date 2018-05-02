@@ -9,7 +9,7 @@ const initialize = (params, done) => {
 }
 
 const handleTransferExecuted = (transfer) => {
-  return DA(FeeService.generateFeesForTransfer(transfer)
+  return DA(FeeService.generateFeeForTransfer(transfer)
     .catch(err => {
       Logger.error('Error handling TransferExecuted event', err)
     }))

@@ -6,11 +6,11 @@ const Fixtures = require('../../../fixtures')
 
 Test('GET /auth_token', getTest => {
   getTest.test('should return token', async function (test) {
-    const accountName = Fixtures.generateAccountName()
+    const participantName = Fixtures.generateParticipantName()
     const password = '1234'
 
-    await Base.createAccount(accountName, password)
-    const basicAuth = await Base.basicAuth(accountName, password)
+    await Base.createParticipant(participantName, password)
+    const basicAuth = await Base.basicAuth(participantName, password)
     const res = await Base.getApi('/auth_token', basicAuth)
     const token = res.body.token
     test.ok(token)
