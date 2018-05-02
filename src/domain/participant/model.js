@@ -1,58 +1,96 @@
+
 'use strict'
 
 const Db = require('../../db')
 
-exports.getById = (id) => {
-  return Db.participant.findOne({ participantId: id })
+exports.getById = async (id) => {
+  try {
+    return await Db.participant.findOne({ participantId: id })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-exports.getByName = (name) => {
-  return Db.participant.findOne({ name })
+exports.getByName = async (name) => {
+  try {
+    return await Db.participant.findOne({ name })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-exports.retrievePartyCredentials = (participant) => {
-  return Db.userCredentials.findOne({ participantId: participant.participantId })
+exports.retrievePartyCredentials = async (participant) => {
+  try {
+    return await Db.userCredentials.findOne({ participantId: participant.participantId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-exports.getAll = () => {
-  return Db.participant.find({}, { order: 'name asc' })
+exports.getAll = async () => {
+  try {
+    const participants = await Db.participant.find({}, { order: 'name asc' })
+    return participants
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-exports.update = (participant, isDisabled) => {
-  return Db.participant.update({ participantId: participant.participantId }, { isDisabled })
+exports.update = async (participant, isDisabled) => {
+  try {
+    return await Db.participant.update({ participantId: participant.participantId }, { isDisabled })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-exports.updatePartyCredentials = (participant, hashedPassword) => {
-  return Db.userCredentials.update({ participantId: participant.participantId }, { password: hashedPassword })
+exports.updatePartyCredentials = async (participant, hashedPassword) => {
+  try {
+    return Db.userCredentials.update({ participantId: participant.participantId }, { password: hashedPassword })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-exports.updateParticipantSettlement = (participant, settlement) => {
-  return Db.participantSettlement.findOne({ participantId: participant.participantId })
-    .then(participantSettlement => {
-      if (participantSettlement) {
-        return Db.participantSettlement.update({ participantId: participant.participantId }, { participantNumber: settlement.participant_number, routingNumber: settlement.routing_number }).then(updatedSettlement => {
-          return {
-            participantName: participant.name,
-            participantNumber: updatedSettlement.participantNumber,
-            routingNumber: updatedSettlement.routingNumber
-          }
-        })
-      }
-      return Db.participantSettlement.insert({ participantId: participant.participantId, participantNumber: settlement.participant_number, routingNumber: settlement.routing_number }).then(insertedSettlement => {
-        return {
-          participantName: participant.name,
-          participantNumber: insertedSettlement.participantNumber,
-          routingNumber: insertedSettlement.routingNumber
-        }
+exports.updateParticipantSettlement = async (participant, settlement) => {
+  try {
+    const participantSettlement = await Db.participantSettlement.findOne({ participantId: participant.participantId })
+    if (participantSettlement) {
+      const updatedSettlement = await Db.participantSettlement.update({
+        participantId: participant.participantId
+      }, {
+        participantNumber: settlement.participant_number,
+        routingNumber: settlement.routing_number
       })
+      return {
+        participantName: participant.name,
+        participantNumber: updatedSettlement.participantNumber,
+        routingNumber: updatedSettlement.routingNumber
+      }
+    }
+    const insertedSettlement = await Db.participantSettlement.insert({
+      participantId: participant.participantId,
+      participantNumber: settlement.participant_number,
+      routingNumber: settlement.routing_number
     })
+    return {
+      participantName: participant.name,
+      participantNumber: insertedSettlement.participantNumber,
+      routingNumber: insertedSettlement.routingNumber
+    }
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-exports.create = (participant) => {
-  return Db.participant.insert({ name: participant.name, emailAddress: participant.emailAddress })
-  .then(insertedParticipant => {
-    const newparticipant = Db.participant.findOne({ participantId: insertedParticipant })
-    return Db.userCredentials.insert({ participantId: insertedParticipant, password: participant.hashedPassword })
-      .then(() => newparticipant)
-  })
+exports.create = async (participant) => {
+  try {
+    const insertedParticipant = await Db.participant.insert({
+      name: participant.name,
+      currencyId: participant.currency
+    })
+    return await Db.participant.findOne({ participantId: insertedParticipant })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
