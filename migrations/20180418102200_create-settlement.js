@@ -1,6 +1,6 @@
 'use strict'
 
-exports.up = function(knex, Promise) {
+exports.up = function (knex, Promise) {
   return knex.schema.createTableIfNotExists('settlement', (t) => {
     t.bigIncrements('settlementId').primary().notNullable()
 
@@ -12,6 +12,6 @@ exports.up = function(knex, Promise) {
   })
 }
 
-exports.down = function(knex, Promise) {
+exports.down = function (knex, Promise) {
   return knex.schema.dropTableIfExists('settlement')
 }
