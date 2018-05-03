@@ -22,7 +22,13 @@ const getAll = () => {
     return builder
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
+      .innerJoin('transferStateChange AS tsc', 'transfer.transferStateChangeId', 'tsc.transferStateChangeId')
+      .select(
+        'transfer.*',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS transferState'
+      )
   })
 }
 
