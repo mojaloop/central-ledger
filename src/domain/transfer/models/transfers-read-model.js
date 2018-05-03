@@ -22,7 +22,13 @@ const getAll = () => {
     return builder
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
+      .innerJoin('transferStateChange AS tsc', 'transfer.transferStateChangeId', 'tsc.transferStateChangeId')
+      .select(
+        'transfer.*',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS transferState'
+      )
   })
 }
 
@@ -43,9 +49,13 @@ const getById = (id) => {
       .where({ transferId: id })
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
-      .innerJoin('transferState AS ts', 'tsc.transferStateId', 'ts.transferStateId')
-      .select('transfer.*', 'ca.name AS payerFsp', 'da.name AS payeeFsp', 'ts.name AS transferState')
+      .innerJoin('transferStateChange AS tsc', 'transfer.transferStateChangeId', 'tsc.transferStateChangeId')
+      .select(
+        'transfer.*',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS transferState'
+      )
       .first()
   })
 }
