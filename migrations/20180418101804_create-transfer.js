@@ -4,10 +4,10 @@ exports.up = function (knex, Promise) {
   return knex.schema.createTableIfNotExists('transfer', (t) => {
     t.string('transferId', 36).primary().notNullable()
 
-    t.integer('payeeParticipantId').unsigned().notNullable()
+    t.integer('payeeParticipantId').unsigned().notNullable().comment('payeeFsp')
     t.foreign('payeeParticipantId').references('participantId').inTable('participant')
 
-    t.integer('payerParticipantId').unsigned().notNullable()
+    t.integer('payerParticipantId').unsigned().notNullable().comment('payerFsp')
     t.foreign('payerParticipantId').references('participantId').inTable('participant')
 
     // t.decimal('payerAmount', 18, 2).notNullable()
@@ -19,14 +19,15 @@ exports.up = function (knex, Promise) {
     // t.text('payeeNote', 'text').defaultTo(null).nullable()
 
     t.decimal('amount', 18, 2).notNullable()
-    t.string('currencyId', 3).notNullable()
+    t.string('currencyId', 3).notNullable().comment('currency')
     t.foreign('currencyId').references('currencyId').inTable('currency')
 
-    t.dateTime('expirationDate').defaultTo(null).nullable()
+    t.dateTime('expirationDate').defaultTo(null).nullable().comment('expiration ilp condition')
 
-    t.bigInteger('transferStateChangeId').unsigned().defaultTo(0).notNullable()
+    // t.bigInteger('transferStateChangeId').unsigned().defaultTo(0).notNullable().comment('transferState')
+    // t.bigInteger('transferStateChangeId').unsigned().defaultTo(0).nullable().comment('transferState')
     // t.string('transferStateId', 50).primary().notNullable()
-    t.foreign('transferStateChangeId').references('transferStateChangeId').inTable('transferStateChange')
+    // t.foreign('transferStateChangeId').references('transferStateChangeId').inTable('transferStateChange')
 
     // t.bigInteger('transferSettlementBatchId').unsigned().notNullable()
     t.bigInteger('transferSettlementBatchId').unsigned().defaultTo(0).nullable()
