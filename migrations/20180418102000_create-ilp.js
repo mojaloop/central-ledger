@@ -7,7 +7,7 @@ exports.up = function (knex, Promise) {
     t.string('transferId', 36).notNullable()
     t.foreign('transferId').references('transferId').inTable('transfer')
 
-    t.text('packet').notNullable()
+    t.text('packet').notNullable().comment('ilpPacket')
     t.string('condition', 48).notNullable()
     t.string('fulfillment', 48).defaultTo(null).nullable()
   })
@@ -16,4 +16,3 @@ exports.up = function (knex, Promise) {
 exports.down = function (knex, Promise) {
   return knex.schema.dropTableIfExists('ilp')
 }
-
