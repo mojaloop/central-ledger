@@ -49,20 +49,9 @@ sudo apt-get install postgresql postgresql-contrib
 ##### Docker
 Run the following commands in your terminal. Please ensure that you run the MySQL statements with the semicolon at the end.
 ```
-docker run -p 3306:3306 -d --name mysql -e MYSQL_ROOT_PASSWORD=password mysql/mysql-server
+docker run -p 3306:3306 -d --name mysql -e MYSQL_USER=central_ledger -e MYSQL_PASSWORD=password -e MYSQL_DATABASE=central_ledger -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql/mysql-server
 
-docker exec -it mysql bash
-
-mysql -uroot -ppassword
-
-***MySQL statements***
-
-CREATE USER 'central_ledger'@'%' IDENTIFIED BY 'password';
-
-GRANT ALL PRIVILEGES ON * . * TO 'central_ledger'@'%';
-
-CREATE SCHEMA `central_ledger`;
-
+docker exec -it mysql mysql -uroot -e "ALTER USER 'central_ledger'@'%' IDENTIFIED WITH mysql_native_password BY 'password';"
 ```
 
 #### Installing MySQLWorkBench
