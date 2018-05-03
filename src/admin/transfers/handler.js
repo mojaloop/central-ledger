@@ -6,7 +6,7 @@ function entityItem (transfer) {
   return {
     transferId: transfer.transferId,
     transferBatchId: transfer.transferBatchId,
-//    state: transfer.state,
+    transferState: transfer.transferState,
     ledger: transfer.ledger,
     payeeParticipantId: transfer.payeeParticipantId,
     payeeAmount: transfer.payeeAmount,

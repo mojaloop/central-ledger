@@ -11,7 +11,7 @@ const findExpired = (expiresAt) => {
 }
 
 const saveTransfer = (record) => {
-  Logger.info('inside save transfer' + record.toString())
+  Logger.debug('save transfer' + record.toString())
   return Db.transfer.insert(record).catch(err => {
     throw err
   })
@@ -43,7 +43,9 @@ const getById = (id) => {
       .where({ transferId: id })
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
+      .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
+      .innerJoin('transferState AS ts', 'tsc.transferStateId', 'ts.transferStateId')
+      .select('transfer.*', 'ca.name AS payerFsp', 'da.name AS payeeFsp', 'ts.name AS transferState')
       .first()
   })
 }
