@@ -1,7 +1,7 @@
 'use strict'
 
 const migrationsDirectory = '../migrations'
-const seedsDirectory = '../seeds'
+const seedsDirectory = './seeds'
 
 const Config = require('../src/lib/config')
 
