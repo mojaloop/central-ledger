@@ -14,7 +14,7 @@ const transferStateChangeModel = require('./models/transferStateChanges')
 const ExecuteTransfersModel = require('../../models/executed-transfers')
 const SettledTransfersModel = require('../../models/settled-transfers')
 
-const saveTransferPrepared = async (payload) => {
+const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   // const debitParticipant = await UrlParser.nameFromParticipantUri(payload.debits[0].participant)
   // const creditParticipant = await UrlParser.nameFromParticipantUri(payload.credits[0].participant)
   // const names = [debitParticipant, creditParticipant]
@@ -51,14 +51,21 @@ const saveTransferPrepared = async (payload) => {
     fulfillment: null
   }
 
+  const state = ((hasPassedValidation) ? TransferState.RECEIVED : TransferState.ABORTED)
+
   const transferStateRecord = {
     transferId: payload.transferId,
-    transferStateId: TransferState.RECEIVED,
-    reason: 'Received Transfer for Prepare',
+    transferStateId: state,
+    reason: stateReason,
     changedDate: (new Date()).toISOString()
   }
 
   // TODO: Move inserts into a Transaction
+
+  // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
+  await TransfersModel.saveTransfer(transferRecord).catch(err => {
+    throw new Error(err.message)
+  })
 
   var extensionsRecordList = []
 
@@ -86,13 +93,9 @@ const saveTransferPrepared = async (payload) => {
     throw new Error(err.message)
   })
 
-  await TransfersModel.saveTransfer(transferRecord).catch(err => {
-    throw new Error(err.message)
-  })
-
   // transferRecord.creditParticipantName = creditParticipant
   // transferRecord.debitParticipantName = debitParticipant
-  return { transferRecord, ilpRecord, transferStateRecord, extensionsRecordList }
+  return { isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList }
 }
 
 const saveTransferExecuted = async ({payload, timestamp}) => {
