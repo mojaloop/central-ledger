@@ -40,18 +40,11 @@ To install Linuxbrew, follow these [instructions](http://linuxbrew.sh/#install-l
 To install Docker, follow these instructions: [Docker for Mac](https://docs.docker.com/docker-for-mac/), [Docker for Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-repository)
 
 #### Installing MySQL
-##### Ubuntu
-```
-sudo apt-get update
-sudo apt-get install postgresql postgresql-contrib
-```
 
 ##### Docker
 Run the following commands in your terminal. Please ensure that you run the MySQL statements with the semicolon at the end.
 ```
-docker run -p 3306:3306 -d --name mysql -e MYSQL_USER=central_ledger -e MYSQL_PASSWORD=password -e MYSQL_DATABASE=central_ledger -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql/mysql-server
-
-docker exec -it mysql mysql -uroot -e "ALTER USER 'central_ledger'@'%' IDENTIFIED WITH mysql_native_password BY 'password';"
+DBUSER=central_ledger; DBPASS=password; SLEEPTIME=15; docker stop mysql; docker rm mysql; docker run -p 3306:3306 -d --name mysql -e MYSQL_USER=$DBUSER -e MYSQL_PASSWORD=$DBPASS -e MYSQL_DATABASE=$DBUSER -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql/mysql-server; sleep $SLEEPTIME; docker exec -it mysql mysql -uroot -e "ALTER USER '$DBUSER'@'%' IDENTIFIED WITH mysql_native_password BY '$DBPASS';"
 ```
 
 #### Installing MySQLWorkBench
@@ -145,9 +138,7 @@ sudo ln -s /opt/Postman/Postman /usr/bin/postman
 ##### Setup Postman
 * open *Postman*
 * click **Import** and then **Import File**
-* navigate to the central_ledger directory and select [ModusBox.postman_collection.json](./ModusBox.postman_collection.json)
-* You can use the environment variable file [LOCAL.postman_environment.json](./LOCAL.postman_environment.json) in your postman
-
+* navigate to the central_ledger directory and select (to be added) and import it into postman
 #### nvm 
 
 ######(This is optional, you can install node directly from the website, node version manager(nvm) isn't really needed unless you want to use multiple versions of node)

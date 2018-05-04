@@ -220,7 +220,7 @@ Test('TransferTranslator', transferTranslatorTest => {
       const transferUri = UrlParser.toTransferUri(id)
       test.notEqual(id, transferUri)
       const payload = { id: transferUri }
-      const result = TransferTranslator.fromPayload(payload)
+      const result = TransferTranslator.fromRequestToDatabase(payload)
       test.equal(result.id, id.toString())
       test.end()
     })

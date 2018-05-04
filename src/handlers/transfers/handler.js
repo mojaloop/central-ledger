@@ -31,15 +31,40 @@
 'use strict'
 
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Commands = require('../../domain/transfer/commands')
+const TransferHandler = require('../../domain/transfer')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const ConsumerUtility = require('../lib/consumer')
+const Validator = require('./validator')
+const TransferQueries = require('../../domain/transfer/queries')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFILL = 'fulfill'
 const REJECT = 'reject'
+
+const prepare = async function (message) {
+  const payload = message.content.payload
+  if (Validator.validate(message.content.payload)) {
+    const existingTransfer = TransferQueries.getById(payload.transferId)
+    if (!existingTransfer) {
+      const result = TransferHandler.prepare(message.content.payload)
+      // notification of prepare transfer to go here
+      return result.transfer
+    } else {
+      // notification of duplicate to go here
+      return result.transfer
+    }
+  }
+}
+
+const fulfill = async function () {
+
+}
+
+const reject = async function () {
+
+}
 
 /**
  * @method CreatePrepareHandler
@@ -53,7 +78,7 @@ const REJECT = 'reject'
 const createPrepareHandler = async function (participantName) {
   try {
     const prepareHandler = {
-      command: Commands.prepareExecute,
+      command: prepare,
       topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
     }
@@ -74,7 +99,7 @@ const createPrepareHandler = async function (participantName) {
 const registerFulfillHandler = async function () {
   try {
     const fulfillHandler = {
-      command: Commands.fulfilling,
+      command: fulfill,
       topicName: Utility.transformGeneralTopicName(TRANSFER, FULFILL),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
     }
@@ -95,7 +120,7 @@ const registerFulfillHandler = async function () {
 const registerRejectHandler = async function () {
   try {
     const rejectHandler = {
-      command: Commands.rejecting(),
+      command: reject,
       topicName: Utility.transformGeneralTopicName(TRANSFER, REJECT),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), REJECT.toUpperCase())
     }

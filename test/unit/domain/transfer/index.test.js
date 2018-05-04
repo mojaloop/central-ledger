@@ -39,7 +39,7 @@ Test('Transfer Service tests', serviceTest => {
     sandbox.stub(SettlementModel, 'generateId')
     sandbox.stub(SettlementModel, 'create')
     sandbox.stub(TransferTranslator, 'toTransfer')
-    sandbox.stub(TransferTranslator, 'fromPayload')
+    sandbox.stub(TransferTranslator, 'fromRequestToDatabase')
     sandbox.stub(Events, 'emitTransferRejected')
     sandbox.stub(Events, 'emitTransferExecuted')
     sandbox.stub(Events, 'emitTransferPrepared')
@@ -227,7 +227,7 @@ Test('Transfer Service tests', serviceTest => {
     prepareTest.test('execute prepare function', test => {
       const payload = { id: 'payload id' }
       const proposedTransfer = { id: 'transfer id' }
-      TransferTranslator.fromPayload.withArgs(payload).returns(proposedTransfer)
+      TransferTranslator.fromRequestToDatabase.withArgs(payload).returns(proposedTransfer)
 
       const preparedTransfer = { id: 'prepared transfer' }
       const prepareResult = { existing: false, transfer: preparedTransfer }
@@ -248,7 +248,7 @@ Test('Transfer Service tests', serviceTest => {
     prepareTest.test('Emit transfer prepared event', test => {
       const payload = { id: 'payload id' }
       const proposedTransfer = { id: 'transfer id' }
-      TransferTranslator.fromPayload.withArgs(payload).returns(proposedTransfer)
+      TransferTranslator.fromRequestToDatabase.withArgs(payload).returns(proposedTransfer)
 
       const preparedTransfer = { id: 'prepared transfer' }
       const prepareResult = { existing: false, transfer: preparedTransfer }
