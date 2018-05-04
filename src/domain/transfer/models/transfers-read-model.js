@@ -3,6 +3,7 @@
 const Moment = require('moment')
 const Db = require('../../../db')
 const TransferState = require('../state')
+const extensionModel = require('../../../models/extensions')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 const findExpired = (expiresAt) => {
@@ -19,7 +20,7 @@ const saveTransfer = async (record) => {
 
 const getAll = async () => {
   return await Db.transfer.query(builder => {
-    return builder
+    var transferResultList = builder
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
       .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
@@ -38,6 +39,15 @@ const getAll = async () => {
       )
       .orderBy('tsc.transferStateChangeId', 'desc')
       .first()
+
+    transferResultList = transferResultList.map(async transferResult => {
+      var extensionList = await extensionModel.getByTransferId(transferResult.transferId)
+      transferResult.extensionList = extensionList
+      transferResult.isTransferReadModel = true
+      return transferResult
+    })
+
+    return transferResultList
   })
 }
 
@@ -53,8 +63,8 @@ const truncateTransfers = async () => {
 }
 
 const getById = async (id) => {
-  return await Db.transfer.query(builder => {
-    return builder
+  return await Db.transfer.query(async (builder) => {
+    var transferResult = builder
       .where({ transferId: id })
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
@@ -72,6 +82,10 @@ const getById = async (id) => {
       )
       .orderBy('tsc.transferStateChangeId', 'desc')
       .first()
+    const extensionList = await extensionModel.getByTransferId(id)
+    transferResult.extensionList = extensionList
+    transferResult.isTransferReadModel = true
+    return transferResult
   })
 }
 

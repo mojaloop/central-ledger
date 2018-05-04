@@ -9,6 +9,7 @@ const TransferState = require('./state')
 const TransferRejectionType = require('./rejection-type')
 const TransfersModel = require('./models/transfers-read-model')
 const ilpModel = require('../../models/ilp')
+const extensionModel = require('../../models/extensions')
 const transferStateChangeModel = require('./models/transferStateChanges')
 const ExecuteTransfersModel = require('../../models/executed-transfers')
 const SettledTransfersModel = require('../../models/settled-transfers')
@@ -57,8 +58,25 @@ const saveTransferPrepared = async (payload) => {
     changedDate: (new Date()).toISOString()
   }
 
-  // TODO: ExtensionList
   // TODO: Move inserts into a Transaction
+
+  var extensionsRecordList = []
+
+  if (payload.extensionList && payload.extensionList.extension) {
+    extensionsRecordList = payload.extensionList.extension.map(ext => {
+      return {
+        transferId: payload.transferId,
+        key: ext.key,
+        value: ext.value,
+        changedDate: (new Date()).toISOString(),
+        changedBy: null
+      }
+    })
+
+    await extensionsRecordList.forEach(async (ext) => {
+      await extensionModel.saveExtension(ext)
+    })
+  }
 
   await ilpModel.saveIlp(ilpRecord).catch(err => {
     throw new Error(err.message)
@@ -74,7 +92,7 @@ const saveTransferPrepared = async (payload) => {
 
   // transferRecord.creditParticipantName = creditParticipant
   // transferRecord.debitParticipantName = debitParticipant
-  return { transferRecord, ilpRecord, transferStateRecord }
+  return { transferRecord, ilpRecord, transferStateRecord, extensionsRecordList }
 }
 
 const saveTransferExecuted = async ({payload, timestamp}) => {
