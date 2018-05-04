@@ -39,7 +39,8 @@ const getFulfillment = (id) => {
 }
 
 const prepare = (payload) => {
-  const transfer = Translator.fromPayload(payload)
+  // const transfer = Translator.fromPayload(payload)
+  const transfer = payload
   return Commands.prepare(transfer)
     .then(result => {
       const t = Translator.toTransfer(result)

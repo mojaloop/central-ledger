@@ -32,6 +32,7 @@ const getAll = async () => {
         'ca.name AS payerFsp',
         'da.name AS payeeFsp',
         'tsc.transferStateId AS internalTransferState',
+        'tsc.changedDate AS completedTimestamp',
         'ts.enumeration AS transferState',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
@@ -76,6 +77,7 @@ const getById = async (id) => {
         'ca.name AS payerFsp',
         'da.name AS payeeFsp',
         'tsc.transferStateId AS transferState',
+        'tsc.changedDate AS completedTimestamp',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
         'ilp.fulfillment AS fulfillment'

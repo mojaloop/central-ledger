@@ -8,9 +8,6 @@ const CryptoConditions = require('../../../crypto-conditions')
 const Errors = require('../../../errors')
 
 const prepare = async (transfer) => {
-  transfer.timeline = {
-    prepared_at: new Date()
-  }
   return await Projection.saveTransferPrepared(transfer).catch(err => {
     throw err
   })
