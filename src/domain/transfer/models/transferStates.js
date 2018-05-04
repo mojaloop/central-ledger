@@ -38,7 +38,7 @@ const saveTransferState = (transferState) => {
 }
 
 const getByTransferStateId = (id) => {
-  return Db.transferStateChange.query(builder => {
+  return Db.transferState.query(builder => {
     return builder
       .where({ transferStateId: id })
       .select('transferState.*')
@@ -46,20 +46,30 @@ const getByTransferStateId = (id) => {
   })
 }
 
-const getAll = (id) => {
-  return Db.transferStateChange.query(builder => {
+const getAll = () => {
+  return Db.transferState.query(builder => {
     return builder
       .select('transferState.*')
   })
 }
 
 const truncateTransferStates = () => {
-  return Db.transfer.truncate()
+  return Db.transferState.truncate()
+}
+
+const destroyTransferStates = () => {
+  return Db.transferState.destroy()
+}
+
+const destroyTransferStatesById = (id) => {
+  return Db.transferState.destroy({ 'transferStateId =': id })
 }
 
 module.exports = {
   saveTransferState,
   getByTransferStateId,
   getAll,
-  truncateTransferStates
+  truncateTransferStates,
+  destroyTransferStates,
+  destroyTransferStatesById
 }
