@@ -3,8 +3,11 @@
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
  The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -15,34 +18,39 @@
  Gates Foundation organization for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
+
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
- * Valentin Genev <valentin.genev@modusbox.com>
+
+ * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+
  --------------
  ******/
-const Model = require('./models/ilp-model')
+'use strict'
 
-// TODO add validations?
+const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
+const Logger = require('@mojaloop/central-services-shared').Logger
 
-const saveIlp = async ({ transferId, packet, condition, fullfilment }) => {
-  return await Model.saveIlp({ transferId, packet, condition, fullfilment })
-}
-
-const update = async (transferId, payload) => {
-  try {
-    const ilp = await Model.getByTransferId(transferId)
-    if (!ilp) {
-      throw new Error('transfer for this ILP not found or expired')
-    }
-    return await Model.update
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-module.exports = {
-  saveIlp,
-  update
+/**
+ * @method CreateHandler
+ *
+ * @param {string} topicName - the topic name to be registered for the required handler. Example: 'topic-dfsp1-transfer-prepare'
+ * @param {object} config - the config for the consumer for the specific functionality and action, retrieved from the default.json. Example: found in default.json 'KAFKA.CONSUMER.TRANSFER.PREPARE'
+ * @param {function} command - the callback handler for the topic. Will be called when the topic is produced against. Example: Command.prepareHandler()
+ *
+ * Parses the accountUri into a participant name from the uri string
+ *
+ * @returns {string} - Returns participant name, throws error if failure occurs
+ */
+exports.createHandler = async (topicName, config, command) => {
+  const consumer = new Consumer([topicName], config)
+  await consumer.connect().then(() => {
+    Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
+    consumer.consume(command)
+  }).catch((e) => {
+    Logger.error(e)
+    throw e
+  })
 }

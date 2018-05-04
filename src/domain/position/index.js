@@ -116,3 +116,7 @@ exports.calculateForAllParticipants = () => {
       })
     })
 }
+
+exports.generatePositionPlaceHolder = () => {
+  return true
+}

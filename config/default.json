@@ -19,5 +19,123 @@
   },
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",
-  "EMAIL_SMTP": "smtp.gmail.com"
+  "EMAIL_SMTP": "smtp.gmail.com",
+  "DFSPS": [
+    "988"
+  ],
+  "KAFKA": {
+    "TOPIC_TEMPLATES": {
+      "PARTICIPANT_TOPIC_TEMPLATE": {
+        "TEMPLATE": "topic-{{participantName}}-{{functionality}}-{{action}}",
+        "REGEX": "topic-(.*)-(.*)-(.*)"
+      },
+      "GENERAL_TOPIC_TEMPLATE": {
+        "TEMPLATE": "topic-{{functionality}}-{{action}}",
+        "REGEX": "topic-(.*)-(.*)"
+      }
+    },
+    "CONSUMER": {
+      "TRANSFER": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "mode": 1,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": false,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaconf": {
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": true
+            }
+          }
+        },
+        "FULFILL": {
+          "config": {
+            "options": {
+              "mode": 1,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": false,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaconf": {
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": true
+            }
+          }
+        },
+        "REJECT": {
+          "config": {
+            "options": {
+              "mode": 1,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": false,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaconf": {
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": true
+            }
+          }
+        }
+      },
+      "POSITION": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "mode": 1,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": false,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaconf": {
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": true
+            }
+          }
+        }
+      },
+      "NOTIFICATION": {
+        "EVENT": {
+          "config": {
+            "options": {
+              "mode": 1,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": false,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaconf": {
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": true
+            }
+          }
+        }
+      }
+    }
+  }
 }

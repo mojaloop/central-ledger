@@ -3,8 +3,11 @@
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
  The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
  http://www.apache.org/licenses/LICENSE-2.0
+
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -15,34 +18,29 @@
  Gates Foundation organization for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
+
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
- * Valentin Genev <valentin.genev@modusbox.com>
+
+ * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+
  --------------
  ******/
-const Model = require('./models/ilp-model')
+'use strict'
 
-// TODO add validations?
+/**
+ * @method Plugin
+ *
+ * @async
+ * Registers registers plugins on HAPI server. This retrieves all routes to be exposed from the routes.js file
+ * @returns {Promise} - Returns a promise: resolve if successful, or rejection if failed
+ */
 
-const saveIlp = async ({ transferId, packet, condition, fullfilment }) => {
-  return await Model.saveIlp({ transferId, packet, condition, fullfilment })
-}
-
-const update = async (transferId, payload) => {
-  try {
-    const ilp = await Model.getByTransferId(transferId)
-    if (!ilp) {
-      throw new Error('transfer for this ILP not found or expired')
-    }
-    return await Model.update
-  } catch (err) {
-    throw new Error(err.message)
+exports.plugin = {
+  name: 'handler routes',
+  register: function (server, options) {
+    server.route(require('./routes'))
   }
-}
-
-module.exports = {
-  saveIlp,
-  update
 }

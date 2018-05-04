@@ -66,9 +66,24 @@ const settle = ({id, settlement_id}) => {
   return Projection.saveSettledTransfers({id, settlement_id})
 }
 
+const prepareExecute = () => {
+  return true
+}
+
+const fulfilling = () => {
+  return true
+}
+
+const rejecting = () => {
+  return true
+}
+
 module.exports = {
   fulfill,
   prepare,
   reject,
-  settle
+  settle,
+  prepareExecute,
+  fulfilling,
+  rejecting
 }
