@@ -42,9 +42,11 @@ const saveTransferPrepared = async (payload) => {
     executedDate: null,
     rejectedDate: null
   }
+
   await TransfersReadModel.saveTransfer(record).catch(err => {
     throw new Error(err.message)
   })
+
   record.creditParticipantName = creditParticipant
   record.debitParticipantName = debitParticipant
   return record

@@ -11,7 +11,7 @@ const findExpired = (expiresAt) => {
 }
 
 const saveTransfer = (record) => {
-  Logger.info('inside save transfer' + record.toString())
+  Logger.debug('save transfer' + record.toString())
   return Db.transfer.insert(record).catch(err => {
     throw err
   })
@@ -22,7 +22,22 @@ const getAll = () => {
     return builder
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
+      .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
+      .innerJoin('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId')
+      .innerJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
+      .select(
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS internalTransferState',
+        'ts.enumeration AS transferState',
+        'ilp.packet AS ilpPacket',
+        'ilp.condition AS condition',
+        'ilp.fulfillment AS fulfillment'
+      )
+      .orderBy('tsc.transferStateChangeId', 'desc')
+      .first()
   })
 }
 
@@ -43,7 +58,19 @@ const getById = (id) => {
       .where({ transferId: id })
       .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
       .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
+      .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
+      .innerJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
+      .select(
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS transferState',
+        'ilp.packet AS ilpPacket',
+        'ilp.condition AS condition',
+        'ilp.fulfillment AS fulfillment'
+      )
+      .orderBy('tsc.transferStateChangeId', 'desc')
       .first()
   })
 }
