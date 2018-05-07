@@ -58,6 +58,8 @@ const prepare = async function (message) {
         return result.transfer
       }
     }
+  } catch (error) {
+    Logger.error(error)
   }
 }
 

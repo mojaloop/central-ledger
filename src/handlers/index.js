@@ -30,28 +30,10 @@
  ******/
 'use strict'
 
-/**
- * @method RegisterAllHandlers
- *
- * @async
- * Registers all handlers by using the require-glob to retrieve all handler exports in sub directories and access the registerAllHandlers()
- * in each of them. Every handler in the **\/handlers must have a registerAllHandlers() function
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-
 const Logger = require('@mojaloop/central-services-shared').Logger
-const requireGlob = require('require-glob')
+const Handlers = require('./handlers')
 
-exports.registerAllHandlers = async (request, h) => {
-  try {
-    const modules = await requireGlob(['./**/handler.js'])
-    for (let key in modules) {
-      Logger.info(`Registering handler module: ${JSON.stringify(modules[key])}`)
-      const handlerObject = modules[key]
-      await handlerObject.handler.registerAllHandlers()
-    }
-    return h.response(true)
-  } catch (e) {
-    Logger.error(e)
-  }
-}
+Logger.info('starting all Handlers')
+Handlers.registerAllHandlers().then((result) => {
+  Logger.info(`yes - ${result}`)
+})
