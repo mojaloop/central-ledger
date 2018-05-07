@@ -44,16 +44,19 @@ const FULFILL = 'fulfill'
 const REJECT = 'reject'
 
 const prepare = async function (message) {
-  const payload = message.content.payload
-  if (Validator.validate(message.content.payload)) {
-    const existingTransfer = TransferQueries.getById(payload.transferId)
-    if (!existingTransfer) {
-      const result = TransferHandler.prepare(message.content.payload)
-      // notification of prepare transfer to go here
-      return result.transfer
-    } else {
-      // notification of duplicate to go here
-      return result.transfer
+  try {
+    Logger.info('THis is the content coming through: ' + message)
+    const payload = message.content.payload
+    if (Validator.validate(message.content.payload)) {
+      const existingTransfer = TransferQueries.getById(payload.transferId)
+      if (!existingTransfer) {
+        const result = TransferHandler.prepare(message.content.payload)
+        // notification of prepare transfer to go here
+        return result.transfer
+      } else {
+        // notification of duplicate to go here
+        return result.transfer
+      }
     }
   }
 }
