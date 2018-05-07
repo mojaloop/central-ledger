@@ -73,8 +73,8 @@ const createPositionHandler = async function (participantName) {
 const registerPositionHandlers = async function () {
   try {
     const participantList = await DAO.retrieveAllParticipants()
-    for (var key in participantList) {
-      await createPositionHandler(participantList[key])
+    for (let name of participantList) {
+      await createPositionHandler(name)
     }
   } catch (error) {
     Logger.error(error)

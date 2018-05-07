@@ -37,13 +37,32 @@ const DAO = require('../lib/dao')
 const ConsumerUtility = require('../lib/consumer')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
-const Translator = require('../../domain/transfer/translator')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFILL = 'fulfill'
 const REJECT = 'reject'
 
+/**
+ * @method prepare
+ *
+ * @async
+ * This is the consumer callback function that gets registered to a topic. This then gets a list of message,
+ * we will only ever use the first message in non batch processing. We then break down the message into its payload and
+ * begin validating the payload. Once the payload is validated successfully it will be written to the database to
+ * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
+ * ABORT status
+ *
+ * @param {error} error - error thrown if something fails within Kafka
+ * @param {array} messages - a list of messages to consume for the relevant topic
+ *
+ * @function Validator.validateByName to validate the payload of the message
+ * @function TransferQueries.getById checks if the transfer currently exists
+ * @function TransferHandler.prepare creates new entries in transfer tables for successful prepare transfer
+ * @function TransferHandler.reject rejects an existing transfer that has been retried and fails validation
+ *
+ * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const prepare = async (error, messages) => {
   if (error) {
     Logger.error(error)
@@ -55,22 +74,36 @@ const prepare = async (error, messages) => {
     } else {
       message = messages
     }
-
-    Logger.info('THis is the content coming through: ' + message)
+    Logger.info('TransferHandler::prepare')
     const consumer = ConsumerUtility.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, PREPARE))
     const payload = message.value.content.payload
-    if (Validator.validate(payload)) {
+    let {validationPassed, reasons} = await Validator.validateByName(payload)
+    if (validationPassed) {
+      Logger.debug('TransferHandler::prepare::validationPassed')
       const existingTransfer = await TransferQueries.getById(payload.transferId)
       if (!existingTransfer) {
+        Logger.debug('TransferHandler::prepare::validationPassed::newEntry')
         const result = await TransferHandler.prepare(payload)
-        Logger.info(result)
         // notification of prepare transfer to go here
-        await consumer.commitMessageSync(message)
-        return result.transfer
+        return await consumer.commitMessageSync(message)
       } else {
-        Logger.info('Transfer is a duplicate')
+        Logger.debug('TransferHandler::prepare::validationFailed::existingEntry')
         // notification of duplicate to go here
         return true
+      }
+    } else {
+      Logger.debug('TransferHandler::prepare::validationFailed')
+      // need to determine what happens with existing transfer with a validation failure
+      const existingTransfer = await TransferQueries.getById(payload.transferId)
+      if (!existingTransfer) {
+        Logger.debug('TransferHandler::prepare::validationFailed::newEntry')
+        await TransferHandler.prepare(payload, reasons.toString(), false)
+        // notification of prepare transfer to go here
+        return await consumer.commitMessageSync(message)
+      } else {
+        Logger.debug('TransferHandler::prepare::validationFailed::existingEntry')
+        const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
+        return await consumer.commitMessageSync(message)
       }
     }
   } catch (error) {
@@ -161,8 +194,8 @@ const registerRejectHandler = async function () {
 const registerPrepareHandlers = async function () {
   try {
     const participantNames = await DAO.retrieveAllParticipants()
-    for (var key in participantNames) {
-      await createPrepareHandler(participantNames[key])
+    for (let name of participantNames) {
+      await createPrepareHandler(name)
     }
   } catch (e) {
     Logger.error(e)

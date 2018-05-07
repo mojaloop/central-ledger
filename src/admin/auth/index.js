@@ -11,7 +11,7 @@ exports.plugin = {
     // server.auth.default('simple')
     server.auth.strategy('jwt-strategy', 'hapi-now-auth', {
       verifyJWT: true,
-      keychain: [Config.ADMIN_SECRET],
+      keychain: ['secret'],
       validate: TokenStrategy.validate
     })
   }

@@ -7,8 +7,8 @@ const Query = require('../../../domain/transfer/queries')
 const CryptoConditions = require('../../../crypto-conditions')
 const Errors = require('../../../errors')
 
-const prepare = async (transfer) => {
-  return await Projection.saveTransferPrepared(transfer).catch(err => {
+const prepare = async (transfer, stateReason = null, hasPassedValidation = true) => {
+  return await Projection.saveTransferPrepared(transfer, stateReason, hasPassedValidation).catch(err => {
     throw err
   })
 }
@@ -39,24 +39,8 @@ const fulfill = async (fulfillment) => {
   return fulfilledTransfer
 }
 
-const reject = async (rejection) => {
-  const record = {
-    aggregate: {
-      id: rejection.id
-    },
-    payload: rejection,
-    timestamp: new Date()
-  }
-  // const transfer = await Query.getById(rejection.id)
-  // if (transfer.state === State.REJECTED && transfer.rejectionReason === rejection.message) {
-  //   return {alreadyRejected: true, transfer}
-  // }
-  // if (!transfer.state === State.PREPARED) {
-  //   throw new Errors.InvalidModificationError(`Transfers in state ${transfer.state} may not be rejected`)
-  // }
-  await Projection.saveTransferRejected(record)
-  const updatedTransfer = await Query.getById(rejection.id)
-  return {alreadyRejected: false, transfer: updatedTransfer}
+const reject = async (stateReason, transferId) => {
+  return await Projection.saveTransferRejected(stateReason, transferId)
 }
 
 const settle = ({id, settlement_id}) => {

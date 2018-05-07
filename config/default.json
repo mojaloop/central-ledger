@@ -20,10 +20,6 @@
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",
   "EMAIL_SMTP": "smtp.gmail.com",
-  "DFSPS": [
-    "fsp1",
-    "fsp2"
-  ],
   "KAFKA": {
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {

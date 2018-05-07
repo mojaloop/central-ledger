@@ -42,7 +42,6 @@ const getByTransferId = (id) => {
     return builder
       .where({ transferId: id })
       .select('transferStateChange.*')
-      .first()
   })
 }
 

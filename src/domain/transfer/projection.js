@@ -1,12 +1,8 @@
 'use strict'
 
 const _ = require('lodash')
-// const UrlParser = require('../../lib/urlparser')
-const Util = require('../../lib/util')
-// const Moment = require('moment')
 const ParticipantService = require('../../domain/participant')
 const TransferState = require('./state')
-const TransferRejectionType = require('./rejection-type')
 const TransfersModel = require('./models/transfers-read-model')
 const ilpModel = require('../../models/ilp')
 const extensionModel = require('../../models/extensions')
@@ -83,8 +79,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       throw new Error(err.message)
     })
 
-    // transferRecord.creditParticipantName = creditParticipant
-    // transferRecord.debitParticipantName = debitParticipant
     return {isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList}
   } catch (e) {
     throw e
@@ -100,19 +94,33 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
   return await TransfersModel.updateTransfer(payload.id, fields)
 }
 
-const saveTransferRejected = async ({aggregate, payload, timestamp}) => {
-  const fields = {
-    state: TransferState.REJECTED,
-    rejectionReason: payload.rejection_reason,
-    rejectedDate: new Date(timestamp)
+const saveTransferRejected = async (stateReason, transferId) => {
+  try {
+    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
+    let existingAbort = false
+    let foundTransferStateChange
+    for (let transferState of transferStateChange){
+      if (transferState.transferStateId !== TransferState.ABORTED) {
+        existingAbort = true
+        foundTransferStateChange = transferState
+        break
+      }
+    }
+    if(!existingAbort) {
+      const newTransferStateChange = {}
+      newTransferStateChange.transferStateChangeId = null
+      newTransferStateChange.transferId = transferId
+      newTransferStateChange.reason = stateReason
+      newTransferStateChange.changedDate = new Date()
+      newTransferStateChange.transferStateId = TransferState.ABORTED
+      await transferStateChangeModel.saveTransferStateChange(newTransferStateChange)
+      return {alreadyRejected: false, newTransferStateChange}
+    } else {
+      return {alreadyRejected: true, foundTransferStateChange}
+    }
+  } catch (e) {
+    throw e
   }
-  if (payload.rejection_reason === TransferRejectionType.CANCELLED) {
-    Util.assign(fields, {
-      payeeRejected: 1,
-      payeeRejectionMessage: payload.message || ''
-    })
-  }
-  return await TransfersModel.updateTransfer(aggregate.id, fields)
 }
 
 const saveExecutedTransfer = async (transfer) => {

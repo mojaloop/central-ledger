@@ -35,7 +35,6 @@ const Decimal = require('decimal.js')
 const Moment = require('moment')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant/index')
-const ValidationError = require('../../errors/index').ValidationError
 const CryptoConditions = require('../../crypto-conditions/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
@@ -49,11 +48,17 @@ const transferPrepareSchema  = Enjoi(JSON.parse(fs.readFileSync(transferPrepareS
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
+let reasons = []
+
 
 const validateParticipantById = async function (participantId) {
-  const participant = Participant.getById(participantId)
+  const participant = await Participant.getById(participantId)
+  if (!participant) {
+    reasons.push(`Participant ${participantId} not found`)
+  }
   return !!participant
 }
+
 /**
  @typedef validationResult
  @type {Object}
@@ -71,45 +76,77 @@ const validateTransferPrepareSchema = async (payload) => {
 }
 
 const validateParticipantByName = async function (participantId) {
-  const participant = Participant.getByName(participantId)
+  const participant = await Participant.getByName(participantId)
+  if (!participant) {
+    reasons.push(`Participant ${participantId} not found`)
+  }
   return !!participant
 }
 
 const validateAmount = (amount) => {
   const decimalAmount = new Decimal(amount.amount)
   if (decimalAmount.decimalPlaces() > allowedScale) {
-    throw new ValidationError(`Amount ${amount.amount} exceeds allowed scale of ${allowedScale}`)
+    reasons.push(`Amount ${amount.amount} exceeds allowed scale of ${allowedScale}`)
+    return false
   }
   if (decimalAmount.precision(true) > allowedPrecision) {
-    throw new ValidationError(`Amount ${amount.amount} exceeds allowed precision of ${allowedPrecision}`)
-  }
-}
-
-const validateConditionAndExpiration = (payload) => {
-  if (!payload.condition) return
-  CryptoConditions.validateCondition(payload.condition)
-  if (payload.expiration) {
-    if (payload.expiration.isBefore(Moment.utc())) {
-      throw new ValidationError(`expiration date: ${payload.expiration.toISOString()} has already expired.`)
-    }
-  } else {
-    throw new ValidationError('expiration: required for conditional transfer')
+    reasons.push(`Amount ${amount.amount} exceeds allowed precision of ${allowedPrecision}`)
+    return false
   }
   return true
 }
 
-const validate = (payload) => {
+const validateConditionAndExpiration = async (payload) => {
+  if (!payload.condition) return false
+  try {
+    await CryptoConditions.validateCondition(payload.condition)
+  } catch (e) {
+    reasons.push('Condition validation failed')
+    return false
+  }
+  if (payload.expiration) {
+    if (payload.expiration.isBefore(Moment.utc())) {
+      reasons.push(`expiration date: ${payload.expiration.toISOString()} has already expired.`)
+      return false
+    }
+  } else {
+    reasons.push('expiration: required for conditional transfer')
+    return false
+  }
+  return true
+}
+
+const validateByName = (payload) => {
+  reasons.length = 0
   return P.resolve().then(() => {
     if (!payload) {
-      throw new ValidationError('Transfer must be provided')
+      reasons.push('Transfer must be provided')
+      return false
     }
-    return !!(validateParticipantByName(payload.payerFsp) && validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && validateConditionAndExpiration(payload))
+    return {
+      validationPassed: !!(validateParticipantByName(payload.payerFsp) && validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && validateConditionAndExpiration(payload)),
+      reasons
+    }
   })
 }
 
-
+const validateById = (payload) => {
+  reasons.length = 0
+  return P.resolve().then(() => {
+    if (!payload) {
+      reasons.push('Transfer must be provided')
+      return false
+    }
+    return {
+      validationPassed: !!(validateParticipantById(payload.payerFsp) && validateParticipantById(payload.payeeFsp) && validateAmount(payload.amount) && validateConditionAndExpiration(payload)),
+      reasons
+    }
+  })
+}
 
 module.exports = {
-  validate,
-  validateTransferPrepareSchema
+  validateByName,
+  validateById,
+  validateTransferPrepareSchema,
+  reasons
 }

@@ -38,10 +38,10 @@ const getFulfillment = (id) => {
     })
 }
 
-const prepare = async (payload) => {
+const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
     // const transfer = Translator.fromPayload(payload)
-    const result = await Commands.prepare(payload)
+    const result = await Commands.prepare(payload, stateReason, hasPassedValidation)
     const t = Translator.toTransfer(result)
     Events.emitTransferPrepared(t)
     return {existing: result.existing, transfer: t}
@@ -50,15 +50,13 @@ const prepare = async (payload) => {
   }
 }
 
-const reject = (rejection) => {
-  return Commands.reject(rejection)
-    .then(({alreadyRejected, transfer}) => {
-      const t = Translator.toTransfer(transfer)
-      if (!alreadyRejected) {
-        Events.emitTransferRejected(t)
-      }
-      return {alreadyRejected, transfer: t}
-    })
+const reject = async (stateReason, transferId) => {
+  const {alreadyRejected, result} = await Commands.reject(stateReason, transferId)
+  // const t = Translator.toTransfer(result)
+  if (!alreadyRejected) {
+    Events.emitTransferRejected(result)
+  }
+  return {alreadyRejected, transfer: result}
 }
 
 const expire = (id) => {

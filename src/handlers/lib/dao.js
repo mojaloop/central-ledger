@@ -30,8 +30,8 @@
  ******/
 'use strict'
 
-const Config = require('../../lib/config')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Participants = require('../../domain/participant')
 
 /**
  * @method RetrieveAllParticipants
@@ -40,10 +40,13 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  *
  * @returns {list} - Returns a list participant names, throws error if failure occurs
  */
-exports.retrieveAllParticipants = () => {
+exports.retrieveAllParticipants = async () => {
   try {
-    // to be replaced by call to database to retrieve all accountNames
-    const accountNames = Config.DFSPS
+    const participants = await Participants.getAll()
+    let accountNames = []
+    for (let participant of participants) {
+      accountNames.push(participant.name)
+    }
     return accountNames
   } catch (e) {
     Logger.error(e)
