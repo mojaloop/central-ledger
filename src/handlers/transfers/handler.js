@@ -43,20 +43,33 @@ const PREPARE = 'prepare'
 const FULFILL = 'fulfill'
 const REJECT = 'reject'
 
-const prepare = async function (message) {
+const prepare = async (error, messages) => {
+  if (error) {
+    Logger.error(error)
+  }
+  let message = {}
   try {
+    if (Array.isArray(messages)) {
+      message = messages[0]
+    } else {
+      message = messages
+    }
+
     Logger.info('THis is the content coming through: ' + message)
-    const payload = message.content.payload
-    if (Validator.validate(message.content.payload)) {
-      const existingTransfer = TransferQueries.getById(payload.transferId)
+    const consumer = ConsumerUtility.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, PREPARE))
+    const payload = message.value.content.payload
+    if (Validator.validate(payload)) {
+      const existingTransfer = await TransferQueries.getById(payload.transferId)
       if (!existingTransfer) {
-        const result = TransferHandler.prepare(message.content.payload)
+        const result = TransferHandler.prepare(payload)
         // notification of prepare transfer to go here
-        return result.transfer
-      } else {
-        // notification of duplicate to go here
+        consumer.commitMessage(message)
         return result.transfer
       }
+      // } else {
+      //   // notification of duplicate to go here
+      //   return result.transfer
+      // }
     }
   } catch (error) {
     Logger.error(error)

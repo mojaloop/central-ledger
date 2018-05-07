@@ -33,6 +33,8 @@
 const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
+let listOfConsumers = {}
+
 /**
  * @method CreateHandler
  *
@@ -47,10 +49,19 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 exports.createHandler = async (topicName, config, command) => {
   const consumer = new Consumer([topicName], config)
   await consumer.connect().then(() => {
+    listOfConsumers[topicName] = consumer
     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
     consumer.consume(command)
   }).catch((e) => {
     Logger.error(e)
     throw e
   })
+}
+
+exports.getConsumer = async (topicName) => {
+  if (listOfConsumers[topicName]) {
+    return listOfConsumers[topicName]
+  } else {
+    throw Error(`no consumer found for topic ${topicName}`)
+  }
 }

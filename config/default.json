@@ -48,7 +48,7 @@
               "sync": true,
               "consumeTimeout": 1000
             },
-            "rdkafkaconf": {
+            "rdkafkaConf": {
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": false
@@ -67,7 +67,7 @@
               "sync": false,
               "consumeTimeout": 1000
             },
-            "rdkafkaconf": {
+            "rdkafkaConf": {
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
@@ -86,7 +86,7 @@
               "sync": false,
               "consumeTimeout": 1000
             },
-            "rdkafkaconf": {
+            "rdkafkaConf": {
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
@@ -107,7 +107,7 @@
               "sync": false,
               "consumeTimeout": 1000
             },
-            "rdkafkaconf": {
+            "rdkafkaConf": {
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
@@ -128,7 +128,7 @@
               "sync": false,
               "consumeTimeout": 1000
             },
-            "rdkafkaconf": {
+            "rdkafkaConf": {
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
