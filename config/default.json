@@ -132,6 +132,119 @@
           }
         }
       }
+    },
+    "PRODUCER": {
+      "TRANSFER": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "default-client",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.ms": 50,
+              "batch.num.messages": 100,
+              "api.version.request": true,
+              "dr_cb": true
+            }
+          }
+        },
+        "FULFILL": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "default-client",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.ms": 50,
+              "batch.num.messages": 100,
+              "api.version.request": true,
+              "dr_cb": true
+            }
+          }
+        },
+        "REJECT": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "default-client",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.ms": 50,
+              "batch.num.messages": 100,
+              "api.version.request": true,
+              "dr_cb": true
+            }
+          }
+        }
+      },
+      "POSITION": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "default-client",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.ms": 50,
+              "batch.num.messages": 100,
+              "api.version.request": true,
+              "dr_cb": true
+            }
+          }
+        }
+      },
+      "NOTIFICATION": {
+        "EVENT": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "default-client",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.ms": 50,
+              "batch.num.messages": 100,
+              "api.version.request": true,
+              "dr_cb": true
+            }
+          }
+        }
+      }
     }
   }
 }

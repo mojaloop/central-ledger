@@ -85,7 +85,8 @@ const prepare = async (error, messages) => {
         Logger.debug('TransferHandler::prepare::validationPassed::newEntry')
         const result = await TransferHandler.prepare(payload)
         // notification of prepare transfer to go here
-        return await consumer.commitMessageSync(message)
+        await consumer.commitMessageSync(message)
+        return true
       } else {
         Logger.debug('TransferHandler::prepare::validationFailed::existingEntry')
         // notification of duplicate to go here
@@ -99,11 +100,13 @@ const prepare = async (error, messages) => {
         Logger.debug('TransferHandler::prepare::validationFailed::newEntry')
         await TransferHandler.prepare(payload, reasons.toString(), false)
         // notification of prepare transfer to go here
-        return await consumer.commitMessageSync(message)
+        await consumer.commitMessageSync(message)
+        return true
       } else {
         Logger.debug('TransferHandler::prepare::validationFailed::existingEntry')
         const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
-        return await consumer.commitMessageSync(message)
+        await consumer.commitMessageSync(message)
+        return true
       }
     }
   } catch (error) {

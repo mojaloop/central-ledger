@@ -42,9 +42,9 @@ const Joi = require('joi')
 const Enjoi = require('enjoi')
 const fs = require('fs')
 
-//Note that the following two lines will be replaced by functionality to load the schemas from DB
-const transferPrepareSchemaFile = "./transfer-schema.json"
-const transferPrepareSchema  = Enjoi(JSON.parse(fs.readFileSync(transferPrepareSchemaFile, 'utf8')))
+// Note that the following two lines will be replaced by functionality to load the schemas from DB
+// const transferPrepareSchemaFile = "./transfer-schema.json"
+// const transferPrepareSchema  = Enjoi(JSON.parse(fs.readFileSync(transferPrepareSchemaFile, 'utf8')))
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
@@ -70,10 +70,10 @@ const validateParticipantById = async function (participantId) {
  * @param {object} payload - The prepare transfer payload.
  * @return {validationResult} Returns a Promise of validationResult Object.
  */
-const validateTransferPrepareSchema = async (payload) => {
-  const validationResult = await Joi.validate (payload, transferPrepareSchema)
-  return validationResult
-}
+// const validateTransferPrepareSchema = async (payload) => {
+//   const validationResult = await Joi.validate (payload, transferPrepareSchema)
+//   return validationResult
+// }
 
 const validateParticipantByName = async function (participantId) {
   const participant = await Participant.getByName(participantId)
@@ -147,6 +147,6 @@ const validateById = (payload) => {
 module.exports = {
   validateByName,
   validateById,
-  validateTransferPrepareSchema,
+//  validateTransferPrepareSchema,
   reasons
 }

@@ -69,6 +69,7 @@
     "continuation-local-storage": "3.2.0",
     "deasync-promise": "1.0.1",
     "decimal.js": "9.0.1",
+    "enjoi": "^3.2.2",
     "five-bells-condition": "5.0.1",
     "flat": "4.0.0",
     "glob": "7.1.1",
