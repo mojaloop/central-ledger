@@ -32,9 +32,9 @@ const Util = require('../lib/util')
 
 exports.saveIlp = async (ilp) => {
   try {
-    return await Db.ilp.returning('ilpId').insert({
+    return await Db.ilp.insert({
       transferId: ilp.transferId,
-      packet: ilp.ilpPacket,
+      packet: ilp.packet,
       condition: ilp.condition,
       fulfillment: ilp.fulfillment
     })
@@ -53,8 +53,7 @@ exports.saveIlp = async (ilp) => {
 
 exports.getByTransferId = async (transferId) => {
   try {
-    return await Db.ilp
-      .select({ transferId: transferId })
+    return await Db.ilp.findOne({ transferId: transferId })
       // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
       // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
@@ -64,8 +63,7 @@ exports.getByTransferId = async (transferId) => {
 
 exports.getByIlpId = async (ilpId) => {
   try {
-    return await Db.ilp
-      .select({ ilpId: ilpId })
+    return await Db.ilp.findOne({ ilpId: ilpId })
       // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
       // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {

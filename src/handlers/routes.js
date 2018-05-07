@@ -102,7 +102,7 @@ module.exports = [
     handler: TransferHandler.registerFulfillHandler,
     options: {
       id: 'fulfill',
-      description: 'Register ful;fill transfer Kafka consumer handler'
+      description: 'Register fulfill transfer Kafka consumer handler'
     }
   },
   /**

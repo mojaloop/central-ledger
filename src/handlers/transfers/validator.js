@@ -42,8 +42,13 @@ const CryptoConditions = require('../../crypto-conditions/index')
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
 
-const validateParticipant = async function (participantId) {
+const validateParticipantById = async function (participantId) {
   const participant = Participant.getById(participantId)
+  return !!participant
+}
+
+const validateParticipantByName = async function (participantId) {
+  const participant = Participant.getByName(participantId)
   return !!participant
 }
 
@@ -75,7 +80,7 @@ const validate = (payload) => {
     if (!payload) {
       throw new ValidationError('Transfer must be provided')
     }
-    return !!(validateParticipant(payload.payerParticipantId) && validateParticipant(payload.payeeParticipantId) && validateAmount(payload.amount) && validateConditionAndExpiration(payload))
+    return !!(validateParticipantByName(payload.payerFsp) && validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && validateConditionAndExpiration(payload))
   })
 }
 

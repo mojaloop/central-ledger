@@ -37,6 +37,7 @@ const DAO = require('../lib/dao')
 const ConsumerUtility = require('../lib/consumer')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
+const Translator = require('../../domain/transfer/translator')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
@@ -61,15 +62,16 @@ const prepare = async (error, messages) => {
     if (Validator.validate(payload)) {
       const existingTransfer = await TransferQueries.getById(payload.transferId)
       if (!existingTransfer) {
-        const result = TransferHandler.prepare(payload)
+        const result = await TransferHandler.prepare(payload)
+        Logger.info(result)
         // notification of prepare transfer to go here
-        consumer.commitMessage(message)
+        await consumer.commitMessageSync(message)
         return result.transfer
+      } else {
+        Logger.info('Transfer is a duplicate')
+        // notification of duplicate to go here
+        return true
       }
-      // } else {
-      //   // notification of duplicate to go here
-      //   return result.transfer
-      // }
     }
   } catch (error) {
     Logger.error(error)

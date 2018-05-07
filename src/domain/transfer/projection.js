@@ -15,87 +15,80 @@ const ExecuteTransfersModel = require('../../models/executed-transfers')
 const SettledTransfersModel = require('../../models/settled-transfers')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
-  // const debitParticipant = await UrlParser.nameFromParticipantUri(payload.debits[0].participant)
-  // const creditParticipant = await UrlParser.nameFromParticipantUri(payload.credits[0].participant)
-  // const names = [debitParticipant, creditParticipant]
+  try {
+    const participants = []
+    const names = [payload.payeeFsp, payload.payerFsp]
 
-  const participants = {}
+    for (let name of names) {
+      const participant = await ParticipantService.getByName(name)
+      participants.push(participant)
+    }
 
-  // for (var i = 0, len = names.length; i < len; i++) {
-  //   const participant = await ParticipantService.getByName(names[i])
-  //   participants.push(participant)
-  // }
+    const participantIds = await _.reduce(participants, (m, acct) => _.set(m, acct.name, acct.participantId), {})
 
-  const names = [payload.payeeFsp, payload.payerFsp]
+    const transferRecord = {
+      transferId: payload.transferId,
+      payeeParticipantId: participantIds[payload.payeeFsp],
+      payerParticipantId: participantIds[payload.payerFsp],
+      amount: payload.amount.amount,
+      currencyId: payload.amount.currency,
+      expirationDate: new Date(payload.expiration)
+    }
 
-  names.forEach(async (name) => {
-    const participant = await ParticipantService.getByName(name)
-    participants.push(participant)
-  })
+    const ilpRecord = {
+      transferId: payload.transferId,
+      packet: payload.ilpPacket,
+      condition: payload.condition,
+      fulfillment: null
+    }
 
-  const participantIds = await _.reduce(participants, (m, acct) => _.set(m, acct.name, acct.participantId), {})
+    const state = ((hasPassedValidation) ? TransferState.RECEIVED : TransferState.ABORTED)
 
-  const transferRecord = {
-    transferId: payload.transferId,
-    payeeParticipantId: participantIds[payload.payeeFsp],
-    payerParticipantId: participantIds[payload.payerFsp],
-    amount: payload.amount.amount,
-    currencyId: payload.amount.currency,
-    expirationDate: new Date(payload.expiration)
-  }
+    const transferStateRecord = {
+      transferId: payload.transferId,
+      transferStateId: state,
+      reason: stateReason,
+      changedDate: new Date()
+    }
 
-  const ilpRecord = {
-    transferId: payload.transferId,
-    packet: payload.ilpPacket,
-    condition: payload.condition,
-    fulfillment: null
-  }
+    // TODO: Move inserts into a Transaction
 
-  const state = ((hasPassedValidation) ? TransferState.RECEIVED : TransferState.ABORTED)
+    // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
+    await TransfersModel.saveTransfer(transferRecord).catch(err => {
+      throw new Error(err.message)
+    })
 
-  const transferStateRecord = {
-    transferId: payload.transferId,
-    transferStateId: state,
-    reason: stateReason,
-    changedDate: (new Date()).toISOString()
-  }
+    var extensionsRecordList = []
 
-  // TODO: Move inserts into a Transaction
-
-  // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
-  await TransfersModel.saveTransfer(transferRecord).catch(err => {
-    throw new Error(err.message)
-  })
-
-  var extensionsRecordList = []
-
-  if (payload.extensionList && payload.extensionList.extension) {
-    extensionsRecordList = payload.extensionList.extension.map(ext => {
-      return {
-        transferId: payload.transferId,
-        key: ext.key,
-        value: ext.value,
-        changedDate: (new Date()).toISOString(),
-        changedBy: null
+    if (payload.extensionList && payload.extensionList.extension) {
+      extensionsRecordList = payload.extensionList.extension.map(ext => {
+        return {
+          transferId: payload.transferId,
+          key: ext.key,
+          value: ext.value,
+          changedDate: new Date(),
+          changedBy: 'user' //this needs to be changed and cannot be null
+        }
+      })
+      for (let ext of extensionsRecordList) {
+        await extensionModel.saveExtension(ext)
       }
+    }
+
+    await ilpModel.saveIlp(ilpRecord).catch(err => {
+      throw new Error(err.message)
     })
 
-    await extensionsRecordList.forEach(async (ext) => {
-      await extensionModel.saveExtension(ext)
+    await transferStateChangeModel.saveTransferStateChange(transferStateRecord).catch(err => {
+      throw new Error(err.message)
     })
+
+    // transferRecord.creditParticipantName = creditParticipant
+    // transferRecord.debitParticipantName = debitParticipant
+    return {isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList}
+  } catch (e) {
+    throw e
   }
-
-  await ilpModel.saveIlp(ilpRecord).catch(err => {
-    throw new Error(err.message)
-  })
-
-  await transferStateChangeModel.saveTransferStateChange(transferStateRecord).catch(err => {
-    throw new Error(err.message)
-  })
-
-  // transferRecord.creditParticipantName = creditParticipant
-  // transferRecord.debitParticipantName = debitParticipant
-  return { isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList }
 }
 
 const saveTransferExecuted = async ({payload, timestamp}) => {

@@ -38,17 +38,16 @@ const getFulfillment = (id) => {
     })
 }
 
-const prepare = (payload) => {
-  // const transfer = Translator.fromPayload(payload)
-  const transfer = payload
-  return Commands.prepare(transfer)
-    .then(result => {
-      const t = Translator.toTransfer(result)
-      Events.emitTransferPrepared(t)
-      return {existing: result.existing, transfer: t}
-    }).catch(err => {
-      throw err
-    })
+const prepare = async (payload) => {
+  try {
+    // const transfer = Translator.fromPayload(payload)
+    const result = await Commands.prepare(payload)
+    const t = Translator.toTransfer(result)
+    Events.emitTransferPrepared(t)
+    return {existing: result.existing, transfer: t}
+  } catch (e) {
+    throw e
+  }
 }
 
 const reject = (rejection) => {

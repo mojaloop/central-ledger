@@ -32,7 +32,7 @@ const Util = require('../lib/util')
 
 exports.saveExtension = async (extension) => {
   try {
-    return await Db.extension.returning('extensionId').insert({
+    return await Db.extension.insert({
       transferId: extension.transferId,
       key: extension.key,
       value: extension.value,
@@ -54,8 +54,7 @@ exports.saveExtension = async (extension) => {
 
 exports.getByTransferId = async (transferId) => {
   try {
-    return await Db.extension
-      .select({ transferId: transferId })
+    return await Db.extension.findOne({ transferId: transferId })
     // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
     // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
@@ -65,8 +64,7 @@ exports.getByTransferId = async (transferId) => {
 
 exports.getByExtensionId = async (extensionId) => {
   try {
-    return await Db.extension
-      .select({ extensionId: extensionId })
+    return await Db.extension.findOne({ extensionId: extensionId })
     // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
     // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {

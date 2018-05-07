@@ -49,16 +49,16 @@ let listOfConsumers = {}
 exports.createHandler = async (topicName, config, command) => {
   const consumer = new Consumer([topicName], config)
   await consumer.connect().then(() => {
-    listOfConsumers[topicName] = consumer
     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
     consumer.consume(command)
+    listOfConsumers[topicName] = consumer
   }).catch((e) => {
     Logger.error(e)
     throw e
   })
 }
 
-exports.getConsumer = async (topicName) => {
+exports.getConsumer = (topicName) => {
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName]
   } else {

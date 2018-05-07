@@ -27,6 +27,9 @@
 
  --------------
  ******/
+
+// @TODO to be cleaned up, used for testing the handlers
+
 'use strict'
 
 const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
@@ -34,9 +37,9 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 
 const transfer = {
-  transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8069',
-  payeeFsp: 'fsp2',
+  transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8019',
   payerFsp: 'fsp1',
+  payeeFsp: 'fsp2',
   amount:
   {
     currency: 'USD',

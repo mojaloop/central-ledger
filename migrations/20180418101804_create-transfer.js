@@ -31,7 +31,9 @@ exports.up = function (knex, Promise) {
 
     // t.bigInteger('transferSettlementBatchId').unsigned().notNullable()
     t.bigInteger('transferSettlementBatchId').unsigned().defaultTo(0).nullable()
-    t.foreign('transferSettlementBatchId').references('transferSettlementBatchId').inTable('transferSettlementBatch')
+
+    // @TODO to be added at a later stage was causing issues on initial insert
+    // t.foreign('transferSettlementBatchId').references('transferSettlementBatchId').inTable('transferSettlementBatch')
 
     // t.dateTime('preparedDate').defaultTo(null).nullable()
     // t.string('ledger', 1024).notNullable()
