@@ -37,7 +37,15 @@ const Config = require('../../lib/config')
 const Participant = require('../../domain/participant/index')
 const ValidationError = require('../../errors/index').ValidationError
 const CryptoConditions = require('../../crypto-conditions/index')
-// const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-shared').Logger
+
+const Joi = require('joi')
+const Enjoi = require('enjoi')
+const fs = require('fs')
+
+//Note that the following two lines will be replaced by functionality to load the schemas from DB
+const transferPrepareSchemaFile = "./transfer-schema.json"
+const transferPrepareSchema  = Enjoi(JSON.parse(fs.readFileSync(transferPrepareSchemaFile, 'utf8')))
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
@@ -45,6 +53,21 @@ const allowedPrecision = Config.AMOUNT.PRECISION
 const validateParticipantById = async function (participantId) {
   const participant = Participant.getById(participantId)
   return !!participant
+}
+/**
+ @typedef validationResult
+ @type {Object}
+ @property {object} error if validation failed, the error reason, otherwise null.
+ @property {object} value the validated value with any type conversions and other modifiers applied (the input is left unchanged). value can be incomplete if validation failed and abortEarly is true. If callback is not provided, then returns an object with error and value properties.
+ */
+/**
+ * Function to validate transfer payload against the transfer schema.
+ * @param {object} payload - The prepare transfer payload.
+ * @return {validationResult} Returns a Promise of validationResult Object.
+ */
+const validateTransferPrepareSchema = async (payload) => {
+  const validationResult = await Joi.validate (payload, transferPrepareSchema)
+  return validationResult
 }
 
 const validateParticipantByName = async function (participantId) {
@@ -84,6 +107,9 @@ const validate = (payload) => {
   })
 }
 
+
+
 module.exports = {
-  validate
+  validate,
+  validateTransferPrepareSchema
 }
