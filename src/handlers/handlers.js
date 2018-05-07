@@ -42,9 +42,9 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const requireGlob = require('require-glob')
 
-exports.registerAllHandlers = async function (request, h) {
+exports.registerAllHandlers = async (request, h) => {
   try {
-    const modules = await requireGlob(['**/handler.js'])
+    const modules = await requireGlob(['./**/handler.js'])
     for (let key in modules) {
       Logger.info(`Registering handler module: ${JSON.stringify(modules[key])}`)
       const handlerObject = modules[key]
