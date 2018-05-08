@@ -51,7 +51,7 @@ const PREPARE = 'prepare'
 const createPositionHandler = async function (participantName) {
   try {
     const positionHandler = {
-      command: Commands.generatePositionPlaceHolder(),
+      command: Commands.generatePositionPlaceHolder,
       topicName: Utility.transformAccountToTopicName(participantName, POSITION, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }

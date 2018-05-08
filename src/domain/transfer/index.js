@@ -40,7 +40,6 @@ const getFulfillment = (id) => {
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
-    // const transfer = Translator.fromPayload(payload)
     const result = await Commands.prepare(payload, stateReason, hasPassedValidation)
     const t = Translator.toTransfer(result)
     Events.emitTransferPrepared(t)
