@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Commands = require('../../domain/position')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
-const ConsumerUtility = require('../lib/consumer')
+const Kafka = require('../lib/kafka')
 
 const POSITION = 'position'
 const PREPARE = 'prepare'
@@ -55,7 +55,7 @@ const createPositionHandler = async function (participantName) {
       topicName: Utility.transformAccountToTopicName(participantName, POSITION, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }
-    await ConsumerUtility.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
+    await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
   } catch (error) {
     Logger.error(error)
     throw error

@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferHandler = require('../../domain/transfer')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
-const ConsumerUtility = require('../lib/consumer')
+const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
 
@@ -42,6 +42,28 @@ const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFILL = 'fulfill'
 const REJECT = 'reject'
+
+/**
+ * @method producerNotificationMessage
+ *
+ * @async
+ * This is an async method that produces a message against the Kafka notification topic. it is called multiple times
+ *
+ * @param {object} message - a list of messages to consume for the relevant topic
+ * @param {object} state - state of the message being produced
+ *
+ * @function Kafka.Producer.produceMessage to persist the message to the configured topic on Kafka
+ * @function Utility.updateMessageProtocolMetadata updates the messages metadata
+ * @function Utility.createGeneralTopicConf dynamically gets the topic configuration
+ * @function Utility.getKafkaConfig dynamically gets Kafka configuration
+ *
+ * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const producerNotificationMessage = async (message, state) => {
+  await Kafka.Producer.produceMessage(Utility.updateMessageProtocolMetadata(message, Utility.ENUMS.NOTIFICATION, state),
+    Utility.createGeneralTopicConf(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT),
+    Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, Utility.ENUMS.NOTIFICATION.toUpperCase(), Utility.ENUMS.EVENT.toUpperCase()))
+}
 
 /**
  * @method prepare
@@ -75,37 +97,41 @@ const prepare = async (error, messages) => {
       message = messages
     }
     Logger.info('TransferHandler::prepare')
-    const consumer = ConsumerUtility.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, PREPARE))
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, PREPARE))
     const payload = message.value.content.payload
     let {validationPassed, reasons} = await Validator.validateByName(payload)
     if (validationPassed) {
-      Logger.debug('TransferHandler::prepare::validationPassed')
+      Logger.info('TransferHandler::prepare::validationPassed')
       const existingTransfer = await TransferQueries.getById(payload.transferId)
       if (!existingTransfer) {
-        Logger.debug('TransferHandler::prepare::validationPassed::newEntry')
+        Logger.info('TransferHandler::prepare::validationPassed::newEntry')
         const result = await TransferHandler.prepare(payload)
-        // notification of prepare transfer to go here
         await consumer.commitMessageSync(message)
+        // position topic to be created and inserted here
         return true
       } else {
-        Logger.debug('TransferHandler::prepare::validationFailed::existingEntry')
+        Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
+        await consumer.commitMessageSync(message)
         // notification of duplicate to go here
+        await producerNotificationMessage(message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       }
     } else {
-      Logger.debug('TransferHandler::prepare::validationFailed')
+      Logger.info('TransferHandler::prepare::validationFailed')
       // need to determine what happens with existing transfer with a validation failure
       const existingTransfer = await TransferQueries.getById(payload.transferId)
       if (!existingTransfer) {
-        Logger.debug('TransferHandler::prepare::validationFailed::newEntry')
+        Logger.info('TransferHandler::prepare::validationFailed::newEntry')
         await TransferHandler.prepare(payload, reasons.toString(), false)
         // notification of prepare transfer to go here
         await consumer.commitMessageSync(message)
+        await producerNotificationMessage(message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else {
-        Logger.debug('TransferHandler::prepare::validationFailed::existingEntry')
+        Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
         const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await consumer.commitMessageSync(message)
+        await producerNotificationMessage(message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       }
     }
@@ -138,7 +164,7 @@ const createPrepareHandler = async function (participantName) {
       topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
     }
-    await ConsumerUtility.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+    await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
   } catch (e) {
     Logger.error(e)
   }
@@ -159,7 +185,7 @@ const registerFulfillHandler = async function () {
       topicName: Utility.transformGeneralTopicName(TRANSFER, FULFILL),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
     }
-    await ConsumerUtility.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
+    await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
   } catch (e) {
     Logger.error(e)
   }
@@ -180,7 +206,7 @@ const registerRejectHandler = async function () {
       topicName: Utility.transformGeneralTopicName(TRANSFER, REJECT),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), REJECT.toUpperCase())
     }
-    await ConsumerUtility.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
+    await Kafka.Consumer.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
   } catch (e) {
     Logger.error(e)
   }

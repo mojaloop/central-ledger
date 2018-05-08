@@ -36,6 +36,7 @@ const UrlParser = require('../../lib/urlparser')
 const Mustache = require('mustache')
 const KafkaConfig = Config.KAFKA_CONFIG
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Uuid = require('uuid4')
 
 /**
  * The Producer config required
@@ -57,17 +58,64 @@ const PRODUCER = 'PRODUCER'
 const CONSUMER = 'CONSUMER'
 
 /**
+ * The Notification config required
+ *
+ * This ENUM is for the notification message being created
+ *
+ * @typedef {object} ENUMS~NOTIFICATION
+ * @property {string} NOTIFICATION - notification to be used to update metadata
+ */
+const NOTIFICATION = 'notification'
+
+/**
+ * The EVENT config required
+ *
+ * This ENUM is for the topic being created
+ *
+ * @typedef {object} ENUMS~EVENT
+ * @property {string} EVENT - event to be used get the config for Kafka
+ */
+const EVENT = 'event'
+
+/**
+ * The STATE constant
+ *
+ * I believe that this is a temporary solution
+ *
+ * This ENUM is for the state of the message being created
+ *
+ * @typedef {object} ENUMS~STATE
+ * @property {string} STATE - used for the state of the message
+ */
+const STATE = {
+  SUCCESS: {
+    status: 'success',
+    code: 0,
+    description: 'action successful'
+  },
+  FAILURE: {
+    status: 'error',
+    code: 999,
+    description: 'action failed'
+  }
+}
+
+
+/**
  * ENUMS
  *
  * Global ENUMS object
  *
  * @typedef {object} ENUMS
- * @property {object} PRODUCER - This ENUM is for the PRODUCER
- * @property {object} CONSUMER - This ENUM is for the CONSUMER
+ * @property {string} PRODUCER - This ENUM is for the PRODUCER
+ * @property {string} CONSUMER - This ENUM is for the CONSUMER
  */
 exports.ENUMS = {
   PRODUCER,
-  CONSUMER
+  CONSUMER,
+  NOTIFICATION,
+  STATE,
+  EVENT
 }
 
 /**
@@ -215,7 +263,113 @@ const getKafkaConfig = (flow, functionality, action) => {
   }
 }
 
+/**
+ * @method updateMessageProtocolMetadata
+ *
+ * @param {object} messageProtocol - The current messageProtocol from kafka
+ * @param {string} metadataType - the action flow. Example: 'prepare'
+ * @param {object} state - the tate of the message being passed.
+ * Example:
+ * SUCCESS: {
+ *   status: 'success',
+ *   code: 0,
+ *   description: 'action successful'
+ * }
+ *
+ * @returns {object} - Returns updated messageProtocol
+ */
+const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => {
+  messageProtocol.metadata.event.responseTo = messageProtocol.metadata.event.id
+  messageProtocol.metadata.event.id = Uuid()
+  messageProtocol.metadata.event.type = metadataType
+  messageProtocol.metadata.event.state = state
+  return messageProtocol
+}
+
+/**
+ * @method createTransferMessageProtocol
+ *
+ * @param {object} payload - The payload of the api request
+ * @param {string} metadataType - the action flow. Example: 'prepare'
+ * @param {object} state - the tate of the message being passed.
+ * Example:
+ * SUCCESS: {
+ *   status: 'success',
+ *   code: 0,
+ *   description: 'action successful'
+ * }
+ * @param {string} pp - this is an optional field for future functionality to send the message to a third party
+ *
+ * @returns {object} - Returns newly created messageProtocol
+ */
+const createTransferMessageProtocol = (payload, metadataType, state, pp = '') => {
+  return {
+    id: payload.transferId,
+    from: payload.payerFsp,
+    to: payload.payeeFsp,
+    type: 'application/json',
+    content: {
+      header: {},
+      payload
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: '',
+        type: metadataType,
+        action: metadataType,
+        createdAt: new Date(),
+        state
+      }
+    },
+    pp
+  }
+}
+
+/**
+ * @method createParticipantTopicConf
+ *
+ * @param {string} participantName - The participant name
+ * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
+ * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
+ * @param {number} partition - optional partition to produce to
+ * @param {*} opaqueKey - optional opaque token, which gets passed along to your delivery reports
+ *
+ * @returns {object} - Returns newly created participant topicConfig
+ */
+const createParticipantTopicConf = (participantName, functionality, action, partition = 0, opaqueKey = 0) => {
+  return {
+    topicName: transformAccountToTopicName(participantName, functionality, action),
+    key: Uuid(),
+    partition,
+    opaqueKey
+  }
+}
+
+/**
+ * @method createGeneralTopicConf
+ *
+ * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
+ * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
+ * @param {number} partition - optional partition to produce to
+ * @param {*} opaqueKey - optional opaque token, which gets passed along to your delivery reports
+ *
+ * @returns {object} - Returns newly created general topicConfig
+ */
+const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey = 0) => {
+  return {
+    topicName: transformGeneralTopicName(functionality, action),
+    key: Uuid(),
+    partition,
+    opaqueKey
+  }
+}
+
 exports.getTopicNameFromURI = getTopicNameFromURI
 exports.transformAccountToTopicName = transformAccountToTopicName
 exports.transformGeneralTopicName = transformGeneralTopicName
 exports.getKafkaConfig = getKafkaConfig
+exports.updateMessageProtocolMetadata = updateMessageProtocolMetadata
+exports.createTransferMessageProtocol = createTransferMessageProtocol
+exports.createParticipantTopicConf = createParticipantTopicConf
+exports.createGeneralTopicConf = createGeneralTopicConf

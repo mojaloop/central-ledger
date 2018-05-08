@@ -130,8 +130,8 @@ module.exports = [
    */
   {
     method: 'POST',
-    path: '/register/position',
-    handler: PositionHandler.registerPositionHandlers,
+    path: '/register/position/all',
+    handler: PositionHandler.registerAllHandlers,
     options: {
       id: 'position',
       description: 'Register position Kafka consumer handler'
@@ -146,11 +146,11 @@ module.exports = [
    */
   {
     method: 'POST',
-    path: '/register/notification',
-    handler: NotificationHandler.registerNotificationHandler,
+    path: '/register/notification/all',
+    handler: NotificationHandler.registerAllHandlers,
     options: {
       id: 'notification',
-      description: 'Register prepare transfer Kafka consumer handler'
+      description: 'Register notification Kafka consumer handler'
     }
   }
 ]

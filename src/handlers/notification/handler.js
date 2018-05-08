@@ -32,7 +32,7 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Commands = require('../../domain/position')
 const Utility = require('../lib/utility')
-const ConsumerUtility = require('../lib/consumer')
+const Kafka = require('../lib/kafka')
 
 const NOTIFICATION = 'notification'
 const EVENT = 'event'
@@ -52,7 +52,7 @@ const registerNotificationHandler = async function () {
       topicName: Utility.transformGeneralTopicName(NOTIFICATION, EVENT),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, NOTIFICATION.toUpperCase(), EVENT.toUpperCase())
     }
-    await ConsumerUtility.createHandler(notificationHandler.topicName, notificationHandler.config, notificationHandler.command)
+    await Kafka.Consumer.createHandler(notificationHandler.topicName, notificationHandler.config, notificationHandler.command)
   } catch (e) {
     Logger.info(e)
   }

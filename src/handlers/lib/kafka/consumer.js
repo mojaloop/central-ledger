@@ -22,6 +22,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
 
@@ -29,8 +30,39 @@
  ******/
 'use strict'
 
-const Producer = require('./producer')
+const Consumer = require('../../../../../central-services-shared/src/index').Kafka.Consumer
+const Logger = require('../../../../../central-services-shared/src/index').Logger
 
-module.exports = {
-  Producer
+let listOfConsumers = {}
+
+/**
+ * @method CreateHandler
+ *
+ * @param {string} topicName - the topic name to be registered for the required handler. Example: 'topic-dfsp1-transfer-prepare'
+ * @param {object} config - the config for the consumer for the specific functionality and action, retrieved from the default.json. Example: found in default.json 'KAFKA.CONSUMER.TRANSFER.PREPARE'
+ * @param {function} command - the callback handler for the topic. Will be called when the topic is produced against. Example: Command.prepareHandler()
+ *
+ * Parses the accountUri into a participant name from the uri string
+ *
+ * @returns {string} - Returns participant name, throws error if failure occurs
+ */
+exports.createHandler = async (topicName, config, command) => {
+  try {
+    const consumer = new Consumer([topicName], config)
+    await consumer.connect()
+    Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
+    consumer.consume(command)
+    listOfConsumers[topicName] = consumer
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
+}
+
+exports.getConsumer = (topicName) => {
+  if (listOfConsumers[topicName]) {
+    return listOfConsumers[topicName]
+  } else {
+    throw Error(`no consumer found for topic ${topicName}`)
+  }
 }

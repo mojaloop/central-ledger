@@ -29,28 +29,10 @@
  ******/
 'use strict'
 
-const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
-const Logger = require('@mojaloop/central-services-shared').Logger
-
-const produceMessage = async (messageProtocol, topicConf, config) => {
-  try {
-    Logger.info('Producer::start')
-
-    let p = new Producer(config)
-    Logger.info('Producer::connect::start')
-    await p.connect()
-    Logger.info('Producer::connect::end')
-
-    Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
-    await p.sendMessage(messageProtocol, topicConf).then(results => {
-      Logger.info(`Producer.sendMessage:: result:'${JSON.stringify(results)}'`)
-    })
-    Logger.info('Producer::end')
-  } catch (e) {
-    throw e
-  }
-}
+const Producer = require('./producer')
+const Consumer = require('./consumer')
 
 module.exports = {
-  produceMessage
+  Producer,
+  Consumer
 }
