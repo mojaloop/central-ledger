@@ -37,6 +37,7 @@ const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
+const Notifications = require('../notification/handler')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
@@ -140,11 +141,11 @@ const prepare = async (error, messages) => {
   }
 }
 
-const fulfill = async function () {
+const fulfill = async () => {
 
 }
 
-const reject = async function () {
+const reject = async () => {
 
 }
 
@@ -157,7 +158,7 @@ const reject = async function () {
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const createPrepareHandler = async function (participantName) {
+const createPrepareHandler = async (participantName) => {
   try {
     const prepareHandler = {
       command: prepare,
@@ -178,7 +179,7 @@ const createPrepareHandler = async function (participantName) {
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerFulfillHandler = async function () {
+const registerFulfillHandler = async () => {
   try {
     const fulfillHandler = {
       command: fulfill,
@@ -200,7 +201,7 @@ const registerFulfillHandler = async function () {
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerRejectHandler = async function () {
+const registerRejectHandler = async () => {
   try {
     const rejectHandler = {
       command: reject,
@@ -222,7 +223,7 @@ const registerRejectHandler = async function () {
  * @function createPrepareHandler called to create the handler for each participant
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerPrepareHandlers = async function () {
+const registerPrepareHandlers = async () => {
   try {
     const participantNames = await DAO.retrieveAllParticipants()
     for (let name of participantNames) {
@@ -243,11 +244,12 @@ const registerPrepareHandlers = async function () {
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerAllHandlers = async function () {
+const registerAllHandlers = async () => {
   try {
     await registerPrepareHandlers()
-    await registerFulfillHandler()
-    await registerRejectHandler()
+    await Notifications.registerNotificationHandler()
+    //await registerFulfillHandler()
+    //await registerRejectHandler()
     return true
   } catch (e) {
     throw e
