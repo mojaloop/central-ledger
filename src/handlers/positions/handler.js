@@ -48,7 +48,7 @@ const PREPARE = 'prepare'
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const createPositionHandler = async function (participantName) {
+const createPositionHandler = async (participantName) => {
   try {
     const positionHandler = {
       command: Commands.generatePositionPlaceHolder,
@@ -62,7 +62,7 @@ const createPositionHandler = async function (participantName) {
   }
 }
 
-/**
+/*
  * @method RegisterPositionsHandlers
  *
  * @async
@@ -70,7 +70,7 @@ const createPositionHandler = async function (participantName) {
  * @function createPositionHandler called to create the handler for each participant
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerPositionHandlers = async function () {
+const registerPositionHandlers = async () => {
   try {
     const participantList = await DAO.retrieveAllParticipants()
     for (let name of participantList) {
@@ -90,7 +90,7 @@ const registerPositionHandlers = async function () {
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerAllHandlers = async function () {
+const registerAllHandlers = async () => {
   try {
     await registerPositionHandlers()
     return true

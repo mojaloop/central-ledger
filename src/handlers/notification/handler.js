@@ -45,7 +45,7 @@ const EVENT = 'event'
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerNotificationHandler = async function () {
+const registerNotificationHandler = async () => {
   try {
     const notificationHandler = {
       command: Commands.generatePositionPlaceHolder, // to be changed once notifications are added
@@ -67,7 +67,7 @@ const registerNotificationHandler = async function () {
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerAllHandlers = async function () {
+const registerAllHandlers = async () => {
   try {
     await registerNotificationHandler()
     return true

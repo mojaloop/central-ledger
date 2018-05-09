@@ -34,7 +34,7 @@ const Logger = require('../../../../../central-services-shared/src/index').Logge
 
 const produceMessage = async (messageProtocol, topicConf, config) => {
   try {
-    Logger.info('Producer::start::topic='+topicConf.topicName)
+    Logger.info('Producer::start::topic=' + topicConf.topicName)
 
     let p = new Producer(config)
     Logger.info('Producer::connect::start')

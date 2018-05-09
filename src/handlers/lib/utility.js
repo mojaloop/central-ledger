@@ -100,7 +100,6 @@ const STATE = {
   }
 }
 
-
 /**
  * ENUMS
  *

@@ -47,7 +47,7 @@
             },
             "rdkafkaConf": {
               "debug": "all",
-              "group.id": "central-ledger-kafka-prepare",
+              "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": false
             }
@@ -67,7 +67,7 @@
             },
             "rdkafkaConf": {
               "debug": "all",
-              "group.id": "central-ledger-kafka-fulfill",
+              "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
@@ -87,7 +87,7 @@
             },
             "rdkafkaConf": {
               "debug": "all",
-              "group.id": "central-ledger-kafka-reject",
+              "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
@@ -109,7 +109,7 @@
             },
             "rdkafkaConf": {
               "debug": "all",
-              "group.id": "central-ledger-kafka-position",
+              "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
@@ -131,7 +131,7 @@
             },
             "rdkafkaConf": {
               "debug": "all",
-              "group.id": "central-ledger-kafka-notification",
+              "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
