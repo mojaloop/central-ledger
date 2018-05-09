@@ -47,16 +47,15 @@ let listOfConsumers = {}
  * @returns {string} - Returns participant name, throws error if failure occurs
  */
 exports.createHandler = async (topicName, config, command) => {
-  try {
-    const consumer = new Consumer([topicName], config)
-    await consumer.connect()
+  const consumer = new Consumer([topicName], config)
+  await consumer.connect().then(async () => {
     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
-    consumer.consume(command)
+    await consumer.consume(command)
     listOfConsumers[topicName] = consumer
-  } catch (e) {
+  }).catch((e) => {
     Logger.error(e)
     throw e
-  }
+  })
 }
 
 exports.getConsumer = (topicName) => {

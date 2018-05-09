@@ -186,6 +186,7 @@ const registerFulfillHandler = async function () {
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
     }
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
+    return true
   } catch (e) {
     Logger.error(e)
   }
@@ -207,6 +208,7 @@ const registerRejectHandler = async function () {
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), REJECT.toUpperCase())
     }
     await Kafka.Consumer.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
+    return true
   } catch (e) {
     Logger.error(e)
   }
@@ -226,6 +228,7 @@ const registerPrepareHandlers = async function () {
     for (let name of participantNames) {
       await createPrepareHandler(name)
     }
+    return true
   } catch (e) {
     Logger.error(e)
     throw e

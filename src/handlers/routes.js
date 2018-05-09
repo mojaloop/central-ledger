@@ -147,7 +147,7 @@ module.exports = [
   {
     method: 'POST',
     path: '/register/notification/all',
-    handler: NotificationHandler.registerAllHandlers,
+    handler: NotificationHandler.registerNotificationHandler,
     options: {
       id: 'notification',
       description: 'Register notification Kafka consumer handler'

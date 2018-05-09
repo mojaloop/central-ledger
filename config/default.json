@@ -38,6 +38,7 @@
             "options": {
               "mode": 1,
               "batchSize": 1,
+              "pollFrequency": 10,
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
               "messageAsJSON": true,
@@ -45,7 +46,8 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "group.id": "central-ledger-kafka",
+              "debug": "all",
+              "group.id": "central-ledger-kafka-prepare",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": false
             }
@@ -64,7 +66,8 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "group.id": "central-ledger-kafka",
+              "debug": "all",
+              "group.id": "central-ledger-kafka-fulfill",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
@@ -83,7 +86,8 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "group.id": "central-ledger-kafka",
+              "debug": "all",
+              "group.id": "central-ledger-kafka-reject",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
@@ -104,7 +108,8 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "group.id": "central-ledger-kafka",
+              "debug": "all",
+              "group.id": "central-ledger-kafka-position",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
@@ -125,7 +130,8 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "group.id": "central-ledger-kafka",
+              "debug": "all",
+              "group.id": "central-ledger-kafka-notification",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": true
             }
@@ -141,6 +147,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
+              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "default-client",
               "event_cb": true,
@@ -162,6 +169,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
+              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "default-client",
               "event_cb": true,
@@ -183,6 +191,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
+              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "default-client",
               "event_cb": true,
@@ -206,6 +215,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
+              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "default-client",
               "event_cb": true,
@@ -229,6 +239,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
+              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "default-client",
               "event_cb": true,

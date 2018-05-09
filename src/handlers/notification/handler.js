@@ -53,6 +53,7 @@ const registerNotificationHandler = async function () {
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, NOTIFICATION.toUpperCase(), EVENT.toUpperCase())
     }
     await Kafka.Consumer.createHandler(notificationHandler.topicName, notificationHandler.config, notificationHandler.command)
+    return true
   } catch (e) {
     Logger.info(e)
   }
