@@ -29,18 +29,22 @@
  ******/
 'use strict'
 
-const Producer = require('../../../../../central-services-shared/src/index').Kafka.Producer
-const Logger = require('../../../../../central-services-shared/src/index').Logger
+const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
+const Logger = require('@mojaloop/central-services-shared').Logger
+const getProducer = require('./producer').getProducer
 
-const produceMessage = async (messageProtocol, topicConf, config) => {
+let p
+
+exports.produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     Logger.info('Producer::start::topic=' + topicConf.topicName)
-
-    let p = new Producer(config)
-    Logger.info('Producer::connect::start')
-    await p.connect()
-    Logger.info('Producer::connect::end')
-
+    p = getProducer
+    if(!p) {
+      p = new Producer(config)
+      Logger.info('Producer::connect::start')
+      await p.connect()
+      Logger.info('Producer::connect::end')
+    }
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
     await p.sendMessage(messageProtocol, topicConf).then(results => {
       Logger.info(`Producer.sendMessage:: result:'${JSON.stringify(results)}'`)
@@ -53,6 +57,11 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
   }
 }
 
-module.exports = {
-  produceMessage
+exports.getProducer = () => {
+  if(p) {
+    return p
+  } else {
+    return null
+  }
+
 }
