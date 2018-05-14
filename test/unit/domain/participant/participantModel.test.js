@@ -31,7 +31,6 @@ const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/domain/participant/model')
-// const Moment = require('moment')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
@@ -50,6 +49,8 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date()
     }
   ]
+
+  let participantMap = new Map()
 
   await participantTest.test('setup', async (assert) => {
     try {
@@ -72,15 +73,14 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create participant', async (assert) => {
     try {
       assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
-      // const createdDate = new Date()
       participantFixtures.forEach(async participant => {
         var result = await Model.create(participant)
+        participantMap.set(result.participantId, result)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.equal(result.name, participant.name, ' names are equal')
         assert.equal(result.currencyId, participant.currency, ' currency match')
         assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
         assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
-        // assert.equal(result.createdDate, createdDate)
       })
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -94,8 +94,8 @@ Test('Participant service', async (participantTest) => {
       assert.plan(1)
       await Model.create({name: 'fsp3'})
     } catch (err) {
-      Logger.error('create participant without currency is failing with message')
-      assert.ok(err.message, err.message)
+      Logger.error('create participant without currency is failing with message ')
+      assert.ok((('message' in err) && ('stack' in err)), err.message)
     }
   })
 
@@ -122,7 +122,47 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  // await participantTest.test('getAll')
+  await participantTest.test('getAll', async (assert) => {
+    try {
+      assert.plan(1)
+      var result = await Model.getAll()
+      assert.ok(result, ' returns result')
+    } catch (err) {
+      Logger.error(`get all participants failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getById', async (assert) => {
+    try {
+      for (let participantId of participantMap.keys()) {
+        let participant = await Model.getById(participantId)
+        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId)))
+      }
+      assert.end()
+    } catch (err) {
+      Logger.error(`get participant by Id failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('update', async (assert) => {
+    try {
+      for (let participantId of participantMap.keys()) {
+        let updatedId = await Model.update(participantMap.get(participantId), true)
+        let p = await Model.getById(updatedId)
+        assert.equal(updatedId, p.participantId)
+        assert.equal(p.isDisabled, 1)
+      }
+      assert.end()
+    } catch (err) {
+      Logger.error(`update participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
 
   await participantTest.test('teardown', async (assert) => {
     try {

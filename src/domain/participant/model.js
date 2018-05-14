@@ -22,7 +22,7 @@ exports.getByName = async (name) => {
 
 // exports.retrievePartyCredentials = async (participant) => {
 //   try {
- //   } catch (err) {
+//   } catch (err) {
 //     throw new Error(err.message)
 //   }
 // }
@@ -38,7 +38,8 @@ exports.getAll = async () => {
 
 exports.update = async (participant, isDisabled) => {
   try {
-    return await Db.participant.update({ participantId: participant.participantId }, { isDisabled })
+    const u = await Db.participant.update({ participantId: participant.participantId }, { isDisabled })
+    return u
   } catch (err) {
     throw new Error(err.message)
   }
