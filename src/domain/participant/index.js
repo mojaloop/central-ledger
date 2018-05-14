@@ -20,7 +20,7 @@ const create = async (payload) => {
       participantId: participant.participantId,
       name: participant.name,
       createdDate: participant.createdDate,
-    //        emailAddress: participant.emailAddress
+      //        emailAddress: participant.emailAddress
       currency: participant.currencyId
     })
   } catch (err) {
