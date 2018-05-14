@@ -32,8 +32,17 @@
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Handlers = require('./handlers')
-
-Logger.info('starting all Handlers')
-Handlers.registerAllHandlers().then((result) => {
-  Logger.info(`yes - ${result}`)
+const Config = require('../lib/config')
+const Db = require('../db')
+//
+Db.connect(Config.DATABASE_URI).then( () => {
+  Logger.info('starting all Handlers')
+  Handlers.registerAllHandlers().then((result) => {
+    Logger.info(`yes - ${result}`)
+  })
 })
+
+// Logger.info('starting all Handlers')
+// Handlers.registerAllHandlers().then((result) => {
+//   Logger.info(`yes - ${result}`)
+// })

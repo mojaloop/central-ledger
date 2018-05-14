@@ -55,6 +55,7 @@ const createPositionHandler = async (participantName) => {
       topicName: Utility.transformAccountToTopicName(participantName, POSITION, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }
+    positionHandler.config.rdkafkaConf['client.id'] = positionHandler.topicName
     await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
   } catch (error) {
     Logger.error(error)
