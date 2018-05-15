@@ -149,6 +149,25 @@ const reject = async () => {
 
 }
 
+const transfer = async (error, messages) => {
+  if (error) {
+    Logger.error(error)
+  }
+  let message = {}
+  try {
+    if (Array.isArray(messages)) {
+      message = messages[0]
+    } else {
+      message = messages
+    }
+
+    // Add code
+
+  } catch (e) {
+    throw e
+  }
+}
+
 /**
  * @method CreatePrepareHandler
  *
@@ -175,10 +194,11 @@ const createPrepareHandler = async (participantName) => {
 const createTransferHandler = async (participantName) => {
   try {
     const transferHandler = {
-      command: prepare,
+      command: transfer,
       topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, TRANSFER),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), TRANSFER.toUpperCase())
     }
+    transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
   } catch (e) {
     throw e

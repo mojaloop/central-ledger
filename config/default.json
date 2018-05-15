@@ -54,6 +54,27 @@
             }
           }
         },
+        "TRANSFER": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "transfer-transfer",
+              "debug": "all",
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": false
+            }
+          }
+        },
         "FULFILL": {
           "config": {
             "options": {
