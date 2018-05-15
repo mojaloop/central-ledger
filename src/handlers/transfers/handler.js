@@ -191,6 +191,15 @@ const createPrepareHandler = async (participantName) => {
   }
 }
 
+/**
+ * @method CreateTransferHandler
+ *
+ * @async
+ * Registers the handler for each participant topic created. Gets Kafka config from default.json
+ *
+ * @function Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const createTransferHandler = async (participantName) => {
   try {
     const transferHandler = {
