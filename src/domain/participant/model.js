@@ -94,12 +94,11 @@ exports.destroyByName = async (participant) => {
 
 exports.create = async (participant) => {
   try {
-    const insertedParticipant = await Db.participant.insert({
+    return await Db.participant.insert({
       name: participant.name,
       currencyId: participant.currency
     })
-    const created = await Db.participant.findOne({ participantId: insertedParticipant })
-    return created
+    // const created = await Db.participant.findOne({ participantId: insertedParticipant })
   } catch (err) {
     throw new Error(err.message)
   }
