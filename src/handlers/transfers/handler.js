@@ -165,6 +165,7 @@ const createPrepareHandler = async (participantName) => {
       topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
     }
+    prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
   } catch (e) {
     Logger.error(e)
@@ -186,6 +187,7 @@ const registerFulfillHandler = async () => {
       topicName: Utility.transformGeneralTopicName(TRANSFER, FULFILL),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
     }
+    fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
   } catch (e) {
@@ -208,6 +210,7 @@ const registerRejectHandler = async () => {
       topicName: Utility.transformGeneralTopicName(TRANSFER, REJECT),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), REJECT.toUpperCase())
     }
+    rejectHandler.config.rdkafkaConf['client.id'] = rejectHandler.topicName
     await Kafka.Consumer.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
     return true
   } catch (e) {
@@ -247,9 +250,8 @@ const registerPrepareHandlers = async () => {
 const registerAllHandlers = async () => {
   try {
     await registerPrepareHandlers()
-    await Notifications.registerNotificationHandler()
-    //await registerFulfillHandler()
-    //await registerRejectHandler()
+    await registerFulfillHandler()
+    await registerRejectHandler()
     return true
   } catch (e) {
     throw e

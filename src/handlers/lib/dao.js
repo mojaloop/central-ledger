@@ -43,10 +43,10 @@ const Participants = require('../../domain/participant')
 exports.retrieveAllParticipants = async () => {
   try {
     const participants = await Participants.getAll()
-    let accountNames = []
-    for (let participant of participants) {
-      accountNames.push(participant.name)
-    }
+    let accountNames = participants.map(participant => participant.name)
+    // for (let participant of participants) {
+    //   accountNames.push(participant.name)
+    // }
     return accountNames
   } catch (e) {
     Logger.error(e)

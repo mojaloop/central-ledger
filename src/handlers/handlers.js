@@ -47,12 +47,16 @@ exports.registerAllHandlers = async (request, h) => {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))
     for (let key in modules) {
-      Logger.info(`Registering handler module: ${JSON.stringify(modules[key])}`)
+      Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
       const handlerObject = modules[key]
       Logger.info(JSON.stringify(handlerObject.handler))
       await handlerObject.handler.registerAllHandlers()
     }
-    return h.response(true)
+    if (h) {
+      return h.response(true)
+    } else {
+      return true
+    }
   } catch (e) {
     Logger.error(e)
   }

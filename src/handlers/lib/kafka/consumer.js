@@ -30,8 +30,8 @@
  ******/
 'use strict'
 
-const Consumer = require('../../../../../central-services-shared/src/index').Kafka.Consumer
-const Logger = require('../../../../../central-services-shared/src/index').Logger
+const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 let listOfConsumers = {}
 

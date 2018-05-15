@@ -66,10 +66,9 @@ const topicConf = {
   opaqueKey: 0
 }
 
-var testProducer = async () => {
+exports.testProducer = async () => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
   config.logger = Logger
   const producer = await Producer.produceMessage(messageProtocol, topicConf, config)
+  return true
 }
-
-testProducer()
