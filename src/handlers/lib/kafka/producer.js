@@ -50,6 +50,7 @@ exports.produceMessage = async (messageProtocol, topicConf, config) => {
       Logger.info(`Producer.sendMessage:: result:'${JSON.stringify(results)}'`)
     })
     Logger.info('Producer::end')
+    return true
   } catch (e) {
     Logger.info(e)
     Logger.error(e)
