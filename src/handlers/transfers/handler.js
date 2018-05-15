@@ -171,6 +171,19 @@ const createPrepareHandler = async (participantName) => {
   }
 }
 
+const createTransferHandler = async (participantName) => {
+  try {
+    const transferHandler = {
+      command: prepare,
+      topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, TRANSFER),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
+    }
+    await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
+  } catch (e) {
+    throw e
+  }
+}
+
 /**
  * @method RegisterFulfillHandler
  *
