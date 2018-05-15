@@ -38,8 +38,7 @@ exports.getAll = async () => {
 
 exports.update = async (participant, isDisabled) => {
   try {
-    const u = await Db.participant.update({ participantId: participant.participantId }, { isDisabled })
-    return u
+    return await Db.participant.update({ participantId: participant.participantId }, { isDisabled })
   } catch (err) {
     throw new Error(err.message)
   }
