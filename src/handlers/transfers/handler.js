@@ -45,28 +45,6 @@ const FULFILL = 'fulfill'
 const REJECT = 'reject'
 
 /**
- * @method producerNotificationMessage
- *
- * @async
- * This is an async method that produces a message against the Kafka notification topic. it is called multiple times
- *
- * @param {object} message - a list of messages to consume for the relevant topic
- * @param {object} state - state of the message being produced
- *
- * @function Kafka.Producer.produceMessage to persist the message to the configured topic on Kafka
- * @function Utility.updateMessageProtocolMetadata updates the messages metadata
- * @function Utility.createGeneralTopicConf dynamically gets the topic configuration
- * @function Utility.getKafkaConfig dynamically gets Kafka configuration
- *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
- */
-const producerNotificationMessage = async (message, state) => {
-  await Kafka.Producer.produceMessage(Utility.updateMessageProtocolMetadata(message, Utility.ENUMS.NOTIFICATION, state),
-    Utility.createGeneralTopicConf(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT),
-    Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, Utility.ENUMS.NOTIFICATION.toUpperCase(), Utility.ENUMS.EVENT.toUpperCase()))
-}
-
-/**
  * @method prepare
  *
  * @async
@@ -114,7 +92,7 @@ const prepare = async (error, messages) => {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
         await consumer.commitMessageSync(message)
         // notification of duplicate to go here
-        await producerNotificationMessage(message.value, Utility.ENUMS.STATE.FAILURE)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       }
     } else {
@@ -126,13 +104,13 @@ const prepare = async (error, messages) => {
         await TransferHandler.prepare(payload, reasons.toString(), false)
         // notification of prepare transfer to go here
         await consumer.commitMessageSync(message)
-        await producerNotificationMessage(message.value, Utility.ENUMS.STATE.FAILURE)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
         const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await consumer.commitMessageSync(message)
-        await producerNotificationMessage(message.value, Utility.ENUMS.STATE.FAILURE)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       }
     }

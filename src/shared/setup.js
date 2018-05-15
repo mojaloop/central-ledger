@@ -19,7 +19,7 @@ const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
 }
 
-const connectDatabase = () => Db.connect(Config.DATABASE_URI)
+const connectDatabase = async () => await Db.connect(Config.DATABASE_URI)
 
 const createServer = (port, modules) => {
   return (async () => {
