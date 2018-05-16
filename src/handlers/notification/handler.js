@@ -68,12 +68,13 @@ const registerNotificationHandler = async () => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerAllHandlers = async () => {
-  try {
-    await registerNotificationHandler()
-    return true
-  } catch (e) {
-    throw e
-  }
+  // try {
+  //   await registerNotificationHandler()
+  //   return true
+  // } catch (e) {
+  //   throw e
+  // }
+  return true
 }
 
 module.exports = {

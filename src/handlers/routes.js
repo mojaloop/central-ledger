@@ -39,6 +39,7 @@ const RegisterAllHandler = require('./handlers')
 const TransferHandler = require('./transfers/handler')
 const PositionHandler = require('./positions/handler')
 const NotificationHandler = require('./notification/handler')
+const testProducer = require('./lib/kafka/testProducer')
 
 module.exports = [
   /**
@@ -151,6 +152,16 @@ module.exports = [
     options: {
       id: 'notification',
       description: 'Register notification Kafka consumer handler'
+    }
+  },
+  // this is for testing purposes so that we can produce transfers without the ML-API. will be removed later
+  {
+    method: 'POST',
+    path: '/test/producer',
+    handler: testProducer.testProducer,
+    options: {
+      id: 'testing',
+      description: 'testing'
     }
   }
 ]

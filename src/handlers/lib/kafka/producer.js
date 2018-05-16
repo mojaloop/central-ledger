@@ -39,7 +39,7 @@ exports.produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     Logger.info('Producer::start::topic=' + topicConf.topicName)
     p = getProducer
-    if(!p) {
+    if (!p) {
       p = new Producer(config)
       Logger.info('Producer::connect::start')
       await p.connect()
@@ -50,6 +50,7 @@ exports.produceMessage = async (messageProtocol, topicConf, config) => {
       Logger.info(`Producer.sendMessage:: result:'${JSON.stringify(results)}'`)
     })
     Logger.info('Producer::end')
+    return true
   } catch (e) {
     Logger.info(e)
     Logger.error(e)
@@ -58,10 +59,9 @@ exports.produceMessage = async (messageProtocol, topicConf, config) => {
 }
 
 exports.getProducer = () => {
-  if(p) {
+  if (p) {
     return p
   } else {
     return null
   }
-
 }

@@ -37,6 +37,7 @@ const Mustache = require('mustache')
 const KafkaConfig = Config.KAFKA_CONFIG
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
+const Kafka = require('./kafka')
 
 /**
  * The Producer config required
@@ -364,6 +365,55 @@ const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey 
   }
 }
 
+/**
+ * @method produceGeneralMessage
+ *
+ * @async
+ * This is an async method that produces a message against a generated Kafka topic. it is called multiple times
+ *
+ * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
+ * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
+ * @param {object} message - a list of messages to consume for the relevant topic
+ * @param {object} state - state of the message being produced
+ *
+ * @function Kafka.Producer.produceMessage to persist the message to the configured topic on Kafka
+ * @function Utility.updateMessageProtocolMetadata updates the messages metadata
+ * @function Utility.createGeneralTopicConf dynamically generates the general topic configuration
+ * @function Utility.getKafkaConfig dynamically gets Kafka configuration
+ *
+ * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const produceGeneralMessage = async (functionality, action, message, state) => {
+  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, state),
+    createGeneralTopicConf(functionality, action),
+    getKafkaConfig(ENUMS.PRODUCER, functionality.toUpperCase(), action.toUpperCase()))
+}
+
+/**
+ * @method produceParticipantMessage
+ *
+ * @async
+ * This is an async method that produces a message against a Kafka generated topic for a specific participant. it is called multiple times
+ *
+ * @param {string} participantName - the name of the participant for topic creation
+ * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
+ * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
+ * @param {object} message - a list of messages to consume for the relevant topic
+ * @param {object} state - state of the message being produced
+ *
+ * @function Kafka.Producer.produceMessage to persist the message to the configured topic on Kafka
+ * @function Utility.updateMessageProtocolMetadata updates the messages metadata
+ * @function Utility.createParticipantTopicConf dynamically generates the topic configuration with a participant name
+ * @function Utility.getKafkaConfig dynamically gets Kafka configuration
+ *
+ * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const produceParticipantMessage = async (participantName, functionality, action, message, state) => {
+  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, state),
+    createParticipantTopicConf(participantName, functionality, action),
+    getKafkaConfig(ENUMS.PRODUCER, functionality.toUpperCase(), action.toUpperCase()))
+}
+
 exports.getTopicNameFromURI = getTopicNameFromURI
 exports.transformAccountToTopicName = transformAccountToTopicName
 exports.transformGeneralTopicName = transformGeneralTopicName
@@ -372,3 +422,5 @@ exports.updateMessageProtocolMetadata = updateMessageProtocolMetadata
 exports.createTransferMessageProtocol = createTransferMessageProtocol
 exports.createParticipantTopicConf = createParticipantTopicConf
 exports.createGeneralTopicConf = createGeneralTopicConf
+exports.produceParticipantMessage = produceParticipantMessage
+exports.produceGeneralMessage = produceGeneralMessage
