@@ -25,6 +25,7 @@
  * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Deon Botha <deon.botha@modusbox.com>
 
  --------------
  ******/
@@ -126,7 +127,26 @@ const fulfill = async () => {
 const reject = async () => {
 
 }
-
+/**
+ * @method transfer
+ *
+ * @async
+ * This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),
+ * we will only ever use the first message in non batch processing. We then break down the message into its payload and
+ * begin validating the payload. Once the payload is validated successfully it will be written to the database to
+ * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
+ * ABORT status
+ *
+ * @param {error} error - error thrown if something fails within Kafka
+ * @param {array} messages - a list of messages to consume for the relevant topic
+ *
+ *  ?? @function Validator.validateByName to validate the payload of the message
+ *  ?? @function TransferQueries.getById checks if the transfer currently exists
+ *  ?? @function TransferHandler.prepare creates new entries in transfer tables for successful prepare transfer
+ *  ?? @function TransferHandler.reject rejects an existing transfer that has been retried and fails validation
+ *
+ * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const transfer = async (error, messages) => {
   if (error) {
     Logger.error(error)
@@ -139,12 +159,23 @@ const transfer = async (error, messages) => {
       message = messages
     }
 
-    // Add code
+    Logger.info('TransferHandler::transfer')
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, TRANSFER))
+    const payload = message.value.content.payload
 
-  } catch (e) {
-    throw e
+
+  } catch (error) {
+    Logger.error(error)
   }
 }
+
+    // Add code
+    // - Request to persist to event dao
+    // - Persist to data store
+    // - persist to event DAO
+    // - Publish notification to payer
+    // - Publish notification to payyee
+
 
 /**
  * @method CreatePrepareHandler
@@ -178,17 +209,28 @@ const createPrepareHandler = async (participantName) => {
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const createTransferHandler = async (participantName) => {
+
+
+/**
+ * @method RegisterTransferHandler
+ *
+ * @async
+ * Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
+ * @function createTransferHandler called to create the handler for each participant
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const registerTransferHandler = async () => {
   try {
     const transferHandler = {
       command: transfer,
-      topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, TRANSFER),
+      topicName: Utility.transformGeneralTopicName(TRANSFER, TRANSFER),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), TRANSFER.toUpperCase())
     }
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
+    return true
   } catch (e) {
-    throw e
+    Logger.error(e)
   }
 }
 
@@ -263,7 +305,7 @@ const registerPrepareHandlers = async () => {
  * @method RegisterAllHandlers
  *
  * @async
- * Registers all handlers in transfers ie: prepare, fulfill and reject
+ * Registers all handlers in transfers ie: prepare, fulfill, transfer and reject
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
@@ -272,6 +314,7 @@ const registerAllHandlers = async () => {
     await registerPrepareHandlers()
     await registerFulfillHandler()
     await registerRejectHandler()
+    await registerTransferHandler()
     return true
   } catch (e) {
     throw e
@@ -279,6 +322,7 @@ const registerAllHandlers = async () => {
 }
 
 module.exports = {
+  registerTransferHandler,
   registerPrepareHandlers,
   registerFulfillHandler,
   registerRejectHandler,

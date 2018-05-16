@@ -132,7 +132,7 @@ const validateByName = (payload) => {
 
 const validateById = (payload) => {
   reasons.length = 0
-  return P.resolve().then(() => {
+  return P.resolve().then(() => {validateByName
     if (!payload) {
       reasons.push('Transfer must be provided')
       return false
