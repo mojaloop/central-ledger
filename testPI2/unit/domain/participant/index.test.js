@@ -74,12 +74,13 @@ Test('Participant service', async (participantTest) => {
     }
 
     participantFixtures.forEach((participant, index) => {
-      participantMap.set(index, participant)
+      participantMap.set(index + 1, participant)
       Db.participant.insert.withArgs({participant}).returns(index)
-      Model.create.withArgs({name: participant.name, currency: participant.currency}).returns((index))
+//      Model.create({ name: payload.name, currency: payload.currency })
+      Model.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
       Model.getByName.withArgs(participant.name).returns((participant))
       Model.getById.withArgs(index).returns((participant))
-      Model.update.withArgs(participant, true).returns((index))
+      Model.update.withArgs(participant, 1).returns((index + 1))
     })
     Model.getAll.returns(Promise.resolve(participantFixtures))
     assert.pass('setup OK')
@@ -103,9 +104,9 @@ Test('Participant service', async (participantTest) => {
       for (let [index, participant] of participantMap) {
         var result = await Service.create({ name: participant.name, currency: participant.currency })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
-        assert.ok(Sinon.match(result, index), ` returns ${result}`)
-        assert.end()
+        assert.ok(Sinon.match(result, index + 1), ` returns ${result}`)
       }
+      assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
       assert.fail()
@@ -158,7 +159,7 @@ Test('Participant service', async (participantTest) => {
     try {
       for (let participantId of participantMap.keys()) {
         let participant = await Service.getById(participantId)
-        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId)))
+        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId + 1)))
       }
       assert.end()
     } catch (err) {
@@ -170,9 +171,9 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('update', async (assert) => {
     try {
-      for (let participantId of participantMap.keys()) {
-        let updatedId = await Service.update(participantMap.get(participantId), true)
-        assert.equal(updatedId, participantId)
+      for (let participant of participantMap.values()) {
+        let updated = await Service.update(participant.name, {is_disabled: 1})
+        assert.equal(updated, participant)
       }
       assert.end()
     } catch (err) {

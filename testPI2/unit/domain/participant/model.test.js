@@ -71,7 +71,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = {name: 'fsp3'}
-    Db.participant.insert.withArgs({ name: falseParticipant.name, currency: undefined }).throws(new Error('message'))
+    Db.participant.insert.withArgs({ name: falseParticipant.name }).throws(new Error('message'))
     try {
       let r = await Model.create(falseParticipant)
       assert.comment(r)
@@ -84,7 +84,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('create participant', async (assert) => {
     try {
-      Db.participant.insert.withArgs(participantFixtures[0]).returns(1)
+      Db.participant.insert.withArgs({name: participantFixtures[0].name, currencyId: participantFixtures[0].currency}).returns(1)
       var result = await Model.create(participantFixtures[0])
       assert.ok(Sinon.match(result, 1), ` returns ${result}`)
       assert.end()
@@ -96,9 +96,9 @@ Test('Participant model', async (participantTest) => {
   })
 
   await participantTest.test('get with empty name', async (assert) => {
-    Db.participant.findOne.withArgs('').throws(new Error())
+    Db.participant.findOne.withArgs({ name: '' }).throws(new Error())
     try {
-      Model.getByName('')
+      await Model.getByName('')
       assert.fail(' should throws with empty name ')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -137,7 +137,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getById', async (assert) => {
     try {
-      Db.participant.findOne.withArgs(1).returns(participantFixtures[0])
+      Db.participant.findOne.withArgs({ participantId: 1 }).returns(participantFixtures[0])
       let participant = await Model.getById(1)
       assert.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       assert.end()
@@ -150,8 +150,10 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('update', async (assert) => {
     try {
-      Db.participant.update.withArgs(participant, true).returns(participantId)
-      let updatedId = await Model.update(participant, true)
+      Db.participant.update.withArgs(
+        { participantId: 1 }, { isDisabled: 1 }
+      ).returns(participantId)
+      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
       assert.equal(updatedId, participantId)
       assert.end()
     } catch (err) {

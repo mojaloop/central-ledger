@@ -75,7 +75,7 @@ Test('Participant service', async (participantTest) => {
     try {
       assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        var result = await Service.create({name: participant.name, currency: participant.currency})
+        let result = await Service.create({name: participant.name, currency: participant.currency})
         let read = await Service.getById(result)
         participantMap.set(result, read)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
@@ -126,7 +126,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll', async (assert) => {
     try {
-      var result = await Service.getAll()
+      let result = await Service.getAll()
       assert.ok(result, ' returns result')
       assert.end()
     } catch (err) {
