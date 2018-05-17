@@ -74,13 +74,14 @@ Test('Participant service', async (participantTest) => {
     try {
       assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        var result = await Model.create(participant)
-        participantMap.set(result.participantId, result)
+        let result = await Model.create(participant)
+        participantMap.set(result, Object.assign({}, participant, {participantId: result}))
+        let read = await Model.getById(result)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
-        assert.equal(result.name, participant.name, ' names are equal')
-        assert.equal(result.currencyId, participant.currency, ' currency match')
-        assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
-        assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
+        assert.equal(read.name, participant.name, ' names are equal')
+        assert.equal(read.currencyId, participant.currency, ' currency match')
+        assert.equal(read.isDisabled, participant.isDisabled, ' isDisabled flag match')
+        assert.ok(Sinon.match(read.createdDate, participant.createdDate), ' created date matches')
       })
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -124,9 +125,9 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll', async (assert) => {
     try {
-      assert.plan(1)
       var result = await Model.getAll()
       assert.ok(result, ' returns result')
+      assert.end()
     } catch (err) {
       Logger.error(`get all participants failed with error - ${err}`)
       assert.fail()
@@ -138,7 +139,7 @@ Test('Participant service', async (participantTest) => {
     try {
       for (let participantId of participantMap.keys()) {
         let participant = await Model.getById(participantId)
-        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId)))
+        assert.deepEqual(participant, participantMap.get(participantId))
       }
       assert.end()
     } catch (err) {

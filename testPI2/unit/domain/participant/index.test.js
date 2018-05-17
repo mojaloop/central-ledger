@@ -23,7 +23,7 @@
  --------------
  ******/
 
-// TODO rework
+// TODO 
 
 'use strict'
 
@@ -33,20 +33,13 @@ const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/domain/participant/model')
+const Service = require('../../../../src/domain/participant/index')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
 
-  participantTest.beforeEach((t) => {
-    sandbox = Sinon.sandbox.create()
-
-    Db.participant = {
-      insert: sandbox.stub(),
-      update: sandbox.stub(),
-      findOne: sandbox.stub(),
-      find: sandbox.stub()
-    }
-  })
+  // participantTest.beforeEach((t) => {
+  //   sandbox = Sinon.sandbox.create()
 
   const participantFixtures = [
     {
@@ -65,29 +58,39 @@ Test('Participant service', async (participantTest) => {
 
   let participantMap = new Map()
 
-  participantTest.test('setup', async (assert) => {
+  await participantTest.test('setup', async (assert) => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(Model, 'create')
     sandbox.stub(Model, 'getByName')
     sandbox.stub(Model, 'getAll')
     sandbox.stub(Model, 'getById')
     sandbox.stub(Model, 'update')
+
+    Db.participant = {
+      insert: sandbox.stub(),
+      update: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub()
+    }
+
     participantFixtures.forEach((participant, index) => {
-      Model.create.withArgs(participant).returns(index)
-      Model.getByName.withArgs(participant.name).returns(participant)
-      Model.getById.withArgs(index).returns(participant)
-      Model.update.withArgs(participant, true).returns(index)
+      participantMap.set(index, participant)
+      Db.participant.insert.withArgs({participant}).returns(index)
+      Model.create.withArgs({name: participant.name, currency: participant.currency}).returns((index))
+      Model.getByName.withArgs(participant.name).returns((participant))
+      Model.getById.withArgs(index).returns((participant))
+      Model.update.withArgs(participant, true).returns((index))
     })
-    Model.getAll.returns(participantFixtures)
+    Model.getAll.returns(Promise.resolve(participantFixtures))
     assert.pass('setup OK')
     assert.end()
   })
 
-  participantTest.test('create false participant', (assert) => {
+  await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = {name: 'fsp3'}
     Model.create.withArgs(falseParticipant).throws(new Error())
     try {
-      Model.create(falseParticipant)
+      await Service.create(falseParticipant)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -95,15 +98,14 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  participantTest.test('create participant', (assert) => {
+  await participantTest.test('create participant', async (assert) => {
     try {
-      assert.plan(participantFixtures.length)
-      participantFixtures.forEach((participant, index) => {
-        var result = Model.create(participant)
-        participantMap.set(result, participant)
+      for (let [index, participant] of participantMap) {
+        var result = await Service.create({ name: participant.name, currency: participant.currency })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.ok(Sinon.match(result, index), ` returns ${result}`)
-      })
+        assert.end()
+      }
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
       assert.fail()
@@ -111,10 +113,10 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  participantTest.test('get with empty name', (assert) => {
+  await participantTest.test('get with empty name', async (assert) => {
     Model.getByName.withArgs('').throws(new Error())
     try {
-      Model.getByName('')
+      Service.getByName('')
       assert.fail(' should throws with empty name ')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -122,11 +124,11 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  participantTest.test('getByName', (assert) => {
+  await participantTest.test('getByName', async (assert) => {
     try {
       assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(participant => {
-        var result = Model.getByName(participant.name)
+        var result = Service.getByName(participant.name)
         assert.equal(result.name, participant.name, ' names are equal')
         assert.equal(result.currency, participant.currency, ' currencies match')
         assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
@@ -140,9 +142,9 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  participantTest.test('getAll', (assert) => {
+  await participantTest.test('getAll', async (assert) => {
     try {
-      var result = Model.getAll()
+      var result = await Service.getAll()
       assert.deepEqual(result, participantFixtures)
       assert.end()
     } catch (err) {
@@ -152,10 +154,10 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  participantTest.test('getById', (assert) => {
+  await participantTest.test('getById', async (assert) => {
     try {
       for (let participantId of participantMap.keys()) {
-        let participant = Model.getById(participantId)
+        let participant = await Service.getById(participantId)
         assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId)))
       }
       assert.end()
@@ -166,10 +168,10 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  participantTest.test('update', (assert) => {
+  await participantTest.test('update', async (assert) => {
     try {
       for (let participantId of participantMap.keys()) {
-        let updatedId = Model.update(participantMap.get(participantId), true)
+        let updatedId = await Service.update(participantMap.get(participantId), true)
         assert.equal(updatedId, participantId)
       }
       assert.end()
