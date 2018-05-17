@@ -9,7 +9,7 @@ exports.create = async (transfer) => {
   try {
     return await Db.ilp.insert({
       transferId: transfer.transferId,
-      packet: transfer.ilpPacket,
+      packet: transfer.packet,
       condition: transfer.condition,
       fulfillment: transfer.fulfillment
     })
@@ -46,6 +46,14 @@ exports.update = async (ilp, payload) => {
   }
   try {
     return await Db.ilp.update({ilpId: ilp.ilpId}, Util.filterUndefined(fields))
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.destroyByTransferId = async (ilp) => {
+  try {
+    await Db.ilp.destroy({transferId: ilp.transferId})
   } catch (err) {
     throw new Error(err.message)
   }
