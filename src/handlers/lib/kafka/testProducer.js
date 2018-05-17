@@ -59,15 +59,22 @@ const messageProtocol = {
   pp: ''
 }
 
+// const topicConf = {
+//   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'trta'),
+//   key: 'producerTest',
+//   partition: 0,
+//   opaqueKey: 0
+// }
+
 const topicConf = {
-  topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
+  topicName: Utility.transformGeneralTopicName('transfer', 'transfer'),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
 }
 
 exports.testProducer = async () => {
-  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'TRANSFER')
   config.logger = Logger
   const producer = await Producer.produceMessage(messageProtocol, topicConf, config)
   return true

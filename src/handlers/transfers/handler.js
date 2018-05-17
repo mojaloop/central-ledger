@@ -158,12 +158,11 @@ const transfer = async (error, messages) => {
     } else {
       message = messages
     }
-
     Logger.info('TransferHandler::transfer')
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, TRANSFER))
-    const payload = message.value.content.payload
-
-
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+    await consumer.commitMessageSync(message)
+    await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+    return true
   } catch (error) {
     Logger.error(error)
   }
@@ -209,7 +208,19 @@ const createPrepareHandler = async (participantName) => {
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-
+const createTransferHandler = async (participantName) => {
+  try {
+    const transferHandler = {
+      command: transfer,
+      topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, TRANSFER),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), TRANSFER.toUpperCase())
+    }
+    transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
+    await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
+  } catch (e) {
+    throw e
+  }
+}
 
 /**
  * @method RegisterTransferHandler
