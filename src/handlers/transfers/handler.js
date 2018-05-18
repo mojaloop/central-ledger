@@ -200,29 +200,6 @@ const createPrepareHandler = async (participantName) => {
 }
 
 /**
- * @method CreateTransferHandler
- *
- * @async
- * Registers the handler for each participant topic created. Gets Kafka config from default.json
- *
- * @function Calls createHandler to register the handler against the Stream Processing API
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const createTransferHandler = async (participantName) => {
-  try {
-    const transferHandler = {
-      command: transfer,
-      topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, TRANSFER),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), TRANSFER.toUpperCase())
-    }
-    transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
-    await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
-  } catch (e) {
-    throw e
-  }
-}
-
-/**
  * @method RegisterTransferHandler
  *
  * @async
