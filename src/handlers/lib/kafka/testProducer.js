@@ -60,7 +60,7 @@ const messageProtocol = {
 }
 
 // const topicConf = {
-//   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'trta'),
+//   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
 //   key: 'producerTest',
 //   partition: 0,
 //   opaqueKey: 0
