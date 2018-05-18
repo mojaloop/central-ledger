@@ -30,19 +30,21 @@ const Db = require('../../../db')
 // const TransferState = require('../state')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-const saveTransferStateChange = (stateChange) => {
+const saveTransferStateChange = async (stateChange) => {
   Logger.debug('save transferStateChange' + stateChange.toString())
-  return Db.transferStateChange.insert(stateChange).catch(err => {
+  try {
+    return await Db.transferStateChange.insert(stateChange)
+  } catch (err) {
     throw err
-  })
+  }
 }
 
-const getByTransferId = (id) => {
-  return Db.transferStateChange.query(builder => {
-    return builder
-      .where({ transferId: id })
-      .select('transferStateChange.*')
-  })
+const getByTransferId = async (id) => {
+  try {
+    return await Db.transferStateChange.findOne({ transferId: id })
+  } catch (err) {
+    throw err
+  }
 }
 
 module.exports = {
