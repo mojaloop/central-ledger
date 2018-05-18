@@ -35,15 +35,6 @@ const Model = require('../../../../src/domain/participant/model')
 Test('Participant model', async (participantTest) => {
   let sandbox
 
-  // participantTest.beforeEach(t => {
-  //   t.end()
-  // })
-
-  // participantTest.afterEach(t => {
-  //   sandbox.restore()
-  //   t.end()
-  // })
-
   const participantFixtures = [
     {
       name: 'fsp1',

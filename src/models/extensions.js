@@ -32,13 +32,14 @@ const Util = require('../lib/util')
 
 exports.saveExtension = async (extension) => {
   try {
-    return await Db.extension.insert({
+    let ext = {
       transferId: extension.transferId,
       key: extension.key,
       value: extension.value,
       changedDate: extension.changedDate,
       changedBy: extension.changedBy
-    })
+    }
+    return await Db.extension.insert(ext)
   } catch (err) {
     throw new Error(err.message)
   }
