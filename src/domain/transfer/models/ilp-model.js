@@ -40,7 +40,7 @@ exports.getByTransferId = async (transferId) => {
 exports.update = async (ilp, payload) => {
   const fields = {
     transferId: ilp.transferId,
-    packet: payload.ilpPacket,
+    packet: payload.packet || payload.ilpPacket,
     condition: payload.condition,
     fulfillment: payload.fulfillment
   }
