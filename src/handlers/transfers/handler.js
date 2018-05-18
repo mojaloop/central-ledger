@@ -168,14 +168,6 @@ const transfer = async (error, messages) => {
   }
 }
 
-    // Add code
-    // - Request to persist to event dao
-    // - Persist to data store
-    // - persist to event DAO
-    // - Publish notification to payer
-    // - Publish notification to payyee
-
-
 /**
  * @method CreatePrepareHandler
  *
