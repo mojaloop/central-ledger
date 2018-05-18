@@ -31,20 +31,16 @@
 
 const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
 const Logger = require('@mojaloop/central-services-shared').Logger
-const getProducer = require('./producer').getProducer
 
 let p
 
 exports.produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     Logger.info('Producer::start::topic=' + topicConf.topicName)
-    p = getProducer
-    if (!p) {
-      p = new Producer(config)
-      Logger.info('Producer::connect::start')
-      await p.connect()
-      Logger.info('Producer::connect::end')
-    }
+    p = new Producer(config)
+    Logger.info('Producer::connect::start')
+    await p.connect()
+    Logger.info('Producer::connect::end')
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
     await p.sendMessage(messageProtocol, topicConf).then(results => {
       Logger.info(`Producer.sendMessage:: result:'${JSON.stringify(results)}'`)
@@ -55,13 +51,5 @@ exports.produceMessage = async (messageProtocol, topicConf, config) => {
     Logger.info(e)
     Logger.error(e)
     throw e
-  }
-}
-
-exports.getProducer = () => {
-  if (p) {
-    return p
-  } else {
-    return null
   }
 }

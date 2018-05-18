@@ -94,7 +94,7 @@ const prepare = async (error, messages) => {
         // notification of duplicate to go here
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-      }
+       }
     } else {
       Logger.info('TransferHandler::prepare::validationFailed')
       // need to determine what happens with existing transfer with a validation failure
