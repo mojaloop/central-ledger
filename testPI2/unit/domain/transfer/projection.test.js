@@ -114,10 +114,13 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('return object of results', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
+
       TransfersReadModel.saveTransfer.returns(P.resolve())
+
       extensionModel.saveExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
+
       const result = await TransfersProjection.saveTransferPrepared(payload)
       test.equal(result.isSaveTransferPrepared, true)
       test.deepEqual(result.transferRecord, transferRecord)
@@ -128,10 +131,28 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.deepEqual(result.extensionsRecordList, extensionsRecordList)
       test.end()
     })
+
+    preparedTest.test('throw error', async (test) => {
+      ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
+      ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
+
+      TransfersReadModel.saveTransfer.throws(new Error())
+
+      try {
+        const result = await TransfersProjection.saveTransferPrepared(payload)
+
+        test.fail('error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+
+    })
     preparedTest.end()
+
+
   })
-
-
 
   transfersProjectionTest.end()
 })

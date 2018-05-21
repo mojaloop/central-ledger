@@ -67,7 +67,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         }
       })
       for (let ext of extensionsRecordList) {
-        await extensionModel.saveExtension(ext)
+        await extensionModel.saveExtension(ext).catch(err => {
+          throw new Error(err.message)
+        })
       }
     }
 
