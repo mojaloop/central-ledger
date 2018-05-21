@@ -135,29 +135,33 @@ Test('Ilp model', async (transferStateTest) => {
     }
   })
 
-  // await transferStateTest.test('destroyTransferStates', async (assert) => {
-  //   Db.transferState.find({}).del().returns([])
-  //   try {
-  //     var result = await Model.destroyTransferStates()
-  //     assert.deepEqual(result, [])
-  //     assert.end()
-  //   } catch (err) {
-  //     Logger.error(`destroy all transfer states failed with error - ${err}`)
-  //     assert.fail(`destroy all transfer states failed with error - ${err}`)
-  //     assert.end()
-  //   }
-  // })
+  await transferStateTest.test('destroyTransferStates', async (assert) => {
+    Db.transferState.find.returns({
+      del: sandbox.stub().returns(1)
+    })
+    try {
+      var result = await Model.destroyTransferStates()
+      assert.deepEqual(result, 1)
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroy all transfer states failed with error - ${err}`)
+      assert.fail(`destroy all transfer states failed with error - ${err}`)
+      assert.end()
+    }
+  })
 
-  // await transferStateTest.test('destroyTransferStatesById', async (assert) => {
-  //   Db.transferState.findOne({ transferStateId: 1 }).del().returns([])
-  //   try {
-  //     var result = await Model.destroyTransferStatesById('1')
-  //     assert.deepEqual(result, [])
-  //     assert.end()
-  //   } catch (err) {
-  //     Logger.error(`destroy transfer state by transferStateId failed with error - ${err}`)
-  //     assert.fail(`destroy transfer states by transferStateId failed with error - ${err}`)
-  //     assert.end()
-  //   }
-  // })
+  await transferStateTest.test('destroyTransferStatesById', async (assert) => {
+    Db.transferState.findOne.withArgs({ transferStateId: '1' }).returns({
+      del: sandbox.stub().returns(1)
+    })
+    try {
+      var result = await Model.destroyTransferStatesById('1')
+      assert.deepEqual(result, 1)
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroy transfer state by transferStateId failed with error - ${err}`)
+      assert.fail(`destroy transfer states by transferStateId failed with error - ${err}`)
+      assert.end()
+    }
+  })
 })
