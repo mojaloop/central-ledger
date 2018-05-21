@@ -67,6 +67,7 @@ const REJECT = 'reject'
 const prepare = async (error, messages) => {
   if (error) {
     Logger.error(error)
+    throw error
   }
   let message = {}
   try {
@@ -116,6 +117,7 @@ const prepare = async (error, messages) => {
     }
   } catch (error) {
     Logger.error(error)
+    throw error
   }
 }
 
@@ -147,6 +149,7 @@ const createPrepareHandler = async (participantName) => {
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
   } catch (e) {
     Logger.error(e)
+    throw e
   }
 }
 
@@ -240,5 +243,6 @@ module.exports = {
   registerPrepareHandlers,
   registerFulfillHandler,
   registerRejectHandler,
-  registerAllHandlers
+  registerAllHandlers,
+  prepare
 }
