@@ -65,11 +65,20 @@ const transferRecord = {
   expirationDate: new Date(payload.expiration)
 }
 
+const stateReason = 'reasonOne'
 
 const transferStateRecord = {
   transferId: payload.transferId,
   transferStateId: TransferState.RECEIVED,
   reason: null,
+  changedDate: new Date()
+}
+
+const newTransferStateRecord = {
+  transferStateChangeId: null,
+  transferId: payload.transferId,
+  transferStateId: TransferState.ABORTED,
+  reason: stateReason,
   changedDate: new Date()
 }
 
@@ -111,6 +120,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
   })
 
   transfersProjectionTest.test('projection saveTransferPrepared should', preparedTest => {
+
     //Positive tests : saveTransferPrepared
     preparedTest.test('return object of results', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
@@ -190,7 +200,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       TransfersReadModel.saveTransfer.returns(P.resolve())
       extensionModel.saveExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
-      transferStateChangeModel.saveTransferStateChange.throws(new Error())
+      transferStateChangeModel.saveTransferStateChange.throws(new Error)
       try {
         await TransfersProjection.saveTransferPrepared(payload)
         test.fail('Error not thrown')
@@ -201,11 +211,30 @@ Test('Transfers-Projection', transfersProjectionTest => {
       }
     })
 
-    // Positive tests : saveTransferRejected
-
-
-
     preparedTest.end()
+  })
+
+  transfersProjectionTest.test('projection saveTransferRejected should', rejectTest => {
+    rejectTest.test('return object of results', async (test) => {
+      transferStateChangeModel.getByTransferId.withArgs(payload.transferId).returns(P.resolve([]))
+      transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
+      let {alreadyRejected, newTransferStateChange} = await TransfersProjection.saveTransferRejected(stateReason, payload.transferId)
+      newTransferStateRecord.changedDate = newTransferStateChange.changedDate
+      test.equal(alreadyRejected, false)
+      test.deepEqual(newTransferStateChange, newTransferStateRecord)
+      test.end()
+    })
+
+    rejectTest.test('return object of results', async (test) => {
+      transferStateChangeModel.getByTransferId.withArgs(payload.transferId).returns(P.resolve([newTransferStateRecord]))
+      let {alreadyRejected, foundTransferStateChange} = await TransfersProjection.saveTransferRejected(stateReason, payload.transferId)
+      newTransferStateRecord.changedDate = foundTransferStateChange.changedDate
+      test.equal(alreadyRejected, true)
+      test.deepEqual(foundTransferStateChange, newTransferStateRecord)
+      test.end()
+    })
+
+    rejectTest.end()
   })
 
   transfersProjectionTest.end()

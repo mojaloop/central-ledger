@@ -99,14 +99,16 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
 }
 
 const saveTransferRejected = async (stateReason, transferId) => {
+
   try {
     const transferStateChange = await transferStateChangeModel.getByTransferId(transferId).catch(err => {
       throw new Error(err.message)
     })
+
     let existingAbort = false
     let foundTransferStateChange
     for (let transferState of transferStateChange){
-      if (transferState.transferStateId !== TransferState.ABORTED) {
+      if (transferState.transferStateId === TransferState.ABORTED) {
         existingAbort = true
         foundTransferStateChange = transferState
         break
