@@ -3,7 +3,7 @@
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const P = require('bluebird')
-const transferHandler = require('../../../../src/handlers/transfers/handler')
+const allTransferHandlers = require('../../../../src/handlers/transfers/handler')
 const Kafka = require('../../../../src/handlers/lib/kafka')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferQueries = require('../../../../src/domain/transfer/queries')
@@ -12,6 +12,7 @@ const Utility = require('../../../../src/handlers/lib/utility')
 const Uuid = require('uuid4')
 const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Consumer = require('../../../../src/handlers/lib/kafka/consumer')
+const DAO = require('../../../../src/handlers/lib/dao')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -73,17 +74,38 @@ const messages = [
 
 const topicName = 'topic-test'
 
-const config = {}
+const config = {
+  options: {
+    'mode': 2,
+    'batchSize': 1,
+    'pollFrequency': 10,
+    'recursiveTimeout': 100,
+    'messageCharset': 'utf8',
+    'messageAsJSON': true,
+    'sync': true,
+    'consumeTimeout': 1000
+  },
+  rdkafkaConf: {
+    'client.id': 'kafka-test',
+    'debug': 'all',
+    'group.id': 'central-ledger-kafka',
+    'metadata.broker.list': 'localhost:9092',
+    'enable.auto.commit': false
+  }
+}
 
 const command = () => {}
 
 const error = () => {throw new Error()}
+
+const participants = ['testName1', 'testName2']
 
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
+    sandbox.stub(DAO)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'connect').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'consume').returns(P.resolve())
@@ -109,7 +131,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({validationPassed: true, reasons: []})
       TransferQueries.getById.returns(P.resolve(null))
       TransferHandler.prepare.returns(P.resolve(true))
-      const result = await transferHandler.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
     })
@@ -119,7 +141,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({validationPassed: true, reasons: []})
       TransferQueries.getById.returns(P.resolve(null))
       TransferHandler.prepare.returns(P.resolve(true))
-      const result = await transferHandler.prepare(null, messages[0])
+      const result = await allTransferHandlers.prepare(null, messages[0])
       test.equal(result, true)
       test.end()
     })
@@ -129,7 +151,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({validationPassed: true, reasons: []})
       TransferQueries.getById.returns(P.resolve({}))
       TransferHandler.prepare.returns(P.resolve(true))
-      const result = await transferHandler.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
     })
@@ -139,7 +161,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({validationPassed: false, reasons: []})
       TransferQueries.getById.returns(P.resolve(null))
       TransferHandler.prepare.returns(P.resolve(true))
-      const result = await transferHandler.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
     })
@@ -149,7 +171,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({validationPassed: false, reasons: []})
       TransferQueries.getById.returns(P.resolve({}))
       TransferHandler.reject.returns(P.resolve(true))
-      const result = await transferHandler.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
     })
@@ -160,7 +182,7 @@ Test('Transfer handler', transferHandlerTest => {
         Validator.validateByName.returns({validationPassed: true, reasons: []})
         TransferQueries.getById.returns(P.resolve(null))
         TransferHandler.prepare.throws(new Error)
-        await transferHandler.prepare(null, messages)
+        await allTransferHandlers.prepare(null, messages)
         test.fail('No Error Thrown')
         test.end()
       } catch (e) {
@@ -171,7 +193,7 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.test('throw an error when an error is thrown from Kafka', async (test) => {
       try {
-        await transferHandler.prepare(error, null)
+        await allTransferHandlers.prepare(error, null)
         test.fail('No Error Thrown')
         test.end()
       } catch (e) {
@@ -183,10 +205,131 @@ Test('Transfer handler', transferHandlerTest => {
     prepareTest.end()
   })
 
-  transferHandlerTest.test('createPrepareHandler should', createPrepareHandlerTest => {
-    createPrepareHandlerTest.test('register a consumer on Kafka', async (test) => {
+  transferHandlerTest.test('transfer should', transferTest => {
 
+    transferTest.test('produce a message to the notifications topic', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      const result = await allTransferHandlers.transfer(null, messages)
+      test.equal(result, true)
+      test.end()
     })
+
+    transferTest.test('create notification when single message sent', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      const result = await allTransferHandlers.transfer(null, messages[0])
+      test.equal(result, true)
+      test.end()
+    })
+
+    transferTest.test('throw an error when an error is by transfer', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.throws(new Error)
+        await allTransferHandlers.transfer(null, messages)
+        test.fail('No Error Thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
+
+    transferTest.test('throw an error when an error is thrown from Kafka', async (test) => {
+      try {
+        await allTransferHandlers.transfer(error, null)
+        test.fail('No Error Thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
+
+    transferTest.end()
+  })
+
+  transferHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
+
+    registerHandlersTest.test('register all consumers on Kafka', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      DAO.retrieveAllParticipants.returns(P.resolve(participants))
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      const result = await allTransferHandlers.registerAllHandlers()
+      test.equal(result, true)
+      test.end()
+    })
+
+    registerHandlersTest.test('register a consumer on Kafka', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+      const result = await allTransferHandlers.registerAllHandlers()
+      test.equal(result, true)
+      test.end()
+    })
+
+    registerHandlersTest.test('throws error retrieveAllParticipants', async (test) => {
+      try {
+        Kafka.Consumer.createHandler(topicName, config, command)
+        await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.throws(new Error)
+        await allTransferHandlers.registerAllHandlers()
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    registerHandlersTest.test('throws error registerFulfillHandler', async (test) => {
+      try {
+        Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.throws(new Error)
+        await allTransferHandlers.registerFulfillHandler()
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    registerHandlersTest.test('throws error registerRejectHandler', async (test) => {
+      try {
+        Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.throws(new Error)
+        await allTransferHandlers.registerRejectHandler()
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    registerHandlersTest.test('throws error registerTransferHandler', async (test) => {
+      try {
+        Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.throws(new Error)
+        await allTransferHandlers.registerTransferHandler()
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    registerHandlersTest.end()
   })
 
   transferHandlerTest.end()

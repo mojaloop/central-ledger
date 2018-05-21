@@ -67,8 +67,8 @@ const REJECT = 'reject'
  */
 const prepare = async (error, messages) => {
   if (error) {
-    Logger.error(error)
-    throw error
+    //Logger.error(error)
+    throw new Error()
   }
   let message = {}
   try {
@@ -142,16 +142,12 @@ const reject = async () => {
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
  *
- *  ?? @function Validator.validateByName to validate the payload of the message
- *  ?? @function TransferQueries.getById checks if the transfer currently exists
- *  ?? @function TransferHandler.prepare creates new entries in transfer tables for successful prepare transfer
- *  ?? @function TransferHandler.reject rejects an existing transfer that has been retried and fails validation
- *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const transfer = async (error, messages) => {
   if (error) {
-    Logger.error(error)
+    //Logger.error(error)
+    throw new Error()
   }
   let message = {}
   try {
@@ -167,6 +163,7 @@ const transfer = async (error, messages) => {
     return true
   } catch (error) {
     Logger.error(error)
+    throw error
   }
 }
 
@@ -188,6 +185,7 @@ const createPrepareHandler = async (participantName) => {
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+    return true
   } catch (e) {
     Logger.error(e)
     throw e
@@ -214,6 +212,7 @@ const registerTransferHandler = async () => {
     return true
   } catch (e) {
     Logger.error(e)
+    throw e
   }
 }
 
@@ -237,6 +236,7 @@ const registerFulfillHandler = async () => {
     return true
   } catch (e) {
     Logger.error(e)
+    throw e
   }
 }
 
@@ -260,6 +260,7 @@ const registerRejectHandler = async () => {
     return true
   } catch (e) {
     Logger.error(e)
+    throw e
   }
 }
 
@@ -310,5 +311,6 @@ module.exports = {
   registerFulfillHandler,
   registerRejectHandler,
   registerAllHandlers,
-  prepare
+  prepare,
+  transfer
 }

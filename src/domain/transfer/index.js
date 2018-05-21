@@ -50,12 +50,12 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
 }
 
 const reject = async (stateReason, transferId) => {
-  const {alreadyRejected, result} = await Commands.reject(stateReason, transferId)
+  const {alreadyRejected, transferStateChange} = await Commands.reject(stateReason, transferId)
   // const t = Translator.toTransfer(result)
   if (!alreadyRejected) {
-    Events.emitTransferRejected(result)
+    Events.emitTransferRejected(transferStateChange)
   }
-  return {alreadyRejected, transfer: result}
+  return {alreadyRejected, transfer: transferStateChange}
 }
 
 const expire = (id) => {

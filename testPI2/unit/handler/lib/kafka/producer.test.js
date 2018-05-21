@@ -5,8 +5,6 @@ const Test = require('tapes')(require('tape'))
 const KafkaProducer = require('@mojaloop/central-services-shared').Kafka.Producer
 const Producer = require('../../../../../src/handlers/lib/kafka/producer')
 const P = require('bluebird')
-const KafkaStubs = require('./KafkaStub')
-const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 
 const transfer = {
@@ -91,9 +89,7 @@ const config = {
 
 Test('Producer', producerTest => {
   let sandbox
-  let ProducerStub
   let config = {}
-  let prod
 
   producerTest.beforeEach(t => {
     sandbox = Sinon.sandbox.create()
@@ -101,8 +97,6 @@ Test('Producer', producerTest => {
     sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'disconnect').returns(P.resolve())
-    // ProducerStub = Sinon.createStubInstance(KafkaProducer);
-    // prod = new ProducerStub(config)
     t.end()
   })
 
@@ -113,8 +107,6 @@ Test('Producer', producerTest => {
 
   producerTest.test('produceMessage should', produceMessageTest => {
     produceMessageTest.test('return true', async test => {
-      //KafkaProducer.connect.returns(P.resolve())
-      //KafkaProducer.sendMessage.returns(P.resolve())
       const result = await Producer.produceMessage(messageProtocol, topicConf, config)
       test.equal(result, true)
       await Producer.disconnect()
