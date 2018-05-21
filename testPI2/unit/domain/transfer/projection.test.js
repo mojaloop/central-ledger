@@ -111,12 +111,12 @@ Test('Transfers-Projection', transfersProjectionTest => {
   })
 
   transfersProjectionTest.test('projection saveTransferPrepared should', preparedTest => {
+    //Positive tests : saveTransferPrepared
     preparedTest.test('return object of results', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
 
       TransfersReadModel.saveTransfer.returns(P.resolve())
-
       extensionModel.saveExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
@@ -132,55 +132,79 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.end()
     })
 
-    preparedTest.test('throw error', async (test) => {
+    // Negative tests : saveTransferPrepared
+    preparedTest.test('save transfer throws error', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-
+      TransfersReadModel.saveTransfer.throws(new Error())
+      extensionModel.saveExtension.returns(P.resolve())
+      ilpModel.saveIlp.returns(P.resolve())
+      transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
-        TransfersModel.saveTransfer.throws(err)
-        test.fail('Error1 not thrown')
-      } catch (e) {
-        test.pass('Error1 thrown')
-      }
-
-      try {
-        extensionModel.saveExtension.throws(err)
-        test.fail('Error2 not thrown')
-      } catch (e) {
-        test.pass('Error2 thrown')
-      }
-
-      try {
-        ilpModel.saveIlp.throws(err)
-        test.fail('Error3 not thrown')
-      } catch (e){
-        test.pass('Error3 thrown')
-      }
-
-      try {
-        transferStateChangeModel.saveTransferStateChange.throws(err)
-        test.fail('Error4 not thrown')
-      }  catch (e) {
-       test.pass('Error4 thrown')
-      }
-
-      try{
-        transferStateChangeModel.saveTransferStateChange.throws(err)
-        test.fail('Error5 not thrown')
-      } catch (e) {
-        test.pass('Error5 thrown')
-      }
-
-      try {
-        const result = await TransfersProjection.saveTransferPrepared(payload).throws(err)
-        test.fail('Error6 not thrown')
+        await TransfersProjection.saveTransferPrepared(payload)
+        test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.pass('Error6 thrown')
+        test.pass('Error thrown')
         test.end()
       }
-
     })
+
+    preparedTest.test('save extension throws error', async (test) => {
+      ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
+      ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
+      TransfersReadModel.saveTransfer.returns(P.resolve())
+      extensionModel.saveExtension.throws(new Error())
+      ilpModel.saveIlp.returns(P.resolve())
+      transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
+      try {
+        await TransfersProjection.saveTransferPrepared(payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    preparedTest.test('save ilp throws error', async (test) => {
+      ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
+      ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
+      TransfersReadModel.saveTransfer.returns(P.resolve())
+      extensionModel.saveExtension.returns(P.resolve())
+      ilpModel.saveIlp.throws(new Error())
+      transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
+      try {
+        await TransfersProjection.saveTransferPrepared(payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    preparedTest.test('save TransferStateChange throws error', async (test) => {
+      ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
+      ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
+      TransfersReadModel.saveTransfer.returns(P.resolve())
+      extensionModel.saveExtension.returns(P.resolve())
+      ilpModel.saveIlp.returns(P.resolve())
+      transferStateChangeModel.saveTransferStateChange.throws(new Error())
+      try {
+        await TransfersProjection.saveTransferPrepared(payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    // Positive tests : saveTransferRejected
+
+
+
     preparedTest.end()
   })
 
