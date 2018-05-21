@@ -110,7 +110,7 @@ const STATE = {
  * @property {string} PRODUCER - This ENUM is for the PRODUCER
  * @property {string} CONSUMER - This ENUM is for the CONSUMER
  */
-exports.ENUMS = {
+const ENUMS = {
   PRODUCER,
   CONSUMER,
   NOTIFICATION,
@@ -424,3 +424,4 @@ exports.createParticipantTopicConf = createParticipantTopicConf
 exports.createGeneralTopicConf = createGeneralTopicConf
 exports.produceParticipantMessage = produceParticipantMessage
 exports.produceGeneralMessage = produceGeneralMessage
+exports.ENUMS = ENUMS

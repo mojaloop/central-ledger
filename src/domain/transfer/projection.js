@@ -67,7 +67,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         }
       })
       for (let ext of extensionsRecordList) {
-        await extensionModel.saveExtension(ext)
+        await extensionModel.saveExtension(ext).catch(err => {
+          throw new Error(err.message)
+        })
       }
     }
 
@@ -91,12 +93,16 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
     fulfillment: payload.fulfillment,
     executedDate: new Date(timestamp)
   }
-  return await TransfersModel.updateTransfer(payload.id, fields)
+  return await TransfersModel.updateTransfer(payload.id, fields).catch(err => {
+    throw new Error(err.message)
+  })
 }
 
 const saveTransferRejected = async (stateReason, transferId) => {
   try {
-    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
+    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId).catch(err => {
+      throw new Error(err.message)
+    })
     let existingAbort = false
     let foundTransferStateChange
     for (let transferState of transferStateChange){
