@@ -22,6 +22,16 @@
  --------------
  ******/
 
+/* transfer model
+    transferId
+    payeeParticipantId
+    payerParticipantId
+    amount
+    currencyId
+    expirationDate
+    transferSettlementBatchId: null
+*/
+
 'use strict'
 
 const ParticipantPreparationModule = require('./participant')
@@ -29,11 +39,16 @@ const Model = require('../../../src/domain/transfer/index')
 
 exports.prepareData = async () => {
   try {
-    let participantPayerResult = await ParticipantPreparationModule.prepareData()
-    let participantPayeeResult = await ParticipantPreparationModule.prepareData()
+    let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
+    let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
 
     return await Model.create({
-      // put transfer columns here
+      payeeParticipantId: participantPayeeResult.participantId,
+      payerParticipantId: participantPayerResult.participantId,
+      amount: 100,
+      currencyId: 'USD',
+      expirationDate: null,
+      transferSettlementBatchId: null
     })
   } catch (err) {
     throw new Error(err.message)
@@ -42,8 +57,8 @@ exports.prepareData = async () => {
 
 exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
-    let participantPayerResult = await ParticipantPreparationModule.deletePreparedData(payerName)
-    let participantPayeeResult = await ParticipantPreparationModule.deletePreparedData(payeeName)
+    let participantPayerResult = await ParticipantPreparationModule.deletePreparedData('payer')
+    let participantPayeeResult = await ParticipantPreparationModule.deletePreparedData('payee')
 
     return Model.destroy({
       transferId: transferId

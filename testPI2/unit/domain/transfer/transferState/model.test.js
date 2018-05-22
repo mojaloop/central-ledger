@@ -33,7 +33,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // const Config = require('../../../../src/lib/config')
 const Model = require('../../../../../src/domain/transfer/models/transferStates')
 
-Test('Ilp model', async (transferStateTest) => {
+Test('transferState model', async (transferStateTest) => {
   let sandbox
 
   const transferStateTestValues = [

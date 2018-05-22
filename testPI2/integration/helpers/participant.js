@@ -32,9 +32,16 @@ const testParticipant = {
   createdDate: new Date()
 }
 
-exports.prepareData = async () => {
+exports.prepareData = async (name) => {
   try {
-    return await Model.create(testParticipant)
+    let participantId = await Model.create(Object.assign(
+      {},
+      testParticipant,
+      {
+        name: name || testParticipant.name
+      }
+    ))
+    return await Model.getById(participantId)
   } catch (err) {
     throw new Error(err.message)
   }

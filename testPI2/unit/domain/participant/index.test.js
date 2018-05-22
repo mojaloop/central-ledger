@@ -23,7 +23,7 @@
  --------------
  ******/
 
-// TODO 
+// TODO
 
 'use strict'
 
@@ -76,7 +76,7 @@ Test('Participant service', async (participantTest) => {
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participant)
       Db.participant.insert.withArgs({participant}).returns(index)
-//      Model.create({ name: payload.name, currency: payload.currency })
+      // Model.create({ name: payload.name, currency: payload.currency })
       Model.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
       Model.getByName.withArgs(participant.name).returns((participant))
       Model.getById.withArgs(index).returns((participant))
