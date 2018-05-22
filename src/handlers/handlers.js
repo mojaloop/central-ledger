@@ -52,11 +52,7 @@ const registerAllHandlers = async (request, h) => {
       Logger.info(JSON.stringify(handlerObject.handler))
       await handlerObject.handler.registerAllHandlers()
     }
-    if (h) {
-      return h.response(true)
-    } else {
-      return true
-    }
+    return true
   } catch (e) {
     Logger.error(e)
     throw e
