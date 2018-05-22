@@ -59,6 +59,7 @@ const registerAllHandlers = async (request, h) => {
     }
   } catch (e) {
     Logger.error(e)
+    throw e
   }
 }
 
