@@ -122,8 +122,18 @@ Test('Commands-Index', commandIndextTest => {
       }
     })
 
+    preparedTest.test('save transfer prepared throws error', async (test) => {
+      TransfersProjection.saveTransferPrepared.throws(new Error)
+      try {
+        await CommandsIndex.prepare(payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
     preparedTest.end()
   })
-
   commandIndextTest.end()
 })
