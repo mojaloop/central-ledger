@@ -234,6 +234,31 @@ Test('Transfers-Projection', transfersProjectionTest => {
     })
 
     //Add negative tests
+    rejectTest.test('save saveTransferRejected throws error', async (test) => {
+      transferStateChangeModel.getByTransferId.withArgs(payload.transferId).throws(new Error)
+      transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
+      try {
+        await TransfersProjection.saveTransferRejected(stateReason, payload.transferId)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    rejectTest.test('save saveTransferRejected throws error', async (test) => {
+      transferStateChangeModel.getByTransferId.withArgs(payload.transferId).returns(P.resolve([]))
+      transferStateChangeModel.saveTransferStateChange.throws(new Error)
+      try {
+        await TransfersProjection.saveTransferRejected(stateReason, payload.transferId)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
 
     rejectTest.end()
   })
