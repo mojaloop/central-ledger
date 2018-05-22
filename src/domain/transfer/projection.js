@@ -67,19 +67,13 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         }
       })
       for (let ext of extensionsRecordList) {
-        await extensionModel.saveExtension(ext).catch(err => {
-          throw new Error(err.message)
-        })
+        await extensionModel.saveExtension(ext)
       }
     }
 
-    await ilpModel.saveIlp(ilpRecord).catch(err => {
-      throw new Error(err.message)
-    })
+    await ilpModel.saveIlp(ilpRecord)
 
-    await transferStateChangeModel.saveTransferStateChange(transferStateRecord).catch(err => {
-      throw new Error(err.message)
-    })
+    await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
 
     return {isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList}
   } catch (e) {
@@ -93,36 +87,34 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
     fulfillment: payload.fulfillment,
     executedDate: new Date(timestamp)
   }
-  return await TransfersModel.updateTransfer(payload.id, fields).catch(err => {
-    throw new Error(err.message)
-  })
+  return await TransfersModel.updateTransfer(payload.id, fields)
 }
 
 const saveTransferRejected = async (stateReason, transferId) => {
+
   try {
-    const existingTransferStateChange = await transferStateChangeModel.getByTransferId(transferId).catch(err => {
-      throw new Error(err.message)
-    })
+    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
+
     let existingAbort = false
-    let transferStateChange
-    for (let transferState of existingTransferStateChange) {
+    let foundTransferStateChange
+    for (let transferState of transferStateChange){
       if (transferState.transferStateId === TransferState.ABORTED) {
         existingAbort = true
-        transferStateChange = transferState
+        foundTransferStateChange = transferState
         break
       }
     }
-    if (!existingAbort) {
-      transferStateChange = {}
-      transferStateChange.transferStateChangeId = null
-      transferStateChange.transferId = transferId
-      transferStateChange.reason = stateReason
-      transferStateChange.changedDate = new Date()
-      transferStateChange.transferStateId = TransferState.ABORTED
-      await transferStateChangeModel.saveTransferStateChange(transferStateChange)
-      return {alreadyRejected: false, transferStateChange}
+    if(!existingAbort) {
+      const newTransferStateChange = {}
+      newTransferStateChange.transferStateChangeId = null
+      newTransferStateChange.transferId = transferId
+      newTransferStateChange.reason = stateReason
+      newTransferStateChange.changedDate = new Date()
+      newTransferStateChange.transferStateId = TransferState.ABORTED
+      await transferStateChangeModel.saveTransferStateChange(newTransferStateChange)
+      return {alreadyRejected: false, newTransferStateChange}
     } else {
-      return {alreadyRejected: true, transferStateChange}
+      return {alreadyRejected: true, foundTransferStateChange}
     }
   } catch (e) {
     throw e
