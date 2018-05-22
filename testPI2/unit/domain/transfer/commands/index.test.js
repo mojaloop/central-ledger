@@ -156,6 +156,18 @@ Test('Commands-Index', commandIndextTest => {
       test.deepEqual(response, rejectResponse)
       test.end()
     })
+
+    rejectTest.test('reject save transfer to the database throws an error', async (test) => {
+      await TransfersProjection.saveTransferRejected.throws(new Error)
+      try {
+        await CommandsIndex.reject(stateReason, payload.transferId)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
     rejectTest.end()
   })
   commandIndextTest.end()

@@ -42,7 +42,11 @@ const fulfill = async (fulfillment) => {
 }
 
 const reject = async (stateReason, transferId) => {
-  return await Projection.saveTransferRejected(stateReason, transferId)
+  try {
+    return await Projection.saveTransferRejected(stateReason, transferId)
+  } catch (error) {
+    throw error
+  }
 }
 
 const settle = ({id, settlement_id}) => {
