@@ -107,6 +107,7 @@ const prepareResponse = {
   transferStateRecord,
   extensionsRecordList
 }
+
 Test('Commands-Index', commandIndextTest => {
   let sandbox
 
@@ -125,7 +126,7 @@ Test('Commands-Index', commandIndextTest => {
 
     preparedTest.test('persist the payload to the database', async (test) => {
       try {
-        TransfersProjection.saveTransferPrepared.returns(P.resolve(prepareResponse))
+        await TransfersProjection.saveTransferPrepared.returns(P.resolve(prepareResponse))
         const response = await CommandsIndex.prepare(payload)
         test.deepEqual(response, prepareResponse)
         test.end()
@@ -136,7 +137,7 @@ Test('Commands-Index', commandIndextTest => {
     })
 
     preparedTest.test('save transfer prepared throws error', async (test) => {
-      TransfersProjection.saveTransferPrepared.throws(new Error)
+      await TransfersProjection.saveTransferPrepared.throws(new Error)
       try {
         await CommandsIndex.prepare(payload)
         test.fail('Error not thrown')
