@@ -50,9 +50,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     // TODO: Move inserts into a Transaction
 
     // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
-    await TransfersModel.saveTransfer(transferRecord).catch(err => {
-      throw new Error(err.message)
-    })
+    await TransfersModel.saveTransfer(transferRecord)
 
     var extensionsRecordList = []
 
@@ -67,19 +65,13 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         }
       })
       for (let ext of extensionsRecordList) {
-        await extensionModel.saveExtension(ext).catch(err => {
-          throw new Error(err.message)
-        })
+        await extensionModel.saveExtension(ext)
       }
     }
 
-    await ilpModel.saveIlp(ilpRecord).catch(err => {
-      throw new Error(err.message)
-    })
+    await ilpModel.saveIlp(ilpRecord)
 
-    await transferStateChangeModel.saveTransferStateChange(transferStateRecord).catch(err => {
-      throw new Error(err.message)
-    })
+    await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
 
     return {isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList}
   } catch (e) {
@@ -93,17 +85,13 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
     fulfillment: payload.fulfillment,
     executedDate: new Date(timestamp)
   }
-  return await TransfersModel.updateTransfer(payload.id, fields).catch(err => {
-    throw new Error(err.message)
-  })
+  return await TransfersModel.updateTransfer(payload.id, fields)
 }
 
 const saveTransferRejected = async (stateReason, transferId) => {
 
   try {
-    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId).catch(err => {
-      throw new Error(err.message)
-    })
+    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
 
     let existingAbort = false
     let foundTransferStateChange
