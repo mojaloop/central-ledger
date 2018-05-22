@@ -32,7 +32,6 @@
 'use strict'
 
 const Config = require('../../lib/config')
-const UrlParser = require('../../lib/urlparser')
 const Mustache = require('mustache')
 const KafkaConfig = Config.KAFKA_CONFIG
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -162,45 +161,6 @@ const generalTopicTemplate = (functionality, action) => {
 }
 
 /**
- * @method GetParticipantName
- *
- * @param {string} accountUri - the accountUri
- *
- * Parses the accountUri into a participant name from the uri string
- *
- * @returns {string} - Returns participant name, throws error if failure occurs
- */
-const getParticipantName = (accountUri) => {
-  try {
-    return UrlParser.nameFromAccountUri(accountUri)
-  } catch (e) {
-    Logger.error(e)
-    throw e
-  }
-}
-
-/**
- * @method GetTopicNameFromURI
- *
- * @param {object} transfer - the transfer object used to get the accountUri from
- * @param {string} functionality - the functionality flow. Example: 'transfer'
- * @param {string} action - the action that applies to the flow. Example: 'prepare'
- *
- * Parses the accountUri into a participant name from the uri string
- *
- * @returns {string} - Returns participant name, throws error if failure occurs
- */
-const getTopicNameFromURI = (transfer, functionality, action) => {
-  try {
-    const participantName = getParticipantName(transfer.debits[0].account)
-    return participantTopicTemplate(participantName, functionality, action)
-  } catch (e) {
-    Logger.error(e)
-    throw e
-  }
-}
-
-/**
  * @method TransformGeneralTopicName
  *
  * @param {string} functionality - the functionality flow. Example: 'transfer'
@@ -291,7 +251,7 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => 
  *
  * @param {object} payload - The payload of the api request
  * @param {string} metadataType - the action flow. Example: 'prepare'
- * @param {object} state - the tate of the message being passed.
+ * @param {object} state - the state of the message being passed.
  * Example:
  * SUCCESS: {
  *   status: 'success',
@@ -414,7 +374,6 @@ const produceParticipantMessage = async (participantName, functionality, action,
     getKafkaConfig(ENUMS.PRODUCER, functionality.toUpperCase(), action.toUpperCase()))
 }
 
-exports.getTopicNameFromURI = getTopicNameFromURI
 exports.transformAccountToTopicName = transformAccountToTopicName
 exports.transformGeneralTopicName = transformGeneralTopicName
 exports.getKafkaConfig = getKafkaConfig

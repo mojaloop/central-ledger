@@ -23,7 +23,7 @@ const participantsList = [
   }
 ]
 
-Test('Transfer handler', daoTest => {
+Test('DAO', daoTest => {
   let sandbox
 
   daoTest.beforeEach(test => {
