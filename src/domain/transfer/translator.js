@@ -17,7 +17,7 @@ const transferProperties = [
 
 const formatAmount = (asset) => Util.mergeAndOmitNil(asset, {
   amount: Util.formatAmount(asset.amount),
-  currency: Util.omitNil(asset.currency)
+  currency: asset.currency
 })
 
 const formatExtensionKeyValue = (asset) => Util.mergeAndOmitNil(asset, {
@@ -43,9 +43,9 @@ const fromTransferAggregate = (t) => {
     amount: formatAmount(t.amount),
     transferState: Util.omitNil(t.transferState),
     completedTimestamp: Util.omitNil(t.completedTimestamp),
-    ilpPacket: Util.omitNil(t.ilpPacket),
-    fulfillment: Util.omitNil(t.fulfillment),
-    condition: Util.omitNil(t.condition),
+    ilpPacket: t.ilpPacket,
+    fulfillment: t.fulfillment,
+    condition: t.condition,
     expiration: Util.omitNil(t.expirationDate),
     extensionList: formatExtensionList(t.extensionList)
   })
@@ -81,7 +81,7 @@ const fromSaveTransferPrepared = (t) => fromTransferAggregate({
   },
   transferStatus: t.transferStateRecord.transferStateId,
   completedTimestamp: t.transferStateRecord.changedDate,
-  ilpPacket: t.ilpRecord.ilpPacket,
+  ilpPacket: t.ilpRecord.ilpPacket || t.ilpRecord.packet,
   fulfillment: t.ilpRecord.fulfillment,
   condition: t.ilpRecord.condition,
   expiration: t.transferRecord.expirationDate,

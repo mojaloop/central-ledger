@@ -63,7 +63,7 @@ Test('Transfer service', async (transferTest) => {
       amount: 100,
       currency: 'USD'
     },
-    expirationDate: new Date(),
+    expirationDate: Date.now(),
     ilpPacket: 'abc',
     condition: 'efd',
     fullfilment: null
@@ -71,10 +71,10 @@ Test('Transfer service', async (transferTest) => {
 
   const transferRecord = {
     transferId: payload.transferId,
-    payeeParticipantId: 1,
-    payerParticipantId: 2,
+    payeeFsp: 1,
+    payerFsp: 2,
     amount: payload.amount.amount,
-    currencyId: payload.amount.currency,
+    currency: payload.amount.currency,
     expirationDate: new Date(payload.expiration)
   }
 
@@ -94,7 +94,7 @@ Test('Transfer service', async (transferTest) => {
 
   const extensionsRecordList = []
 
-  const transferResult = {
+  const transferPrepareResult = {
     isSaveTransferPrepared: true,
     transferRecord,
     ilpRecord,
@@ -102,11 +102,9 @@ Test('Transfer service', async (transferTest) => {
     extensionsRecordList
   }
 
-  let participantMap = new Map()
-
   await transferTest.test('setup', async (assert) => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(Commands, 'prepare')
+    sandbox.stub(Commands, 'prepare').withArgs(payload, null, null).returns(transferPrepareResult)
     sandbox.stub(transferQueries, 'getById')
     sandbox.stub(transferQueries, 'getAll')
 
@@ -124,25 +122,21 @@ Test('Transfer service', async (transferTest) => {
     assert.end()
   })
 
-  await participantTest.test('create false participant', async (assert) => {
-    const falseParticipant = {name: 'fsp3'}
-    Model.create.withArgs(falseParticipant).throws(new Error())
-    try {
-      await Service.create(falseParticipant)
-      assert.fail(' should throw')
-    } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
-    }
-    assert.end()
-  })
+  // await transferTest.test('create false participant', async (assert) => {
+  //   Model.create.withArgs(falseParticipant).throws(new Error())
+  //   try {
+  //     await Service.create(falseParticipant)
+  //     assert.fail(' should throw')
+  //   } catch (err) {
+  //     assert.assert(err instanceof Error, ` throws ${err} `)
+  //   }
+  //   assert.end()
+  // })
 
-  await participantTest.test('create participant', async (assert) => {
+  await transferTest.test('prepare transfer', async (assert) => {
     try {
-      for (let [index, participant] of participantMap) {
-        var result = await Service.create({ name: participant.name, currency: participant.currency })
-        assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
-        assert.ok(Sinon.match(result, index + 1), ` returns ${result}`)
-      }
+      let transferCreated = await Service.prepare(payload, null, null)
+      assert.comment(JSON.stringify(transferCreated, null, 4))
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -151,72 +145,72 @@ Test('Transfer service', async (transferTest) => {
     }
   })
 
-  await participantTest.test('get with empty name', async (assert) => {
-    Model.getByName.withArgs('').throws(new Error())
-    try {
-      Service.getByName('')
-      assert.fail(' should throws with empty name ')
-    } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
-    }
-    assert.end()
-  })
+  // await transferTest.test('get with empty name', async (assert) => {
+  //   Model.getByName.withArgs('').throws(new Error())
+  //   try {
+  //     Service.getByName('')
+  //     assert.fail(' should throws with empty name ')
+  //   } catch (err) {
+  //     assert.assert(err instanceof Error, ` throws ${err} `)
+  //   }
+  //   assert.end()
+  // })
 
-  await participantTest.test('getByName', async (assert) => {
-    try {
-      assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
-      participantFixtures.forEach(participant => {
-        var result = Service.getByName(participant.name)
-        assert.equal(result.name, participant.name, ' names are equal')
-        assert.equal(result.currency, participant.currency, ' currencies match')
-        assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
-        assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
-      })
-      assert.end()
-    } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
+  // await transferTest.test('getByName', async (assert) => {
+  //   try {
+  //     assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
+  //     participantFixtures.forEach(participant => {
+  //       var result = Service.getByName(participant.name)
+  //       assert.equal(result.name, participant.name, ' names are equal')
+  //       assert.equal(result.currency, participant.currency, ' currencies match')
+  //       assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
+  //       assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
+  //     })
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`create participant failed with error - ${err}`)
+  //     assert.fail()
+  //     assert.end()
+  //   }
+  // })
 
-  await participantTest.test('getAll', async (assert) => {
-    try {
-      var result = await Service.getAll()
-      assert.deepEqual(result, participantFixtures)
-      assert.end()
-    } catch (err) {
-      Logger.error(`get all participants failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
+  // await transferTest.test('getAll', async (assert) => {
+  //   try {
+  //     var result = await Service.getAll()
+  //     assert.deepEqual(result, participantFixtures)
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`get all participants failed with error - ${err}`)
+  //     assert.fail()
+  //     assert.end()
+  //   }
+  // })
 
-  await participantTest.test('getById', async (assert) => {
-    try {
-      for (let participantId of participantMap.keys()) {
-        let participant = await Service.getById(participantId)
-        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId + 1)))
-      }
-      assert.end()
-    } catch (err) {
-      Logger.error(`get participant by Id failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
+  // await transferTest.test('getById', async (assert) => {
+  //   try {
+  //     for (let participantId of participantMap.keys()) {
+  //       let participant = await Service.getById(participantId)
+  //       assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId + 1)))
+  //     }
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`get participant by Id failed with error - ${err}`)
+  //     assert.fail()
+  //     assert.end()
+  //   }
+  // })
 
-  await participantTest.test('update', async (assert) => {
-    try {
-      for (let participant of participantMap.values()) {
-        let updated = await Service.update(participant.name, {is_disabled: 1})
-        assert.equal(updated, participant)
-      }
-      assert.end()
-    } catch (err) {
-      Logger.error(`update participant failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
+  // await transferTest.test('update', async (assert) => {
+  //   try {
+  //     for (let participant of participantMap.values()) {
+  //       let updated = await Service.update(participant.name, {is_disabled: 1})
+  //       assert.equal(updated, participant)
+  //     }
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`update participant failed with error - ${err}`)
+  //     assert.fail()
+  //     assert.end()
+  //   }
+  // })
 })
