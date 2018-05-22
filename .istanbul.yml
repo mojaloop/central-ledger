@@ -1,6 +1,6 @@
 instrumentation:
   include-all-sources: true
-  excludes: ['**/migrations/**', '**/deploy/**', '**/src/domain/settlements/settlementEventListener.js']
+  excludes: ['**/migrations/**', '**/deploy/**', '**/src/domain/settlements/settlementEventListener.js', '**/src/handlers/lib/kafka/testProducer.js']
 check:
   global:
     statements: 90

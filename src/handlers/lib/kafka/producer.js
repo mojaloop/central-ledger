@@ -46,15 +46,16 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
     Logger.info('Producer::end')
     return true
   } catch (e) {
-    Logger.info(e)
     Logger.error(e)
     throw e
   }
 }
 
 const disconnect = async () => {
-  if (p) {
+  try {
     await p.disconnect()
+  } catch (e) {
+    throw e
   }
 }
 

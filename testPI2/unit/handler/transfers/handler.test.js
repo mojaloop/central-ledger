@@ -114,7 +114,6 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(TransferQueries)
     sandbox.stub(TransferHandler)
     sandbox.stub(Utility)
-    Utility.transformAccountToTopicName.returns(topicName)
     Utility.produceGeneralMessage.returns(P.resolve())
     test.end()
   })
@@ -128,6 +127,7 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.test('persist transfer to database when messages is an array', async (test) => {
       await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({validationPassed: true, reasons: []})
       TransferQueries.getById.returns(P.resolve(null))
       TransferHandler.prepare.returns(P.resolve(true))
@@ -138,6 +138,7 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.test('persist transfer to database when single message sent', async (test) => {
       await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({validationPassed: true, reasons: []})
       TransferQueries.getById.returns(P.resolve(null))
       TransferHandler.prepare.returns(P.resolve(true))
@@ -148,6 +149,7 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.test('not persist duplicate transfer to database', async (test) => {
       await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({validationPassed: true, reasons: []})
       TransferQueries.getById.returns(P.resolve({}))
       TransferHandler.prepare.returns(P.resolve(true))
@@ -158,6 +160,7 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.test('fail validation and persist REJECTED transfer to database', async (test) => {
       await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({validationPassed: false, reasons: []})
       TransferQueries.getById.returns(P.resolve(null))
       TransferHandler.prepare.returns(P.resolve(true))
@@ -168,6 +171,7 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.test('fail validation and duplicate entry should be updated to REJECTED and persisted to database', async (test) => {
       await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({validationPassed: false, reasons: []})
       TransferQueries.getById.returns(P.resolve({}))
       TransferHandler.reject.returns(P.resolve(true))
@@ -179,9 +183,23 @@ Test('Transfer handler', transferHandlerTest => {
     prepareTest.test('throw an error when an error is by prepare', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
+        Utility.transformAccountToTopicName.returns(topicName)
         Validator.validateByName.returns({validationPassed: true, reasons: []})
         TransferQueries.getById.returns(P.resolve(null))
         TransferHandler.prepare.throws(new Error)
+        await allTransferHandlers.prepare(null, messages)
+        test.fail('No Error Thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
+
+    prepareTest.test('throw an error when consumer not found', async (test) => {
+      try {
+        await Consumer.createHandler(topicName, config, command)
+        Utility.transformAccountToTopicName.returns('invalid-topic')
         await allTransferHandlers.prepare(null, messages)
         test.fail('No Error Thrown')
         test.end()
@@ -255,6 +273,7 @@ Test('Transfer handler', transferHandlerTest => {
     registerHandlersTest.test('register all consumers on Kafka', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       DAO.retrieveAllParticipants.returns(P.resolve(participants))
+      Utility.transformAccountToTopicName.returns(topicName)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.registerAllHandlers()
@@ -264,6 +283,7 @@ Test('Transfer handler', transferHandlerTest => {
 
     registerHandlersTest.test('register a consumer on Kafka', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       await DAO.retrieveAllParticipants.returns(P.resolve(participants))
@@ -276,6 +296,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+        Utility.transformAccountToTopicName.returns(topicName)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error)
         await allTransferHandlers.registerAllHandlers()

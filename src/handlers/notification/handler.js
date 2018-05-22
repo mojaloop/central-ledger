@@ -55,7 +55,8 @@ const registerNotificationHandler = async () => {
     await Kafka.Consumer.createHandler(notificationHandler.topicName, notificationHandler.config, notificationHandler.command)
     return true
   } catch (e) {
-    Logger.info(e)
+    Logger.error(e)
+    throw e
   }
 }
 

@@ -106,12 +106,62 @@ Test('Producer', producerTest => {
   })
 
   producerTest.test('produceMessage should', produceMessageTest => {
+
     produceMessageTest.test('return true', async test => {
       const result = await Producer.produceMessage(messageProtocol, topicConf, config)
       test.equal(result, true)
       await Producer.disconnect()
       test.end()
     })
+
+    produceMessageTest.end()
+  })
+  producerTest.end()
+})
+
+
+Test('Producer Failure', producerTest => {
+  let sandbox
+  let config = {}
+
+  producerTest.beforeEach(t => {
+    sandbox = Sinon.sandbox.create()
+    sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
+    sandbox.stub(KafkaProducer.prototype, 'connect').throws(new Error)
+    sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
+    sandbox.stub(KafkaProducer.prototype, 'disconnect').throws(new Error)
+    t.end()
+  })
+
+  producerTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
+
+  producerTest.test('produceMessage should', produceMessageTest => {
+
+    produceMessageTest.test('throw error when connect throws error', async test => {
+      try {
+        await Producer.produceMessage(messageProtocol, topicConf, config)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    produceMessageTest.test('throw error when no producer to disconnect', async (test) => {
+      try {
+        await Producer.disconnect()
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
+
     produceMessageTest.end()
   })
   producerTest.end()

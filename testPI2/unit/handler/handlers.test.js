@@ -20,8 +20,11 @@ Test('handlers', handlersTest => {
 
   handlersTest.test('handlers test should', registerAllTest => {
     registerAllTest.test('register all handlers', test => {
-
+    test.end()
     })
+
+    registerAllTest.end()
   })
 
+  handlersTest.end()
 })
