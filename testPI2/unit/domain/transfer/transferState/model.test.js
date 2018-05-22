@@ -122,18 +122,18 @@ Test('transferState model', async (transferStateTest) => {
     }
   })
 
-  await transferStateTest.test('truncateTransferStates', async (assert) => {
-    Db.transferState.truncate.returns(true)
-    try {
-      var result = await Model.truncateTransferStates()
-      assert.deepEqual(result, true)
-      assert.end()
-    } catch (err) {
-      Logger.error(`truncate all transfer states failed with error - ${err}`)
-      assert.fail(`truncate all transfer states failed with error - ${err}`)
-      assert.end()
-    }
-  })
+  // await transferStateTest.test('truncateTransferStates', async (assert) => {
+  //   Db.transferState.truncate.returns(true)
+  //   try {
+  //     var result = await Model.truncateTransferStates()
+  //     assert.deepEqual(result, true)
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`truncate all transfer states failed with error - ${err}`)
+  //     assert.fail(`truncate all transfer states failed with error - ${err}`)
+  //     assert.end()
+  //   }
+  // })
 
   await transferStateTest.test('destroyTransferStates', async (assert) => {
     Db.transferState.find.returns({

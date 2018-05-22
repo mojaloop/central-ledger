@@ -35,14 +35,14 @@
 'use strict'
 
 const ParticipantPreparationModule = require('./participant')
-const Model = require('../../../src/domain/transfer/index')
+const Model = require('../../../src/domain/transfer/models/transfers-read-model')
 
 exports.prepareData = async () => {
   try {
     let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
     let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
 
-    return await Model.create({
+    return await Model.saveTransfer({
       payeeParticipantId: participantPayeeResult.participantId,
       payerParticipantId: participantPayerResult.participantId,
       amount: 100,

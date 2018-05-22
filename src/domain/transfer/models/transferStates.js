@@ -72,9 +72,9 @@ const getAll = () => {
   }
 }
 
-const truncateTransferStates = () => {
-  return Db.transferState.truncate()
-}
+// const truncateTransferStates = () => {
+//   return Db.transferState.truncate()
+// }
 
 const destroyTransferStates = () => {
   try {
@@ -96,7 +96,7 @@ module.exports = {
   saveTransferState,
   getByTransferStateId,
   getAll,
-  truncateTransferStates,
+  // truncateTransferStates,
   destroyTransferStates,
   destroyTransferStatesById
 }

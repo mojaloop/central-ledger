@@ -85,56 +85,56 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
   }
 }
 
-const saveTransferExecuted = async ({payload, timestamp}) => {
-  const fields = {
-    state: TransferState.EXECUTED,
-    fulfillment: payload.fulfillment,
-    executedDate: new Date(timestamp)
-  }
-  return await TransfersModel.updateTransfer(payload.id, fields)
-}
+// const saveTransferExecuted = async ({payload, timestamp}) => {
+//   const fields = {
+//     state: TransferState.EXECUTED,
+//     fulfillment: payload.fulfillment,
+//     executedDate: new Date(timestamp)
+//   }
+//   return await TransfersModel.updateTransfer(payload.id, fields)
+// }
 
-const saveTransferRejected = async (stateReason, transferId) => {
-  try {
-    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
-    let existingAbort = false
-    let foundTransferStateChange
-    for (let transferState of transferStateChange){
-      if (transferState.transferStateId !== TransferState.ABORTED) {
-        existingAbort = true
-        foundTransferStateChange = transferState
-        break
-      }
-    }
-    if(!existingAbort) {
-      const newTransferStateChange = {}
-      newTransferStateChange.transferStateChangeId = null
-      newTransferStateChange.transferId = transferId
-      newTransferStateChange.reason = stateReason
-      newTransferStateChange.changedDate = new Date()
-      newTransferStateChange.transferStateId = TransferState.ABORTED
-      await transferStateChangeModel.saveTransferStateChange(newTransferStateChange)
-      return {alreadyRejected: false, newTransferStateChange}
-    } else {
-      return {alreadyRejected: true, foundTransferStateChange}
-    }
-  } catch (e) {
-    throw e
-  }
-}
+// const saveTransferRejected = async (stateReason, transferId) => {
+//   try {
+//     const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
+//     let existingAbort = false
+//     let foundTransferStateChange
+//     for (let transferState of transferStateChange){
+//       if (transferState.transferStateId !== TransferState.ABORTED) {
+//         existingAbort = true
+//         foundTransferStateChange = transferState
+//         break
+//       }
+//     }
+//     if(!existingAbort) {
+//       const newTransferStateChange = {}
+//       newTransferStateChange.transferStateChangeId = null
+//       newTransferStateChange.transferId = transferId
+//       newTransferStateChange.reason = stateReason
+//       newTransferStateChange.changedDate = new Date()
+//       newTransferStateChange.transferStateId = TransferState.ABORTED
+//       await transferStateChangeModel.saveTransferStateChange(newTransferStateChange)
+//       return {alreadyRejected: false, newTransferStateChange}
+//     } else {
+//       return {alreadyRejected: true, foundTransferStateChange}
+//     }
+//   } catch (e) {
+//     throw e
+//   }
+// }
 
-const saveExecutedTransfer = async (transfer) => {
-  await ExecuteTransfersModel.create(transfer.payload.id)
-}
+// const saveExecutedTransfer = async (transfer) => {
+//   await ExecuteTransfersModel.create(transfer.payload.id)
+// }
 
-const saveSettledTransfers = async ({id, settlement_id}) => {
-  await SettledTransfersModel.create({id, settlement_id})
-}
+// const saveSettledTransfers = async ({id, settlement_id}) => {
+//   await SettledTransfersModel.create({id, settlement_id})
+// }
 
 module.exports = {
-  saveTransferPrepared,
-  saveTransferExecuted,
-  saveTransferRejected,
-  saveExecutedTransfer,
-  saveSettledTransfers
+  saveTransferPrepared
+  // saveTransferExecuted,
+  // saveTransferRejected,
+  // saveExecutedTransfer,
+  // saveSettledTransfers
 }
