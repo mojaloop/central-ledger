@@ -42,7 +42,7 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const requireGlob = require('require-glob')
 
-exports.registerAllHandlers = async (request, h) => {
+const registerAllHandlers = async (request, h) => {
   try {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))
@@ -60,4 +60,8 @@ exports.registerAllHandlers = async (request, h) => {
   } catch (e) {
     Logger.error(e)
   }
+}
+
+module.exports = {
+  registerAllHandlers
 }

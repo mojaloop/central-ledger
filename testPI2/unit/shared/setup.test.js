@@ -9,10 +9,12 @@ const Db = require('../../../src/db')
 const Config = require('../../../src/lib/config')
 // const Participant = require('../../../src/domain/participant')
 const Plugins = require('../../../src/shared/plugins')
+const HandlerPlugins = require('../../../src/handlers/plugin')
 const RequestLogger = require('../../../src/lib/request-logger')
 const UrlParser = require('../../../src/lib/urlparser')
 const Sidecar = require('../../../src/lib/sidecar')
 const Proxyquire = require('proxyquire')
+const RegisterHandlers = require('../../../src/handlers/handlers')
 
 Test('setup', setupTest => {
   let sandbox
@@ -27,7 +29,9 @@ Test('setup', setupTest => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(Hapi, 'Server')
     sandbox.stub(Plugins, 'registerPlugins')
+    sandbox.stub(HandlerPlugins, 'plugin')
     sandbox.stub(Migrator)
+    sandbox.stub(RegisterHandlers, 'registerAllHandlers')
     // sandbox.stub(Participant)
     sandbox.stub(UrlParser, 'idFromTransferUri')
     sandbox.stub(RequestLogger, 'logRequest')
@@ -69,21 +73,21 @@ Test('setup', setupTest => {
     return server
   }
 
-  setupTest.test('initialize should', initializeTest => {
-    const setupPromises = ({service}) => {
+  setupTest.test('initialize should', async (initializeTest) => {
+    const setupPromises = async ({service}) => {
       Migrator.migrate.returns(P.resolve())
       Db.connect.returns(P.resolve())
       Sidecar.connect.returns(P.resolve())
       const server = createServer()
       if (service === 'api') {
-
+        await RegisterHandlers.registerAllHandlers.returns(P.resolve())
         // Participant.createLedgerParticipant().returns(P.resolve())
       }
       return server
     }
 
-    initializeTest.test('connect to sidecar', test => {
-      const server = setupPromises({})
+    initializeTest.test('connect to sidecar', async (test) => {
+      const server = await setupPromises({})
 
       const service = 'test'
       Setup.initialize({ service }).then(s => {
@@ -95,8 +99,8 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('connect to db and return hapi server', test => {
-      const server = setupPromises({})
+    initializeTest.test('connect to db and return hapi server', async (test) => {
+      const server = await setupPromises({})
 
       Setup.initialize({}).then(s => {
         test.ok(Db.connect.calledWith(databaseUri))
@@ -106,8 +110,8 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('run migrations if runMigrations flag enabled', test => {
-      setupPromises({})
+    initializeTest.test('run migrations if runMigrations flag enabled', async (test) => {
+      await setupPromises({})
 
       Setup.initialize({ runMigrations: true }).then(() => {
         test.ok(Db.connect.called)
