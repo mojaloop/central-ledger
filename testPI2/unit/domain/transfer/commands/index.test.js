@@ -87,6 +87,19 @@ const extensionsRecordList = [
   }
 ]
 
+const newTransferStateChange = {
+  transferStateChangeId: null,
+  transferId: payload.transferId,
+  transferStateId: TransferState.ABORTED,
+  reason: stateReason,
+  changedDate: new Date()
+}
+
+const rejectResponse = {
+  alreadyRejected: false,
+  newTransferStateChange
+}
+
 const prepareResponse = {
   isSaveTransferPrepared: true,
   transferRecord,
@@ -135,5 +148,16 @@ Test('Commands-Index', commandIndextTest => {
     })
     preparedTest.end()
   })
+
+  commandIndextTest.test('reject should', rejectTest => {
+    rejectTest.test('reject saving transfer to the database', async (test) => {
+      await TransfersProjection.saveTransferRejected.returns(P.resolve(rejectResponse))
+      const response = await CommandsIndex.reject(stateReason, payload.transferId)
+      test.deepEqual(response, rejectResponse)
+      test.end()
+    })
+    rejectTest.end()
+  })
   commandIndextTest.end()
+
 })
