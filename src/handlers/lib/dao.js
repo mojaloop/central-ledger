@@ -40,7 +40,7 @@ const Participants = require('../../domain/participant')
  *
  * @returns {list} - Returns a list participant names, throws error if failure occurs
  */
-exports.retrieveAllParticipants = async () => {
+const retrieveAllParticipants = async () => {
   try {
     const participants = await Participants.getAll()
     return participants.map(participant => participant.name)
@@ -48,4 +48,8 @@ exports.retrieveAllParticipants = async () => {
     Logger.error(e)
     throw e
   }
+}
+
+module.exports = {
+  retrieveAllParticipants
 }

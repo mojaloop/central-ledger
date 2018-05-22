@@ -35,7 +35,7 @@ const Handlers = require('./handlers')
 const Config = require('../lib/config')
 const Db = require('../db')
 //
-Db.connect(Config.DATABASE_URI).then( () => {
+Db.connect(Config.DATABASE_URI).then(() => {
   Logger.info('starting all Handlers')
   Handlers.registerAllHandlers().then((result) => {
     Logger.info(`yes - ${result}`)

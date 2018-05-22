@@ -3,13 +3,10 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
-const Uuid = require('uuid4')
-const Moment = require('moment')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../../src/lib/urlparser')
 const ParticipantService = require('../../../../src/domain/participant')
 const TransferState = require('../../../../src/domain/transfer/state')
-const TransferRejectionType = require('../../../../src/domain/transfer/rejection-type')
 const TransfersReadModel = require('../../../../src/domain/transfer/models/transfers-read-model')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
 const ilpModel = require('../../../../src/models/ilp')
@@ -20,24 +17,21 @@ const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
   payerFsp: 'dfsp1',
   payeeFsp: 'dfsp2',
-  amount:
-    {
-      currency: 'USD',
-      amount: '433.88'
-    },
+  amount: {
+    currency: 'USD',
+    amount: '433.88'
+  },
   ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
   condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
   expiration: '2016-05-24T08:38:08.699-04:00',
-  extensionList:
-    {
-      extension:
-        [
-          {
-            key: 'key1',
-            value: 'value1'
-          }
-        ]
-    }
+  extensionList: {
+    extension: [
+      {
+        key: 'key1',
+        value: 'value1'
+      }
+    ]
+  }
 }
 
 const participant1 = {
@@ -95,7 +89,7 @@ const extensionsRecordList = [
     key: payload.extensionList.extension[0].key,
     value: payload.extensionList.extension[0].value,
     changedDate: new Date(),
-    changedBy: 'user' //this needs to be changed and cannot be null
+    changedBy: 'user' // this needs to be changed and cannot be null
   }
 ]
 
@@ -120,8 +114,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
   })
 
   transfersProjectionTest.test('projection saveTransferPrepared should', preparedTest => {
-
-    //Positive tests : saveTransferPrepared
+    // Positive tests : saveTransferPrepared
     preparedTest.test('return object of results', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
@@ -233,7 +226,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.end()
     })
 
-    //Add negative tests
+    // Add negative tests
     rejectTest.test('save saveTransferRejected throws error', async (test) => {
       transferStateChangeModel.getByTransferId.withArgs(payload.transferId).throws(new Error)
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())

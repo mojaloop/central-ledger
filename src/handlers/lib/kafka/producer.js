@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 
 let p
 
-exports.produceMessage = async (messageProtocol, topicConf, config) => {
+const produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     Logger.info('Producer::start::topic=' + topicConf.topicName)
     p = new Producer(config)
@@ -42,14 +42,24 @@ exports.produceMessage = async (messageProtocol, topicConf, config) => {
     await p.connect()
     Logger.info('Producer::connect::end')
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
-    await p.sendMessage(messageProtocol, topicConf).then(results => {
-      Logger.info(`Producer.sendMessage:: result:'${JSON.stringify(results)}'`)
-    })
+    await p.sendMessage(messageProtocol, topicConf)
     Logger.info('Producer::end')
     return true
   } catch (e) {
-    Logger.info(e)
     Logger.error(e)
     throw e
   }
+}
+
+const disconnect = async () => {
+  try {
+    await p.disconnect()
+  } catch (e) {
+    throw e
+  }
+}
+
+module.exports = {
+  produceMessage,
+  disconnect
 }

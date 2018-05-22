@@ -50,7 +50,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     // TODO: Move inserts into a Transaction
 
     // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
-    await TransfersModel.saveTransfer(transferRecord)
+    await TransfersModel.saveTransfer(transferRecord).catch(err => {
+      throw new Error(err.message)
+    })
 
     var extensionsRecordList = []
 
@@ -61,7 +63,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           key: ext.key,
           value: ext.value,
           changedDate: new Date(),
-          changedBy: 'user' //this needs to be changed and cannot be null
+          changedBy: 'user' // this needs to be changed and cannot be null
         }
       })
       for (let ext of extensionsRecordList) {
@@ -81,7 +83,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
 const saveTransferExecuted = async ({payload, timestamp}) => {
   const fields = {
-    state: TransferState.EXECUTED,
+    state: TransferState.COMMITTED,
     fulfillment: payload.fulfillment,
     executedDate: new Date(timestamp)
   }
@@ -89,20 +91,19 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
 }
 
 const saveTransferRejected = async (stateReason, transferId) => {
-
   try {
     const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
 
     let existingAbort = false
     let foundTransferStateChange
-    for (let transferState of transferStateChange){
+    for (let transferState of transferStateChange) {
       if (transferState.transferStateId === TransferState.ABORTED) {
         existingAbort = true
         foundTransferStateChange = transferState
         break
       }
     }
-    if(!existingAbort) {
+    if (!existingAbort) {
       const newTransferStateChange = {}
       newTransferStateChange.transferStateChangeId = null
       newTransferStateChange.transferId = transferId

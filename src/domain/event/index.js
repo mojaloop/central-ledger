@@ -32,7 +32,7 @@
 
 'use strict'
 
-const Model = require('./model');
+const Model = require('./model')
 
 const getAll = async () => {
   try {
@@ -44,13 +44,13 @@ const getAll = async () => {
 
 const update = async (eventNameId, value, description) => {
   try {
-     return await Model.update(eventNameId, value, description)
+    return await Model.update(eventNameId, value, description)
   } catch (e) {
     throw e
   }
 }
 
-const truncate = async() => {
+const truncate = async () => {
   try {
     return await Model.truncate()
   } catch (e) {

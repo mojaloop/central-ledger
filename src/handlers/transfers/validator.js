@@ -30,17 +30,15 @@
  ******/
 'use strict'
 
-const P = require('bluebird')
 const Decimal = require('decimal.js')
-const Moment = require('moment')
 const Config = require('../../lib/config')
-const Participant = require('../../domain/participant/index')
+const Participant = require('../../domain/participant')
 const CryptoConditions = require('../../crypto-conditions/index')
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
-const Joi = require('joi')
-const Enjoi = require('enjoi')
-const fs = require('fs')
+// const Joi = require('joi')
+// const Enjoi = require('enjoi')
+// const fs = require('fs')
 
 // Note that the following two lines will be replaced by functionality to load the schemas from DB
 // const transferPrepareSchemaFile = "./transfer-schema.json"
@@ -49,7 +47,6 @@ const fs = require('fs')
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
 let reasons = []
-
 
 const validateParticipantById = async function (participantId) {
   const participant = await Participant.getById(participantId)
@@ -75,10 +72,10 @@ const validateParticipantById = async function (participantId) {
 //   return validationResult
 // }
 
-const validateParticipantByName = async function (participantId) {
-  const participant = await Participant.getByName(participantId)
+const validateParticipantByName = async function (participantName) {
+  const participant = await Participant.getByName(participantName)
   if (!participant) {
-    reasons.push(`Participant ${participantId} not found`)
+    reasons.push(`Participant ${participantName} not found`)
   }
   return !!participant
 }
@@ -97,7 +94,10 @@ const validateAmount = (amount) => {
 }
 
 const validateConditionAndExpiration = async (payload) => {
-  if (!payload.condition) return false
+  if (!payload.condition) {
+    reasons.push('condition is required for a conditional transfer')
+    return false
+  }
   try {
     await CryptoConditions.validateCondition(payload.condition)
   } catch (e) {
@@ -105,8 +105,8 @@ const validateConditionAndExpiration = async (payload) => {
     return false
   }
   if (payload.expiration) {
-    if (payload.expiration.isBefore(Moment.utc())) {
-      reasons.push(`expiration date: ${payload.expiration.toISOString()} has already expired.`)
+    if (Date.parse(payload.expiration) < Date.parse(new Date().toDateString())) {
+      reasons.push(`expiration date: ${new Date(payload.expiration.toString()).toISOString()} has already expired.`)
       return false
     }
   } else {
@@ -116,32 +116,34 @@ const validateConditionAndExpiration = async (payload) => {
   return true
 }
 
-const validateByName = (payload) => {
+const validateByName = async (payload) => {
   reasons.length = 0
-  return P.resolve().then(() => {
-    if (!payload) {
-      reasons.push('Transfer must be provided')
-      return false
-    }
-    return {
-      validationPassed: !!(validateParticipantByName(payload.payerFsp) && validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && validateConditionAndExpiration(payload)),
-      reasons
-    }
-  })
+  let validationPassed
+  if (!payload) {
+    reasons.push('Transfer must be provided')
+    validationPassed = false
+    return {validationPassed, reasons}
+  }
+  validationPassed = (await validateParticipantByName(payload.payerFsp) && await validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload))
+  return {
+    validationPassed,
+    reasons
+  }
 }
 
-const validateById = (payload) => {
+const validateById = async (payload) => {
   reasons.length = 0
-  return P.resolve().then(() => {validateByName
-    if (!payload) {
-      reasons.push('Transfer must be provided')
-      return false
-    }
-    return {
-      validationPassed: !!(validateParticipantById(payload.payerFsp) && validateParticipantById(payload.payeeFsp) && validateAmount(payload.amount) && validateConditionAndExpiration(payload)),
-      reasons
-    }
-  })
+  let validationPassed
+  if (!payload) {
+    reasons.push('Transfer must be provided')
+    validationPassed = false
+    return {validationPassed, reasons}
+  }
+  validationPassed = (await validateParticipantById(payload.payerFsp) && await validateParticipantById(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload))
+  return {
+    validationPassed,
+    reasons
+  }
 }
 
 module.exports = {
