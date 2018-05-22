@@ -20,7 +20,7 @@ Test('handlers', handlersTest => {
 
   handlersTest.test('handlers test should', registerAllTest => {
     registerAllTest.test('register all handlers', test => {
-    test.end()
+      test.end()
     })
 
     registerAllTest.end()

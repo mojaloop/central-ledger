@@ -109,7 +109,6 @@ Test('Utility Test', utilityTest => {
   })
 
   utilityTest.test('createParticipantTopicConf should', createParticipantTopicConfTest => {
-
     createParticipantTopicConfTest.test('return a participant topic conf object', test => {
       const response = Utility.createParticipantTopicConf(participantName, TRANSFER, PREPARE)
       test.equal(response.topicName, participantTopic)
@@ -136,7 +135,6 @@ Test('Utility Test', utilityTest => {
   })
 
   utilityTest.test('createGeneralTopicConf should', createGeneralTopicConfTest => {
-
     createGeneralTopicConfTest.test('return a general topic conf object', test => {
       const response = Utility.createGeneralTopicConf(TRANSFER, FULFILL)
       test.equal(response.topicName, generalTopic)
@@ -163,7 +161,6 @@ Test('Utility Test', utilityTest => {
   })
 
   utilityTest.test('updateMessageProtocolMetadata should', updateMessageProtocolMetadataTest => {
-
     updateMessageProtocolMetadataTest.test('return an updated metadata object in the message protocol', test => {
       const previousEventId = messageProtocol.metadata.event.id
       const newMessageProtocol = Utility.updateMessageProtocolMetadata(messageProtocol, TRANSFER, Utility.ENUMS.STATE.SUCCESS)
@@ -177,7 +174,6 @@ Test('Utility Test', utilityTest => {
   })
 
   utilityTest.test('getKafkaConfig should', getKafkaConfigTest => {
-
     getKafkaConfigTest.test('return the Kafka config from the default.json', test => {
       const config = Utility.getKafkaConfig(CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
       test.deepEqual(config, defaultConfig)
@@ -199,7 +195,6 @@ Test('Utility Test', utilityTest => {
   })
 
   utilityTest.test('createTransferMessageProtocol should', createTransferMessageProtocolTest => {
-
     createTransferMessageProtocolTest.test('return a new messageProtocol', test => {
       const createdMessageProtocol = Utility.createTransferMessageProtocol(transfer, PREPARE, Utility.ENUMS.STATE.SUCCESS)
       messageProtocol.metadata.event.type = createdMessageProtocol.metadata.event.type
@@ -214,7 +209,6 @@ Test('Utility Test', utilityTest => {
   })
 
   utilityTest.test('produceGeneralMessage should', produceGeneralMessageTest => {
-
     produceGeneralMessageTest.test('produce a general message', async (test) => {
       const result = await Utility.produceGeneralMessage(TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
       test.equal(result, true)
@@ -225,7 +219,6 @@ Test('Utility Test', utilityTest => {
   })
 
   utilityTest.test('produceParticipantMessage should', produceParticipantMessageTest => {
-
     produceParticipantMessageTest.test('produce a participant message', async (test) => {
       const result = await Utility.produceParticipantMessage(participantName, TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
       test.equal(result, true)

@@ -38,7 +38,6 @@ Test('DAO', daoTest => {
   })
 
   daoTest.test('dao should', retrieveAllParticipantsTest => {
-
     retrieveAllParticipantsTest.test('return a map of participants', async (test) => {
       Participants.getAll.returns(P.resolve(participantsList))
       const participants = await DAO.retrieveAllParticipants()

@@ -82,7 +82,6 @@ Test('Producer', producerTest => {
   })
 
   producerTest.test('produceMessage should', produceMessageTest => {
-
     produceMessageTest.test('return true', async test => {
       const result = await Producer.produceMessage(messageProtocol, topicConf, config)
       test.equal(result, true)
@@ -114,7 +113,6 @@ Test('Producer Failure', producerTest => {
   })
 
   producerTest.test('produceMessage should', produceMessageTest => {
-
     produceMessageTest.test('throw error when connect throws error', async test => {
       try {
         await Producer.produceMessage(messageProtocol, topicConf, config)

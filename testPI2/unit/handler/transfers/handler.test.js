@@ -18,28 +18,25 @@ const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
   payerFsp: 'dfsp1',
   payeeFsp: 'dfsp2',
-  amount:
-    {
-      currency: 'USD',
-      amount: '433.88'
-    },
+  amount: {
+    currency: 'USD',
+    amount: '433.88'
+  },
   ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
   condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
   expiration: '2016-05-24T08:38:08.699-04:00',
-  extensionList:
-    {
-      extension:
-        [
-          {
-            key: 'key1',
-            value: 'value1'
-          },
-          {
-            key: 'key2',
-            value: 'value2'
-          }
-        ]
-    }
+  extensionList: {
+    extension: [
+      {
+        key: 'key1',
+        value: 'value1'
+      },
+      {
+        key: 'key2',
+        value: 'value2'
+      }
+    ]
+  }
 }
 
 const messageProtocol = {
@@ -96,7 +93,7 @@ const config = {
 
 const command = () => {}
 
-const error = () => {throw new Error()}
+const error = () => { throw new Error() }
 
 const participants = ['testName1', 'testName2']
 
@@ -124,7 +121,6 @@ Test('Transfer handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('prepare should', prepareTest => {
-
     prepareTest.test('persist transfer to database when messages is an array', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -224,7 +220,6 @@ Test('Transfer handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('transfer should', transferTest => {
-
     transferTest.test('produce a message to the notifications topic', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
@@ -269,7 +264,6 @@ Test('Transfer handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
-
     registerHandlersTest.test('register all consumers on Kafka', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       DAO.retrieveAllParticipants.returns(P.resolve(participants))

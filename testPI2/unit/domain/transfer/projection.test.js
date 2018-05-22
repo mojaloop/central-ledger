@@ -3,13 +3,10 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
-const Uuid = require('uuid4')
-const Moment = require('moment')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../../src/lib/urlparser')
 const ParticipantService = require('../../../../src/domain/participant')
 const TransferState = require('../../../../src/domain/transfer/state')
-const TransferRejectionType = require('../../../../src/domain/transfer/rejection-type')
 const TransfersReadModel = require('../../../../src/domain/transfer/models/transfers-read-model')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
 const ilpModel = require('../../../../src/models/ilp')
@@ -92,7 +89,7 @@ const extensionsRecordList = [
     key: payload.extensionList.extension[0].key,
     value: payload.extensionList.extension[0].value,
     changedDate: new Date(),
-    changedBy: 'user' //this needs to be changed and cannot be null
+    changedBy: 'user' // this needs to be changed and cannot be null
   }
 ]
 
@@ -117,8 +114,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
   })
 
   transfersProjectionTest.test('projection saveTransferPrepared should', preparedTest => {
-
-    //Positive tests : saveTransferPrepared
+    // Positive tests : saveTransferPrepared
     preparedTest.test('return object of results', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
@@ -230,7 +226,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.end()
     })
 
-    //Add negative tests
+    // Add negative tests
     rejectTest.test('save saveTransferRejected throws error', async (test) => {
       transferStateChangeModel.getByTransferId.withArgs(payload.transferId).throws(new Error)
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())

@@ -110,7 +110,7 @@ const prepare = async (error, messages) => {
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
-        //const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
+        // const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
