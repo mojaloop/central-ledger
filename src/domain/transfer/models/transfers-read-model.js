@@ -38,7 +38,7 @@ const getAll = async () => {
         'ilp.condition AS condition',
         'ilp.fulfillment AS fulfillment'
       )
-      .orderBy('tsc.transferStateChangeId', 'desc')
+      .orderBy('tsc.=transferStateChangeId', 'desc')
       .first()
 
     transferResultList = transferResultList.map(async transferResult => {

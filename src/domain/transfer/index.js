@@ -1,13 +1,13 @@
 'use strict'
 
-const P = require('bluebird')
+// const P = require('bluebird')
 const TransferQueries = require('./queries')
-const SettleableTransfersReadModel = require('../../models/settleable-transfers-read-model')
-const SettlementModel = require('../../models/settlement')
+// const SettleableTransfersReadModel = require('../../models/settleable-transfers-read-model')
+// const SettlementModel = require('../../models/settlement')
 const Commands = require('./commands')
 const Translator = require('./translator')
-const RejectionType = require('./rejection-type')
-const State = require('./state')
+// const RejectionType = require('./rejection-type')
+// const State = require('./state')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
 

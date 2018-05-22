@@ -7,8 +7,8 @@ const TransfersModel = require('./models/transfers-read-model')
 const ilpModel = require('../../models/ilp')
 const extensionModel = require('../../models/extensions')
 const transferStateChangeModel = require('./models/transferStateChanges')
-const ExecuteTransfersModel = require('../../models/executed-transfers')
-const SettledTransfersModel = require('../../models/settled-transfers')
+// const ExecuteTransfersModel = require('../../models/executed-transfers')
+// const SettledTransfersModel = require('../../models/settled-transfers')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
