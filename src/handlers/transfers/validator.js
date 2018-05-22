@@ -30,17 +30,15 @@
  ******/
 'use strict'
 
-const P = require('bluebird')
 const Decimal = require('decimal.js')
-const Moment = require('moment')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
 const CryptoConditions = require('../../crypto-conditions/index')
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
-const Joi = require('joi')
-const Enjoi = require('enjoi')
-const fs = require('fs')
+// const Joi = require('joi')
+// const Enjoi = require('enjoi')
+// const fs = require('fs')
 
 // Note that the following two lines will be replaced by functionality to load the schemas from DB
 // const transferPrepareSchemaFile = "./transfer-schema.json"

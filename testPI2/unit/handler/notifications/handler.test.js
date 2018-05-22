@@ -149,6 +149,12 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
+    registerHandlersTest.test('registers registerNotificationHandler', async (test) => {
+      const result = await allTransferHandlers.registerAllHandlers()
+      test.equal(result, true)
+      test.end()
+    })
+
     registerHandlersTest.end()
   })
 

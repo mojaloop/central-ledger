@@ -36,13 +36,13 @@ const Db = require('@mojaloop/central-services-database').Db
 
 exports.getById = async (eventNameId) => {
   try {
-    return await Db.eventName.findOne({ eventNameId })
+    return await Db.eventName.findOne({eventNameId})
   } catch (e) {
     throw e
   }
 }
 
-exports.saveEventName = async ( eventName ) =>{
+exports.saveEventName = async (eventName) => {
   try {
     return await Db.eventName.insert(eventName)
   } catch (e) {
@@ -52,7 +52,7 @@ exports.saveEventName = async ( eventName ) =>{
 
 exports.getAll = async () => {
   try {
-    return await Db.eventName.find({}, { order: 'eventName asc' })
+    return await Db.eventName.find({}, {order: 'eventName asc'})
   } catch (err) {
     throw err
   }
@@ -60,16 +60,16 @@ exports.getAll = async () => {
 
 exports.update = async (eventNameId, value, description) => {
   try {
-    return await Db.eventName.update({ eventNameId }, { value, description })
+    return await Db.eventName.update({eventNameId}, {value, description})
   } catch (err) {
     throw err
   }
 }
 
-exports.truncate = async() => {
+exports.truncate = async () => {
   try {
     return await Db.eventName.truncate()
-  }catch (err) {
+  } catch (err) {
     throw err
   }
 }

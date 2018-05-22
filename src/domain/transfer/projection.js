@@ -63,7 +63,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           key: ext.key,
           value: ext.value,
           changedDate: new Date(),
-          changedBy: 'user' //this needs to be changed and cannot be null
+          changedBy: 'user' // this needs to be changed and cannot be null
         }
       })
       for (let ext of extensionsRecordList) {
@@ -89,7 +89,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
 const saveTransferExecuted = async ({payload, timestamp}) => {
   const fields = {
-    state: TransferState.EXECUTED,
+    state: TransferState.COMMITTED,
     fulfillment: payload.fulfillment,
     executedDate: new Date(timestamp)
   }
@@ -105,14 +105,14 @@ const saveTransferRejected = async (stateReason, transferId) => {
     })
     let existingAbort = false
     let transferStateChange
-    for (let transferState of existingTransferStateChange){
+    for (let transferState of existingTransferStateChange) {
       if (transferState.transferStateId === TransferState.ABORTED) {
         existingAbort = true
         transferStateChange = transferState
         break
       }
     }
-    if(!existingAbort) {
+    if (!existingAbort) {
       transferStateChange = {}
       transferStateChange.transferStateChangeId = null
       transferStateChange.transferId = transferId

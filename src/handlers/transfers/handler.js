@@ -38,7 +38,6 @@ const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
-const Notifications = require('../notification/handler')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
@@ -67,7 +66,7 @@ const REJECT = 'reject'
  */
 const prepare = async (error, messages) => {
   if (error) {
-    //Logger.error(error)
+    // Logger.error(error)
     throw new Error()
   }
   let message = {}
@@ -86,7 +85,8 @@ const prepare = async (error, messages) => {
       const existingTransfer = await TransferQueries.getById(payload.transferId)
       if (!existingTransfer) {
         Logger.info('TransferHandler::prepare::validationPassed::newEntry')
-        const result = await TransferHandler.prepare(payload)
+        // const result = await TransferHandler.prepare(payload)
+        await TransferHandler.prepare(payload)
         await consumer.commitMessageSync(message)
         // position topic to be created and inserted here
         return true
@@ -96,7 +96,7 @@ const prepare = async (error, messages) => {
         // notification of duplicate to go here
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-       }
+      }
     } else {
       Logger.info('TransferHandler::prepare::validationFailed')
       // need to determine what happens with existing transfer with a validation failure
@@ -110,7 +110,8 @@ const prepare = async (error, messages) => {
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
-        const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
+        //const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
+        await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
@@ -146,7 +147,7 @@ const reject = async () => {
  */
 const transfer = async (error, messages) => {
   if (error) {
-    //Logger.error(error)
+    // Logger.error(error)
     throw new Error()
   }
   let message = {}
