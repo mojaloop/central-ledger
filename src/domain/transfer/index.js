@@ -43,7 +43,7 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
     const result = await Commands.prepare(payload, stateReason, hasPassedValidation)
     const t = Translator.toTransfer(result)
     Events.emitTransferPrepared(t)
-    return {existing: result.existing, transfer: t}
+    return {transfer: t}
   } catch (e) {
     throw e
   }

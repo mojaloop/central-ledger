@@ -109,18 +109,15 @@ Test('Transfer-Index', transferIndexTest => {
 
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
-        await CommandsIndex.prepare.returns(P.resolve(prepareResponse))
-        await Translator.toTransfer.returns(P.resolve(payload))
-        await Events.emitTransferPrepared.returns(P.resolve(true))
+        CommandsIndex.prepare.returns(P.resolve(prepareResponse))
+        Translator.toTransfer.returns(payload)
         const response = await TransferIndex.prepare(payload)
-        //test.deepEqual(prepareResponse, )
-        test.ok
+        test.equal(response.transfer, payload)
         test.end()
       } catch (e) {
         test.fail('Error Thrown')
         test.end()
       }
-
     })
     preparedTest.end()
   })
