@@ -31,13 +31,43 @@
 'use strict'
 
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Commands = require('../../domain/position')
+const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 
+
 const POSITION = 'position'
+const TRANSFER = 'transfer'
+
 const PREPARE = 'prepare'
+
+const positions =  async (error, messages) => {
+  if (error) {
+    Logger.error(error)
+  }
+  let message = {}
+  try {
+    if (Array.isArray(messages)) {
+      message = messages[0]
+    } else {
+      message = messages
+    }
+    Logger.info('TransferHandler::position')
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, POSITION, PREPARE))
+    const payload = message.value.content.payload
+    // Will follow framework flow in future
+    await Projection.updateTransferState(payload)
+    await Utility.produceGeneralMessage(TRANSFER, TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
+    await consumer.commitMessageSync(message)
+    return true
+  } catch (error) {
+    Logger.error(error)
+  }
+}
+
+
+
 
 /**
  * @method CreatePositionHandler
@@ -51,11 +81,10 @@ const PREPARE = 'prepare'
 const createPositionHandler = async (participantName) => {
   try {
     const positionHandler = {
-      command: Commands.generatePositionPlaceHolder,
+      command: positions,
       topicName: Utility.transformAccountToTopicName(participantName, POSITION, PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
     }
-    positionHandler.config.rdkafkaConf['client.id'] = positionHandler.topicName
     await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
   } catch (error) {
     Logger.error(error)

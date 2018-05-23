@@ -89,6 +89,16 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
   }
   return await TransfersModel.updateTransfer(payload.id, fields)
 }
+//This update should only be done if the transfer id only has the state RECEIVED //TODO
+const updateTransferState = async (payload) => {
+  const transferStateRecord = {
+    transferId: payload.transferId,
+    transferStateId: TransferState.RESERVED,
+    reason: '',
+    changedDate: new Date()
+  }
+  return await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
+}
 
 const saveTransferRejected = async (stateReason, transferId) => {
   try {
@@ -133,5 +143,6 @@ module.exports = {
   saveTransferExecuted,
   saveTransferRejected,
   saveExecutedTransfer,
-  saveSettledTransfers
+  saveSettledTransfers,
+  updateTransferState
 }

@@ -8,8 +8,8 @@ exports.up = function (knex, Promise) {
     t.foreign('transferId').references('transferId').inTable('transfer')
 
     t.text('packet').notNullable().comment('ilpPacket')
-    t.string('condition', 48).notNullable()
-    t.string('fulfillment', 48).defaultTo(null).nullable()
+    t.string('condition', 256).notNullable()
+    t.string('fulfillment', 256).defaultTo(null).nullable()
   })
 }
 
