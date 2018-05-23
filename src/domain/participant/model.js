@@ -46,7 +46,7 @@ exports.update = async (participant, isDisabled) => {
 
 exports.destroyByName = async (participant) => {
   try {
-    await Db.participant.destroy({name: participant.name})
+    return await Db.participant.destroy({name: participant.name})
   } catch (err) {
     throw new Error(err.message)
   }

@@ -24,9 +24,9 @@
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
+const Model = require('../../../src/domain/participant/model')
 const testParticipant = {
-  name: 'fsp' + new Date().getTime(),
+  name: 'fsp',
   currency: 'USD',
   isDisabled: 0,
   createdDate: new Date()
@@ -38,7 +38,7 @@ exports.prepareData = async (name) => {
       {},
       testParticipant,
       {
-        name: name || testParticipant.name
+        name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
       }
     ))
     return await Model.getById(participantId)
@@ -53,7 +53,7 @@ exports.deletePreparedData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyByName(participantName)
+    return await Model.destroyByName({ name: participantName })
   } catch (err) {
     throw new Error(err.message)
   }

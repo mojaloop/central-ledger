@@ -28,10 +28,19 @@ exports.create = async (transfer) => {
 
 exports.getByTransferId = async (transferId) => {
   try {
-    return await Db.ilp
-      .select({ transferId: transferId })
-      .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
-      .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
+    return await Db.ilp.query(async (builder) => {
+      return builder
+        .where({'ilp.transferId': transferId})
+        // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`)
+        .innerJoin('transfer as transfer', 'transfer.transferId', 'ilp.transferId')
+        .select('ilp.*')
+        .select('transfer.*')
+        .first()
+    })
+    // return await Db.ilp
+    //   .findOne({ transferId: transferId })
+    //   .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
+    //   .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
     throw new Error(err.message)
   }

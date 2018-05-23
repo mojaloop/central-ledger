@@ -13,9 +13,7 @@ const findExpired = (expiresAt) => {
 
 const saveTransfer = async (record) => {
   Logger.debug('save transfer' + record.toString())
-  return await Db.transfer.insert(record).catch(err => {
-    throw err
-  })
+  return await Db.transfer.insert(record)
 }
 
 const getAll = async () => {
@@ -62,15 +60,23 @@ const truncateTransfers = async () => {
   return await Db.transfer.truncate()
 }
 
+const destroyByTransferId = async (transfer) => {
+  try {
+    await Db.transfer.destroy({transferId: transfer.transferId})
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 const getById = async (id) => {
   try {
     return await Db.transfer.query(async (builder) => {
       var transferResult = builder
         .where({'transfer.transferId': id})
-        .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
-        .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-        .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
-        .innerJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
+        .leftJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
+        .leftJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
+        .leftJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
+        .leftJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
         .select(
           'transfer.*',
           'transfer.currencyId AS currency',
@@ -99,5 +105,6 @@ module.exports = {
   getAll,
   updateTransfer,
   truncateTransfers,
+  destroyByTransferId,
   getById
 }

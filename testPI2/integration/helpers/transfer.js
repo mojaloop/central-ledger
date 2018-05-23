@@ -42,14 +42,22 @@ exports.prepareData = async () => {
     let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
     let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
 
-    return await Model.saveTransfer({
+    let transferId = 'tr' + new Date().getTime() + Math.ceil((Math.random() * 10000))
+    await Model.saveTransfer({
       payeeParticipantId: participantPayeeResult.participantId,
       payerParticipantId: participantPayerResult.participantId,
+      transferId: transferId,
       amount: 100,
       currencyId: 'USD',
       expirationDate: null,
       transferSettlementBatchId: null
     })
+
+    return {
+      transferId,
+      participantPayerResult,
+      participantPayeeResult
+    }
   } catch (err) {
     throw new Error(err.message)
   }
@@ -57,12 +65,16 @@ exports.prepareData = async () => {
 
 exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
-    let participantPayerResult = await ParticipantPreparationModule.deletePreparedData('payer')
-    let participantPayeeResult = await ParticipantPreparationModule.deletePreparedData('payee')
-
-    return Model.destroy({
+    return Model.destroyByTransferId({
       transferId: transferId
-      // put transfer columns here
+    }).then(async () => {
+      let participantPayerResult = await ParticipantPreparationModule.deletePreparedData(payerName)
+      let participantPayeeResult = await ParticipantPreparationModule.deletePreparedData(payeeName)
+
+      return {
+        participantPayerResult,
+        participantPayeeResult
+      }
     })
   } catch (err) {
     throw new Error(err.message)
