@@ -8,9 +8,11 @@ const CryptoConditions = require('../../../crypto-conditions')
 const Errors = require('../../../errors')
 
 const prepare = async (transfer, stateReason = null, hasPassedValidation = true) => {
-  return await Projection.saveTransferPrepared(transfer, stateReason, hasPassedValidation).catch(err => {
-    throw err
-  })
+  try {
+    return await Projection.saveTransferPrepared(transfer, stateReason, hasPassedValidation)
+  } catch (error) {
+    throw error
+  }
 }
 
 const fulfill = async (fulfillment) => {
@@ -40,7 +42,11 @@ const fulfill = async (fulfillment) => {
 }
 
 const reject = async (stateReason, transferId) => {
-  return await Projection.saveTransferRejected(stateReason, transferId)
+  try {
+    return await Projection.saveTransferRejected(stateReason, transferId)
+  } catch (error) {
+    throw error
+  }
 }
 
 const settle = ({id, settlement_id}) => {
