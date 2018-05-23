@@ -55,7 +55,7 @@ const reject = async (stateReason, transferId) => {
   if (!alreadyRejected) {
     Events.emitTransferRejected(transferStateChange)
   }
-  return {alreadyRejected, transfer: transferStateChange}
+  return {alreadyRejected, transferStateChange}
 }
 
 const expire = (id) => {
