@@ -32,7 +32,7 @@ exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
 
-    let ilpId = await Model.create({
+    await Model.create({
       transferId: transferResult.transferId,
       packet: 'test packet',
       condition: 'test condition',
@@ -43,7 +43,7 @@ exports.prepareData = async () => {
 
     return {
       ilp,
-      transfer: transfer,
+      transfer,
       participantPayer: transferResult.participantPayerResult,
       participantPayee: transferResult.participantPayeeResult
     }

@@ -31,12 +31,12 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
-const Model = require('../../../../src/domain/transfer/models/ilp-model')
+// const Model = require('../../../../src/domain/transfer/models/ilp-model')
 const Service = require('../../../../src/domain/transfer/ilp')
-const TransferModel = require('../../../../src/domain/transfer/index')
+// const TransferModel = require('../../../../src/domain/transfer/index')
 const HelperModule = require('../../helpers/index')
 
-Test('Ilp service', async (ilpTest) => {
+Test('Ilp service tests', async (ilpTest) => {
   let sandbox
 
   let ilpTestValues = [
@@ -154,11 +154,20 @@ Test('Ilp service', async (ilpTest) => {
   })
 
   await ilpTest.test('getByTransferId', async (assert) => {
-
     try {
       for (let ilp of ilpMap.values()) {
         let result = await Service.getByTransferId(ilpMap.get(ilp.ilpId).transferId)
-        assert.equal(JSON.stringify(ilp), JSON.stringify(ilpMap.get(ilp.ilpId)))
+        assert.equal(JSON.stringify(Object.assign({},
+          result,
+          {
+            participantPayer: {
+              name: ilp.participantPayer.name
+            },
+            participantPayee: {
+              name: ilp.participantPayee.name
+            }
+          }
+        )), JSON.stringify(ilp))
 
         assert.comment(`Testing with ilp \n ${JSON.stringify(ilp, null, 2)}`)
         assert.equal(result.transferId, ilp.transferId, ' transferId match')

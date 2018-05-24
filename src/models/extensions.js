@@ -87,3 +87,11 @@ exports.update = async (extension) => {
     throw new Error(err.message)
   }
 }
+
+exports.destroyByTransferId = async (extension) => {
+  try {
+    return await Db.extension.destroy({transferId: extension.transferId})
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}

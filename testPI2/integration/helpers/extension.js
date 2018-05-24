@@ -18,40 +18,50 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
  * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
  ******/
-const Model = require('./models/ilp-model')
 
-// TODO add validations?
+'use strict'
 
-const create = async ({ transferId, packet, condition, fulfillment }) => {
+const TransferPreparationModule = require('./transfer')
+const TransferModel = require('../../../src/domain/transfer/models/transfers-read-model')
+const Model = require('../../../src/models/extensions')
+
+exports.prepareData = async () => {
   try {
-    return await Model.create({ transferId, packet, condition, fulfillment })    
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+    let transferResult = await TransferPreparationModule.prepareData()
 
-const getByTransferId = (transferId) => {
-  return Model.getByTransferId(transferId)
-}
+    await Model.saveExtension({
+      transferId: transferResult.transferId,
+      key: 'extension.key',
+      value: 'extension.value',
+      changedDate: new Date(),
+      changedBy: 'extension.changedBy'
 
-const update = async (transferId, payload) => {
-  try {
-    const ilp = await Model.getByTransferId(transferId)
-    if (!ilp) {
-      throw new Error('transfer for this ILP not found or expired')
+    })
+    let transfer = await TransferModel.getById(transferResult.transferId)
+    let extension = await Model.getByTransferId(transferResult.transferId)
+
+    return {
+      extension,
+      transfer,
+      participantPayer: transferResult.participantPayerResult,
+      participantPayee: transferResult.participantPayeeResult
     }
-    return await Model.update(ilp, payload)
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-module.exports = {
-  create,
-  getByTransferId,
-  update
+exports.deletePreparedData = async (extensionId, transferId, payerName, payeeName) => {
+  try {
+    return await Model.destroyByTransferId({
+      transferId: transferId
+    }).then(async () => {
+      return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
