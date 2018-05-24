@@ -13,53 +13,64 @@ const findExpired = (expiresAt) => {
 
 const saveTransfer = async (record) => {
   Logger.debug('save transfer' + record.toString())
-  return await Db.transfer.insert(record).catch(err => {
+  try {
+    return await Db.transfer.insert(record)
+  } catch (err) {
     throw err
-  })
+  }
 }
 
 const getAll = async () => {
-  return await Db.transfer.query(builder => {
-    var transferResultList = builder
-      .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
-      .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
-      .innerJoin('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId')
-      .innerJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
-      .select(
-        'transfer.*',
-        'transfer.currencyId AS currency',
-        'ca.name AS payerFsp',
-        'da.name AS payeeFsp',
-        'tsc.transferStateId AS internalTransferState',
-        'tsc.changedDate AS completedTimestamp',
-        'ts.enumeration AS transferState',
-        'ilp.packet AS ilpPacket',
-        'ilp.condition AS condition',
-        'ilp.fulfillment AS fulfillment'
-      )
-      .orderBy('tsc.=transferStateChangeId', 'desc')
-      .first()
+  try {
+    return await Db.transfer.query(async (builder) => {
+      let transferResultList = await builder
+        .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
+        .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
+        .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
+        .innerJoin('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId')
+        .innerJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
+        .select(
+          'transfer.*',
+          'transfer.currencyId AS currency',
+          'ca.name AS payerFsp',
+          'da.name AS payeeFsp',
+          'tsc.transferStateId AS internalTransferState',
+          'tsc.changedDate AS completedTimestamp',
+          'ts.enumeration AS transferState',
+          'ilp.packet AS ilpPacket',
+          'ilp.condition AS condition',
+          'ilp.fulfillment AS fulfillment'
+        )
+        .orderBy('tsc.=transferStateChangeId', 'desc')
 
-    transferResultList = transferResultList.map(async transferResult => {
-      transferResult.extensionList = await extensionModel.getByTransferId(transferResult.transferId)
-      transferResult.isTransferReadModel = true
-      return transferResult
+      transferResultList = transferResultList.map(async transferResult => {
+        transferResult.extensionList = await extensionModel.getByTransferId(transferResult.transferId)
+        transferResult.isTransferReadModel = true
+        return transferResult
+      })
+      return transferResultList
     })
-
-    return transferResultList
-  })
+  } catch (err) {
+    throw err
+  }
 }
 
 const updateTransfer = async (transferId, fields) => {
-  return await Db.transfer.update({ transferId: transferId }, fields).catch(err => {
+  try {
+    return await Db.transfer.update({ transferId: transferId }, fields)
+  } catch (err) {
     Logger.info(err)
     throw err
-  })
+  }
 }
 
 const truncateTransfers = async () => {
-  return await Db.transfer.truncate()
+  try {
+    return await Db.transfer.truncate()
+  } catch (err) {
+    Logger.info(err)
+    throw err
+  }
 }
 
 const getById = async (id) => {

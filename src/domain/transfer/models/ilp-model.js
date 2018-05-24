@@ -53,7 +53,7 @@ exports.update = async (ilp, payload) => {
 
 exports.destroyByTransferId = async (ilp) => {
   try {
-    await Db.ilp.destroy({transferId: ilp.transferId})
+    return await Db.ilp.destroy({transferId: ilp.transferId})
   } catch (err) {
     throw new Error(err.message)
   }

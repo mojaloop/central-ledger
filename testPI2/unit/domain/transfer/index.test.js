@@ -48,7 +48,7 @@ const exampleTransfer = {
   condition: 'efd',
   fullfilment: null,
   completedTimeStamp: null,
-  expirationDate: null,
+  expirationDate: new Date().setDate((new Date()).getDate() + 7),
   transferSettlementBatchId: null
 }
 
@@ -63,7 +63,7 @@ Test('Transfer service', async (transferTest) => {
       amount: 100,
       currency: 'USD'
     },
-    expirationDate: Date.now(),
+    expirationDate: new Date().setDate((new Date()).getDate() + 7),
     ilpPacket: 'abc',
     condition: 'efd',
     fullfilment: null
