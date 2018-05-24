@@ -36,13 +36,12 @@ const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 
-
 const POSITION = 'position'
 const TRANSFER = 'transfer'
 
 const PREPARE = 'prepare'
 
-const positions =  async (error, messages) => {
+const positions = async (error, messages) => {
   if (error) {
     Logger.error(error)
   }
@@ -63,11 +62,9 @@ const positions =  async (error, messages) => {
     return true
   } catch (error) {
     Logger.error(error)
+    throw error
   }
 }
-
-
-
 
 /**
  * @method CreatePositionHandler
