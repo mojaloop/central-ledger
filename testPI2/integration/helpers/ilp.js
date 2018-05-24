@@ -25,18 +25,28 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
+const TransferModel = require('../../../src/domain/transfer/models/transfers-read-model')
 const Model = require('../../../src/domain/transfer/models/ilp-model')
 
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
 
-    return await Model.create({
+    let ilpId = await Model.create({
       transferId: transferResult.transferId,
-      packet: transferResult.packet,
-      condition: transferResult.condition,
-      fulfillment: transferResult.fulfillment
+      packet: 'test packet',
+      condition: 'test condition',
+      fulfillment: 'test fulfillment'
     })
+    let transfer = await TransferModel.getById(transferResult.transferId)
+    let ilp = await Model.getByTransferId(transferResult.transferId)
+
+    return {
+      ilp,
+      transfer: transfer,
+      participantPayer: transferResult.participantPayerResult,
+      participantPayee: transferResult.participantPayeeResult
+    }
   } catch (err) {
     throw new Error(err.message)
   }
@@ -44,10 +54,10 @@ exports.prepareData = async () => {
 
 exports.deletePreparedData = async (ilpId, transferId, payerName, payeeName) => {
   try {
-    let transferResult = await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
-
     return await Model.destroyByTransferId({
       transferId: transferId
+    }).then(async () => {
+      return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {
     throw new Error(err.message)
