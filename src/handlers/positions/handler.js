@@ -131,5 +131,6 @@ const registerAllHandlers = async () => {
 
 module.exports = {
   registerPositionHandlers,
-  registerAllHandlers
+  registerAllHandlers,
+  positions
 }

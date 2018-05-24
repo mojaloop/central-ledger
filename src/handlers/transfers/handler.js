@@ -89,6 +89,7 @@ const prepare = async (error, messages) => {
         await TransferHandler.prepare(payload)
         await consumer.commitMessageSync(message)
         // position topic to be created and inserted here
+        await Utility.produceParticipantMessage(payload.payerFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')

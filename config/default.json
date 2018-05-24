@@ -145,7 +145,7 @@
         "EVENT": {
           "config": {
             "options": {
-              "mode": 1,
+              "mode": 2,
               "batchSize": 1,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
@@ -155,7 +155,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "notification",
+              "client.id": "notification-event",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",

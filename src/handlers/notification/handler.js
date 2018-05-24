@@ -30,12 +30,33 @@
  ******/
 'use strict'
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Commands = require('../../domain/position')
 const Utility = require('../lib/utility')
 const Kafka = require('../lib/kafka')
 
 const NOTIFICATION = 'notification'
 const EVENT = 'event'
+
+
+const mockNotification = async (error, messages) =>{
+  if (error) {
+    // Logger.error(error)
+    throw new Error()
+  }
+  let message = {}
+  try {
+    if (Array.isArray(messages)) {
+      message = messages[0]
+    } else {
+      message = messages
+    }
+    Logger.info('NotificationHandler::notification')
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(NOTIFICATION, EVENT))
+    await consumer.commitMessageSync(message)
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
+}
 
 /**
  * @method RegisterNotificationHandler
@@ -48,7 +69,7 @@ const EVENT = 'event'
 const registerNotificationHandler = async () => {
   try {
     const notificationHandler = {
-      command: Commands.generatePositionPlaceHolder, // to be changed once notifications are added
+      command: mockNotification, // to be changed once notifications are added
       topicName: Utility.transformGeneralTopicName(NOTIFICATION, EVENT),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, NOTIFICATION.toUpperCase(), EVENT.toUpperCase())
     }
@@ -69,16 +90,17 @@ const registerNotificationHandler = async () => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerAllHandlers = async () => {
-  // try {
-  //   await registerNotificationHandler()
-  //   return true
-  // } catch (e) {
-  //   throw e
-  // }
+  try {
+    await registerNotificationHandler()
+    return true
+  } catch (e) {
+    throw e
+  }
   return true
 }
 
 module.exports = {
   registerNotificationHandler,
-  registerAllHandlers
+  registerAllHandlers,
+  mockNotification
 }

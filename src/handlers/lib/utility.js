@@ -68,6 +68,16 @@ const CONSUMER = 'CONSUMER'
 const NOTIFICATION = 'notification'
 
 /**
+ * The Position config required
+ *
+ * This ENUM is for the Position message being created
+ *
+ * @typedef {object} ENUMS~POSITION
+ * @property {string} POSITION - position to be used to update metadata
+ */
+const POSITION = 'position'
+
+/**
  * The EVENT config required
  *
  * This ENUM is for the topic being created
@@ -113,6 +123,7 @@ const ENUMS = {
   PRODUCER,
   CONSUMER,
   NOTIFICATION,
+  POSITION,
   STATE,
   EVENT
 }

@@ -96,6 +96,7 @@
     "urlsafe-base64": "1.0.0",
     "uuid4": "1.0.0",
     "vision": "5.3.1",
+    "wait-for-stuff": "^1.4.0",
     "winston": "2.4.0",
     "ws": "4.0.0"
   },
