@@ -11,6 +11,64 @@ const TransferHandler = require('../../../../src/domain/transfer')
 const Utility = require('../../../../src/handlers/lib/utility')
 const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const DAO = require('../../../../src/handlers/lib/dao')
+const Uuid = require('uuid4')
+const Logger = require('@mojaloop/central-services-shared').Logger
+const TransferStateChange =  require('../../../../src/domain/transfer/models/transferStateChanges')
+
+const transfer = {
+  transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+  payerFsp: 'dfsp1',
+  payeeFsp: 'dfsp2',
+  amount: {
+    currency: 'USD',
+    amount: '433.88'
+  },
+  ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+  condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+  expiration: '2016-05-24T08:38:08.699-04:00',
+  extensionList: {
+    extension: [
+      {
+        key: 'key1',
+        value: 'value1'
+      },
+      {
+        key: 'key2',
+        value: 'value2'
+      }
+    ]
+  }
+}
+
+const messageProtocol = {
+  id: transfer.transferId,
+  from: transfer.payerFsp,
+  to: transfer.payeeFsp,
+  type: 'application/json',
+  content: {
+    header: '',
+    payload: transfer
+  },
+  metadata: {
+    event: {
+      id: Uuid(),
+      type: 'prepare',
+      action: 'prepare',
+      createdAt: new Date(),
+      state: {
+        status: 'success',
+        code: 0
+      }
+    }
+  },
+  pp: ''
+}
+
+const messages = [
+  {
+    value: messageProtocol
+  }
+]
 
 const topicName = 'topic-test'
 
@@ -34,7 +92,7 @@ const config = {
   }
 }
 
-const command = () => {}
+const  command = () => {}
 
 const participants = ['testName1', 'testName2']
 
@@ -52,6 +110,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(TransferQueries)
     sandbox.stub(TransferHandler)
     sandbox.stub(Utility)
+    sandbox.stub(TransferStateChange)
     Utility.transformAccountToTopicName.returns(topicName)
     Utility.produceGeneralMessage.returns(P.resolve())
     test.end()
@@ -100,6 +159,23 @@ Test('Transfer handler', transferHandlerTest => {
 
     registerHandlersTest.end()
   })
+
+  transferHandlerTest.test('positions should be able to ', positionsTest => {
+    positionsTest.test('Update transferStateChange in the database when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+//      await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      const result = await allTransferHandlers.positions(null, messages)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+    positionsTest.end()
+  })
+
+
 
   transferHandlerTest.end()
 })
