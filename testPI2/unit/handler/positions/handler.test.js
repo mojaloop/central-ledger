@@ -175,7 +175,23 @@ Test('Transfer handler', transferHandlerTest => {
     positionsTest.end()
   })
 
-
-
+  transferHandlerTest.test('positions should be able to ', positionsTest => {
+    positionsTest.test('Update transferStateChange in the database when messages is an array', async (test) => {
+      try {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+//      await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+      TransferStateChange.saveTransferStateChange.returns(new Error)
+      const result = await allTransferHandlers.positions(new Error, null)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (e) {
+      test.pass('Error thrown')
+      test.end()
+    }
+    })
+    positionsTest.end()
+  })
   transferHandlerTest.end()
 })
