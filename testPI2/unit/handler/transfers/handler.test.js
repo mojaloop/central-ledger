@@ -229,33 +229,42 @@ Test('Transfer handler', transferHandlerTest => {
       TransferQueries.getById.returns(P.resolve(null))
       TransferDomain.prepare.returns(P.resolve(true))
 
-      var testFunc = (str) => {
-        return `${str} world`
+      var testFunc = (str1, str2) => {
+        var result = `${str1}.world.${str2}`
+        console.log(result)
+        return result
       }
 
       var testClassCallback = {
         run: function (var1) {
-          console.log(var1('hello'))
-          return true
+          // logic that is going to DB
+          console.log(`testClassCallback - ${var1('hello', 'john')}`)
+          // console.log(var1('hello', 'john'))
+          return var1('hello', 'john')
         }
       }
 
       console.log('1!!!')
       console.log(`1- testClassCallback.run(testFunc) = ${testClassCallback.run(testFunc)}`)
 
-      sandbox.stub(testClassCallback, 'run').returns(false).callsArg(0)
+      // sandbox.stub(testClassCallback, 'run').returns(false).callsArgWith(0, 'test', 'bleh')
+      sandbox.stub(testClassCallback, 'run').returns(false).yields('test', 'bleh')
 
       console.log('2!!!')
       console.log(`2- testClassCallback.run(testFunc) = ${testClassCallback.run(testFunc)}`)
 
-      process.exit(0)
-      var stubKafkaConsumerPrototypeConsume = sandbox.stub(KafkaConsumer.prototype, 'consume').callsArgWith(0, null, messages).returns(P.resolve())
+      // process.exit(0)
+
+      // var stubKafkaConsumerPrototypeConsume = sandbox.stub(KafkaConsumer.prototype, 'consume').callsArgWith(0, [null, messages]).returns(P.resolve())
+      console.log('stubbing the stuff')
+      var stubKafkaConsumerPrototypeConsume = sandbox.stub(KafkaConsumer.prototype, 'consume').callsArgWith(0, null, messages)
+      // var stubKafkaConsumerPrototypeConsume = sandbox.stub(KafkaConsumer.prototype, 'consume').returns(P.reject(true)).yields(null, messages)
 
       await Consumer.createHandler(topicName, config, command)
       var result = false
 
       // result = await allTransferHandlers.prepare(null, messages[0])
-      // await stubKafkaConsumerPrototypeConsume.callArgWith(0, [null, messages])
+
       var startTime = moment()
       var targetProcessingTimeInSeconds = 10
       var elapsedSeconds = 0
@@ -271,8 +280,8 @@ Test('Transfer handler', transferHandlerTest => {
         }
       }
 
-      test.equal(isAllTransferHandlersPrepareCalled, true)
-      test.equal(result, true)
+      test.equal(isAllTransferHandlersPrepareCalled, true, 'prepare callback was executed')
+      test.equal(result, true, `prepare callback was executed returned ${result}`)
       test.end()
       spyForAllTransferHandlersPrepare.restore()
     })
