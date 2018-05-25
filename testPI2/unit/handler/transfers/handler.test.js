@@ -9,7 +9,7 @@ const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferQueries = require('../../../../src/domain/transfer/queries')
 const TransferDomain = require('../../../../src/domain/transfer')
 const Utility = require('../../../../src/handlers/lib/utility')
-const moment = require('moment')
+const Moment = require('moment')
 const Uuid = require('uuid4')
 const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Consumer = require('../../../../src/handlers/lib/kafka/consumer')
@@ -265,13 +265,13 @@ Test('Transfer handler', transferHandlerTest => {
 
       // result = await allTransferHandlers.prepare(null, messages[0])
 
-      var startTime = moment()
+      var startTime = Moment()
       var targetProcessingTimeInSeconds = 10
       var elapsedSeconds = 0
       let isAllTransferHandlersPrepareCalled = false
 
       while (elapsedSeconds < targetProcessingTimeInSeconds) {
-        elapsedSeconds = moment().diff(startTime, 'seconds')
+        elapsedSeconds = Moment().diff(startTime, 'seconds')
         Logger.debug(`elapsedSeconds...${elapsedSeconds}`)
         isAllTransferHandlersPrepareCalled = spyForAllTransferHandlersPrepare.called
         if (isAllTransferHandlersPrepareCalled) {
