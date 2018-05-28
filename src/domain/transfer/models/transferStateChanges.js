@@ -41,8 +41,13 @@ const saveTransferStateChange = async (stateChange) => {
 
 const getByTransferId = async (id) => {
   try {
-    let transferStateChanges = await Db.transferStateChange.find({ transferId: id }, { order: 'changedDate desc' })
-    return transferStateChanges[0]
+    // let transferStateChanges = await Db.transferStateChange.find({ transferId: id }, { order: 'changedDate desc' })
+    // return transferStateChanges[0]
+    return await Db.transferStateChange.query(async (builder) => {
+      let result = builder.select('transferStateChange.*').orderBy('changedDate', 'desc').first()
+      if (!result) throw new Error('no such transfer')
+      return result
+    })
   } catch (err) {
     throw err
   }

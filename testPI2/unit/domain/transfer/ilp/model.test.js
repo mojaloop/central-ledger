@@ -122,10 +122,12 @@ Test('Ilp model', async (ilpTest) => {
       ).returns(ilpId)
       let updatedId = await Model.update({ ilpId: ilpId }, { packet: 'new test packet' })
       assert.equal(updatedId, ilpId)
+      sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`update ilp failed with error - ${err}`)
       assert.fail(`update ilp failed with error - ${err}`)
+      sandbox.restore()
       assert.end()
     }
   })

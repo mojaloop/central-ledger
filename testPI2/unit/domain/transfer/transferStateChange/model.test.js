@@ -27,10 +27,10 @@
 
 const Test = require('tape') // require('tapes')(require('tape')) //
 const Sinon = require('sinon')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Config = require('../../../../src/lib/config')
-const Model = require('../../../../src/domain/transfer/models/transferStateChanges')
+const Model = require('../../../../../src/domain/transfer/models/transferStateChanges')
 
 Test('TransferStateChange model', async (transferStateChangeModel) => {
   let sandbox
@@ -49,8 +49,21 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
   sandbox = Sinon.sandbox.create()
   Db.transferStateChange = {
     insert: sandbox.stub(),
-    findOne: sandbox.stub()
+    query: sandbox.stub()
   }
+
+  let builderStub = sandbox.stub()
+  let orderStub = sandbox.stub()
+  let firstStub = sandbox.stub()
+  builderStub.select = sandbox.stub()
+
+  Db.transferStateChange.query.callsArgWith(0, builderStub)
+  Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
+  builderStub.select.returns({
+    orderBy: orderStub.returns({
+      first: firstStub.returns(transferStateChangeModelFixtures[0])
+    })
+  })
 
   await transferStateChangeModel.test('create false transfer state change', async (assert) => {
     Db.transferStateChange.insert.withArgs({
@@ -76,32 +89,22 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
       assert.equal(result, 1, ` returns ${result}`)
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transferStateChange failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await transferStateChangeModel.test('get extensions by transferId with empty id', async (assert) => {
-    Db.transferStateChange.findOne.withArgs({ transferId: '' }).throws(new Error())
-    try {
-      await Model.getByTransferId('')
-      assert.fail(' should throws with empty name ')
-    } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
-    }
-    assert.end()
-  })
-
-  await transferStateChangeModel.test('get by extensionId', async (assert) => {
-    Db.transferStateChange.findOne.withArgs({transferId: 1}).returns(transferStateChangeModelFixtures[0])
+  await transferStateChangeModel.test('get by transferId', async (assert) => {
     try {
       var result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferStateChangeModelFixtures[0])
       assert.end()
+      sandbox.restore()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transferStateChange failed with error - ${err}`)
       assert.fail()
+      sandbox.restore()
       assert.end()
     }
   })

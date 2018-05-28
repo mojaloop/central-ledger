@@ -170,10 +170,12 @@ Test('Extension model', async (extensionModelTest) => {
       let updatedId = await Model.update(
         Object.assign(extensionModelFixtures[1], { extensionId: 1, transferId: 1 }), Object.assign(extensionModelFixtures[1], { transferId: 1 }))
       assert.equal(updatedId, 1)
+      sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
       assert.fail()
+      sandbox.restore()
       assert.end()
     }
   })

@@ -175,9 +175,11 @@ Test('Participant service', async (participantTest) => {
         let updated = await Service.update(participant.name, {is_disabled: 1})
         assert.equal(updated, participant)
       }
+      sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
+      sandbox.restore()
       assert.fail()
       assert.end()
     }

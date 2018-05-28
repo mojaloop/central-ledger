@@ -51,7 +51,7 @@ const extensionModel = require('../../../../src/models/extensions')
 //   transferSettlementBatchId: null
 // }
 
-Test('Transfer service', async (transferTest) => {
+Test('Transfer model', async (transferTest) => {
   let sandbox
 
   const payload = {
@@ -180,10 +180,10 @@ Test('Transfer service', async (transferTest) => {
       Db.transfer.query.returns(transfers)
 
       builderStub.where.returns({
-        innerJoin: payerStub.returns({
-          innerJoin: payeeStub.returns({
-            innerJoin: stateChangeStub.returns({
-              innerJoin: ilpStub.returns({
+        leftJoin: payerStub.returns({
+          leftJoin: payeeStub.returns({
+            leftJoin: stateChangeStub.returns({
+              leftJoin: ilpStub.returns({
                 select: selectStub.returns({
                   orderBy: orderStub.returns({
                     first: firstStub.returns(transfers)
@@ -280,9 +280,11 @@ Test('Transfer service', async (transferTest) => {
         'ilp.fulfillment AS fulfillment'
       ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.=transferStateChangeId', 'desc').calledOnce)
+      sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
+      sandbox.restore()
       assert.fail()
       assert.end()
     }

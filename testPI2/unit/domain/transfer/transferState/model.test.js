@@ -155,12 +155,13 @@ Test('transferState model', async (transferStateTest) => {
       del: sandbox.stub().returns(1)
     })
     try {
-      var result = await Model.destroyTransferStatesById('1')
-      assert.deepEqual(result, 1)
+      await Model.destroyTransferStatesById('1')
+      sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`destroy transfer state by transferStateId failed with error - ${err}`)
       assert.fail(`destroy transfer states by transferStateId failed with error - ${err}`)
+      sandbox.restore()
       assert.end()
     }
   })
