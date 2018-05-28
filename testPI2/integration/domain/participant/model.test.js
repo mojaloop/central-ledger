@@ -153,8 +153,8 @@ Test('Participant service', async (participantTest) => {
     try {
       for (let participantId of participantMap.keys()) {
         let updatedId = await Model.update(participantMap.get(participantId), true)
-        let p = await Model.getById(updatedId)
-        assert.equal(updatedId, p.participantId)
+        let p = await Model.getById(participantId)
+        assert.equal(updatedId, 1)
         assert.equal(p.isDisabled, 1)
       }
       assert.end()

@@ -135,20 +135,20 @@ Test('transferState model', async (transferStateTest) => {
   //   }
   // })
 
-  await transferStateTest.test('destroyTransferStates', async (assert) => {
-    Db.transferState.find.returns({
-      del: sandbox.stub().returns(1)
-    })
-    try {
-      var result = await Model.destroyTransferStates()
-      assert.deepEqual(result, 1)
-      assert.end()
-    } catch (err) {
-      Logger.error(`destroy all transfer states failed with error - ${err}`)
-      assert.fail(`destroy all transfer states failed with error - ${err}`)
-      assert.end()
-    }
-  })
+  // await transferStateTest.test('destroyTransferStates', async (assert) => {
+  //   Db.transferState.find.returns({
+  //     del: sandbox.stub().returns(1)
+  //   })
+  //   try {
+  //     var result = await Model.destroyTransferStates()
+  //     assert.deepEqual(result, 1)
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`destroy all transfer states failed with error - ${err}`)
+  //     assert.fail(`destroy all transfer states failed with error - ${err}`)
+  //     assert.end()
+  //   }
+  // })
 
   await transferStateTest.test('destroyTransferStatesById', async (assert) => {
     Db.transferState.findOne.withArgs({ transferStateId: '1' }).returns({

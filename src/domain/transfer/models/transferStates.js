@@ -78,7 +78,7 @@ const getAll = () => {
 
 const destroyTransferStates = () => {
   try {
-    return Db.transferState.find({}).del()
+    return Db.transferState.destroy()
   } catch (err) {
     throw new Error(err.message)
   }
