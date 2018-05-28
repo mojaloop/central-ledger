@@ -40,7 +40,8 @@ const create = async function (request, h) {
   try {
     const entity = await Participant.getByName(request.payload.name)
     await handleExistingRecord(entity)
-    const participant = await Participant.create(request.payload)
+    const participantId = await Participant.create(request.payload)
+    const participant = await Participant.getById(participantId)
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)

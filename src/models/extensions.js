@@ -32,13 +32,14 @@ const Util = require('../lib/util')
 
 exports.saveExtension = async (extension) => {
   try {
-    return await Db.extension.insert({
+    let ext = {
       transferId: extension.transferId,
       key: extension.key,
       value: extension.value,
       changedDate: extension.changedDate,
       changedBy: extension.changedBy
-    })
+    }
+    return await Db.extension.insert(ext)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -82,6 +83,14 @@ exports.update = async (extension) => {
   }
   try {
     return await Db.extension.update({extensionId: extension.extensionId}, Util.filterUndefined(fields))
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.destroyByTransferId = async (extension) => {
+  try {
+    return await Db.extension.destroy({transferId: extension.transferId})
   } catch (err) {
     throw new Error(err.message)
   }

@@ -30,46 +30,73 @@ const Db = require('../../../db')
 // const TransferState = require('../state')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-const saveTransferState = (transferState) => {
+const saveTransferState = async (transferState) => {
   Logger.debug('save transferState' + transferState.toString())
-  return Db.transferState.insert(transferState).catch(err => {
-    throw err
-  })
+
+  try {
+    return await Db.transferState.insert(transferState)
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
+
+// const getByTransferStateId = (id) => {
+//   return Db.transferState.query(builder => {
+//     return builder
+//       .where({ transferStateId: id })
+//       .select('transferState.*')
+//       .first()
+//   })
+// }
 
 const getByTransferStateId = (id) => {
-  return Db.transferState.query(builder => {
-    return builder
-      .where({ transferStateId: id })
-      .select('transferState.*')
-      .first()
-  })
+  try {
+    return Db.transferState.findOne({ transferStateId: id })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
+
+// const getAll = () => {
+//   return Db.transferState.query(builder => {
+//     return builder
+//       .select('transferState.*')
+//   })
+// }
 
 const getAll = () => {
-  return Db.transferState.query(builder => {
-    return builder
-      .select('transferState.*')
-  })
+  try {
+    return Db.transferState.find({})
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
-const truncateTransferStates = () => {
-  return Db.transferState.truncate()
-}
+// const truncateTransferStates = () => {
+//   return Db.transferState.truncate()
+// }
 
 const destroyTransferStates = () => {
-  return Db.transferState.destroy()
+  try {
+    return Db.transferState.find({}).del()
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
 const destroyTransferStatesById = (id) => {
-  return Db.transferState.destroy({ 'transferStateId =': id })
+  try {
+    return Db.transferState.destroy({ transferStateId: id })
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
 module.exports = {
   saveTransferState,
   getByTransferStateId,
   getAll,
-  truncateTransferStates,
+  // truncateTransferStates,
   destroyTransferStates,
   destroyTransferStatesById
 }

@@ -18,40 +18,52 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
  * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
  ******/
-const Model = require('./models/ilp-model')
+'use strict'
 
-// TODO add validations?
+const Model = require('../../../src/domain/transfer/models/transferStates')
 
-const create = async ({ transferId, packet, condition, fulfillment }) => {
-  try {
-    return await Model.create({ transferId, packet, condition, fulfillment })    
-  } catch (err) {
-    throw new Error(err.message)
+const testTransferStates = [
+  {
+    'transferStateId': 'TEST_RECEIVED',
+    'enumeration': 'RECEIVED',
+    'description': 'Next ledger has received the transfer.'
+  },
+  {
+    'transferStateId': 'TEST_RESERVED',
+    'enumeration': 'RESERVED',
+    'description': 'Next ledger has reserved the transfer.'
+  },
+  {
+    'transferStateId': 'TEST_COMMITTED',
+    'enumeration': 'COMMITTED',
+    'description': 'Next ledger has successfully performed the transfer.'
+  },
+  {
+    'transferStateId': 'TEST_ABORTED',
+    'enumeration': 'ABORTED',
+    'description': 'Next ledger has aborted the transfer due a rejection or failure to perform the transfer.'
+  },
+  {
+    'transferStateId': 'TEST_SETTLED',
+    'enumeration': 'COMMITTED',
+    'description': 'Ledger has settled the transfer'
   }
-}
+]
 
-const getByTransferId = (transferId) => {
-  return Model.getByTransferId(transferId)
-}
-
-const update = async (transferId, payload) => {
-  try {
-    const ilp = await Model.getByTransferId(transferId)
-    if (!ilp) {
-      throw new Error('transfer for this ILP not found or expired')
-    }
-    return await Model.update(ilp, payload)
-  } catch (err) {
-    throw new Error(err.message)
+exports.prepareData = async () => {
+  for (let state of testTransferStates) {
+    await Model.saveTransferState(state)
   }
+  return testTransferStates
 }
 
-module.exports = {
-  create,
-  getByTransferId,
-  update
+exports.deletePreparedData = async () => {
+  let result = []
+  for (let state of testTransferStates) {
+    result.push(await Model.destroyTransferStatesById(state.transferStateId))
+  }
+  return result
 }

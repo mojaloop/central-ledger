@@ -18,40 +18,43 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
  * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
  ******/
-const Model = require('./models/ilp-model')
 
-// TODO add validations?
+'use strict'
 
-const create = async ({ transferId, packet, condition, fulfillment }) => {
+const Model = require('../../../src/domain/participant/model')
+const testParticipant = {
+  name: 'fsp',
+  currency: 'USD',
+  isDisabled: 0,
+  createdDate: new Date()
+}
+
+exports.prepareData = async (name) => {
   try {
-    return await Model.create({ transferId, packet, condition, fulfillment })    
+    let participantId = await Model.create(Object.assign(
+      {},
+      testParticipant,
+      {
+        name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
+      }
+    ))
+    return await Model.getById(participantId)
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-const getByTransferId = (transferId) => {
-  return Model.getByTransferId(transferId)
-}
+exports.deletePreparedData = async (participantName) => {
+  if (!participantName) {
+    throw new Error('Please provide a valid participant name!')
+  }
 
-const update = async (transferId, payload) => {
   try {
-    const ilp = await Model.getByTransferId(transferId)
-    if (!ilp) {
-      throw new Error('transfer for this ILP not found or expired')
-    }
-    return await Model.update(ilp, payload)
+    return await Model.destroyByName({ name: participantName })
   } catch (err) {
     throw new Error(err.message)
   }
-}
-
-module.exports = {
-  create,
-  getByTransferId,
-  update
 }
