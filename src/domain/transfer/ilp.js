@@ -26,9 +26,9 @@ const Model = require('./models/ilp-model')
 
 // TODO add validations?
 
-const create = async ({ transferId, packet, condition, fulfillment }) => {
+const create = async ({transferId, packet, condition, fulfillment}) => {
   try {
-    return await Model.create({ transferId, packet, condition, fulfillment })    
+    return await Model.create({transferId, packet, condition, fulfillment})
   } catch (err) {
     throw new Error(err.message)
   }

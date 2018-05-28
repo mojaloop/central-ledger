@@ -34,7 +34,7 @@
     "test:xunit": "tape 'testPI2/unit/**/*.test.js' | tap-xunit",
     "test:coverage": "istanbul cover tape -- 'testPI2/unit/**/*.test.js'",
     "test:coverage-check": "npm run test:coverage && istanbul check-coverage",
-    "test:integration": "sh ./testPI2/integration-runner.sh ./test/integration-runner.env",
+    "test:integration": "sh ./testPI2/integration-runner.sh ./testPI2/integration-runner.env",
     "test:functional": "run-s docker:build test:functional:test-only",
     "test:functional:test-only": "sh ./testPI2/functional-runner.sh docker-compose.yml docker-compose.functional.yml ./test/.env",
     "test:spec:test-only": "sh ./testPI2/spec-runner.sh ./test/.env",

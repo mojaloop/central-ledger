@@ -139,7 +139,11 @@ Test('Participant service', async (participantTest) => {
     try {
       for (let participantId of participantMap.keys()) {
         let participant = await Model.getById(participantId)
-        assert.deepEqual(participant, participantMap.get(participantId))
+        var currentParticipant = participantMap.get(participantId)
+        assert.equal(participant.name, currentParticipant.name, ' names are equal')
+        assert.equal(participant.currencyId, currentParticipant.currency, ' currencies match')
+        assert.equal(participant.isDisabled, currentParticipant.isDisabled, ' isDisabled flag match')
+        assert.ok(Sinon.match(participant.createdDate, currentParticipant.createdDate), ' created date matches')
       }
       assert.end()
     } catch (err) {
@@ -153,8 +157,8 @@ Test('Participant service', async (participantTest) => {
     try {
       for (let participantId of participantMap.keys()) {
         let updatedId = await Model.update(participantMap.get(participantId), true)
-        let p = await Model.getById(updatedId)
-        assert.equal(updatedId, p.participantId)
+        let p = await Model.getById(participantId)
+        assert.equal(updatedId, 1)
         assert.equal(p.isDisabled, 1)
       }
       assert.end()

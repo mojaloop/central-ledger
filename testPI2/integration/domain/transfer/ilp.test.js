@@ -186,7 +186,7 @@ Test('Ilp service tests', async (ilpTest) => {
   await ilpTest.test('update', async (assert) => {
     try {
       for (let ilp of ilpMap.values()) {
-        let result = await Service.update(ilp.transferId, { packet: 'new test packet' })
+        let result = await Service.update(ilp.transferId, {packet: 'new test packet'})
         let ilpDb = await Service.getByTransferId(ilp.transferId)
         assert.equal(result, 1, ' ilp is updated')
         assert.equal(ilp.ilpId, ilpDb.ilpId, ' ids match')

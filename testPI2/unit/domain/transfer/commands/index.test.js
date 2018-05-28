@@ -170,6 +170,6 @@ Test('Commands-Index', commandIndextTest => {
     })
     rejectTest.end()
   })
-  commandIndextTest.end()
 
+  commandIndextTest.end()
 })

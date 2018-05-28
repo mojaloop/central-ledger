@@ -146,9 +146,11 @@ Test('Participant model', async (participantTest) => {
       ).returns(participantId)
       let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
       assert.equal(updatedId, participantId)
+      sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
+      sandbox.restore()
       assert.fail()
       assert.end()
     }

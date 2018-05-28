@@ -31,6 +31,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Db = require('../../../../../src/db/index')
 const Config = require('../../../../../src/lib/config')
 const Model = require('../../../../../src/domain/transfer/models/transferStates')
+const _ = require('lodash')
 
 Test('transferState Model Test', async (transferStateTest) => {
   let sandbox
@@ -58,7 +59,7 @@ Test('transferState Model Test', async (transferStateTest) => {
     },
     {
       'transferStateId': 'TEST_SETTLED',
-      'enumeration': 'COMMITTED',
+      'enumeration': 'SETTLED',
       'description': 'Ledger has settled the transfer'
     }
   ]
@@ -71,15 +72,15 @@ Test('transferState Model Test', async (transferStateTest) => {
   await transferStateTest.test('setup', async (assert) => {
     try {
       sandbox = Sinon.sandbox.create()
-      await Db.connect(Config.DATABASE_URI).then(() => {
-        Model.destroyTransferStates()
-        assert.pass()
-        assert.end()
-      }).catch(err => {
-        Logger.error(`Setup for test failed with error - ${err}`)
-        assert.fail()
-        assert.end()
-      })
+      await Db.connect(Config.DATABASE_URI)
+      for (let state of transferTestStates) {
+        var result = await Model.getByTransferStateId(state.transferStateId)
+        if (result) {
+          await Model.destroyTransferStatesById(state.transferStateId)
+        }
+      }
+      assert.pass()
+      assert.end()
     } catch (err) {
       Logger.error(`setup failed with error - ${err}`)
       assert.fail()
@@ -122,7 +123,8 @@ Test('transferState Model Test', async (transferStateTest) => {
 
       const transferStateList = await Model.getAll()
       if (Array.isArray(transferStateList)) {
-        transferStateList.forEach(state => {
+        const similarTransferStateList = await _.intersectionBy(transferStateList, transferTestStates, 'transferStateId')
+        similarTransferStateList.forEach(state => {
           assert.ok(Sinon.match(state, transferTestStatesMap[state.transferStateId]), `${state.transferStateId} transferState results match`)
         })
       } else {
@@ -139,11 +141,10 @@ Test('transferState Model Test', async (transferStateTest) => {
   await transferStateTest.test('destroyTransferStatesById', async (assert) => {
     try {
       assert.plan(transferTestStates.length)
-
-      transferTestStates.forEach(async state => {
+      for (let state of transferTestStates) {
         var result = await Model.destroyTransferStatesById(state.transferStateId)
         assert.ok(Sinon.match(result, true))
-      })
+      }
     } catch (err) {
       Logger.error(`destroyTransferStatesById failed with error - ${err}`)
       assert.fail()
@@ -151,17 +152,17 @@ Test('transferState Model Test', async (transferStateTest) => {
     }
   })
 
-  await transferStateTest.test('destroyTransferStates', async (assert) => {
-    try {
-      var result = await Model.destroyTransferStates()
-      assert.ok(Sinon.match(result, true))
-      assert.end()
-    } catch (err) {
-      Logger.error(`destroyTransferStatesById failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
+  // await transferStateTest.test('destroyTransferStates', async (assert) => {
+  //   try {
+  //     var result = await Model.destroyTransferStates()
+  //     assert.ok(Sinon.match(result, true))
+  //     assert.end()
+  //   } catch (err) {
+  //     Logger.error(`destroyTransferStatesById failed with error - ${err}`)
+  //     assert.fail()
+  //     assert.end()
+  //   }
+  // })
 
   await transferStateTest.test('teardown', async (assert) => {
     try {

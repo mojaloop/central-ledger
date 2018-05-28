@@ -12,6 +12,7 @@ const Handlers = require('../../../src/handlers/handlers')
 const Db = require('@mojaloop/central-services-database').Db
 const Producer = require('../../../src/handlers/lib/kafka/producer')
 const Utility = require('../../../src/handlers/lib/utility')
+const Participant = require('../../../src/domain/participant')
 // const TransferHandler = require('../../../src/handlers/transfers/handler')
 // const PositionHandler = require('../../../src/handlers/positions/handler')
 // const NotificationHandler = require('../../../src/handlers/notification/handler')
@@ -75,6 +76,16 @@ const topicConf = {
   opaqueKey: 0
 }
 
+const participants = [
+  {
+    name: 'dfsp1',
+    currency: 'USD'
+  },
+  {
+    name: 'dfsp2',
+    currency: 'USD'
+  }
+]
 // const topicConf = {
 //   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'position', 'prepare'),
 //   key: 'producerTest',
@@ -127,10 +138,16 @@ Test('Handlers test', async handlersTest => {
 
     registerAllHandlers.test('setup', async (test) => {
       await Db.connect(Config.DATABASE_URI)
+      for (let payload of participants) {
+        const participant = await Participant.getByName(payload.name)
+        if (!participant) {
+          await Participant.create(payload)
+        }
+      }
       await Handlers.registerAllHandlers()
       setTimeout(() => {
         test.end()
-      }, 10000)
+      }, 20000)
     })
 
     registerAllHandlers.test('register all kafka handlers', async (test) => {

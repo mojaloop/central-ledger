@@ -3,7 +3,7 @@
 const Db = require('../../../db')
 // const Moment = require('moment')
 const Util = require('../../../lib/util')
-const Time = require('../../../lib/time')
+// const Time = require('../../../lib/time')
 
 exports.create = async (transfer) => {
   try {

@@ -195,6 +195,6 @@ Test('Transfer-Index', transferIndexTest => {
     })
     rejectTest.end()
   })
-  transferIndexTest.end()
 
+  transferIndexTest.end()
 })
