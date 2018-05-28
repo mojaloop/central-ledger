@@ -62,13 +62,13 @@ const transferStateRecord = {
   changedDate: new Date()
 }
 
-const newTransferStateRecord = {
-  transferStateChangeId: null,
-  transferId: payload.transferId,
-  transferStateId: TransferState.ABORTED,
-  reason: stateReason,
-  changedDate: new Date()
-}
+// const newTransferStateRecord = {
+//   transferStateChangeId: null,
+//   transferId: payload.transferId,
+//   transferStateId: TransferState.ABORTED,
+//   reason: stateReason,
+//   changedDate: new Date()
+// }
 
 const ilpRecord = {
   transferId: payload.transferId,
@@ -123,7 +123,6 @@ Test('Commands-Index', commandIndextTest => {
   })
 
   commandIndextTest.test('prepare should', preparedTest => {
-
     preparedTest.test('persist the payload to the database', async (test) => {
       try {
         await TransfersProjection.saveTransferPrepared.returns(P.resolve(prepareResponse))

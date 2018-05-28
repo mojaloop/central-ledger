@@ -132,7 +132,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-
     prepareTest.test('persist transfer to database when single message sent', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)

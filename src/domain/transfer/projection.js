@@ -89,7 +89,7 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
   }
   return await TransfersModel.updateTransfer(payload.id, fields)
 }
-//This update should only be done if the transfer id only has the state RECEIVED //TODO
+// This update should only be done if the transfer id only has the state RECEIVED //TODO
 const updateTransferState = async (payload) => {
   const transferStateRecord = {
     transferId: payload.transferId,

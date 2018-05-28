@@ -102,13 +102,13 @@ const rejectResponse = {
   newTransferStateChange
 }
 
-const newTransferStateRecord = {
-  transferStateChangeId: null,
-  transferId: payload.transferId,
-  transferStateId: TransferState.ABORTED,
-  reason: stateReason,
-  changedDate: new Date()
-}
+// const newTransferStateRecord = {
+//   transferStateChangeId: null,
+//   transferId: payload.transferId,
+//   transferStateId: TransferState.ABORTED,
+//   reason: stateReason,
+//   changedDate: new Date()
+// }
 
 Test('Transfer-Index', transferIndexTest => {
   let sandbox
@@ -127,7 +127,6 @@ Test('Transfer-Index', transferIndexTest => {
   })
 
   transferIndexTest.test('prepare should', preparedTest => {
-
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
         CommandsIndex.prepare.returns(P.resolve(prepareResponse))

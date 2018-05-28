@@ -13,8 +13,6 @@ const ilpModel = require('../../../../src/models/ilp')
 const extensionModel = require('../../../../src/models/extensions')
 const transferStateChangeModel = require('../../../../src/domain/transfer/models/transferStateChanges')
 
-
-
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
   payerFsp: 'dfsp1',
@@ -35,12 +33,13 @@ const payload = {
     ]
   }
 }
-const updateTransferStateRecord = {
-  transferId: payload.transferId,
-  transferStateId:'RESERVED',
-  reason: '',
-  changedDate: new Date()
-}
+// const updateTransferStateRecord = {
+//   transferId: payload.transferId,
+//   transferStateId: 'RESERVED',
+//   reason: '',
+//   changedDate: new Date()
+// }
+
 const participant1 = {
   participantId: 1,
   currencyId: 'USD',
@@ -265,26 +264,25 @@ Test('Transfers-Projection', transfersProjectionTest => {
 
   transfersProjectionTest.test('projection updateTransferState should', updateTransferStateTest => {
     updateTransferStateTest.test('successfully add an entry of transferStateRecord to DB', async (test) => {
-       transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
-       let result = await TransfersProjection.updateTransferState(payload)
-       test.equal(result, true)
-       test.end()
+      transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
+      let result = await TransfersProjection.updateTransferState(payload)
+      test.equal(result, true)
+      test.end()
     })
 
     updateTransferStateTest.test('Throws error on updateTransferState', async (test) => {
-     try {
-      transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
-      let result = await TransfersProjection.updateTransferState(null)
-      test.fail('Error not thrown')
-      test.end()
-    } catch (e) {
-      test.pass('Error thrown')
-      test.end()
-    }
+      try {
+        transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
+        await TransfersProjection.updateTransferState(null)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
     })
     updateTransferStateTest.end()
   })
-
 
   transfersProjectionTest.end()
 })

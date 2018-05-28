@@ -1,21 +1,21 @@
 'use strict'
 
 const Test = require('tape')
-const Sinon = require('sinon')
-const P = require('bluebird')
+// const Sinon = require('sinon')
+// const P = require('bluebird')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
-const wait = require('wait-for-stuff')
+// const wait = require('wait-for-stuff')
 
 const Config = require('../../../src/lib/config')
 const Handlers = require('../../../src/handlers/handlers')
 const Db = require('@mojaloop/central-services-database').Db
 const Producer = require('../../../src/handlers/lib/kafka/producer')
 const Utility = require('../../../src/handlers/lib/utility')
-const TransferHandler = require('../../../src/handlers/transfers/handler')
-const PositionHandler = require('../../../src/handlers/positions/handler')
-const NotificationHandler = require('../../../src/handlers/notification/handler')
-const TransferProjection = require('../../../src/domain/transfer/projection')
+// const TransferHandler = require('../../../src/handlers/transfers/handler')
+// const PositionHandler = require('../../../src/handlers/positions/handler')
+// const NotificationHandler = require('../../../src/handlers/notification/handler')
+// const TransferProjection = require('../../../src/domain/transfer/projection')
 const TransferReadModel = require('../../../src/domain/transfer/models/transfers-read-model')
 const Moment = require('moment')
 

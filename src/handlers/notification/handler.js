@@ -36,8 +36,7 @@ const Kafka = require('../lib/kafka')
 const NOTIFICATION = 'notification'
 const EVENT = 'event'
 
-
-const mockNotification = async (error, messages) =>{
+const mockNotification = async (error, messages) => {
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -96,7 +95,6 @@ const registerAllHandlers = async () => {
   } catch (e) {
     throw e
   }
-  return true
 }
 
 module.exports = {

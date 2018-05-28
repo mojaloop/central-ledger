@@ -13,7 +13,7 @@ const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consume
 const DAO = require('../../../../src/handlers/lib/dao')
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const TransferStateChange =  require('../../../../src/domain/transfer/models/transferStateChanges')
+const TransferStateChange = require('../../../../src/domain/transfer/models/transferStateChanges')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -92,7 +92,7 @@ const config = {
   }
 }
 
-const  command = () => {}
+const command = () => {}
 
 const participants = ['testName1', 'testName2']
 
@@ -165,7 +165,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-//      await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+//    await DAO.retrieveAllParticipants.returns(P.resolve(participants))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
@@ -175,18 +175,18 @@ Test('Transfer handler', transferHandlerTest => {
 
     positionsTest.test('Throws error on positions', async (test) => {
       try {
-      await Kafka.Consumer.createHandler(topicName, config, command)
-      Utility.transformGeneralTopicName.returns(topicName)
-      Utility.getKafkaConfig.returns(config)
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
 //      await DAO.retrieveAllParticipants.returns(P.resolve(participants))
-      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      const result = await allTransferHandlers.positions(new Error, null)
-      test.fail('Error not thrown')
-      test.end()
-    } catch (e) {
-      test.pass('Error thrown')
-      test.end()
-    }
+        TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+        await allTransferHandlers.positions(new Error, null)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
     })
     positionsTest.end()
   })
