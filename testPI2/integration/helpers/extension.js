@@ -28,6 +28,50 @@ const TransferPreparationModule = require('./transfer')
 const TransferModel = require('../../../src/domain/transfer/models/transfers-read-model')
 const Model = require('../../../src/models/extensions')
 
+// const returnObject = {
+//   "extension": {
+//     "extensionId": 77,
+//     "transferId": "tr15272357608111536",
+//     "key": "extension.key",
+//     "value": "extension.value",
+//     "changedDate": "2018-05-25T08:09:21.000Z",
+//     "changedBy": "extension.changedBy"
+//   },
+//   "transfer": {
+//     "transferId": "tr15272357608111536",
+//     "payeeParticipantId": 106,
+//     "payerParticipantId": 105,
+//     "amount": 100,
+//     "currencyId": "USD",
+//     "expirationDate": null,
+//     "transferSettlementBatchId": null,
+//     "currency": "USD",
+//     "payerFsp": "payer15272357607931221",
+//     "payeeFsp": "payee1527235760806628",
+//     "transferState": null,
+//     "completedTimestamp": null,
+//     "ilpPacket": null,
+//     "condition": null,
+//     "fulfillment": null
+//   },
+//   "participants": {
+//     "participantPayer": {
+//       "participantId": 105,
+//       "currencyId": "USD",
+//       "name": "payer15272357607931221",
+//       "createdDate": "2018-05-25T05:09:20.000Z",
+//       "isDisabled": 0
+//     },
+//     "participantPayee": {
+//       "participantId": 106,
+//       "currencyId": "USD",
+//       "name": "payee1527235760806628",
+//       "createdDate": "2018-05-25T05:09:20.000Z",
+//       "isDisabled": 0
+//     }
+//   }
+// }
+
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
@@ -46,8 +90,10 @@ exports.prepareData = async () => {
     return {
       extension,
       transfer,
-      participantPayer: transferResult.participantPayerResult,
-      participantPayee: transferResult.participantPayeeResult
+      participants: {
+        participantPayer: transferResult.participantPayerResult,
+        participantPayee: transferResult.participantPayeeResult
+      }
     }
   } catch (err) {
     throw new Error(err.message)

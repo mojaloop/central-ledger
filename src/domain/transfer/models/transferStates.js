@@ -30,11 +30,11 @@ const Db = require('../../../db')
 // const TransferState = require('../state')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-const saveTransferState = (transferState) => {
+const saveTransferState = async (transferState) => {
   Logger.debug('save transferState' + transferState.toString())
 
   try {
-    return Db.transferState.insert(transferState)
+    return await Db.transferState.insert(transferState)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -86,7 +86,7 @@ const destroyTransferStates = () => {
 
 const destroyTransferStatesById = (id) => {
   try {
-    return Db.transferState.findOne({ transferStateId: id }).del()
+    return Db.transferState.destroy({ transferStateId: id })
   } catch (err) {
     throw new Error(err.message)
   }

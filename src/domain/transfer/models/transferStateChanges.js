@@ -41,7 +41,16 @@ const saveTransferStateChange = async (stateChange) => {
 
 const getByTransferId = async (id) => {
   try {
-    return await Db.transferStateChange.findOne({ transferId: id })
+    let transferStateChanges = await Db.transferStateChange.find({ transferId: id }, { order: 'changedDate desc' })
+    return transferStateChanges[0]
+  } catch (err) {
+    throw err
+  }
+}
+
+const truncate = async (id) => {
+  try {
+    return await Db.transferStateChange.truncate()
   } catch (err) {
     throw err
   }
@@ -49,5 +58,6 @@ const getByTransferId = async (id) => {
 
 module.exports = {
   saveTransferStateChange,
-  getByTransferId
+  getByTransferId,
+  truncate
 }

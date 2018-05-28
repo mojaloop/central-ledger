@@ -78,14 +78,7 @@ Test('Extension model test', async (extensionTest) => {
           let read = await Model.getByTransferId(extensionResult.transfer.transferId)
 
           read = Object.assign({}, { extension: read }, {
-            participants: {
-              participantPayer: {
-                name: extensionResult.participantPayer.name
-              },
-              participantPayee: {
-                name: extensionResult.participantPayee.name
-              }
-            }
+            participants: extensionResult.participants
           })
 
           extensionMap.set(result.extensionId, read)
