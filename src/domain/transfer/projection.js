@@ -102,28 +102,28 @@ const updateTransferState = async (payload) => {
 
 const saveTransferRejected = async (stateReason, transferId) => {
   try {
-    const transferStateChange = await transferStateChangeModel.getByTransferId(transferId)
+    const existingTransferStateChanges = await transferStateChangeModel.getByTransferId(transferId)
 
     let existingAbort = false
-    let foundTransferStateChange
-    for (let transferState of transferStateChange) {
+    let transferStateChange
+    for (let transferState of existingTransferStateChanges) {
       if (transferState.transferStateId === TransferState.ABORTED) {
         existingAbort = true
-        foundTransferStateChange = transferState
+        transferStateChange = transferState
         break
       }
     }
     if (!existingAbort) {
-      const newTransferStateChange = {}
-      newTransferStateChange.transferStateChangeId = null
-      newTransferStateChange.transferId = transferId
-      newTransferStateChange.reason = stateReason
-      newTransferStateChange.changedDate = new Date()
-      newTransferStateChange.transferStateId = TransferState.ABORTED
-      await transferStateChangeModel.saveTransferStateChange(newTransferStateChange)
-      return {alreadyRejected: false, newTransferStateChange}
+      transferStateChange = {}
+      transferStateChange.transferStateChangeId = null
+      transferStateChange.transferId = transferId
+      transferStateChange.reason = stateReason
+      transferStateChange.changedDate = new Date()
+      transferStateChange.transferStateId = TransferState.ABORTED
+      await transferStateChangeModel.saveTransferStateChange(transferStateChange)
+      return {alreadyRejected: false, transferStateChange}
     } else {
-      return {alreadyRejected: true, foundTransferStateChange}
+      return {alreadyRejected: true, transferStateChange}
     }
   } catch (e) {
     throw e

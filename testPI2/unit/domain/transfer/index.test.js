@@ -89,6 +89,27 @@ const prepareResponse = {
   extensionsRecordList
 }
 
+const newTransferStateChange = {
+  transferStateChangeId: null,
+  transferId: payload.transferId,
+  transferStateId: TransferState.ABORTED,
+  reason: stateReason,
+  changedDate: new Date()
+}
+
+const rejectResponse = {
+  alreadyRejected: false,
+  newTransferStateChange
+}
+
+const newTransferStateRecord = {
+  transferStateChangeId: null,
+  transferId: payload.transferId,
+  transferStateId: TransferState.ABORTED,
+  reason: stateReason,
+  changedDate: new Date()
+}
+
 Test('Transfer-Index', transferIndexTest => {
   let sandbox
 
@@ -109,20 +130,71 @@ Test('Transfer-Index', transferIndexTest => {
 
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
-        await CommandsIndex.prepare.returns(P.resolve(prepareResponse))
-        await Translator.toTransfer.returns(P.resolve(payload))
-        await Events.emitTransferPrepared.returns(P.resolve(true))
+        CommandsIndex.prepare.returns(P.resolve(prepareResponse))
+        Translator.toTransfer.returns(payload)
         const response = await TransferIndex.prepare(payload)
-        //test.deepEqual(prepareResponse, )
-        test.ok
+        test.deepEqual(response.transfer, payload)
         test.end()
       } catch (e) {
         test.fail('Error Thrown')
         test.end()
       }
+    })
 
+    preparedTest.test('prepare transfer throws error', async (test) => {
+      CommandsIndex.prepare.throws(new Error)
+      Translator.toTransfer.returns(payload)
+      try {
+        await TransferIndex.prepare(payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    preparedTest.test('prepare transfer throws error', async (test) => {
+      CommandsIndex.prepare.returns(P.resolve(prepareResponse))
+      Translator.toTransfer.throws(new Error)
+      try {
+        await TransferIndex.prepare(payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
     })
     preparedTest.end()
+  })
+
+  transferIndexTest.test('prepare should', rejectTest => {
+    rejectTest.test('reject transfer payload that passed validation', async (test) => {
+      CommandsIndex.reject.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
+      const rejectResponse = await TransferIndex.reject(stateReason, payload.transferId)
+      rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate
+      test.equal(rejectResponse.alreadyRejected, false)
+      test.deepEqual(rejectResponse.transferStateChange, newTransferStateChange)
+      test.end()
+    })
+    rejectTest.end()
+  })
+
+  transferIndexTest.test('prepare should', rejectTest => {
+    rejectTest.test('reject transfer throws an error', async (test) => {
+      CommandsIndex.reject.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
+      try {
+        await TransferIndex.reject(stateReason, payload.transferId)
+        rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+    rejectTest.end()
   })
   transferIndexTest.end()
 
