@@ -1,6 +1,6 @@
 'use strict'
 
-const Test = require('tapes')(require('tape'))
+const Test = require('tape')
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -15,6 +15,9 @@ const Utility = require('../../../src/handlers/lib/utility')
 const TransferHandler = require('../../../src/handlers/transfers/handler')
 const PositionHandler = require('../../../src/handlers/positions/handler')
 const NotificationHandler = require('../../../src/handlers/notification/handler')
+const TransferProjection = require('../../../src/domain/transfer/projection')
+const TransferReadModel = require('../../../src/domain/transfer/models/transfers-read-model')
+const Moment = require('moment')
 
 const transfer = {
   transferId: Uuid(),
@@ -104,43 +107,60 @@ exports.testProducer = async () => {
 //   return true
 // }
 
+Test('Handlers test', async handlersTest => {
+  // handlersTest.beforeEach(async (test) => {
+  //   await Db.connect(Config.DATABASE_URI)
+  //   await Handlers.registerAllHandlers()
+  //   setTimeout(() => {
+  //     test.end()
+  //   }, 10000)
+  // })
 
-Test('Handlers test', handlersTest => {
+  handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
+    // registerAllHandlers.beforeEach(async (test) => {
+    //   await Db.connect(Config.DATABASE_URI)
+    //   await Handlers.registerAllHandlers()
+    //   setTimeout(() => {
+    //     test.end()
+    //   }, 10000)
+    // })
 
-  handlersTest.beforeEach(async (test) => {
-    await Db.connect(Config.DATABASE_URI)
-    await Handlers.registerAllHandlers()
-    setTimeout(() => {
-      test.end()
-    }, 10000)
-  })
+    registerAllHandlers.test('setup', async (test) => {
+      await Db.connect(Config.DATABASE_URI)
+      await Handlers.registerAllHandlers()
+      setTimeout(() => {
+        test.end()
+      }, 10000)
+    })
 
-
-  handlersTest.test('registerAllHandlers should', registerAllHandlers => {
     registerAllHandlers.test('register all kafka handlers', async (test) => {
-      const prepareSpy = Sinon.spy(TransferHandler, 'prepare')
-      // const positionSpy = Sinon.spy(PositionHandler.positions)
-      // const transferSpy = Sinon.spy(TransferHandler.transfer)
-      // const notificationSpy = Sinon.spy(NotificationHandler.mockNotification)
+      var startTime = Moment()
+      var targetProcessingTimeInSeconds = 25
+      var elapsedSeconds = 0
+      let isTransferHandlersPrepareCalled = false
+      let result = null
+
       const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
       config.logger = Logger
-      const response = await Producer.produceMessage(messageProtocol, topicConf, config)
-      // setTimeout(() => {
-      //   clearTimeout()
-      //   test.fail()
-      //   TransferHandler.prepare.restore()
-      //   test.end()
-      // }, 100000)
-      wait.for.value(TransferHandler.prepare, 'called', true)
-      // wait.for.value(positionSpy, 'called', true)
-      // wait.for.value(transferSpy, 'called', true)
-      // wait.for.value(notificationSpy, 'called', true)
-      test.equal(response, true)
-      TransferHandler.prepare.restore()
-      test.end()
-      // positionSpy.restore()
-      // transferSpy.restore()
-      // notificationSpy.restore()
+
+      const producerResponse = await Producer.produceMessage(messageProtocol, topicConf, config)
+
+      setTimeout(async () => {
+        while (elapsedSeconds < targetProcessingTimeInSeconds) {
+          elapsedSeconds = Moment().diff(startTime, 'seconds')
+          // console.log(`elapsedSeconds=${elapsedSeconds}`)
+          var transfer = await TransferReadModel.getById(messageProtocol.id)
+          if (transfer) {
+            result = true
+            isTransferHandlersPrepareCalled = true
+          }
+        }
+
+        test.equal(producerResponse, true, 'Producer for prepare published message')
+        test.equal(isTransferHandlersPrepareCalled, true, 'prepare callback was executed')
+        test.equal(result, true, `prepare callback was executed returned ${result}`)
+        test.end()
+      }, 30000)
     })
 
     registerAllHandlers.end()
@@ -149,7 +169,8 @@ Test('Handlers test', handlersTest => {
   handlersTest.end()
 })
 
-Test.onFinish(async (test) => {
+Test.onFinish(async () => {
   await Producer.disconnect()
-  test.end()
+  // add loop code to disconnect consumers
+  process.exit(0)
 })
