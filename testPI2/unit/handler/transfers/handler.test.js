@@ -132,6 +132,8 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    Logger.info('this is to cause conflicts')
+
     prepareTest.test('persist transfer to database when single message sent', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
