@@ -51,6 +51,7 @@ const mockNotification = async (error, messages) => {
     Logger.info('NotificationHandler::notification')
     const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(NOTIFICATION, EVENT))
     await consumer.commitMessageSync(message)
+    return true
   } catch (e) {
     Logger.error(e)
     throw e
