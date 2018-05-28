@@ -50,9 +50,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     // TODO: Move inserts into a Transaction
 
     // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
-    await TransfersModel.saveTransfer(transferRecord).catch(err => {
-      throw new Error(err.message)
-    })
+    await TransfersModel.saveTransfer(transferRecord)
 
     var extensionsRecordList = []
 

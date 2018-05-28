@@ -140,6 +140,41 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.end()
     })
 
+    preparedTest.test('return object of results when status is aborted', async (test) => {
+      ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
+      ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
+      TransfersReadModel.saveTransfer.returns(P.resolve())
+      extensionModel.saveExtension.returns(P.resolve())
+      ilpModel.saveIlp.returns(P.resolve())
+      transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
+
+      const result = await TransfersProjection.saveTransferPrepared(payload, 'validation failed', false)
+      test.equal(result.isSaveTransferPrepared, true)
+      test.deepEqual(result.transferRecord, transferRecord)
+      test.deepEqual(result.ilpRecord, ilpRecord)
+      transferStateRecord.changedDate = result.transferStateRecord.changedDate
+      transferStateRecord.reason = 'validation failed'
+      transferStateRecord.transferStateId = 'ABORTED'
+      extensionsRecordList[0].changedDate = result.extensionsRecordList[0].changedDate
+      test.deepEqual(result.transferStateRecord, transferStateRecord)
+      test.deepEqual(result.extensionsRecordList, extensionsRecordList)
+      test.end()
+    })
+
+    preparedTest.test('throw an error when unable to save transfer', async (test) => {
+      try {
+        ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
+        ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
+        TransfersReadModel.saveTransfer.throws(new Error)
+        await TransfersProjection.saveTransferPrepared(payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
     // Negative tests : saveTransferPrepared
     preparedTest.test('save transfer throws error', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
