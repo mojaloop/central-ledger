@@ -45,7 +45,7 @@ Test('Transfer Service tests', serviceTest => {
     sandbox.stub(Events, 'emitTransferPrepared')
     sandbox.stub(Commands, 'settle')
     sandbox.stub(Commands, 'reject')
-    sandbox.stub(Commands, 'fulfill')
+    sandbox.stub(Commands, 'fulfil')
     sandbox.stub(Commands, 'prepare')
     t.end()
   })
@@ -131,7 +131,7 @@ Test('Transfer Service tests', serviceTest => {
         .then(test.end)
     })
 
-    getFulfillmentTest.test('throw MissingFulfillmentError if transfer does not have fulfillment', test => {
+    getFulfillmentTest.test('throw MissingFulfillmentError if transfer does not have fulfilment', test => {
       const id = Uuid()
       const transfer = { id, executionCondition: 'condition', state: TransferState.EXECUTED }
       TransferQueries.getById.withArgs(id).returns(P.resolve(transfer))
@@ -149,14 +149,14 @@ Test('Transfer Service tests', serviceTest => {
         .then(test.end)
     })
 
-    getFulfillmentTest.test('return transfer fulfillment', test => {
+    getFulfillmentTest.test('return transfer fulfilment', test => {
       const id = Uuid()
-      const fulfillment = 'fulfillment'
-      const transfer = { id, fulfillment, executionCondition: 'condition', state: TransferState.EXECUTED }
+      const fulfilment = 'fulfilment'
+      const transfer = { id, fulfilment, executionCondition: 'condition', state: TransferState.EXECUTED }
       TransferQueries.getById.returns(P.resolve(transfer))
       Service.getFulfillment(id)
         .then(result => {
-          test.equal(result, fulfillment)
+          test.equal(result, fulfilment)
           test.end()
         })
     })
@@ -267,51 +267,51 @@ Test('Transfer Service tests', serviceTest => {
     prepareTest.end()
   })
 
-  serviceTest.test('fulfill should', fulfillTest => {
-    fulfillTest.test('execute fulfill command', function (assert) {
-      let fulfillment = 'oAKAAA'
+  serviceTest.test('fulfil should', fulfillTest => {
+    fulfillTest.test('execute fulfil command', function (assert) {
+      let fulfilment = 'oAKAAA'
       let transferId = '3a2a1d9e-8640-4d2d-b06c-84f2cd613204'
       let expandedId = 'http://central-ledger/transfers/' + transferId
       TransferTranslator.toTransfer.returns({ id: expandedId })
-      let payload = { id: transferId, fulfillment }
+      let payload = { id: transferId, fulfilment }
       let transfer = createTransfer(transferId)
       transfer.id = transferId
-      Commands.fulfill.withArgs(payload).returns(P.resolve(transfer))
-      Service.fulfill(payload)
+      Commands.fulfil.withArgs(payload).returns(P.resolve(transfer))
+      Service.fulfil(payload)
         .then(result => {
           assert.equal(result.id, expandedId)
-          assert.ok(Commands.fulfill.calledWith(payload))
+          assert.ok(Commands.fulfil.calledWith(payload))
           assert.end()
         })
     })
 
     fulfillTest.test('Emit transfer executed event', t => {
-      let fulfillment = 'oAKAAA'
+      let fulfilment = 'oAKAAA'
       let transferId = '3a2a1d9e-8640-4d2d-b06c-84f2cd613204'
       let expandedId = 'http://central-ledger/transfers/' + transferId
       TransferTranslator.toTransfer.returns({ id: expandedId })
-      let payload = { id: transferId, fulfillment }
+      let payload = { id: transferId, fulfilment }
       let transfer = createTransfer(transferId)
-      Commands.fulfill.withArgs(payload).returns(P.resolve(transfer))
-      Service.fulfill(payload)
+      Commands.fulfil.withArgs(payload).returns(P.resolve(transfer))
+      Service.fulfil(payload)
         .then(result => {
           let emitArgs = Events.emitTransferExecuted.firstCall.args
           let args0 = emitArgs[0]
           t.equal(args0.id, expandedId)
           let args1 = emitArgs[1]
-          t.equal(args1.execution_condition_fulfillment, fulfillment)
+          t.equal(args1.execution_condition_fulfillment, fulfilment)
           t.end()
         })
     })
 
     fulfillTest.test('reject and throw error if transfer is expired', assert => {
-      let fulfillment = 'oAKAAA'
+      let fulfilment = 'oAKAAA'
       let transfer = createTransfer()
-      let payload = { id: transfer.id, fulfillment }
+      let payload = { id: transfer.id, fulfilment }
 
-      Commands.fulfill.withArgs(payload).returns(P.reject(new Errors.ExpiredTransferError()))
+      Commands.fulfil.withArgs(payload).returns(P.reject(new Errors.ExpiredTransferError()))
       Commands.reject.returns(P.resolve({ transfer }))
-      Service.fulfill(payload)
+      Service.fulfil(payload)
         .then(() => {
           assert.fail('Expected exception')
           assert.end()

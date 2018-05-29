@@ -41,7 +41,7 @@ const TransferQueries = require('../../domain/transfer/queries')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
-const FULFILL = 'fulfill'
+const FULFIL = 'fulfil'
 const REJECT = 'reject'
 
 /**
@@ -124,7 +124,7 @@ const prepare = async (error, messages) => {
   }
 }
 
-const fulfill = async () => {
+const fulfil = async () => {
 
 }
 
@@ -222,16 +222,16 @@ const registerTransferHandler = async () => {
  * @method RegisterFulfillHandler
  *
  * @async
- * Registers the one handler for fulfill transfer. Gets Kafka config from default.json
+ * Registers the one handler for fulfil transfer. Gets Kafka config from default.json
  * @function Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerFulfillHandler = async () => {
   try {
     const fulfillHandler = {
-      command: fulfill,
-      topicName: Utility.transformGeneralTopicName(TRANSFER, FULFILL),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFILL.toUpperCase())
+      command: fulfil,
+      topicName: Utility.transformGeneralTopicName(TRANSFER, FULFIL),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFIL.toUpperCase())
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
@@ -291,7 +291,7 @@ const registerPrepareHandlers = async () => {
  * @method RegisterAllHandlers
  *
  * @async
- * Registers all handlers in transfers ie: prepare, fulfill, transfer and reject
+ * Registers all handlers in transfers ie: prepare, fulfil, transfer and reject
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */

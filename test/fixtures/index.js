@@ -86,7 +86,7 @@ const buildTransferExecutedEvent = (transferId, debit, credit, expirationDate) =
       credits: [credit],
       execution_condition: executionCondition,
       expires_at: expirationDate,
-      fulfillment: 'oAKAAA'
+      fulfilment: 'oAKAAA'
     },
     aggregate: {
       id: transferId,

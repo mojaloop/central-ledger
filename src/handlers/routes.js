@@ -94,16 +94,16 @@ module.exports = [
    * @method POST
    *
    * @async
-   * Registers consumer handlers for fulfill transfer this is one topic for all transfers as fulfills do not need to keep order
+   * Registers consumer handlers for fulfil transfer this is one topic for all transfers as fulfills do not need to keep order
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
     method: 'POST',
-    path: '/register/transfer/fulfill',
+    path: '/register/transfer/fulfil',
     handler: TransferHandler.registerFulfillHandler,
     options: {
-      id: 'fulfill',
-      description: 'Register fulfill transfer Kafka consumer handler'
+      id: 'fulfil',
+      description: 'Register fulfil transfer Kafka consumer handler'
     }
   },
   /**

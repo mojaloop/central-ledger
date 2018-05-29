@@ -9,7 +9,7 @@ const transferProperties = [
   'transferState',
   'completedTimestamp',
   'ilpPacket',
-  'fulfillment',
+  'fulfilment',
   'condition',
   'expiration',
   'extensionList'
@@ -44,7 +44,7 @@ const fromTransferAggregate = (t) => {
     transferState: Util.omitNil(t.transferState),
     completedTimestamp: Util.omitNil(t.completedTimestamp),
     ilpPacket: t.ilpPacket,
-    fulfillment: t.fulfillment,
+    fulfilment: t.fulfilment,
     condition: t.condition,
     expiration: Util.omitNil(t.expirationDate),
     extensionList: formatExtensionList(t.extensionList)
@@ -64,7 +64,7 @@ const fromTransferReadModel = (t) => fromTransferAggregate({
   transferState: t.transferState,
   completedTimestamp: t.completedTimestamp,
   ilpPacket: t.ilpPacket,
-  fulfillment: t.fulfillment,
+  fulfilment: t.fulfilment,
   condition: t.condition,
   expiration: t.expirationDate,
   extensionList: t.extensionList
@@ -82,7 +82,7 @@ const fromSaveTransferPrepared = (t) => fromTransferAggregate({
   transferStatus: t.transferStateRecord.transferStateId,
   completedTimestamp: t.transferStateRecord.changedDate,
   ilpPacket: t.ilpRecord.ilpPacket || t.ilpRecord.packet,
-  fulfillment: t.ilpRecord.fulfillment,
+  fulfilment: t.ilpRecord.fulfilment,
   condition: t.ilpRecord.condition,
   expiration: t.transferRecord.expirationDate,
   extensionList: t.extensionsRecordList

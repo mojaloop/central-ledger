@@ -35,7 +35,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       transferId: payload.transferId,
       packet: payload.ilpPacket,
       condition: payload.condition,
-      fulfillment: null
+      fulfilment: null
     }
 
     const state = ((hasPassedValidation) ? TransferState.RECEIVED : TransferState.ABORTED)
@@ -82,16 +82,16 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 const saveTransferExecuted = async ({payload, timestamp}) => {
   const fields = {
     state: TransferState.COMMITTED,
-    fulfillment: payload.fulfillment,
+    fulfilment: payload.fulfilment,
     executedDate: new Date(timestamp)
   }
   return await TransfersModel.updateTransfer(payload.id, fields)
 }
 // This update should only be done if the transfer id only has the state RECEIVED //TODO
-const updateTransferState = async (payload) => {
+const updateTransferState = async (payload, state) => {
   const transferStateRecord = {
     transferId: payload.transferId,
-    transferStateId: TransferState.RESERVED,
+    transferStateId: state,
     reason: '',
     changedDate: new Date()
   }

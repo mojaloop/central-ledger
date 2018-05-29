@@ -78,11 +78,11 @@ const updateParticipant = (participantName, isDisabled) => putAdmin(`/participan
 
 const getTransfer = (transferId) => getApi(`/transfers/${transferId}`)
 
-const getFulfillment = (transferId) => getApi(`/transfers/${transferId}/fulfillment`)
+const getFulfillment = (transferId) => getApi(`/transfers/${transferId}/fulfilment`)
 
 const prepareTransfer = (transferId, transfer) => P.resolve(putApi(`/transfers/${transferId}`, transfer))
 
-const fulfillTransfer = (transferId, fulfillment, auth) => putApi(`/transfers/${transferId}/fulfillment`, fulfillment, auth, 'text/plain')
+const fulfillTransfer = (transferId, fulfilment, auth) => putApi(`/transfers/${transferId}/fulfilment`, fulfilment, auth, 'text/plain')
 
 const rejectTransfer = (transferId, reason, auth) => putApi(`/transfers/${transferId}/rejection`, reason, auth)
 

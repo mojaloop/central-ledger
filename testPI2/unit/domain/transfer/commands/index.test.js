@@ -74,7 +74,7 @@ const ilpRecord = {
   transferId: payload.transferId,
   packet: payload.ilpPacket,
   condition: payload.condition,
-  fulfillment: null
+  fulfilment: null
 }
 
 const extensionsRecordList = [

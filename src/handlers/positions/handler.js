@@ -35,11 +35,13 @@ const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
+const TransferState = require('../../../src/domain/transfer/state')
 
 const POSITION = 'position'
 const TRANSFER = 'transfer'
 
 const PREPARE = 'prepare'
+const COMMIT = 'commit'
 
 const positions = async (error, messages) => {
   if (error) {
@@ -55,10 +57,18 @@ const positions = async (error, messages) => {
     Logger.info('TransferHandler::position')
     const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, POSITION, PREPARE))
     const payload = message.value.content.payload
-    // Will follow framework flow in future
-    await Projection.updateTransferState(payload)
-    await Utility.produceGeneralMessage(TRANSFER, TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
+    if (message.value.metadata.event.type === POSITION && message.value.metadata.event.action === PREPARE) {
+      await Projection.updateTransferState(payload, TransferState.RESERVED)
+    } else if (message.value.metadata.event.type === POSITION && message.value.metadata.event.action === COMMIT) {
+      await Projection.updateTransferState(payload, TransferState.COMMITTED)
+    } else {
+      await consumer.commitMessageSync(message)
+      throw new Error('event action or type not valid')
+    }
     await consumer.commitMessageSync(message)
+    // Will follow framework flow in future
+    await Utility.produceGeneralMessage(TRANSFER, TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
+
     return true
   } catch (error) {
     Logger.error(error)

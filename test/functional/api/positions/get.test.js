@@ -6,7 +6,7 @@ const Fixtures = require('../../../fixtures')
 
 Test('GET /positions', getTest => {
   getTest.test('should return net positions', test => {
-    let fulfillment = 'oAKAAA'
+    let fulfilment = 'oAKAAA'
     let participant1Name = Fixtures.generateParticipantName()
     let participant2Name = Fixtures.generateParticipantName()
     let participant3Name = Fixtures.generateParticipantName()
@@ -27,11 +27,11 @@ Test('GET /positions', getTest => {
       .then(() => Base.createParticipant(participant4Name))
       .then(() => Base.createCharge(chargePayload))
       .then(() => Base.prepareTransfer(transfer1Id, Fixtures.buildTransfer(transfer1Id, Fixtures.buildDebitOrCredit(participant1Name, '130'), Fixtures.buildDebitOrCredit(participant2Name, '130'))))
-      .then(() => Base.fulfillTransfer(transfer1Id, fulfillment))
+      .then(() => Base.fulfillTransfer(transfer1Id, fulfilment))
       .then(() => Base.prepareTransfer(transfer2Id, Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(participant1Name, '130'), Fixtures.buildDebitOrCredit(participant3Name, '130'))))
-      .then(() => Base.fulfillTransfer(transfer2Id, fulfillment))
+      .then(() => Base.fulfillTransfer(transfer2Id, fulfilment))
       .then(() => Base.prepareTransfer(transfer3Id, Fixtures.buildTransfer(transfer3Id, Fixtures.buildDebitOrCredit(participant3Name, '130'), Fixtures.buildDebitOrCredit(participant2Name, '130'))))
-      .then(() => Base.fulfillTransfer(transfer3Id, fulfillment))
+      .then(() => Base.fulfillTransfer(transfer3Id, fulfilment))
       .then(() => {
         Base.getApi('/positions')
           .expect(200)
@@ -50,7 +50,7 @@ Test('GET /positions', getTest => {
 
 Test('GET /positions/{name}', getTestParticipant => {
   getTestParticipant.test('should return net positions for participant', test => {
-    let fulfillment = 'oAKAAA'
+    let fulfilment = 'oAKAAA'
     let participant1Name = Fixtures.generateParticipantName()
     let participant2Name = Fixtures.generateParticipantName()
     let participant3Name = Fixtures.generateParticipantName()
@@ -67,9 +67,9 @@ Test('GET /positions/{name}', getTestParticipant => {
       .then(() => Base.createParticipant(participant3Name))
       .then(() => Base.createCharge(chargePayload))
       .then(() => Base.prepareTransfer(transfer1Id, Fixtures.buildTransfer(transfer1Id, Fixtures.buildDebitOrCredit(participant1Name, '10'), Fixtures.buildDebitOrCredit(participant2Name, '10'))))
-      .then(() => Base.fulfillTransfer(transfer1Id, fulfillment))
+      .then(() => Base.fulfillTransfer(transfer1Id, fulfilment))
       .then(() => Base.prepareTransfer(transfer2Id, Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(participant1Name, '10'), Fixtures.buildDebitOrCredit(participant3Name, '10'))))
-      .then(() => Base.fulfillTransfer(transfer2Id, fulfillment))
+      .then(() => Base.fulfillTransfer(transfer2Id, fulfilment))
       .then(() => {
         Base.getApi(`/positions/${participant1Name}`)
           .expect(200)

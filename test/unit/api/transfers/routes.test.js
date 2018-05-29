@@ -30,9 +30,9 @@ Test('return error if id is not a guid on get prepare', async function (assert) 
   assert.end()
 })
 
-Test('return error if invalid content type on fulfillment', async function (assert) {
+Test('return error if invalid content type on fulfilment', async function (assert) {
   let req = Base.buildRequest({
-    url: '/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfillment',
+    url: '/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfilment',
     method: 'PUT',
     headers: {'Content-Type': 'application/json'}
   })
@@ -43,9 +43,9 @@ Test('return error if invalid content type on fulfillment', async function (asse
   assert.end()
 })
 
-Test('return error if fulfillment missing', async function (assert) {
+Test('return error if fulfilment missing', async function (assert) {
   let req = Base.buildRequest({
-    url: '/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfillment',
+    url: '/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfilment',
     method: 'PUT',
     headers: {'Content-Type': 'text/plain'}
   })
@@ -56,9 +56,9 @@ Test('return error if fulfillment missing', async function (assert) {
   assert.end()
 })
 
-Test('return error if id is not a guid on fulfill', async function (assert) {
+Test('return error if id is not a guid on fulfil', async function (assert) {
   let req = Base.buildRequest({
-    url: '/transfers/abcd/fulfillment',
+    url: '/transfers/abcd/fulfilment',
     method: 'PUT',
     headers: {'Content-Type': 'text/plain'}
   })
@@ -87,9 +87,9 @@ Test('return error if rejection reason missing', async function (assert) {
   assert.end()
 })
 
-Test('return error if id is not a guid on get fulfillment', async function (assert) {
+Test('return error if id is not a guid on get fulfilment', async function (assert) {
   let req = Base.buildRequest({
-    url: '/transfers/abcd/fulfillment',
+    url: '/transfers/abcd/fulfilment',
     method: 'GET',
     headers: {'Content-Type': 'text/plain'}
   })

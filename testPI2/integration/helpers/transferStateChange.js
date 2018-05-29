@@ -46,7 +46,7 @@ const Model = require('../../../src/domain/transfer/models/transferStateChanges'
 //     "completedTimestamp": "2018-05-25T06:08:22.000Z",
 //     "ilpPacket": null,
 //     "condition": null,
-//     "fulfillment": null
+//     "fulfilment": null
 //   },
 //   "transferStateChangeResult": {
 //     "transferStateChangeId": 6,
