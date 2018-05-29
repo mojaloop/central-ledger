@@ -36,7 +36,7 @@ exports.prepareData = async () => {
       transferId: transferResult.transferId,
       packet: 'test packet',
       condition: 'test condition',
-      fulfillment: 'test fulfillment'
+      fulfilment: 'test fulfilment'
     })
     let transfer = await TransferModel.getById(transferResult.transferId)
     let ilp = await Model.getByTransferId(transferResult.transferId)

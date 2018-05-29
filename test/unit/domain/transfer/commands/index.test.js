@@ -34,14 +34,14 @@ Test('Transfer index test', indexTest => {
     prepareTest.end()
   })
 
-  indexTest.test('fulfill should', fulfillTest => {
-    fulfillTest.test('execute fulfill command on context', t => {
+  indexTest.test('fulfil should', fulfillTest => {
+    fulfillTest.test('execute fulfil command on context', t => {
       let command = sandbox.stub()
       let expected = {}
       command.returns(expected)
 
       let payload = {}
-      TransferCommands.fulfill(payload)
+      TransferCommands.fulfil(payload)
       .then(result => {
         t.ok(command.calledWith('FulfillTransfer', payload))
         t.equal(result, expected)

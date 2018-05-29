@@ -154,7 +154,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
         }],
         execution_condition: executionCondition,
         expires_at: '2015-06-16T00:00:01.000Z',
-        fulfillment: 'oAKAAA'
+        fulfilment: 'oAKAAA'
       },
       aggregate: {
         id: Uuid(),
@@ -170,7 +170,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       TransfersProjection.handleTransferExecuted(event)
       assert.ok(TransfersReadModel.updateTransfer.calledWith(event.aggregate.id, Sinon.match({
         state: TransferState.EXECUTED,
-        fulfillment: event.payload.fulfillment,
+        fulfilment: event.payload.fulfilment,
         executedDate: Moment(event.timestamp)
       })))
       assert.end()

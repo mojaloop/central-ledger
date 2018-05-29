@@ -13,11 +13,12 @@ const Utility = require('../../../../src/handlers/lib/utility')
 let participantName
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
-const FULFILL = 'fulfill'
+const FULFIL = 'fulfil'
+const COMMIT = 'commit'
 const CONSUMER = 'CONSUMER'
 
 const participantTopic = 'topic-testParticipant-transfer-prepare'
-const generalTopic = 'topic-transfer-fulfill'
+const generalTopic = 'topic-transfer-fulfil'
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -57,7 +58,7 @@ const messageProtocol = {
     event: {
       id: Uuid(),
       type: 'prepare',
-      action: 'prepare',
+      action: 'commit',
       createdAt: new Date(),
       state: {
         status: 'success',
@@ -136,7 +137,7 @@ Test('Utility Test', utilityTest => {
 
   utilityTest.test('createGeneralTopicConf should', createGeneralTopicConfTest => {
     createGeneralTopicConfTest.test('return a general topic conf object', test => {
-      const response = Utility.createGeneralTopicConf(TRANSFER, FULFILL)
+      const response = Utility.createGeneralTopicConf(TRANSFER, FULFIL)
       test.equal(response.topicName, generalTopic)
       test.equal(response.partition, 0)
       test.equal(response.opaqueKey, 0)
@@ -146,7 +147,7 @@ Test('Utility Test', utilityTest => {
     createGeneralTopicConfTest.test('throw error when Mustache cannot find config', test => {
       try {
         Sinon.stub(Mustache, 'render').throws(new Error)
-        Utility.createGeneralTopicConf(TRANSFER, FULFILL)
+        Utility.createGeneralTopicConf(TRANSFER, FULFIL)
         test.fail('No Error thrown')
         test.end()
         Mustache.render.restore()
@@ -196,7 +197,7 @@ Test('Utility Test', utilityTest => {
 
   utilityTest.test('createTransferMessageProtocol should', createTransferMessageProtocolTest => {
     createTransferMessageProtocolTest.test('return a new messageProtocol', test => {
-      const createdMessageProtocol = Utility.createTransferMessageProtocol(transfer, PREPARE, Utility.ENUMS.STATE.SUCCESS)
+      const createdMessageProtocol = Utility.createTransferMessageProtocol(transfer, PREPARE, COMMIT, Utility.ENUMS.STATE.SUCCESS)
       messageProtocol.metadata.event.type = createdMessageProtocol.metadata.event.type
       createdMessageProtocol.metadata.event.id = messageProtocol.metadata.event.id
       createdMessageProtocol.metadata.event.responseTo = messageProtocol.metadata.event.responseTo

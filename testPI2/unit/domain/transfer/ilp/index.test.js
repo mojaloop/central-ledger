@@ -42,7 +42,7 @@ Test('Ilp service', async (ilpTest) => {
       transferId: '1',
       packet: 'test packet',
       condition: 'test condition',
-      fulfillment: 'test fulfillment'
+      fulfilment: 'test fulfilment'
     }
   ]
 
@@ -70,7 +70,7 @@ Test('Ilp service', async (ilpTest) => {
         transferId: ilp.transferId,
         packet: ilp.packet,
         condition: ilp.condition,
-        fulfillment: ilp.fulfillment
+        fulfilment: ilp.fulfilment
       }).returns(index + 1)
       Model.getByTransferId.withArgs(ilp.transferId).returns(Object.assign(
         {},
@@ -88,7 +88,7 @@ Test('Ilp service', async (ilpTest) => {
   })
 
   await ilpTest.test('create false ilp', async (assert) => {
-    const falseIlp = {transferId: '1', packet: undefined, condition: undefined, fulfillment: undefined}
+    const falseIlp = {transferId: '1', packet: undefined, condition: undefined, fulfilment: undefined}
     Model.create.withArgs(falseIlp).throws(new Error())
     try {
       let r = await Service.create(falseIlp)
@@ -107,7 +107,7 @@ Test('Ilp service', async (ilpTest) => {
           transferId: ilp.transferId,
           packet: ilp.packet,
           condition: ilp.condition,
-          fulfillment: ilp.fulfillment
+          fulfilment: ilp.fulfilment
         })
         ilpMap.set(index, Object.assign(
           {},

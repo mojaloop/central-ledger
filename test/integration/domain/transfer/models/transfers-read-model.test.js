@@ -65,12 +65,12 @@ Test('transfers read model', modelTest => {
           let transfer = Fixtures.buildReadModelTransfer(transferId, buildReadModelDebitOrCredit(debitParticipantName, '50', participantMap), buildReadModelDebitOrCredit(creditParticipantName, '50', participantMap), TransferState.PREPARED)
           ReadModel.saveTransfer(transfer)
             .then(() => {
-              let updatedFields = { state: TransferState.EXECUTED, fulfillment: 'oAKAAA', executedDate: Moment(1474471284081) }
+              let updatedFields = { state: TransferState.EXECUTED, fulfilment: 'oAKAAA', executedDate: Moment(1474471284081) }
               return ReadModel.updateTransfer(transferId, updatedFields)
                 .then(updatedTransfer => {
                   test.equal(updatedTransfer.transferId, transferId)
                   // test.equal(updatedTransfer.state, updatedFields.state)
-                  test.equal(updatedTransfer.fulfillment, updatedFields.fulfillment)
+                  test.equal(updatedTransfer.fulfilment, updatedFields.fulfilment)
                   test.deepEqual(updatedTransfer.executedDate, updatedFields.executedDate.toDate())
                   test.end()
                 })

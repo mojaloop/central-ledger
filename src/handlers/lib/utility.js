@@ -261,7 +261,8 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => 
  * @method createTransferMessageProtocol
  *
  * @param {object} payload - The payload of the api request
- * @param {string} metadataType - the action flow. Example: 'prepare'
+ * @param {string} type - the type flow. Example: 'prepare'
+ * @param {string} action - the action flow. Example: 'commit'
  * @param {object} state - the state of the message being passed.
  * Example:
  * SUCCESS: {
@@ -273,7 +274,7 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => 
  *
  * @returns {object} - Returns newly created messageProtocol
  */
-const createTransferMessageProtocol = (payload, metadataType, state, pp = '') => {
+const createTransferMessageProtocol = (payload, type, action, state, pp = '') => {
   return {
     id: payload.transferId,
     from: payload.payerFsp,
@@ -287,8 +288,8 @@ const createTransferMessageProtocol = (payload, metadataType, state, pp = '') =>
       event: {
         id: Uuid(),
         responseTo: '',
-        type: metadataType,
-        action: metadataType,
+        type,
+        action,
         createdAt: new Date(),
         state
       }

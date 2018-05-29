@@ -4,18 +4,18 @@ const Test = require('tape')
 const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
 const TransferState = require('../../../../src/domain/transfer/state')
-const fulfillment = 'oAKAAA'
+const fulfilment = 'oAKAAA'
 
 const amount = '25.00'
 
-Test('PUT /transfer/:id/fulfillment', putTest => {
-  putTest.test('should fulfill a transfer', test => {
+Test('PUT /transfer/:id/fulfilment', putTest => {
+  putTest.test('should fulfil a transfer', test => {
     const transferId = Fixtures.generateTransferId()
     const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
-        Base.fulfillTransfer(transferId, fulfillment)
+        Base.fulfillTransfer(transferId, fulfilment)
           .expect(200)
           .expect('Content-Type', /json/)
           .then(res => {
@@ -39,7 +39,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
   putTest.test('should return error when fulfilling non-existing transfer', test => {
     const transferId = Fixtures.generateTransferId()
 
-    Base.fulfillTransfer(transferId, fulfillment)
+    Base.fulfillTransfer(transferId, fulfilment)
       .expect(404)
       .then(res => {
         test.equal(res.body.id, 'NotFoundError')
@@ -48,14 +48,14 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
       })
   })
 
-  putTest.test('should return fulfillment when fulfilling already fulfilled transfer', test => {
+  putTest.test('should return fulfilment when fulfilling already fulfilled transfer', test => {
     const transferId = Fixtures.generateTransferId()
     const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
-      .then(() => Base.fulfillTransfer(transferId, fulfillment))
+      .then(() => Base.fulfillTransfer(transferId, fulfilment))
       .then(() => {
-        Base.fulfillTransfer(transferId, fulfillment)
+        Base.fulfillTransfer(transferId, fulfilment)
           .expect(200)
           .expect('Content-Type', /json/)
           .then(res => {
@@ -83,7 +83,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
     Base.prepareTransfer(transferId, transfer)
       .delay(1000)
       .then(() => {
-        Base.fulfillTransfer(transferId, fulfillment)
+        Base.fulfillTransfer(transferId, fulfilment)
           .expect(422)
           .expect('Content-Type', 'application/json; charset=utf-8')
           .then(res => {
@@ -100,7 +100,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
-        Base.fulfillTransfer(transferId, fulfillment)
+        Base.fulfillTransfer(transferId, fulfilment)
           .expect(422)
           .expect('Content-Type', 'application/json; charset=utf-8')
           .then(res => {
@@ -118,7 +118,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
     Base.prepareTransfer(transferId, transfer)
       .then(() => Base.rejectTransfer(transferId, Fixtures.rejectionMessage(), { name: Base.participant2Password, password: Base.participant2Password }))
       .then(() => {
-        Base.fulfillTransfer(transferId, fulfillment)
+        Base.fulfillTransfer(transferId, fulfilment)
           .expect(400)
           .expect('Content-Type', 'application/json; charset=utf-8')
           .then(res => {
@@ -129,7 +129,7 @@ Test('PUT /transfer/:id/fulfillment', putTest => {
       })
   })
 
-  putTest.test('should return error when fulfillment is invalid', test => {
+  putTest.test('should return error when fulfilment is invalid', test => {
     const transferId = Fixtures.generateTransferId()
     const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 

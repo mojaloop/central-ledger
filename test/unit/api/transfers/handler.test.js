@@ -43,7 +43,7 @@ Test('transfer handler', handlerTest => {
     sandbox.stub(TransferService, 'prepare')
     sandbox.stub(TransferService, 'getById')
     sandbox.stub(TransferService, 'reject')
-    sandbox.stub(TransferService, 'fulfill')
+    sandbox.stub(TransferService, 'fulfil')
     sandbox.stub(TransferService, 'getFulfillment')
     sandbox.stub(Sidecar, 'logRequest')
     originalHostName = Config.HOSTNAME
@@ -225,11 +225,11 @@ Test('transfer handler', handlerTest => {
         timeline: {}
       }
 
-      const fulfillment = {id: '3a2a1d9e-8640-4d2d-b06c-84f2cd613204', fulfillment: 'oAKAAA'}
+      const fulfilment = {id: '3a2a1d9e-8640-4d2d-b06c-84f2cd613204', fulfilment: 'oAKAAA'}
 
-      TransferService.fulfill.returns(P.resolve(transfer))
+      TransferService.fulfil.returns(P.resolve(transfer))
 
-      const request = createRequest(fulfillment.id, fulfillment.fulfillment)
+      const request = createRequest(fulfilment.id, fulfilment.fulfilment)
       const reply = {
         response: (response) => {
           test.equal(response.id, transfer.id)
@@ -246,12 +246,12 @@ Test('transfer handler', handlerTest => {
       await Handler.fulfillTransfer(request, reply)
     })
 
-    fulfillTransferTest.test('return error if transfer service fulfill throws', async function (test) {
-      const fulfillment = {id: '3a2a1d9e-8640-4d2d-b06c-84f2cd613204', fulfillment: 'oAKAAA'}
+    fulfillTransferTest.test('return error if transfer service fulfil throws', async function (test) {
+      const fulfilment = {id: '3a2a1d9e-8640-4d2d-b06c-84f2cd613204', fulfilment: 'oAKAAA'}
       const error = new Error()
-      TransferService.fulfill.returns(P.reject(error))
+      TransferService.fulfil.returns(P.reject(error))
       try {
-        await Handler.fulfillTransfer(createRequest(fulfillment.id, fulfillment.fulfillment), {})
+        await Handler.fulfillTransfer(createRequest(fulfilment.id, fulfilment.fulfilment), {})
       } catch (e) {
         test.equal(e, error)
         test.end()
@@ -408,15 +408,15 @@ Test('transfer handler', handlerTest => {
   })
 
   handlerTest.test('getTransferFulfillment should', getTransferFulfillmentTest => {
-    getTransferFulfillmentTest.test('get fulfillment by transfer id', async function (test) {
+    getTransferFulfillmentTest.test('get fulfilment by transfer id', async function (test) {
       const id = Uuid()
-      const fulfillment = 'oAKAAA'
+      const fulfilment = 'oAKAAA'
 
-      TransferService.getFulfillment.withArgs(id).returns(P.resolve(fulfillment))
+      TransferService.getFulfillment.withArgs(id).returns(P.resolve(fulfilment))
 
       const reply = {
         response: (response) => {
-          test.equal(response, fulfillment)
+          test.equal(response, fulfilment)
           return {
             type: type => {
               test.equal(type, 'text/plain')

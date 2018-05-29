@@ -52,7 +52,7 @@ const Model = require('../../../src/models/extensions')
 //     "completedTimestamp": null,
 //     "ilpPacket": null,
 //     "condition": null,
-//     "fulfillment": null
+//     "fulfilment": null
 //   },
 //   "participants": {
 //     "participantPayer": {

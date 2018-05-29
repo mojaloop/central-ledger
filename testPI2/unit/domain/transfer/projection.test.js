@@ -86,7 +86,7 @@ const ilpRecord = {
   transferId: payload.transferId,
   packet: payload.ilpPacket,
   condition: payload.condition,
-  fulfillment: null
+  fulfilment: null
 }
 
 const extensionsRecordList = [
@@ -300,7 +300,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
   transfersProjectionTest.test('projection updateTransferState should', updateTransferStateTest => {
     updateTransferStateTest.test('successfully add an entry of transferStateRecord to DB', async (test) => {
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
-      let result = await TransfersProjection.updateTransferState(payload)
+      let result = await TransfersProjection.updateTransferState(payload, TransferState.RESERVED)
       test.equal(result, true)
       test.end()
     })

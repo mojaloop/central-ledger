@@ -52,7 +52,7 @@ const messageProtocol = {
   metadata: {
     event: {
       id: Uuid(),
-      type: 'prepare',
+      type: 'position',
       action: 'prepare',
       createdAt: new Date(),
       state: {
@@ -95,6 +95,8 @@ const config = {
 const command = () => {}
 
 const participants = ['testName1', 'testName2']
+
+const COMMIT = 'commit'
 
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
@@ -165,7 +167,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-//    await DAO.retrieveAllParticipants.returns(P.resolve(participants))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
@@ -173,12 +174,39 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    positionsTest.test('Update transferStateChange in the database when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = COMMIT
+      const result = await allTransferHandlers.positions(null, messages)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('throws error when invalid action recieved', async (test) => {
+      try {
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
+        TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+        messages[0].value.metadata.event.action = 'invalid'
+        await allTransferHandlers.positions(null, messages)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
     positionsTest.test('Throws error on positions', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
-//      await DAO.retrieveAllParticipants.returns(P.resolve(participants))
         TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
         await allTransferHandlers.positions(new Error, null)
         test.fail('Error not thrown')

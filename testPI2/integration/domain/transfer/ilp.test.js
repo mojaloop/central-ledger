@@ -44,7 +44,7 @@ Test('Ilp service tests', async (ilpTest) => {
       transferId: '1',
       packet: 'test packet',
       condition: 'test condition',
-      fulfillment: 'test fulfillment'
+      fulfilment: 'test fulfilment'
     }
   ]
 
@@ -92,7 +92,7 @@ Test('Ilp service tests', async (ilpTest) => {
           assert.equal(result.transferId, read.transferId, ' transferId match')
           assert.equal(result.packet, read.packet, ' packet match')
           assert.equal(result.condition, read.condition, ' condition match')
-          assert.equal(result.fulfillment, read.fulfillment, ' fulfillment match')
+          assert.equal(result.fulfilment, read.fulfilment, ' fulfilment match')
           assert.end()
         } catch (err) {
           Logger.error(`create 1 ilp failed with error - ${err}`)
@@ -113,7 +113,7 @@ Test('Ilp service tests', async (ilpTest) => {
       await Service.create({
         packet: 'test packet',
         condition: 'test condition',
-        fulfillment: 'test fulfillment'
+        fulfilment: 'test fulfilment'
       })
       assert.end()
     } catch (err) {
@@ -128,7 +128,7 @@ Test('Ilp service tests', async (ilpTest) => {
       await Service.create({
         transferId: '10',
         condition: 'test condition',
-        fulfillment: 'test fulfillment'
+        fulfilment: 'test fulfilment'
       })
       assert.end()
     } catch (err) {
@@ -143,7 +143,7 @@ Test('Ilp service tests', async (ilpTest) => {
       await Service.create({
         transferId: '10',
         packet: 'test packet',
-        fulfillment: 'test fulfillment'
+        fulfilment: 'test fulfilment'
       })
       assert.end()
     } catch (err) {
@@ -173,7 +173,7 @@ Test('Ilp service tests', async (ilpTest) => {
         assert.equal(result.transferId, ilp.transferId, ' transferId match')
         assert.equal(result.packet, ilp.packet, ' packet match')
         assert.equal(result.condition, ilp.condition, ' condition match')
-        assert.equal(result.fulfillment, ilp.fulfillment, ' fulfillment match')
+        assert.equal(result.fulfilment, ilp.fulfilment, ' fulfilment match')
       }
       assert.end()
     } catch (err) {

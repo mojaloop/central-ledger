@@ -32,7 +32,7 @@ Test('post and get an participant', assert => {
 })
 
 Test('return the net position for the participant as the balance', async function (assert) {
-  let fulfillment = 'oAKAAA'
+  let fulfilment = 'oAKAAA'
   Config.LEDGER_ACCOUNT_NAME = 'LedgerParticipantName'
   let transferId = Fixtures.generateTransferId()
   let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'))
@@ -41,9 +41,9 @@ Test('return the net position for the participant as the balance', async functio
   let transfer2 = Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(Base.participant2Name, '15'), Fixtures.buildDebitOrCredit(Base.participant1Name, '15'))
 
   await Base.prepareTransfer(transferId, transfer)
-  await Base.fulfillTransfer(transferId, fulfillment)
+  await Base.fulfillTransfer(transferId, fulfilment)
   await Base.prepareTransfer(transfer2Id, transfer2)
-  await Base.fulfillTransfer(transfer2Id, fulfillment)
+  await Base.fulfillTransfer(transfer2Id, fulfilment)
   const res = await Base.getParticipant(Base.participant1Name)
   assert.equal(Base.participant1Name, res.body.name)
   assert.equal('-35', res.body.balance)

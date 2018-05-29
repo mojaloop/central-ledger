@@ -9,7 +9,7 @@ exports.up = function (knex, Promise) {
 
     t.text('packet').notNullable().comment('ilpPacket')
     t.string('condition', 256).notNullable()
-    t.string('fulfillment', 256).defaultTo(null).nullable()
+    t.string('fulfilment', 256).defaultTo(null).nullable()
   })
 }
 

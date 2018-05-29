@@ -31,10 +31,10 @@ const getFulfillment = (id) => {
       if (transfer.state === State.REJECTED) {
         throw new Errors.AlreadyRolledBackError()
       }
-      if (!transfer.fulfillment) {
+      if (!transfer.fulfilment) {
         throw new Errors.MissingFulfillmentError()
       }
-      return transfer.fulfillment
+      return transfer.fulfilment
     })
 }
 
@@ -62,16 +62,16 @@ const expire = (id) => {
   return reject({id, rejection_reason: RejectionType.EXPIRED})
 }
 
-const fulfill = (fulfillment) => {
-  return Commands.fulfill(fulfillment)
+const fulfil = (fulfilment) => {
+  return Commands.fulfil(fulfilment)
     .then(transfer => {
       const t = Translator.toTransfer(transfer)
-      Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfillment.fulfillment})
+      Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfilment.fulfilment})
       return t
     })
     .catch(err => {
       if (typeof err === Errors.ExpiredTransferError) {
-        return expire(fulfillment.id)
+        return expire(fulfilment.id)
           .then(() => { throw new Errors.UnpreparedTransferError() })
       } else {
         throw err
@@ -107,7 +107,7 @@ const settle = async () => {
 }
 
 module.exports = {
-  fulfill,
+  fulfil,
   getById,
   getAll,
   getFulfillment,
