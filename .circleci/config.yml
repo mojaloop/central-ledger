@@ -466,7 +466,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+#            - test-functional
             # - test-spec
           filters:
             tags:
@@ -491,7 +491,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+#            - test-functional
             # - test-spec
           filters:
             tags:
