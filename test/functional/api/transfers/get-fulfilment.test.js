@@ -4,16 +4,16 @@ const Test = require('tape')
 const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
 
-Test('GET /transfers/:id/fulfillment', getTest => {
-  getTest.test('should return fulfillment for transfer', async function (test) {
-    const fulfillment = 'oAKAAA'
+Test('GET /transfers/:id/fulfilment', getTest => {
+  getTest.test('should return fulfilment for transfer', async function (test) {
+    const fulfilment = 'oAKAAA'
     const transferId = Fixtures.generateTransferId()
     const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '25'), Fixtures.buildDebitOrCredit(Base.participant2Name, '25'))
 
     await Base.prepareTransfer(transferId, transfer)
-    await Base.fulfillTransfer(transferId, fulfillment)
+    await Base.fulfillTransfer(transferId, fulfilment)
     const res = await Base.getFulfillment(transferId)
-    test.equal(res.text, fulfillment)
+    test.equal(res.text, fulfilment)
     test.end()
   })
 
@@ -29,7 +29,7 @@ Test('GET /transfers/:id/fulfillment', getTest => {
           })
   })
 
-  getTest.test('should return error when retrieving fulfillment if transfer not executed', test => {
+  getTest.test('should return error when retrieving fulfilment if transfer not executed', test => {
     const transferId = Fixtures.generateTransferId()
     const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'))
 
@@ -45,7 +45,7 @@ Test('GET /transfers/:id/fulfillment', getTest => {
       })
   })
 
-  getTest.test('should return error when retrieving fulfillment of rejected transfer', test => {
+  getTest.test('should return error when retrieving fulfilment of rejected transfer', test => {
     const transferId = Fixtures.generateTransferId()
     const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, '50'), Fixtures.buildDebitOrCredit(Base.participant2Name, '50'))
 

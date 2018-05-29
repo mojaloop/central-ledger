@@ -57,7 +57,7 @@ const messageProtocol = {
 }
 
 const topicConf = {
-  topicName: Utility.transformGeneralTopicName('transfer', 'fulfill'),
+  topicName: Utility.transformGeneralTopicName('transfer', 'fulfil'),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
@@ -92,7 +92,7 @@ const topicConf = {
 // }
 
 exports.testProducer = async () => {
-  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFILL')
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFIL')
   config.logger = Logger
   await Producer.produceMessage(messageProtocol, topicConf, config)
   return true

@@ -46,12 +46,12 @@ Test('PUT /transfers/:id/reject', putTest => {
   putTest.test('should return error when rejecting fulfulled transfer', test => {
     const reason = Fixtures.rejectionMessage()
     const transferId = Fixtures.generateTransferId()
-    const fulfillment = 'oAKAAA'
+    const fulfilment = 'oAKAAA'
 
     const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
-      .then(() => Base.fulfillTransfer(transferId, fulfillment))
+      .then(() => Base.fulfillTransfer(transferId, fulfilment))
       .then(() => {
         Base.rejectTransfer(transferId, reason, { name: Base.participant2Name, password: Base.participant2Password })
           .expect(400)
@@ -67,12 +67,12 @@ Test('PUT /transfers/:id/reject', putTest => {
   putTest.test('should return error when rejecting unconditional transfer', test => {
     const reason = Fixtures.rejectionMessage()
     const transferId = Fixtures.generateTransferId()
-    const fulfillment = 'oAKAAA'
+    const fulfilment = 'oAKAAA'
 
     const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
-      .then(() => Base.fulfillTransfer(transferId, fulfillment))
+      .then(() => Base.fulfillTransfer(transferId, fulfilment))
       .then(() => {
         Base.rejectTransfer(transferId, reason, { name: Base.participant2Name, password: Base.participant2Password })
           .expect(422)

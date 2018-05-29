@@ -42,10 +42,10 @@ Test('transfer service', function (modelTest) {
     prepareTest.end()
   })
 
-  modelTest.test('fulfill should', function (fulfillTest) {
-    let fulfillment = 'oAKAAA'
+  modelTest.test('fulfil should', function (fulfillTest) {
+    let fulfilment = 'oAKAAA'
 
-    fulfillTest.test('fulfill a transfer', function (assert) {
+    fulfillTest.test('fulfil a transfer', function (assert) {
       let debitParticipantName = Fixtures.generateParticipantName()
       let creditParticipantName = Fixtures.generateParticipantName()
 
@@ -55,7 +55,7 @@ Test('transfer service', function (modelTest) {
       createParticipants([debitParticipantName, creditParticipantName])
         .then(participantMap => {
           TransferService.prepare(transfer)
-            .then(prepared => TransferService.fulfill({ id: transferId, fulfillment: fulfillment }))
+            .then(prepared => TransferService.fulfil({ id: transferId, fulfilment: fulfilment }))
             .then(fulfilled => {
               assert.equal(fulfilled.id, transfer.id)
               assert.equal(fulfilled.ledger, transfer.ledger)

@@ -39,7 +39,7 @@ const getAll = async () => {
           'ts.enumeration AS transferState',
           'ilp.packet AS ilpPacket',
           'ilp.condition AS condition',
-          'ilp.fulfillment AS fulfillment'
+          'ilp.fulfilment AS fulfilment'
         )
         .orderBy('tsc.=transferStateChangeId', 'desc')
 
@@ -99,7 +99,7 @@ const getById = async (id) => {
           'tsc.changedDate AS completedTimestamp',
           'ilp.packet AS ilpPacket',
           'ilp.condition AS condition',
-          'ilp.fulfillment AS fulfillment'
+          'ilp.fulfilment AS fulfilment'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()

@@ -11,10 +11,10 @@ The central ledger has two APIs targeted at different consumers. The DFSP API is
 * `POST` [**Send message to account**](#send-message-to-account)
 * `GET` [**Get position for account**](#get-position-for-account)
 * `PUT` [**Prepare transfer**](#prepare-transfer) 
-* `PUT` [**Fulfill transfer**](#fulfill-transfer)
+* `PUT` [**Fulfil transfer**](#fulfil-transfer)
 * `PUT` [**Reject transfer**](#reject-transfer) 
 * `GET` [**Get transfer by id**](#get-transfer-by-id)
-* `GET` [**Get transfer fulfillment**](#get-transfer-fulfillment)
+* `GET` [**Get transfer fulfilment**](#get-transfer-fulfilment)
 * `GET` [**Get net positions**](#get-net-positions) 
 * `GET` [**Get metadata**](#get-metadata) 
 * `POST` [**Get charge quote**](#get-a-charge-quote) 
@@ -486,11 +486,11 @@ Content-Type: application/json
 }
 ```
 
-#### Fulfill transfer 
-The fulfill transfer endpoint will either execute or cancel a transfer, depending on the existence of an *execution_condition* or *cancellation_condition*. To successfully fulfill a transfer, make sure the [transfer has previously been prepared.](#prepare-transfer) 
+#### Fulfil transfer 
+The fulfil transfer endpoint will either execute or cancel a transfer, depending on the existence of an *execution_condition* or *cancellation_condition*. To successfully fulfil a transfer, make sure the [transfer has previously been prepared.](#prepare-transfer) 
 
 ##### HTTP Request
-`PUT http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfillment`
+`PUT http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfilment`
 
 ##### Headers
 | Field | Type | Description |
@@ -505,7 +505,7 @@ The fulfill transfer endpoint will either execute or cancel a transfer, dependin
 ##### Request Body
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| Fulfillment | String | A fulfillment in string format |
+| Fulfilment | String | A fulfilment in string format |
 
 ##### Response 200 OK
 | Field | Type | Description |
@@ -514,7 +514,7 @@ The fulfill transfer endpoint will either execute or cancel a transfer, dependin
 
 ##### Request
 ``` http
-PUT http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfillment HTTP/1.1
+PUT http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfilment HTTP/1.1
 Content-Type: text/plain
 oAKAAA
 ```
@@ -706,11 +706,11 @@ HTTP/1.1 200 OK
 }
 ```
 
-#### Get transfer fulfillment
-The get transfer fulfillment endpoint will return the fulfillment for a transfer that has been executed or cancelled. To successfully retrieve a transfer fulfillment, make sure the [transfer has previously been fulfilled.](#fulfill-transfer)
+#### Get transfer fulfilment
+The get transfer fulfilment endpoint will return the fulfilment for a transfer that has been executed or cancelled. To successfully retrieve a transfer fulfilment, make sure the [transfer has previously been fulfilled.](#fulfil-transfer)
 
 ##### HTTP Request
-`GET http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfillment`
+`GET http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfilment`
 
 ##### URL Params
 | Field | Type | Description |
@@ -720,11 +720,11 @@ The get transfer fulfillment endpoint will return the fulfillment for a transfer
 ##### Response 200 OK
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| Fulfillment | String | The fulfillment for the transfer |
+| Fulfilment | String | The fulfilment for the transfer |
 
 #### Request
 ``` http
-GET http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfillment HTTP/1.1
+GET http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfilment HTTP/1.1
 ```
 
 ##### Response
@@ -864,7 +864,7 @@ HTTP/1.1 200 OK
     "accounts": "http://central-ledger/accounts",
     "send_message": "http://central-ledger/messages",
     "transfer": "http://central-ledger/transfers/:id",
-    "transfer_fulfillment": "http://central-ledger/transfers/:id/fulfillment",
+    "transfer_fulfillment": "http://central-ledger/transfers/:id/fulfilment",
     "transfer_rejection": "http://central-ledger/transfers/:id/rejection",
     "notifications": "ws://central-ledger/websocket"
   },
@@ -2260,7 +2260,7 @@ HTTP/1.1 200 OK
 
 A transfer represents money being moved between two DFSP accounts at the central ledger.
 
-The transfer must specify an execution_condition, in which case it executes automatically when presented with the fulfillment for the condition. (Assuming the transfer has not expired or been canceled first.) Currently, the central ledger only supports the condition type of [PREIMAGE-SHA-256](https://interledger.org/five-bells-condition/spec.html#rfc.section.4.1) and a max fulfillment length of 65535. 
+The transfer must specify an execution_condition, in which case it executes automatically when presented with the fulfilment for the condition. (Assuming the transfer has not expired or been canceled first.) Currently, the central ledger only supports the condition type of [PREIMAGE-SHA-256](https://interledger.org/five-bells-condition/spec.html#rfc.section.4.1) and a max fulfilment length of 65535. 
 
 Some fields are Read-only, meaning they are set by the API and cannot be modified by clients. A transfer object can have the following fields:
 

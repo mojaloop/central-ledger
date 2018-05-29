@@ -15,16 +15,16 @@ const prepare = async (transfer, stateReason = null, hasPassedValidation = true)
   }
 }
 
-const fulfill = async (fulfillment) => {
+const fulfil = async (fulfilment) => {
   const record = {
-    payload: fulfillment,
+    payload: fulfilment,
     timestamp: new Date()
   }
-  const transfer = await Query.getById(fulfillment.id)
+  const transfer = await Query.getById(fulfilment.id)
   if (!transfer.executionCondition) {
     throw new Errors.TransferNotConditionalError()
   }
-  // if ((transfer.state === State.EXECUTED || transfer.state === State.SETTLED) && fulfillment === fulfillment.fulfillment) {
+  // if ((transfer.state === State.EXECUTED || transfer.state === State.SETTLED) && fulfilment === fulfilment.fulfilment) {
   //   return transfer
   // }
   if (new Date() > new Date(transfer.expirationDate)) {
@@ -33,10 +33,10 @@ const fulfill = async (fulfillment) => {
   // if (transfer.state !== State.PREPARED) {
   //   throw new Errors.InvalidModificationError(`Transfers in state ${transfer.state} may not be executed`)
   // }
-  CryptoConditions.validateFulfillment(fulfillment.fulfillment, transfer.executionCondition)
+  CryptoConditions.validateFulfillment(fulfilment.fulfilment, transfer.executionCondition)
   await Projection.saveTransferExecuted({payload: record.payload, timestamp: record.timestamp})
   await Projection.saveExecutedTransfer(record)
-  const fulfilledTransfer = await Query.getById(fulfillment.id)
+  const fulfilledTransfer = await Query.getById(fulfilment.id)
   await FeeProjection.generateFeeForTransfer(fulfilledTransfer)
   return fulfilledTransfer
 }
@@ -54,7 +54,7 @@ const settle = ({id, settlement_id}) => {
 }
 
 module.exports = {
-  fulfill,
+  fulfil,
   prepare,
   reject,
   settle

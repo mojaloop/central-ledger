@@ -41,7 +41,7 @@ Test('Ilp model', async (ilpTest) => {
       transferId: '1',
       packet: 'test packet',
       condition: 'test condition',
-      fulfillment: 'test fulfillment'
+      fulfilment: 'test fulfilment'
     }
   ]
   const ilp = ilpTestValues[0]
@@ -77,7 +77,7 @@ Test('Ilp model', async (ilpTest) => {
         transferId: ilp.transferId,
         packet: ilp.packet,
         condition: ilp.condition,
-        fulfillment: ilp.fulfillment
+        fulfilment: ilp.fulfilment
       }).returns(1)
       var result = await Model.create(ilp)
       assert.ok(result === 1, ` returns ${result}`)
@@ -106,7 +106,7 @@ Test('Ilp model', async (ilpTest) => {
   //     var result = await Model.getByTransferId('1')
   //     assert.equal(result.transferId, ilp.transferId, ' transferIds are equal')
   //     assert.equal(result.condition, ilp.condition, ' conditions match')
-  //     assert.equal(result.fulfillment, ilp.fulfillment, ' fulfillments match')
+  //     assert.equal(result.fulfilment, ilp.fulfilment, ' fulfillments match')
   //     assert.end()
   //   } catch (err) {
   //     Logger.error(`create ilp failed with error - ${err}`)

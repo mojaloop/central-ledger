@@ -81,7 +81,7 @@ Test('Transfer model', async (transferTest) => {
   //   transferId: payload.transferId,
   //   packet: payload.ilpPacket,
   //   condition: payload.condition,
-  //   fulfillment: null
+  //   fulfilment: null
   // }
 
   // const transferStateRecord = {
@@ -132,7 +132,7 @@ Test('Transfer model', async (transferTest) => {
   // updateTransfer
   await transferTest.test('updateTransfer should', async (assert) => {
     try {
-      let fields = { state: TransferState.EXECUTED, fulfillment: 'oAKAAA' }
+      let fields = { state: TransferState.EXECUTED, fulfilment: 'oAKAAA' }
       let updatedTransfer = { transferId: payload.transferId }
       Db.transfer.update = sandbox.stub().returns(Promise.resolve(updatedTransfer))
       let u = await Model.updateTransfer(payload.transferId, fields)
@@ -214,7 +214,7 @@ Test('Transfer model', async (transferTest) => {
         'tsc.changedDate AS completedTimestamp',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
-        'ilp.fulfillment AS fulfillment'
+        'ilp.fulfilment AS fulfilment'
       ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       assert.ok(firstStub.withArgs().calledOnce)
@@ -277,7 +277,7 @@ Test('Transfer model', async (transferTest) => {
         'ts.enumeration AS transferState',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
-        'ilp.fulfillment AS fulfillment'
+        'ilp.fulfilment AS fulfilment'
       ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.=transferStateChangeId', 'desc').calledOnce)
       sandbox.restore()

@@ -18,7 +18,7 @@ function entityItem (transfer) {
     payeeRejectionMessage: transfer.payeeRejectionMessage,
     executionCondition: transfer.executionCondition,
     cancellationCondition: transfer.cancellationCondition,
-    fulfillment: transfer.fulfillment,
+    fulfilment: transfer.fulfilment,
     rejectionReason: transfer.rejectionReason,
     expirationDate: transfer.expirationDate,
     additionalInfo: transfer.additionalInfo,

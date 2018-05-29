@@ -18,7 +18,7 @@ Test('return metadata', async function (assert) {
   assert.equal(res.body.urls.participant_update_participant_settlement, `http://${Fixtures.hostname}/participants/:name/settlement`)
   assert.equal(res.body.urls.participants, `http://${Fixtures.hostname}/participants`)
   assert.equal(res.body.urls.transfer, `http://${Fixtures.hostname}/transfers/:id`)
-  assert.equal(res.body.urls.transfer_fulfillment, `http://${Fixtures.hostname}/transfers/:id/fulfillment`)
+  assert.equal(res.body.urls.transfer_fulfillment, `http://${Fixtures.hostname}/transfers/:id/fulfilment`)
   assert.equal(res.body.urls.transfer_rejection, `http://${Fixtures.hostname}/transfers/:id/rejection`)
   assert.equal(res.body.urls.websocket, `ws://${Fixtures.hostname}/websocket`)
   assert.equal(res.body.urls.message, `http://${Fixtures.hostname}/messages`)

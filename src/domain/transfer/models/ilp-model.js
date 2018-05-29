@@ -11,7 +11,7 @@ exports.create = async (transfer) => {
       transferId: transfer.transferId,
       packet: transfer.packet,
       condition: transfer.condition,
-      fulfillment: transfer.fulfillment
+      fulfilment: transfer.fulfilment
     })
   } catch (err) {
     throw new Error(err.message)
@@ -51,7 +51,7 @@ exports.update = async (ilp, payload) => {
     transferId: ilp.transferId,
     packet: payload.packet || payload.ilpPacket,
     condition: payload.condition,
-    fulfillment: payload.fulfillment
+    fulfilment: payload.fulfilment
   }
   try {
     return await Db.ilp.update({ilpId: ilp.ilpId}, Util.filterUndefined(fields))

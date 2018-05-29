@@ -49,56 +49,56 @@ Test('crypto conditions', conditionsTest => {
 
   conditionsTest.test('validateFulfillment should', validateFulfillmentTest => {
     validateFulfillmentTest.test('throw InvalidBodyError if five-bells fulfillmentToCondition throws', test => {
-      const fulfillment = 'some-fulfillment'
+      const fulfilment = 'some-fulfilment'
       const condition = 'some-condition'
       const error = new Error('message')
-      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfillment).throws(error)
+      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfilment).throws(error)
       try {
-        Conditions.validateFulfillment(fulfillment, condition)
+        Conditions.validateFulfillment(fulfilment, condition)
         test.fail('Should have thrown')
       } catch (error) {
         test.assert(error instanceof Errors.InvalidBodyError)
-        test.equal(error.message, 'Invalid fulfillment: message')
+        test.equal(error.message, 'Invalid fulfilment: message')
       }
       test.end()
     })
 
     validateFulfillmentTest.test('throw InvalidBodyError if five-bell validateFulfillment throws error', test => {
       const condition = 'some-condition'
-      const fulfillment = 'some-fulfillment'
+      const fulfilment = 'some-fulfilment'
       const error = new Error('message')
-      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfillment).returns(condition)
-      FiveBellsConditions.validateFulfillment.withArgs(fulfillment, condition).throws(error)
+      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfilment).returns(condition)
+      FiveBellsConditions.validateFulfillment.withArgs(fulfilment, condition).throws(error)
       try {
-        Conditions.validateFulfillment(fulfillment, condition)
+        Conditions.validateFulfillment(fulfilment, condition)
         test.fail('Should have thrown')
       } catch (error) {
         test.assert(error instanceof Errors.InvalidBodyError)
-        test.equal(error.message, 'Invalid fulfillment: message')
+        test.equal(error.message, 'Invalid fulfilment: message')
       }
       test.end()
     })
 
     validateFulfillmentTest.test('throw UnmetConditionError if fulfillmentCondition does not equal condition', test => {
-      const fulfillment = 'some-fulfillment'
+      const fulfilment = 'some-fulfilment'
       const condition = 'some-condition'
-      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfillment).returns('not' + condition)
+      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfilment).returns('not' + condition)
       try {
-        Conditions.validateFulfillment(fulfillment, condition)
+        Conditions.validateFulfillment(fulfilment, condition)
         test.fail('Should have thrown')
       } catch (error) {
         test.assert(error instanceof Errors.UnmetConditionError)
-        test.equal(error.message, 'Fulfillment does not match any condition')
+        test.equal(error.message, 'Fulfilment does not match any condition')
       }
       test.end()
     })
 
-    validateFulfillmentTest.test('return true if five-bell fulfillment returns true', test => {
+    validateFulfillmentTest.test('return true if five-bell fulfilment returns true', test => {
       const condition = 'some-condition'
-      const fulfillment = 'some-fulfillment'
+      const fulfilment = 'some-fulfilment'
       FiveBellsConditions.fulfillmentToCondition.returns(condition)
-      FiveBellsConditions.validateFulfillment.withArgs(fulfillment, condition).returns(true)
-      test.equal(Conditions.validateFulfillment(fulfillment, condition), true)
+      FiveBellsConditions.validateFulfillment.withArgs(fulfilment, condition).returns(true)
+      test.equal(Conditions.validateFulfillment(fulfilment, condition), true)
       test.end()
     })
 
