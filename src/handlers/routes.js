@@ -39,7 +39,7 @@ const RegisterAllHandler = require('./handlers')
 const TransferHandler = require('./transfers/handler')
 const PositionHandler = require('./positions/handler')
 const NotificationHandler = require('./notification/handler')
-const testProducer = require('./lib/kafka/testProducer')
+const testProducer = require('../../testPI2/integration/helpers/testProducer')
 
 module.exports = [
   /**

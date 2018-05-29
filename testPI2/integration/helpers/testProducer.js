@@ -2,10 +2,10 @@
 
 'use strict'
 
-const Producer = require('./producer')
+const Producer = require('../../../src/handlers/lib/kafka/producer')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
-const Utility = require('../utility')
+const Utility = require('../../../src/handlers/lib/utility')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8098',
