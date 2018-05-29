@@ -216,33 +216,33 @@ jobs:
       - store_test_results:
           path: ./test/results
 
-  test-functional:
-    machine: true
-    <<: *defaults_working_directory
-    steps:
-      - run:
-          name: Add the Postgres 9.6 binaries to the path.
-          command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
-      - run:
-          name: Install Docker Compose
-          command: |
-            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
-            chmod +x ~/docker-compose
-            mv ~/docker-compose /usr/local/bin/docker-compose
-      - checkout
-      - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-      - run:
-          name: Create dir for test results
-          command: mkdir -p ./test/results
-      - run:
-          name: Execute functional tests
-          command: npm -s run test:functional
-      - store_artifacts:
-          path: ./test/results
-          prefix: test
-      - store_test_results:
-          path: ./test/results
+#  test-functional:
+#    machine: true
+#    <<: *defaults_working_directory
+#    steps:
+#      - run:
+#          name: Add the Postgres 9.6 binaries to the path.
+#          command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+#      - run:
+#          name: Install Docker Compose
+#          command: |
+#            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+#            chmod +x ~/docker-compose
+#            mv ~/docker-compose /usr/local/bin/docker-compose
+#      - checkout
+#      - restore_cache:
+#          key: dependency-cache-{{ checksum "package.json" }}
+#      - run:
+#          name: Create dir for test results
+#          command: mkdir -p ./test/results
+#      - run:
+#          name: Execute functional tests
+#          command: npm -s run test:functional
+#      - store_artifacts:
+#          path: ./test/results
+#          prefix: test
+#      - store_test_results:
+#          path: ./test/results
 
 #   test-spec:
 #     machine: true
@@ -437,17 +437,17 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      - test-functional:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore:
-                - /feature*/
-                - /bugfix*/
+#      - test-functional:
+#          context: org-global
+#          requires:
+#            - setup
+#          filters:
+#            tags:
+#              only: /.*/
+#            branches:
+#              ignore:
+#                - /feature*/
+#                - /bugfix*/
     #   - test-spec:
     #       context: org-global
     #       requires:
@@ -466,7 +466,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+#            - test-functional
             # - test-spec
           filters:
             tags:
@@ -491,7 +491,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+#            - test-functional
             # - test-spec
           filters:
             tags:
