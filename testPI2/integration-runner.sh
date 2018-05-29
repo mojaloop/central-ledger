@@ -54,6 +54,8 @@ stop_docker() {
   (docker stop $DB_HOST && docker rm $DB_HOST) > /dev/null 2>&1
   >&1 echo "$APP_HOST environment is shutting down"
   (docker stop $APP_HOST && docker rm $APP_HOST) > /dev/null 2>&1
+  >&1 echo "Deleting test network: $DOCKER_NETWORK"
+  docker network rm integration-test-net
 }
 
 clean_docker() {
@@ -64,6 +66,7 @@ ftest() {
   docker run -i --rm \
     --link $KAFKA_HOST \
     --link $DB_HOST \
+    --network $DOCKER_NETWORK \
     --env HOST_IP="$APP_HOST" \
     --env KAFKA_HOST="$KAFKA_HOST" \
     --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
@@ -83,6 +86,7 @@ run_test_command() {
   docker run -it \
     --link $KAFKA_HOST \
     --link $DB_HOST \
+    --network $DOCKER_NETWORK \
     --name $APP_HOST \
     --env HOST_IP="$APP_HOST" \
     --env KAFKA_HOST="$KAFKA_HOST" \
@@ -101,6 +105,7 @@ run_test_command() {
 fcurl() {
 	docker run --rm -i \
 		--link $ENDPOINT_HOST \
+		--network $DOCKER_NETWORK \
 		--entrypoint curl \
 		"jlekie/curl:latest" \
         --silent --head --fail \
@@ -110,9 +115,11 @@ fcurl() {
 # Kafka functions
 
 start_kafka() {
+  echo "docker run -td -i -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT --name=$KAFKA_HOST --env ADVERTISED_HOST=$KAFKA_HOST --env ADVERTISED_PORT=$KAFKA_BROKER_PORT --env CONSUMER_THREADS=1 --env TOPICS=my-topic,some-other-topic --env ZK_CONNECT=kafka7zookeeper:2181/root/path --env GROUP_ID=mymirror $KAFKA_IMAGE"
   docker run -td -i \
     -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT \
     -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT \
+    --network $DOCKER_NETWORK \
     --name=$KAFKA_HOST \
     --env ADVERTISED_HOST=$KAFKA_HOST \
     --env ADVERTISED_PORT=$KAFKA_BROKER_PORT \
@@ -127,6 +134,7 @@ fkafka() {
   >&2 echo "fkafka()"
 	docker run --rm -i \
 	  --link $KAFKA_HOST \
+	  --network $DOCKER_NETWORK \
 	  --env KAFKA_HOST="$KAFKA_HOST" \
     --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
 	  taion809/kafka-cli \
@@ -145,6 +153,7 @@ start_db() {
   docker run -td \
     -p $DB_PORT:$DB_PORT \
     --name $DB_HOST \
+    --network $DOCKER_NETWORK \
     -e MYSQL_USER=$DB_USER \
     -e MYSQL_PASSWORD=$DB_PASSWORD \
     -e MYSQL_DATABASE=$DB_NAME \
@@ -155,6 +164,7 @@ start_db() {
 fdb() {
   docker run -it --rm \
     --link $DB_HOST:mysql \
+    --network $DOCKER_NETWORK \
     -e DB_HOST=$DB_HOST \
     -e DB_PORT=$DB_PORT \
     -e DB_PASSWORD=$DB_PASSWORD \
@@ -182,6 +192,9 @@ then
   clean_docker
   exit 1
 fi
+
+>&1 echo "Creating test network: $DOCKER_NETWORK"
+docker network create $DOCKER_NETWORK
 
 >&1 echo "Kafka is starting"
 start_kafka
