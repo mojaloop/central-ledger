@@ -12,7 +12,7 @@ COPY config /opt/central-ledger/config
 COPY package.json server.sh /opt/central-ledger/
 
 # overwrite default.json with integration environment specific config
-RUN cp -rf /opt/central-ledger/test/integration-config.json /opt/central-ledger/config/default.json
+RUN cp -f /opt/central-ledger/test/integration-config.json /opt/central-ledger/config/default.json
 
 RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake \
     && cd $(npm root -g)/npm \

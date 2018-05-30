@@ -230,7 +230,7 @@ const getKafkaConfig = (flow, functionality, action) => {
     actionObject.config.logger = Logger
     return actionObject.config
   } catch (e) {
-    throw new Error('No config found for those parameters')
+    throw new Error(`No config found for those parameters flow='${flow}', functionality='${functionality}', action='${action}'`)
   }
 }
 
