@@ -54,7 +54,7 @@ Test('Fee-Projection', feeProjectionTest => {
         }],
         execution_condition: executionCondition,
         expires_at: '2015-06-16T00:00:01.000Z',
-        fulfillment: 'oAKAAA'
+        fulfilment: 'oAKAAA'
       },
       aggregate: {
         id: Uuid(),

@@ -106,7 +106,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         'additionalInfo': null,
         'preparedDate': '2016-11-16T20:02:19.363Z',
         'executedDate': '2016-11-17T20:02:19.363Z',
-        'fulfillment': null,
+        'fulfilment': null,
         'payeeRejected': 0,
         'payeeRejectionMessage': null,
         'rejectedDate': null,
@@ -166,7 +166,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         'preparedDate': '2016-11-16T20:02:19.363Z',
         'executedDate': '2016-11-17T20:02:19.363Z',
         'rejectedDate': '2016-11-17T20:02:19.363Z',
-        'fulfillment': 'fulfillment',
+        'fulfilment': 'fulfilment',
         'payeeRejected': 1,
         'payerParticipantId': 2,
         'payeeParticipantId': 1,
@@ -220,7 +220,7 @@ Test('TransferTranslator', transferTranslatorTest => {
       const transferUri = UrlParser.toTransferUri(id)
       test.notEqual(id, transferUri)
       const payload = { id: transferUri }
-      const result = TransferTranslator.fromPayload(payload)
+      const result = TransferTranslator.fromRequestToDatabase(payload)
       test.equal(result.id, id.toString())
       test.end()
     })

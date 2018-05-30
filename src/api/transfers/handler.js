@@ -30,11 +30,11 @@ exports.prepareTransfer = async function (request, h) {
 
 exports.fulfillTransfer = async function (request, h) {
   Sidecar.logRequest(request)
-  const fulfillment = {
+  const fulfilment = {
     id: request.params.id,
-    fulfillment: request.payload
+    fulfilment: request.payload
   }
-  const transfer = await TransferService.fulfill(fulfillment)
+  const transfer = await TransferService.fulfil(fulfilment)
   return h.response(transfer).code(200)
 }
 

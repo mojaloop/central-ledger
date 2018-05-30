@@ -1,7 +1,10 @@
-const currencies = [{
-  'name': 'Afghanistan afghani',
-  'currencyId': 'AFA'
-},
+'use strict'
+
+const currencies = [
+  {
+    'name': 'Afghanistan afghani',
+    'currencyId': 'AFA'
+  },
   {
     'name': 'Albanian lek',
     'currencyId': 'ALL'
@@ -653,13 +656,14 @@ const currencies = [{
   {
     'name': 'Zimbabwe dollar',
     'currencyId': 'ZWL'
-  }]
+  }
+]
 
-exports.seed = function (knex, Promise) {
-  // Deletes ALL existing entries
-  return knex('currency').del()
-    .then(function () {
-      // Inserts seed entries
-      return knex('currency').insert(currencies)
-    })
+exports.seed = async function (knex, Promise) {
+  try {
+    return await knex('currency').insert(currencies)
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return
+    else console.log(`Uploading seeds for currency has failed with the following error: ${err}`)
+  }
 }

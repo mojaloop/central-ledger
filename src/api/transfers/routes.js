@@ -59,22 +59,22 @@ module.exports = [{
 },
 {
   method: 'PUT',
-  path: '/transfers/{id}/fulfillment',
+  path: '/transfers/{id}/fulfilment',
   handler: Handler.fulfillTransfer,
   options: {
     id: 'transfer_fulfillment',
     tags: tags,
     auth: Auth.strategy(),
-    description: 'Fulfill a transfer',
+    description: 'Fulfil a transfer',
     payload: {
       failAction: 'error'
     },
     validate: {
       headers: Joi.object({'content-type': Joi.string().required().valid('text/plain')}).unknown(),
       params: {
-        id: Joi.string().guid().required().description('Id of transfer to fulfill')
+        id: Joi.string().guid().required().description('Id of transfer to fulfil')
       },
-      payload: Joi.string().trim().max(65535).required().description('Fulfillment of the execution condition')
+      payload: Joi.string().trim().max(65535).required().description('Fulfilment of the execution condition')
     }
   }
 },
@@ -101,15 +101,15 @@ module.exports = [{
 },
 {
   method: 'GET',
-  path: '/transfers/{id}/fulfillment',
+  path: '/transfers/{id}/fulfilment',
   handler: Handler.getTransferFulfillment,
   options: {
     tags: tags,
-    description: 'Get transfer fulfillment',
+    description: 'Get transfer fulfilment',
     auth: Auth.strategy(),
     validate: {
       params: {
-        id: Joi.string().guid().required().description('Id of transfer to retrieve fulfillment for')
+        id: Joi.string().guid().required().description('Id of transfer to retrieve fulfilment for')
       }
     }
   }

@@ -9,6 +9,7 @@ const UrlParser = require('../../../../src/lib/urlparser')
 const Handler = require('../../../../src/admin/participants/handler')
 const Participant = require('../../../../src/domain/participant')
 const Sidecar = require('../../../../src/lib/sidecar')
+const Boom = require('boom')
 
 Test('participant handler', handlerTest => {
   let sandbox
@@ -35,12 +36,14 @@ Test('participant handler', handlerTest => {
       const participant1 = {
         name: 'participant1',
         createdDate: new Date(),
-        isDisabled: false
+        isDisabled: false,
+        currency: 'USD'
       }
       const participant2 = {
         name: 'participant2',
         createdDate: new Date(),
-        isDisabled: false
+        isDisabled: false,
+        currency: 'USD'
       }
       const participant = [participant1, participant2]
 
@@ -153,7 +156,7 @@ Test('participant handler', handlerTest => {
     })
 
     updateParticipantTest.test('reply with error if Participant services throws', async function (test) {
-      const error = new Error()
+      const error = Boom.badRequest()
       Participant.update.returns(P.reject(error))
 
       const request = {
@@ -164,7 +167,7 @@ Test('participant handler', handlerTest => {
       try {
         await Handler.update(request, {})
       } catch (e) {
-        test.equal(e, error)
+        test.equal(e.message, error.message)
         test.end()
       }
     })
@@ -204,7 +207,7 @@ Test('participant handler', handlerTest => {
       try {
         await Handler.create({payload}, {})
       } catch (e) {
-        test.ok(e instanceof Errors.RecordExistsError)
+        test.ok(e instanceof Error)
         test.equal(e.message, 'The participant has already been registered')
         test.end()
       }

@@ -14,12 +14,13 @@ const UrlParser = require('../lib/urlparser')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
 const Boom = require('boom')
+const RegisterHandlers = require('../handlers/handlers')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
 }
 
-const connectDatabase = () => Db.connect(Config.DATABASE_URI)
+const connectDatabase = async () => await Db.connect(Config.DATABASE_URI)
 
 const createServer = (port, modules) => {
   return (async () => {
@@ -58,9 +59,10 @@ const initialize = async function ({service, port, modules = [], runMigrations =
   await connectDatabase()
   await Sidecar.connect(service)
   const server = await createServer(port, modules)
-  /* if (service === 'api') {
-    await Participant.createLedgerParticipant(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
-  } */
+  if (service === 'api') {
+    await RegisterHandlers.registerAllHandlers()
+    // await Participant.createLedgerParticipant(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
+  }
   return server
 }
 

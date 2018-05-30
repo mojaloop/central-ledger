@@ -7,25 +7,24 @@ const Query = require('../../../domain/transfer/queries')
 const CryptoConditions = require('../../../crypto-conditions')
 const Errors = require('../../../errors')
 
-const prepare = async (transfer) => {
-  transfer.timeline = {
-    prepared_at: new Date()
+const prepare = async (transfer, stateReason = null, hasPassedValidation = true) => {
+  try {
+    return await Projection.saveTransferPrepared(transfer, stateReason, hasPassedValidation)
+  } catch (error) {
+    throw error
   }
-  return await Projection.saveTransferPrepared(transfer).catch(err => {
-    throw err
-  })
 }
 
-const fulfill = async (fulfillment) => {
+const fulfil = async (fulfilment) => {
   const record = {
-    payload: fulfillment,
+    payload: fulfilment,
     timestamp: new Date()
   }
-  const transfer = await Query.getById(fulfillment.id)
+  const transfer = await Query.getById(fulfilment.id)
   if (!transfer.executionCondition) {
     throw new Errors.TransferNotConditionalError()
   }
-  // if ((transfer.state === State.EXECUTED || transfer.state === State.SETTLED) && fulfillment === fulfillment.fulfillment) {
+  // if ((transfer.state === State.EXECUTED || transfer.state === State.SETTLED) && fulfilment === fulfilment.fulfilment) {
   //   return transfer
   // }
   if (new Date() > new Date(transfer.expirationDate)) {
@@ -34,32 +33,20 @@ const fulfill = async (fulfillment) => {
   // if (transfer.state !== State.PREPARED) {
   //   throw new Errors.InvalidModificationError(`Transfers in state ${transfer.state} may not be executed`)
   // }
-  CryptoConditions.validateFulfillment(fulfillment.fulfillment, transfer.executionCondition)
+  CryptoConditions.validateFulfillment(fulfilment.fulfilment, transfer.executionCondition)
   await Projection.saveTransferExecuted({payload: record.payload, timestamp: record.timestamp})
   await Projection.saveExecutedTransfer(record)
-  const fulfilledTransfer = await Query.getById(fulfillment.id)
+  const fulfilledTransfer = await Query.getById(fulfilment.id)
   await FeeProjection.generateFeeForTransfer(fulfilledTransfer)
   return fulfilledTransfer
 }
 
-const reject = async (rejection) => {
-  const record = {
-    aggregate: {
-      id: rejection.id
-    },
-    payload: rejection,
-    timestamp: new Date()
+const reject = async (stateReason, transferId) => {
+  try {
+    return await Projection.saveTransferRejected(stateReason, transferId)
+  } catch (error) {
+    throw error
   }
-  // const transfer = await Query.getById(rejection.id)
-  // if (transfer.state === State.REJECTED && transfer.rejectionReason === rejection.message) {
-  //   return {alreadyRejected: true, transfer}
-  // }
-  // if (!transfer.state === State.PREPARED) {
-  //   throw new Errors.InvalidModificationError(`Transfers in state ${transfer.state} may not be rejected`)
-  // }
-  await Projection.saveTransferRejected(record)
-  const updatedTransfer = await Query.getById(rejection.id)
-  return {alreadyRejected: false, transfer: updatedTransfer}
 }
 
 const settle = ({id, settlement_id}) => {
@@ -67,7 +54,7 @@ const settle = ({id, settlement_id}) => {
 }
 
 module.exports = {
-  fulfill,
+  fulfil,
   prepare,
   reject,
   settle

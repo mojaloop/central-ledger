@@ -67,7 +67,7 @@ Test('transfer model', modelTest => {
   modelTest.test('updateTransfer should', updateTransferTest => {
     updateTransferTest.test('update transfer record', test => {
       let transferId = Uuid()
-      let fields = { state: TransferState.EXECUTED, fulfillment: 'oAKAAA' }
+      let fields = { state: TransferState.EXECUTED, fulfilment: 'oAKAAA' }
       let updatedTransfer = { transferId: transferId }
 
       Db.transfer.update = sandbox.stub().returns(P.resolve(updatedTransfer))

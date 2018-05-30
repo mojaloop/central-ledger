@@ -3,6 +3,7 @@
 const Moment = require('moment')
 const Db = require('../../../db')
 const TransferState = require('../state')
+const extensionModel = require('../../../models/extensions')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 const findExpired = (expiresAt) => {
@@ -10,42 +11,105 @@ const findExpired = (expiresAt) => {
   return Db.transfer.find({ state: TransferState.PREPARED, 'expirationDate <': expirationDate })
 }
 
-const saveTransfer = (record) => {
-  Logger.info('inside save transfer' + record.toString())
-  return Db.transfer.insert(record).catch(err => {
+const saveTransfer = async (record) => {
+  Logger.debug('save transfer' + record.toString())
+  try {
+    return await Db.transfer.insert(record)
+  } catch (err) {
     throw err
-  })
+  }
 }
 
-const getAll = () => {
-  return Db.transfer.query(builder => {
-    return builder
-      .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
-      .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
-  })
+const getAll = async () => {
+  try {
+    return await Db.transfer.query(async (builder) => {
+      let transferResultList = await builder
+        .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
+        .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
+        .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
+        .innerJoin('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId')
+        .innerJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
+        .select(
+          'transfer.*',
+          'transfer.currencyId AS currency',
+          'ca.name AS payerFsp',
+          'da.name AS payeeFsp',
+          'tsc.transferStateId AS internalTransferState',
+          'tsc.changedDate AS completedTimestamp',
+          'ts.enumeration AS transferState',
+          'ilp.packet AS ilpPacket',
+          'ilp.condition AS condition',
+          'ilp.fulfilment AS fulfilment'
+        )
+        .orderBy('tsc.=transferStateChangeId', 'desc')
+
+      transferResultList = transferResultList.map(async transferResult => {
+        transferResult.extensionList = await extensionModel.getByTransferId(transferResult.transferId)
+        transferResult.isTransferReadModel = true
+        return transferResult
+      })
+      return transferResultList
+    })
+  } catch (err) {
+    throw err
+  }
 }
 
-const updateTransfer = (transferId, fields) => {
-  return Db.transfer.update({ transferId: transferId }, fields).catch(err => {
+const updateTransfer = async (transferId, fields) => {
+  try {
+    return await Db.transfer.update({ transferId: transferId }, fields)
+  } catch (err) {
     Logger.info(err)
     throw err
-  })
+  }
 }
 
-const truncateTransfers = () => {
-  return Db.transfer.truncate()
+const truncateTransfers = async () => {
+  try {
+    return await Db.transfer.truncate()
+  } catch (err) {
+    Logger.info(err)
+    throw err
+  }
 }
 
-const getById = (id) => {
-  return Db.transfer.query(builder => {
-    return builder
-      .where({ transferId: id })
-      .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
-      .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-      .select('transfer.*', 'ca.name AS creditParticipantName', 'da.name AS debitParticipantName')
-      .first()
-  })
+const destroyByTransferId = async (transfer) => {
+  try {
+    await Db.transfer.destroy({transferId: transfer.transferId})
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+const getById = async (id) => {
+  try {
+    return await Db.transfer.query(async (builder) => {
+      var transferResult = builder
+        .where({'transfer.transferId': id})
+        .leftJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
+        .leftJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
+        .leftJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
+        .leftJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
+        .select(
+          'transfer.*',
+          'transfer.currencyId AS currency',
+          'ca.name AS payerFsp',
+          'da.name AS payeeFsp',
+          'tsc.transferStateId AS transferState',
+          'tsc.changedDate AS completedTimestamp',
+          'ilp.packet AS ilpPacket',
+          'ilp.condition AS condition',
+          'ilp.fulfilment AS fulfilment'
+        )
+        .orderBy('tsc.transferStateChangeId', 'desc')
+        .first()
+      transferResult.extensionList = await extensionModel.getByTransferId(id)
+      transferResult.isTransferReadModel = true
+      return transferResult
+    })
+  } catch (e) {
+    throw e
+  }
 }
 
 module.exports = {
@@ -54,5 +118,6 @@ module.exports = {
   getAll,
   updateTransfer,
   truncateTransfers,
+  destroyByTransferId,
   getById
 }

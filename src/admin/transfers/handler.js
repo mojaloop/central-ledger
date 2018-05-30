@@ -6,7 +6,7 @@ function entityItem (transfer) {
   return {
     transferId: transfer.transferId,
     transferBatchId: transfer.transferBatchId,
-//    state: transfer.state,
+    transferState: transfer.transferState,
     ledger: transfer.ledger,
     payeeParticipantId: transfer.payeeParticipantId,
     payeeAmount: transfer.payeeAmount,
@@ -18,7 +18,7 @@ function entityItem (transfer) {
     payeeRejectionMessage: transfer.payeeRejectionMessage,
     executionCondition: transfer.executionCondition,
     cancellationCondition: transfer.cancellationCondition,
-    fulfillment: transfer.fulfillment,
+    fulfilment: transfer.fulfilment,
     rejectionReason: transfer.rejectionReason,
     expirationDate: transfer.expirationDate,
     additionalInfo: transfer.additionalInfo,
