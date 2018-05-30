@@ -84,7 +84,7 @@
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
               "messageAsJSON": true,
-              "sync": false,
+              "sync": true,
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
@@ -92,7 +92,7 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "kafka-int:9092",
-              "enable.auto.commit": true
+              "enable.auto.commit": false
             }
           }
         },
@@ -105,7 +105,7 @@
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
               "messageAsJSON": true,
-              "sync": false,
+              "sync": true,
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
@@ -113,7 +113,7 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "kafka-int:9092",
-              "enable.auto.commit": true
+              "enable.auto.commit": false
             }
           }
         }
@@ -128,7 +128,7 @@
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
               "messageAsJSON": true,
-              "sync": false,
+              "sync": true,
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
@@ -136,7 +136,7 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "kafka-int:9092",
-              "enable.auto.commit": true
+              "enable.auto.commit": false
             }
           }
         }
@@ -151,7 +151,7 @@
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
               "messageAsJSON": true,
-              "sync": false,
+              "sync": true,
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
@@ -159,7 +159,7 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "kafka-int:9092",
-              "enable.auto.commit": true
+              "enable.auto.commit": false
             }
           }
         }
