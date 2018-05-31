@@ -173,6 +173,7 @@ const fulfil = async (error, messages) => {
         return true
       }
     } else if (metadata.event.type === FULFIL && metadata.event.action === REJECT) {
+      throw new Error('Not implemented')
       // TODO: fulfil reject flow {2.2.1.} to be implemented here
     } else {
       Logger.info('FulfilHandler::fulfil::invalidEventAction')
@@ -187,7 +188,8 @@ const fulfil = async (error, messages) => {
 }
 
 const reject = async () => {
-  // TODO: delete method and use fulfil reject condition (see line 176)
+  // TODO: delete method and use fulfil reject condition (see line 177)
+  throw new Error('Not implemented')
 }
 /**
  * @method transfer
@@ -372,5 +374,7 @@ module.exports = {
   registerRejectHandler,
   registerAllHandlers,
   prepare,
+  fulfil,
+  reject,
   transfer
 }
