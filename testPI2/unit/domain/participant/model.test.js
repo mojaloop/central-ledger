@@ -126,6 +126,20 @@ Test('Participant model', async (participantTest) => {
     }
   })
 
+  await participantTest.test('getAll should throw an error', async (test) => {
+    try {
+      Db.participant.find.throws(new Error)
+      var result = await Model.getAll()
+      test.deepEqual(result, participantFixtures)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`get all participants failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
   await participantTest.test('getById', async (assert) => {
     try {
       Db.participant.findOne.withArgs({ participantId: 1 }).returns(participantFixtures[0])
@@ -136,6 +150,20 @@ Test('Participant model', async (participantTest) => {
       Logger.error(`get participant by Id failed with error - ${err}`)
       assert.fail()
       assert.end()
+    }
+  })
+
+  await participantTest.test('getById should fail', async (test) => {
+    try {
+      Db.participant.findOne.withArgs({ participantId: 1 }).throws(new Error)
+      let participant = await Model.getById(1)
+      test.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`get participant by Id failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
     }
   })
 
@@ -155,4 +183,23 @@ Test('Participant model', async (participantTest) => {
       assert.end()
     }
   })
+
+  await participantTest.test('update shouild throw an error', async (test) => {
+    try {
+      Db.participant.update.withArgs(
+        { participantId: 1 }, { isDisabled: 1 }
+      ).throws(new Error)
+      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
+      test.equal(updatedId, participantId)
+      test.fail('Error not thrown')
+      sandbox.restore()
+      test.end()
+    } catch (err) {
+      Logger.error(`update participant failed with error - ${err}`)
+      test.pass('Error thrown')
+      sandbox.restore()
+      test.end()
+    }
+  })
+
 })
