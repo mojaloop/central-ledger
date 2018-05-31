@@ -265,7 +265,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(builderStub.innerJoin.withArgs('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId').calledOnce)
       assert.ok(payeeStub.withArgs('participant AS da', 'transfer.payeeParticipantId', 'da.participantId').calledOnce)
       assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
-      assert.ok(stateStub.withArgs('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId').calledOnce)
+      assert.ok(stateStub.withArgs('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId').calledOnce)
       assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
       assert.ok(selectStub.withArgs(
         'transfer.*',
@@ -279,7 +279,7 @@ Test('Transfer model', async (transferTest) => {
         'ilp.condition AS condition',
         'ilp.fulfilment AS fulfilment'
       ).calledOnce)
-      assert.ok(orderStub.withArgs('tsc.=transferStateChangeId', 'desc').calledOnce)
+      assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       sandbox.restore()
       assert.end()
     } catch (err) {

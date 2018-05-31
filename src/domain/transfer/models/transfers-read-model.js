@@ -27,7 +27,7 @@ const getAll = async () => {
         .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
         .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
         .innerJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
-        .innerJoin('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId')
+        .innerJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .innerJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
         .select(
           'transfer.*',
@@ -41,13 +41,11 @@ const getAll = async () => {
           'ilp.condition AS condition',
           'ilp.fulfilment AS fulfilment'
         )
-        .orderBy('tsc.=transferStateChangeId', 'desc')
-
-      transferResultList = transferResultList.map(async transferResult => {
+        .orderBy('tsc.transferStateChangeId', 'desc')
+      for (let transferResult of transferResultList) {
         transferResult.extensionList = await extensionModel.getByTransferId(transferResult.transferId)
         transferResult.isTransferReadModel = true
-        return transferResult
-      })
+      }
       return transferResultList
     })
   } catch (err) {
