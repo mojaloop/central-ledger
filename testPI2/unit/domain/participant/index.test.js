@@ -69,8 +69,7 @@ Test('Participant service', async (participantTest) => {
     Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
-      findOne: sandbox.stub(),
-      find: sandbox.stub()
+      findOne: sandbox.stub()
     }
 
     participantFixtures.forEach((participant, index) => {
@@ -102,7 +101,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create participant', async (assert) => {
     try {
       for (let [index, participant] of participantMap) {
-        var result = await Service.create({ name: participant.name, currency: participant.currency })
+        var result = await Service.create({name: participant.name, currency: participant.currency})
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.ok(Sinon.match(result, index + 1), ` returns ${result}`)
       }
@@ -155,6 +154,19 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
+  await participantTest.test('getAll should throw an error', async (assert) => {
+    try {
+      Model.getAll.throws(new Error())
+      await Service.getAll()
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get all participants failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
   await participantTest.test('getById', async (assert) => {
     try {
       for (let participantId of participantMap.keys()) {
@@ -181,6 +193,19 @@ Test('Participant service', async (participantTest) => {
       Logger.error(`update participant failed with error - ${err}`)
       sandbox.restore()
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('update should throw an error', async (assert) => {
+    try {
+      Model.getByName.throwsException
+      await Service.update(participantFixtures[0].name, {is_disabled: 1})
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`update participant failed with error - ${err}`)
+      assert.pass('Error thrown')
       assert.end()
     }
   })
