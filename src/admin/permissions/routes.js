@@ -10,6 +10,6 @@ module.exports = [
     method: 'GET',
     path: '/permissions',
     handler: Handler.getPermissions,
-    config: RouteConfig.config(tags, Permissions.PERMISSIONS_LIST)
+    options: RouteConfig.config(tags, Permissions.PERMISSIONS_LIST)
   }
 ]

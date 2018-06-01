@@ -23,39 +23,36 @@ Test('token handler', handlerTest => {
   })
 
   handlerTest.test('create should', createTest => {
-    createTest.test('create token from user key', test => {
-      const userKey = 'user-key'
-      const account = { accountId: 1 }
+    createTest.test('create token from party key', async function (test) {
+      const userKey = 'party-key'
+      const participant = { participantId: 1 }
       const token = 'generated-token'
       JWT.create.withArgs(userKey).returns(P.resolve(token))
       const request = {
         auth: {
-          credentials: account
+          credentials: participant
         },
         payload: {
           key: userKey
         }
       }
 
-      const reply = (response) => {
-        test.deepEqual(response, { token })
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.create(request, reply)
+      const response = await Handler.create(request, {})
+      test.deepEqual(response, token)
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
-    createTest.test('reply with error if thrown', test => {
+    createTest.test('reply with error if thrown', async function (test) {
       const error = new Error()
       JWT.create.returns(P.reject(error))
 
-      const reply = (response) => {
-        test.equal(response, error)
+      try {
+        await Handler.create({ auth: { credentials: {} }, payload: { key: 'key' } }, {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
       }
-
-      Handler.create({ auth: { credentials: {} }, payload: { key: 'key' } }, reply)
     })
 
     createTest.end()

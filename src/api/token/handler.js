@@ -3,11 +3,10 @@
 const TokenService = require('../../domain/token')
 const Sidecar = require('../../lib/sidecar')
 
-const create = (req, rep) => {
+const create = async function (req, rep) {
   Sidecar.logRequest(req)
-  TokenService.create(req.auth.credentials)
-    .then(token => rep(token))
-    .catch(e => rep(e))
+  const token = await TokenService.create(req.auth.credentials)
+  return token
 }
 
 module.exports = {

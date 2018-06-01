@@ -3,31 +3,22 @@
 const TransferService = require('../../domain/transfer')
 const FeeService = require('../../domain/fee')
 const TokenService = require('../../domain/token')
-const SettlementService = require('../../domain/settlements')
+const SettlementService = require('../../domain/settlement')
 const Sidecar = require('../../lib/sidecar')
 
-exports.rejectExpired = function (request, reply) {
+exports.rejectExpired = async function (request, h) {
   Sidecar.logRequest(request)
-  return TransferService.rejectExpired()
-    .then(response => reply(response))
-    .catch(e => reply(e))
+  return await TransferService.rejectExpired()
 }
 
-exports.settle = function (request, reply) {
+exports.settle = async function (request, h) {
   Sidecar.logRequest(request)
-  return TransferService.settle()
-    .then(settledTransfers => {
-      return FeeService.settleFeesForTransfers(settledTransfers)
-        .then(settledFees => {
-          return reply(SettlementService.performSettlement(settledTransfers, settledFees))
-        })
-    })
-    .catch(e => reply(e))
+  const settledTransfers = await TransferService.settle()
+  const settledFee = await FeeService.settleFeeForTransfers(settledTransfers)
+  return SettlementService.performSettlement(settledTransfers, settledFee)
 }
 
-exports.rejectExpiredTokens = function (request, reply) {
+exports.rejectExpiredTokens = async function (request, h) {
   Sidecar.logRequest(request)
   return TokenService.removeExpired()
-    .then(response => reply(response))
-    .catch(e => reply(e))
 }

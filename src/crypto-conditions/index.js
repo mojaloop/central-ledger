@@ -11,14 +11,14 @@ const validateCondition = (conditionUri) => {
   }
 }
 
-const validateFulfillment = (fulfillment, condition) => {
+const validateFulfillment = (fulfilment, condition) => {
   try {
-    const fulfillmentCondition = FiveBellsCondition.fulfillmentToCondition(fulfillment)
+    const fulfillmentCondition = FiveBellsCondition.fulfillmentToCondition(fulfilment)
     if (fulfillmentCondition === condition) {
-      return FiveBellsCondition.validateFulfillment(fulfillment, condition)
+      return FiveBellsCondition.validateFulfillment(fulfilment, condition)
     }
   } catch (error) {
-    throw new Errors.InvalidBodyError(`Invalid fulfillment: ${error.message}`)
+    throw new Errors.InvalidBodyError(`Invalid fulfilment: ${error.message}`)
   }
   throw new Errors.UnmetConditionError()
 }

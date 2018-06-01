@@ -1,16 +1,15 @@
 'use strict'
 
 const PositionService = require('../../domain/position')
-const Account = require('../../domain/account')
+const Participant = require('../../domain/participant')
 
-exports.calculateForAllAccounts = (request, reply) => {
-  PositionService.calculateForAllAccounts()
-        .then(positions => reply({ positions: positions }))
+exports.calculateForAllParticipants = async function (request, h) {
+  const positions = await PositionService.calculateForAllParticipants()
+  return h.response({ positions: positions })
 }
 
-exports.calculateForAccount = (request, reply) => {
-  return Account.getByName(request.params.name).then(account => {
-    return PositionService.calculateForAccount(account)
-            .then(position => reply(position))
-  })
+exports.calculateForParticipant = async function (request, h) {
+  const participant = await Participant.getByName(request.params.name)
+  const positions = await PositionService.calculateForParticipant(participant)
+  return h.response(positions)
 }

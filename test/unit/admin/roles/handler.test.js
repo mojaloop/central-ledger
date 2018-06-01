@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
 const SecurityService = require('../../../../src/domain/security')
-const Handler = require('../../../../src/admin/roles/handler')
+const Handler = require('../../../../src/admin/role/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 
 Test('Security handler', handlerTest => {
@@ -23,58 +23,52 @@ Test('Security handler', handlerTest => {
     test.end()
   })
 
-  handlerTest.test('getRoles should', getRolesTest => {
-    getRolesTest.test('return roles from SecurityService', test => {
-      const roles = [{ name: 'role1' }, { name: 'role2' }]
-      SecurityService.getAllRoles.returns(P.resolve(roles))
-      const reply = (response) => {
-        test.deepEqual(response, roles)
-        test.end()
-      }
-
-      Handler.getRoles({}, reply)
+  handlerTest.test('getRole should', getRoleTest => {
+    getRoleTest.test('return role from SecurityService', async function (test) {
+      const role = [{name: 'role1'}, {name: 'role2'}]
+      SecurityService.getAllRole.returns(P.resolve(role))
+      const response = await Handler.getRole({}, {})
+      test.deepEqual(response, role)
+      test.end()
     })
 
-    getRolesTest.test('return error if SecurityService getAllRoles throws', test => {
+    getRoleTest.test('return error if SecurityService getAllRole throws', async function (test) {
       const error = new Error()
-      SecurityService.getAllRoles.returns(P.reject(error))
-      const reply = (response) => {
-        test.deepEqual(response, error)
+      SecurityService.getAllRole.returns(P.reject(error))
+      try {
+        await Handler.getRole({}, {})
+      } catch (e) {
+        test.deepEqual(e, error)
         test.end()
       }
-
-      Handler.getRoles({}, reply)
     })
 
-    getRolesTest.end()
+    getRoleTest.end()
   })
 
   handlerTest.test('createRole should', createTest => {
-    createTest.test('create role in SecurityService', test => {
-      const role = { name: 'test', permissions: ['PERMISSION1', 'PERMISSION2'] }
+    createTest.test('create role in SecurityService', async function (test) {
+      const role = {name: 'test', permissions: ['PERMISSION1', 'PERMISSION2']}
       SecurityService.createRole.withArgs(role).returns(P.resolve(role))
 
       const request = {
         payload: role
       }
 
-      const reply = (response) => {
-        test.deepEqual(response, role)
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.createRole(request, reply)
+      const response = await Handler.createRole(request, {})
+      test.deepEqual(response, role)
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
     createTest.end()
   })
 
   handlerTest.test('updateRole should', updateTest => {
-    updateTest.test('update role in SecurityService', test => {
+    updateTest.test('update role in SecurityService', async function (test) {
       const roleId = Uuid()
-      const role = { roleId, name: 'test', permissions: ['PERMISSION1', 'PERMISSION2'] }
-      const payload = { name: 'test' }
+      const role = {roleId, name: 'test', permissions: ['PERMISSION1', 'PERMISSION2']}
+      const payload = {name: 'test'}
       SecurityService.updateRole.withArgs(roleId, payload).returns(P.resolve(role))
 
       const request = {
@@ -84,55 +78,54 @@ Test('Security handler', handlerTest => {
         }
       }
 
-      const reply = (response) => {
-        test.deepEqual(response, role)
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.updateRole(request, reply)
+      const response = await Handler.updateRole(request, {})
+      test.deepEqual(response, role)
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
     updateTest.end()
   })
 
   handlerTest.test('deleteRole should', deleteTest => {
-    deleteTest.test('delete role in security service and return 204', test => {
+    deleteTest.test('delete role in security service and return 204', async function (test) {
       const roleId = Uuid()
       SecurityService.deleteRole.withArgs(roleId).returns(P.resolve())
 
       const request = {
-        params: { id: roleId }
+        params: {id: roleId}
       }
 
-      const reply = response => {
-        test.notOk(response)
-        test.ok(Sidecar.logRequest.calledWith(request))
-        return {
-          code: statusCode => {
-            test.equal(statusCode, 204)
-            test.end()
+      const reply = {
+        response: (output) => {
+          test.notOk(output)
+          test.ok(Sidecar.logRequest.calledWith(request))
+          return {
+            code: statusCode => {
+              test.equal(statusCode, 204)
+              test.end()
+            }
           }
         }
       }
 
-      Handler.deleteRole(request, reply)
+      await Handler.deleteRole(request, reply)
     })
 
-    deleteTest.test('reply with error if SecurityService throws', test => {
+    deleteTest.test('reply with error if SecurityService throws', async function (test) {
       const error = new Error()
       SecurityService.deleteRole.returns(P.reject(error))
 
-      const reply = response => {
-        test.equal(response, error)
+      const request = {
+        params: {id: Uuid()}
+      }
+
+      try {
+        await Handler.deleteRole(request, {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
       }
-
-      const request = {
-        params: { id: Uuid() }
-      }
-
-      Handler.deleteRole(request, reply)
     })
 
     deleteTest.end()

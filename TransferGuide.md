@@ -120,7 +120,7 @@ Now that the transfer is prepared, you are free to execute the transfer. This co
 
 #### Request
 ```
-PUT http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfillment HTTP/1.1
+PUT http://central-ledger/transfers/3a2a1d9e-8640-4d2d-b06c-84f2cd613204/fulfilment HTTP/1.1
 Content-Type: text/plain
 oAKAAA
 ```

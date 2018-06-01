@@ -17,15 +17,15 @@ const getTokenExpiration = () => {
   return Config.TOKEN_EXPIRATION ? (Time.getCurrentUTCTimeInMilliseconds() + Config.TOKEN_EXPIRATION) : null
 }
 
-const create = ({ accountId }) => {
+const create = ({ participantId }) => {
   return generateToken().then(result => {
-    return Model.create({ accountId, token: result.tokenHash, expiration: getTokenExpiration() })
+    return Model.create({ participantId, token: result.tokenHash, expiration: getTokenExpiration() })
       .then(() => ({ token: result.token }))
   })
 }
 
-const byAccount = ({ accountId }) => {
-  return Model.byAccount({ accountId })
+const byParticipant = ({ participantId }) => {
+  return Model.byParticipant({ participantId })
 }
 
 const removeExpired = () => {
@@ -34,6 +34,6 @@ const removeExpired = () => {
 
 module.exports = {
   create,
-  byAccount,
+  byParticipant,
   removeExpired
 }

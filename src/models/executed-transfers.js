@@ -2,8 +2,8 @@
 
 const Db = require('../db')
 
-exports.create = (transfer) => {
-  return Db.executedTransfers.insert({ transferId: transfer.id })
+exports.create = (transferId) => {
+  return Db.executedTransfers.insert({ transferId: transferId })
 }
 
 exports.truncate = () => {

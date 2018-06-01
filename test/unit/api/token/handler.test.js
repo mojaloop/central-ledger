@@ -23,35 +23,31 @@ Test('token handler', handlerTest => {
   })
 
   handlerTest.test('create should', createTest => {
-    createTest.test('create token from auth credentials', test => {
+    createTest.test('create token from auth credentials', async function (test) {
       const token = { token: 'token' }
-      const account = { accountId: 1 }
-      TokenService.create.withArgs(account).returns(P.resolve(token))
+      const participant = { participantId: 1 }
+      TokenService.create.withArgs(participant).returns(P.resolve(token))
       const request = {
         auth: {
-          credentials: account
+          credentials: participant
         }
       }
 
-      const reply = (response) => {
-        test.equal(response, token)
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.create(request, reply)
+      const response = await Handler.create(request, {})
+      test.equal(response, token)
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
-    createTest.test('reply with error if thrown', test => {
+    createTest.test('reply with error if thrown', async function (test) {
       const error = new Error()
       TokenService.create.returns(P.reject(error))
-
-      const reply = (response) => {
-        test.equal(response, error)
+      try {
+        await Handler.create({ auth: { credentials: {} } }, {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
       }
-
-      Handler.create({ auth: { credentials: {} } }, reply)
     })
 
     createTest.end()

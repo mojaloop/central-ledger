@@ -1,32 +1,30 @@
 'use strict'
 
 const Test = require('tape')
-const bluebird = require('bluebird')
+const Logger = require('@mojaloop/central-services-shared').Logger
 const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
 
-Test('GET /accounts', getTest => {
-  getTest.test('should return all accounts', function (assert) {
-    const account1Name = 'a' + Fixtures.generateAccountName()
-    const account2Name = 'b' + Fixtures.generateAccountName()
-
-    bluebird.all([Base.createAccount(account1Name), Base.createAccount(account2Name)])
-    .then(([account1Res, account2Res]) => {
-      Base.getAdmin('/accounts')
-        .expect(200)
-        .expect('Content-Type', /json/)
-        .then(res => {
-          assert.equal(res.body[0].name, account1Res.body.name)
-          assert.equal(res.body[0].created, account1Res.body.created)
-          assert.equal(res.body[0].id, account1Res.body.id)
-          assert.equal(res.body[0].emailAddress, account1Res.body.emailAddress)
-          assert.equal(res.body[1].name, account2Res.body.name)
-          assert.equal(res.body[1].created, account2Res.body.created)
-          assert.equal(res.body[1].id, account2Res.body.id)
-          assert.equal(res.body[1].emailAddress, account2Res.body.emailAddress)
-          assert.end()
-        })
-    })
+Test('GET /participants', getTest => {
+  getTest.test('should return all participants', async function (assert) {
+    const participant1Name = 'a' + Fixtures.generateParticipantName()
+    const participant2Name = 'b' + Fixtures.generateParticipantName()
+    try {
+      const participant1Res = await Base.createParticipant(participant1Name)
+      const participant2Res = await Base.createParticipant(participant2Name)
+      const res = await Base.getAdmin('/participants')
+      assert.equal(res.body[0].name, participant1Res.body.name)
+      assert.equal(res.body[0].created, participant1Res.body.created)
+      assert.equal(res.body[0].id, participant1Res.body.id)
+      assert.equal(res.body[0].emailAddress, participant1Res.body.emailAddress)
+      assert.equal(res.body[1].name, participant2Res.body.name)
+      assert.equal(res.body[1].created, participant2Res.body.created)
+      assert.equal(res.body[1].id, participant2Res.body.id)
+      assert.equal(res.body[1].emailAddress, participant2Res.body.emailAddress)
+      assert.end()
+    } catch (e) {
+      Logger.info(e)
+    }
   })
 
   getTest.end()

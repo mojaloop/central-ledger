@@ -10,10 +10,14 @@ module.exports = [
     method: 'POST',
     path: '/auth_token',
     handler: Handler.create,
-    config: {
+    options: {
       tags,
-      auth: AdminAuthStrategy.name,
+      auth: AdminAuthStrategy.scheme,
       description: 'Get a token for admin authentication',
+      payload: {
+        allow: 'application/json',
+        failAction: 'error'
+      },
       validate: {
         payload: {
           key: Joi.string().required().description('Login key')

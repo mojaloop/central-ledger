@@ -2,10 +2,11 @@
 
 const Util = require('../../lib/util')
 const JWT = require('../../domain/security/jwt')
+const Errors = require('../../errors')
 
-const reducePermissions = (roles) => {
+const reducePermissions = (role) => {
   const flattened = []
-  roles.map(x => x.permissions).forEach(p => {
+  role.map(x => x.permissions).forEach(p => {
     p.forEach(permission => {
       if (!flattened.includes(permission)) {
         flattened.push(permission)
@@ -15,19 +16,26 @@ const reducePermissions = (roles) => {
   return flattened
 }
 
-const validate = (request, token, cb) => {
-  JWT.verify(token)
-    .then(({ user, roles }) => {
-      const scope = reducePermissions(roles)
-      const credentials = Util.merge(user, { scope: scope })
-      return cb(null, true, credentials)
-    })
-    .catch(e => cb(e, false))
+const validate = async (request, token, h) => {
+  try {
+    let isValid = false
+    const result = await JWT.verify(token)
+    if (result) {
+      isValid = true
+      const scope = reducePermissions(result.role)
+      const credentials = Util.merge(result.party, {scope: scope})
+      return {isValid, credentials}
+    } else {
+      throw new Errors.UnauthorizedError('Invalid token')
+    }
+  } catch (e) {
+    return {e, verified: false}
+  }
 }
 
 module.exports = {
   name: 'admin-token',
-  scheme: 'bearer',
+  scheme: 'jwt-strategy',
   validate: validate
 }
 

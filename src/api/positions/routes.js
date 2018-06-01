@@ -5,23 +5,23 @@ const tags = ['api', 'positions']
 module.exports = [{
   method: 'GET',
   path: '/positions',
-  handler: Handler.calculateForAllAccounts,
-  config: {
+  handler: Handler.calculateForAllParticipants,
+  options: {
     id: 'positions',
-    auth: Auth.strategy(),
     tags: tags,
+    auth: Auth.strategy(),
     description: 'Retrieve outstanding positions.'
   }
 },
 {
   method: 'GET',
   path: '/positions/{name}',
-  handler: Handler.calculateForAccount,
-  config: {
-    id: 'positions_account',
-    auth: Auth.strategy(),
+  handler: Handler.calculateForParticipant,
+  options: {
+    id: 'positions_participant',
     tags: tags,
-    description: 'Retrieve outstanding positions for an account.'
+    auth: Auth.strategy(),
+    description: 'Retrieve outstanding positions for an participant.'
   }
 }
 ]

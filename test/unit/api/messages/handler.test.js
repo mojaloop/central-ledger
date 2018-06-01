@@ -26,17 +26,18 @@ Test('Message Handler', handlerTest => {
   })
 
   handlerTest.test('sendMessage should', sendTest => {
-    sendTest.test('respond with error if validator fails', test => {
+    sendTest.test('respond with error if validator fails', async function (test) {
       const error = new Error()
       Validator.validate.returns(P.reject(error))
-
-      Handler.sendMessage({}, (response) => {
-        test.equal(response, error)
+      try {
+        await Handler.sendMessage({}, {})
+      } catch (e) {
+        test.equal(e, error)
         test.end()
-      })
+      }
     })
 
-    sendTest.test('send message', test => {
+    sendTest.test('send message', async function (test) {
       const message = {
         to: '',
         from: '',
@@ -46,28 +47,33 @@ Test('Message Handler', handlerTest => {
         payload: message
       }
       Validator.validate.withArgs(request.payload).returns(P.resolve(message))
-      Handler.sendMessage(request, () => {
-        test.ok(Events.sendMessage.calledWith(message))
-        test.ok(Sidecar.logRequest.calledWith(request))
-        return {
-          code: () => {
-            test.end()
-          }
-        }
-      })
-    })
-
-    sendTest.test('reply with 201', test => {
-      const reply = (response) => {
-        return {
-          code: (statusCode) => {
-            test.notOk(response)
-            test.equal(statusCode, 201)
-            test.end()
+      const reply = {
+        response: () => {
+          test.ok(Events.sendMessage.calledWith(message))
+          test.ok(Sidecar.logRequest.calledWith(request))
+          return {
+            code: () => {
+              test.end()
+            }
           }
         }
       }
-      Handler.sendMessage({}, reply)
+      await Handler.sendMessage(request, reply)
+    })
+
+    sendTest.test('reply with 201', async function (test) {
+      const reply = {
+        response: (output) => {
+          return {
+            code: (statusCode) => {
+              test.notOk(output)
+              test.equal(statusCode, 201)
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.sendMessage({}, reply)
     })
 
     sendTest.end()

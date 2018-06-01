@@ -1,0 +1,158 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+ * Valentin Genev <valentin.genev@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+ --------------
+ ******/
+
+'use strict'
+
+const Test = require('tape') // require('tapes')(require('tape')) //
+const Sinon = require('sinon')
+const Db = require('../../../../src/db/index')
+const Logger = require('@mojaloop/central-services-shared').Logger
+// const Config = require('../../../../src/lib/config')
+const Model = require('../../../../src/domain/participant/model')
+
+Test('Participant model', async (participantTest) => {
+  let sandbox
+
+  const participantFixtures = [
+    {
+      name: 'fsp1',
+      currency: 'USD',
+      isDisabled: 0,
+      createdDate: new Date()
+    },
+    {
+      name: 'fsp2',
+      currency: 'EUR',
+      isDisabled: 0,
+      createdDate: new Date()
+    }
+  ]
+  const participant = participantFixtures[0]
+  const participantId = 1
+
+  sandbox = Sinon.sandbox.create()
+  Db.participant = {
+    insert: sandbox.stub(),
+    update: sandbox.stub(),
+    findOne: sandbox.stub(),
+    find: sandbox.stub()
+  }
+
+  await participantTest.test('create false participant', async (assert) => {
+    const falseParticipant = {name: 'fsp3'}
+    Db.participant.insert.withArgs({ name: falseParticipant.name }).throws(new Error('message'))
+    try {
+      let r = await Model.create(falseParticipant)
+      assert.comment(r)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('create participant', async (assert) => {
+    try {
+      Db.participant.insert.withArgs({name: participantFixtures[0].name, currencyId: participantFixtures[0].currency}).returns(1)
+      var result = await Model.create(participantFixtures[0])
+      assert.ok(Sinon.match(result, 1), ` returns ${result}`)
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('get with empty name', async (assert) => {
+    Db.participant.findOne.withArgs({ name: '' }).throws(new Error())
+    try {
+      await Model.getByName('')
+      assert.fail(' should throws with empty name ')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getByName', async (assert) => {
+    try {
+      Db.participant.findOne.withArgs({name: participant.name}).returns(participantFixtures[0])
+      var result = await Model.getByName(participant.name)
+      assert.equal(result.name, participant.name, ' names are equal')
+      assert.equal(result.currency, participant.currency, ' currencies match')
+      assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
+      assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getAll', async (assert) => {
+    Db.participant.find.returns(participantFixtures)
+    try {
+      var result = await Model.getAll()
+      assert.deepEqual(result, participantFixtures)
+      assert.end()
+    } catch (err) {
+      Logger.error(`get all participants failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getById', async (assert) => {
+    try {
+      Db.participant.findOne.withArgs({ participantId: 1 }).returns(participantFixtures[0])
+      let participant = await Model.getById(1)
+      assert.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
+      assert.end()
+    } catch (err) {
+      Logger.error(`get participant by Id failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('update', async (assert) => {
+    try {
+      Db.participant.update.withArgs(
+        { participantId: 1 }, { isDisabled: 1 }
+      ).returns(participantId)
+      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
+      assert.equal(updatedId, participantId)
+      sandbox.restore()
+      assert.end()
+    } catch (err) {
+      Logger.error(`update participant failed with error - ${err}`)
+      sandbox.restore()
+      assert.fail()
+      assert.end()
+    }
+  })
+})

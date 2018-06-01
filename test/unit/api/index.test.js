@@ -10,7 +10,7 @@ const Routes = require('../../../src/api/routes')
 const Auth = require('../../../src/api/auth')
 const Sockets = require('../../../src/api/sockets')
 const Worker = require('../../../src/api/worker')
-const Account = require('../../../src/domain/account')
+const Participant = require('../../../src/domain/participant')
 const Setup = require('../../../src/shared/setup')
 
 Test('Api index', indexTest => {
@@ -20,7 +20,7 @@ Test('Api index', indexTest => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(Setup)
     sandbox.stub(Logger)
-    sandbox.stub(Account, 'createLedgerAccount')
+    sandbox.stub(Participant, 'createLedgerParticipant')
     test.end()
   })
 
@@ -30,7 +30,7 @@ Test('Api index', indexTest => {
   })
 
   indexTest.test('export should', exportTest => {
-    exportTest.test('initialize server', test => {
+    exportTest.test('initialize server', async function (test) {
       const server = {
         start: sandbox.stub(),
         info: {
@@ -39,15 +39,15 @@ Test('Api index', indexTest => {
       }
       server.start.returns(P.resolve({}))
       Setup.initialize.returns(P.resolve(server))
-      Account.createLedgerAccount.returns(P.resolve({}))
 
-      require('../../../src/api/index').then(() => {
-        test.ok(Setup.initialize.calledWith({ service: 'api', port: Config.PORT, modules: [Auth, Routes, Sockets, Worker], loadEventric: true, runMigrations: true }))
-        test.ok(Account.createLedgerAccount.calledWith(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD))
-        test.ok(server.start.called)
-        test.ok(Logger.info.called)
-        test.end()
-      })
+      await require('../../../src/api/index')
+      test.ok(Setup.initialize.calledWith({
+        service: 'api',
+        port: Config.PORT,
+        modules: [Auth, Routes, Sockets, Worker],
+        runMigrations: true
+      }))
+      test.end()
     })
     exportTest.end()
   })
