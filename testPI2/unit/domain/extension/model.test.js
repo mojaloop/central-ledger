@@ -188,7 +188,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('destroy extension', async (assert) => {
     Db.extension.destroy.withArgs({transferId: 1}).returns(1)
     try {
-      let result = await Model.destroyByTransferId(extensionModelFixtures[0]) 
+      let result = await Model.destroyByTransferId(extensionModelFixtures[0])
       assert.equal(result, 1)
       assert.end()
     } catch (err) {

@@ -60,7 +60,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
   await transferReadModelTest.test('get the created transfer test', async function (assert) {
     try {
       let transfers = await Model.getAll()
-      assert.equal(transfers.length, 1, 'only one transfer is returned')
+      assert.true(transfers.length >= 1, 'one or more transfers are returned')
       assert.equal(transfers[0].transferId, transferPrepareResult.transfer.transferId)
       assert.end()
     } catch (err) {

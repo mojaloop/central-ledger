@@ -34,7 +34,7 @@ Test('handlers', handlersTest => {
 
     registerAllTest.test('throws error when transfer handler throws error', async (test) => {
       try {
-        Sinon.stub(TransferHandler, 'registerAllHandlers').throws(new Error)
+        Sinon.stub(TransferHandler, 'registerAllHandlers').throws(new Error())
         await Handlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()

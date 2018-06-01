@@ -231,8 +231,8 @@ Test('Transfer model', async (transferTest) => {
       Db.transfer.query.returns(transfers)
 
       builderStub.where.returns({
-        leftJoin: payerStub.returns({
-          leftJoin: payeeStub.returns({
+        innerJoin: payerStub.returns({
+          innerJoin: payeeStub.returns({
             leftJoin: stateChangeStub.returns({
               leftJoin: ilpStub.returns({
                 select: selectStub.returns({
@@ -265,7 +265,8 @@ Test('Transfer model', async (transferTest) => {
         'tsc.changedDate AS completedTimestamp',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
-        'ilp.fulfilment AS fulfilment'
+        'ilp.fulfilment AS fulfilment',
+        'ilp.ilpId AS ilpId'
       ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       assert.ok(firstStub.withArgs().calledOnce)
@@ -313,9 +314,9 @@ Test('Transfer model', async (transferTest) => {
 
       builderStub.innerJoin.returns({
         innerJoin: payeeStub.returns({
-          innerJoin: stateChangeStub.returns({
-            innerJoin: stateStub.returns({
-              innerJoin: ilpStub.returns({
+          leftJoin: stateChangeStub.returns({
+            leftJoin: stateStub.returns({
+              leftJoin: ilpStub.returns({
                 select: selectStub.returns({
                   orderBy: orderStub.returns(transfers)
                 })
@@ -342,72 +343,10 @@ Test('Transfer model', async (transferTest) => {
         'ts.enumeration AS transferState',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
-        'ilp.fulfilment AS fulfilment'
+        'ilp.fulfilment AS fulfilment',
+        'ilp.ilpId AS ilpId'
       ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
-      sandbox.restore()
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await transferTest.test('return all transfers should throw an error', async (assert) => {
-    try {
-      const transferId1 = 't1'
-      const transferId2 = 't2'
-      const transfers = [{transferId: transferId1}, {transferId: transferId2}]
-
-      let builderStub = sandbox.stub()
-      let payeeStub = sandbox.stub()
-      let stateChangeStub = sandbox.stub()
-      let stateStub = sandbox.stub()
-      let ilpStub = sandbox.stub()
-      let selectStub = sandbox.stub()
-      let orderStub = sandbox.stub()
-
-      builderStub.innerJoin = sandbox.stub()
-
-      Db.transfer.query.callsArgWith(0, builderStub)
-      Db.transfer.query.throws(new Error)
-
-      builderStub.innerJoin.returns({
-        innerJoin: payeeStub.returns({
-          innerJoin: stateChangeStub.returns({
-            innerJoin: stateStub.returns({
-              innerJoin: ilpStub.returns({
-                select: selectStub.returns({
-                  orderBy: orderStub.returns(transfers)
-                })
-              })
-            })
-          })
-        })
-      })
-
-      let found = await Model.getAll()
-      assert.equal(found, transfers)
-      assert.ok(builderStub.innerJoin.withArgs('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId').calledOnce)
-      assert.ok(payeeStub.withArgs('participant AS da', 'transfer.payeeParticipantId', 'da.participantId').calledOnce)
-      assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
-      assert.ok(stateStub.withArgs('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId').calledOnce)
-      assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
-      assert.ok(selectStub.withArgs(
-        'transfer.*',
-        'transfer.currencyId AS currency',
-        'ca.name AS payerFsp',
-        'da.name AS payeeFsp',
-        'tsc.transferStateId AS internalTransferState',
-        'tsc.changedDate AS completedTimestamp',
-        'ts.enumeration AS transferState',
-        'ilp.packet AS ilpPacket',
-        'ilp.condition AS condition',
-        'ilp.fulfilment AS fulfilment'
-      ).calledOnce)
-      assert.ok(orderStub.withArgs('tsc.=transferStateChangeId', 'desc').calledOnce)
       sandbox.restore()
       assert.fail('Error not thrown')
       assert.end()
