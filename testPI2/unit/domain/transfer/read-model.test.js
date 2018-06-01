@@ -108,7 +108,8 @@ Test('Transfer model', async (transferTest) => {
       find: sandbox.stub(),
       update: sandbox.stub(),
       truncate: sandbox.stub(),
-      query: sandbox.stub()
+      query: sandbox.stub(),
+      destroy: sandbox.stub()
     }
     assert.pass('setup OK')
     assert.end()
@@ -470,6 +471,33 @@ Test('Transfer model', async (transferTest) => {
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
       sandbox.restore()
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+   // destroy
+  await transferTest.test('destroyByTransferId should', async (assert) => {
+    try {
+      Db.transfer.destroy.returns(Promise.resolve(true))
+      await Model.destroyByTransferId(transferRecord)
+      assert.ok(Db.transfer.destroy.calledOnce)
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferTest.test('destroyByTransferId should throw an error', async (assert) => {
+    try {
+      Db.transfer.destroy.throws(new Error)
+      await Model.destroyByTransferId(transferRecord)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
