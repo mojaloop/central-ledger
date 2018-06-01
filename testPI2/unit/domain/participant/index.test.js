@@ -196,4 +196,17 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
+  await participantTest.test('update should throw an error', async (assert) => {
+    try {
+      Model.getByName.throwsException
+      await Service.update(participantFixtures[0].name, {is_disabled: 1})
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`update participant failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
 })
