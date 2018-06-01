@@ -33,7 +33,7 @@ const transfer = {
 }
 
 const fulfil = {
-  fulfilment: 'oAKAAA---BBB',
+  fulfilment: 'oAKAAA',
   completedTimestamp: '2018-10-24T08:38:08.699-04:00',
   transferState: 'COMMITTED',
   extensionList: {
@@ -50,20 +50,20 @@ const fulfil = {
   }
 }
 
-const messageProtocol = {
+let messageProtocol = {
   id: transfer.transferId,
   from: transfer.payerFsp,
   to: transfer.payeeFsp,
   type: 'application/json',
   content: {
     header: '',
-    payload: fulfil
+    payload: transfer
   },
   metadata: {
     event: {
       id: Uuid(),
-      type: 'fulfil',
-      action: 'commit',
+      type: 'transfer',
+      action: 'prepare',
       createdAt: new Date(),
       state: {
         status: 'success',
@@ -73,32 +73,36 @@ const messageProtocol = {
   },
   pp: ''
 }
-// ------------------------------------------------------------------------------------------------
-// const topicConf = {
-//   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
-//   key: 'producerTest',
-//   partition: 0,
-//   opaqueKey: 0
-// }
-// exports.testProducer = async () => {
-//   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
-//   config.logger = Logger
-//   await Producer.produceMessage(messageProtocol, topicConf, config)
-//   return true
-// }
+
 // ------------------------------------------------------------------------------------------------
 const topicConf = {
-  topicName: Utility.transformGeneralTopicName('transfer', 'fulfil'),
+  topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
 }
 exports.testProducer = async () => {
-  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFIL')
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
   config.logger = Logger
   await Producer.produceMessage(messageProtocol, topicConf, config)
   return true
 }
+// ------------------------------------------------------------------------------------------------
+messageProtocol.content.payload = fulfil
+// messageProtocol.metadata.event.type = 'fulfil'
+// messageProtocol.metadata.event.action = 'commit'
+// const topicConf = {
+//   topicName: Utility.transformGeneralTopicName('transfer', 'fulfil'),
+//   key: 'producerTest',
+//   partition: 0,
+//   opaqueKey: 0
+// }
+// exports.testProducer = async () => {
+//   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFIL')
+//   config.logger = Logger
+//   await Producer.produceMessage(messageProtocol, topicConf, config)
+//   return true
+// }
 // ------------------------------------------------------------------------------------------------
 // const topicConf = {
 //   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'position', 'prepare'),

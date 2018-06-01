@@ -180,8 +180,8 @@ Test('Transfer model', async (transferTest) => {
       Db.transfer.query.returns(transfers)
 
       builderStub.where.returns({
-        leftJoin: payerStub.returns({
-          leftJoin: payeeStub.returns({
+        innerJoin: payerStub.returns({
+          innerJoin: payeeStub.returns({
             leftJoin: stateChangeStub.returns({
               leftJoin: ilpStub.returns({
                 select: selectStub.returns({
@@ -214,6 +214,7 @@ Test('Transfer model', async (transferTest) => {
         'tsc.changedDate AS completedTimestamp',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
+        'ilp.fulfilment AS fulfilment',
         'ilp.ilpId AS ilpId'
       ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
@@ -248,9 +249,9 @@ Test('Transfer model', async (transferTest) => {
 
       builderStub.innerJoin.returns({
         innerJoin: payeeStub.returns({
-          innerJoin: stateChangeStub.returns({
-            innerJoin: stateStub.returns({
-              innerJoin: ilpStub.returns({
+          leftJoin: stateChangeStub.returns({
+            leftJoin: stateStub.returns({
+              leftJoin: ilpStub.returns({
                 select: selectStub.returns({
                   orderBy: orderStub.returns(transfers)
                 })
@@ -277,7 +278,8 @@ Test('Transfer model', async (transferTest) => {
         'ts.enumeration AS transferState',
         'ilp.packet AS ilpPacket',
         'ilp.condition AS condition',
-        'ilp.fulfilment AS fulfilment'
+        'ilp.fulfilment AS fulfilment',
+        'ilp.ilpId AS ilpId'
       ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       sandbox.restore()
