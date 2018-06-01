@@ -162,6 +162,24 @@ Test('Transfer model', async (transferTest) => {
       assert.end()
     }
   })
+
+  await transferTest.test('updateTransfer should throw error', async (assert) => {
+    try {
+      let fields = {state: TransferState.EXECUTED, fulfilment: 'oAKAAA'}
+      let updatedTransfer = {transferId: payload.transferId}
+      Db.transfer.update = sandbox.stub().throws(new Error)
+      let u = await Model.updateTransfer(payload.transferId, fields)
+      assert.equal(u, updatedTransfer)
+      assert.ok(Db.transfer.update.calledWith({transferId: payload.transferId}, fields))
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
   // truncateTransfer
   await transferTest.test('truncateTransfers should', async (assert) => {
     try {
@@ -175,6 +193,21 @@ Test('Transfer model', async (transferTest) => {
       assert.end()
     }
   })
+
+  await transferTest.test('truncateTransfers should throw an error', async (assert) => {
+    try {
+      Db.transfer.truncate.throws(new Error)
+      await Model.truncateTransfers()
+      assert.ok(Db.transfer.truncate.calledOnce)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
   // getById
   await transferTest.test('return transfer by id', async (assert) => {
     try {
@@ -239,6 +272,77 @@ Test('Transfer model', async (transferTest) => {
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferTest.test('return transfer by id should throw an error', async (assert) => {
+    try {
+      const transferId1 = 't1'
+      const transferId2 = 't2'
+      const transfers = [{transferId: transferId1}, {transferId: transferId2}]
+
+      let builderStub = sandbox.stub()
+      let payerStub = sandbox.stub()
+      let payeeStub = sandbox.stub()
+      let stateChangeStub = sandbox.stub()
+      let ilpStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+      let orderStub = sandbox.stub()
+      let firstStub = sandbox.stub()
+
+      builderStub.where = sandbox.stub()
+
+      Db.transfer.query.callsArgWith(0, builderStub)
+      // Db.transfer.query.returns(transfers)
+      Db.transfer.query.throws(new Error)
+
+      builderStub.where.returns({
+        leftJoin: payerStub.returns({
+          leftJoin: payeeStub.returns({
+            leftJoin: stateChangeStub.returns({
+              leftJoin: ilpStub.returns({
+                select: selectStub.returns({
+                  orderBy: orderStub.returns({
+                    first: firstStub.returns(transfers)
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      sandbox.stub(extensionModel, 'getByTransferId')
+      // extensionModel.getByTransferId.returns(extensionsRecordList)
+      extensionModel.getByTransferId.throws(new Error)
+
+      let found = await Model.getById(transferId1).throws(new Error)
+      assert.equal(found, transfers)
+      assert.ok(builderStub.where.withArgs({'transfer.transferId': transferId1}))
+      assert.ok(payerStub.withArgs('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId').calledOnce)
+      assert.ok(payeeStub.withArgs('participant AS da', 'transfer.payeeParticipantId', 'da.participantId').calledOnce)
+      assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
+      assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
+      assert.ok(selectStub.withArgs(
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS transferState',
+        'tsc.changedDate AS completedTimestamp',
+        'ilp.packet AS ilpPacket',
+        'ilp.condition AS condition',
+        'ilp.fulfilment AS fulfilment'
+      ).calledOnce)
+
+      assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      assert.ok(firstStub.withArgs().calledOnce)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.pass('Error thrown')
       assert.end()
     }
   })

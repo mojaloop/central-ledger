@@ -6,10 +6,10 @@ const TransferState = require('../state')
 const extensionModel = require('../../../models/extensions')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-const findExpired = (expiresAt) => {
+/*const findExpired = (expiresAt) => {
   const expirationDate = (expiresAt || Moment.utc()).toISOString()
   return Db.transfer.find({ state: TransferState.PREPARED, 'expirationDate <': expirationDate })
-}
+}*/
 
 const saveTransfer = async (record) => {
   Logger.debug('save transfer' + record.toString())
@@ -113,7 +113,7 @@ const getById = async (id) => {
 }
 
 module.exports = {
-  findExpired,
+  // findExpired,
   saveTransfer,
   getAll,
   updateTransfer,
