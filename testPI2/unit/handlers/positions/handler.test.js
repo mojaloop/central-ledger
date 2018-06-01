@@ -149,7 +149,7 @@ Test('Transfer handler', transferHandlerTest => {
         Kafka.Consumer.createHandler(topicName, config, command)
         await DAO.retrieveAllParticipants.returns(P.resolve(participants))
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
+        Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()
@@ -208,7 +208,7 @@ Test('Transfer handler', transferHandlerTest => {
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-        await allTransferHandlers.positions(new Error, null)
+        await allTransferHandlers.positions(new Error(), null)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

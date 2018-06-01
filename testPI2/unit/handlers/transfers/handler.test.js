@@ -221,7 +221,7 @@ Test('Transfer handler', transferHandlerTest => {
         Utility.transformAccountToTopicName.returns(topicName)
         Validator.validateByName.returns({validationPassed: true, reasons: []})
         TransferQueries.getById.returns(P.resolve(null))
-        TransferHandler.prepare.throws(new Error)
+        TransferHandler.prepare.throws(new Error())
         await allTransferHandlers.prepare(null, messages)
         test.fail('No Error Thrown')
         test.end()
@@ -373,7 +373,7 @@ Test('Transfer handler', transferHandlerTest => {
     transferTest.test('throw an error when an error is by transfer', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.throws(new Error)
+        Utility.transformGeneralTopicName.throws(new Error())
         await allTransferHandlers.transfer(null, messages)
         test.fail('No Error Thrown')
         test.end()
@@ -426,7 +426,7 @@ Test('Transfer handler', transferHandlerTest => {
         await DAO.retrieveAllParticipants.returns(P.resolve(participants))
         Utility.transformAccountToTopicName.returns(topicName)
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
+        Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()
@@ -440,7 +440,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
+        Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerFulfillHandler()
         test.fail('Error not thrown')
         test.end()
@@ -454,7 +454,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
+        Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerRejectHandler()
         test.fail('Error not thrown')
         test.end()
@@ -468,7 +468,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
+        Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerTransferHandler()
         test.fail('Error not thrown')
         test.end()

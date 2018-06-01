@@ -134,7 +134,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
+        Utility.getKafkaConfig.throws(new Error())
         await notificationHandler.registerNotificationHandler()
         test.fail('Error not thrown')
         test.end()
@@ -154,7 +154,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
+        Utility.getKafkaConfig.throws(new Error())
         await notificationHandler.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()

@@ -66,7 +66,7 @@ Test('transfer validator', validatorTest => {
 
     validateByNameTest.test('fail validation for invalid condition', async (test) => {
       Participant.getByName.returns(P.resolve({}))
-      CryptoConditions.validateCondition.throws(new Error)
+      CryptoConditions.validateCondition.throws(new Error())
       const {validationPassed, reasons} = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Condition validation failed'])

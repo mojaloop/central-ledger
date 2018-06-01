@@ -47,7 +47,7 @@ Test('DAO', daoTest => {
 
     retrieveAllParticipantsTest.test('return a map of participants', async (test) => {
       try {
-        Participants.getAll.throws(new Error)
+        Participants.getAll.throws(new Error())
         await DAO.retrieveAllParticipants()
         test.fail('Error not thrown')
         test.end()

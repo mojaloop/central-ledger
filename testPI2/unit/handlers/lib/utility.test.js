@@ -120,7 +120,7 @@ Test('Utility Test', utilityTest => {
 
     createParticipantTopicConfTest.test('throw error when Mustache cannot find config', test => {
       try {
-        Sinon.stub(Mustache, 'render').throws(new Error)
+        Sinon.stub(Mustache, 'render').throws(new Error())
         Utility.createParticipantTopicConf(participantName, TRANSFER, PREPARE)
         test.fail('No Error thrown')
         test.end()
@@ -146,7 +146,7 @@ Test('Utility Test', utilityTest => {
 
     createGeneralTopicConfTest.test('throw error when Mustache cannot find config', test => {
       try {
-        Sinon.stub(Mustache, 'render').throws(new Error)
+        Sinon.stub(Mustache, 'render').throws(new Error())
         Utility.createGeneralTopicConf(TRANSFER, FULFIL)
         test.fail('No Error thrown')
         test.end()

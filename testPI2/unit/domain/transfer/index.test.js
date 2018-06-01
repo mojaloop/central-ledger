@@ -141,7 +141,7 @@ Test('Transfer-Index', transferIndexTest => {
     })
 
     preparedTest.test('prepare transfer throws error', async (test) => {
-      CommandsIndex.prepare.throws(new Error)
+      CommandsIndex.prepare.throws(new Error())
       Translator.toTransfer.returns(payload)
       try {
         await TransferIndex.prepare(payload)
@@ -155,7 +155,7 @@ Test('Transfer-Index', transferIndexTest => {
 
     preparedTest.test('prepare transfer throws error', async (test) => {
       CommandsIndex.prepare.returns(P.resolve(prepareResponse))
-      Translator.toTransfer.throws(new Error)
+      Translator.toTransfer.throws(new Error())
       try {
         await TransferIndex.prepare(payload)
         test.fail('Error not thrown')
