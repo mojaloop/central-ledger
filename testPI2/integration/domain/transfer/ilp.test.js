@@ -32,7 +32,7 @@ const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 // const Model = require('../../../../src/domain/transfer/models/ilp-model')
-const Service = require('../../../../src/domain/transfer/ilp')
+const Service = require('../../../../src/mo')
 // const TransferModel = require('../../../../src/domain/transfer/index')
 const HelperModule = require('../../helpers/index')
 
