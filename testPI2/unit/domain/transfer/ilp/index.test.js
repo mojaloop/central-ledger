@@ -150,6 +150,19 @@ Test('Ilp service', async (ilpTest) => {
     }
   })
 
+  await ilpTest.test('update false ilp', async (assert) => {
+    try {
+      for (let ilp of ilpMap.values()) {
+        await Service.update(0)
+        assert.fail(' should throws with empty transferId ')
+      }
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+
   await ilpTest.test('update', async (assert) => {
     try {
       for (let ilp of ilpMap.values()) {
