@@ -117,7 +117,7 @@ Test('Transfer model', async (transferTest) => {
   // saveTransfer
   await transferTest.test('save transfer test', async (assert) => {
     try {
-      let saved = { transferId: transferRecord.transferId }
+      let saved = {transferId: transferRecord.transferId}
       Db.transfer.insert.returns(Promise.resolve(saved))
       let transferCreated = await Model.saveTransfer(payload, null, null)
       assert.equal(transferCreated, saved, 'transfer is inserted and Id is returned')
@@ -129,15 +129,32 @@ Test('Transfer model', async (transferTest) => {
       assert.end()
     }
   })
+
+  await transferTest.test('save transfer test should throw an error', async (assert) => {
+    try {
+      let saved = {transferId: transferRecord.transferId}
+      Db.transfer.insert.throws(new Error)
+      let transferCreated = await Model.saveTransfer(payload, null, null)
+      assert.equal(transferCreated, saved, 'transfer is inserted and Id is returned')
+      assert.ok(Db.transfer.insert.calledOnce)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
   // updateTransfer
   await transferTest.test('updateTransfer should', async (assert) => {
     try {
-      let fields = { state: TransferState.EXECUTED, fulfilment: 'oAKAAA' }
-      let updatedTransfer = { transferId: payload.transferId }
+      let fields = {state: TransferState.EXECUTED, fulfilment: 'oAKAAA'}
+      let updatedTransfer = {transferId: payload.transferId}
       Db.transfer.update = sandbox.stub().returns(Promise.resolve(updatedTransfer))
       let u = await Model.updateTransfer(payload.transferId, fields)
       assert.equal(u, updatedTransfer)
-      assert.ok(Db.transfer.update.calledWith({ transferId: payload.transferId }, fields))
+      assert.ok(Db.transfer.update.calledWith({transferId: payload.transferId}, fields))
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -163,7 +180,7 @@ Test('Transfer model', async (transferTest) => {
     try {
       const transferId1 = 't1'
       const transferId2 = 't2'
-      const transfers = [{ transferId: transferId1 }, { transferId: transferId2 }]
+      const transfers = [{transferId: transferId1}, {transferId: transferId2}]
 
       let builderStub = sandbox.stub()
       let payerStub = sandbox.stub()
@@ -200,7 +217,7 @@ Test('Transfer model', async (transferTest) => {
 
       let found = await Model.getById(transferId1)
       assert.equal(found, transfers)
-      assert.ok(builderStub.where.withArgs({ 'transfer.transferId': transferId1 }))
+      assert.ok(builderStub.where.withArgs({'transfer.transferId': transferId1}))
       assert.ok(payerStub.withArgs('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId').calledOnce)
       assert.ok(payeeStub.withArgs('participant AS da', 'transfer.payeeParticipantId', 'da.participantId').calledOnce)
       assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
@@ -231,7 +248,7 @@ Test('Transfer model', async (transferTest) => {
     try {
       const transferId1 = 't1'
       const transferId2 = 't2'
-      const transfers = [{ transferId: transferId1 }, { transferId: transferId2 }]
+      const transfers = [{transferId: transferId1}, {transferId: transferId2}]
 
       let builderStub = sandbox.stub()
       let payeeStub = sandbox.stub()
@@ -286,6 +303,70 @@ Test('Transfer model', async (transferTest) => {
       Logger.error(`create participant failed with error - ${err}`)
       sandbox.restore()
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferTest.test('return all transfers should throw an error', async (assert) => {
+    try {
+      const transferId1 = 't1'
+      const transferId2 = 't2'
+      const transfers = [{transferId: transferId1}, {transferId: transferId2}]
+
+      let builderStub = sandbox.stub()
+      let payeeStub = sandbox.stub()
+      let stateChangeStub = sandbox.stub()
+      let stateStub = sandbox.stub()
+      let ilpStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+      let orderStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+
+      Db.transfer.query.callsArgWith(0, builderStub)
+      Db.transfer.query.throws(new Error)
+
+      builderStub.innerJoin.returns({
+        innerJoin: payeeStub.returns({
+          innerJoin: stateChangeStub.returns({
+            innerJoin: stateStub.returns({
+              innerJoin: ilpStub.returns({
+                select: selectStub.returns({
+                  orderBy: orderStub.returns(transfers)
+                })
+              })
+            })
+          })
+        })
+      })
+
+      let found = await Model.getAll()
+      assert.equal(found, transfers)
+      assert.ok(builderStub.innerJoin.withArgs('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId').calledOnce)
+      assert.ok(payeeStub.withArgs('participant AS da', 'transfer.payeeParticipantId', 'da.participantId').calledOnce)
+      assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
+      assert.ok(stateStub.withArgs('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId').calledOnce)
+      assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
+      assert.ok(selectStub.withArgs(
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS internalTransferState',
+        'tsc.changedDate AS completedTimestamp',
+        'ts.enumeration AS transferState',
+        'ilp.packet AS ilpPacket',
+        'ilp.condition AS condition',
+        'ilp.fulfilment AS fulfilment'
+      ).calledOnce)
+      assert.ok(orderStub.withArgs('tsc.=transferStateChangeId', 'desc').calledOnce)
+      sandbox.restore()
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      sandbox.restore()
+      assert.pass('Error thrown')
       assert.end()
     }
   })
