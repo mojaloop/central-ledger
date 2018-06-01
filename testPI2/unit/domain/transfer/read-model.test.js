@@ -280,65 +280,8 @@ Test('Transfer model', async (transferTest) => {
   await transferTest.test('return transfer by id should throw an error', async (assert) => {
     try {
       const transferId1 = 't1'
-      const transferId2 = 't2'
-      const transfers = [{transferId: transferId1}, {transferId: transferId2}]
-
-      let builderStub = sandbox.stub()
-      let payerStub = sandbox.stub()
-      let payeeStub = sandbox.stub()
-      let stateChangeStub = sandbox.stub()
-      let ilpStub = sandbox.stub()
-      let selectStub = sandbox.stub()
-      let orderStub = sandbox.stub()
-      let firstStub = sandbox.stub()
-
-      builderStub.where = sandbox.stub()
-
-      Db.transfer.query.callsArgWith(0, builderStub)
-      // Db.transfer.query.returns(transfers)
-      Db.transfer.query.throws(new Error)
-
-      builderStub.where.returns({
-        leftJoin: payerStub.returns({
-          leftJoin: payeeStub.returns({
-            leftJoin: stateChangeStub.returns({
-              leftJoin: ilpStub.returns({
-                select: selectStub.returns({
-                  orderBy: orderStub.returns({
-                    first: firstStub.returns(transfers)
-                  })
-                })
-              })
-            })
-          })
-        })
-      })
-
-      sandbox.stub(extensionModel, 'getByTransferId')
-      // extensionModel.getByTransferId.returns(extensionsRecordList)
-      extensionModel.getByTransferId.throws(new Error)
-
-      let found = await Model.getById(transferId1).throws(new Error)
-      assert.equal(found, transfers)
-      assert.ok(builderStub.where.withArgs({'transfer.transferId': transferId1}))
-      assert.ok(payerStub.withArgs('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId').calledOnce)
-      assert.ok(payeeStub.withArgs('participant AS da', 'transfer.payeeParticipantId', 'da.participantId').calledOnce)
-      assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
-      assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
-      assert.ok(selectStub.withArgs(
-        'transfer.*',
-        'transfer.currencyId AS currency',
-        'ca.name AS payerFsp',
-        'da.name AS payeeFsp',
-        'tsc.transferStateId AS transferState',
-        'tsc.changedDate AS completedTimestamp',
-        'ilp.packet AS ilpPacket',
-        'ilp.condition AS condition',
-        'ilp.fulfilment AS fulfilment'
-      ).calledOnce)
-
-      assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
-      assert.ok(firstStub.withArgs().calledOnce)
+      Db.transfer.query.throws(new Error())
+      await Model.getById(transferId1)
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
