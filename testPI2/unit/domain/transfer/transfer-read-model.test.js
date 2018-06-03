@@ -1,27 +1,27 @@
 /*****
- License
- --------------
- Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
- http://www.apache.org/licenses/LICENSE-2.0
- Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
- Contributors
- --------------
- This is the official list of the Mojaloop project contributors for this file.
- Names of the original copyright holders (individuals or organizations)
- should be listed with a '*' in the first column. People who have
- contributed from an organization can be listed under the organization
- that actually holds the copyright for their contributions (see the
- Gates Foundation organization for an example). Those individuals should have
- their names indented and be marked with a '-'. Email address can be added
- optionally within square brackets <email>.
- * Gates Foundation
- - Name Surname <name.surname@gatesfoundation.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
- --------------
- ******/
+License
+--------------
+Copyright © 2017 Bill & Melinda Gates Foundation
+The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+Contributors
+--------------
+This is the official list of the Mojaloop project contributors for this file.
+Names of the original copyright holders (individuals or organizations)
+should be listed with a '*' in the first column. People who have
+contributed from an organization can be listed under the organization
+that actually holds the copyright for their contributions (see the
+Gates Foundation organization for an example). Those individuals should have
+their names indented and be marked with a '-'. Email address can be added
+optionally within square brackets <email>.
+* Gates Foundation
+- Name Surname <name.surname@gatesfoundation.com>
+* Valentin Genev <valentin.genev@modusbox.com>
+* Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+* Miguel de Barros <miguel.debarros@modusbox.com>
+--------------
+******/
 
 // TODO
 
@@ -77,29 +77,29 @@ Test('Transfer model', async (transferTest) => {
     expirationDate: new Date(payload.expiration)
   }
 
-  // const ilpRecord = {
-  //   transferId: payload.transferId,
-  //   packet: payload.ilpPacket,
-  //   condition: payload.condition,
-  //   fulfilment: null
-  // }
+// const ilpRecord = {
+//   transferId: payload.transferId,
+//   packet: payload.ilpPacket,
+//   condition: payload.condition,
+//   fulfilment: null
+// }
 
-  // const transferStateRecord = {
-  //   transferId: payload.transferId,
-  //   transferStateId: 'RECEIVED',
-  //   reason: null,
-  //   changedDate: new Date()
-  // }
+// const transferStateRecord = {
+//   transferId: payload.transferId,
+//   transferStateId: 'RECEIVED',
+//   reason: null,
+//   changedDate: new Date()
+// }
 
   const extensionsRecordList = []
 
-  // const transferPrepareResult = {
-  //   isSaveTransferPrepared: true,
-  //   transferRecord,
-  //   ilpRecord,
-  //   transferStateRecord,
-  //   extensionsRecordList
-  // }
+// const transferPrepareResult = {
+//   isSaveTransferPrepared: true,
+//   transferRecord,
+//   ilpRecord,
+//   transferStateRecord,
+//   extensionsRecordList
+// }
 
   await transferTest.test('setup', async (assert) => {
     sandbox = Sinon.sandbox.create()
@@ -115,7 +115,7 @@ Test('Transfer model', async (transferTest) => {
     assert.end()
   })
 
-  // saveTransfer
+// saveTransfer
   await transferTest.test('save transfer test', async (assert) => {
     try {
       let saved = {transferId: transferRecord.transferId}
@@ -134,7 +134,7 @@ Test('Transfer model', async (transferTest) => {
   await transferTest.test('save transfer test should throw an error', async (assert) => {
     try {
       let saved = {transferId: transferRecord.transferId}
-      Db.transfer.insert.throws(new Error)
+      Db.transfer.insert.throws(new Error())
       let transferCreated = await Model.saveTransfer(payload, null, null)
       assert.equal(transferCreated, saved, 'transfer is inserted and Id is returned')
       assert.ok(Db.transfer.insert.calledOnce)
@@ -147,7 +147,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-  // updateTransfer
+// updateTransfer
   await transferTest.test('updateTransfer should', async (assert) => {
     try {
       let fields = {state: TransferState.EXECUTED, fulfilment: 'oAKAAA'}
@@ -168,7 +168,7 @@ Test('Transfer model', async (transferTest) => {
     try {
       let fields = {state: TransferState.EXECUTED, fulfilment: 'oAKAAA'}
       let updatedTransfer = {transferId: payload.transferId}
-      Db.transfer.update = sandbox.stub().throws(new Error)
+      Db.transfer.update = sandbox.stub().throws(new Error())
       let u = await Model.updateTransfer(payload.transferId, fields)
       assert.equal(u, updatedTransfer)
       assert.ok(Db.transfer.update.calledWith({transferId: payload.transferId}, fields))
@@ -181,7 +181,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-  // truncateTransfer
+// truncateTransfer
   await transferTest.test('truncateTransfers should', async (assert) => {
     try {
       Db.transfer.truncate.returns(Promise.resolve())
@@ -197,7 +197,7 @@ Test('Transfer model', async (transferTest) => {
 
   await transferTest.test('truncateTransfers should throw an error', async (assert) => {
     try {
-      Db.transfer.truncate.throws(new Error)
+      Db.transfer.truncate.throws(new Error())
       await Model.truncateTransfers()
       assert.ok(Db.transfer.truncate.calledOnce)
       assert.fail('Error not thrown')
@@ -209,7 +209,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-  // getById
+// getById
   await transferTest.test('return transfer by id', async (assert) => {
     try {
       const transferId1 = 't1'
@@ -257,17 +257,17 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
       assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
       assert.ok(selectStub.withArgs(
-        'transfer.*',
-        'transfer.currencyId AS currency',
-        'ca.name AS payerFsp',
-        'da.name AS payeeFsp',
-        'tsc.transferStateId AS transferState',
-        'tsc.changedDate AS completedTimestamp',
-        'ilp.packet AS ilpPacket',
-        'ilp.condition AS condition',
-        'ilp.fulfilment AS fulfilment',
-        'ilp.ilpId AS ilpId'
-      ).calledOnce)
+    'transfer.*',
+    'transfer.currencyId AS currency',
+    'ca.name AS payerFsp',
+    'da.name AS payeeFsp',
+    'tsc.transferStateId AS transferState',
+    'tsc.changedDate AS completedTimestamp',
+    'ilp.packet AS ilpPacket',
+    'ilp.condition AS condition',
+    'ilp.fulfilment AS fulfilment',
+    'ilp.ilpId AS ilpId'
+  ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       assert.ok(firstStub.withArgs().calledOnce)
       assert.end()
@@ -292,7 +292,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-  // getAll
+// getAll
   await transferTest.test('return all transfers', async (assert) => {
     try {
       const transferId1 = 't1'
@@ -345,8 +345,72 @@ Test('Transfer model', async (transferTest) => {
         'ilp.condition AS condition',
         'ilp.fulfilment AS fulfilment',
         'ilp.ilpId AS ilpId'
-      ).calledOnce)
+  ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      sandbox.restore()
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      sandbox.restore()
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferTest.test('return all transfers should throw an error', async (assert) => {
+    try {
+      const transferId1 = 't1'
+      const transferId2 = 't2'
+      const transfers = [{transferId: transferId1}, {transferId: transferId2}]
+
+      let builderStub = sandbox.stub()
+      let payeeStub = sandbox.stub()
+      let stateChangeStub = sandbox.stub()
+      let stateStub = sandbox.stub()
+      let ilpStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+      let orderStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+
+      Db.transfer.query.callsArgWith(0, builderStub)
+      Db.transfer.query.throws(new Error())
+
+      builderStub.innerJoin.returns({
+        innerJoin: payeeStub.returns({
+          leftJoin: stateChangeStub.returns({
+            leftJoin: stateStub.returns({
+              leftJoin: ilpStub.returns({
+                select: selectStub.returns({
+                  orderBy: orderStub.returns(transfers)
+                })
+              })
+            })
+          })
+        })
+      })
+
+      let found = await Model.getAll()
+      assert.equal(found, transfers)
+      assert.ok(builderStub.innerJoin.withArgs('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId').calledOnce)
+      assert.ok(payeeStub.withArgs('participant AS da', 'transfer.payeeParticipantId', 'da.participantId').calledOnce)
+      assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
+      assert.ok(stateStub.withArgs('transferState AS ts', 'tsc.transferStateId', 'tsc.transferStateId').calledOnce)
+      assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
+      assert.ok(selectStub.withArgs(
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS internalTransferState',
+        'tsc.changedDate AS completedTimestamp',
+        'ts.enumeration AS transferState',
+        'ilp.packet AS ilpPacket',
+        'ilp.condition AS condition',
+        'ilp.fulfilment AS fulfilment',
+        'ilp.ilpId AS ilpId'
+  ).calledOnce)
+      assert.ok(orderStub.withArgs('tsc.=transferStateChangeId', 'desc').calledOnce)
       sandbox.restore()
       assert.fail('Error not thrown')
       assert.end()
@@ -358,7 +422,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-   // destroy
+// destroy
   await transferTest.test('destroyByTransferId should', async (assert) => {
     try {
       Db.transfer.destroy.returns(Promise.resolve(true))
@@ -374,7 +438,7 @@ Test('Transfer model', async (transferTest) => {
 
   await transferTest.test('destroyByTransferId should throw an error', async (assert) => {
     try {
-      Db.transfer.destroy.throws(new Error)
+      Db.transfer.destroy.throws(new Error())
       await Model.destroyByTransferId(transferRecord)
       assert.fail('Error not thrown')
       assert.end()

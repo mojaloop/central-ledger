@@ -31,7 +31,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Config = require('../../../../src/lib/config')
-const Model = require('../../../../../src/domain/transfer/models/ilp-model')
+const Model = require('../../../../../src/models/ilp')
 
 Test('Ilp model', async (ilpTest) => {
   let sandbox
@@ -91,7 +91,7 @@ Test('Ilp model', async (ilpTest) => {
         condition: ilp.condition,
         fulfilment: ilp.fulfilment
       }).returns(1)
-      var result = await Model.create(ilp)
+      var result = await Model.saveIlp(ilp)
       assert.ok(result === 1, ` returns ${result}`)
       assert.end()
     } catch (err) {
@@ -101,11 +101,13 @@ Test('Ilp model', async (ilpTest) => {
     }
   })
 
-  await ilpTest.test('get with empty transferId', async (assert) => {
-    Db.ilp.query.throws(new Error('False getByTransferId ilp'))
+  await ilpTest.test('create false ilp', async (assert) => {
+    const falseIlp = {transferId: '1', packet: undefined, condition: undefined, fulfilment: undefined}
+    Db.ilp.insert.withArgs(falseIlp).throws(new Error())
     try {
-      await Model.getByTransferId('')
-      assert.fail(' should throws with empty transferId ')
+      let r = await Model.saveIlp(falseIlp)
+      console.log(r)
+      assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
     }
@@ -113,7 +115,19 @@ Test('Ilp model', async (ilpTest) => {
   })
 
   await ilpTest.test('getByTransferId', async (assert) => {
-    Db.ilp.query.returns(ilpTestValues[0])
+    let falseIlp = null
+    Db.ilp.findOne.withArgs({transferId: falseIlp}).throws(new Error())
+    try {
+      await Model.getByTransferId(null)
+      assert.fail('should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await ilpTest.test('getByTransferId', async (assert) => {
+    Db.ilp.findOne.withArgs({transferId: ilpTestValues[0].transferId}).returns(ilpTestValues[0])
     try {
       var result = await Model.getByTransferId('1')
       assert.equal(result.transferId, ilp.transferId, ' transferIds are equal')
@@ -154,7 +168,7 @@ Test('Ilp model', async (ilpTest) => {
       Db.ilp.update.withArgs(
         { ilpId: ilpId }, { packet: 'new test packet' }
       ).returns(ilpId)
-      let updatedId = await Model.update({ ilpId: ilpId }, { packet: 'new test packet' })
+      let updatedId = await Model.update({ ilpId: ilpId, packet: 'new test packet' })
       assert.equal(updatedId, ilpId)
       assert.end()
     } catch (err) {
@@ -204,3 +218,49 @@ Test('Ilp model', async (ilpTest) => {
     }
   })
 })
+
+
+//   await ilpTest.test('update false ilp', async (assert) => {
+//     try {
+//       for (let ilp of ilpMap.values()) {
+//         await Service.update(0)
+//         assert.fail(' should throws with empty transferId ')
+//       }
+//       assert.end()
+//     } catch (err) {
+//       assert.assert(err instanceof Error, ` throws ${err} `)
+//       assert.end()
+//     }
+//   })
+
+//   await ilpTest.test('update', async (assert) => {
+//     try {
+//       for (let ilp of ilpMap.values()) {
+//         let updated = await Service.update(ilp.transferId, { packet: 'new test packet' })
+//         assert.equal(updated, ilp.ilpId)
+//       }
+//       sandbox.restore()
+//       assert.end()
+//     } catch (err) {
+//       Logger.error(`update ilp failed with error - ${err}`)
+//       assert.fail(`update ilp failed with error - ${err}`)
+//       sandbox.restore()
+//       assert.end()
+//     }
+//   })
+// })
+//   await ilpTest.test('update', async (assert) => {
+//     try {
+//       for (let ilp of ilpMap.values()) {
+//         let updated = await Service.update(ilp.transferId, { packet: 'new test packet' })
+//         assert.equal(updated, ilp.ilpId)
+//       }
+//       sandbox.restore()
+//       assert.end()
+//     } catch (err) {
+//       Logger.error(`update ilp failed with error - ${err}`)
+//       assert.fail(`update ilp failed with error - ${err}`)
+//       sandbox.restore()
+//       assert.end()
+//     }
+//   })
