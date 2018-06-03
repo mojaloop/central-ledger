@@ -96,7 +96,7 @@ Test('Participant model', async (participantTest) => {
       Db.participant.insert.withArgs({
         name: participantFixtures[0].name,
         currencyId: participantFixtures[0].currency
-      }).throws(new Error)
+      }).throws(new Error())
       var result = await Model.create(participantFixtures[0])
       test.ok(Sinon.match(result, 1), ` returns ${result}`)
       test.fail('Error not thrown')
@@ -150,7 +150,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getAll should throw an error', async (test) => {
     try {
-      Db.participant.find.throws(new Error)
+      Db.participant.find.throws(new Error())
       var result = await Model.getAll()
       test.deepEqual(result, participantFixtures)
       test.fail('Error not thrown')
@@ -177,7 +177,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getById should fail', async (test) => {
     try {
-      Db.participant.findOne.withArgs({participantId: 1}).throws(new Error)
+      Db.participant.findOne.withArgs({participantId: 1}).throws(new Error())
       let participant = await Model.getById(1)
       test.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       test.fail('Error not thrown')
@@ -210,7 +210,7 @@ Test('Participant model', async (participantTest) => {
     try {
       Db.participant.update.withArgs(
         {participantId: 1}, {isDisabled: 1}
-      ).throws(new Error)
+      ).throws(new Error())
       let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
       test.equal(updatedId, participantId)
       test.fail('Error not thrown')
@@ -241,7 +241,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('destroyByName should throw an error', async (test) => {
     try {
-      Db.participant.destroy.withArgs({name: participant.name}).throws(new Error)
+      Db.participant.destroy.withArgs({name: participant.name}).throws(new Error())
       const result = await Model.destroyByName(participant)
       test.equal(result, true)
       test.fail('Error not thrown')
@@ -254,5 +254,4 @@ Test('Participant model', async (participantTest) => {
       test.end()
     }
   })
-
 })

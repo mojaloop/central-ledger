@@ -257,17 +257,17 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId').calledOnce)
       assert.ok(ilpStub.withArgs('ilp AS ilp', 'transfer.transferId', 'ilp.transferId').calledOnce)
       assert.ok(selectStub.withArgs(
-    'transfer.*',
-    'transfer.currencyId AS currency',
-    'ca.name AS payerFsp',
-    'da.name AS payeeFsp',
-    'tsc.transferStateId AS transferState',
-    'tsc.changedDate AS completedTimestamp',
-    'ilp.packet AS ilpPacket',
-    'ilp.condition AS condition',
-    'ilp.fulfilment AS fulfilment',
-    'ilp.ilpId AS ilpId'
-  ).calledOnce)
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'ca.name AS payerFsp',
+        'da.name AS payeeFsp',
+        'tsc.transferStateId AS transferState',
+        'tsc.changedDate AS completedTimestamp',
+        'ilp.packet AS ilpPacket',
+        'ilp.condition AS condition',
+        'ilp.fulfilment AS fulfilment',
+        'ilp.ilpId AS ilpId'
+      ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       assert.ok(firstStub.withArgs().calledOnce)
       assert.end()
@@ -345,7 +345,7 @@ Test('Transfer model', async (transferTest) => {
         'ilp.condition AS condition',
         'ilp.fulfilment AS fulfilment',
         'ilp.ilpId AS ilpId'
-  ).calledOnce)
+      ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       sandbox.restore()
       assert.end()

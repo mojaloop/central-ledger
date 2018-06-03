@@ -219,7 +219,6 @@ Test('Ilp model', async (ilpTest) => {
   })
 })
 
-
 //   await ilpTest.test('update false ilp', async (assert) => {
 //     try {
 //       for (let ilp of ilpMap.values()) {
