@@ -46,7 +46,7 @@ module.exports = [
    * @function RegisterAllHandlersRoute
    *
    * @async
-   * Registers all consumer handlers for all participants
+   * @description Registers all consumer handlers for all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -62,7 +62,7 @@ module.exports = [
    * @function RegisterAllTransferHandlersRoute
    *
    * @async
-   * Registers all consumer handlers for all transfers processes for all participants
+   * @description Registers all consumer handlers for all transfers processes for all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -78,7 +78,7 @@ module.exports = [
    * @function RegisterPrepareHandlerRoute
    *
    * @async
-   * Registers consumer handlers for prepare transfer all participants
+   * @description Registers consumer handlers for prepare transfer all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -94,7 +94,7 @@ module.exports = [
    * @function RegisterFulfilHandlerRoute
    *
    * @async
-   * Registers consumer handlers for fulfil transfer this is one topic for all transfers as fulfills do not need to keep order
+   * @description Registers consumer handlers for fulfil transfer this is one topic for all transfers as fulfills do not need to keep order
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -110,7 +110,7 @@ module.exports = [
    * @function RegisterRejectHandlerRoute
    *
    * @async
-   * Registers consumer handlers for reject transfer this is one topic for all transfers as rejects do not need to keep order
+   * @description Registers consumer handlers for reject transfer this is one topic for all transfers as rejects do not need to keep order
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -126,7 +126,7 @@ module.exports = [
    * @function RegisterAllPositionHandlersRoute
    *
    * @async
-   * Registers consumer handlers for positions all participants
+   * @description Registers consumer handlers for positions all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -142,7 +142,7 @@ module.exports = [
    * @function RegisterNotificationHandlerRoute
    *
    * @async
-   * Registers consumer handlers for notifications this is one topic for all participants
+   * @description Registers consumer handlers for notifications this is one topic for all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {

@@ -39,7 +39,7 @@
  * @function Register Handler Routes HAPI
  *
  * @async
- * Registers registers plugins on HAPI server. This retrieves all routes to be exposed from the routes.js file
+ * @description Registers registers plugins on HAPI server. This retrieves all routes to be exposed from the routes.js file
  * @returns {Promise} - Returns a promise: resolve if successful, or rejection if failed
  */
 

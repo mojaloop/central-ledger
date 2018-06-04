@@ -342,17 +342,17 @@ const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey 
  * @function produceGeneralMessage
  *
  * @async
- * This is an async method that produces a message against a generated Kafka topic. it is called multiple times
+ * @description This is an async method that produces a message against a generated Kafka topic. it is called multiple times
+ *
+ * Kafka.Producer.produceMessage called to persist the message to the configured topic on Kafka
+ * Utility.updateMessageProtocolMetadata called updates the messages metadata
+ * Utility.createGeneralTopicConf called dynamically generates the general topic configuration
+ * Utility.getKafkaConfig called dynamically gets Kafka configuration
  *
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
  * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
  * @param {object} message - a list of messages to consume for the relevant topic
  * @param {object} state - state of the message being produced
- *
- * @description Kafka.Producer.produceMessage called to persist the message to the configured topic on Kafka
- * Utility.updateMessageProtocolMetadata called updates the messages metadata
- * Utility.createGeneralTopicConf called dynamically generates the general topic configuration
- * Utility.getKafkaConfig called dynamically gets Kafka configuration
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
@@ -369,16 +369,16 @@ const produceGeneralMessage = async (functionality, action, message, state) => {
  *
  * @description This is an async method that produces a message against a Kafka generated topic for a specific participant. it is called multiple times
  *
+ * Kafka.Producer.produceMessage called to persist the message to the configured topic on Kafka
+ * Utility.updateMessageProtocolMetadata called updates the messages metadata
+ * Utility.createParticipantTopicConf called dynamically generates the topic configuration with a participant name
+ * Utility.getKafkaConfig called dynamically gets Kafka configuration
+ *
  * @param {string} participantName - the name of the participant for topic creation
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
  * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
  * @param {object} message - a list of messages to consume for the relevant topic
  * @param {object} state - state of the message being produced
- *
- * @description Kafka.Producer.produceMessage called to persist the message to the configured topic on Kafka
- * Utility.updateMessageProtocolMetadata called updates the messages metadata
- * Utility.createParticipantTopicConf called dynamically generates the topic configuration with a participant name
- * Utility.getKafkaConfig called dynamically gets Kafka configuration
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
