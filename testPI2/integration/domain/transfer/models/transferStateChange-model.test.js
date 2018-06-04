@@ -63,7 +63,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       stateChangePrepareResult = await HelperModule.prepareNeededData('transferStateChange')
       assert.comment('the prepared data are: ', JSON.stringify(stateChangePrepareResult, null, 4))
 
-      let state = stateChangePrepareResult.transferStateResults[0]
+      let state = stateChangePrepareResult.transferStateResults[1]
       let createdId = 0
       let result = {}
       let transferStateChange = {
