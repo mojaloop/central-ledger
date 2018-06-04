@@ -154,14 +154,24 @@ module.exports = [
       description: 'Register notification Kafka consumer handler'
     }
   },
-  // this is for testing purposes so that we can produce transfers without the ML-API. will be removed later
+
+  // Following are for testing purposes so that we can produce transfers without the ML-API. To be removed later.
   {
     method: 'POST',
-    path: '/test/producer',
-    handler: testProducer.testProducer,
+    path: '/test/producer/transfer/prepare',
+    handler: testProducer.transferPrepare,
     options: {
-      id: 'testing',
-      description: 'testing'
+      id: 'transferPrepareTestProducer',
+      description: 'Produces transfer prepare message to Kafka'
+    }
+  },
+  {
+    method: 'POST',
+    path: '/test/producer/transfer/fulfil',
+    handler: testProducer.transferFulfil,
+    options: {
+      id: 'transferFulfilTestProducer',
+      description: 'Produces transfer fulfil message to Kafka'
     }
   }
 ]

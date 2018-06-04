@@ -17,6 +17,7 @@ const Participant = require('../../../src/domain/participant')
 // const PositionHandler = require('../../../src/handlers/positions/handler')
 // const NotificationHandler = require('../../../src/handlers/notification/handler')
 // const TransferProjection = require('../../../src/domain/transfer/projection')
+const TransferState = require('../../../src/domain/transfer/state')
 const TransferReadModel = require('../../../src/domain/transfer/models/transfers-read-model')
 const Moment = require('moment')
 
@@ -31,6 +32,24 @@ const transfer = {
   ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
   condition: 'ni:///sha-256;47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU?fpt=preimage-sha-256&cost=0',
   expiration: '2018-11-24T08:38:08.699-04:00',
+  extensionList: {
+    extension: [
+      {
+        key: 'key1',
+        value: 'value1'
+      },
+      {
+        key: 'key2',
+        value: 'value2'
+      }
+    ]
+  }
+}
+
+const fulfil = {
+  fulfilment: 'oAKAAA',
+  completedTimestamp: '2018-10-24T08:38:08.699-04:00',
+  transferState: 'COMMITTED',
   extensionList: {
     extension: [
       {
@@ -69,8 +88,28 @@ const messageProtocol = {
   pp: ''
 }
 
+const messageProtocolFulfil = Object.assign({}, messageProtocol, {
+  content: {
+    payload: fulfil
+  },
+  metadata: {
+    event: {
+      id: Uuid(),
+      type: 'fulfil',
+      action: 'commit'
+    }
+  }
+})
+
 const topicConf = {
   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
+  key: 'producerTest',
+  partition: 0,
+  opaqueKey: 0
+}
+
+const topicConfFulfil = {
+  topicName: Utility.transformGeneralTopicName('transfer', 'fulfil'),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
@@ -136,7 +175,7 @@ Test('Handlers test', async handlersTest => {
     //   }, 10000)
     // })
 
-    registerAllHandlers.test('setup', async (test) => {
+    await registerAllHandlers.test('setup', async (test) => {
       await Db.connect(Config.DATABASE_URI)
       for (let payload of participants) {
         const participant = await Participant.getByName(payload.name)
@@ -150,7 +189,7 @@ Test('Handlers test', async handlersTest => {
       }, 20000)
     })
 
-    registerAllHandlers.test('register all kafka handlers', async (test) => {
+    await registerAllHandlers.test('register all kafka handlers', async (test) => {
       var startTime = Moment()
       var targetProcessingTimeInSeconds = 25
       var elapsedSeconds = 0
@@ -174,8 +213,44 @@ Test('Handlers test', async handlersTest => {
         }
 
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(isTransferHandlersPrepareCalled, true, 'prepare callback was executed')
-        test.equal(result, true, `prepare callback was executed returned ${result}`)
+        test.equal(isTransferHandlersPrepareCalled, true, 'Prepare callback was executed')
+        test.equal(result, true, `Prepare callback was executed returned ${result}`)
+        test.end()
+      }, 30000)
+    })
+
+    await registerAllHandlers.test('register all kafka handlers', async (test) => {
+      var startTime = Moment()
+      var targetProcessingTimeInSeconds = 25
+      var elapsedSeconds = 0
+      let isFulfilHandlerCalled = false
+      let isTransferStateCommitted = false
+      let isIlpFulfilmentUpdated = false
+      let result = null
+
+      const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFIL')
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(messageProtocolFulfil, topicConfFulfil, config)
+
+      setTimeout(async () => {
+        while (elapsedSeconds < targetProcessingTimeInSeconds) {
+          elapsedSeconds = Moment().diff(startTime, 'seconds')
+          // console.log(`elapsedSeconds=${elapsedSeconds}`)
+          var transfer = await TransferReadModel.getById(messageProtocol.id)
+          if (transfer) {
+            isFulfilHandlerCalled = true
+            isTransferStateCommitted = transfer.transferState === TransferState.COMMITTED
+            isIlpFulfilmentUpdated = transfer.fulfilment === fulfil.fulfilment
+            result = true
+          }
+        }
+
+        test.equal(producerResponse, true, 'Producer for fulfil published message')
+        test.equal(isFulfilHandlerCalled, true, 'Fulfil callback was executed')
+        test.equal(isTransferStateCommitted, true, 'Transfer state changed to COMMITTED')
+        test.equal(isIlpFulfilmentUpdated, true, 'Fulfilment updated ilp table record')
+        test.equal(result, true, `Fulfil callback was executed returned ${result}`)
         test.end()
       }, 30000)
     })

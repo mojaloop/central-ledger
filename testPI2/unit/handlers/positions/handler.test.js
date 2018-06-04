@@ -3,19 +3,17 @@
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const P = require('bluebird')
-const Uuid = require('uuid4')
-const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
-
-const notificationHandler = require('../../../../src/handlers/notification/handler')
+const allTransferHandlers = require('../../../../src/handlers/positions/handler')
 const Kafka = require('../../../../src/handlers/lib/kafka')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferQueries = require('../../../../src/domain/transfer/queries')
 const TransferHandler = require('../../../../src/domain/transfer')
 const Utility = require('../../../../src/handlers/lib/utility')
+const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const DAO = require('../../../../src/handlers/lib/dao')
-const Consumer = require('../../../../src/handlers/lib/kafka/consumer')
-
-const topicName = 'topic-test'
+const Uuid = require('uuid4')
+const Logger = require('@mojaloop/central-services-shared').Logger
+const TransferStateChange = require('../../../../src/domain/transfer/models/transferStateChanges')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -54,7 +52,7 @@ const messageProtocol = {
   metadata: {
     event: {
       id: Uuid(),
-      type: 'prepare',
+      type: 'position',
       action: 'prepare',
       createdAt: new Date(),
       state: {
@@ -71,6 +69,8 @@ const messages = [
     value: messageProtocol
   }
 ]
+
+const topicName = 'topic-test'
 
 const config = {
   options: {
@@ -92,9 +92,11 @@ const config = {
   }
 }
 
-const error = () => { throw new Error() }
-
 const command = () => {}
+
+const participants = ['testName1', 'testName2']
+
+const COMMIT = 'commit'
 
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
@@ -110,6 +112,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(TransferQueries)
     sandbox.stub(TransferHandler)
     sandbox.stub(Utility)
+    sandbox.stub(TransferStateChange)
     Utility.transformAccountToTopicName.returns(topicName)
     Utility.produceGeneralMessage.returns(P.resolve())
     test.end()
@@ -121,41 +124,33 @@ Test('Transfer handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
-    registerHandlersTest.test('registers registerNotificationHandler', async (test) => {
-      Kafka.Consumer.createHandler(topicName, config, command)
+    registerHandlersTest.test('register all consumers on Kafka', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      DAO.retrieveAllParticipants.returns(P.resolve(participants))
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-      const result = await notificationHandler.registerNotificationHandler()
+      const result = await allTransferHandlers.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
 
-    registerHandlersTest.test('throws error registerFulfillHandler', async (test) => {
-      try {
-        Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
-        await notificationHandler.registerNotificationHandler()
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-
-    registerHandlersTest.test('registers registerNotificationHandler', async (test) => {
-      const result = await notificationHandler.registerAllHandlers()
+    registerHandlersTest.test('register a consumer on Kafka', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+      const result = await allTransferHandlers.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
 
-    registerHandlersTest.test('throws error registerAllHandlers', async (test) => {
+    registerHandlersTest.test('throws error retrieveAllParticipants', async (test) => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
+        await DAO.retrieveAllParticipants.returns(P.resolve(participants))
         Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error)
-        await notificationHandler.registerAllHandlers()
+        Utility.getKafkaConfig.throws(new Error())
+        await allTransferHandlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -167,45 +162,61 @@ Test('Transfer handler', transferHandlerTest => {
     registerHandlersTest.end()
   })
 
-  transferHandlerTest.test('mockNotification should', mockNotificationTest => {
-    mockNotificationTest.test('receive the messages from kafka and process it', async (test) => {
-      const result = await notificationHandler.mockNotification(null, messages)
+  transferHandlerTest.test('positions should be able to ', positionsTest => {
+    positionsTest.test('Update transferStateChange in the database when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      const result = await allTransferHandlers.positions(null, messages)
+      Logger.info(result)
       test.equal(result, true)
       test.end()
     })
 
-    mockNotificationTest.test('receive the message from kafka and process it', async (test) => {
-      const result = await notificationHandler.mockNotification(null, messages[0])
+    positionsTest.test('Update transferStateChange in the database when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = COMMIT
+      const result = await allTransferHandlers.positions(null, messages)
+      Logger.info(result)
       test.equal(result, true)
       test.end()
     })
 
-    mockNotificationTest.test('throw an error when an error is thrown from Kafka', async (test) => {
+    positionsTest.test('throws error when invalid action recieved', async (test) => {
       try {
-        await notificationHandler.mockNotification(error, null)
-        test.fail('No Error Thrown')
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
+        TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+        messages[0].value.metadata.event.action = 'invalid'
+        await allTransferHandlers.positions(null, messages)
+        test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.pass('Error Thrown')
+        test.pass('Error thrown')
         test.end()
       }
     })
 
-    mockNotificationTest.test('throw an error when consumer not found', async (test) => {
+    positionsTest.test('Throws error on positions', async (test) => {
       try {
-        await Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns('invalid-topic')
-        await notificationHandler.mockNotification(null, messages)
-        test.fail('No Error Thrown')
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
+        TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+        await allTransferHandlers.positions(new Error(), null)
+        test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.pass('Error Thrown')
+        test.pass('Error thrown')
         test.end()
       }
     })
-
-    mockNotificationTest.end()
+    positionsTest.end()
   })
-
   transferHandlerTest.end()
 })

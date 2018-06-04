@@ -136,7 +136,7 @@ Test('Commands-Index', commandIndextTest => {
     })
 
     preparedTest.test('save transfer prepared throws error', async (test) => {
-      await TransfersProjection.saveTransferPrepared.throws(new Error)
+      await TransfersProjection.saveTransferPrepared.throws(new Error())
       try {
         await CommandsIndex.prepare(payload)
         test.fail('Error not thrown')
@@ -158,7 +158,7 @@ Test('Commands-Index', commandIndextTest => {
     })
 
     rejectTest.test('reject save transfer to the database throws an error', async (test) => {
-      await TransfersProjection.saveTransferRejected.throws(new Error)
+      await TransfersProjection.saveTransferRejected.throws(new Error())
       try {
         await CommandsIndex.reject(stateReason, payload.transferId)
         test.fail('Error not thrown')
