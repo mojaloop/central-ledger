@@ -5,11 +5,8 @@ exports.up = function (knex, Promise) {
     t.bigIncrements('transferStateChangeId').primary().notNullable()
 
     t.string('transferId', 36).notNullable()
+    t.foreign('transferId').references('transferId').inTable('transfer')
 
-    // the below foreign key constraint has been moved to the add-transfer-state-foreign-key file
-    // t.foreign('transferId').references('transferId').inTable('transfer')
-
-    // t.integer('transferStateId').unsigned().notNullable()
     t.string('transferStateId', 50).notNullable()
     t.foreign('transferStateId').references('transferStateId').inTable('transferState')
 
