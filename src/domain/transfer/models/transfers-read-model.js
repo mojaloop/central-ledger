@@ -20,7 +20,7 @@
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>e
  --------------
  ******/
 
