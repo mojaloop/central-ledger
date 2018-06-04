@@ -25,9 +25,7 @@
 
 'use strict'
 
-// const Moment = require('moment')
 const Db = require('../../../db')
-// const TransferState = require('../state')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 const saveTransferStateChange = async (stateChange) => {
@@ -41,8 +39,6 @@ const saveTransferStateChange = async (stateChange) => {
 
 const getByTransferId = async (id) => {
   try {
-    // let transferStateChanges = await Db.transferStateChange.find({ transferId: id }, { order: 'changedDate desc' })
-    // return transferStateChanges[0]
     return await Db.transferStateChange.query(async (builder) => {
       let result = builder
         .where({'transferStateChange.transferId': id})
