@@ -29,6 +29,10 @@
  ******/
 'use strict'
 
+/**
+ * @module src/handlers/lib/kafka
+ */
+
 const Producer = require('./producer')
 const Consumer = require('./consumer')
 

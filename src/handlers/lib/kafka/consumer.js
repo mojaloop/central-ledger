@@ -30,6 +30,10 @@
  ******/
 'use strict'
 
+/**
+ * @module src/handlers/lib/kafka
+ */
+
 const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
@@ -42,9 +46,10 @@ let listOfConsumers = {}
  * @param {object} config - the config for the consumer for the specific functionality and action, retrieved from the default.json. Example: found in default.json 'KAFKA.CONSUMER.TRANSFER.PREPARE'
  * @param {function} command - the callback handler for the topic. Will be called when the topic is produced against. Example: Command.prepareHandler()
  *
- * Parses the accountUri into a participant name from the uri string
+ * @description Parses the accountUri into a participant name from the uri string
  *
- * @returns {string} - Returns participant name, throws error if failure occurs
+ * @returns {object} - Returns a Promise
+ * @throws {Error} -  if failure occurs
  */
 const createHandler = async (topicName, config, command) => {
   const consumer = new Consumer([topicName], config)
@@ -58,6 +63,16 @@ const createHandler = async (topicName, config, command) => {
   })
 }
 
+/**
+ * @method GetConsumer
+ *
+ * @param {string} topicName - the topic name to locate a specific consumer
+ *
+ * @description This is used to get a consumer with the topic name to commit the messages that have been received
+ *
+ * @returns {Consumer} - Returns consumer
+ * @throws {Error} - if consumer not found for topic name
+ */
 const getConsumer = (topicName) => {
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName]

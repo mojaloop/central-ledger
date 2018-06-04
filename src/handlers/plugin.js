@@ -27,11 +27,16 @@
  * Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
+
  ******/
 'use strict'
 
 /**
- * @method Plugin
+ * @module src/handlers
+ */
+
+/**
+ * @method Register Handler Routes HAPI
  *
  * @async
  * Registers registers plugins on HAPI server. This retrieves all routes to be exposed from the routes.js file

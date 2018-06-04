@@ -31,6 +31,10 @@
  ******/
 'use strict'
 
+/**
+ * @module src/handlers/transfers
+ */
+
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferHandler = require('../../domain/transfer')
 const Utility = require('../lib/utility')
@@ -50,22 +54,22 @@ const REJECT = 'reject'
 const COMMIT = 'commit'
 
 /**
- * @method prepare
+ * @method TransferPrepareHandler
  *
  * @async
- * This is the consumer callback function that gets registered to a topic. This then gets a list of message,
+ * @description This is the consumer callback function that gets registered to a topic. This then gets a list of message,
  * we will only ever use the first message in non batch processing. We then break down the message into its payload and
  * begin validating the payload. Once the payload is validated successfully it will be written to the database to
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
  * ABORT status
  *
+ * Validator.validateByName called to validate the payload of the message
+ * TransferQueries.getById called and checks if the transfer currently exists
+ * TransferHandler.prepare called and creates new entries in transfer tables for successful prepare transfer
+ * TransferHandler.reject called and rejects an existing transfer that has been retried and fails validation
+ *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
- *
- * @function Validator.validateByName to validate the payload of the message
- * @function TransferQueries.getById checks if the transfer currently exists
- * @function TransferHandler.prepare creates new entries in transfer tables for successful prepare transfer
- * @function TransferHandler.reject rejects an existing transfer that has been retried and fails validation
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
@@ -154,7 +158,7 @@ const fulfil = async (error, messages) => {
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-      // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
+        // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
       } else if (fulfilmentCondition !== existingTransfer.condition) { // TODO: FiveBellsCondition.fulfillmentToCondition always passes
         Logger.info('FulfilHandler::fulfil::validationFailed::invalidFulfilment')
         await consumer.commitMessageSync(message)
@@ -192,10 +196,10 @@ const reject = async () => {
   throw new Error('Not implemented')
 }
 /**
- * @method transfer
+ * @method TransferTransferHandler
  *
  * @async
- * This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),
+ * @description This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),
  * we will only ever use the first message in non batch processing. We then break down the message into its payload and
  * begin validating the payload. Once the payload is validated successfully it will be written to the database to
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
@@ -233,9 +237,9 @@ const transfer = async (error, messages) => {
  * @method CreatePrepareHandler
  *
  * @async
- * Registers the handler for each participant topic created. Gets Kafka config from default.json
+ * @description Registers the handler for each participant topic created. Gets Kafka config from default.json
  *
- * @function Calls createHandler to register the handler against the Stream Processing API
+ * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const createPrepareHandler = async (participantName) => {
@@ -258,8 +262,8 @@ const createPrepareHandler = async (participantName) => {
  * @method RegisterTransferHandler
  *
  * @async
- * Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * @function createTransferHandler called to create the handler for each participant
+ * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
+ * createTransferHandler called to create the handler for each participant
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerTransferHandler = async () => {
@@ -282,8 +286,8 @@ const registerTransferHandler = async () => {
  * @method RegisterFulfillHandler
  *
  * @async
- * Registers the one handler for fulfil transfer. Gets Kafka config from default.json
- * @function Calls createHandler to register the handler against the Stream Processing API
+ * @description Registers the one handler for fulfil transfer. Gets Kafka config from default.json
+ * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerFulfillHandler = async () => {
@@ -306,8 +310,8 @@ const registerFulfillHandler = async () => {
  * @method RegisterRejectHandler
  *
  * @async
- * Registers the one handler for reject transfer. Gets Kafka config from default.json
- * @function Calls createHandler to register the handler against the Stream Processing API
+ * @description Registers the one handler for reject transfer. Gets Kafka config from default.json
+ * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerRejectHandler = async () => {
@@ -330,8 +334,8 @@ const registerRejectHandler = async () => {
  * @method RegisterPrepareHandlers
  *
  * @async
- * Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * @function createPrepareHandler called to create the handler for each participant
+ * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
+ * createPrepareHandler called to create the handler for each participant
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPrepareHandlers = async () => {
@@ -351,7 +355,7 @@ const registerPrepareHandlers = async () => {
  * @method RegisterAllHandlers
  *
  * @async
- * Registers all handlers in transfers ie: prepare, fulfil, transfer and reject
+ * @description Registers all handlers in transfers ie: prepare, fulfil, transfer and reject
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */

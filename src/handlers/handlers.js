@@ -1,4 +1,5 @@
 /*****
+ * @file This registers all handlers for the central-ledger API
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
@@ -29,6 +30,10 @@
  --------------
  ******/
 'use strict'
+
+/**
+ * @module src/handlers
+ */
 
 /**
  * @method RegisterAllHandlers

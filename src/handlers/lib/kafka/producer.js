@@ -29,11 +29,27 @@
  ******/
 'use strict'
 
+/**
+ * @module src/handlers/lib/kafka
+ */
+
 const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 let p
 
+/**
+ * @method ProduceMessage
+ *
+ * @param {string} messageProtocol - message being created against topic
+ * @param {object} topicConf - configuration for the topic to produce to
+ * @param {object} config - Producer configuration, eg: to produce batch or poll
+ *
+ * @description Creates a producer on Kafka for the specified topic and configuration
+ *
+ * @returns {boolean} - returns true if producer successfully created and producers to
+ * @throws {error} - if not successfully create/produced to
+ */
 const produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     Logger.info('Producer::start::topic=' + topicConf.topicName)
@@ -51,6 +67,13 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
   }
 }
 
+/**
+ * @method Disconnect
+ *
+ * @description Disconnects the current producer from Kafka
+ *
+ * @returns {object} Promise
+ */
 const disconnect = async () => {
   try {
     await p.disconnect()

@@ -29,6 +29,11 @@
  --------------
  ******/
 'use strict'
+
+/**
+ * @module src/handlers/notification
+ */
+
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Utility = require('../lib/utility')
 const Kafka = require('../lib/kafka')
@@ -62,8 +67,8 @@ const mockNotification = async (error, messages) => {
  * @method RegisterNotificationHandler
  *
  * @async
- * Registers the one handler for notifications. Gets Kafka config from default.json
- * @function Calls createHandler to register the handler against the Stream Processing API
+ * @description Registers the one handler for notifications. Gets Kafka config from default.json
+ * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerNotificationHandler = async () => {
@@ -85,7 +90,7 @@ const registerNotificationHandler = async () => {
  * @method RegisterAllHandlers
  *
  * @async
- * Registers all handlers in notifications
+ * @description Registers all handlers in notifications
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
