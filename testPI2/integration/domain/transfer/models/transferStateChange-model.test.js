@@ -56,7 +56,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
     }
   })
 
-  async function testInserts (assert) {
+  await stateChangeTest.test('create state change test', async (assert) => {
     try {
       // Prepare helper tests actually the Model.saveExtension and Model.getByTransferId
 
@@ -86,9 +86,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.fail(`Create all extension objects failed - ${err}`)
       assert.end()
     }
-  }
-
-  await stateChangeTest.test('create state change test', testInserts)
+  })
 
   await stateChangeTest.test('create stateChange without transferId should throw error', async (assert) => {
     let state = stateChangePrepareResult.transferStateResults[0]
