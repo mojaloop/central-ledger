@@ -82,7 +82,7 @@ const positions = async (error, messages) => {
 }
 
 /**
- * @method CreatePositionHandler
+ * @function CreatePositionHandler
  *
  * @async
  * @description Registers the handler for each participant topic created. Gets Kafka config from default.json
@@ -105,7 +105,7 @@ const createPositionHandler = async (participantName) => {
 }
 
 /**
- * @method RegisterPositionsHandlers
+ * @function RegisterPositionsHandlers
  *
  * @async
  * @description Registers the position handlers for all participants. Retrieves the list of all participants from the database and loops through each
@@ -125,7 +125,7 @@ const registerPositionHandlers = async () => {
 }
 
 /**
- * @method RegisterAllHandlers
+ * @function RegisterAllHandlers
  *
  * @async
  * @description Registers all handlers in positions

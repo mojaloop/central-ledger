@@ -43,7 +43,7 @@ const testProducer = require('../../testPI2/integration/helpers/testProducer')
 
 module.exports = [
   /**
-   * @method RegisterAllHandlersRoute
+   * @function RegisterAllHandlersRoute
    *
    * @async
    * Registers all consumer handlers for all participants
@@ -59,7 +59,7 @@ module.exports = [
     }
   },
   /**
-   * @method RegisterAllTransferHandlersRoute
+   * @function RegisterAllTransferHandlersRoute
    *
    * @async
    * Registers all consumer handlers for all transfers processes for all participants
@@ -75,7 +75,7 @@ module.exports = [
     }
   },
   /**
-   * @method RegisterPrepareHandlerRoute
+   * @function RegisterPrepareHandlerRoute
    *
    * @async
    * Registers consumer handlers for prepare transfer all participants
@@ -91,7 +91,7 @@ module.exports = [
     }
   },
   /**
-   * @method RegisterFulfilHandlerRoute
+   * @function RegisterFulfilHandlerRoute
    *
    * @async
    * Registers consumer handlers for fulfil transfer this is one topic for all transfers as fulfills do not need to keep order
@@ -107,7 +107,7 @@ module.exports = [
     }
   },
   /**
-   * @method RegisterRejectHandlerRoute
+   * @function RegisterRejectHandlerRoute
    *
    * @async
    * Registers consumer handlers for reject transfer this is one topic for all transfers as rejects do not need to keep order
@@ -123,7 +123,7 @@ module.exports = [
     }
   },
   /**
-   * @method RegisterAllPositionHandlersRoute
+   * @function RegisterAllPositionHandlersRoute
    *
    * @async
    * Registers consumer handlers for positions all participants
@@ -139,7 +139,7 @@ module.exports = [
     }
   },
   /**
-   * @method RegisterNotificationHandlerRoute
+   * @function RegisterNotificationHandlerRoute
    *
    * @async
    * Registers consumer handlers for notifications this is one topic for all participants

@@ -64,7 +64,7 @@ const mockNotification = async (error, messages) => {
 }
 
 /**
- * @method RegisterNotificationHandler
+ * @function RegisterNotificationHandler
  *
  * @async
  * @description Registers the one handler for notifications. Gets Kafka config from default.json
@@ -87,7 +87,7 @@ const registerNotificationHandler = async () => {
 }
 
 /**
- * @method RegisterAllHandlers
+ * @function RegisterAllHandlers
  *
  * @async
  * @description Registers all handlers in notifications

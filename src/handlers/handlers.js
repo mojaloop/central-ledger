@@ -36,7 +36,7 @@
  */
 
 /**
- * @method RegisterAllHandlers
+ * @function RegisterAllHandlers
  *
  * @async
  * Registers all handlers by using the require-glob to retrieve all handler exports in sub directories and access the registerAllHandlers()

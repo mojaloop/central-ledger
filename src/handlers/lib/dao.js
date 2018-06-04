@@ -38,7 +38,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Participants = require('../../domain/participant')
 
 /**
- * @method RetrieveAllParticipants
+ * @function RetrieveAllParticipants
  *
  * @description Calls getAllParticipant DAO to retrieve a list of participants and then use that to get a list of names for the creation of topics
  *

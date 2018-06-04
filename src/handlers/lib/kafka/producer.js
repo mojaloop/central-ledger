@@ -39,7 +39,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 let p
 
 /**
- * @method ProduceMessage
+ * @function ProduceMessage
  *
  * @param {string} messageProtocol - message being created against topic
  * @param {object} topicConf - configuration for the topic to produce to
@@ -68,7 +68,7 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
 }
 
 /**
- * @method Disconnect
+ * @function Disconnect
  *
  * @description Disconnects the current producer from Kafka
  *

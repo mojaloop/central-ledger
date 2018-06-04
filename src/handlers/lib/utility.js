@@ -133,7 +133,7 @@ const ENUMS = {
 }
 
 /**
- * @method ParticipantTopicTemplate
+ * @function ParticipantTopicTemplate
  *
  * @description Generates a participant topic name from the 3 inputs which are used in the placeholder topic template for participants found in the default.json
  *
@@ -157,7 +157,7 @@ const participantTopicTemplate = (participantName, functionality, action) => {
 }
 
 /**
- * @method GeneralTopicTemplate
+ * @function GeneralTopicTemplate
  *
  * @description Generates a general topic name from the 2 inputs, which are used in the placeholder general topic template found in the default.json
  *
@@ -176,7 +176,7 @@ const generalTopicTemplate = (functionality, action) => {
 }
 
 /**
- * @method TransformGeneralTopicName
+ * @function TransformGeneralTopicName
  *
  * @description generalTopicTemplate called which generates a general topic name from the 2 inputs, which are used in the placeholder general topic template found in the default.json
  *
@@ -194,7 +194,7 @@ const transformGeneralTopicName = (functionality, action) => {
 }
 
 /**
- * @method TransformGeneralTopicName
+ * @function TransformGeneralTopicName
  *
  * @description participantTopicTemplate called which generates a participant topic name from the 3 inputs, which are used in the placeholder participant topic template found in the default.json
  *
@@ -213,7 +213,7 @@ const transformAccountToTopicName = (participantName, functionality, action) => 
 }
 
 /**
- * @method GetKafkaConfig
+ * @function GetKafkaConfig
  *
  * @description participantTopicTemplate called which generates a participant topic name from the 3 inputs, which are used in the placeholder participant topic template found in the default.json
  *
@@ -236,7 +236,7 @@ const getKafkaConfig = (flow, functionality, action) => {
 }
 
 /**
- * @method updateMessageProtocolMetadata
+ * @function updateMessageProtocolMetadata
  *
  * @param {object} messageProtocol - The current messageProtocol from kafka
  * @param {string} metadataType - the action flow. Example: 'prepare'
@@ -259,7 +259,7 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => 
 }
 
 /**
- * @method createTransferMessageProtocol
+ * @function createTransferMessageProtocol
  *
  * @param {object} payload - The payload of the api request
  * @param {string} type - the type flow. Example: 'prepare'
@@ -300,7 +300,7 @@ const createTransferMessageProtocol = (payload, type, action, state, pp = '') =>
 }
 
 /**
- * @method createParticipantTopicConfig
+ * @function createParticipantTopicConfig
  *
  * @param {string} participantName - The participant name
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
@@ -320,7 +320,7 @@ const createParticipantTopicConf = (participantName, functionality, action, part
 }
 
 /**
- * @method createGeneralTopicConfig
+ * @function createGeneralTopicConfig
  *
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
  * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
@@ -339,7 +339,7 @@ const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey 
 }
 
 /**
- * @method produceGeneralMessage
+ * @function produceGeneralMessage
  *
  * @async
  * This is an async method that produces a message against a generated Kafka topic. it is called multiple times
@@ -363,7 +363,7 @@ const produceGeneralMessage = async (functionality, action, message, state) => {
 }
 
 /**
- * @method produceParticipantMessage
+ * @function produceParticipantMessage
  *
  * @async
  *

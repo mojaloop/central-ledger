@@ -40,7 +40,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 let listOfConsumers = {}
 
 /**
- * @method CreateHandler
+ * @function CreateHandler
  *
  * @param {string} topicName - the topic name to be registered for the required handler. Example: 'topic-dfsp1-transfer-prepare'
  * @param {object} config - the config for the consumer for the specific functionality and action, retrieved from the default.json. Example: found in default.json 'KAFKA.CONSUMER.TRANSFER.PREPARE'
@@ -64,7 +64,7 @@ const createHandler = async (topicName, config, command) => {
 }
 
 /**
- * @method GetConsumer
+ * @function GetConsumer
  *
  * @param {string} topicName - the topic name to locate a specific consumer
  *

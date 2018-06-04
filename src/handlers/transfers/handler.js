@@ -54,7 +54,7 @@ const REJECT = 'reject'
 const COMMIT = 'commit'
 
 /**
- * @method TransferPrepareHandler
+ * @function TransferPrepareHandler
  *
  * @async
  * @description This is the consumer callback function that gets registered to a topic. This then gets a list of message,
@@ -196,7 +196,7 @@ const reject = async () => {
   throw new Error('Not implemented')
 }
 /**
- * @method TransferTransferHandler
+ * @function TransferTransferHandler
  *
  * @async
  * @description This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),
@@ -234,7 +234,7 @@ const transfer = async (error, messages) => {
 }
 
 /**
- * @method CreatePrepareHandler
+ * @function CreatePrepareHandler
  *
  * @async
  * @description Registers the handler for each participant topic created. Gets Kafka config from default.json
@@ -259,7 +259,7 @@ const createPrepareHandler = async (participantName) => {
 }
 
 /**
- * @method RegisterTransferHandler
+ * @function RegisterTransferHandler
  *
  * @async
  * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
@@ -283,7 +283,7 @@ const registerTransferHandler = async () => {
 }
 
 /**
- * @method RegisterFulfillHandler
+ * @function RegisterFulfillHandler
  *
  * @async
  * @description Registers the one handler for fulfil transfer. Gets Kafka config from default.json
@@ -307,7 +307,7 @@ const registerFulfillHandler = async () => {
 }
 
 /**
- * @method RegisterRejectHandler
+ * @function RegisterRejectHandler
  *
  * @async
  * @description Registers the one handler for reject transfer. Gets Kafka config from default.json
@@ -331,7 +331,7 @@ const registerRejectHandler = async () => {
 }
 
 /**
- * @method RegisterPrepareHandlers
+ * @function RegisterPrepareHandlers
  *
  * @async
  * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
@@ -352,7 +352,7 @@ const registerPrepareHandlers = async () => {
 }
 
 /**
- * @method RegisterAllHandlers
+ * @function RegisterAllHandlers
  *
  * @async
  * @description Registers all handlers in transfers ie: prepare, fulfil, transfer and reject
