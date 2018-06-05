@@ -132,7 +132,6 @@ const getById = async (id) => {
 }
 
 module.exports = {
-  // findExpired,
   saveTransfer,
   getAll,
   updateTransfer,
