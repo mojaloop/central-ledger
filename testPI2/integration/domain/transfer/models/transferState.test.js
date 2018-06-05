@@ -152,18 +152,6 @@ Test('transferState Model Test', async (transferStateTest) => {
     }
   })
 
-  // await transferStateTest.test('destroyTransferStates', async (assert) => {
-  //   try {
-  //     var result = await Model.destroyTransferStates()
-  //     assert.ok(Sinon.match(result, true))
-  //     assert.end()
-  //   } catch (err) {
-  //     Logger.error(`destroyTransferStatesById failed with error - ${err}`)
-  //     assert.fail()
-  //     assert.end()
-  //   }
-  // })
-
   await transferStateTest.test('teardown', async (assert) => {
     try {
       // Model.destroyTransferStates() // falls over when this is executed

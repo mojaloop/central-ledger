@@ -18,7 +18,7 @@ const Participant = require('../../../src/domain/participant')
 // const NotificationHandler = require('../../../src/handlers/notification/handler')
 // const TransferProjection = require('../../../src/domain/transfer/projection')
 const TransferState = require('../../../src/domain/transfer/state')
-const TransferReadModel = require('../../../src/domain/transfer/models/transfers-read-model')
+const TransferReadModel = require('../../../src/domain/transfer/models/transfer-read-model')
 const Moment = require('moment')
 
 const transfer = {

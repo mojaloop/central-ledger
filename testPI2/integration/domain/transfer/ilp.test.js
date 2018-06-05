@@ -24,7 +24,6 @@
  --------------
  ******/
 
- /*
 'use strict'
 
 const Test = require('tape')
@@ -32,9 +31,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
-// const Model = require('../../../../src/domain/transfer/models/ilp-model')
-const Service = require('../../../../src/domain/transfer/ilp')
-// const TransferModel = require('../../../../src/domain/transfer/index')
+const Service = require('../../../../src/models/ilp')
 const HelperModule = require('../../helpers/index')
 
 Test('Ilp service tests', async (ilpTest) => {
@@ -101,7 +98,6 @@ Test('Ilp service tests', async (ilpTest) => {
           assert.end()
         }
       })
-      // assert.end()
     } catch (err) {
       Logger.error(`create all ilp objects failed with error - ${err}`)
       assert.fail(`Create all ilp objects failed - ${err}`)
@@ -187,7 +183,7 @@ Test('Ilp service tests', async (ilpTest) => {
   await ilpTest.test('update', async (assert) => {
     try {
       for (let ilp of ilpMap.values()) {
-        let result = await Service.update(ilp.transferId, {packet: 'new test packet'})
+        let result = await Service.update({ ilpId: ilp.ilpId, packet: 'new test packet' })
         let ilpDb = await Service.getByTransferId(ilp.transferId)
         assert.equal(result, 1, ' ilp is updated')
         assert.equal(ilp.ilpId, ilpDb.ilpId, ' ids match')
@@ -221,4 +217,3 @@ Test('Ilp service tests', async (ilpTest) => {
     }
   })
 })
-*/

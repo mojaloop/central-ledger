@@ -25,7 +25,7 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/domain/transfer/models/transfers-read-model')
+const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
 const TransferStatePreparationHelper = require('./transferState')
 const Model = require('../../../src/domain/transfer/models/transferStateChanges')
 

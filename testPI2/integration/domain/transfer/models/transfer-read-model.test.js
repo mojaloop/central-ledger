@@ -20,9 +20,11 @@
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+ * Deon Botha <deon.botha@modusbox.com>
  --------------
- ******/
+******/
 
 'use strict'
 
@@ -31,12 +33,11 @@ const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/domain/transfer/models/transfers-read-model')
+const Model = require('../../../../../src/domain/transfer/models/transfer-read-model')
 const HelperModule = require('../../../helpers/index')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
   let sandbox = Sinon.sandbox.create()
-  // let stateMap = new Map()
   var transferPrepareResult = {}
 
   await transferReadModelTest.test('setup', async (assert) => {
