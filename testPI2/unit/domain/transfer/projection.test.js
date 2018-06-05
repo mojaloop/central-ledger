@@ -165,7 +165,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       try {
         ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
         ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-        TransfersReadModel.saveTransfer.throws(new Error)
+        TransfersReadModel.saveTransfer.throws(new Error())
         await TransfersProjection.saveTransferPrepared(payload)
         test.fail('Error not thrown')
         test.end()
@@ -179,7 +179,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('save transfer throws error', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-      TransfersReadModel.saveTransfer.throws(new Error)
+      TransfersReadModel.saveTransfer.throws(new Error())
       extensionModel.saveExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
@@ -197,7 +197,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.returns(P.resolve())
-      extensionModel.saveExtension.throws(new Error)
+      extensionModel.saveExtension.throws(new Error())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
@@ -215,7 +215,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.returns(P.resolve())
       extensionModel.saveExtension.returns(P.resolve())
-      ilpModel.saveIlp.throws(new Error)
+      ilpModel.saveIlp.throws(new Error())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
         await TransfersProjection.saveTransferPrepared(payload)
@@ -233,7 +233,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       TransfersReadModel.saveTransfer.returns(P.resolve())
       extensionModel.saveExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
-      transferStateChangeModel.saveTransferStateChange.throws(new Error)
+      transferStateChangeModel.saveTransferStateChange.throws(new Error())
       try {
         await TransfersProjection.saveTransferPrepared(payload)
         test.fail('Error not thrown')
@@ -269,7 +269,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
 
     // Add negative tests
     rejectTest.test('save saveTransferRejected throws error', async (test) => {
-      transferStateChangeModel.getByTransferId.withArgs(payload.transferId).throws(new Error)
+      transferStateChangeModel.getByTransferId.withArgs(payload.transferId).throws(new Error())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
         await TransfersProjection.saveTransferRejected(stateReason, payload.transferId)
@@ -283,7 +283,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
 
     rejectTest.test('save saveTransferRejected throws error', async (test) => {
       transferStateChangeModel.getByTransferId.withArgs(payload.transferId).returns(P.resolve([]))
-      transferStateChangeModel.saveTransferStateChange.throws(new Error)
+      transferStateChangeModel.saveTransferStateChange.throws(new Error())
       try {
         await TransfersProjection.saveTransferRejected(stateReason, payload.transferId)
         test.fail('Error not thrown')

@@ -38,6 +38,8 @@ exports.prepareNeededData = async (tableName, data) => {
       return require('./transferState').prepareData()
     case 'transferStateChange':
       return require('./transferStateChange').prepareData()
+    case 'transferModel':
+      return require('./transferTestHelper').prepareData()
     default:
       throw new Error('Please provide a table name that has methods to insert its prepared data!')
   }
@@ -64,6 +66,11 @@ exports.deletePreparedData = async (tableName, data) => {
         throw new Error('Please provide transferId, payer and payee names in order to delete the prepared data!')
       }
       return require('./transferStateChange').deletePreparedData(data.transferId, data.payerName, data.payeeName)
+    case 'transferModel':
+      if (!data || !data.transferId || !data.payerName || !data.payeeName) {
+        throw new Error('Please provide transferId, payer and payee names in order to delete the prepared data!')
+      }
+      return require('./transferTestHelper').deletePreparedData(data.transferId, data.payerName, data.payeeName)
     default:
       throw new Error('Please provide a table name that has methods to delete its prepared data!')
   }

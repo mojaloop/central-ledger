@@ -38,11 +38,16 @@ const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
+const TransferState = require('../../domain/transfer/state')
+// const CryptoConditions = require('../../crypto-conditions')
+const FiveBellsCondition = require('five-bells-condition')
+const ilp = require('../../models/ilp')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFIL = 'fulfil'
 const REJECT = 'reject'
+const COMMIT = 'commit'
 
 /**
  * @method prepare
@@ -124,12 +129,67 @@ const prepare = async (error, messages) => {
   }
 }
 
-const fulfil = async () => {
-
+const fulfil = async (error, messages) => {
+  if (error) {
+    // Logger.error(error)
+    throw new Error()
+  }
+  let message = {}
+  try {
+    if (Array.isArray(messages)) {
+      message = messages[0]
+    } else {
+      message = messages
+    }
+    Logger.info('FulfilHandler::fulfil')
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, FULFIL))
+    const metadata = message.value.metadata
+    const transferId = message.value.id
+    const payload = message.value.content.payload
+    if (metadata.event.type === FULFIL && metadata.event.action === COMMIT) {
+      const existingTransfer = await TransferQueries.getById(transferId)
+      const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
+      if (!existingTransfer) {
+        Logger.info('FulfilHandler::fulfil::validationFailed::notFound')
+        await consumer.commitMessageSync(message)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        return true
+      // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
+      } else if (fulfilmentCondition !== existingTransfer.condition) { // TODO: FiveBellsCondition.fulfillmentToCondition always passes
+        Logger.info('FulfilHandler::fulfil::validationFailed::invalidFulfilment')
+        await consumer.commitMessageSync(message)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        return true
+      } else if (existingTransfer.transferState !== TransferState.RESERVED) {
+        Logger.info('FulfilHandler::fulfil::validationFailed::existingEntry')
+        await consumer.commitMessageSync(message)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        return true
+      } else { // validations success
+        Logger.info('FulfilHandler::fulfil::validationPassed')
+        await ilp.update({ilpId: existingTransfer.ilpId, fulfilment: payload.fulfilment})
+        await consumer.commitMessageSync(message)
+        await Utility.produceParticipantMessage(existingTransfer.payeeFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+        return true
+      }
+    } else if (metadata.event.type === FULFIL && metadata.event.action === REJECT) {
+      throw new Error('Not implemented')
+      // TODO: fulfil reject flow {2.2.1.} to be implemented here
+    } else {
+      Logger.info('FulfilHandler::fulfil::invalidEventAction')
+      await consumer.commitMessageSync(message)
+      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+      return true
+    }
+  } catch (error) {
+    Logger.error(error)
+    throw error
+  }
 }
 
 const reject = async () => {
-
+  // TODO: delete method and use fulfil reject condition (see line 177)
+  throw new Error('Not implemented')
 }
 /**
  * @method transfer
@@ -314,5 +374,7 @@ module.exports = {
   registerRejectHandler,
   registerAllHandlers,
   prepare,
+  fulfil,
+  reject,
   transfer
 }
