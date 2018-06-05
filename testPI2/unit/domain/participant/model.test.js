@@ -25,11 +25,11 @@
 
 'use strict'
 
-const Test = require('tape') // require('tapes')(require('tape')) //
+const Test = require('tape')
 const Sinon = require('sinon')
+const P = require('bluebird')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/domain/participant/model')
 
 Test('Participant model', async (participantTest) => {
@@ -57,12 +57,13 @@ Test('Participant model', async (participantTest) => {
     insert: sandbox.stub(),
     update: sandbox.stub(),
     findOne: sandbox.stub(),
-    find: sandbox.stub()
+    find: sandbox.stub(),
+    destroy: sandbox.stub()
   }
 
   await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = {name: 'fsp3'}
-    Db.participant.insert.withArgs({ name: falseParticipant.name }).throws(new Error('message'))
+    Db.participant.insert.withArgs({name: falseParticipant.name}).throws(new Error('message'))
     try {
       let r = await Model.create(falseParticipant)
       assert.comment(r)
@@ -75,7 +76,10 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('create participant', async (assert) => {
     try {
-      Db.participant.insert.withArgs({name: participantFixtures[0].name, currencyId: participantFixtures[0].currency}).returns(1)
+      Db.participant.insert.withArgs({
+        name: participantFixtures[0].name,
+        currencyId: participantFixtures[0].currency
+      }).returns(1)
       var result = await Model.create(participantFixtures[0])
       assert.ok(Sinon.match(result, 1), ` returns ${result}`)
       assert.end()
@@ -86,8 +90,25 @@ Test('Participant model', async (participantTest) => {
     }
   })
 
+  await participantTest.test('create participant should throw an error', async (test) => {
+    try {
+      Db.participant.insert.withArgs({
+        name: participantFixtures[0].name,
+        currencyId: participantFixtures[0].currency
+      }).throws(new Error())
+      var result = await Model.create(participantFixtures[0])
+      test.ok(Sinon.match(result, 1), ` returns ${result}`)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
   await participantTest.test('get with empty name', async (assert) => {
-    Db.participant.findOne.withArgs({ name: '' }).throws(new Error())
+    Db.participant.findOne.withArgs({name: ''}).throws(new Error())
     try {
       await Model.getByName('')
       assert.fail(' should throws with empty name ')
@@ -126,9 +147,23 @@ Test('Participant model', async (participantTest) => {
     }
   })
 
+  await participantTest.test('getAll should throw an error', async (test) => {
+    try {
+      Db.participant.find.throws(new Error())
+      var result = await Model.getAll()
+      test.deepEqual(result, participantFixtures)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`get all participants failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
   await participantTest.test('getById', async (assert) => {
     try {
-      Db.participant.findOne.withArgs({ participantId: 1 }).returns(participantFixtures[0])
+      Db.participant.findOne.withArgs({participantId: 1}).returns(participantFixtures[0])
       let participant = await Model.getById(1)
       assert.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       assert.end()
@@ -139,12 +174,26 @@ Test('Participant model', async (participantTest) => {
     }
   })
 
+  await participantTest.test('getById should fail', async (test) => {
+    try {
+      Db.participant.findOne.withArgs({participantId: 1}).throws(new Error())
+      let participant = await Model.getById(1)
+      test.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`get participant by Id failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
   await participantTest.test('update', async (assert) => {
     try {
       Db.participant.update.withArgs(
-        { participantId: 1 }, { isDisabled: 1 }
+        {participantId: 1}, {isDisabled: 1}
       ).returns(participantId)
-      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
+      let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
       assert.equal(updatedId, participantId)
       sandbox.restore()
       assert.end()
@@ -153,6 +202,55 @@ Test('Participant model', async (participantTest) => {
       sandbox.restore()
       assert.fail()
       assert.end()
+    }
+  })
+
+  await participantTest.test('update should throw an error', async (test) => {
+    try {
+      Db.participant.update.withArgs(
+        {participantId: 1}, {isDisabled: 1}
+      ).throws(new Error())
+      let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
+      test.equal(updatedId, participantId)
+      test.fail('Error not thrown')
+      sandbox.restore()
+      test.end()
+    } catch (err) {
+      Logger.error(`update participant failed with error - ${err}`)
+      test.pass('Error thrown')
+      sandbox.restore()
+      test.end()
+    }
+  })
+
+  await participantTest.test('destroyByName', async (assert) => {
+    try {
+      Db.participant.destroy.withArgs({name: participant.name}).returns(P.resolve(true))
+      const result = await Model.destroyByName(participant)
+      assert.equal(result, true)
+      sandbox.restore()
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroy participant failed with error - ${err}`)
+      sandbox.restore()
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyByName should throw an error', async (test) => {
+    try {
+      Db.participant.destroy.withArgs({name: participant.name}).throws(new Error())
+      const result = await Model.destroyByName(participant)
+      test.equal(result, true)
+      test.fail('Error not thrown')
+      sandbox.restore()
+      test.end()
+    } catch (err) {
+      Logger.error(`destroy participant failed with error - ${err}`)
+      test.pass('Error thrown')
+      sandbox.restore()
+      test.end()
     }
   })
 })

@@ -25,14 +25,14 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/domain/transfer/models/transfers-read-model')
-const Model = require('../../../src/domain/transfer/models/ilp-model')
+const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
+const Model = require('../../../src/models/ilp')
 
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
 
-    await Model.create({
+    await Model.saveIlp({
       transferId: transferResult.transferId,
       packet: 'test packet',
       condition: 'test condition',

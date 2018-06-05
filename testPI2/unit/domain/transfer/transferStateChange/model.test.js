@@ -25,11 +25,10 @@
 
 'use strict'
 
-const Test = require('tape') // require('tapes')(require('tape')) //
+const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Config = require('../../../../src/lib/config')
 const Model = require('../../../../../src/domain/transfer/models/transferStateChanges')
 
 Test('TransferStateChange model', async (transferStateChangeModel) => {
@@ -49,19 +48,23 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
   sandbox = Sinon.sandbox.create()
   Db.transferStateChange = {
     insert: sandbox.stub(),
+    truncate: sandbox.stub(),
     query: sandbox.stub()
   }
 
   let builderStub = sandbox.stub()
+  let selectStub = sandbox.stub()
   let orderStub = sandbox.stub()
   let firstStub = sandbox.stub()
-  builderStub.select = sandbox.stub()
+  builderStub.where = sandbox.stub()
 
   Db.transferStateChange.query.callsArgWith(0, builderStub)
   Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
-  builderStub.select.returns({
-    orderBy: orderStub.returns({
-      first: firstStub.returns(transferStateChangeModelFixtures[0])
+  builderStub.where.returns({
+    select: selectStub.returns({
+      orderBy: orderStub.returns({
+        first: firstStub.returns(transferStateChangeModelFixtures[0])
+      })
     })
   })
 
@@ -97,7 +100,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
 
   await transferStateChangeModel.test('get by transferId', async (assert) => {
     try {
-      var result = await Model.getByTransferId(1)
+      let result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferStateChangeModelFixtures[0])
       assert.end()
       sandbox.restore()
@@ -107,5 +110,46 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
       sandbox.restore()
       assert.end()
     }
+  })
+
+  await transferStateChangeModel.test('get by transferId', async (assert) => {
+    Db.transferStateChange.query.throws(new Error())
+    try {
+      await Model.getByTransferId(null)
+      assert.fail('should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+    sandbox.restore()
+  })
+
+  await transferStateChangeModel.test('truncateTransfers should throw an error', async (assert) => {
+    try {
+      Db.transferStateChange.truncate.throws(new Error())
+      await Model.truncate()
+      assert.ok(Db.transferStateChange.truncate.called)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+    sandbox.restore()
+  })
+
+  await transferStateChangeModel.test('transferStateChange truncate should', async (assert) => {
+    try {
+      Db.transferStateChange.truncate.returns(Promise.resolve())
+      await Model.truncate()
+      assert.ok(Db.transferStateChange.truncate.called)
+      assert.end()
+    } catch (err) {
+      Logger.error(`create participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+    sandbox.restore()
   })
 })

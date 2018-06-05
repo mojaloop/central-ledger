@@ -1,6 +1,6 @@
 'use strict'
 
-const TransfersReadModel = require('./models/transfers-read-model')
+const TransfersReadModel = require('./models/transfer-read-model')
 // const TransferStateChange = require('./models/transferStateChanges')
 
 const getAll = () => {

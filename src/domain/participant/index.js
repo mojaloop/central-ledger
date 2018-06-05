@@ -122,6 +122,7 @@ module.exports = {
   getAll,
   getById,
   getByName,
+  participantExists,
   update
   // verify,
   // updatePartyCredentials,
