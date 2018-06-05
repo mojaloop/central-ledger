@@ -36,7 +36,6 @@ const HelperModule = require('../../../helpers/index')
 
 Test('Transfer State Change model test', async (stateChangeTest) => {
   let sandbox = Sinon.sandbox.create()
-  // let stateMap = new Map()
   var stateChangePrepareResult = {}
   var latestInsertedTransferStateChange = {}
   await stateChangeTest.test('setup', async (assert) => {
@@ -59,7 +58,6 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
   await stateChangeTest.test('create state change test', async (assert) => {
     try {
       // Prepare helper tests actually the Model.saveExtension and Model.getByTransferId
-
       stateChangePrepareResult = await HelperModule.prepareNeededData('transferStateChange')
       assert.comment('the prepared data are: ', JSON.stringify(stateChangePrepareResult, null, 4))
 
@@ -78,7 +76,6 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.equal(createdId, result.transferStateChangeId, ' transferId match')
       assert.equal(transferStateChange.transferStateId, result.transferStateId, ' key match')
       assert.equal(transferStateChange.reason, result.reason, ' value match')
-      // assert.equal(transferStateChange.changedDate.toString(), result.changedDate.toString(), ' changedDate match') one second difference needs to be tackled
       latestInsertedTransferStateChange = result
       assert.end()
     } catch (err) {
@@ -106,7 +103,6 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
   })
 
   await stateChangeTest.test('create stateChange without transferStateId should throw error', async (assert) => {
-    // let state = stateChangePrepareResult.transferStateResults[0]
     try {
       await Model.saveTransferStateChange({
         transferId: stateChangePrepareResult.transfer.transferId,
@@ -121,23 +117,6 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.end()
     }
   })
-
-  // await stateChangeTest.test('create stateChange without changedDate should throw error', async (assert) => {
-  //   let state = stateChangePrepareResult.transferStateResults[0]
-  //   try {
-  //     await Model.saveTransferStateChange({
-  //       transferId: stateChangePrepareResult.transfer.transferId,
-  //       transferStateId: state.transferStateId,
-  //       reason: null
-  //     })
-  //     assert.fail('should throw')
-  //     assert.end()
-  //   } catch (err) {
-  //     Logger.error('create state change without transferStateId is failing with message ')
-  //     assert.ok((('message' in err) && ('stack' in err)), err.message)
-  //     assert.end()
-  //   }
-  // })
 
   await stateChangeTest.test('getByTransferId', async (assert) => {
     try {

@@ -26,11 +26,10 @@
 
 'use strict'
 
-const Test = require('tape') // require('tapes')(require('tape')) //
+const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Config = require('../../../../src/lib/config')
 const Model = require('../../../../../src/domain/transfer/models/transferStates')
 
 Test('transferState model', async (transferStateTest) => {
@@ -131,19 +130,6 @@ Test('transferState model', async (transferStateTest) => {
       assert.end()
     }
   })
-
-  // await transferStateTest.test('truncateTransferStates', async (assert) => {
-  //   Db.transferState.truncate.returns(true)
-  //   try {
-  //     var result = await Model.truncateTransferStates()
-  //     assert.deepEqual(result, true)
-  //     assert.end()
-  //   } catch (err) {
-  //     Logger.error(`truncate all transfer states failed with error - ${err}`)
-  //     assert.fail(`truncate all transfer states failed with error - ${err}`)
-  //     assert.end()
-  //   }
-  // })
 
   await transferStateTest.test('destroyTransferStates false transferState', async (assert) => {
     Db.transferState.destroy.throws(new Error('False destroyTransferStates transferState'))

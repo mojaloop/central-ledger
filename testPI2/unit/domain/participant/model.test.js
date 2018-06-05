@@ -25,12 +25,11 @@
 
 'use strict'
 
-const Test = require('tape') // require('tapes')(require('tape')) //
+const Test = require('tape')
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/domain/participant/model')
 
 Test('Participant model', async (participantTest) => {

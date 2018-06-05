@@ -26,11 +26,10 @@
 
 'use strict'
 
-const Test = require('tape') // require('tapes')(require('tape')) //
+const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Config = require('../../../../src/lib/config')
 const Model = require('../../../../../src/models/ilp')
 
 Test('Ilp model', async (ilpTest) => {
@@ -218,48 +217,3 @@ Test('Ilp model', async (ilpTest) => {
     }
   })
 })
-
-//   await ilpTest.test('update false ilp', async (assert) => {
-//     try {
-//       for (let ilp of ilpMap.values()) {
-//         await Service.update(0)
-//         assert.fail(' should throws with empty transferId ')
-//       }
-//       assert.end()
-//     } catch (err) {
-//       assert.assert(err instanceof Error, ` throws ${err} `)
-//       assert.end()
-//     }
-//   })
-
-//   await ilpTest.test('update', async (assert) => {
-//     try {
-//       for (let ilp of ilpMap.values()) {
-//         let updated = await Service.update(ilp.transferId, { packet: 'new test packet' })
-//         assert.equal(updated, ilp.ilpId)
-//       }
-//       sandbox.restore()
-//       assert.end()
-//     } catch (err) {
-//       Logger.error(`update ilp failed with error - ${err}`)
-//       assert.fail(`update ilp failed with error - ${err}`)
-//       sandbox.restore()
-//       assert.end()
-//     }
-//   })
-// })
-//   await ilpTest.test('update', async (assert) => {
-//     try {
-//       for (let ilp of ilpMap.values()) {
-//         let updated = await Service.update(ilp.transferId, { packet: 'new test packet' })
-//         assert.equal(updated, ilp.ilpId)
-//       }
-//       sandbox.restore()
-//       assert.end()
-//     } catch (err) {
-//       Logger.error(`update ilp failed with error - ${err}`)
-//       assert.fail(`update ilp failed with error - ${err}`)
-//       sandbox.restore()
-//       assert.end()
-//     }
-//   })

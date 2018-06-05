@@ -31,7 +31,6 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/domain/transfer/models/transfers-read-model')
 const TransferState = require('../../../../src/domain/transfer/state')
 const extensionModel = require('../../../../src/models/extensions')

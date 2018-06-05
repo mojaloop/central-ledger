@@ -96,7 +96,6 @@ Test('Extension model test', async (extensionTest) => {
           assert.end()
         }
       })
-      // assert.end()
     } catch (err) {
       Logger.error(`create all extension objects failed with error - ${err}`)
       assert.fail(`Create all extension objects failed - ${err}`)

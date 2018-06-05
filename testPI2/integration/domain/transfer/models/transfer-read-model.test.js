@@ -36,7 +36,6 @@ const HelperModule = require('../../../helpers/index')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
   let sandbox = Sinon.sandbox.create()
-  // let stateMap = new Map()
   var transferPrepareResult = {}
 
   await transferReadModelTest.test('setup', async (assert) => {
