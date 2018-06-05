@@ -25,7 +25,7 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/domain/transfer/models/transfers-read-model')
+const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
 const Model = require('../../../src/models/extensions')
 
 // const returnObject = {
