@@ -55,7 +55,7 @@ const COMMIT = 'commit'
 
 // This errorCode and errorDescription are dummy values until a rules engine is established
 const errorCode = 3100
-const errorDescription = 'Generic validation error to be used for not disclosing information that may be considered private.'
+const errorDescription = 'Generic validation error'
 
 /**
  * @function TransferPrepareHandler
