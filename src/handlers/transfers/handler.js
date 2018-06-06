@@ -53,6 +53,10 @@ const FULFIL = 'fulfil'
 const REJECT = 'reject'
 const COMMIT = 'commit'
 
+// This errorCode and errorDescription are dummy values until a rules engine is established
+const errorCode = 3100
+const errorDescription = 'Generic validation error to be used for not disclosing information that may be considered private.'
+
 /**
  * @function TransferPrepareHandler
  *
@@ -104,7 +108,8 @@ const prepare = async (error, messages) => {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
         await consumer.commitMessageSync(message)
         // notification of duplicate to go here
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
         return true
       }
     } else {
@@ -116,14 +121,16 @@ const prepare = async (error, messages) => {
         await TransferHandler.prepare(payload, reasons.toString(), false)
         // notification of prepare transfer to go here
         await consumer.commitMessageSync(message)
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
         // const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await consumer.commitMessageSync(message)
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
         return true
       }
     }

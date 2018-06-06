@@ -66,7 +66,7 @@ const messageProtocol = {
   to: transfer.payeeFsp,
   type: 'application/json',
   content: {
-    header: '',
+    header: {},
     payload: transfer
   },
   metadata: {
@@ -185,6 +185,8 @@ Test('Transfer handler', transferHandlerTest => {
     prepareTest.test('not persist duplicate transfer to database', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      Utility.createState.returns(messageProtocol.metadata.event.state)
       Validator.validateByName.returns({validationPassed: true, reasons: []})
       TransferQueries.getById.returns(P.resolve({}))
       TransferHandler.prepare.returns(P.resolve(true))
@@ -196,6 +198,8 @@ Test('Transfer handler', transferHandlerTest => {
     prepareTest.test('fail validation and persist REJECTED transfer to database', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      Utility.createState.returns(messageProtocol.metadata.event.state)
       Validator.validateByName.returns({validationPassed: false, reasons: []})
       TransferQueries.getById.returns(P.resolve(null))
       TransferHandler.prepare.returns(P.resolve(true))
@@ -207,6 +211,8 @@ Test('Transfer handler', transferHandlerTest => {
     prepareTest.test('fail validation and duplicate entry should be updated to REJECTED and persisted to database', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      Utility.createState.returns(messageProtocol.metadata.event.state)
       Validator.validateByName.returns({validationPassed: false, reasons: []})
       TransferQueries.getById.returns(P.resolve({}))
       TransferHandler.reject.returns(P.resolve(true))
@@ -219,6 +225,8 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Utility.transformAccountToTopicName.returns(topicName)
+        Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+        Utility.createState.returns(messageProtocol.metadata.event.state)
         Validator.validateByName.returns({validationPassed: true, reasons: []})
         TransferQueries.getById.returns(P.resolve(null))
         TransferHandler.prepare.throws(new Error())
