@@ -341,8 +341,12 @@ const registerRejectHandler = async () => {
 const registerPrepareHandlers = async () => {
   try {
     const participantNames = await DAO.retrieveAllParticipants()
-    for (let name of participantNames) {
-      await createPrepareHandler(name)
+    if (participantNames.length !== 0) {
+      for (let name of participantNames) {
+        await createPrepareHandler(name)
+      }
+    } else {
+      Logger.info('No participants for prepare handler creation')
     }
     return true
   } catch (e) {

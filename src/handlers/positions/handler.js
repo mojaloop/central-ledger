@@ -115,8 +115,12 @@ const createPositionHandler = async (participantName) => {
 const registerPositionHandlers = async () => {
   try {
     const participantList = await DAO.retrieveAllParticipants()
-    for (let name of participantList) {
-      await createPositionHandler(name)
+    if (participantList.length !== 0) {
+      for (let name of participantList) {
+        await createPositionHandler(name)
+      }
+    } else {
+      Logger.info('No participants for position handler creation')
     }
   } catch (error) {
     Logger.error(error)

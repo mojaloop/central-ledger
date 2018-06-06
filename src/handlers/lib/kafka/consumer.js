@@ -59,6 +59,7 @@ const createHandler = async (topicName, config, command) => {
     listOfConsumers[topicName] = consumer
   }).catch((e) => {
     Logger.error(e)
+    Logger.info('Consumer error has occurred')
     throw e
   })
 }

@@ -103,6 +103,7 @@ const validateConditionAndExpiration = async (payload) => {
     return false
   }
   try {
+    payload.condition = 'ni:///sha-256;' + payload.condition + '?fpt=preimage-sha-256&cost=0'
     await CryptoConditions.validateCondition(payload.condition)
   } catch (e) {
     reasons.push('Condition validation failed')
