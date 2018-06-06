@@ -4,7 +4,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
-const TransferReadModel = require('../../../../src/domain/transfer/models/transfers-read-model')
+const TransferReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
 const TransferQueries = require('../../../../src/domain/transfer/queries')
 
 Test('Transfer Queries tests', queriesTest => {

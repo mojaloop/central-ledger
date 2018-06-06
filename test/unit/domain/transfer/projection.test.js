@@ -10,7 +10,7 @@ const UrlParser = require('../../../../src/lib/urlparser')
 const ParticipantService = require('../../../../src/domain/participant')
 const TransferState = require('../../../../src/domain/transfer/state')
 const TransferRejectionType = require('../../../../src/domain/transfer/rejection-type')
-const TransfersReadModel = require('../../../../src/domain/transfer/models/transfers-read-model')
+const TransfersReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
 
 const hostname = 'http://some-host'

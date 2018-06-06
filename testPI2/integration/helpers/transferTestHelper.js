@@ -28,8 +28,8 @@ const TransferPreparationModule = require('./transfer')
 const TransferStatePreparationHelper = require('./transferState')
 const StateChangeModel = require('../../../src/domain/transfer/models/transferStateChanges')
 const ExtensionModel = require('../../../src/models/extensions')
-const IlpModel = require('../../../src/domain/transfer/models/ilp-model')
-const TransferModel = require('../../../src/domain/transfer/models/transfers-read-model')
+const IlpModel = require('../../../src/models/ilp')
+const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
 
 // const preparedData = {
 //   'ilp': {
@@ -136,7 +136,7 @@ exports.prepareData = async () => {
 
     })
 
-    await IlpModel.create({
+    await IlpModel.saveIlp({
       transferId: transferResult.transferId,
       packet: 'test packet',
       condition: 'test condition',
