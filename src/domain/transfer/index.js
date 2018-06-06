@@ -99,6 +99,17 @@ const getFulfillment = (id) => {
     })
 }
 
+/**
+ * @function prepare
+ *
+ * @description Create a prepare transfer and persist it to the database
+ * Returns the prepared transfer object
+ * @param {Object} payload transfer object to be prepared
+ * @param {Object} stateReason Defaults to Null
+ * @param {boolean} hasPassedValidation defaults to true
+ * @returns {Object} Prepared transfer objectTransfer
+ * @throws {Exception}
+ */
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
     const result = await Commands.prepare(payload, stateReason, hasPassedValidation)
@@ -110,9 +121,18 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   }
 }
 
+/**
+ * @function reject
+ *
+ * @description Rejects a prepared transfer record
+ * Returns an object with the alreadyRejected indicator value and the transfer state change value
+ * @param {String} stateReason Rejection state change reason
+ * @param {string} transferId Transfer Id of the transfer record to be rejected
+ * @returns {Object} Rejected transfer object
+ * @throws {Exception}
+ */
 const reject = async (stateReason, transferId) => {
   const {alreadyRejected, transferStateChange} = await Commands.reject(stateReason, transferId)
-  // const t = Translator.toTransfer(result)
   if (!alreadyRejected) {
     Events.emitTransferRejected(transferStateChange)
   }
@@ -126,10 +146,12 @@ const expire = (id) => {
 /**
  * @function fulfil
  *
- * @description Registers the handler for each participant topic created. Gets Kafka config from default.json
- *
- * Calls createHandler to register the handler against the Stream Processing API
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ * @description Persists a transfer as fulfilled to the database
+ * Returns a transfer object that was fulfilled
+ * @param {Obj} fulfilment Transfer object to be fulfilled
+ * @returns {Promise} Promise object represents the fulfilled transfer
+ * @throws {UnpreparedTransferError}
+ * @throws {ExpiredTransferError}
  */
 const fulfil = (fulfilment) => {
   return Commands.fulfil(fulfilment)
@@ -148,6 +170,13 @@ const fulfil = (fulfilment) => {
     })
 }
 
+/**
+ * @function rejectExpired
+ *
+ * @description Runs through all expired transfers and set them to rejected
+ * Returns a map of expired transfers that were succesfully rejected
+ * @returns {Promise} Map of rejected transfer id's
+ */
 const rejectExpired = () => {
   const rejections = TransferQueries.findExpired().then(expired => expired.map(x => expire(x.transferId)))
   return P.all(rejections).then(rejections => {
@@ -155,6 +184,15 @@ const rejectExpired = () => {
   })
 }
 
+/**
+ * @function settle
+ *
+ * @async
+ * @description Generates an settlement id for each transfer that can been settled
+ * Returns an object of settled transfers
+ * @returns {Promise} Object transfers settled
+ * @returns {Promise} Resolved promise or a object of settled transfers
+ */
 const settle = async () => {
   const settlementId = SettlementModel.generateId()
   const settledTransfers = SettlementModel.create(settlementId, 'transfer').then(() => {
