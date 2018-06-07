@@ -104,11 +104,18 @@ const saveTransferRejected = async (stateReason, transferId) => {
 
     let existingAbort = false
     let transferStateChange
-    for (let transferState of existingTransferStateChanges) {
-      if (transferState.transferStateId === TransferState.ABORTED) {
+    if (Array.isArray(existingTransferStateChanges)) {
+      for (let transferState of existingTransferStateChanges) {
+        if (transferState.transferStateId === TransferState.ABORTED) {
+          existingAbort = true
+          transferStateChange = transferState
+          break
+        }
+      }
+    } else {
+      if (existingTransferStateChanges.transferStateId === TransferState.ABORTED) {
         existingAbort = true
-        transferStateChange = transferState
-        break
+        transferStateChange = existingTransferStateChanges
       }
     }
     if (!existingAbort) {

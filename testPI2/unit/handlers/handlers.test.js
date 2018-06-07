@@ -6,7 +6,6 @@ const P = require('bluebird')
 const Handlers = require('../../../src/handlers/handlers')
 const TransferHandler = require('../../../src/handlers/transfers/handler')
 const PositionHandler = require('../../../src/handlers/positions/handler')
-const NotificationHandler = require('../../../src/handlers/notification/handler')
 
 Test('handlers', handlersTest => {
   let sandbox
@@ -14,7 +13,6 @@ Test('handlers', handlersTest => {
   handlersTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(PositionHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(NotificationHandler, 'registerAllHandlers').returns(P.resolve(true))
     test.end()
   })
 

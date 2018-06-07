@@ -31,6 +31,10 @@
 
 'use strict'
 
+/**
+ * @module src/handlers/lib
+ */
+
 const Config = require('../../lib/config')
 const Mustache = require('mustache')
 const KafkaConfig = Config.KAFKA_CONFIG
@@ -41,18 +45,18 @@ const Kafka = require('./kafka')
 /**
  * The Producer config required
  *
- * This ENUM is for the PRODUCER of the topic being created
+ * @description This ENUM is for the PRODUCER of the topic being created
  *
- * @typedef {object} ENUMS~PRODUCER
+ * @enum {object} ENUMS~PRODUCER
  * @property {string} PRODUCER - PRODUCER config to be fetched
  */
 const PRODUCER = 'PRODUCER'
 /**
  * The Consumer config required
  *
- * This ENUM is for the CONSUMER of the topic being created
+ * @description This ENUM is for the CONSUMER of the topic being created
  *
- * @typedef {object} ENUMS~CONSUMER
+ * @enum {object} ENUMS~CONSUMER
  * @property {string} CONSUMER - CONSUMER config to be fetched
  */
 const CONSUMER = 'CONSUMER'
@@ -60,9 +64,9 @@ const CONSUMER = 'CONSUMER'
 /**
  * The Notification config required
  *
- * This ENUM is for the notification message being created
+ * @description This ENUM is for the notification message being created
  *
- * @typedef {object} ENUMS~NOTIFICATION
+ * @enum {object} ENUMS~NOTIFICATION
  * @property {string} NOTIFICATION - notification to be used to update metadata
  */
 const NOTIFICATION = 'notification'
@@ -70,9 +74,9 @@ const NOTIFICATION = 'notification'
 /**
  * The Position config required
  *
- * This ENUM is for the Position message being created
+ * @description This ENUM is for the Position message being created
  *
- * @typedef {object} ENUMS~POSITION
+ * @enum {object} ENUMS~POSITION
  * @property {string} POSITION - position to be used to update metadata
  */
 const POSITION = 'position'
@@ -80,9 +84,9 @@ const POSITION = 'position'
 /**
  * The EVENT config required
  *
- * This ENUM is for the topic being created
+ * @description This ENUM is for the topic being created
  *
- * @typedef {object} ENUMS~EVENT
+ * @enum {object} ENUMS~EVENT
  * @property {string} EVENT - event to be used get the config for Kafka
  */
 const EVENT = 'event'
@@ -94,7 +98,7 @@ const EVENT = 'event'
  *
  * This ENUM is for the state of the message being created
  *
- * @typedef {object} ENUMS~STATE
+ * @enum {object} ENUMS~STATE
  * @property {string} STATE - used for the state of the message
  */
 const STATE = {
@@ -113,9 +117,9 @@ const STATE = {
 /**
  * ENUMS
  *
- * Global ENUMS object
+ * @description Global ENUMS object
  *
- * @typedef {object} ENUMS
+ * @enum {object} ENUMS
  * @property {string} PRODUCER - This ENUM is for the PRODUCER
  * @property {string} CONSUMER - This ENUM is for the CONSUMER
  */
@@ -129,13 +133,13 @@ const ENUMS = {
 }
 
 /**
- * @method ParticipantTopicTemplate
+ * @function ParticipantTopicTemplate
+ *
+ * @description Generates a participant topic name from the 3 inputs which are used in the placeholder topic template for participants found in the default.json
  *
  * @param {string} participantName - participant name, retrieved from database. Example: 'dfsp1'
  * @param {string} functionality - the functionality flow. Example: 'transfer'
  * @param {string} action - the action that applies to the flow. Example: 'prepare'
- *
- * Generates a participant topic name from the 3 inputs which are used in the placeholder topic template for participants found in the default.json
  *
  * @returns {string} - Returns topic name to be created, throws error if failure occurs
  */
@@ -153,12 +157,12 @@ const participantTopicTemplate = (participantName, functionality, action) => {
 }
 
 /**
- * @method GeneralTopicTemplate
+ * @function GeneralTopicTemplate
+ *
+ * @description Generates a general topic name from the 2 inputs, which are used in the placeholder general topic template found in the default.json
  *
  * @param {string} functionality - the functionality flow. Example: 'transfer'
  * @param {string} action - the action that applies to the flow. Example: 'prepare'
- *
- * Generates a general topic name from the 2 inputs, which are used in the placeholder general topic template found in the default.json
  *
  * @returns {string} - Returns topic name to be created, throws error if failure occurs
  */
@@ -172,13 +176,12 @@ const generalTopicTemplate = (functionality, action) => {
 }
 
 /**
- * @method TransformGeneralTopicName
+ * @function TransformGeneralTopicName
+ *
+ * @description generalTopicTemplate called which generates a general topic name from the 2 inputs, which are used in the placeholder general topic template found in the default.json
  *
  * @param {string} functionality - the functionality flow. Example: 'transfer'
  * @param {string} action - the action that applies to the flow. Example: 'prepare'
- *
- * @function generalTopicTemplate called which generates a general topic name from the 2 inputs,
- * which are used in the placeholder general topic template found in the default.json
  *
  * @returns {string} - Returns topic name to be created, throws error if failure occurs
  */
@@ -191,14 +194,13 @@ const transformGeneralTopicName = (functionality, action) => {
 }
 
 /**
- * @method TransformGeneralTopicName
+ * @function TransformGeneralTopicName
+ *
+ * @description participantTopicTemplate called which generates a participant topic name from the 3 inputs, which are used in the placeholder participant topic template found in the default.json
  *
  * @param {string} participantName - participant name, retrieved from database. Example: 'dfsp1'
  * @param {string} functionality - the functionality flow. Example: 'transfer'
  * @param {string} action - the action that applies to the flow. Example: 'prepare'
- *
- * @function participantTopicTemplate called which generates a participant topic name from the 3 inputs,
- * which are used in the placeholder participant topic template found in the default.json
  *
  * @returns {string} - Returns topic name to be created, throws error if failure occurs
  */
@@ -211,14 +213,13 @@ const transformAccountToTopicName = (participantName, functionality, action) => 
 }
 
 /**
- * @method GetKafkaConfig
+ * @function GetKafkaConfig
+ *
+ * @description participantTopicTemplate called which generates a participant topic name from the 3 inputs, which are used in the placeholder participant topic template found in the default.json
  *
  * @param {string} flow - This is required for the config for the Stream Processing API. Example: 'CONSUMER' ie: note the case of text
  * @param {string} functionality - the functionality flow. Example: 'TRANSFER' ie: note the case of text
  * @param {string} action - the action that applies to the flow. Example: 'PREPARE' ie: note the case of text
- *
- * @function participantTopicTemplate called which generates a participant topic name from the 3 inputs,
- * which are used in the placeholder participant topic template found in the default.json
  *
  * @returns {string} - Returns topic name to be created, throws error if failure occurs
  */
@@ -235,11 +236,11 @@ const getKafkaConfig = (flow, functionality, action) => {
 }
 
 /**
- * @method updateMessageProtocolMetadata
+ * @function updateMessageProtocolMetadata
  *
  * @param {object} messageProtocol - The current messageProtocol from kafka
  * @param {string} metadataType - the action flow. Example: 'prepare'
- * @param {object} state - the tate of the message being passed.
+ * @param {object} state - the state of the message being passed.
  * Example:
  * SUCCESS: {
  *   status: 'success',
@@ -258,7 +259,60 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => 
 }
 
 /**
- * @method createTransferMessageProtocol
+ * @function createPrepareErrorStatus
+ *
+ * @param {number} errorCode - error code for error occurred
+ * @param {string} errorDescription - error description for error occurred
+ * @param {object} extensionList - list of extensions
+ * Example:
+ * errorInformation: {
+ *   errorCode: 3001,
+ *   errorDescription: 'A failure has occurred',
+ *   extensionList: [{
+ *      extension: {
+ *        key: 'key',
+ *        value: 'value'
+ *      }
+ *   }]
+ * }
+ *
+ * @returns {object} - Returns errorInformation object
+ */
+const createPrepareErrorStatus = (errorCode, errorDescription, extensionList) => {
+  return {
+    errorInformation: {
+      errorCode,
+      errorDescription,
+      extensionList
+    }
+  }
+}
+
+/**
+ * @function createState
+ *
+ * @param {string} status - status of message
+ * @param {number} code - error code
+ * @param {string} description - description of error
+ * @example:
+ * errorInformation: {
+ *   status: 'error',
+ *   code: 3100,
+ *   description: 'error message'
+ * }
+ *
+ * @returns {object} - Returns errorInformation object
+ */
+const createState = (status, code, description) => {
+  return {
+    status,
+    code,
+    description
+  }
+}
+
+/**
+ * @function createTransferMessageProtocol
  *
  * @param {object} payload - The payload of the api request
  * @param {string} type - the type flow. Example: 'prepare'
@@ -299,7 +353,7 @@ const createTransferMessageProtocol = (payload, type, action, state, pp = '') =>
 }
 
 /**
- * @method createParticipantTopicConf
+ * @function createParticipantTopicConfig
  *
  * @param {string} participantName - The participant name
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
@@ -319,7 +373,7 @@ const createParticipantTopicConf = (participantName, functionality, action, part
 }
 
 /**
- * @method createGeneralTopicConf
+ * @function createGeneralTopicConfig
  *
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
  * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
@@ -338,20 +392,20 @@ const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey 
 }
 
 /**
- * @method produceGeneralMessage
+ * @function produceGeneralMessage
  *
  * @async
- * This is an async method that produces a message against a generated Kafka topic. it is called multiple times
+ * @description This is an async method that produces a message against a generated Kafka topic. it is called multiple times
+ *
+ * Kafka.Producer.produceMessage called to persist the message to the configured topic on Kafka
+ * Utility.updateMessageProtocolMetadata called updates the messages metadata
+ * Utility.createGeneralTopicConf called dynamically generates the general topic configuration
+ * Utility.getKafkaConfig called dynamically gets Kafka configuration
  *
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
  * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
  * @param {object} message - a list of messages to consume for the relevant topic
  * @param {object} state - state of the message being produced
- *
- * @function Kafka.Producer.produceMessage to persist the message to the configured topic on Kafka
- * @function Utility.updateMessageProtocolMetadata updates the messages metadata
- * @function Utility.createGeneralTopicConf dynamically generates the general topic configuration
- * @function Utility.getKafkaConfig dynamically gets Kafka configuration
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
@@ -362,21 +416,22 @@ const produceGeneralMessage = async (functionality, action, message, state) => {
 }
 
 /**
- * @method produceParticipantMessage
+ * @function produceParticipantMessage
  *
  * @async
- * This is an async method that produces a message against a Kafka generated topic for a specific participant. it is called multiple times
+ *
+ * @description This is an async method that produces a message against a Kafka generated topic for a specific participant. it is called multiple times
+ *
+ * Kafka.Producer.produceMessage called to persist the message to the configured topic on Kafka
+ * Utility.updateMessageProtocolMetadata called updates the messages metadata
+ * Utility.createParticipantTopicConf called dynamically generates the topic configuration with a participant name
+ * Utility.getKafkaConfig called dynamically gets Kafka configuration
  *
  * @param {string} participantName - the name of the participant for topic creation
  * @param {string} functionality - the functionality flow. Example: 'transfer' ie: note the case of text
  * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
  * @param {object} message - a list of messages to consume for the relevant topic
  * @param {object} state - state of the message being produced
- *
- * @function Kafka.Producer.produceMessage to persist the message to the configured topic on Kafka
- * @function Utility.updateMessageProtocolMetadata updates the messages metadata
- * @function Utility.createParticipantTopicConf dynamically generates the topic configuration with a participant name
- * @function Utility.getKafkaConfig dynamically gets Kafka configuration
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
@@ -390,6 +445,8 @@ exports.transformAccountToTopicName = transformAccountToTopicName
 exports.transformGeneralTopicName = transformGeneralTopicName
 exports.getKafkaConfig = getKafkaConfig
 exports.updateMessageProtocolMetadata = updateMessageProtocolMetadata
+exports.createPrepareErrorStatus = createPrepareErrorStatus
+exports.createState = createState
 exports.createTransferMessageProtocol = createTransferMessageProtocol
 exports.createParticipantTopicConf = createParticipantTopicConf
 exports.createGeneralTopicConf = createGeneralTopicConf

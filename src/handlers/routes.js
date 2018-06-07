@@ -32,21 +32,20 @@
 
 /**
  * Kafka Consumer Handler Routes
- * @module Routes
+ * @module src/handlers
  */
 
 const RegisterAllHandler = require('./handlers')
 const TransferHandler = require('./transfers/handler')
 const PositionHandler = require('./positions/handler')
-const NotificationHandler = require('./notification/handler')
 const testProducer = require('../../testPI2/integration/helpers/testProducer')
 
 module.exports = [
   /**
-   * @method POST
+   * @function RegisterAllHandlersRoute
    *
    * @async
-   * Registers all consumer handlers for all participants
+   * @description Registers all consumer handlers for all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -59,10 +58,10 @@ module.exports = [
     }
   },
   /**
-   * @method POST
+   * @function RegisterAllTransferHandlersRoute
    *
    * @async
-   * Registers all consumer handlers for all transfers processes for all participants
+   * @description Registers all consumer handlers for all transfers processes for all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -75,10 +74,10 @@ module.exports = [
     }
   },
   /**
-   * @method POST
+   * @function RegisterPrepareHandlerRoute
    *
    * @async
-   * Registers consumer handlers for prepare transfer all participants
+   * @description Registers consumer handlers for prepare transfer all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -91,10 +90,10 @@ module.exports = [
     }
   },
   /**
-   * @method POST
+   * @function RegisterFulfilHandlerRoute
    *
    * @async
-   * Registers consumer handlers for fulfil transfer this is one topic for all transfers as fulfills do not need to keep order
+   * @description Registers consumer handlers for fulfil transfer this is one topic for all transfers as fulfills do not need to keep order
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -107,10 +106,10 @@ module.exports = [
     }
   },
   /**
-   * @method POST
+   * @function RegisterRejectHandlerRoute
    *
    * @async
-   * Registers consumer handlers for reject transfer this is one topic for all transfers as rejects do not need to keep order
+   * @description Registers consumer handlers for reject transfer this is one topic for all transfers as rejects do not need to keep order
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -123,10 +122,10 @@ module.exports = [
     }
   },
   /**
-   * @method POST
+   * @function RegisterAllPositionHandlersRoute
    *
    * @async
-   * Registers consumer handlers for positions all participants
+   * @description Registers consumer handlers for positions all participants
    * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
    */
   {
@@ -136,22 +135,6 @@ module.exports = [
     options: {
       id: 'position',
       description: 'Register position Kafka consumer handler'
-    }
-  },
-  /**
-   * @method POST
-   *
-   * @async
-   * Registers consumer handlers for notifications this is one topic for all participants
-   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-   */
-  {
-    method: 'POST',
-    path: '/register/notification/all',
-    handler: NotificationHandler.registerNotificationHandler,
-    options: {
-      id: 'notification',
-      description: 'Register notification Kafka consumer handler'
     }
   },
 

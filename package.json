@@ -52,7 +52,8 @@
     "docker:build:admin": "docker build --no-cache -f admin.Dockerfile -t $npm_package_config_images_admin:latest .",
     "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml stop",
     "docker:rm": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml rm -f -v",
-    "docker:clean": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml down --rmi local"
+    "docker:clean": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml down --rmi local",
+    "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json"
   },
   "dependencies": {
     "@mojaloop/central-services-auth": "0.2.0",
@@ -69,6 +70,7 @@
     "continuation-local-storage": "3.2.0",
     "deasync-promise": "1.0.1",
     "decimal.js": "9.0.1",
+    "docdash": "^0.4.0",
     "enjoi": "^3.2.2",
     "five-bells-condition": "5.0.1",
     "flat": "4.0.0",
@@ -82,6 +84,7 @@
     "hapi-swagger": "9.0.2",
     "inert": "5.1.0",
     "joi": "13.1.2",
+    "jsdoc": "^3.5.5",
     "json2csv": "3.11.5",
     "jsonwebtoken": "8.1.1",
     "knex": "0.14.2",
@@ -101,7 +104,7 @@
     "ws": "4.0.0"
   },
   "optionalDependencies": {
-    "pg": "7.4.1"
+    "mysql": "^2.15.0"
   },
   "devDependencies": {
     "aws-sdk": "2.16.0",

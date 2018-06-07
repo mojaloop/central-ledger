@@ -30,6 +30,10 @@
  ******/
 'use strict'
 
+/**
+ * @module src/handlers/positions
+ */
+
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
@@ -78,12 +82,12 @@ const positions = async (error, messages) => {
 }
 
 /**
- * @method CreatePositionHandler
+ * @function CreatePositionHandler
  *
  * @async
- * Registers the handler for each participant topic created. Gets Kafka config from default.json
+ * @description Registers the handler for each participant topic created. Gets Kafka config from default.json
  *
- * @function Calls createHandler to register the handler against the Stream Processing API
+ * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const createPositionHandler = async (participantName) => {
@@ -100,19 +104,23 @@ const createPositionHandler = async (participantName) => {
   }
 }
 
-/*
- * @method RegisterPositionsHandlers
+/**
+ * @function RegisterPositionsHandlers
  *
  * @async
- * Registers the position handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * @function createPositionHandler called to create the handler for each participant
+ * @description Registers the position handlers for all participants. Retrieves the list of all participants from the database and loops through each
+ * createPositionHandler called to create the handler for each participant
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPositionHandlers = async () => {
   try {
     const participantList = await DAO.retrieveAllParticipants()
-    for (let name of participantList) {
-      await createPositionHandler(name)
+    if (participantList.length !== 0) {
+      for (let name of participantList) {
+        await createPositionHandler(name)
+      }
+    } else {
+      Logger.info('No participants for position handler creation')
     }
   } catch (error) {
     Logger.error(error)
@@ -121,10 +129,10 @@ const registerPositionHandlers = async () => {
 }
 
 /**
- * @method RegisterAllHandlers
+ * @function RegisterAllHandlers
  *
  * @async
- * Registers all handlers in positions
+ * @description Registers all handlers in positions
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */

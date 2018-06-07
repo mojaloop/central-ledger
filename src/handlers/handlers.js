@@ -1,4 +1,5 @@
 /*****
+ * @file This registers all handlers for the central-ledger API
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
@@ -31,11 +32,15 @@
 'use strict'
 
 /**
- * @method RegisterAllHandlers
+ * @module src/handlers
+ */
+
+/**
+ * @function RegisterAllHandlers
  *
  * @async
- * Registers all handlers by using the require-glob to retrieve all handler exports in sub directories and access the registerAllHandlers()
- * in each of them. Every handler in the **\/handlers must have a registerAllHandlers() function
+ * @description Registers all handlers by using the require-glob to retrieve all handler exports in sub directories and access the registerAllHandlers()
+ * in each of them. Every handler in the sub-folders must have a registerAllHandlers() function
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 
