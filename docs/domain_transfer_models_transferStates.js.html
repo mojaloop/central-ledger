@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>domain/transfer/models/transferStates.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-src_domain_transfer.html">src/domain/transfer</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer.html#~fulfil">fulfil</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getAll">getAll</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getById">getById</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getFulfillment">getFulfillment</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~prepare">prepare</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~reject">reject</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~rejectExpired">rejectExpired</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveExecutedTransfer">saveExecutedTransfer</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveSettledTransfers">saveSettledTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferExecuted">saveTransferExecuted</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferPrepared">saveTransferPrepared</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferRejected">saveTransferRejected</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~settle">settle</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~updateTransferState">updateTransferState</a></li></ul></li><li><a href="module-src_domain_transfer_commands.html">src/domain/transfer/commands</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_commands.html#~prepare">prepare</a></li><li data-type='method'><a href="module-src_domain_transfer_commands.html#~reject">reject</a></li><li data-type='method'><a href="module-src_domain_transfer_commands.html#~settle">settle</a></li></ul></li><li><a href="module-src_domain_transfer_models_transfer-read-model.html">src/domain/transfer/models/transfer-read-model</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~destroyByTransferId">destroyByTransferId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~getAllTransfers">getAllTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~getById">getById</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~saveTransfer">saveTransfer</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~truncateTransfers">truncateTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~updateTransfer">updateTransfer</a></li></ul></li><li><a href="module-src_domain_transfer_models_transferStateChange.html">src/domain/transfer/models/transferStateChange</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~getByTransferId">getByTransferId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~saveTransferStateChange">saveTransferStateChange</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~truncateTransfers">truncateTransfers</a></li></ul></li><li><a href="module-src_domain_transfer_models_transferStates.html">src/domain/transfer/models/transferStates</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~destroyTransferStates">destroyTransferStates</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~destroyTransferStatesById">destroyTransferStatesById</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~getAll">getAll</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~getByTransferStateId">getByTransferStateId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~saveTransferState">saveTransferState</a></li></ul></li><li><a href="module-src_handlers.html">src/handlers</a><ul class='methods'><li data-type='method'><a href="module-src_handlers.html#~RegisterHandlerRoutesHAPI">Register Handler Routes HAPI</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllHandlersRoute">RegisterAllHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllPositionHandlersRoute">RegisterAllPositionHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllTransferHandlersRoute">RegisterAllTransferHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterFulfilHandlerRoute">RegisterFulfilHandlerRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterPrepareHandlerRoute">RegisterPrepareHandlerRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterRejectHandlerRoute">RegisterRejectHandlerRoute</a></li></ul></li><li><a href="module-src_handlers_lib.html">src/handlers/lib</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_lib.html#~createGeneralTopicConfig">createGeneralTopicConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createParticipantTopicConfig">createParticipantTopicConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createPrepareErrorStatus">createPrepareErrorStatus</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createState">createState</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createTransferMessageProtocol">createTransferMessageProtocol</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~GeneralTopicTemplate">GeneralTopicTemplate</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~GetKafkaConfig">GetKafkaConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~ParticipantTopicTemplate">ParticipantTopicTemplate</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~produceGeneralMessage">produceGeneralMessage</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~produceParticipantMessage">produceParticipantMessage</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~RetrieveAllParticipants">RetrieveAllParticipants</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~TransformGeneralTopicName">TransformGeneralTopicName</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~TransformGeneralTopicName">TransformGeneralTopicName</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~updateMessageProtocolMetadata">updateMessageProtocolMetadata</a></li></ul></li><li><a href="module-src_handlers_lib_kafka.html">src/handlers/lib/kafka</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~CreateHandler">CreateHandler</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~Disconnect">Disconnect</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~GetConsumer">GetConsumer</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~ProduceMessage">ProduceMessage</a></li></ul></li><li><a href="module-src_handlers_positions.html">src/handlers/positions</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_positions.html#~CreatePositionHandler">CreatePositionHandler</a></li><li data-type='method'><a href="module-src_handlers_positions.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers_positions.html#~RegisterPositionsHandlers">RegisterPositionsHandlers</a></li></ul></li><li><a href="module-src_handlers_transfers.html">src/handlers/transfers</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_transfers.html#~CreatePrepareHandler">CreatePrepareHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterFulfillHandler">RegisterFulfillHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterPrepareHandlers">RegisterPrepareHandlers</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterRejectHandler">RegisterRejectHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterTransferHandler">RegisterTransferHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~TransferPrepareHandler">TransferPrepareHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~TransferTransferHandler">TransferTransferHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~validateParticipantByName">validateParticipantByName</a></li></ul></li><li><a href="module-src_models_ilp.html">src/models/ilp</a><ul class='methods'><li data-type='method'><a href="module-src_models_ilp.html#~destroyByTransferId">destroyByTransferId</a></li><li data-type='method'><a href="module-src_models_ilp.html#~getByTransferId">getByTransferId</a></li><li data-type='method'><a href="module-src_models_ilp.html#~saveIlp">saveIlp</a></li><li data-type='method'><a href="module-src_models_ilp.html#~update">update</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">domain/transfer/models/transferStates.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*****
+ License
+ --------------
+ Copyright © 2017 Bill &amp; Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill &amp; Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets &lt;email>.
+ * Gates Foundation
+ - Name Surname &lt;name.surname@gatesfoundation.com>
+ * Valentin Genev &lt;valentin.genev@modusbox.com>
+ * Rajiv Mothilal &lt;rajiv.mothilal@modusbox.com>
+ * Miguel de Barros &lt;miguel.debarros@modusbox.com>
+ --------------
+ ******/
+
+'use strict'
+
+/**
+ * Model - transferStates
+ * @module src/domain/transfer/models/transferStates
+ */
+
+// const Moment = require('moment')
+const Db = require('../../../db')
+// const TransferState = require('../state')
+const Logger = require('@mojaloop/central-services-shared').Logger
+
+/**
+ * @function saveTransferState
+ *
+ * @async
+ * @description Insert new transfer state
+ *
+ * @param {object} transferState - object containing all needed columns for transferState (transferStateId, enumeration, description)
+ *
+ * @returns {number} - Returns the id of the newly created transfer state, throws error if failure occurs
+ */
+const saveTransferState = async (transferState) => {
+  Logger.debug('save transferState' + transferState.toString())
+
+  try {
+    return await Db.transferState.insert(transferState)
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+// const getByTransferStateId = (id) => {
+//   return Db.transferState.query(builder => {
+//     return builder
+//       .where({ transferStateId: id })
+//       .select('transferState.*')
+//       .first()
+//   })
+// }
+
+/**
+ * @function getByTransferStateId
+ *
+ * @async
+ * @description Get a record from transferState table, filtered by transferStateId
+ *
+ * @param {number} id - the transferStateId of the wanted record
+ *
+ * @returns {object} - Returns an object of transfer state, filtered by the requested transferStateId, throws error if failure occurs
+ */
+const getByTransferStateId = (id) => {
+  try {
+    return Db.transferState.findOne({ transferStateId: id })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+// const getAll = () => {
+//   return Db.transferState.query(builder => {
+//     return builder
+//       .select('transferState.*')
+//   })
+// }
+
+/**
+ * @function getAll
+ *
+ * @async
+ * @description Get all records from transferState table
+ * @returns {list} - Returns a list of transfer states, throws error if failure occurs
+ */
+const getAll = () => {
+  try {
+    return Db.transferState.find({})
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+// const truncateTransferStates = () => {
+//   return Db.transferState.truncate()
+// }
+
+/**
+ * @function destroyTransferStates
+ *
+ * @async
+ * @description Destroy all records from transferState table
+ * @returns {number} - Returns a number of affected rows for the query, throws error if failure occurs
+ */
+const destroyTransferStates = () => {
+  try {
+    return Db.transferState.destroy()
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+/**
+ * @function destroyTransferStatesById
+ *
+ * @async
+ * @description Destroy a record from transferState table, filtered by transferStateId
+ *
+ * @param {number} id - the transferStateId of the wanted record
+ *
+ * @returns {number} - Returns a number of affected rows for the query, throws error if failure occurs
+ */
+const destroyTransferStatesById = (id) => {
+  try {
+    return Db.transferState.destroy({ transferStateId: id })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+module.exports = {
+  saveTransferState,
+  getByTransferStateId,
+  getAll,
+  // truncateTransferStates,
+  destroyTransferStates,
+  destroyTransferStatesById
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
