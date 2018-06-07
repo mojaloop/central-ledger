@@ -271,6 +271,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferQueries.getById.returns(P.resolve(null))
+      Validator.validateFulfilCondition.returns(P.resolve(true))
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
       test.end()
@@ -280,7 +281,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferQueries.getById.returns(P.resolve({condition: 'condition'}))
-      FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
+      Validator.validateFulfilCondition.returns(P.resolve(true))
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
       test.end()
@@ -290,7 +291,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferQueries.getById.returns(P.resolve({condition: 'condition', transferState: TransferState.COMMITTED}))
-      FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      Validator.validateFulfilCondition.returns(P.resolve(true))
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
       test.end()
@@ -300,7 +301,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferQueries.getById.returns(P.resolve({condition: 'condition', transferState: TransferState.RESERVED}))
-      FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      Validator.validateFulfilCondition.returns(P.resolve(true))
       ilp.update.returns(P.resolve())
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
@@ -311,6 +312,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
+        Validator.validateFulfilCondition.returns(P.resolve(true))
         const invalidEventMessage = Object.assign({}, fulfilMessages[0])
         invalidEventMessage.value.metadata.event.action = 'reject'
         await allTransferHandlers.fulfil(null, invalidEventMessage)
@@ -325,6 +327,7 @@ Test('Transfer handler', transferHandlerTest => {
     fulfilTest.test('fail validation when invalid event action is provided', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(P.resolve(true))
       const invalidEventMessage = Object.assign({}, fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'invalid event'
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])

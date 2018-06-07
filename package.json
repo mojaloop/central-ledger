@@ -17,7 +17,7 @@
   },
   "standard": {
     "ignore": [
-      "/migrations/**"
+      "/migrations/**", "/docs/**"
     ]
   },
   "scripts": {
