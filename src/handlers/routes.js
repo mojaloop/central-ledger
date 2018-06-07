@@ -38,7 +38,6 @@
 const RegisterAllHandler = require('./handlers')
 const TransferHandler = require('./transfers/handler')
 const PositionHandler = require('./positions/handler')
-const NotificationHandler = require('./notification/handler')
 const testProducer = require('../../testPI2/integration/helpers/testProducer')
 
 module.exports = [
@@ -136,22 +135,6 @@ module.exports = [
     options: {
       id: 'position',
       description: 'Register position Kafka consumer handler'
-    }
-  },
-  /**
-   * @function RegisterNotificationHandlerRoute
-   *
-   * @async
-   * @description Registers consumer handlers for notifications this is one topic for all participants
-   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-   */
-  {
-    method: 'POST',
-    path: '/register/notification/all',
-    handler: NotificationHandler.registerNotificationHandler,
-    options: {
-      id: 'notification',
-      description: 'Register notification Kafka consumer handler'
     }
   },
 

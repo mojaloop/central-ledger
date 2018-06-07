@@ -259,6 +259,59 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => 
 }
 
 /**
+ * @function createPrepareErrorStatus
+ *
+ * @param {number} errorCode - error code for error occurred
+ * @param {string} errorDescription - error description for error occurred
+ * @param {object} extensionList - list of extensions
+ * Example:
+ * errorInformation: {
+ *   errorCode: 3001,
+ *   errorDescription: 'A failure has occurred',
+ *   extensionList: [{
+ *      extension: {
+ *        key: 'key',
+ *        value: 'value'
+ *      }
+ *   }]
+ * }
+ *
+ * @returns {object} - Returns errorInformation object
+ */
+const createPrepareErrorStatus = (errorCode, errorDescription, extensionList) => {
+  return {
+    errorInformation: {
+      errorCode,
+      errorDescription,
+      extensionList
+    }
+  }
+}
+
+/**
+ * @function createState
+ *
+ * @param {string} status - status of message
+ * @param {number} code - error code
+ * @param {string} description - description of error
+ * @example:
+ * errorInformation: {
+ *   status: 'error',
+ *   code: 3100,
+ *   description: 'error message'
+ * }
+ *
+ * @returns {object} - Returns errorInformation object
+ */
+const createState = (status, code, description) => {
+  return {
+    status,
+    code,
+    description
+  }
+}
+
+/**
  * @function createTransferMessageProtocol
  *
  * @param {object} payload - The payload of the api request
@@ -392,6 +445,8 @@ exports.transformAccountToTopicName = transformAccountToTopicName
 exports.transformGeneralTopicName = transformGeneralTopicName
 exports.getKafkaConfig = getKafkaConfig
 exports.updateMessageProtocolMetadata = updateMessageProtocolMetadata
+exports.createPrepareErrorStatus = createPrepareErrorStatus
+exports.createState = createState
 exports.createTransferMessageProtocol = createTransferMessageProtocol
 exports.createParticipantTopicConf = createParticipantTopicConf
 exports.createGeneralTopicConf = createGeneralTopicConf

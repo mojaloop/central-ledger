@@ -63,7 +63,7 @@ const getByTransferId = async (id) => {
       let result = builder
         .where({'transferStateChange.transferId': id})
         .select('transferStateChange.*')
-        .orderBy('changedDate', 'desc')
+        .orderBy('transferStateChangeId', 'desc')
         .first()
       return result
     })
