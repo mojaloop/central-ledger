@@ -30,13 +30,17 @@
  ******/
 'use strict'
 
+/**
+ * @module src/handlers/lib
+ */
+
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Participants = require('../../domain/participant')
 
 /**
- * @method RetrieveAllParticipants
+ * @function RetrieveAllParticipants
  *
- * Calls getAllParticipant DAO to retrieve a list of participants and then use that to get a list of names for the creation of topics
+ * @description Calls getAllParticipant DAO to retrieve a list of participants and then use that to get a list of names for the creation of topics
  *
  * @returns {list} - Returns a list participant names, throws error if failure occurs
  */

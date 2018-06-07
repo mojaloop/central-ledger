@@ -7,7 +7,6 @@ const P = require('bluebird')
 const Migrator = require('../../../src/lib/migrator')
 const Db = require('../../../src/db')
 const Config = require('../../../src/lib/config')
-// const Participant = require('../../../src/domain/participant')
 const Plugins = require('../../../src/shared/plugins')
 const HandlerPlugins = require('../../../src/handlers/plugin')
 const RequestLogger = require('../../../src/lib/request-logger')
@@ -42,7 +41,7 @@ Test('setup', setupTest => {
     Db.disconnect = sandbox.stub()
     uuidStub = sandbox.stub()
 
-    Setup = Proxyquire('../../../src/shared/setup', { 'uuid4': uuidStub })
+    Setup = Proxyquire('../../../src/shared/setup', {'uuid4': uuidStub})
 
     oldHostName = Config.HOSTNAME
     oldDatabaseUri = Config.DATABASE_URI
@@ -73,7 +72,7 @@ Test('setup', setupTest => {
     return server
   }
 
-  setupTest.test('initialize should', async (initializeTest) => {
+  setupTest.test('initialize should', (initializeTest) => {
     const setupPromises = async ({service}) => {
       Migrator.migrate.returns(P.resolve())
       Db.connect.returns(P.resolve())
@@ -90,7 +89,7 @@ Test('setup', setupTest => {
       const server = await setupPromises({})
 
       const service = 'test'
-      Setup.initialize({ service }).then(s => {
+      Setup.initialize({service}).then(s => {
         test.ok(Db.connect.calledWith(databaseUri))
         test.ok(Sidecar.connect.calledWith(service))
         test.notOk(Migrator.migrate.called)
@@ -113,11 +112,10 @@ Test('setup', setupTest => {
     initializeTest.test('run migrations if runMigrations flag enabled', async (test) => {
       await setupPromises({})
 
-      Setup.initialize({ runMigrations: true }).then(() => {
-        test.ok(Db.connect.called)
-        test.ok(Migrator.migrate.called)
-        test.end()
-      })
+      await Setup.initialize({runMigrations: true})
+      test.ok(Db.connect.called)
+      test.ok(Migrator.migrate.called)
+      test.end()
     })
 
     initializeTest.end()

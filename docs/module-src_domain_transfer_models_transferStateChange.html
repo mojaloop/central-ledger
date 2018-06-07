@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>src/domain/transfer/models/transferStateChange - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-src_domain_transfer.html">src/domain/transfer</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer.html#~fulfil">fulfil</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getAll">getAll</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getById">getById</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getFulfillment">getFulfillment</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~prepare">prepare</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~reject">reject</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~rejectExpired">rejectExpired</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveExecutedTransfer">saveExecutedTransfer</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveSettledTransfers">saveSettledTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferExecuted">saveTransferExecuted</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferPrepared">saveTransferPrepared</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferRejected">saveTransferRejected</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~settle">settle</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~updateTransferState">updateTransferState</a></li></ul></li><li><a href="module-src_domain_transfer_commands.html">src/domain/transfer/commands</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_commands.html#~prepare">prepare</a></li><li data-type='method'><a href="module-src_domain_transfer_commands.html#~reject">reject</a></li><li data-type='method'><a href="module-src_domain_transfer_commands.html#~settle">settle</a></li></ul></li><li><a href="module-src_domain_transfer_models_transfer-read-model.html">src/domain/transfer/models/transfer-read-model</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~destroyByTransferId">destroyByTransferId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~getAllTransfers">getAllTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~getById">getById</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~saveTransfer">saveTransfer</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~truncateTransfers">truncateTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~updateTransfer">updateTransfer</a></li></ul></li><li><a href="module-src_domain_transfer_models_transferStateChange.html">src/domain/transfer/models/transferStateChange</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~getByTransferId">getByTransferId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~saveTransferStateChange">saveTransferStateChange</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~truncateTransfers">truncateTransfers</a></li></ul></li><li><a href="module-src_domain_transfer_models_transferStates.html">src/domain/transfer/models/transferStates</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~destroyTransferStates">destroyTransferStates</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~destroyTransferStatesById">destroyTransferStatesById</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~getAll">getAll</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~getByTransferStateId">getByTransferStateId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~saveTransferState">saveTransferState</a></li></ul></li><li><a href="module-src_handlers.html">src/handlers</a><ul class='methods'><li data-type='method'><a href="module-src_handlers.html#~RegisterHandlerRoutesHAPI">Register Handler Routes HAPI</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllHandlersRoute">RegisterAllHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllPositionHandlersRoute">RegisterAllPositionHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllTransferHandlersRoute">RegisterAllTransferHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterFulfilHandlerRoute">RegisterFulfilHandlerRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterPrepareHandlerRoute">RegisterPrepareHandlerRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterRejectHandlerRoute">RegisterRejectHandlerRoute</a></li></ul></li><li><a href="module-src_handlers_lib.html">src/handlers/lib</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_lib.html#~createGeneralTopicConfig">createGeneralTopicConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createParticipantTopicConfig">createParticipantTopicConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createPrepareErrorStatus">createPrepareErrorStatus</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createState">createState</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createTransferMessageProtocol">createTransferMessageProtocol</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~GeneralTopicTemplate">GeneralTopicTemplate</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~GetKafkaConfig">GetKafkaConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~ParticipantTopicTemplate">ParticipantTopicTemplate</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~produceGeneralMessage">produceGeneralMessage</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~produceParticipantMessage">produceParticipantMessage</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~RetrieveAllParticipants">RetrieveAllParticipants</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~TransformGeneralTopicName">TransformGeneralTopicName</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~TransformGeneralTopicName">TransformGeneralTopicName</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~updateMessageProtocolMetadata">updateMessageProtocolMetadata</a></li></ul></li><li><a href="module-src_handlers_lib_kafka.html">src/handlers/lib/kafka</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~CreateHandler">CreateHandler</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~Disconnect">Disconnect</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~GetConsumer">GetConsumer</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~ProduceMessage">ProduceMessage</a></li></ul></li><li><a href="module-src_handlers_positions.html">src/handlers/positions</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_positions.html#~CreatePositionHandler">CreatePositionHandler</a></li><li data-type='method'><a href="module-src_handlers_positions.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers_positions.html#~RegisterPositionsHandlers">RegisterPositionsHandlers</a></li></ul></li><li><a href="module-src_handlers_transfers.html">src/handlers/transfers</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_transfers.html#~CreatePrepareHandler">CreatePrepareHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterFulfillHandler">RegisterFulfillHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterPrepareHandlers">RegisterPrepareHandlers</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterRejectHandler">RegisterRejectHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterTransferHandler">RegisterTransferHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~TransferPrepareHandler">TransferPrepareHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~TransferTransferHandler">TransferTransferHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~validateParticipantByName">validateParticipantByName</a></li></ul></li><li><a href="module-src_models_ilp.html">src/models/ilp</a><ul class='methods'><li data-type='method'><a href="module-src_models_ilp.html#~destroyByTransferId">destroyByTransferId</a></li><li data-type='method'><a href="module-src_models_ilp.html#~getByTransferId">getByTransferId</a></li><li data-type='method'><a href="module-src_models_ilp.html#~saveIlp">saveIlp</a></li><li data-type='method'><a href="module-src_models_ilp.html#~update">update</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">src/domain/transfer/models/transferStateChange</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getByTransferId"><span class="type-signature">(async, inner) </span>getByTransferId<span class="signature">(id)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="domain_transfer_models_transferStateChanges.js.html">domain/transfer/models/transferStateChanges.js</a>, <a href="domain_transfer_models_transferStateChanges.js.html#line52">line 52</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>This operation retrieves the most recent transferStateChange by its transfer id</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the transfer id of the transferStateChange that will be retrieved</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>the transferStateChange object</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~saveTransferStateChange"><span class="type-signature">(async, inner) </span>saveTransferStateChange<span class="signature">(stateChange)</span><span class="type-signature"> &rarr; {string}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="domain_transfer_models_transferStateChanges.js.html">domain/transfer/models/transferStateChanges.js</a>, <a href="domain_transfer_models_transferStateChanges.js.html#line35">line 35</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>This is the create operation for the transferStateChange table</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>stateChange</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the transferStateChange object that will be inserted</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>id of the inserted object</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~truncateTransfers"><span class="type-signature">(async, inner) </span>truncateTransfers<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="domain_transfer_models_transferStateChanges.js.html">domain/transfer/models/transferStateChanges.js</a>, <a href="domain_transfer_models_transferStateChanges.js.html#line75">line 75</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>This truncate operation of the transferStateChange table</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

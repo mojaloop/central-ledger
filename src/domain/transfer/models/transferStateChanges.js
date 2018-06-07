@@ -25,8 +25,20 @@
 
 'use strict'
 
+/**
+ * @module src/domain/transfer/models/transferStateChange
+ */
+
 const Db = require('../../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+
+/**
+ * @function saveTransferStateChange
+ * @async
+ * @description This is the create operation for the transferStateChange table
+ * @param  {object} stateChange the transferStateChange object that will be inserted
+ * @returns {string} id of the inserted object
+ */
 
 const saveTransferStateChange = async (stateChange) => {
   Logger.debug('save transferStateChange' + stateChange.toString())
@@ -37,13 +49,21 @@ const saveTransferStateChange = async (stateChange) => {
   }
 }
 
+/**
+ * @function getByTransferId
+ * @async
+ * @description This operation retrieves the most recent transferStateChange by its transfer id
+ * @param  {string} id the transfer id of the transferStateChange that will be retrieved
+ * @returns {Object} the transferStateChange object
+ */
+
 const getByTransferId = async (id) => {
   try {
     return await Db.transferStateChange.query(async (builder) => {
       let result = builder
         .where({'transferStateChange.transferId': id})
         .select('transferStateChange.*')
-        .orderBy('changedDate', 'desc')
+        .orderBy('transferStateChangeId', 'desc')
         .first()
       return result
     })
@@ -51,6 +71,13 @@ const getByTransferId = async (id) => {
     throw err
   }
 }
+
+/**
+ * @function truncateTransfers
+ * @async
+ * @description This truncate operation of the transferStateChange table
+ * @returns {Promise}
+ */
 
 const truncate = async (id) => {
   try {

@@ -1,0 +1,2768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>src/handlers/transfers - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-src_domain_transfer.html">src/domain/transfer</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer.html#~fulfil">fulfil</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getAll">getAll</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getById">getById</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~getFulfillment">getFulfillment</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~prepare">prepare</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~reject">reject</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~rejectExpired">rejectExpired</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveExecutedTransfer">saveExecutedTransfer</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveSettledTransfers">saveSettledTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferExecuted">saveTransferExecuted</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferPrepared">saveTransferPrepared</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~saveTransferRejected">saveTransferRejected</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~settle">settle</a></li><li data-type='method'><a href="module-src_domain_transfer.html#~updateTransferState">updateTransferState</a></li></ul></li><li><a href="module-src_domain_transfer_commands.html">src/domain/transfer/commands</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_commands.html#~prepare">prepare</a></li><li data-type='method'><a href="module-src_domain_transfer_commands.html#~reject">reject</a></li><li data-type='method'><a href="module-src_domain_transfer_commands.html#~settle">settle</a></li></ul></li><li><a href="module-src_domain_transfer_models_transfer-read-model.html">src/domain/transfer/models/transfer-read-model</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~destroyByTransferId">destroyByTransferId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~getAllTransfers">getAllTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~getById">getById</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~saveTransfer">saveTransfer</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~truncateTransfers">truncateTransfers</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transfer-read-model.html#~updateTransfer">updateTransfer</a></li></ul></li><li><a href="module-src_domain_transfer_models_transferStateChange.html">src/domain/transfer/models/transferStateChange</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~getByTransferId">getByTransferId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~saveTransferStateChange">saveTransferStateChange</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStateChange.html#~truncateTransfers">truncateTransfers</a></li></ul></li><li><a href="module-src_domain_transfer_models_transferStates.html">src/domain/transfer/models/transferStates</a><ul class='methods'><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~destroyTransferStates">destroyTransferStates</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~destroyTransferStatesById">destroyTransferStatesById</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~getAll">getAll</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~getByTransferStateId">getByTransferStateId</a></li><li data-type='method'><a href="module-src_domain_transfer_models_transferStates.html#~saveTransferState">saveTransferState</a></li></ul></li><li><a href="module-src_handlers.html">src/handlers</a><ul class='methods'><li data-type='method'><a href="module-src_handlers.html#~RegisterHandlerRoutesHAPI">Register Handler Routes HAPI</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllHandlersRoute">RegisterAllHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllPositionHandlersRoute">RegisterAllPositionHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterAllTransferHandlersRoute">RegisterAllTransferHandlersRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterFulfilHandlerRoute">RegisterFulfilHandlerRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterPrepareHandlerRoute">RegisterPrepareHandlerRoute</a></li><li data-type='method'><a href="module-src_handlers.html#~RegisterRejectHandlerRoute">RegisterRejectHandlerRoute</a></li></ul></li><li><a href="module-src_handlers_lib.html">src/handlers/lib</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_lib.html#~createGeneralTopicConfig">createGeneralTopicConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createParticipantTopicConfig">createParticipantTopicConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createPrepareErrorStatus">createPrepareErrorStatus</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createState">createState</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~createTransferMessageProtocol">createTransferMessageProtocol</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~GeneralTopicTemplate">GeneralTopicTemplate</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~GetKafkaConfig">GetKafkaConfig</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~ParticipantTopicTemplate">ParticipantTopicTemplate</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~produceGeneralMessage">produceGeneralMessage</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~produceParticipantMessage">produceParticipantMessage</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~RetrieveAllParticipants">RetrieveAllParticipants</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~TransformGeneralTopicName">TransformGeneralTopicName</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~TransformGeneralTopicName">TransformGeneralTopicName</a></li><li data-type='method'><a href="module-src_handlers_lib.html#~updateMessageProtocolMetadata">updateMessageProtocolMetadata</a></li></ul></li><li><a href="module-src_handlers_lib_kafka.html">src/handlers/lib/kafka</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~CreateHandler">CreateHandler</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~Disconnect">Disconnect</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~GetConsumer">GetConsumer</a></li><li data-type='method'><a href="module-src_handlers_lib_kafka.html#~ProduceMessage">ProduceMessage</a></li></ul></li><li><a href="module-src_handlers_positions.html">src/handlers/positions</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_positions.html#~CreatePositionHandler">CreatePositionHandler</a></li><li data-type='method'><a href="module-src_handlers_positions.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers_positions.html#~RegisterPositionsHandlers">RegisterPositionsHandlers</a></li></ul></li><li><a href="module-src_handlers_transfers.html">src/handlers/transfers</a><ul class='methods'><li data-type='method'><a href="module-src_handlers_transfers.html#~CreatePrepareHandler">CreatePrepareHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterAllHandlers">RegisterAllHandlers</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterFulfillHandler">RegisterFulfillHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterPrepareHandlers">RegisterPrepareHandlers</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterRejectHandler">RegisterRejectHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~RegisterTransferHandler">RegisterTransferHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~TransferPrepareHandler">TransferPrepareHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~TransferTransferHandler">TransferTransferHandler</a></li><li data-type='method'><a href="module-src_handlers_transfers.html#~validateParticipantByName">validateParticipantByName</a></li></ul></li><li><a href="module-src_models_ilp.html">src/models/ilp</a><ul class='methods'><li data-type='method'><a href="module-src_models_ilp.html#~destroyByTransferId">destroyByTransferId</a></li><li data-type='method'><a href="module-src_models_ilp.html#~getByTransferId">getByTransferId</a></li><li data-type='method'><a href="module-src_models_ilp.html#~saveIlp">saveIlp</a></li><li data-type='method'><a href="module-src_models_ilp.html#~update">update</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">src/handlers/transfers</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="~CreatePrepareHandler"><span class="type-signature">(async, inner) </span>CreatePrepareHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line282">line 282</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the handler for each participant topic created. Gets Kafka config from default.json</p>
+<p>Calls createHandler to register the handler against the Stream Processing API</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterAllHandlers"><span class="type-signature">(async, inner) </span>RegisterAllHandlers<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line404">line 404</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers all handlers in transfers ie: prepare, fulfil, transfer and reject</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterFulfillHandler"><span class="type-signature">(async, inner) </span>RegisterFulfillHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line331">line 331</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the one handler for fulfil transfer. Gets Kafka config from default.json<br>Calls createHandler to register the handler against the Stream Processing API</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterPrepareHandlers"><span class="type-signature">(async, inner) </span>RegisterPrepareHandlers<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line379">line 379</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each<br>createPrepareHandler called to create the handler for each participant</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterRejectHandler"><span class="type-signature">(async, inner) </span>RegisterRejectHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line355">line 355</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the one handler for reject transfer. Gets Kafka config from default.json<br>Calls createHandler to register the handler against the Stream Processing API</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterTransferHandler"><span class="type-signature">(async, inner) </span>RegisterTransferHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line307">line 307</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each<br>createTransferHandler called to create the handler for each participant</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~TransferPrepareHandler"><span class="type-signature">(async, inner) </span>TransferPrepareHandler<span class="signature">(error, messages)</span><span class="type-signature"> &rarr; {object}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line61">line 61</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>This is the consumer callback function that gets registered to a topic. This then gets a list of message,<br>we will only ever use the first message in non batch processing. We then break down the message into its payload and<br>begin validating the payload. Once the payload is validated successfully it will be written to the database to<br>the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an<br>ABORT status</p>
+<p>Validator.validateByName called to validate the payload of the message<br>TransferQueries.getById called and checks if the transfer currently exists<br>TransferHandler.prepare called and creates new entries in transfer tables for successful prepare transfer<br>TransferHandler.reject called and rejects an existing transfer that has been retried and fails validation</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>error thrown if something fails within Kafka</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>messages</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a list of messages to consume for the relevant topic</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~TransferTransferHandler"><span class="type-signature">(async, inner) </span>TransferTransferHandler<span class="signature">(error, messages)</span><span class="type-signature"> &rarr; {object}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line210">line 210</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),<br>we will only ever use the first message in non batch processing. We then break down the message into its payload and<br>begin validating the payload. Once the payload is validated successfully it will be written to the database to<br>the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an<br>ABORT status</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>error thrown if something fails within Kafka</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>messages</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a list of messages to consume for the relevant topic</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~validateParticipantByName"><span class="type-signature">(async, inner) </span>validateParticipantByName<span class="signature">(payload)</span><span class="type-signature"> &rarr; {validationResult}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_validator.js.html">handlers/transfers/validator.js</a>, <a href="handlers_transfers_validator.js.html#line81">line 81</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Function to validate transfer payload against the transfer schema.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>payload</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The prepare transfer payload.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Returns a Promise of validationResult Object.</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">validationResult</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Type Definitions</h3>
+
+        
+                
+<h4 class="name" id="~validationResult">validationResult</h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_validator.js.html">handlers/transfers/validator.js</a>, <a href="handlers_transfers_validator.js.html#line65">line 65</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>if validation failed, the error reason, otherwise null.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the validated value with any type conversions and other modifiers applied (the input is left unchanged). value can be incomplete if validation failed and abortEarly is true. If callback is not provided, then returns an object with error and value properties.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+            
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="~CreatePrepareHandler"><span class="type-signature">(async, inner) </span>CreatePrepareHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line282">line 282</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the handler for each participant topic created. Gets Kafka config from default.json</p>
+<p>Calls createHandler to register the handler against the Stream Processing API</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterAllHandlers"><span class="type-signature">(async, inner) </span>RegisterAllHandlers<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line404">line 404</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers all handlers in transfers ie: prepare, fulfil, transfer and reject</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterFulfillHandler"><span class="type-signature">(async, inner) </span>RegisterFulfillHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line331">line 331</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the one handler for fulfil transfer. Gets Kafka config from default.json<br>Calls createHandler to register the handler against the Stream Processing API</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterPrepareHandlers"><span class="type-signature">(async, inner) </span>RegisterPrepareHandlers<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line379">line 379</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each<br>createPrepareHandler called to create the handler for each participant</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterRejectHandler"><span class="type-signature">(async, inner) </span>RegisterRejectHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line355">line 355</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the one handler for reject transfer. Gets Kafka config from default.json<br>Calls createHandler to register the handler against the Stream Processing API</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~RegisterTransferHandler"><span class="type-signature">(async, inner) </span>RegisterTransferHandler<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line307">line 307</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each<br>createTransferHandler called to create the handler for each participant</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~TransferPrepareHandler"><span class="type-signature">(async, inner) </span>TransferPrepareHandler<span class="signature">(error, messages)</span><span class="type-signature"> &rarr; {object}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line61">line 61</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>This is the consumer callback function that gets registered to a topic. This then gets a list of message,<br>we will only ever use the first message in non batch processing. We then break down the message into its payload and<br>begin validating the payload. Once the payload is validated successfully it will be written to the database to<br>the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an<br>ABORT status</p>
+<p>Validator.validateByName called to validate the payload of the message<br>TransferQueries.getById called and checks if the transfer currently exists<br>TransferHandler.prepare called and creates new entries in transfer tables for successful prepare transfer<br>TransferHandler.reject called and rejects an existing transfer that has been retried and fails validation</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>error thrown if something fails within Kafka</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>messages</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a list of messages to consume for the relevant topic</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~TransferTransferHandler"><span class="type-signature">(async, inner) </span>TransferTransferHandler<span class="signature">(error, messages)</span><span class="type-signature"> &rarr; {object}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_handler.js.html">handlers/transfers/handler.js</a>, <a href="handlers_transfers_handler.js.html#line210">line 210</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),<br>we will only ever use the first message in non batch processing. We then break down the message into its payload and<br>begin validating the payload. Once the payload is validated successfully it will be written to the database to<br>the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an<br>ABORT status</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">error</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>error thrown if something fails within Kafka</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>messages</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a list of messages to consume for the relevant topic</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns a boolean: true if successful, or throws and error if failed</li>
+</ul>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~validateParticipantByName"><span class="type-signature">(async, inner) </span>validateParticipantByName<span class="signature">(payload)</span><span class="type-signature"> &rarr; {validationResult}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_validator.js.html">handlers/transfers/validator.js</a>, <a href="handlers_transfers_validator.js.html#line81">line 81</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Function to validate transfer payload against the transfer schema.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>payload</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The prepare transfer payload.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Returns a Promise of validationResult Object.</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">validationResult</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Type Definitions</h3>
+
+        
+                
+<h4 class="name" id="~validationResult">validationResult</h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="handlers_transfers_validator.js.html">handlers/transfers/validator.js</a>, <a href="handlers_transfers_validator.js.html#line65">line 65</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>if validation failed, the error reason, otherwise null.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the validated value with any type conversions and other modifiers applied (the input is left unchanged). value can be incomplete if validation failed and abortEarly is true. If callback is not provided, then returns an object with error and value properties.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+            
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

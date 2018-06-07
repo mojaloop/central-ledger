@@ -10,11 +10,15 @@ The following documentation represents the services, APIs and endpoints responsi
 
 Contents:
 
+- [JSDocs](#jsdocs)
 - [Deployment](#deployment)
 - [Configuration](#configuration)
 - [API](#api)
 - [Logging](#logging)
 - [Tests](#tests)
+
+##JSDocs
+[JSDocs for Central Ledger](/central-ledger/docs/index.html)
 
 ## Deployment
 

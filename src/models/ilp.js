@@ -25,9 +25,24 @@
 
 'use strict'
 
+/**
+ * Model - ilp
+ * @module src/models/ilp
+ */
+
 const Db = require('../db')
 const Util = require('../lib/util')
 
+/**
+ * @function saveIlp
+ *
+ * @async
+ * @description Insert new ilp
+ *
+ * @param {object} transfer - object containing all needed columns for ilp (transferId, packet, condition, fulfilment)
+ *
+ * @returns {number} - Returns the id of the newly created ilp, throws error if failure occurs
+ */
 exports.saveIlp = async (transfer) => {
   try {
     return await Db.ilp.insert({
@@ -41,6 +56,16 @@ exports.saveIlp = async (transfer) => {
   }
 }
 
+/**
+ * @function getByTransferId
+ *
+ * @async
+ * @description Get a record from ilp table, filtered by transferId
+ *
+ * @param {number} transferId - the transferId connected to the wanted record
+ *
+ * @returns {object} - Returns an object of ilp, filtered by the requested transferId, throws error if failure occurs
+ */
 exports.getByTransferId = async (transferId) => {
   try {
     return await Db.ilp.findOne({ transferId: transferId })
@@ -49,6 +74,16 @@ exports.getByTransferId = async (transferId) => {
   }
 }
 
+/**
+ * @function update
+ *
+ * @async
+ * @description Get a record from ilp table, filtered by transferId
+ *
+ * @param {object} ilp - object containing all needed columns for ilp regarding this method (ilpId, transferId, packet, condition, fulfilment)
+ *
+ * @returns {object} - Returns an object of ilp, filtered by the requested transferId, throws error if failure occurs
+ */
 exports.update = async (ilp) => {
   const fields = {
     transferId: ilp.transferId,
@@ -63,6 +98,16 @@ exports.update = async (ilp) => {
   }
 }
 
+/**
+ * @function destroyByTransferId
+ *
+ * @async
+ * @description Destroy a record from transferState table, filtered by transferStateId
+ *
+ * @param {object} ilp - object containing all needed columns for ilp regarding the this method (transferId)
+ *
+ * @returns {number} - Returns a number of affected rows for the query, throws error if failure occurs
+ */
 exports.destroyByTransferId = async (ilp) => {
   try {
     return await Db.ilp.destroy({transferId: ilp.transferId})

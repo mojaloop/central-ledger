@@ -1,4 +1,39 @@
+/*****
+ * @file This registers all handlers for the central-ledger API
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+
+ --------------
+ ******/
 'use strict'
+
+/**
+ * @module src/domain/transfer
+ */
 
 const _ = require('lodash')
 const ParticipantService = require('../../domain/participant')
@@ -10,6 +45,14 @@ const transferStateChangeModel = require('./models/transferStateChanges')
 const ExecuteTransfersModel = require('../../models/executed-transfers')
 const SettledTransfersModel = require('../../models/settled-transfers')
 
+/**
+ * @function saveTransferPrepared
+ *
+ * @async
+ * @description Save prepared transfers. Updates transferRecord, ilpRecord and transferStateRecord
+ * @param {object} payload - transfer request payload
+ * @param {object} stateReason - defaults to Null
+ */
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
     const participants = []
@@ -79,6 +122,15 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
   }
 }
 
+/**
+ * @function saveTransferExecuted
+ *
+ * @async
+ * @description Change transfer state to committed
+ * @param {object} payload - transfer request payload
+ * @param {timestamp} timestamp - current date time
+ * @throw {general exception}
+ */
 const saveTransferExecuted = async ({payload, timestamp}) => {
   const fields = {
     state: TransferState.COMMITTED,
@@ -87,7 +139,16 @@ const saveTransferExecuted = async ({payload, timestamp}) => {
   }
   return await TransfersModel.updateTransfer(payload.id, fields)
 }
+
 // This update should only be done if the transfer id only has the state RECEIVED //TODO
+/**
+ * @function updateTransferState
+ *
+ * @async
+ * @description Change transfer state to committed
+ * @param {object} payload - transfer request payload
+ * @param {string} state - transfer state Id
+ */
 const updateTransferState = async (payload, state) => {
   const transferStateRecord = {
     transferId: payload.transferId,
@@ -98,17 +159,33 @@ const updateTransferState = async (payload, state) => {
   return await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
 }
 
+/**
+ * @function saveTransferRejected
+ *
+ * @async
+ * @description Change transfer state to aborted
+ * @param {string} stateReason - transfer reject reason
+ * @param {string} transferId - transfer request id
+ * @throws {generalException}
+ */
 const saveTransferRejected = async (stateReason, transferId) => {
   try {
     const existingTransferStateChanges = await transferStateChangeModel.getByTransferId(transferId)
 
     let existingAbort = false
     let transferStateChange
-    for (let transferState of existingTransferStateChanges) {
-      if (transferState.transferStateId === TransferState.ABORTED) {
+    if (Array.isArray(existingTransferStateChanges)) {
+      for (let transferState of existingTransferStateChanges) {
+        if (transferState.transferStateId === TransferState.ABORTED) {
+          existingAbort = true
+          transferStateChange = transferState
+          break
+        }
+      }
+    } else {
+      if (existingTransferStateChanges.transferStateId === TransferState.ABORTED) {
         existingAbort = true
-        transferStateChange = transferState
-        break
+        transferStateChange = existingTransferStateChanges
       }
     }
     if (!existingAbort) {
@@ -128,10 +205,22 @@ const saveTransferRejected = async (stateReason, transferId) => {
   }
 }
 
+/**
+ * @function saveExecutedTransfer
+ *
+ * @async
+ * @description Creates an excuted transfer record and persist to the db
+ */
 const saveExecutedTransfer = async (transfer) => {
   await ExecuteTransfersModel.create(transfer.payload.id)
 }
 
+/**
+ * @function saveSettledTransfers
+ *
+ * @async
+ * @description Creates an settled transfer record and persist to the db
+ */
 const saveSettledTransfers = async ({id, settlement_id}) => {
   await SettledTransfersModel.create({id, settlement_id})
 }

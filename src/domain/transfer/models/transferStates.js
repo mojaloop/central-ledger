@@ -25,11 +25,26 @@
 
 'use strict'
 
+/**
+ * Model - transferStates
+ * @module src/domain/transfer/models/transferStates
+ */
+
 // const Moment = require('moment')
 const Db = require('../../../db')
 // const TransferState = require('../state')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
+/**
+ * @function saveTransferState
+ *
+ * @async
+ * @description Insert new transfer state
+ *
+ * @param {object} transferState - object containing all needed columns for transferState (transferStateId, enumeration, description)
+ *
+ * @returns {number} - Returns the id of the newly created transfer state, throws error if failure occurs
+ */
 const saveTransferState = async (transferState) => {
   Logger.debug('save transferState' + transferState.toString())
 
@@ -49,6 +64,16 @@ const saveTransferState = async (transferState) => {
 //   })
 // }
 
+/**
+ * @function getByTransferStateId
+ *
+ * @async
+ * @description Get a record from transferState table, filtered by transferStateId
+ *
+ * @param {number} id - the transferStateId of the wanted record
+ *
+ * @returns {object} - Returns an object of transfer state, filtered by the requested transferStateId, throws error if failure occurs
+ */
 const getByTransferStateId = (id) => {
   try {
     return Db.transferState.findOne({ transferStateId: id })
@@ -64,6 +89,13 @@ const getByTransferStateId = (id) => {
 //   })
 // }
 
+/**
+ * @function getAll
+ *
+ * @async
+ * @description Get all records from transferState table
+ * @returns {list} - Returns a list of transfer states, throws error if failure occurs
+ */
 const getAll = () => {
   try {
     return Db.transferState.find({})
@@ -76,6 +108,13 @@ const getAll = () => {
 //   return Db.transferState.truncate()
 // }
 
+/**
+ * @function destroyTransferStates
+ *
+ * @async
+ * @description Destroy all records from transferState table
+ * @returns {number} - Returns a number of affected rows for the query, throws error if failure occurs
+ */
 const destroyTransferStates = () => {
   try {
     return Db.transferState.destroy()
@@ -84,6 +123,16 @@ const destroyTransferStates = () => {
   }
 }
 
+/**
+ * @function destroyTransferStatesById
+ *
+ * @async
+ * @description Destroy a record from transferState table, filtered by transferStateId
+ *
+ * @param {number} id - the transferStateId of the wanted record
+ *
+ * @returns {number} - Returns a number of affected rows for the query, throws error if failure occurs
+ */
 const destroyTransferStatesById = (id) => {
   try {
     return Db.transferState.destroy({ transferStateId: id })
