@@ -236,7 +236,8 @@ const transfer = async (error, messages) => {
       message = messages
     }
 
-    const {metadata, from, to, content, id} = message.value
+    // const {metadata, from, to, content, id} = message.value
+    const {metadata} = message.value
     const {action, state} = metadata.event
     const status = state.status
     Logger.info('TransferHandler::transfer action: ' + action)
