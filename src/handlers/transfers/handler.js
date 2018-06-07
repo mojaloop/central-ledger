@@ -44,7 +44,8 @@ const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
 const TransferState = require('../../domain/transfer/state')
 // const CryptoConditions = require('../../crypto-conditions')
-const FiveBellsCondition = require('five-bells-condition')
+// const FiveBellsCondition = require('five-bells-condition')
+// const Crypto = require('crypto')
 const ilp = require('../../models/ilp')
 
 const TRANSFER = 'transfer'
@@ -159,14 +160,18 @@ const fulfil = async (error, messages) => {
     const payload = message.value.content.payload
     if (metadata.event.type === FULFIL && metadata.event.action === COMMIT) {
       const existingTransfer = await TransferQueries.getById(transferId)
-      const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
+
+      // @NOTE: This has been commented out as it does not conform to the Mojaloop Specification. The Crypo-conditions are generic and do not conform to any specific protocol, but rather must be determined by the implemented schema
+      // const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
+
       if (!existingTransfer) {
         Logger.info('FulfilHandler::fulfil::validationFailed::notFound')
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-        // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
-      } else if (fulfilmentCondition !== existingTransfer.condition) { // TODO: FiveBellsCondition.fulfillmentToCondition always passes
+      } else if (Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) { // NOTE: re-aligned to the Mojaloop specification
+      // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
+      // } else if (fulfilmentCondition !== existingTransfer.condition) { // TODO: FiveBellsCondition.fulfillmentToCondition always passes
         Logger.info('FulfilHandler::fulfil::validationFailed::invalidFulfilment')
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
@@ -218,6 +223,7 @@ const reject = async () => {
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const transfer = async (error, messages) => {
+  Logger.info('TransferHandler::transfer')
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -229,11 +235,43 @@ const transfer = async (error, messages) => {
     } else {
       message = messages
     }
-    Logger.info('TransferHandler::transfer')
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
-    await consumer.commitMessageSync(message)
-    await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
-    return true
+
+    const {metadata, from, to, content, id} = message.value
+    const {action, state} = metadata.event
+    const status = state.status
+    Logger.info('TransferHandler::transfer action: ' + action)
+    Logger.info('TransferHandler::transfer status: ' + status)
+
+    // Validate event - Rule: type == 'transfer' && action == 'commit'
+    if (action.toLowerCase() === 'prepare' && status.toLowerCase() === 'success') {
+      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+
+      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      await consumer.commitMessageSync(message)
+
+      return true
+    } else if (action.toLowerCase() === 'commit' && status.toLowerCase() === 'success') {
+      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+
+      // send notification message to Payee
+      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      // send notification message to Payer
+      // message.value.to = from
+      // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      await consumer.commitMessageSync(message)
+
+      return true
+    } else {
+      Logger.warning('TransferHandler::transfer - Unknown event...nothing to do here')
+      return true
+    }
+    // const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+    // await consumer.commitMessageSync(message)
+    // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+    // return true
   } catch (error) {
     Logger.error(error)
     throw error
