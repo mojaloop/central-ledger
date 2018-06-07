@@ -26,9 +26,21 @@
 
 'use strict'
 
+/**
+ * @module src/domain/transfer/models/transfer-read-model
+ */
+
 const Db = require('../../../db')
 const extensionModel = require('../../../models/extensions')
 const Logger = require('@mojaloop/central-services-shared').Logger
+
+/**
+ * @function saveTransfer
+ * @async
+ * @description This is the create operation for transfer table
+ * @param  {object} record the transfer object that will be stored
+ * @returns {string} id of the inserted transfer
+ */
 
 const saveTransfer = async (record) => {
   Logger.debug('save transfer' + record.toString())
@@ -38,6 +50,13 @@ const saveTransfer = async (record) => {
     throw err
   }
 }
+
+/**
+ * @function getAllTransfers
+ * @async
+ * @description This operation retrieves all transfers ordered by transferStateChange
+ * @returns {Array} Array of transfer objects
+ */
 
 const getAll = async () => {
   try {
@@ -73,6 +92,15 @@ const getAll = async () => {
   }
 }
 
+/**
+ * @function updateTransfer
+ * @async
+ * @description This the update operation for the transfer table
+ * @param  {string} transferId the id of the transfer object that will be updated
+ * @param  {Object} fields object with fields that will be updated
+ * @returns {number} the number of the updated records
+ */
+
 const updateTransfer = async (transferId, fields) => {
   try {
     return await Db.transfer.update({ transferId: transferId }, fields)
@@ -81,6 +109,13 @@ const updateTransfer = async (transferId, fields) => {
     throw err
   }
 }
+
+/**
+ * @function truncateTransfers
+ * @async
+ * @description This truncate operation of the transfer table
+ * @returns {Promise}
+ */
 
 const truncateTransfers = async () => {
   try {
@@ -91,6 +126,14 @@ const truncateTransfers = async () => {
   }
 }
 
+/**
+ * @function destroyByTransferId
+ * @async
+ * @description This operation deletes a transfer
+ * @param  {Object} transfer the transfer that will be deleted
+ * @returns {number} the number of the deleted records
+ */
+
 const destroyByTransferId = async (transfer) => {
   try {
     await Db.transfer.destroy({transferId: transfer.transferId})
@@ -98,6 +141,14 @@ const destroyByTransferId = async (transfer) => {
     throw new Error(err.message)
   }
 }
+
+/**
+ * @function getById
+ * @async
+ * @description This operation retrieves a transfer by its id
+ * @param  {string} id the transfer that will be retrieved
+ * @returns {Object} the transfer object
+ */
 
 const getById = async (id) => {
   try {
