@@ -43,8 +43,9 @@ const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
 const TransferState = require('../../domain/transfer/state')
-// const CryptoConditions = require('../../crypto-conditions')
-const FiveBellsCondition = require('five-bells-condition')
+const CryptoConditions = require('../../crypto-conditions')
+// const FiveBellsCondition = require('five-bells-condition')
+const Crypto = require('crypto')
 const ilp = require('../../models/ilp')
 
 const TRANSFER = 'transfer'
@@ -159,13 +160,23 @@ const fulfil = async (error, messages) => {
     const payload = message.value.content.payload
     if (metadata.event.type === FULFIL && metadata.event.action === COMMIT) {
       const existingTransfer = await TransferQueries.getById(transferId)
-      const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
+
+      // @NOTE: This has been commented out as it does not conform to the Mojaloop Specification. The Crypo-conditions are generic and do not conform to any specific protocol, but rather must be determined by the implemented schema
+      // const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
+
+      // @TODO: The following hashing code should be moved into a re-usable common-shared-service at a later point
+      var hashSha256 = Crypto.createHash('sha256')
+      var fulfilmentCondition = payload.fulfilment
+      fulfilmentCondition = hashSha256.update(fulfilmentCondition)
+      // console.log(conditionHashedFulfil)
+      fulfilmentCondition = hashSha256.digest(fulfilmentCondition).toString('base64')
+
       if (!existingTransfer) {
         Logger.info('FulfilHandler::fulfil::validationFailed::notFound')
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-        // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
+      // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
       } else if (fulfilmentCondition !== existingTransfer.condition) { // TODO: FiveBellsCondition.fulfillmentToCondition always passes
         Logger.info('FulfilHandler::fulfil::validationFailed::invalidFulfilment')
         await consumer.commitMessageSync(message)
