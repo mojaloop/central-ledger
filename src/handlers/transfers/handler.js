@@ -223,6 +223,7 @@ const reject = async () => {
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const transfer = async (error, messages) => {
+  Logger.info('TransferHandler::transfer')
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -234,11 +235,43 @@ const transfer = async (error, messages) => {
     } else {
       message = messages
     }
-    Logger.info('TransferHandler::transfer')
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
-    await consumer.commitMessageSync(message)
-    await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
-    return true
+
+    const {metadata, from, to, content, id} = message.value
+    const {action, state} = metadata.event
+    const status = state.status
+    Logger.info('TransferHandler::transfer action: ' + action)
+    Logger.info('TransferHandler::transfer status: ' + status)
+
+    // Validate event - Rule: type == 'transfer' && action == 'commit'
+    if (action.toLowerCase() === 'prepare' && status.toLowerCase() === 'success') {
+      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+
+      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      await consumer.commitMessageSync(message)
+
+      return true
+    } else if (action.toLowerCase() === 'commit' && status.toLowerCase() === 'success') {
+      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+
+      // send notification message to Payee
+      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      // send notification message to Payer
+      // message.value.to = from
+      // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      await consumer.commitMessageSync(message)
+
+      return true
+    } else {
+      Logger.warning('TransferHandler::transfer - Unknown event...nothing to do here')
+      return true
+    }
+    // const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+    // await consumer.commitMessageSync(message)
+    // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+    // return true
   } catch (error) {
     Logger.error(error)
     throw error
