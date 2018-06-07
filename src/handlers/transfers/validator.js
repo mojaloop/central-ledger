@@ -34,10 +34,12 @@
  * @module src/handlers/transfers
  */
 
+const Logger = require('@mojaloop/central-services-shared').Logger
 const Decimal = require('decimal.js')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
 const CryptoConditions = require('../../crypto-conditions/index')
+const Crypto = require('crypto')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 
 // const Joi = require('joi')
@@ -97,6 +99,16 @@ const validateAmount = (amount) => {
   return true
 }
 
+const validateFulfilCondition = (fulfilment, condition) => {
+  // @TODO: The following hashing code should be moved into a re-usable common-shared-service at a later point
+  var hashSha256 = Crypto.createHash('sha256')
+  var calculatedCondition = fulfilment
+  calculatedCondition = hashSha256.update(calculatedCondition)
+  calculatedCondition = hashSha256.digest(calculatedCondition).toString('base64').slice(0, -1)
+  Logger.debug(`calculatedCondition=${calculatedCondition}`)
+  return calculatedCondition === condition
+}
+
 const validateConditionAndExpiration = async (payload) => {
   if (!payload.condition) {
     reasons.push('condition is required for a conditional transfer')
@@ -154,6 +166,7 @@ const validateById = async (payload) => {
 module.exports = {
   validateByName,
   validateById,
+  validateFulfilCondition,
 //  validateTransferPrepareSchema,
   reasons
 }
