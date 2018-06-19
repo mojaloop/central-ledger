@@ -7,11 +7,16 @@ module.exports = [{
   method: 'PUT',
   path: '/transfers/{id}',
   handler: Handler.prepareTransfer,
-  config: {
+  options: {
     id: 'transfer',
     tags: tags,
     auth: Auth.strategy(),
     description: 'Prepare a transfer',
+    payload: {
+      allow: 'application/json',
+      failAction: 'error',
+      output: 'data'
+    },
     validate: {
       params: {
         id: Joi.string().guid().required().description('Id of transfer to prepare')
@@ -41,7 +46,7 @@ module.exports = [{
   method: 'GET',
   path: '/transfers/{id}',
   handler: Handler.getTransferById,
-  config: {
+  options: {
     tags: tags,
     auth: Auth.strategy(),
     description: 'Get transfer by ID',
@@ -56,13 +61,16 @@ module.exports = [{
   method: 'PUT',
   path: '/transfers/{id}/fulfillment',
   handler: Handler.fulfillTransfer,
-  config: {
+  options: {
     id: 'transfer_fulfillment',
     tags: tags,
     auth: Auth.strategy(),
     description: 'Fulfill a transfer',
+    payload: {
+      failAction: 'error'
+    },
     validate: {
-      headers: Joi.object({ 'content-type': Joi.string().required().valid('text/plain') }).unknown(),
+      headers: Joi.object({'content-type': Joi.string().required().valid('text/plain')}).unknown(),
       params: {
         id: Joi.string().guid().required().description('Id of transfer to fulfill')
       },
@@ -74,11 +82,15 @@ module.exports = [{
   method: 'PUT',
   path: '/transfers/{id}/rejection',
   handler: Handler.rejectTransfer,
-  config: {
+  options: {
     id: 'transfer_rejection',
     tags: tags,
     auth: Auth.strategy(),
     description: 'Reject a transfer',
+    payload: {
+      allow: 'application/json',
+      failAction: 'error'
+    },
     validate: {
       params: {
         id: Joi.string().guid().required().description('Id of transfer to reject')
@@ -91,7 +103,7 @@ module.exports = [{
   method: 'GET',
   path: '/transfers/{id}/fulfillment',
   handler: Handler.getTransferFulfillment,
-  config: {
+  options: {
     tags: tags,
     description: 'Get transfer fulfillment',
     auth: Auth.strategy(),

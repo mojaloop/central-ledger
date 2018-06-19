@@ -7,7 +7,11 @@ const config = (tags, permission, validate) => {
   if (tags) {
     conf.tags = tags
   }
-
+  if (validate) {
+    if (validate.payload) {
+      conf.payload = validate.payload
+    }
+  }
   if (permission) {
     if (permission.key) {
       conf.auth = Auth.tokenAuth(permission)
@@ -16,11 +20,11 @@ const config = (tags, permission, validate) => {
       conf.description = permission
     }
   }
-
   if (validate) {
-    conf.validate = validate
+    if (validate.validate) {
+      conf.validate = validate.validate
+    }
   }
-
   return conf
 }
 

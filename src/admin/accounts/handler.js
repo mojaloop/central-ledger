@@ -5,7 +5,7 @@ const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlparser')
 const Sidecar = require('../../lib/sidecar')
 
-const entityItem = ({ name, createdDate, isDisabled }) => {
+const entityItem = ({name, createdDate, isDisabled}) => {
   const link = UrlParser.toAccountUri(name)
   return {
     name,
@@ -33,35 +33,29 @@ const handleMissingRecord = (entity) => {
   return entity
 }
 
-const create = (request, reply) => {
+const create = async function (request, h) {
   Sidecar.logRequest(request)
-  Account.getByName(request.payload.name)
-    .then(handleExistingRecord)
-    .then(() => Account.create(request.payload))
-    .then(account => reply(entityItem(account)).code(201))
-    .catch(reply)
+  const entity = await Account.getByName(request.payload.name)
+  await handleExistingRecord(entity)
+  const account = await Account.create(request.payload)
+  return h.response(entityItem(account)).code(201)
 }
 
-const getAll = (request, reply) => {
-  Account.getAll()
-    .then(results => results.map(entityItem))
-    .then(reply)
-    .catch(reply)
+const getAll = async function (request, h) {
+  const results = await Account.getAll()
+  return results.map(entityItem)
 }
 
-const getByName = (request, reply) => {
-  Account.getByName(request.params.name)
-    .then(handleMissingRecord)
-    .then(account => entityItem(account))
-    .then(reply)
-    .catch(reply)
+const getByName = async function (request, h) {
+  const entity = await Account.getByName(request.params.name)
+  handleMissingRecord(entity)
+  return entityItem(entity)
 }
 
-const update = (request, reply) => {
+const update = async function (request, h) {
   Sidecar.logRequest(request)
-  Account.update(request.params.name, request.payload)
-    .then(result => reply(entityItem(result)))
-    .catch(reply)
+  const updatedEntity = await Account.update(request.params.name, request.payload)
+  return entityItem(updatedEntity)
 }
 
 module.exports = {

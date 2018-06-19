@@ -11,7 +11,7 @@ const Sidecar = require('../../../../src/lib/sidecar')
 const toAccount = 'http://central-ledger/accounts/to'
 const fromAccount = 'http://central-ledger/accounts/from'
 
-const createPayload = ({ ledger = Config.HOSTNAME, from = fromAccount, to = toAccount, data = {} }) => {
+const createPayload = ({ledger = Config.HOSTNAME, from = fromAccount, to = toAccount, data = {}}) => {
   return {
     ledger,
     from,
@@ -21,7 +21,7 @@ const createPayload = ({ ledger = Config.HOSTNAME, from = fromAccount, to = toAc
 }
 
 const buildRequest = (payload = {}) => {
-  return Base.buildRequest({ url: '/messages', method: 'POST', payload })
+  return Base.buildRequest({url: '/messages', method: 'POST', payload})
 }
 
 Test('POST /messages', postTest => {
@@ -40,41 +40,31 @@ Test('POST /messages', postTest => {
     test.end()
   })
 
-  postTest.test('return error if required fields are missing', test => {
+  postTest.test('return error if required fields are missing', async function (test) {
     let req = buildRequest({})
-
-    Base.setup().then(server => {
-      server.inject(req, res => {
-        Base.assertBadRequestError(test, res, [
-          { message: 'ledger is required', params: { key: 'ledger' } },
-          { message: 'from is required', params: { key: 'from' } },
-          { message: 'to is required', params: { key: 'to' } },
-          { message: 'data is required', params: { key: 'data' } }
-        ])
-        test.end()
-      })
-    })
+    const server = await Base.setup()
+    const res = await server.inject(req)
+    Base.assertBadRequestError(test, res, 'child "ledger" fails because [ledger is required]. child "from" fails because [from is required]. child "to" fails because [to is required]. child "data" fails because [data is required]')
+    await server.stop()
+    test.end()
   })
 
-  postTest.test('return error if ledger is not url', test => {
-    let req = buildRequest(createPayload({ ledger: 'test' }))
-
-    Base.setup().then(server => {
-      server.inject(req, res => {
-        Base.assertBadRequestError(test, res, [{ message: 'ledger must be a valid uri', params: { key: 'ledger', value: 'test' } }])
-        test.end()
-      })
-    })
+  postTest.test('return error if ledger is not url', async function (test) {
+    let req = buildRequest(createPayload({ledger: 'test'}))
+    const server = await Base.setup()
+    const res = await server.inject(req)
+    Base.assertBadRequestError(test, res, 'child "ledger" fails because [ledger must be a valid uri]')
+    await server.stop()
+    test.end()
   })
 
-  postTest.test('return error if ledger is not valid', test => {
-    let req = buildRequest(createPayload({ ledger: 'http://not-valid' }))
-    Base.setup().then(server => {
-      server.inject(req, res => {
-        Base.assertBadRequestError(test, res, [{ message: 'ledger is not valid for this ledger', params: { key: 'ledger', value: 'http://not-valid' } }])
-        test.end()
-      })
-    })
+  postTest.test('return error if ledger is not valid', async function (test) {
+    let req = buildRequest(createPayload({ledger: 'http://not-valid'}))
+    const server = await Base.setup()
+    const res = await server.inject(req)
+    Base.assertInvalidBodyError(test, res, 'Body does not match schema')
+    await server.stop()
+    test.end()
   })
 
   postTest.end()

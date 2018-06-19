@@ -29,11 +29,9 @@ function entityItem (transfer) {
   }
 }
 
-const getAll = (request, reply) => {
-  Transfer.getAll()
-    .then(results => results.map(entityItem))
-    .then(result => reply(result))
-    .catch(e => reply(e))
+const getAll = async function (request, h) {
+  const transfers = await Transfer.getAll()
+  return transfers.map(entityItem)
 }
 
 module.exports = {

@@ -9,9 +9,9 @@ module.exports = [
     method: 'GET',
     path: '/auth_token',
     handler: Handler.create,
-    config: {
+    options: {
       tags,
-      auth: AccountAuthStrategy.name,
+      auth: AccountAuthStrategy.scheme,
       description: 'Get a token that can be used to authenticate future requests',
       id: 'auth_token'
     }

@@ -1,21 +1,26 @@
 'use strict'
 
+// const Bcrypt = require('bcrypt') for later use
 const Config = require('../../lib/config')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
-const validate = (request, username, password, cb) => {
+const validate = async (request, username, password, h) => {
   if (!(username && password && Config.ADMIN_KEY && Config.ADMIN_SECRET)) {
-    return cb(null, false)
+    return {credentials: null, isValid: false}
   }
-
-  if (username === Config.ADMIN_KEY && password === Config.ADMIN_SECRET) {
-    return cb(null, true, { is_admin: true })
+  const isValid = password === Config.ADMIN_SECRET
+  // const isValid = await Bcrypt.compare(password, Config.ADMIN_SECRET) to be used in the future to hash passwords
+  if (username === Config.ADMIN_KEY && isValid) {
+    const credentials = {id: 'test', name: username, is_admin: true}
+    Logger.info('is a valid admin')
+    return {isValid: true, credentials}
   } else {
-    return cb(null, false)
+    return {credentials: null, isValid: false}
   }
 }
 
 module.exports = {
   name: 'admin',
-  scheme: 'basic',
+  scheme: 'simple',
   validate
 }

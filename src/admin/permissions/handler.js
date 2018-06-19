@@ -2,14 +2,14 @@
 
 const Permissions = require('../../domain/security/permissions')
 
-const getPermissions = (request, reply) => {
+const getPermissions = function (request, h) {
   const permissions = Object.keys(Permissions).map(k => {
     /* istanbul ignore else */
     if (Permissions.hasOwnProperty(k)) {
       return Permissions[k]
     }
   })
-  reply(permissions)
+  return permissions
 }
 
 module.exports = {

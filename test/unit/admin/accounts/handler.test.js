@@ -31,7 +31,7 @@ Test('accounts handler', handlerTest => {
   })
 
   handlerTest.test('getAll should', getAllTest => {
-    getAllTest.test('get all accounts and format list', test => {
+    getAllTest.test('get all accounts and format list', async function (test) {
       const account1 = {
         name: 'account1',
         createdDate: new Date(),
@@ -45,43 +45,40 @@ Test('accounts handler', handlerTest => {
       const accounts = [account1, account2]
 
       Account.getAll.returns(P.resolve(accounts))
-
-      const reply = response => {
-        test.equal(response.length, 2)
-        const item1 = response[0]
-        test.equal(item1.name, account1.name)
-        test.equal(item1.id, `${hostname}/accounts/${account1.name}`)
-        test.equal(item1.is_disabled, false)
-        test.equal(item1.created, account1.createdDate)
-        test.equal(item1._links.self, `${hostname}/accounts/${account1.name}`)
-        const item2 = response[1]
-        test.equal(item2.name, account2.name)
-        test.equal(item2.id, `${hostname}/accounts/${account2.name}`)
-        test.equal(item2.is_disabled, false)
-        test.equal(item2.created, account2.createdDate)
-        test.equal(item2._links.self, `${hostname}/accounts/${account2.name}`)
-        test.end()
-      }
-
-      Handler.getAll({}, reply)
+      const response = await Handler.getAll({}, {})
+      test.equal(response.length, 2)
+      const item1 = response[0]
+      test.equal(item1.name, account1.name)
+      test.equal(item1.id, `${hostname}/accounts/${account1.name}`)
+      test.equal(item1.is_disabled, false)
+      test.equal(item1.created, account1.createdDate)
+      test.equal(item1._links.self, `${hostname}/accounts/${account1.name}`)
+      const item2 = response[1]
+      test.equal(item2.name, account2.name)
+      test.equal(item2.id, `${hostname}/accounts/${account2.name}`)
+      test.equal(item2.is_disabled, false)
+      test.equal(item2.created, account2.createdDate)
+      test.equal(item2._links.self, `${hostname}/accounts/${account2.name}`)
+      test.end()
     })
 
-    getAllTest.test('reply with error if Account services throws', test => {
+    getAllTest.test('reply with error if Account services throws', async function (test) {
       const error = new Error()
       Account.getAll.returns(P.reject(error))
 
-      const reply = (e) => {
-        test.equal(e, error)
+      try {
+        await Handler.getAll({}, {})
+      } catch (err) {
+        test.equal(err, error)
         test.end()
       }
-      Handler.getAll({}, reply)
     })
 
     getAllTest.end()
   })
 
   handlerTest.test('getByName should', getByNameTest => {
-    getByNameTest.test('get and format an account', test => {
+    getByNameTest.test('get and format an account', async function (test) {
       const account1 = {
         name: 'account1',
         createdDate: new Date(),
@@ -90,30 +87,28 @@ Test('accounts handler', handlerTest => {
 
       Account.getByName.returns(P.resolve(account1))
 
-      const reply = response => {
-        test.equal(response.name, account1.name)
-        test.equal(response.id, `${hostname}/accounts/${account1.name}`)
-        test.equal(response.is_disabled, false)
-        test.equal(response.created, account1.createdDate)
-        test.equal(response._links.self, `${hostname}/accounts/${account1.name}`)
-        test.end()
-      }
-
-      Handler.getByName({ params: { name: account1.name } }, reply)
+      const response = await Handler.getByName({params: {name: account1.name}}, {})
+      test.equal(response.name, account1.name)
+      test.equal(response.id, `${hostname}/accounts/${account1.name}`)
+      test.equal(response.is_disabled, false)
+      test.equal(response.created, account1.createdDate)
+      test.equal(response._links.self, `${hostname}/accounts/${account1.name}`)
+      test.end()
     })
 
-    getByNameTest.test('reply with not found error if Account does not exist', test => {
+    getByNameTest.test('reply with not found error if Account does not exist', async function (test) {
       const error = new Errors.NotFoundError('The requested resource could not be found.')
       Account.getByName.returns(P.resolve(null))
 
-      const reply = (e) => {
-        test.deepEqual(e, error)
+      try {
+        await Handler.getByName({params: {name: 'name'}}, {})
+      } catch (err) {
+        test.deepEqual(err, error)
         test.end()
       }
-      Handler.getByName({ params: { name: 'name' } }, reply)
     })
 
-    getByNameTest.test('reply with error if Account services throws', test => {
+    getByNameTest.test('reply with error if Account services throws', async function (test) {
       const error = new Error()
       Account.getByName.returns(P.reject(error))
 
@@ -121,14 +116,19 @@ Test('accounts handler', handlerTest => {
         test.equal(e, error)
         test.end()
       }
-      Handler.getByName({ params: { name: 'name' } }, reply)
+      try {
+        await Handler.getByName({params: {name: 'name'}}, reply)
+      } catch (e) {
+        test.equal(e, error)
+        test.end()
+      }
     })
 
     getByNameTest.end()
   })
 
   handlerTest.test('updateAccount should', updateAccountTest => {
-    updateAccountTest.test('update an account to disabled', test => {
+    updateAccountTest.test('update an account to disabled', async function (test) {
       const account = {
         name: 'account1',
         id: `${hostname}/accounts/account1`,
@@ -139,76 +139,75 @@ Test('accounts handler', handlerTest => {
       Account.update.returns(P.resolve(account))
 
       const request = {
-        payload: { is_disabled: false },
-        params: { name: 'name' }
+        payload: {is_disabled: false},
+        params: {name: 'name'}
       }
 
-      const reply = response => {
-        test.equal(response.name, account.name)
-        test.equal(response.id, `${hostname}/accounts/${account.name}`)
-        test.equal(response.is_disabled, account.isDisabled)
-        test.equal(response.created, account.createdDate)
-        test.ok(Sidecar.logRequest.calledWith(request))
-        test.end()
-      }
-
-      Handler.update(request, reply)
+      const response = await Handler.update(request, {})
+      test.equal(response.name, account.name)
+      test.equal(response.id, `${hostname}/accounts/${account.name}`)
+      test.equal(response.is_disabled, account.isDisabled)
+      test.equal(response.created, account.createdDate)
+      test.ok(Sidecar.logRequest.calledWith(request))
+      test.end()
     })
 
-    updateAccountTest.test('reply with error if Account services throws', test => {
+    updateAccountTest.test('reply with error if Account services throws', async function (test) {
       const error = new Error()
       Account.update.returns(P.reject(error))
 
       const request = {
-        payload: { is_disabled: false },
-        params: { name: 'name' }
+        payload: {is_disabled: false},
+        params: {name: 'name'}
       }
 
-      const reply = (e) => {
+      try {
+        await Handler.update(request, {})
+      } catch (e) {
         test.equal(e, error)
         test.end()
       }
-
-      Handler.update(request, reply)
     })
 
     updateAccountTest.end()
   })
 
   handlerTest.test('create should', createTest => {
-    createTest.test('return created account', test => {
-      const payload = { name: 'dfsp1', password: 'dfsp1' }
-      const account = { name: payload.name, createdDate: 'today', isDisabled: true }
+    createTest.test('return created account', async function (test) {
+      const payload = {name: 'dfsp1', password: 'dfsp1'}
+      const account = {name: payload.name, createdDate: 'today', isDisabled: true}
       Account.getByName.returns(P.resolve(null))
       Account.create.withArgs(payload).returns(P.resolve(account))
       const accountId = UrlParser.toAccountUri(account.name)
-      const reply = (response) => {
-        test.equal(response.id, accountId)
-        test.equal(response.is_disabled, account.isDisabled)
-        test.equal(response.created, account.createdDate)
-        test.ok(Sidecar.logRequest.calledWith({ payload }))
-        return {
-          code: (statusCode) => {
-            test.equal(statusCode, 201)
-            test.end()
+      const reply = {
+        response: (output) => {
+          test.equal(output.id, accountId)
+          test.equal(output.is_disabled, account.isDisabled)
+          test.equal(output.created, account.createdDate)
+          test.ok(Sidecar.logRequest.calledWith({payload}))
+          return {
+            code: (statusCode) => {
+              test.equal(statusCode, 201)
+              test.end()
+            }
           }
         }
       }
-
-      Handler.create({ payload }, reply)
+      await Handler.create({payload}, reply)
     })
 
-    createTest.test('return RecordExistsError if name already registered', test => {
-      const payload = { name: 'dfsp1', password: 'dfsp1' }
-      Account.getByName.returns(P.resolve({}))
+    createTest.test('return RecordExistsError if name already registered', async function (test) {
+      const payload = {name: 'dfsp1', password: 'dfsp1'}
+      const account = {name: payload.name, createdDate: 'today', isDisabled: true}
+      Account.getByName.returns(P.resolve({account}))
 
-      const reply = response => {
-        test.ok(response instanceof Errors.RecordExistsError)
-        test.equal(response.message, 'The account has already been registered')
+      try {
+        await Handler.create({payload}, {})
+      } catch (e) {
+        test.ok(e instanceof Errors.RecordExistsError)
+        test.equal(e.message, 'The account has already been registered')
         test.end()
       }
-
-      Handler.create({ payload }, reply)
     })
 
     createTest.end()

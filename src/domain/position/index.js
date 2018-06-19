@@ -101,11 +101,9 @@ exports.calculateForAllAccounts = () => {
         transferPositionMap.set(UrlParser.toAccountUri(account.name), buildEmptyPosition())
         feePositionMap.set(UrlParser.toAccountUri(account.name), buildEmptyPosition())
       })
-
       return P.all([SettleableTransfersReadmodel.getUnsettledTransfers(), Fee.getUnsettledFees()]).then(([transfers, fees]) => {
         const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap))
         const feePositions = buildResponse(calculatePositions(fees.map(mapFeeToExecuted), feePositionMap))
-
         var positions = []
         accounts.forEach(account => {
           const accountUri = UrlParser.toAccountUri(account.name)
@@ -114,7 +112,6 @@ exports.calculateForAllAccounts = () => {
 
           positions.push(generatePosition(accountUri, accountTransferPositions, accountFeePositions))
         })
-
         return positions
       })
     })

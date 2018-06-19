@@ -10,11 +10,15 @@ module.exports = [
     method: 'POST',
     path: '/messages',
     handler: Handler.sendMessage,
-    config: {
+    options: {
       tags,
       description: 'Send a notification to another account',
       id: 'message',
       auth: Auth.strategy(),
+      payload: {
+        allow: 'application/json',
+        failAction: 'error'
+      },
       validate: {
         payload: {
           id: Joi.string().optional(),
