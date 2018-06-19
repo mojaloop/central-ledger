@@ -10,7 +10,7 @@ const generateTransferId = () => {
   return Uuid()
 }
 
-const generateAccountName = () => {
+const generateParticipantName = () => {
   return generateRandomName()
 }
 
@@ -18,9 +18,9 @@ const generateRandomName = () => {
   return `dfsp${Uuid().replace(/-/g, '')}`.substr(0, 25)
 }
 
-const buildDebitOrCredit = (accountName, amount, memo) => {
+const buildDebitOrCredit = (participantName, amount, memo) => {
   return {
-    account: `http://${hostname}/accounts/${accountName}`,
+    participant: `http://${hostname}/participants/${participantName}`,
     amount: amount,
     memo: memo,
     authorized: true
@@ -33,15 +33,15 @@ const futureDate = () => {
   return d
 }
 
-const buildTransfer = (transferId, debit, credit, expiresAt) => {
-  expiresAt = (expiresAt || futureDate()).toISOString()
+const buildTransfer = (transferId, debit, credit, expirationDate) => {
+  expirationDate = (expirationDate || futureDate()).toISOString()
   return {
     id: `http://${hostname}/transfers/${transferId}`,
     ledger: `http://${hostname}`,
     debits: [debit],
     credits: [credit],
     execution_condition: executionCondition,
-    expires_at: expiresAt
+    expires_at: expirationDate
   }
 }
 
@@ -54,8 +54,8 @@ const buildUnconditionalTransfer = (transferId, debit, credit) => {
   }
 }
 
-const buildTransferPreparedEvent = (transferId, debit, credit, expiresAt) => {
-  expiresAt = (expiresAt || futureDate()).toISOString()
+const buildTransferPreparedEvent = (transferId, debit, credit, expirationDate) => {
+  expirationDate = (expirationDate || futureDate()).toISOString()
   return {
     id: 1,
     name: 'TransferPrepared',
@@ -64,7 +64,7 @@ const buildTransferPreparedEvent = (transferId, debit, credit, expiresAt) => {
       debits: [debit],
       credits: [credit],
       execution_condition: executionCondition,
-      expires_at: expiresAt
+      expires_at: expirationDate
     },
     aggregate: {
       id: transferId,
@@ -75,8 +75,8 @@ const buildTransferPreparedEvent = (transferId, debit, credit, expiresAt) => {
   }
 }
 
-const buildTransferExecutedEvent = (transferId, debit, credit, expiresAt) => {
-  expiresAt = (expiresAt || futureDate()).toISOString()
+const buildTransferExecutedEvent = (transferId, debit, credit, expirationDate) => {
+  expirationDate = (expirationDate || futureDate()).toISOString()
   return {
     id: 2,
     name: 'TransferExecuted',
@@ -85,8 +85,8 @@ const buildTransferExecutedEvent = (transferId, debit, credit, expiresAt) => {
       debits: [debit],
       credits: [credit],
       execution_condition: executionCondition,
-      expires_at: expiresAt,
-      fulfillment: 'oAKAAA'
+      expires_at: expirationDate,
+      fulfilment: 'oAKAAA'
     },
     aggregate: {
       id: transferId,
@@ -113,23 +113,23 @@ const buildTransferRejectedEvent = (transferId, rejectionReason) => {
   }
 }
 
-const buildReadModelTransfer = (transferId, debit, credit, state, expiresAt, preparedDate, rejectionReason) => {
+const buildReadModelTransfer = (transferId, debit, credit, state, expirationDate, preparedDate, rejectionReason) => {
   state = state || 'prepared'
-  expiresAt = (expiresAt || futureDate()).toISOString()
+  expirationDate = (expirationDate || futureDate()).toISOString()
   preparedDate = (preparedDate || new Date()).toISOString()
   return {
-    transferUuid: transferId,
+    transferId: transferId,
     state: state,
     ledger: `${hostname}`,
-    debitAccountId: debit.accountId,
-    debitAmount: debit.amount,
-    debitMemo: debit.memo,
-    creditAccountId: credit.accountId,
-    creditAmount: credit.amount,
-    creditMemo: credit.memo,
+    payeeParticipantId: debit.participantId,
+    payeeAmount: debit.amount,
+    payeeNote: debit.memo,
+    payerParticipantId: credit.participantId,
+    payerAmount: credit.amount,
+    payerNote: credit.memo,
     executionCondition: executionCondition,
     rejectionReason: rejectionReason,
-    expiresAt: expiresAt,
+    expirationDate: expirationDate,
     preparedDate: preparedDate
   }
 }
@@ -144,25 +144,25 @@ const buildCharge = (name, rateType, code) => {
     'minimum': '16.00',
     'maximum': '100.00',
     'is_active': true,
-    'payer': 'sender',
-    'payee': 'receiver'
+    'payerParticipantId': 'sender',
+    'payeeParticipantId': 'receiver'
   }
 }
 
-const findAccountPositions = (positions, accountName) => {
+const findParticipantPositions = (positions, participantName) => {
   return positions.find(function (p) {
-    return p.account === buildAccountUrl(accountName)
+    return p.participant === buildParticipantUrl(participantName)
   })
 }
 
-const buildAccountUrl = (accountName) => {
-  return `http://${hostname}/accounts/${accountName}`
+const buildParticipantUrl = (participantName) => {
+  return `http://${hostname}/participants/${participantName}`
 }
 
-function buildAccountPosition (accountName, tPayments, tReceipts, fPayments, fReceipts) {
+function buildParticipantPosition (participantName, tPayments, tReceipts, fPayments, fReceipts) {
   return {
-    account: buildAccountUrl(accountName),
-    fees: {
+    participant: buildParticipantUrl(participantName),
+    fee: {
       payments: fPayments.toString(),
       receipts: fReceipts.toString(),
       net: (fReceipts - fPayments).toString()
@@ -196,7 +196,7 @@ const rejectionMessage = () => {
 
 module.exports = {
   hostname,
-  buildAccountPosition,
+  buildParticipantPosition,
   buildCharge,
   buildDebitOrCredit,
   buildTransfer,
@@ -205,9 +205,9 @@ module.exports = {
   buildTransferExecutedEvent,
   buildTransferRejectedEvent,
   buildReadModelTransfer,
-  findAccountPositions,
+  findParticipantPositions,
   generateRandomName,
-  generateAccountName,
+  generateParticipantName,
   generateTransferId,
   getMomentToExpire,
   getCurrentUTCTimeInMilliseconds,

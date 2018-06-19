@@ -10,7 +10,7 @@ const Routes = require('../../../src/api/routes')
 const Auth = require('../../../src/api/auth')
 const Sockets = require('../../../src/api/sockets')
 const Worker = require('../../../src/api/worker')
-const Account = require('../../../src/domain/account')
+const Participant = require('../../../src/domain/participant')
 const Setup = require('../../../src/shared/setup')
 
 Test('Api index', indexTest => {
@@ -20,7 +20,7 @@ Test('Api index', indexTest => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(Setup)
     sandbox.stub(Logger)
-    sandbox.stub(Account, 'createLedgerAccount')
+    sandbox.stub(Participant, 'createLedgerParticipant')
     test.end()
   })
 
@@ -45,7 +45,6 @@ Test('Api index', indexTest => {
         service: 'api',
         port: Config.PORT,
         modules: [Auth, Routes, Sockets, Worker],
-        loadEventric: true,
         runMigrations: true
       }))
       test.end()

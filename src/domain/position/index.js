@@ -4,7 +4,7 @@ const _ = require('lodash')
 const Decimal = require('decimal.js')
 const UrlParser = require('../../lib/urlparser')
 const PositionCalculator = require('./position-calculator')
-const Account = require('../../domain/account')
+const Participant = require('../../domain/participant')
 const Fee = require('../../domain/fee')
 const SettleableTransfersReadmodel = require('../../models/settleable-transfers-read-model')
 const P = require('bluebird')
@@ -22,16 +22,16 @@ const buildEmptyPosition = () => {
 }
 
 const buildResponse = (positionMap) => {
-  return Array.from(positionMap.keys()).sort().map(p => _.assign({ account: p }, _.forOwn(positionMap.get(p), (value, key, obj) => (obj[key] = value.toString()))))
+  return Array.from(positionMap.keys()).sort().map(p => _.assign({ participant: p }, _.forOwn(positionMap.get(p), (value, key, obj) => (obj[key] = value.toString()))))
 }
 
 const mapFeeToExecuted = (fee) => {
   return {
-    account: fee.account,
-    debitAmount: fee.payerAmount,
-    creditAmount: fee.payeeAmount,
-    debitAccountName: fee.payerAccountName,
-    creditAccountName: fee.payeeAccountName
+    participant: fee.participant,
+    payeeAmount: fee.payerAmount,
+    payerAmount: fee.payeeAmount,
+    debitParticipantName: fee.payerParticipantName,
+    creditParticipantName: fee.payeeParticipantName
   }
 }
 
@@ -50,69 +50,73 @@ const calculatePositions = (executed, positionMap) => {
       }
     }
 
-    const debitAccount = UrlParser.toAccountUri(head.debitAccountName)
-    const creditAccount = UrlParser.toAccountUri(head.creditAccountName)
+    const debitParticipant = UrlParser.toParticipantUri(head.debitParticipantName)
+    const creditParticipant = UrlParser.toParticipantUri(head.creditParticipantName)
 
-    addToExistingPositionFor(debitAccount)(buildPosition(new Decimal(head.debitAmount), new Decimal('0'), (new Decimal(head.debitAmount)).times(-1)))
-    addToExistingPositionFor(creditAccount)(buildPosition(new Decimal('0'), new Decimal(head.creditAmount), new Decimal(head.creditAmount)))
+    addToExistingPositionFor(debitParticipant)(buildPosition(new Decimal(head.payeeAmount), new Decimal('0'), (new Decimal(head.payeeAmount)).times(-1)))
+    addToExistingPositionFor(creditParticipant)(buildPosition(new Decimal('0'), new Decimal(head.payerAmount), new Decimal(head.payerAmount)))
 
     return calculatePositions(tail, positionMap)
   }
 }
 
-const generatePosition = (accountUri, transferPositions, feePositions) => {
+const generatePosition = (participantUri, transferPositions, feePositions) => {
   const transferAmount = new Decimal(transferPositions.net)
   const feeAmount = new Decimal(feePositions.net)
 
-  delete transferPositions.account
-  delete feePositions.account
+  delete transferPositions.participant
+  delete feePositions.participant
 
   return {
-    account: accountUri,
-    fees: feePositions,
+    participant: participantUri,
+    fee: feePositions,
     transfers: transferPositions,
     net: transferAmount.plus(feeAmount).valueOf()
   }
 }
 
-exports.calculateForAccount = (account) => {
-  const accountUri = UrlParser.toAccountUri(account.name)
-  const transferPositionMap = new Map().set(accountUri, buildEmptyPosition())
-  const feePositionMap = new Map().set(accountUri, buildEmptyPosition())
+exports.calculateForParticipant = (participant) => {
+  const participantUri = UrlParser.toParticipantUri(participant.name)
+  const transferPositionMap = new Map().set(participantUri, buildEmptyPosition())
+  const feePositionMap = new Map().set(participantUri, buildEmptyPosition())
 
-  return P.all([SettleableTransfersReadmodel.getUnsettledTransfersByAccount(account.accountId), Fee.getUnsettledFeesByAccount(account)]).then(([transfers, fees]) => {
-    const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap)).find(x => x.account === accountUri)
-    const feePositions = buildResponse(calculatePositions(fees.map(mapFeeToExecuted), feePositionMap)).find(x => x.account === accountUri)
+  return P.all([SettleableTransfersReadmodel.getUnsettledTransfersByParticipant(participant.participantId), Fee.getUnsettledFeeByParticipant(participant)]).then(([transfers, fee]) => {
+    const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap)).find(x => x.participant === participantUri)
+    const feePositions = buildResponse(calculatePositions(fee.map(mapFeeToExecuted), feePositionMap)).find(x => x.participant === participantUri)
 
-    return generatePosition(accountUri, transferPositions, feePositions)
+    return generatePosition(participantUri, transferPositions, feePositions)
   })
 }
 
-exports.calculateForAllAccounts = () => {
-  return Account.getAll()
-    .then(accounts => {
-      if (!accounts || accounts.length === 0) {
+exports.calculateForAllParticipants = () => {
+  return Participant.getAll()
+    .then(participant => {
+      if (!participant || participant.length === 0) {
         return []
       }
       const transferPositionMap = new Map()
       const feePositionMap = new Map()
 
-      accounts.forEach(account => {
-        transferPositionMap.set(UrlParser.toAccountUri(account.name), buildEmptyPosition())
-        feePositionMap.set(UrlParser.toAccountUri(account.name), buildEmptyPosition())
+      participant.forEach(participant => {
+        transferPositionMap.set(UrlParser.toParticipantUri(participant.name), buildEmptyPosition())
+        feePositionMap.set(UrlParser.toParticipantUri(participant.name), buildEmptyPosition())
       })
-      return P.all([SettleableTransfersReadmodel.getUnsettledTransfers(), Fee.getUnsettledFees()]).then(([transfers, fees]) => {
+      return P.all([SettleableTransfersReadmodel.getUnsettledTransfers(), Fee.getUnsettledFee()]).then(([transfers, fee]) => {
         const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap))
-        const feePositions = buildResponse(calculatePositions(fees.map(mapFeeToExecuted), feePositionMap))
+        const feePositions = buildResponse(calculatePositions(fee.map(mapFeeToExecuted), feePositionMap))
         var positions = []
-        accounts.forEach(account => {
-          const accountUri = UrlParser.toAccountUri(account.name)
-          const accountTransferPositions = transferPositions.find(x => x.account === accountUri)
-          const accountFeePositions = feePositions.find(x => x.account === accountUri)
+        participant.forEach(participant => {
+          const participantUri = UrlParser.toParticipantUri(participant.name)
+          const participantTransferPositions = transferPositions.find(x => x.participant === participantUri)
+          const participantFeePositions = feePositions.find(x => x.participant === participantUri)
 
-          positions.push(generatePosition(accountUri, accountTransferPositions, accountFeePositions))
+          positions.push(generatePosition(participantUri, participantTransferPositions, participantFeePositions))
         })
         return positions
       })
     })
+}
+
+exports.generatePositionPlaceHolder = () => {
+  return true
 }

@@ -5,10 +5,10 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
 const SecurityService = require('../../../../src/domain/security')
-const Handler = require('../../../../src/admin/users/handler')
+const Handler = require('../../../../src/admin/party/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 
-Test('User handler', handlerTest => {
+Test('Party handler', handlerTest => {
   let sandbox
 
   handlerTest.beforeEach(test => {
@@ -23,95 +23,95 @@ Test('User handler', handlerTest => {
     test.end()
   })
 
-  handlerTest.test('create should createUser in service', async function (test) {
-    const user = {firstName: 'dave'}
+  handlerTest.test('create should createParty in service', async function (test) {
+    const party = {firstName: 'dave'}
 
-    SecurityService.createUser.returns(P.resolve(user))
+    SecurityService.createParty.returns(P.resolve(party))
 
     const request = {
-      payload: user
+      payload: party
     }
 
     const response = await Handler.create(request, {})
-    test.equal(response, user)
+    test.equal(response, party)
     test.ok(Sidecar.logRequest.calledWith(request))
     test.end()
   })
 
-  handlerTest.test('getAll should get all users from service', async function (test) {
-    const users = [{}, {}]
-    SecurityService.getAllUsers.returns(P.resolve(users))
+  handlerTest.test('getAll should get all party from service', async function (test) {
+    const party = [{}, {}]
+    SecurityService.getAllParty.returns(P.resolve(party))
 
     const response = await Handler.getAll({}, {})
-    test.equal(response, users)
+    test.equal(response, party)
     test.end()
   })
 
-  handlerTest.test('getById should get user by id from service', async function (test) {
-    const user = {firstName: 'Dave'}
-    const userId = Uuid()
-    SecurityService.getUserById.withArgs(userId).returns(P.resolve(user))
+  handlerTest.test('getById should get party by id from service', async function (test) {
+    const party = {firstName: 'Dave'}
+    const partyId = Uuid()
+    SecurityService.getPartyById.withArgs(partyId).returns(P.resolve(party))
 
-    const response = await Handler.getById({params: {id: userId}}, {})
-    test.equal(response, user)
+    const response = await Handler.getById({params: {id: partyId}}, {})
+    test.equal(response, party)
     test.end()
   })
 
-  handlerTest.test('remove should deleteUser in service and return empty', async function (test) {
-    const userId = Uuid()
+  handlerTest.test('remove should deleteParty in service and return empty', async function (test) {
+    const partyId = Uuid()
 
-    SecurityService.deleteUser.returns(P.resolve({}))
+    SecurityService.deleteParty.returns(P.resolve({}))
 
-    const request = {params: {id: userId}}
+    const request = {params: {id: partyId}}
 
     const response = await Handler.remove(request, {})
     test.deepEqual(response, {})
     test.ok(Sidecar.logRequest.calledWith(request))
-    test.ok(SecurityService.deleteUser.calledWith(userId))
+    test.ok(SecurityService.deleteParty.calledWith(partyId))
     test.end()
   })
 
-  handlerTest.test('update should update user by id', async function (test) {
-    const userId = Uuid()
+  handlerTest.test('update should update party by id', async function (test) {
+    const partyId = Uuid()
     const details = {firstName: 'Dave'}
-    const user = {lastName: 'Superuser'}
+    const party = {lastName: 'Superuser'}
 
-    SecurityService.updateUser.returns(P.resolve(user))
+    SecurityService.updateParty.returns(P.resolve(party))
     const request = {
-      params: {id: userId},
+      params: {id: partyId},
       payload: details
     }
 
     const response = await Handler.update(request, {})
-    test.deepEqual(response, user)
+    test.deepEqual(response, party)
     test.ok(Sidecar.logRequest.calledWith(request))
-    test.ok(SecurityService.updateUser.calledWith(userId, details))
+    test.ok(SecurityService.updateParty.calledWith(partyId, details))
     test.end()
   })
 
-  handlerTest.test('getRoles should return roles from service', async function (test) {
-    const roles = [{}, {}]
-    const userId = Uuid()
-    SecurityService.getUserRoles.withArgs(userId).returns(P.resolve(roles))
+  handlerTest.test('getRole should return role from service', async function (test) {
+    const role = [{}, {}]
+    const partyId = Uuid()
+    SecurityService.getPartyRole.withArgs(partyId).returns(P.resolve(role))
 
-    const response = await Handler.getRoles({params: {id: userId}}, {})
-    test.deepEqual(response, roles)
+    const response = await Handler.getRole({params: {id: partyId}}, {})
+    test.deepEqual(response, role)
     test.end()
   })
 
-  handlerTest.test('updateRoles should update roles in service', async function (test) {
-    const updatedRoles = [{}, {}]
+  handlerTest.test('updateRole should update role in service', async function (test) {
+    const updatedRole = [{}, {}]
     const roleIds = [Uuid(), Uuid()]
-    const userId = Uuid()
+    const partyId = Uuid()
 
-    SecurityService.updateUserRoles.withArgs(userId, roleIds).returns(P.resolve(updatedRoles))
+    SecurityService.updatePartyRole.withArgs(partyId, roleIds).returns(P.resolve(updatedRole))
     const request = {
-      params: {id: userId},
+      params: {id: partyId},
       payload: roleIds
     }
 
-    const response = await Handler.updateRoles(request, {})
-    test.deepEqual(response, updatedRoles)
+    const response = await Handler.updateRole(request, {})
+    test.deepEqual(response, updatedRole)
     test.ok(Sidecar.logRequest.calledWith(request))
     test.end()
   })

@@ -5,7 +5,7 @@ const BaseError = Shared.BaseError
 const ErrorCategory = Shared.ErrorCategory
 
 class RecordExistsError extends BaseError {
-  constructor (message = 'The account has already been registered') {
+  constructor (message = 'The participant has already been registered') {
     super(ErrorCategory.UNPROCESSABLE, message)
   }
 }

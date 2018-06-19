@@ -30,18 +30,18 @@ Test('Token Service', serviceTest => {
 
   serviceTest.test('create should', createTest => {
     createTest.test('generate token and save hash to model', test => {
-      const accountId = 1234
-      const account = { accountId }
+      const participantId = 1234
+      const participant = { participantId }
       const token = 'token'
       const tokenHash = 'tokenHash'
       const encodedTokenHash = tokenHash
       Crypto.generateToken.returns(P.resolve(token))
       Crypto.hash.withArgs(token).returns(P.resolve(tokenHash))
-      Model.create.returns(P.resolve({ accountId, token: encodedTokenHash }))
-      TokenService.create(account)
+      Model.create.returns(P.resolve({ participantId, token: encodedTokenHash }))
+      TokenService.create(participant)
         .then(result => {
           test.equal(result.token, token)
-          test.ok(Model.create.calledWith(Sinon.match({ accountId, token: encodedTokenHash })))
+          test.ok(Model.create.calledWith(Sinon.match({ participantId, token: encodedTokenHash })))
           test.end()
         })
     })
@@ -50,8 +50,8 @@ Test('Token Service', serviceTest => {
 
   serviceTest.test('create should', createTest => {
     createTest.test('generate expiration if Config.TOKEN_EXPIRATION is set', test => {
-      const accountId = 1234
-      const account = { accountId }
+      const participantId = 1234
+      const participant = { participantId }
       const token = 'token'
       const tokenHash = 'tokenHash'
       const encodedTokenHash = tokenHash
@@ -64,17 +64,17 @@ Test('Token Service', serviceTest => {
       Time.getCurrentUTCTimeInMilliseconds.returns(currentTime)
       Config.TOKEN_EXPIRATION = tokenExpiration
 
-      Model.create.returns(P.resolve({ accountId, token: encodedTokenHash, expiration: tokenExpires }))
-      TokenService.create(account)
+      Model.create.returns(P.resolve({ participantId, token: encodedTokenHash, expiration: tokenExpires }))
+      TokenService.create(participant)
         .then(result => {
-          test.ok(Model.create.calledWith(Sinon.match({ accountId, token: encodedTokenHash, expiration: tokenExpires })))
+          test.ok(Model.create.calledWith(Sinon.match({ participantId, token: encodedTokenHash, expiration: tokenExpires })))
           test.end()
         })
     })
 
     createTest.test('create non expiring token if Config.TOKEN_EXPIRATION not set', test => {
-      const accountId = 1234
-      const account = { accountId }
+      const participantId = 1234
+      const participant = { participantId }
       const token = 'token'
       const tokenHash = 'tokenHash'
       const encodedTokenHash = tokenHash
@@ -83,9 +83,9 @@ Test('Token Service', serviceTest => {
       Config.TOKEN_EXPIRATION = null
       Model.create.returns(P.resolve({}))
 
-      TokenService.create(account)
+      TokenService.create(participant)
         .then(result => {
-          test.ok(Model.create.calledWith(Sinon.match({ accountId, token: encodedTokenHash, expiration: null })))
+          test.ok(Model.create.calledWith(Sinon.match({ participantId, token: encodedTokenHash, expiration: null })))
           test.end()
         })
     })
@@ -93,19 +93,19 @@ Test('Token Service', serviceTest => {
     createTest.end()
   })
 
-  serviceTest.test('byAccount should', byAccountTest => {
-    byAccountTest.test('return byToken from Model', test => {
-      const accountId = 1
-      const account = { accountId }
-      Model.byAccount.returns(P.resolve([]))
-      TokenService.byAccount(account)
+  serviceTest.test('byParticipant should', byParticipantTest => {
+    byParticipantTest.test('return byToken from Model', test => {
+      const participantId = 1
+      const participant = { participantId }
+      Model.byParticipant.returns(P.resolve([]))
+      TokenService.byParticipant(participant)
         .then(result => {
-          test.ok(Model.byAccount.calledWith(Sinon.match({ accountId })))
+          test.ok(Model.byParticipant.calledWith(Sinon.match({ participantId })))
           test.end()
         })
     })
 
-    byAccountTest.end()
+    byParticipantTest.end()
   })
 
   serviceTest.test('removeExpired should', removeExpiredTest => {

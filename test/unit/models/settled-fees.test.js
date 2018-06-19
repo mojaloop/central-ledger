@@ -4,16 +4,16 @@ const src = '../../../src'
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
-const Model = require(`${src}/models/settled-fees`)
+const Model = require(`${src}/models/settled-fee`)
 const Db = require(`${src}/db`)
 
-Test('settled-fees model', function (modelTest) {
+Test('settled-fee model', function (modelTest) {
   let sandbox
 
   modelTest.beforeEach((t) => {
     sandbox = Sinon.sandbox.create()
 
-    Db.settledFees = {
+    Db.settledFee = {
       insert: sandbox.stub(),
       truncate: sandbox.stub()
     }
@@ -31,7 +31,7 @@ Test('settled-fees model', function (modelTest) {
       const fee = { feeId: '1234', settlementId: 'abc' }
       const created = { feeId: fee.feeId, settlementId: fee.settlementId }
 
-      Db.settledFees.insert.returns(P.resolve(created))
+      Db.settledFee.insert.returns(P.resolve(created))
 
       Model.create(fee)
         .then(c => {
@@ -45,11 +45,11 @@ Test('settled-fees model', function (modelTest) {
 
   modelTest.test('truncate should', truncateTest => {
     truncateTest.test('truncate table', test => {
-      Db.settledFees.truncate.returns(P.resolve())
+      Db.settledFee.truncate.returns(P.resolve())
 
       Model.truncate()
         .then(() => {
-          test.ok(Db.settledFees.truncate.calledOnce)
+          test.ok(Db.settledFee.truncate.calledOnce)
           test.end()
         })
     })

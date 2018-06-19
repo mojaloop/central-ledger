@@ -4,7 +4,7 @@ const Test = require('tape')
 const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
 
-Test('PUT /charges/{name}', putTest => {
+Test('PUT /charge/{name}', putTest => {
   putTest.test('should update a charge', async function (test) {
     const chargeName = Fixtures.generateRandomName()
     const payload = {
@@ -16,8 +16,8 @@ Test('PUT /charges/{name}', putTest => {
       maximum: '100.00',
       code: '003',
       is_active: true,
-      payer: 'sender',
-      payee: 'receiver'
+      payerParticipantId: 'sender',
+      payeeParticipantId: 'receiver'
     }
 
     const payload2 = {
@@ -39,15 +39,15 @@ Test('PUT /charges/{name}', putTest => {
     test.equal(res.body.code, payload2.code)
     test.equal(res.body.rate_type, payload.rate_type)
     test.equal(res.body.rate, payload.rate)
-    test.equal(res.body.payer, payload.payer)
-    test.equal(res.body.payee, payload.payee)
+    test.equal(res.body.payerParticipantId, payload.payerParticipantId)
+    test.equal(res.body.payeeParticipantId, payload.payeeParticipantId)
     test.end()
   })
 
   putTest.end()
 })
 
-Test('PUT /charges/{name}', putTest => {
+Test('PUT /charge/{name}', putTest => {
   putTest.test('should update a charge with null values', async function (test) {
     const chargeName = Fixtures.generateRandomName()
     const payload = {
@@ -59,8 +59,8 @@ Test('PUT /charges/{name}', putTest => {
       maximum: '100.00',
       code: '003',
       is_active: true,
-      payer: 'sender',
-      payee: 'receiver'
+      payerParticipantId: 'sender',
+      payeeParticipantId: 'receiver'
     }
 
     const payload2 = {
@@ -82,8 +82,8 @@ Test('PUT /charges/{name}', putTest => {
     test.equal(res.body.code, payload2.code)
     test.equal(res.body.rate_type, payload.rate_type)
     test.equal(res.body.rate, payload.rate)
-    test.equal(res.body.payer, payload.payer)
-    test.equal(res.body.payee, payload.payee)
+    test.equal(res.body.payerParticipantId, payload.payerParticipantId)
+    test.equal(res.body.payeeParticipantId, payload.payeeParticipantId)
     test.end()
   })
 

@@ -29,27 +29,27 @@ Test('JWT', jwtTest => {
   })
 
   jwtTest.test('create should', createTest => {
-    createTest.test('throw error if user does not exist', test => {
+    createTest.test('throw error if party does not exist', test => {
       const userKey = 'kiy'
-      SecurityService.getUserByKey.withArgs(userKey).returns(Promise.reject(new Errors.NotFoundError('User does not exist')))
+      SecurityService.getPartyByKey.withArgs(userKey).returns(Promise.reject(new Errors.NotFoundError('Party does not exist')))
 
       JWT.create(userKey)
         .then(() => test.fail('expected exception'))
         .catch(Errors.NotFoundError, e => {
-          test.equal(e.message, 'User does not exist')
+          test.equal(e.message, 'Party does not exist')
           test.end()
         })
         .catch(() => test.fail('Expected not found exception'))
     })
 
-    createTest.test('return key signed with user', test => {
+    createTest.test('return key signed with party', test => {
       const userKey = 'kiy'
-      const userId = Uuid()
-      const user = { userId, key: userKey }
-      SecurityService.getUserByKey.withArgs(userKey).returns(Promise.resolve(user))
+      const partyId = Uuid()
+      const party = { partyId, key: userKey }
+      SecurityService.getPartyByKey.withArgs(userKey).returns(Promise.resolve(party))
 
       const signedToken = 'signed-token'
-      WebToken.sign.withArgs(Sinon.match({ userInfo: { userId } }), Config.ADMIN_SECRET).returns(signedToken)
+      WebToken.sign.withArgs(Sinon.match({ userInfo: { partyId } }), Config.ADMIN_SECRET).returns(signedToken)
 
       JWT.create(userKey)
         .then(result => {
@@ -60,9 +60,9 @@ Test('JWT', jwtTest => {
 
     createTest.test('assign issuer and expiration to created token', test => {
       const userKey = 'key'
-      const user = { userId: Uuid(), key: userKey }
+      const party = { partyId: Uuid(), key: userKey }
       Config.TOKEN_EXPIRATION = 30000
-      SecurityService.getUserByKey.returns(Promise.resolve(user))
+      SecurityService.getPartyByKey.returns(Promise.resolve(party))
 
       JWT.create(userKey)
         .then(() => {
@@ -76,9 +76,9 @@ Test('JWT', jwtTest => {
 
     createTest.test('default expiresIn to 1 hour', test => {
       const userKey = 'key'
-      const user = { userId: Uuid(), key: userKey }
+      const party = { partyId: Uuid(), key: userKey }
       Config.TOKEN_EXPIRATION = null
-      SecurityService.getUserByKey.returns(Promise.resolve(user))
+      SecurityService.getPartyByKey.returns(Promise.resolve(party))
 
       JWT.create(userKey)
         .then(() => {
@@ -106,12 +106,12 @@ Test('JWT', jwtTest => {
         .catch(() => test.fail('Expected exception'))
     })
 
-    verifyTest.test('throw error if user does not exist', test => {
+    verifyTest.test('throw error if party does not exist', test => {
       const token = 'token'
-      const userId = Uuid()
-      const decoded = { userInfo: { userId } }
+      const partyId = Uuid()
+      const decoded = { userInfo: { partyId } }
       WebToken.verify.withArgs(token, Config.ADMIN_SECRET).yields(null, decoded)
-      SecurityService.getUserById.withArgs(userId).returns(Promise.reject(new Errors.NotFoundError()))
+      SecurityService.getPartyById.withArgs(partyId).returns(Promise.reject(new Errors.NotFoundError()))
 
       JWT.verify(token)
         .then(() => test.fail('expected exception'))
@@ -122,20 +122,20 @@ Test('JWT', jwtTest => {
         .catch(() => test.fail('Expected exception'))
     })
 
-    verifyTest.test('return user and roles for user', test => {
+    verifyTest.test('return party and role for party', test => {
       const token = 'token'
-      const userId = Uuid()
-      const decoded = { userInfo: { userId } }
+      const partyId = Uuid()
+      const decoded = { userInfo: { partyId } }
       WebToken.verify.withArgs(token, Config.ADMIN_SECRET).yields(null, decoded)
-      const user = { userId }
-      SecurityService.getUserById.withArgs(userId).returns(Promise.resolve(user))
-      const roles = [{}, {}]
-      SecurityService.getUserRoles.withArgs(userId).returns(Promise.resolve(roles))
+      const party = { partyId }
+      SecurityService.getPartyById.withArgs(partyId).returns(Promise.resolve(party))
+      const role = [{}, {}]
+      SecurityService.getPartyRole.withArgs(partyId).returns(Promise.resolve(role))
 
       JWT.verify(token)
         .then(result => {
-          test.deepEqual(result.user, user)
-          test.deepEqual(result.roles, roles)
+          test.deepEqual(result.party, party)
+          test.deepEqual(result.role, role)
           test.end()
         })
     })

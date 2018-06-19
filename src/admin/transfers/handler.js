@@ -4,28 +4,29 @@ const Transfer = require('../../domain/transfer')
 
 function entityItem (transfer) {
   return {
-    transferUuid: transfer.transferUuid,
-    state: transfer.state,
+    transferId: transfer.transferId,
+    transferBatchId: transfer.transferBatchId,
+    transferState: transfer.transferState,
     ledger: transfer.ledger,
-    debitAccountId: transfer.debitAccountId,
-    debitAmount: transfer.debitAmount,
-    debitMemo: transfer.debitMemo,
-    creditAccountId: transfer.creditAccountId,
-    creditAmount: transfer.creditAmount,
-    creditMemo: transfer.creditMemo,
-    creditRejected: transfer.creditRejected,
-    creditRejectionMessage: transfer.creditRejectionMessage,
+    payeeParticipantId: transfer.payeeParticipantId,
+    payeeAmount: transfer.payeeAmount,
+    payeeNote: transfer.payeeNote,
+    payerParticipantId: transfer.payerParticipantId,
+    payerAmount: transfer.payerAmount,
+    payerNote: transfer.payerNote,
+    payeeRejected: transfer.payeeRejected,
+    payeeRejectionMessage: transfer.payeeRejectionMessage,
     executionCondition: transfer.executionCondition,
     cancellationCondition: transfer.cancellationCondition,
-    fulfillment: transfer.fulfillment,
+    fulfilment: transfer.fulfilment,
     rejectionReason: transfer.rejectionReason,
-    expiresAt: transfer.expiresAt,
+    expirationDate: transfer.expirationDate,
     additionalInfo: transfer.additionalInfo,
     preparedDate: transfer.preparedDate,
     executedDate: transfer.executedDate,
     rejectedDate: transfer.rejectedDate,
-    creditAccountName: transfer.creditAccountName,
-    debitAccountName: transfer.debitAccountName
+    creditParticipantName: transfer.creditParticipantName,
+    debitParticipantName: transfer.debitParticipantName
   }
 }
 

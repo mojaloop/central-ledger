@@ -1,6 +1,6 @@
 instrumentation:
   include-all-sources: true
-  excludes: ['**/migrations/**', '**/deploy/**', '**/src/domain/settlements/settlementEventListener.js']
+  excludes: ['**/migrations/**', '**/deploy/**', '**/src/domain/settlements/settlementEventListener.js', '**/testPI2/**']
 check:
   global:
     statements: 90

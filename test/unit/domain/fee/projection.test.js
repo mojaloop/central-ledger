@@ -6,31 +6,31 @@ const P = require('bluebird')
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const FeeService = require('../../../../src/domain/fee')
-const FeesProjection = require('../../../../src/domain/fee/projection')
+const FeeProjection = require('../../../../src/domain/fee/projection')
 
 const hostname = 'http://some-host'
 const executionCondition = 'ni:///sha-256;47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU?fpt=preimage-sha-256&cost=0'
 
-Test('Fees-Projection', feesProjectionTest => {
+Test('Fee-Projection', feeProjectionTest => {
   let sandbox
 
-  feesProjectionTest.beforeEach(t => {
+  feeProjectionTest.beforeEach(t => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(FeeService, 'generateFeesForTransfer')
+    sandbox.stub(FeeService, 'generateFeeForTransfer')
     sandbox.stub(Logger, 'error')
     t.end()
   })
 
-  feesProjectionTest.afterEach(t => {
+  feeProjectionTest.afterEach(t => {
     sandbox.restore()
     t.end()
   })
 
-  feesProjectionTest.test('Initialize should', initTest => {
+  feeProjectionTest.test('Initialize should', initTest => {
     initTest.test('call done', t => {
       let done = sandbox.stub()
 
-      FeesProjection.initialize({}, done)
+      FeeProjection.initialize({}, done)
       t.ok(done.calledOnce)
       t.end()
     })
@@ -38,23 +38,23 @@ Test('Fees-Projection', feesProjectionTest => {
     initTest.end()
   })
 
-  feesProjectionTest.test('handleTransferExecuted should', executedTest => {
+  feeProjectionTest.test('handleTransferExecuted should', executedTest => {
     const event = {
       id: 2,
       name: 'TransferExecuted',
       payload: {
         ledger: `${hostname}`,
         debits: [{
-          account: `${hostname}/accounts/dfsp1`,
+          participant: `${hostname}/participants/dfsp1`,
           amount: '50'
         }],
         credits: [{
-          account: `${hostname}/accounts/dfsp2`,
+          participant: `${hostname}/participants/dfsp2`,
           amount: '50'
         }],
         execution_condition: executionCondition,
         expires_at: '2015-06-16T00:00:01.000Z',
-        fulfillment: 'oAKAAA'
+        fulfilment: 'oAKAAA'
       },
       aggregate: {
         id: Uuid(),
@@ -64,18 +64,18 @@ Test('Fees-Projection', feesProjectionTest => {
       timestamp: 1474471284081
     }
 
-    executedTest.test('generate fees in model', test => {
-      FeeService.generateFeesForTransfer.returns(P.resolve({}))
-      FeesProjection.handleTransferExecuted(event)
-      test.ok(FeeService.generateFeesForTransfer.calledWith(event))
+    executedTest.test('generate fee in model', test => {
+      FeeService.generateFeeForTransfer.returns(P.resolve({}))
+      FeeProjection.handleTransferExecuted(event)
+      test.ok(FeeService.generateFeeForTransfer.calledWith(event))
       test.end()
     })
 
     executedTest.test('log error', t => {
       const error = new Error()
-      FeeService.generateFeesForTransfer.returns(P.reject(error))
+      FeeService.generateFeeForTransfer.returns(P.reject(error))
 
-      FeesProjection.handleTransferExecuted(event)
+      FeeProjection.handleTransferExecuted(event)
       t.ok(Logger.error.calledWith('Error handling TransferExecuted event', error))
       t.end()
     })
@@ -83,5 +83,5 @@ Test('Fees-Projection', feesProjectionTest => {
     executedTest.end()
   })
 
-  feesProjectionTest.end()
+  feeProjectionTest.end()
 })

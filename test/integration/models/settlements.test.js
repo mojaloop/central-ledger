@@ -1,9 +1,9 @@
 'use strict'
 
 const Test = require('tape')
-const Model = require('../../../src/models/settlements')
+const Model = require('../../../src/models/settlement')
 
-Test('settlements model', modelTest => {
+Test('settlement model', modelTest => {
   modelTest.test('create should', createTest => {
     createTest.test('create a new settlement', test => {
       let settlementId = Model.generateId()

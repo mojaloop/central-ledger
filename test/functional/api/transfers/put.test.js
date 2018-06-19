@@ -16,7 +16,7 @@ Test('PUT /transfers', putTest => {
   putTest.test('should prepare a transfer', test => {
     const transferId = Fixtures.generateTransferId()
     const memo = { interledger: 'blah', path: 'blah' }
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount, memo))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount, memo))
 
     prepareTransfer(transferId, transfer)
       .expect(201)
@@ -24,10 +24,10 @@ Test('PUT /transfers', putTest => {
       .then(res => {
         test.equal(res.body.id, transfer.id)
         test.equal(res.body.ledger, transfer.ledger)
-        test.equal(res.body.debits[0].account, transfer.debits[0].account)
+        test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
         test.equal(res.body.debits[0].amount, amount)
         test.equal(res.body.debits[0].hasOwnProperty('memo'), false)
-        test.equal(res.body.credits[0].account, transfer.credits[0].account)
+        test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
         test.equal(res.body.credits[0].amount, amount)
         test.deepEqual(res.body.credits[0].memo, memo)
         test.equal(res.body.execution_condition, transfer.execution_condition)
@@ -43,7 +43,7 @@ Test('PUT /transfers', putTest => {
   putTest.test('should prepare and execute unconditional transfer', test => {
     const transferId = Fixtures.generateTransferId()
     const memo = { interledger: 'blah', path: 'blah' }
-    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount, memo), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount, memo), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     prepareTransfer(transferId, transfer)
       .expect(201)
@@ -51,10 +51,10 @@ Test('PUT /transfers', putTest => {
       .then(res => {
         test.equal(res.body.id, transfer.id)
         test.equal(res.body.ledger, transfer.ledger)
-        test.equal(res.body.debits[0].account, transfer.debits[0].account)
+        test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
         test.equal(res.body.debits[0].amount, amount)
         test.deepEqual(res.body.debits[0].memo, memo)
-        test.equal(res.body.credits[0].account, transfer.credits[0].account)
+        test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
         test.equal(res.body.credits[0].amount, amount)
         test.equal(res.body.credits[0].hasOwnProperty('memo'), false)
         test.equal(res.body.hasOwnProperty('execution_condition'), false)
@@ -69,7 +69,7 @@ Test('PUT /transfers', putTest => {
 
   putTest.test('should not throw error on optimistic transfer with repeat id', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount, { interledger: 'blah', path: 'blah' }), Fixtures.buildDebitOrCredit(Base.account2Name, amount, { interledger: 'blah', path: 'blah' }))
+    const transfer = Fixtures.buildUnconditionalTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount, { interledger: 'blah', path: 'blah' }), Fixtures.buildDebitOrCredit(Base.participant2Name, amount, { interledger: 'blah', path: 'blah' }))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() =>
@@ -88,7 +88,7 @@ Test('PUT /transfers', putTest => {
 
   putTest.test('should return transfer details when preparing existing transfer', test => {
     const transferId = Fixtures.generateTransferId()
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
@@ -98,9 +98,9 @@ Test('PUT /transfers', putTest => {
           .then(res => {
             test.equal(res.body.id, transfer.id)
             test.equal(res.body.ledger, transfer.ledger)
-            test.equal(res.body.debits[0].account, transfer.debits[0].account)
+            test.equal(res.body.debits[0].participant, transfer.debits[0].participant)
             test.equal(res.body.debits[0].amount, amount)
-            test.equal(res.body.credits[0].account, transfer.credits[0].account)
+            test.equal(res.body.credits[0].participant, transfer.credits[0].participant)
             test.equal(res.body.credits[0].amount, amount)
             test.equal(res.body.execution_condition, transfer.execution_condition)
             test.equal(res.body.expires_at, transfer.expires_at)
@@ -115,11 +115,11 @@ Test('PUT /transfers', putTest => {
 
   putTest.test('should return error when preparing existing transfer with changed properties', test => {
     let transferId = Fixtures.generateTransferId()
-    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
-        transfer.credits.push(Fixtures.buildDebitOrCredit(Base.account1Name, amount))
+        transfer.credits.push(Fixtures.buildDebitOrCredit(Base.participant1Name, amount))
 
         prepareTransfer(transferId, transfer)
           .expect(400)
@@ -134,7 +134,7 @@ Test('PUT /transfers', putTest => {
 
   putTest.test('return error when preparing fulfilled transfer', test => {
     let transferId = Fixtures.generateTransferId()
-    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    let transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => Base.fulfillTransfer(transferId, 'oAKAAA'))
@@ -153,7 +153,7 @@ Test('PUT /transfers', putTest => {
   putTest.test('return error when preparing transfer with expired date', test => {
     const transferId = Fixtures.generateTransferId()
     const expiredDate = Moment.utc().add(-10, 'minutes')
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount), expiredDate)
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount), expiredDate)
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => Base.fulfillTransfer(transferId, 'oAKAAA'))
@@ -169,10 +169,10 @@ Test('PUT /transfers', putTest => {
       })
   })
 
-  putTest.test('return error when preparing transfer with ledger account as sender', test => {
+  putTest.test('return error when preparing transfer with ledger participant as sender', test => {
     const transferId = Fixtures.generateTransferId()
-    Config.LEDGER_ACCOUNT_NAME = 'LedgerAccountName'
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Config.LEDGER_ACCOUNT_NAME, amount), Fixtures.buildDebitOrCredit(Base.account2Name, amount))
+    Config.LEDGER_ACCOUNT_NAME = 'LedgerParticipantName'
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Config.LEDGER_ACCOUNT_NAME, amount), Fixtures.buildDebitOrCredit(Base.participant2Name, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => Base.fulfillTransfer(transferId, 'oAKAAA'))
@@ -182,16 +182,16 @@ Test('PUT /transfers', putTest => {
           .expect('Content-Type', /json/)
           .then(res => {
             test.equal(res.body.id, 'ValidationError')
-            test.equal(res.body.message, `Account ${Config.LEDGER_ACCOUNT_NAME} not found`)
+            test.equal(res.body.message, `Participant ${Config.LEDGER_ACCOUNT_NAME} not found`)
             test.end()
           })
       })
   })
 
-  putTest.test('return error when preparing transfer with ledger account as receiver', test => {
+  putTest.test('return error when preparing transfer with ledger participant as receiver', test => {
     const transferId = Fixtures.generateTransferId()
-    Config.LEDGER_ACCOUNT_NAME = 'LedgerAccountName'
-    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.account1Name, amount), Fixtures.buildDebitOrCredit(Config.LEDGER_ACCOUNT_NAME, amount))
+    Config.LEDGER_ACCOUNT_NAME = 'LedgerParticipantName'
+    const transfer = Fixtures.buildTransfer(transferId, Fixtures.buildDebitOrCredit(Base.participant1Name, amount), Fixtures.buildDebitOrCredit(Config.LEDGER_ACCOUNT_NAME, amount))
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => Base.fulfillTransfer(transferId, 'oAKAAA'))
@@ -201,7 +201,7 @@ Test('PUT /transfers', putTest => {
           .expect('Content-Type', /json/)
           .then(res => {
             test.equal(res.body.id, 'ValidationError')
-            test.equal(res.body.message, `Account ${Config.LEDGER_ACCOUNT_NAME} not found`)
+            test.equal(res.body.message, `Participant ${Config.LEDGER_ACCOUNT_NAME} not found`)
             test.end()
           })
       })
