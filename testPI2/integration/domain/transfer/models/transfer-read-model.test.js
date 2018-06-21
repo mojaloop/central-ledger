@@ -92,7 +92,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
         amount: 100,
         currencyId: 'USD',
         expirationDate: null,
-        transferSettlementBatchId: null
+        settlementWindowId: null
       })
       let read = await Model.getById('test_tr_id')
       assert.equal(read.transferId, 'test_tr_id')

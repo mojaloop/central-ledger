@@ -29,7 +29,7 @@
     amount
     currencyId
     expirationDate
-    transferSettlementBatchId: null
+    settlementWindowId: null
 */
 
 'use strict'
@@ -50,7 +50,7 @@ exports.prepareData = async () => {
       amount: 100,
       currencyId: 'USD',
       expirationDate: null,
-      transferSettlementBatchId: null
+      settlementWindowId: null
     })
 
     return {
