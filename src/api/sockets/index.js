@@ -6,7 +6,7 @@ const Uuid = require('uuid4')
 const Events = require('../../lib/events')
 const SocketManager = require('./socket-manager')
 const WebSocket = require('./websocket')
-const AccountTransfers = require('./account-transfers')
+const ParticipantTransfers = require('./participant-transfers')
 
 let manager
 
@@ -16,10 +16,10 @@ const createWebSocketServer = (listener) => {
   })
 }
 
-const getAccounts = (transfer) => {
+const getParticipants = (transfer) => {
   const credits = transfer.credits || []
   const debits = transfer.debits || []
-  return [...credits, ...debits].map(c => c.account)
+  return [...credits, ...debits].map(c => c.participant)
 }
 
 const wireConnection = (webSocketServer) => {
@@ -29,7 +29,7 @@ const wireConnection = (webSocketServer) => {
     if (path === '/websocket') {
       WebSocket.initialize(ws, manager)
     } else {
-      AccountTransfers.initialize(ws, url, manager)
+      ParticipantTransfers.initialize(ws, url, manager)
     }
   })
 }
@@ -37,7 +37,7 @@ const wireConnection = (webSocketServer) => {
 const transferHandler = (event) => {
   return (msg) => {
     const resource = formatResource(event, msg.resource, msg.related_resources)
-    getAccounts(msg.resource).forEach(account => manager.send(account, resource))
+    getParticipants(msg.resource).forEach(participant => manager.send(participant, resource))
   }
 }
 
@@ -59,8 +59,8 @@ const formatResource = (event, resource, relatedResources) => {
 }
 
 const messageHandler = (message) => {
-  const toAccount = message.to
-  manager.send(toAccount, formatResource('message.send', message))
+  const toParticipant = message.to
+  manager.send(toParticipant, formatResource('message.send', message))
 }
 
 const wireEvents = () => {

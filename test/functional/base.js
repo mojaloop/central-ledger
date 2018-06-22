@@ -9,36 +9,36 @@ const P = require('bluebird')
 const Encoding = require('@mojaloop/central-services-shared').Encoding
 const DA = require('deasync-promise')
 
-const account1Name = 'dfsp1'
-const account1AccountNumber = '1234'
-const account1RoutingNumber = '2345'
-const account2Name = 'dfsp2'
-const account2AccountNumber = '3456'
-const account2RoutingNumber = '4567'
+const participant1Name = 'dfsp1'
+const participant1ParticipantNumber = '1234'
+const participant1RoutingNumber = '2345'
+const participant2Name = 'dfsp2'
+const participant2ParticipantNumber = '3456'
+const participant2RoutingNumber = '4567'
 
 const basicAuth = (name, password) => {
   const credentials = Encoding.toBase64(name + ':' + password)
   return {'Authorization': `Basic ${credentials}`}
 }
 
-let account1promise
-let account2promise
-const account1 = () => {
-  if (!account1promise) {
-    account1promise = createAccount(account1Name, account1Name).then(res => {
-      return createAccountSettlement(account1Name, account1AccountNumber, account1RoutingNumber).then(() => res.body)
+let participant1promise
+let participant2promise
+const participant1 = () => {
+  if (!participant1promise) {
+    participant1promise = createParticipant(participant1Name, participant1Name).then(res => {
+      return createParticipantSettlement(participant1Name, participant1ParticipantNumber, participant1RoutingNumber).then(() => res.body)
     })
   }
-  return DA(account1promise)
+  return DA(participant1promise)
 }
 
-const account2 = () => {
-  if (!account2promise) {
-    account2promise = createAccount(account2Name, account2Name).then(res => {
-      return createAccountSettlement(account2Name, account2AccountNumber, account2RoutingNumber).then(() => res.body)
+const participant2 = () => {
+  if (!participant2promise) {
+    participant2promise = createParticipant(participant2Name, participant2Name).then(res => {
+      return createParticipantSettlement(participant2Name, participant2ParticipantNumber, participant2RoutingNumber).then(() => res.body)
     })
   }
-  return DA(account2promise)
+  return DA(participant2promise)
 }
 
 const getApi = (path, headers = {}) => RequestApi.get(path).auth('admin', 'admin').set(headers)
@@ -61,59 +61,59 @@ const postAdmin = (path, data, contentType = 'application/json') => RequestAdmin
 
 const putAdmin = (path, data, contentType = 'application/json') => RequestAdmin.put(path).set('Content-Type', contentType).send(data)
 
-const createAccount = (accountName, password = '1234', emailAddress = accountName + '@test.com') => postApi('/accounts', {
-  name: accountName,
+const createParticipant = (participantName, password = '1234', emailAddress = participantName + '@test.com') => postApi('/participants', {
+  name: participantName,
   password: password,
   emailAddress: emailAddress
 })
 
-const createAccountSettlement = (accountName, accountNumber, routingNumber) => putApi(`/accounts/${accountName}/settlement`, {
-  account_number: accountNumber,
+const createParticipantSettlement = (participantName, participantNumber, routingNumber) => putApi(`/participants/${participantName}/settlement`, {
+  participant_number: participantNumber,
   routing_number: routingNumber
 })
 
-const getAccount = (accountName) => getApi(`/accounts/${accountName}`)
+const getParticipant = (participantName) => getApi(`/participants/${participantName}`)
 
-const updateAccount = (accountName, isDisabled) => putAdmin(`/accounts/${accountName}`, {is_disabled: isDisabled})
+const updateParticipant = (participantName, isDisabled) => putAdmin(`/participants/${participantName}`, {is_disabled: isDisabled})
 
 const getTransfer = (transferId) => getApi(`/transfers/${transferId}`)
 
-const getFulfillment = (transferId) => getApi(`/transfers/${transferId}/fulfillment`)
+const getFulfillment = (transferId) => getApi(`/transfers/${transferId}/fulfilment`)
 
 const prepareTransfer = (transferId, transfer) => P.resolve(putApi(`/transfers/${transferId}`, transfer))
 
-const fulfillTransfer = (transferId, fulfillment, auth) => putApi(`/transfers/${transferId}/fulfillment`, fulfillment, auth, 'text/plain')
+const fulfillTransfer = (transferId, fulfilment, auth) => putApi(`/transfers/${transferId}/fulfilment`, fulfilment, auth, 'text/plain')
 
 const rejectTransfer = (transferId, reason, auth) => putApi(`/transfers/${transferId}/rejection`, reason, auth)
 
-const createCharge = (payload) => postAdmin('/charges', payload)
+const createCharge = (payload) => postAdmin('/charge', payload)
 
-const updateCharge = (name, payload) => putAdmin(`/charges/${name}`, payload)
+const updateCharge = (name, payload) => putAdmin(`/charge/${name}`, payload)
 
 module.exports = {
-  account1Name: account1().name,
-  account1AccountNumber,
-  account1RoutingNumber,
-  account1Password: account1Name,
-  account2Name: account2().name,
-  account2AccountNumber,
-  account2RoutingNumber,
-  account2Password: account2Name,
+  participant1Name: participant1().name,
+  participant1ParticipantNumber,
+  participant1RoutingNumber,
+  participant1Password: participant1Name,
+  participant2Name: participant2().name,
+  participant2ParticipantNumber,
+  participant2RoutingNumber,
+  participant2Password: participant2Name,
   basicAuth,
-  createAccount,
+  createParticipant,
   createCharge,
   fulfillTransfer,
   getTransfer,
   getFulfillment,
   getApi,
   getAdmin,
-  getAccount,
+  getParticipant,
   postApi,
   postAdmin,
   prepareTransfer,
   putApi,
   putAdmin,
   rejectTransfer,
-  updateAccount,
+  updateParticipant,
   updateCharge
 }

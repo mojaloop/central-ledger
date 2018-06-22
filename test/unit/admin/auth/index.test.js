@@ -72,7 +72,7 @@ Test('Auth module', authTest => {
 
     tokenAuthTest.test('return token auth and permission scope if permission provided', test => {
       Config.ENABLE_TOKEN_AUTH = true
-      const permission = Permissions.ACCOUNTS_LIST
+      const permission = Permissions.PARTICIPANTS_LIST
       const result = AuthModule.tokenAuth(permission)
 
       test.deepEqual(result, { strategy: TokenStrategy.name, scope: permission.key })

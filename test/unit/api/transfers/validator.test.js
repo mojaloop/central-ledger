@@ -7,7 +7,7 @@ const Moment = require('moment')
 const P = require('bluebird')
 const Config = require('../../../../src/lib/config')
 const UrlParser = require('../../../../src/lib/urlparser')
-const Account = require('../../../../src/domain/account')
+const Participant = require('../../../../src/domain/participant')
 const Validator = require('../../../../src/api/transfers/validator')
 const ValidationError = require('../../../../src/errors').ValidationError
 const CryptoConditions = require('../../../../src/crypto-conditions')
@@ -28,7 +28,7 @@ Test('transfer validator', (test) => {
   const allowedScale = 2
   const allowedPrecision = 10
   const hostname = 'http://some-hostname'
-  const badAccountUri = 'bad_account_uri'
+  const badParticipantUri = 'bad_participant_uri'
   const badPrecisionAmount = '100000000.23'
   const badScaleAmount = '1.123'
   const expiredAt = Moment('2016-12-26T00:00:01.000Z').utc()
@@ -39,18 +39,18 @@ Test('transfer validator', (test) => {
 
   const goodTransfer = () => {
     transferId = Uuid()
-    const account1Name = 'some_account_name'
-    const account2Name = 'other_account_name'
+    const participant1Name = 'some_participant_name'
+    const participant2Name = 'other_participant_name'
     const transferIdUri = `${hostname}/transfers/${transferId}`
 
-    let account1Uri = `${hostname}/accounts/${account1Name}`
-    let account2Uri = `${hostname}/accounts/${account2Name}`
-    Account.getByName.withArgs(account1Name).returns(P.resolve({}))
-    Account.getByName.withArgs(account2Name).returns(P.resolve({}))
+    let participant1Uri = `${hostname}/participants/${participant1Name}`
+    let participant2Uri = `${hostname}/participants/${participant2Name}`
+    Participant.getByName.withArgs(participant1Name).returns(P.resolve({}))
+    Participant.getByName.withArgs(participant2Name).returns(P.resolve({}))
 
-    UrlParser.nameFromAccountUri.withArgs(badAccountUri).returns(null)
-    UrlParser.nameFromAccountUri.withArgs(account1Uri).returns(account1Name)
-    UrlParser.nameFromAccountUri.withArgs(account2Uri).returns(account2Name)
+    UrlParser.nameFromParticipantUri.withArgs(badParticipantUri).returns(null)
+    UrlParser.nameFromParticipantUri.withArgs(participant1Uri).returns(participant1Name)
+    UrlParser.nameFromParticipantUri.withArgs(participant2Uri).returns(participant2Name)
     UrlParser.idFromTransferUri.withArgs(transferIdUri).returns(transferId)
 
     return {
@@ -58,13 +58,13 @@ Test('transfer validator', (test) => {
       ledger: hostname,
       credits: [
         {
-          account: account1Uri,
+          participant: participant1Uri,
           amount: '50.00'
         }
       ],
       debits: [
         {
-          account: account2Uri,
+          participant: participant2Uri,
           amount: '50.00'
         }
       ],
@@ -75,9 +75,9 @@ Test('transfer validator', (test) => {
 
   test.beforeEach((t) => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(UrlParser, 'nameFromAccountUri')
+    sandbox.stub(UrlParser, 'nameFromParticipantUri')
     sandbox.stub(UrlParser, 'idFromTransferUri')
-    sandbox.stub(Account, 'getByName')
+    sandbox.stub(Participant, 'getByName')
     sandbox.stub(Moment, 'utc')
     sandbox.stub(CryptoConditions, 'validateCondition')
     CryptoConditions.validateCondition.returns(true)
@@ -110,56 +110,56 @@ Test('transfer validator', (test) => {
     assertValidationError(Validator.validate(transfer, transferId), assert, 'transfer.ledger is not valid for this ledger')
   })
 
-  test.test('reject if transfer.credits.account is not parseable', assert => {
+  test.test('reject if transfer.credits.participant is not parseable', assert => {
     let transfer = goodTransfer()
-    transfer.credits[0].account = badAccountUri
-    assertValidationError(Validator.validate(transfer, transferId), assert, `Invalid account URI: ${badAccountUri}`)
+    transfer.credits[0].participant = badParticipantUri
+    assertValidationError(Validator.validate(transfer, transferId), assert, `Invalid participant URI: ${badParticipantUri}`)
   })
 
-  test.test('reject if transfer.debits.account is not parseable', assert => {
+  test.test('reject if transfer.debits.participant is not parseable', assert => {
     let transfer = goodTransfer()
-    transfer.debits[0].account = badAccountUri
-    assertValidationError(Validator.validate(transfer, transferId), assert, `Invalid account URI: ${badAccountUri}`)
+    transfer.debits[0].participant = badParticipantUri
+    assertValidationError(Validator.validate(transfer, transferId), assert, `Invalid participant URI: ${badParticipantUri}`)
   })
 
-  test.test('reject if transfer.credits.account name does not exist', assert => {
-    let badAccountName = 'bad_account_name'
-    let accountUri = 'some-debit-account'
+  test.test('reject if transfer.credits.participant name does not exist', assert => {
+    let badParticipantName = 'bad_participant_name'
+    let participantUri = 'some-debit-participant'
     let transfer = goodTransfer()
-    transfer.credits[0].account = accountUri
-    UrlParser.nameFromAccountUri.withArgs(accountUri).returns(badAccountName)
-    Account.getByName.withArgs(badAccountName).returns(P.resolve(null))
-    assertValidationError(Validator.validate(transfer, transferId), assert, `Account ${badAccountName} not found`)
+    transfer.credits[0].participant = participantUri
+    UrlParser.nameFromParticipantUri.withArgs(participantUri).returns(badParticipantName)
+    Participant.getByName.withArgs(badParticipantName).returns(P.resolve(null))
+    assertValidationError(Validator.validate(transfer, transferId), assert, `Participant ${badParticipantName} not found`)
   })
 
-  test.test('reject if transfer.debits.account name does not exist', assert => {
-    let badAccountName = 'bad_account_name'
-    let accountUri = 'some-debit-account'
+  test.test('reject if transfer.debits.participant name does not exist', assert => {
+    let badParticipantName = 'bad_participant_name'
+    let participantUri = 'some-debit-participant'
     let transfer = goodTransfer()
-    transfer.debits[0].account = accountUri
-    UrlParser.nameFromAccountUri.withArgs(accountUri).returns(badAccountName)
-    Account.getByName.withArgs(badAccountName).returns(P.resolve(null))
-    assertValidationError(Validator.validate(transfer, transferId), assert, `Account ${badAccountName} not found`)
+    transfer.debits[0].participant = participantUri
+    UrlParser.nameFromParticipantUri.withArgs(participantUri).returns(badParticipantName)
+    Participant.getByName.withArgs(badParticipantName).returns(P.resolve(null))
+    assertValidationError(Validator.validate(transfer, transferId), assert, `Participant ${badParticipantName} not found`)
   })
 
-  test.test('reject if transfer.credits.account name is the ledger account name', assert => {
-    let badAccountName = Config.LEDGER_ACCOUNT_NAME
-    let accountUri = 'some-debit-account'
+  test.test('reject if transfer.credits.participant name is the ledger participant name', assert => {
+    let badParticipantName = Config.LEDGER_ACCOUNT_NAME
+    let participantUri = 'some-debit-participant'
     let transfer = goodTransfer()
-    transfer.credits[0].account = accountUri
-    UrlParser.nameFromAccountUri.withArgs(accountUri).returns(badAccountName)
-    Account.getByName.withArgs(badAccountName).returns(P.resolve({}))
-    assertValidationError(Validator.validate(transfer, transferId), assert, `Account ${badAccountName} not found`)
+    transfer.credits[0].participant = participantUri
+    UrlParser.nameFromParticipantUri.withArgs(participantUri).returns(badParticipantName)
+    Participant.getByName.withArgs(badParticipantName).returns(P.resolve({}))
+    assertValidationError(Validator.validate(transfer, transferId), assert, `Participant ${badParticipantName} not found`)
   })
 
-  test.test('reject if transfer.debits.account name is the ledger account name', assert => {
-    let badAccountName = Config.LEDGER_ACCOUNT_NAME
-    let accountUri = 'some-debit-account'
+  test.test('reject if transfer.debits.participant name is the ledger participant name', assert => {
+    let badParticipantName = Config.LEDGER_ACCOUNT_NAME
+    let participantUri = 'some-debit-participant'
     let transfer = goodTransfer()
-    transfer.debits[0].account = accountUri
-    UrlParser.nameFromAccountUri.withArgs(accountUri).returns(badAccountName)
-    Account.getByName.withArgs(badAccountName).returns(P.resolve({}))
-    assertValidationError(Validator.validate(transfer, transferId), assert, `Account ${badAccountName} not found`)
+    transfer.debits[0].participant = participantUri
+    UrlParser.nameFromParticipantUri.withArgs(participantUri).returns(badParticipantName)
+    Participant.getByName.withArgs(badParticipantName).returns(P.resolve({}))
+    assertValidationError(Validator.validate(transfer, transferId), assert, `Participant ${badParticipantName} not found`)
   })
 
   test.test('reject if transfer.id is not url', assert => {
@@ -233,7 +233,7 @@ Test('transfer validator', (test) => {
     let transfer = goodTransfer()
     Validator.validate(transfer, transferId)
       .then(t => {
-        assert.ok(Account.getByName.calledTwice)
+        assert.ok(Participant.getByName.calledTwice)
         assert.equal(t, transfer)
         assert.end()
       })
@@ -244,19 +244,19 @@ Test('transfer validator', (test) => {
     transfer.execution_condition = null
     Validator.validate(transfer, transferId)
       .then(t => {
-        assert.ok(Account.getByName.calledTwice)
+        assert.ok(Participant.getByName.calledTwice)
         assert.equal(t, transfer)
         assert.end()
       })
   })
 
-  test.test('call Account.getByName once if same account name', assert => {
+  test.test('call Participant.getByName once if same participant name', assert => {
     let transfer = goodTransfer()
-    transfer.debits[0].account = transfer.credits[0].account
+    transfer.debits[0].participant = transfer.credits[0].participant
 
     Validator.validate(transfer, transferId)
       .then(t => {
-        assert.ok(Account.getByName.calledOnce)
+        assert.ok(Participant.getByName.calledOnce)
         assert.equal(t, transfer)
         assert.end()
       })

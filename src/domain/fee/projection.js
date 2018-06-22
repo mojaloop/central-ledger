@@ -8,8 +8,8 @@ const initialize = (params, done) => {
   return done()
 }
 
-const handleTransferExecuted = (event) => {
-  return DA(FeeService.generateFeesForTransfer(event)
+const handleTransferExecuted = (transfer) => {
+  return DA(FeeService.generateFeeForTransfer(transfer)
     .catch(err => {
       Logger.error('Error handling TransferExecuted event', err)
     }))

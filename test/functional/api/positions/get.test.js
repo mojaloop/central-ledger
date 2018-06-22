@@ -6,11 +6,11 @@ const Fixtures = require('../../../fixtures')
 
 Test('GET /positions', getTest => {
   getTest.test('should return net positions', test => {
-    let fulfillment = 'oAKAAA'
-    let account1Name = Fixtures.generateAccountName()
-    let account2Name = Fixtures.generateAccountName()
-    let account3Name = Fixtures.generateAccountName()
-    let account4Name = Fixtures.generateAccountName()
+    let fulfilment = 'oAKAAA'
+    let participant1Name = Fixtures.generateParticipantName()
+    let participant2Name = Fixtures.generateParticipantName()
+    let participant3Name = Fixtures.generateParticipantName()
+    let participant4Name = Fixtures.generateParticipantName()
 
     let transfer1Id = Fixtures.generateTransferId()
     let transfer2Id = Fixtures.generateTransferId()
@@ -21,26 +21,26 @@ Test('GET /positions', getTest => {
     chargePayload.maximum = '131.00'
     chargePayload.rate = '1.00'
 
-    Base.createAccount(account1Name)
-      .then(() => Base.createAccount(account2Name))
-      .then(() => Base.createAccount(account3Name))
-      .then(() => Base.createAccount(account4Name))
+    Base.createParticipant(participant1Name)
+      .then(() => Base.createParticipant(participant2Name))
+      .then(() => Base.createParticipant(participant3Name))
+      .then(() => Base.createParticipant(participant4Name))
       .then(() => Base.createCharge(chargePayload))
-      .then(() => Base.prepareTransfer(transfer1Id, Fixtures.buildTransfer(transfer1Id, Fixtures.buildDebitOrCredit(account1Name, '130'), Fixtures.buildDebitOrCredit(account2Name, '130'))))
-      .then(() => Base.fulfillTransfer(transfer1Id, fulfillment))
-      .then(() => Base.prepareTransfer(transfer2Id, Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(account1Name, '130'), Fixtures.buildDebitOrCredit(account3Name, '130'))))
-      .then(() => Base.fulfillTransfer(transfer2Id, fulfillment))
-      .then(() => Base.prepareTransfer(transfer3Id, Fixtures.buildTransfer(transfer3Id, Fixtures.buildDebitOrCredit(account3Name, '130'), Fixtures.buildDebitOrCredit(account2Name, '130'))))
-      .then(() => Base.fulfillTransfer(transfer3Id, fulfillment))
+      .then(() => Base.prepareTransfer(transfer1Id, Fixtures.buildTransfer(transfer1Id, Fixtures.buildDebitOrCredit(participant1Name, '130'), Fixtures.buildDebitOrCredit(participant2Name, '130'))))
+      .then(() => Base.fulfillTransfer(transfer1Id, fulfilment))
+      .then(() => Base.prepareTransfer(transfer2Id, Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(participant1Name, '130'), Fixtures.buildDebitOrCredit(participant3Name, '130'))))
+      .then(() => Base.fulfillTransfer(transfer2Id, fulfilment))
+      .then(() => Base.prepareTransfer(transfer3Id, Fixtures.buildTransfer(transfer3Id, Fixtures.buildDebitOrCredit(participant3Name, '130'), Fixtures.buildDebitOrCredit(participant2Name, '130'))))
+      .then(() => Base.fulfillTransfer(transfer3Id, fulfilment))
       .then(() => {
         Base.getApi('/positions')
           .expect(200)
           .expect('Content-Type', /json/)
           .then(res => {
-            test.deepEqual(Fixtures.findAccountPositions(res.body.positions, account1Name), Fixtures.buildAccountPosition(account1Name, 260, 0, 2, 0))
-            test.deepEqual(Fixtures.findAccountPositions(res.body.positions, account2Name), Fixtures.buildAccountPosition(account2Name, 0, 260, 0, 2))
-            test.deepEqual(Fixtures.findAccountPositions(res.body.positions, account3Name), Fixtures.buildAccountPosition(account3Name, 130, 130, 1, 1))
-            test.deepEqual(Fixtures.findAccountPositions(res.body.positions, account4Name), Fixtures.buildAccountPosition(account4Name, 0, 0, 0, 0))
+            test.deepEqual(Fixtures.findParticipantPositions(res.body.positions, participant1Name), Fixtures.buildParticipantPosition(participant1Name, 260, 0, 2, 0))
+            test.deepEqual(Fixtures.findParticipantPositions(res.body.positions, participant2Name), Fixtures.buildParticipantPosition(participant2Name, 0, 260, 0, 2))
+            test.deepEqual(Fixtures.findParticipantPositions(res.body.positions, participant3Name), Fixtures.buildParticipantPosition(participant3Name, 130, 130, 1, 1))
+            test.deepEqual(Fixtures.findParticipantPositions(res.body.positions, participant4Name), Fixtures.buildParticipantPosition(participant4Name, 0, 0, 0, 0))
             test.end()
           })
       })
@@ -48,12 +48,12 @@ Test('GET /positions', getTest => {
   getTest.end()
 })
 
-Test('GET /positions/{name}', getTestAccount => {
-  getTestAccount.test('should return net positions for account', test => {
-    let fulfillment = 'oAKAAA'
-    let account1Name = Fixtures.generateAccountName()
-    let account2Name = Fixtures.generateAccountName()
-    let account3Name = Fixtures.generateAccountName()
+Test('GET /positions/{name}', getTestParticipant => {
+  getTestParticipant.test('should return net positions for participant', test => {
+    let fulfilment = 'oAKAAA'
+    let participant1Name = Fixtures.generateParticipantName()
+    let participant2Name = Fixtures.generateParticipantName()
+    let participant3Name = Fixtures.generateParticipantName()
 
     let transfer1Id = Fixtures.generateTransferId()
     let transfer2Id = Fixtures.generateTransferId()
@@ -62,23 +62,23 @@ Test('GET /positions/{name}', getTestAccount => {
     chargePayload.minimum = '0.00'
     chargePayload.maximum = '10.00'
 
-    Base.createAccount(account1Name)
-      .then(() => Base.createAccount(account2Name))
-      .then(() => Base.createAccount(account3Name))
+    Base.createParticipant(participant1Name)
+      .then(() => Base.createParticipant(participant2Name))
+      .then(() => Base.createParticipant(participant3Name))
       .then(() => Base.createCharge(chargePayload))
-      .then(() => Base.prepareTransfer(transfer1Id, Fixtures.buildTransfer(transfer1Id, Fixtures.buildDebitOrCredit(account1Name, '10'), Fixtures.buildDebitOrCredit(account2Name, '10'))))
-      .then(() => Base.fulfillTransfer(transfer1Id, fulfillment))
-      .then(() => Base.prepareTransfer(transfer2Id, Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(account1Name, '10'), Fixtures.buildDebitOrCredit(account3Name, '10'))))
-      .then(() => Base.fulfillTransfer(transfer2Id, fulfillment))
+      .then(() => Base.prepareTransfer(transfer1Id, Fixtures.buildTransfer(transfer1Id, Fixtures.buildDebitOrCredit(participant1Name, '10'), Fixtures.buildDebitOrCredit(participant2Name, '10'))))
+      .then(() => Base.fulfillTransfer(transfer1Id, fulfilment))
+      .then(() => Base.prepareTransfer(transfer2Id, Fixtures.buildTransfer(transfer2Id, Fixtures.buildDebitOrCredit(participant1Name, '10'), Fixtures.buildDebitOrCredit(participant3Name, '10'))))
+      .then(() => Base.fulfillTransfer(transfer2Id, fulfilment))
       .then(() => {
-        Base.getApi(`/positions/${account1Name}`)
+        Base.getApi(`/positions/${participant1Name}`)
           .expect(200)
           .expect('Content-Type', /json/)
           .then(res => {
-            test.equal(res.body.account, `http://central-ledger/accounts/${account1Name}`)
-            test.equal(res.body.fees.payments, '1')
-            test.equal(res.body.fees.receipts, '0')
-            test.equal(res.body.fees.net, '-1')
+            test.equal(res.body.participant, `http://central-ledger/participants/${participant1Name}`)
+            test.equal(res.body.fee.payments, '1')
+            test.equal(res.body.fee.receipts, '0')
+            test.equal(res.body.fee.net, '-1')
             test.equal(res.body.transfers.payments, '20')
             test.equal(res.body.transfers.receipts, '0')
             test.equal(res.body.transfers.net, '-20')
@@ -88,5 +88,5 @@ Test('GET /positions/{name}', getTestAccount => {
       })
   })
 
-  getTestAccount.end()
+  getTestParticipant.end()
 })

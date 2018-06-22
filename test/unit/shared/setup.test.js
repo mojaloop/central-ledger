@@ -7,8 +7,7 @@ const P = require('bluebird')
 const Migrator = require('../../../src/lib/migrator')
 const Db = require('../../../src/db')
 const Config = require('../../../src/lib/config')
-const Eventric = require('../../../src/eventric')
-const Account = require('../../../src/domain/account')
+// const Participant = require('../../../src/domain/participant')
 const Plugins = require('../../../src/shared/plugins')
 const RequestLogger = require('../../../src/lib/request-logger')
 const UrlParser = require('../../../src/lib/urlparser')
@@ -29,8 +28,7 @@ Test('setup', setupTest => {
     sandbox.stub(Hapi, 'Server')
     sandbox.stub(Plugins, 'registerPlugins')
     sandbox.stub(Migrator)
-    sandbox.stub(Eventric)
-    sandbox.stub(Account)
+    // sandbox.stub(Participant)
     sandbox.stub(UrlParser, 'idFromTransferUri')
     sandbox.stub(RequestLogger, 'logRequest')
     sandbox.stub(RequestLogger, 'logResponse')
@@ -76,10 +74,10 @@ Test('setup', setupTest => {
       Migrator.migrate.returns(P.resolve())
       Db.connect.returns(P.resolve())
       Sidecar.connect.returns(P.resolve())
-      Eventric.getContext.returns(P.resolve())
       const server = createServer()
       if (service === 'api') {
-        Account.createLedgerAccount().returns(P.resolve())
+
+        // Participant.createLedgerParticipant().returns(P.resolve())
       }
       return server
     }
@@ -91,7 +89,6 @@ Test('setup', setupTest => {
       Setup.initialize({ service }).then(s => {
         test.ok(Db.connect.calledWith(databaseUri))
         test.ok(Sidecar.connect.calledWith(service))
-        test.notOk(Eventric.getContext.called)
         test.notOk(Migrator.migrate.called)
         test.equal(s, server)
         test.end()
@@ -103,7 +100,6 @@ Test('setup', setupTest => {
 
       Setup.initialize({}).then(s => {
         test.ok(Db.connect.calledWith(databaseUri))
-        test.notOk(Eventric.getContext.called)
         test.notOk(Migrator.migrate.called)
         test.equal(s, server)
         test.end()
@@ -116,26 +112,6 @@ Test('setup', setupTest => {
       Setup.initialize({ runMigrations: true }).then(() => {
         test.ok(Db.connect.called)
         test.ok(Migrator.migrate.called)
-        test.notOk(Eventric.getContext.called)
-        test.end()
-      })
-    })
-
-    initializeTest.test('setup eventric context if loadEventric flag enabled', test => {
-      setupPromises({})
-
-      Setup.initialize({ loadEventric: true }).then(() => {
-        test.ok(Db.connect.called)
-        test.notOk(Migrator.migrate.called)
-        test.ok(Eventric.getContext.called)
-        test.end()
-      })
-    })
-
-    initializeTest.test('create ledger account on api service call', (test) => {
-      setupPromises({})
-      Setup.initialize({ service: 'api' }).then(() => {
-        test.ok(Account.createLedgerAccount.called)
         test.end()
       })
     })

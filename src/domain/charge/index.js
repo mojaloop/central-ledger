@@ -11,7 +11,7 @@ function typeExists (rateType) {
   return rateType === PERCENTAGE || rateType === FLAT
 }
 
-function filterCharges (charge, amount) {
+function filterCharge (charge, amount) {
   amount = new Decimal(amount)
 
   return (!charge.minimum || amount.greaterThanOrEqualTo(charge.minimum)) &&
@@ -65,11 +65,11 @@ const getAllSenderAsPayer = () => {
 }
 
 const getAllForTransfer = (transfer) => {
-  return getAll().then(charges => charges.filter(charge => filterCharges(charge, transfer.creditAmount)))
+  return getAll().then(charge => charge.filter(charge => filterCharge(charge, transfer.payerAmount)))
 }
 
 const quote = (transaction) => {
-  return getAllSenderAsPayer().then(charges => charges.filter(charge => filterCharges(charge, transaction.amount))
+  return getAllSenderAsPayer().then(charge => charge.filter(charge => filterCharge(charge, transaction.amount))
     .map(charge => chargeQuote(charge, transaction.amount)))
 }
 

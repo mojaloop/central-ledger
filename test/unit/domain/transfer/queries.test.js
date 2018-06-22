@@ -4,7 +4,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
-const TransferReadModel = require('../../../../src/domain/transfer/models/transfers-read-model')
+const TransferReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
 const TransferQueries = require('../../../../src/domain/transfer/queries')
 
 Test('Transfer Queries tests', queriesTest => {
@@ -48,7 +48,7 @@ Test('Transfer Queries tests', queriesTest => {
 
   queriesTest.test('findExpired should', findExpiredTest => {
     findExpiredTest.test('find expired transfers', test => {
-      let transfers = [{ transferUuid: 1 }, { transferUuid: 2 }]
+      let transfers = [{ transferId: 1 }, { transferId: 2 }]
       TransferReadModel.findExpired.returns(P.resolve(transfers))
 
       TransferQueries.findExpired()

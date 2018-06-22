@@ -7,10 +7,10 @@ const Uuid = require('uuid4')
 const Moment = require('moment')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../../src/lib/urlparser')
-const AccountService = require('../../../../src/domain/account')
+const ParticipantService = require('../../../../src/domain/participant')
 const TransferState = require('../../../../src/domain/transfer/state')
 const TransferRejectionType = require('../../../../src/domain/transfer/rejection-type')
-const TransfersReadModel = require('../../../../src/domain/transfer/models/transfers-read-model')
+const TransfersReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
 
 const hostname = 'http://some-host'
@@ -24,8 +24,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
     sandbox.stub(TransfersReadModel, 'saveTransfer')
     sandbox.stub(TransfersReadModel, 'updateTransfer')
     sandbox.stub(TransfersReadModel, 'truncateTransfers')
-    sandbox.stub(UrlParser, 'nameFromAccountUri')
-    sandbox.stub(AccountService, 'getByName')
+    sandbox.stub(UrlParser, 'nameFromParticipantUri')
+    sandbox.stub(ParticipantService, 'getByName')
     sandbox.stub(Logger, 'error')
     t.end()
   })
@@ -66,8 +66,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
   })
 
   transfersProjectionTest.test('handleTransferPrepared should', preparedTest => {
-    const dfsp1Account = { accountId: 1, name: 'dfsp1', url: `${hostname}/accounts/dfsp1` }
-    const dfsp2Account = { accountId: 2, name: 'dfsp2', url: `${hostname}/accounts/dfsp2` }
+    const dfsp1Participant = { participantId: 1, name: 'dfsp1', url: `${hostname}/participants/dfsp1` }
+    const dfsp2Participant = { participantId: 2, name: 'dfsp2', url: `${hostname}/participants/dfsp2` }
 
     const event = {
       id: 1,
@@ -75,11 +75,11 @@ Test('Transfers-Projection', transfersProjectionTest => {
       payload: {
         ledger: `${hostname}`,
         debits: [{
-          account: dfsp1Account.url,
+          participant: dfsp1Participant.url,
           amount: '50'
         }],
         credits: [{
-          account: dfsp2Account.url,
+          participant: dfsp2Participant.url,
           amount: '50'
         }],
         execution_condition: executionCondition,
@@ -94,38 +94,38 @@ Test('Transfers-Projection', transfersProjectionTest => {
     }
 
     preparedTest.test('save transfer to read model', test => {
-      UrlParser.nameFromAccountUri.withArgs(dfsp1Account.url).returns(dfsp1Account.name)
-      UrlParser.nameFromAccountUri.withArgs(dfsp2Account.url).returns(dfsp2Account.name)
-      AccountService.getByName.withArgs(dfsp1Account.name).returns(Promise.resolve(dfsp1Account))
-      AccountService.getByName.withArgs(dfsp2Account.name).returns(Promise.resolve(dfsp2Account))
+      UrlParser.nameFromParticipantUri.withArgs(dfsp1Participant.url).returns(dfsp1Participant.name)
+      UrlParser.nameFromParticipantUri.withArgs(dfsp2Participant.url).returns(dfsp2Participant.name)
+      ParticipantService.getByName.withArgs(dfsp1Participant.name).returns(Promise.resolve(dfsp1Participant))
+      ParticipantService.getByName.withArgs(dfsp2Participant.name).returns(Promise.resolve(dfsp2Participant))
       TransfersReadModel.saveTransfer.returns(P.resolve({}))
 
       TransfersProjection.handleTransferPrepared(event)
       test.ok(TransfersReadModel.saveTransfer.calledWith(Sinon.match({
-        transferUuid: event.aggregate.id,
+        transferId: event.aggregate.id,
         state: TransferState.PREPARED,
         ledger: event.payload.ledger,
-        debitAccountId: dfsp1Account.accountId,
-        debitAmount: event.payload.debits[0].amount,
-        debitMemo: undefined,
-        creditAccountId: dfsp2Account.accountId,
-        creditAmount: event.payload.credits[0].amount,
-        creditMemo: undefined,
+        payeeParticipantId: dfsp1Participant.participantId,
+        payeeAmount: event.payload.debits[0].amount,
+        payeeNote: JSON.stringify(undefined),
+        payerParticipantId: dfsp2Participant.participantId,
+        payerAmount: event.payload.credits[0].amount,
+        payerNote: JSON.stringify(undefined),
         executionCondition: event.payload.execution_condition,
         cancellationCondition: undefined,
         rejectReason: undefined,
-        expiresAt: event.payload.expires_at,
+        expirationDate: new Date(event.payload.expires_at),
         additionalInfo: undefined,
-        preparedDate: Moment(event.timestamp)
+        preparedDate: new Date(event.timestamp)
       })))
       test.end()
     })
 
     preparedTest.test('log error', t => {
-      UrlParser.nameFromAccountUri.withArgs(dfsp1Account.url).returns(dfsp1Account.name)
-      UrlParser.nameFromAccountUri.withArgs(dfsp2Account.url).returns(dfsp2Account.name)
-      AccountService.getByName.withArgs(dfsp1Account.name).returns(Promise.resolve(dfsp1Account))
-      AccountService.getByName.withArgs(dfsp2Account.name).returns(Promise.resolve(dfsp2Account))
+      UrlParser.nameFromParticipantUri.withArgs(dfsp1Participant.url).returns(dfsp1Participant.name)
+      UrlParser.nameFromParticipantUri.withArgs(dfsp2Participant.url).returns(dfsp2Participant.name)
+      ParticipantService.getByName.withArgs(dfsp1Participant.name).returns(Promise.resolve(dfsp1Participant))
+      ParticipantService.getByName.withArgs(dfsp2Participant.name).returns(Promise.resolve(dfsp2Participant))
 
       const error = new Error()
       TransfersReadModel.saveTransfer.returns(P.reject(error))
@@ -145,16 +145,16 @@ Test('Transfers-Projection', transfersProjectionTest => {
       payload: {
         ledger: `${hostname}`,
         debits: [{
-          account: `${hostname}/accounts/dfsp1`,
+          participant: `${hostname}/participants/dfsp1`,
           amount: '50'
         }],
         credits: [{
-          account: `${hostname}/accounts/dfsp2`,
+          participant: `${hostname}/participants/dfsp2`,
           amount: '50'
         }],
         execution_condition: executionCondition,
         expires_at: '2015-06-16T00:00:01.000Z',
-        fulfillment: 'oAKAAA'
+        fulfilment: 'oAKAAA'
       },
       aggregate: {
         id: Uuid(),
@@ -170,7 +170,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       TransfersProjection.handleTransferExecuted(event)
       assert.ok(TransfersReadModel.updateTransfer.calledWith(event.aggregate.id, Sinon.match({
         state: TransferState.EXECUTED,
-        fulfillment: event.payload.fulfillment,
+        fulfilment: event.payload.fulfilment,
         executedDate: Moment(event.timestamp)
       })))
       assert.end()
@@ -215,8 +215,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.equal(fields.state, TransferState.REJECTED)
       test.equal(fields.rejectionReason, TransferRejectionType.EXPIRED)
       test.equal(fields.rejectedDate.toISOString(), Moment(event.timestamp).toISOString())
-      test.equal(fields.hasOwnProperty('creditRejected'), false)
-      test.equal(fields.hasOwnProperty('creditRejectionMessage'), false)
+      test.equal(fields.hasOwnProperty('payeeRejected'), false)
+      test.equal(fields.hasOwnProperty('payeeRejectionMessage'), false)
       test.end()
     })
 
@@ -236,8 +236,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.equal(fields.state, TransferState.REJECTED)
       test.equal(fields.rejectionReason, TransferRejectionType.CANCELLED)
       test.equal(fields.rejectedDate.toISOString(), Moment(event.timestamp).toISOString())
-      test.equal(fields.creditRejected, 1)
-      test.equal(fields.creditRejectionMessage, message)
+      test.equal(fields.payeeRejected, 1)
+      test.equal(fields.payeeRejectionMessage, message)
       test.end()
     })
 
@@ -255,8 +255,8 @@ Test('Transfers-Projection', transfersProjectionTest => {
       test.equal(fields.state, TransferState.REJECTED)
       test.equal(fields.rejectionReason, TransferRejectionType.CANCELLED)
       test.equal(fields.rejectedDate.toISOString(), Moment(event.timestamp).toISOString())
-      test.equal(fields.creditRejected, 1)
-      test.equal(fields.creditRejectionMessage, '')
+      test.equal(fields.payeeRejected, 1)
+      test.equal(fields.payeeRejectionMessage, '')
       test.end()
     })
 
