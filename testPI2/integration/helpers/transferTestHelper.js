@@ -43,7 +43,7 @@ const TransferModel = require('../../../src/domain/transfer/models/transfer-read
 //     'amount': 100,
 //     'currencyId': 'USD',
 //     'expirationDate': null,
-//     'transferSettlementBatchId': null
+//     'settlementWindowId': null
 //   },
 //   'extension': {
 //     'extensionId': 4,
@@ -60,7 +60,7 @@ const TransferModel = require('../../../src/domain/transfer/models/transfer-read
 //     'amount': 100,
 //     'currencyId': 'USD',
 //     'expirationDate': null,
-//     'transferSettlementBatchId': null,
+//     'settlementWindowId': null,
 //     'currency': 'USD',
 //     'payerFsp': 'payer1527749095045383',
 //     'payeeFsp': 'payee15277490950569075',

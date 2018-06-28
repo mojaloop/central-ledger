@@ -47,7 +47,7 @@ const extensionModel = require('../../../../src/models/extensions')
 //   fullfilment: null,
 //   completedTimeStamp: null,
 //   expirationDate: new Date().setDate((new Date()).getDate() + 7),
-//   transferSettlementBatchId: null
+//   settlementWindowId: null
 // }
 
 Test('Transfer model', async (transferTest) => {
