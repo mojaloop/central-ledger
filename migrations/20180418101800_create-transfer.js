@@ -29,11 +29,11 @@ exports.up = function (knex, Promise) {
     // t.string('transferStateId', 50).primary().notNullable()
     // t.foreign('transferStateChangeId').references('transferStateChangeId').inTable('transferStateChange')
 
-    // t.bigInteger('transferSettlementBatchId').unsigned().notNullable()
-    t.bigInteger('transferSettlementBatchId').unsigned().defaultTo(0).nullable()
+    // t.bigInteger('settlementWindowId').unsigned().notNullable()
+    t.bigInteger('settlementWindowId').unsigned().defaultTo(0).nullable()
 
     // @TODO to be added at a later stage was causing issues on initial insert
-    // t.foreign('transferSettlementBatchId').references('transferSettlementBatchId').inTable('transferSettlementBatch')
+    // t.foreign('settlementWindowId').references('settlementWindowId').inTable('settlementWindow')
 
     // t.dateTime('preparedDate').defaultTo(null).nullable()
     // t.string('ledger', 1024).notNullable()

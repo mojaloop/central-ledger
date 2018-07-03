@@ -7,7 +7,10 @@ exports.up = function (knex, Promise) {
     t.integer('participantId').unsigned().notNullable()
     t.foreign('participantId').references('participantId').inTable('participant')
 
-    t.decimal('value', 18, 2).notNullable()
+    t.string('type', 16).notNullable().comment('type of limit e.g. netDebitCap')
+    t.foreign('type').references('type').inTable('participantLimit')
+    t.decimal('value', 18, 2).notNullable().comment('value of limit')
+
     t.dateTime('changedDate').defaultTo(knex.fn.now()).notNullable()
     t.string('changedBy', 128).notNullable()
   })
