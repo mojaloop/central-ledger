@@ -8,7 +8,7 @@ exports.up = function (knex, Promise) {
     t.string('ilpFulfilment', 256).notNullable()
     t.dateTime('completedDate').notNullable()
     t.boolean('isValid').nullable()
-    t.bigInteger('settlementWindowId').nullable()
+    t.bigInteger('settlementWindowId').unsigned().nullable()
     t.foreign('settlementWindowId').references('settlementWindowId').inTable('settlementWindow')
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })

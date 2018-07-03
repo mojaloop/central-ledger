@@ -5,7 +5,7 @@ exports.up = function (knex, Promise) {
     t.increments('participantCurrencyId').primary().notNullable()
     t.integer('participantId').unsigned().notNullable()
     t.foreign('participantId').references('participantId').inTable('participant')
-    t.string('currencyId', 3).primary().notNullable()
+    t.string('currencyId', 3).notNullable()
     t.foreign('currencyId').references('currencyId').inTable('currency')
     t.boolean('isActive').defaultTo(true).notNullable()
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()

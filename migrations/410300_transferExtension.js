@@ -8,7 +8,7 @@ exports.up = function (knex, Promise) {
     t.string('transferFulfilmentId', 36).defaultTo(null).nullable()
     t.foreign('transferFulfilmentId').references('transferFulfilmentId').inTable('transferFulfilment')
     t.string('key', 128).notNullable()
-    t.text('value').notNullable()
+    t.text('value').nullable()
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })
 }
