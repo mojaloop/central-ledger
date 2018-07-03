@@ -5,7 +5,7 @@ exports.up = function (knex, Promise) {
     t.increments('participantLimitId').primary().notNullable()
     t.integer('participantCurrencyId').unsigned().notNullable()
     t.foreign('participantCurrencyId').references('participantCurrencyId').inTable('participantCurrency')
-    t.integer('participantLimitTypeId').notNullable()
+    t.integer('participantLimitTypeId').unsigned().notNullable()
     t.foreign('participantLimitTypeId').references('participantLimitTypeId').inTable('participantLimitType')
     t.decimal('value', 18, 2).defaultTo(0).notNullable()
     t.decimal('thresholdAlarmPercentage', 5, 2).defaultTo(10).notNullable()
