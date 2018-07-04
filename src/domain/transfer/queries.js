@@ -1,3 +1,4 @@
+// TODO: remove and point directly to transfer-read-model from index.js
 'use strict'
 
 const TransfersReadModel = require('./models/transfer-read-model')

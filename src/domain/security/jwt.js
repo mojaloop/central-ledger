@@ -4,7 +4,7 @@ const JWT = require('jsonwebtoken')
 const Promise = require('bluebird')
 const Config = require('../../lib/config')
 const Errors = require('../../errors')
-const SecurityService = require('./index')
+const SecurityService = {}
 
 const create = (key) => {
   const expiresIn = (Config.TOKEN_EXPIRATION || 3600000) / 1000

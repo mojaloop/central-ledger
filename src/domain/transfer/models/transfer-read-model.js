@@ -1,3 +1,5 @@
+// TODO: rename to transfer.js, match table names
+
 /*****
  License
  --------------
