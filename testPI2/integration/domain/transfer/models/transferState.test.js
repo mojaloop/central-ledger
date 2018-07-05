@@ -30,7 +30,7 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Db = require('../../../../../src/db/index')
 const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/domain/transfer/models/transferStates')
+const Model = require('../../../../../src/domain/transfer/models/transferState')
 const _ = require('lodash')
 
 Test('transferState Model Test', async (transferStateTest) => {
@@ -76,7 +76,7 @@ Test('transferState Model Test', async (transferStateTest) => {
       for (let state of transferTestStates) {
         var result = await Model.getByTransferStateId(state.transferStateId)
         if (result) {
-          await Model.destroyTransferStatesById(state.transferStateId)
+          await Model.destroytransferStateById(state.transferStateId)
         }
       }
       assert.pass()
@@ -138,15 +138,15 @@ Test('transferState Model Test', async (transferStateTest) => {
     }
   })
 
-  await transferStateTest.test('destroyTransferStatesById', async (assert) => {
+  await transferStateTest.test('destroytransferStateById', async (assert) => {
     try {
       assert.plan(transferTestStates.length)
       for (let state of transferTestStates) {
-        var result = await Model.destroyTransferStatesById(state.transferStateId)
+        var result = await Model.destroytransferStateById(state.transferStateId)
         assert.ok(Sinon.match(result, true))
       }
     } catch (err) {
-      Logger.error(`destroyTransferStatesById failed with error - ${err}`)
+      Logger.error(`destroytransferStateById failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -154,7 +154,7 @@ Test('transferState Model Test', async (transferStateTest) => {
 
   await transferStateTest.test('teardown', async (assert) => {
     try {
-      // Model.destroyTransferStates() // falls over when this is executed
+      // Model.destroytransferState() // falls over when this is executed
       await Db.disconnect()
       sandbox.restore()
       assert.end()

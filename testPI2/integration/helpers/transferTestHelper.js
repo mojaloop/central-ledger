@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
@@ -26,10 +28,10 @@
 
 const TransferPreparationModule = require('./transfer')
 const TransferStatePreparationHelper = require('./transferState')
-const StateChangeModel = require('../../../src/domain/transfer/models/transferStateChanges')
-const ExtensionModel = require('../../../src/models/extensions')
-const IlpModel = require('../../../src/models/ilp')
-const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
+const StateChangeModel = require('../../../src/models/transfer/transferStateChange')
+const ExtensionModel = require('../../../src/models/transfer/transferExtension')
+const IlpModel = require('../../../src/models/transfer/ilpPacket')
+const TransferModel = require('../../../src/models/transfer/facade')
 
 // const preparedData = {
 //   'ilp': {

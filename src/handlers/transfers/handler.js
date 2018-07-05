@@ -22,6 +22,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -46,7 +47,7 @@ const TransferState = require('../../domain/transfer/state')
 // const CryptoConditions = require('../../cryptoConditions')
 // const FiveBellsCondition = require('five-bells-condition')
 // const Crypto = require('crypto')
-const ilp = require('../../models/ilp')
+const ilp = require('../../models/transfer/ilpPacket')
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'

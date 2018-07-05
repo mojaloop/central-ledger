@@ -1,8 +1,8 @@
-// TODO: remove and point directly to transfer-read-model from index.js
+// TODO: remove and point directly to facade from index.js
 'use strict'
 
-const TransfersReadModel = require('./models/transfer-read-model')
-// const TransferStateChange = require('./models/transferStateChanges')
+const TransfersReadModel = require('../../models/transfer/facade')
+// const TransferStateChange = require('./models/transferStateChange')
 
 const getAll = () => {
   return TransfersReadModel.getAll()

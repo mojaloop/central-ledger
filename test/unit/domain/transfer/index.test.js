@@ -13,7 +13,7 @@ const Commands = require('../../../../src/domain/transfer/commands')
 const Service = require('../../../../src/domain/transfer')
 const TransferState = require('../../../../src/domain/transfer/state')
 const TransferTranslator = require('../../../../src/domain/transfer/translator')
-const RejectionType = require(`${src}/domain/transfer/rejection-type`)
+const RejectionType = require(`${src}/domain/transfer/rejectionType`)
 const Errors = require('../../../../src/errors')
 
 const createTransfer = (transferId = '3a2a1d9e-8640-4d2d-b06c-84f2cd613204') => {

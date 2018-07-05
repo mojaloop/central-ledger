@@ -7,11 +7,11 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../../src/lib/urlParser')
 const ParticipantService = require('../../../../src/domain/participant')
 const TransferState = require('../../../../src/domain/transfer/state')
-const TransfersReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
+const TransfersReadModel = require('../../../../src/models/transfer/facade')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
-const ilpModel = require('../../../../src/models/ilp')
-const extensionModel = require('../../../../src/models/extensions')
-const transferStateChangeModel = require('../../../../src/domain/transfer/models/transferStateChanges')
+const ilpModel = require('../../../../src/models/transfer/ilpPacket')
+const extensionModel = require('../../../../src/models/transfer/transferExtension')
+const transferStateChangeModel = require('../../../../src/models/transfer/transferStateChange')
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',

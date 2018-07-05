@@ -2,7 +2,7 @@
 
 const Validator = require('./validator')
 const TransferService = require('../../domain/transfer')
-const TransferRejectionType = require('../../domain/transfer/rejection-type')
+const TransferRejectionType = require('../../domain/transfer/rejectionType')
 const TransferTranslator = require('../../domain/transfer/translator')
 const NotFoundError = require('../../errors').NotFoundError
 const Sidecar = require('../../lib/sidecar')

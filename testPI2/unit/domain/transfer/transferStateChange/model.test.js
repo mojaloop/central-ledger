@@ -29,7 +29,7 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../../src/domain/transfer/models/transferStateChanges')
+const Model = require('../../../../../src/domain/transfer/models/transferStateChange')
 
 Test('TransferStateChange model', async (transferStateChangeModel) => {
   let sandbox

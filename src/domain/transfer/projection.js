@@ -3,10 +3,10 @@
 const _ = require('lodash')
 const ParticipantService = require('../../domain/participant')
 const TransferState = require('./state')
-const TransfersModel = require('./models/transfer-read-model')
-const ilpModel = require('../../models/ilp')
-const extensionModel = require('../../models/extensions')
-const transferStateChangeModel = require('./models/transferStateChanges')
+const TransfersModel = require('../../models/transfer/facade')
+const ilpModel = require('../../models/transfer/ilpPacket')
+const extensionModel = require('../../models/transfer/transferExtension')
+const transferStateChangeModel = require('../../models/transfer/transferStateChange')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -98,12 +98,12 @@ const updateTransferState = async (payload, state) => {
 
 const saveTransferRejected = async (stateReason, transferId) => {
   try {
-    const existingTransferStateChanges = await transferStateChangeModel.getByTransferId(transferId)
+    const existingtransferStateChange = await transferStateChangeModel.getByTransferId(transferId)
 
     let existingAbort = false
     let transferStateChange
-    if (Array.isArray(existingTransferStateChanges)) {
-      for (let transferState of existingTransferStateChanges) {
+    if (Array.isArray(existingtransferStateChange)) {
+      for (let transferState of existingtransferStateChange) {
         if (transferState.transferStateId === TransferState.ABORTED) {
           existingAbort = true
           transferStateChange = transferState
@@ -111,9 +111,9 @@ const saveTransferRejected = async (stateReason, transferId) => {
         }
       }
     } else {
-      if (existingTransferStateChanges.transferStateId === TransferState.ABORTED) {
+      if (existingtransferStateChange.transferStateId === TransferState.ABORTED) {
         existingAbort = true
-        transferStateChange = existingTransferStateChanges
+        transferStateChange = existingtransferStateChange
       }
     }
     if (!existingAbort) {

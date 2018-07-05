@@ -31,7 +31,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/domain/transfer/models/transferStateChanges')
+const Model = require('../../../../../src/domain/transfer/models/transferStateChange')
 const HelperModule = require('../../../helpers/index')
 
 Test('Transfer State Change model test', async (stateChangeTest) => {

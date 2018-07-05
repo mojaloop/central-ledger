@@ -1,7 +1,7 @@
 // TODO: clean up -- find calling method
 'use strict'
 
-const Projection = require('../../../domain/transfer/projection')
+const Projection = require('./projection')
 
 const prepare = async (transfer, stateReason = null, hasPassedValidation = true) => {
   try {

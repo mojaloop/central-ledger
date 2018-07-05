@@ -8,7 +8,7 @@ const Moment = require('moment')
 const Uuid = require('uuid4')
 const Db = require(`${src}/db`)
 const UrlParser = require(`${src}/lib/urlParser`)
-const TransfersReadModel = require(`${src}/domain/transfer/models/transfer-read-model`)
+const TransfersReadModel = require(`${src}/models/transfer/facade`)
 const TransferState = require(`${src}/domain/transfer/state`)
 
 Test('transfer model', modelTest => {

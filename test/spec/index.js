@@ -15,7 +15,7 @@ process.env.TEST_EMAIL_2 = Base.participant2Name + '@test.com'
 process.env.ILP_PLUGIN_TEST_CONFIG = Path.join(__dirname, '../../node_modules/five-bells-ledger-api-tests/index.js')
 
 ChildProcess.execSync('npm test', {
-  cwd: Path.join(__dirname, '../../node_modules/ilp-plugin-tests'),
+  cwd: Path.join(__dirname, '../../node_modules/ilpPacket-plugin-tests'),
   env: process.env,
   stdio: 'inherit'
 })

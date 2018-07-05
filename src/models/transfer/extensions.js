@@ -1,5 +1,3 @@
-// TODO: determine if it's needed
-
 /*****
  License
  --------------
@@ -19,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -27,78 +27,73 @@
 
 'use strict'
 
+const Db = require('../../db')
 // const Moment = require('moment')
-const Db = require('../../../db')
-// const TransferState = require('../state')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Util = require('../../lib/util')
+// const Time = require('../lib/time')
 
-const saveTransferState = async (transferState) => {
-  Logger.debug('save transferState' + transferState.toString())
-
+exports.saveExtension = async (extension) => {
   try {
-    return await Db.transferState.insert(transferState)
+    let ext = {
+      transferId: extension.transferId,
+      key: extension.key,
+      value: extension.value,
+      changedDate: extension.changedDate,
+      changedBy: extension.changedBy
+    }
+    return await Db.extension.insert(ext)
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-// const getByTransferStateId = (id) => {
-//   return Db.transferState.query(builder => {
-//     return builder
-//       .where({ transferStateId: id })
-//       .select('transferState.*')
-//       .first()
-//   })
+// exports.getById = async (id) => {
+//   try {
+//     return await Db.ilp.findOne({ ilpId: id })
+//   } catch (err) {
+//     throw new Error(err.message)
+//   }
 // }
 
-const getByTransferStateId = (id) => {
+exports.getByTransferId = async (transferId) => {
   try {
-    return Db.transferState.findOne({ transferStateId: id })
+    return await Db.extension.findOne({ transferId: transferId })
+    // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
+    // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-// const getAll = () => {
-//   return Db.transferState.query(builder => {
-//     return builder
-//       .select('transferState.*')
-//   })
-// }
-
-const getAll = () => {
+exports.getByExtensionId = async (extensionId) => {
   try {
-    return Db.transferState.find({})
+    return await Db.extension.findOne({ extensionId: extensionId })
+    // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
+    // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-// const truncateTransferStates = () => {
-//   return Db.transferState.truncate()
-// }
-
-const destroyTransferStates = () => {
+exports.update = async (extension) => {
+  const fields = {
+    transferId: extension.transferId,
+    key: extension.key,
+    value: extension.value,
+    changedDate: extension.changedDate,
+    changedBy: extension.changedBy
+  }
   try {
-    return Db.transferState.destroy()
+    return await Db.extension.update({extensionId: extension.extensionId}, Util.filterUndefined(fields))
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-const destroyTransferStatesById = (id) => {
+exports.destroyByTransferId = async (extension) => {
   try {
-    return Db.transferState.destroy({ transferStateId: id })
+    return await Db.extension.destroy({transferId: extension.transferId})
   } catch (err) {
     throw new Error(err.message)
   }
-}
-
-module.exports = {
-  saveTransferState,
-  getByTransferStateId,
-  getAll,
-  // truncateTransferStates,
-  destroyTransferStates,
-  destroyTransferStatesById
 }

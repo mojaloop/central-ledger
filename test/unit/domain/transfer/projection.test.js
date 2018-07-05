@@ -9,8 +9,8 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../../src/lib/urlParser')
 const ParticipantService = require('../../../../src/domain/participant')
 const TransferState = require('../../../../src/domain/transfer/state')
-const TransferRejectionType = require('../../../../src/domain/transfer/rejection-type')
-const TransfersReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
+const TransferRejectionType = require('../../../../src/domain/transfer/rejectionType')
+const TransfersReadModel = require('../../../../src/models/transfer/facade')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
 
 const hostname = 'http://some-host'
