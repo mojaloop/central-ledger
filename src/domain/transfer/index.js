@@ -2,8 +2,8 @@
 
 const P = require('bluebird')
 const TransferQueries = require('./queries')
-const SettleableTransfersReadModel = require('../../models/settleable-transfers-read-model')
-const SettlementModel = require('../../models/settlement')
+const SettlementFacade = require('../../models/settlement/facade')
+const SettlementModel = require('../../models/settlement/settlement')
 const Commands = require('./commands')
 const Translator = require('./translator')
 const RejectionType = require('./rejection-type')
@@ -89,7 +89,7 @@ const rejectExpired = () => {
 const settle = async () => {
   const settlementId = SettlementModel.generateId()
   const settledTransfers = SettlementModel.create(settlementId, 'transfer').then(() => {
-    return SettleableTransfersReadModel.getSettleableTransfers().then(transfers => {
+    return SettlementFacade.getSettleableTransfers().then(transfers => {
       transfers.forEach(transfer => {
         Commands.settle({id: transfer.transferId, settlement_id: settlementId})
       })

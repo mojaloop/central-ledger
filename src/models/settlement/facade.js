@@ -1,6 +1,6 @@
 'use strict'
 
-const Db = require('../db')
+const Db = require('../../db')
 
 exports.getSettleableTransfers = () => {
   return Db.executedTransfers.query(buildSettleableTransfersQuery)

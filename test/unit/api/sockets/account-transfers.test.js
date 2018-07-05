@@ -4,9 +4,9 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const ParticipantService = require('../../../../src/domain/participant')
-const UrlParser = require('../../../../src/lib/urlparser')
+const UrlParser = require('../../../../src/lib/urlParser')
 const ValidationError = require('../../../../src/errors').ValidationError
-const ParticipantTransfers = require('../../../../src/api/sockets/participant-transfers')
+const ParticipantTransfers = require('../../../../src/api/sockets/participantTransfers')
 
 Test('ParticipantTransfers', transfersTest => {
   let sandbox

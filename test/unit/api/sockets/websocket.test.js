@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const EventEmitter = require('events').EventEmitter
 const SocketValidator = require('../../../../src/api/sockets/validator')
 const WebSocket = require('../../../../src/api/sockets/websocket')
-const RequestLogger = require('../../../../src/lib/request-logger')
+const RequestLogger = require('../../../../src/lib/requestLogger')
 
 Test('WebSocket', socketTest => {
   let sandbox

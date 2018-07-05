@@ -38,7 +38,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Decimal = require('decimal.js')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
-const CryptoConditions = require('../../crypto-conditions/index')
+const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 
@@ -47,7 +47,7 @@ const Crypto = require('crypto')
 // const fs = require('fs')
 
 // Note that the following two lines will be replaced by functionality to load the schemas from DB
-// const transferPrepareSchemaFile = "./transfer-schema.json"
+// const transferPrepareSchemaFile = "./transferSchema.json"
 // const transferPrepareSchema  = Enjoi(JSON.parse(fs.readFileSync(transferPrepareSchemaFile, 'utf8')))
 
 const allowedScale = Config.AMOUNT.SCALE

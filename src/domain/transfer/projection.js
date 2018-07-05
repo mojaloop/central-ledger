@@ -7,8 +7,6 @@ const TransfersModel = require('./models/transfer-read-model')
 const ilpModel = require('../../models/ilp')
 const extensionModel = require('../../models/extensions')
 const transferStateChangeModel = require('./models/transferStateChanges')
-const ExecuteTransfersModel = require('../../models/executed-transfers')
-const SettledTransfersModel = require('../../models/settled-transfers')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -135,19 +133,9 @@ const saveTransferRejected = async (stateReason, transferId) => {
   }
 }
 
-const saveExecutedTransfer = async (transfer) => {
-  await ExecuteTransfersModel.create(transfer.payload.id)
-}
-
-const saveSettledTransfers = async ({id, settlement_id}) => {
-  await SettledTransfersModel.create({id, settlement_id})
-}
-
 module.exports = {
   saveTransferPrepared,
   saveTransferExecuted,
   saveTransferRejected,
-  saveExecutedTransfer,
-  saveSettledTransfers,
   updateTransferState
 }

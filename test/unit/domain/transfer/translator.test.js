@@ -2,7 +2,7 @@
 
 const Test = require('tape')
 const Uuid = require('uuid4')
-const UrlParser = require('../../../../src/lib/urlparser')
+const UrlParser = require('../../../../src/lib/urlParser')
 const TransferTranslator = require('../../../../src/domain/transfer/translator')
 const Fixtures = require('../../../fixtures')
 

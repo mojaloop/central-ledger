@@ -1,6 +1,6 @@
 'use strict'
 
-const UrlParser = require('../../lib/urlparser')
+const UrlParser = require('../../lib/urlParser')
 const ParticipantService = require('../../domain/participant')
 const NotFoundError = require('../../errors').NotFoundError
 

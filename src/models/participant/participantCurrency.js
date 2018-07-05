@@ -1,7 +1,7 @@
 
 'use strict'
 
-const Db = require('../db')
+const Db = require('../../db')
 
 exports.create = async (participantId, currencyId) => {
   try {

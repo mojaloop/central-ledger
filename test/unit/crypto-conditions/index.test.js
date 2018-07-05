@@ -2,7 +2,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Conditions = require('../../../src/crypto-conditions')
+const Conditions = require('../../../src/cryptoConditions')
 const Errors = require('../../../src/errors')
 const FiveBellsConditions = require('five-bells-condition')
 

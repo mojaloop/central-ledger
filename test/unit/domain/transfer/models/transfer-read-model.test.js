@@ -7,7 +7,7 @@ const P = require('bluebird')
 const Moment = require('moment')
 const Uuid = require('uuid4')
 const Db = require(`${src}/db`)
-const UrlParser = require(`${src}/lib/urlparser`)
+const UrlParser = require(`${src}/lib/urlParser`)
 const TransfersReadModel = require(`${src}/domain/transfer/models/transfer-read-model`)
 const TransferState = require(`${src}/domain/transfer/state`)
 

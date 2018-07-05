@@ -1,7 +1,7 @@
 'use strict'
 
 const Client = require('@mojaloop/forensic-logging-client')
-const NullClient = require('./null-client')
+const NullClient = require('./nullClient')
 const Config = require('../config')
 const Moment = require('moment')
 

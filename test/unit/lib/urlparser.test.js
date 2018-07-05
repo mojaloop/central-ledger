@@ -3,7 +3,7 @@
 const Test = require('tape')
 const Uuid = require('uuid4')
 const Config = require('../../../src/lib/config')
-const UrlParser = require('../../../src/lib/urlparser')
+const UrlParser = require('../../../src/lib/urlParser')
 
 Test('nameFromParticipantUri', nameFromParticipantUriTest => {
   nameFromParticipantUriTest.test('return null if not url', t => {

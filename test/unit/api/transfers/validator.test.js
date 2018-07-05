@@ -6,11 +6,11 @@ const Uuid = require('uuid4')
 const Moment = require('moment')
 const P = require('bluebird')
 const Config = require('../../../../src/lib/config')
-const UrlParser = require('../../../../src/lib/urlparser')
+const UrlParser = require('../../../../src/lib/urlParser')
 const Participant = require('../../../../src/domain/participant')
 const Validator = require('../../../../src/api/transfers/validator')
 const ValidationError = require('../../../../src/errors').ValidationError
-const CryptoConditions = require('../../../../src/crypto-conditions')
+const CryptoConditions = require('../../../../src/cryptoConditions')
 
 let assertValidationError = (promise, assert, message) => {
   promise.then(a => {

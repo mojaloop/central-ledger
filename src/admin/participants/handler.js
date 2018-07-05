@@ -1,9 +1,8 @@
 'use strict'
 
 const Participant = require('../../domain/participant')
-const ParticipantCurrencyModel = require('../../models/participantCurrency')
 const Errors = require('../../errors')
-const UrlParser = require('../../lib/urlparser')
+const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
@@ -58,8 +57,8 @@ const create = async function (request, h) {
       const participantId = await Participant.create(request.payload)
       participant = await Participant.getById(participantId)
     }
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participant.participantId, request.payload.currency)
-    participant.currencyList = [await ParticipantCurrencyModel.getById(participantCurrencyId)]
+    const participantCurrencyId = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency)
+    participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId)]
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)

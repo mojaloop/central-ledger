@@ -1,6 +1,6 @@
 'use strict'
 
-const RequestLogger = require('./../../lib/request-logger')
+const RequestLogger = require('./../../lib/requestLogger')
 
 class SocketManager {
   constructor () {

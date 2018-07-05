@@ -1,7 +1,7 @@
 'use strict'
 
 const Handler = require('./handler')
-const RouteConfig = require('../route-config')
+const RouteConfig = require('../routeConfig')
 const Permissions = require('../../domain/security/permissions')
 const tags = ['api', 'commands']
 

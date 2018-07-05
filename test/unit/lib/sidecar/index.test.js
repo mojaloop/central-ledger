@@ -27,7 +27,7 @@ Test('Sidecar', sidecarTest => {
     nullClientCreateStub = sandbox.stub()
     clientCreateStub = sandbox.stub()
 
-    stubs = { './null-client': { create: nullClientCreateStub }, '@mojaloop/forensic-logging-client': { create: clientCreateStub } }
+    stubs = { './nullClient': { create: nullClientCreateStub }, '@mojaloop/forensic-logging-client': { create: clientCreateStub } }
 
     t.end()
   })
