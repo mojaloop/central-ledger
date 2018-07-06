@@ -41,7 +41,7 @@ exports.saveExtension = async (extension) => {
       changedDate: extension.changedDate,
       changedBy: extension.changedBy
     }
-    return await Db.extension.insert(ext)
+    return await Db.transferExtension.insert(ext)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -57,7 +57,7 @@ exports.saveExtension = async (extension) => {
 
 exports.getByTransferId = async (transferId) => {
   try {
-    return await Db.extension.findOne({ transferId: transferId })
+    return await Db.transferExtension.findOne({ transferId: transferId })
     // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
     // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
@@ -67,7 +67,7 @@ exports.getByTransferId = async (transferId) => {
 
 exports.getByExtensionId = async (extensionId) => {
   try {
-    return await Db.extension.findOne({ extensionId: extensionId })
+    return await Db.transferExtension.findOne({ extensionId: extensionId })
     // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
     // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
@@ -84,7 +84,7 @@ exports.update = async (extension) => {
     changedBy: extension.changedBy
   }
   try {
-    return await Db.extension.update({extensionId: extension.extensionId}, Util.filterUndefined(fields))
+    return await Db.transferExtension.update({extensionId: extension.extensionId}, Util.filterUndefined(fields))
   } catch (err) {
     throw new Error(err.message)
   }
@@ -92,7 +92,7 @@ exports.update = async (extension) => {
 
 exports.destroyByTransferId = async (extension) => {
   try {
-    return await Db.extension.destroy({transferId: extension.transferId})
+    return await Db.transferExtension.destroy({transferId: extension.transferId})
   } catch (err) {
     throw new Error(err.message)
   }

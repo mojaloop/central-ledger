@@ -106,26 +106,45 @@ const getById = async (id) => {
   try {
     return await Db.transfer.query(async (builder) => {
       var transferResult = builder
-        .where({'transfer.transferId': id})
-        .innerJoin('participant AS ca', 'transfer.payerParticipantId', 'ca.participantId')
-        .innerJoin('participant AS da', 'transfer.payeeParticipantId', 'da.participantId')
-        .leftJoin('transferStateChange AS tsc', 'transfer.transferId', 'tsc.transferId')
-        .leftJoin('ilp AS ilp', 'transfer.transferId', 'ilp.transferId')
+        .where({
+          'transfer.transferId': id,
+          'tprt1.name': 'PAYER-DFSP',
+          'tprt2.name': 'PAYEE-DFSP'
+        })
+        // PAYER
+        .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
+        .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
+        .innerJoin('participantCurrency AS pc1', function () {
+          this.on('pc1.participantCurrencyId', 'tp1.participantCurrencyId')
+          .andOn('pc1.currencyId', 'transfer.currencyId')
+        })
+        .innerJoin('participant AS ca', 'ca.participantId', 'pc1.participantId')
+        // PAYEE
+        .innerJoin('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId')
+        .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
+        .innerJoin('participantCurrency AS pc2', function () {
+          this.on('pc2.participantCurrencyId', 'tp2.participantCurrencyId')
+          .andOn('pc2.currencyId', 'transfer.currencyId')
+        })
+        .innerJoin('participant AS da', 'da.participantId', 'pc2.participantId')
+        // OTHER JOINS
+        .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
+        .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
+        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
         .select(
           'transfer.*',
           'transfer.currencyId AS currency',
           'ca.name AS payerFsp',
           'da.name AS payeeFsp',
           'tsc.transferStateId AS transferState',
-          'tsc.changedDate AS completedTimestamp',
-          'ilp.packet AS ilpPacket',
-          'ilp.condition AS condition',
-          'ilp.fulfilment AS fulfilment',
-          'ilp.ilpId AS ilpId'
+          'tsc.createdDate AS completedTimestamp',
+          'ilpp.value AS ilpPacket',
+          'transfer.ilpCondition AS condition',
+          'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
-      transferResult.extensionList = await extensionModel.getByTransferId(id)
+      transferResult.extensionList = await extensionModel.getByTransferId(id) // TODO: check if needed
       transferResult.isTransferReadModel = true
       return transferResult
     })
