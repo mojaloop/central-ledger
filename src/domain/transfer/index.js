@@ -7,7 +7,7 @@ const SettlementModel = require('../../models/settlement/settlement')
 const Commands = require('./commands')
 const Translator = require('./translator')
 const RejectionType = require('./rejectionType')
-const State = require('./state')
+const Enum = require('../enum')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
 
@@ -28,7 +28,7 @@ const getFulfillment = (id) => {
       if (!transfer.executionCondition) {
         throw new Errors.TransferNotConditionalError()
       }
-      if (transfer.state === State.REJECTED) {
+      if (transfer.state === Enum.TransferState.REJECTED) {
         throw new Errors.AlreadyRolledBackError()
       }
       if (!transfer.fulfilment) {

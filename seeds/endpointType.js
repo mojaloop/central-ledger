@@ -2,15 +2,15 @@
 
 const endpointTypes = [
   {
-    'name': 'FSIOP-CALLBACK-URL',
+    'name': 'FSIOP_CALLBACK_URL',
     'description': 'Mojaloop compliant callback URL'
   },
   {
-    'name': 'ALARM-NOTIFICATION-URL',
+    'name': 'ALARM_NOTIFICATION_URL',
     'description': 'Participant callback URL to which alarm notifications can be sent'
   },
   {
-    'name': 'ALARM-NOTIFICATION-TOPIC',
+    'name': 'ALARM_NOTIFICATION_TOPIC',
     'description': 'Kafka topic used to publish alarm notifications'
   }
 ]

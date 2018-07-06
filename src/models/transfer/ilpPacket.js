@@ -30,13 +30,11 @@
 const Db = require('../../db')
 const Util = require('../../lib/util')
 
-exports.saveIlp = async (transfer) => {
+exports.saveIlpPacket = async (record) => {
   try {
-    return await Db.ilp.insert({
-      transferId: transfer.transferId,
-      packet: transfer.packet,
-      condition: transfer.condition,
-      fulfilment: transfer.fulfilment
+    return await Db.ilpPacket.insert({
+      transferId: record.transferId,
+      value: record.value
     })
   } catch (err) {
     throw new Error(err.message)
@@ -51,23 +49,21 @@ exports.getByTransferId = async (transferId) => {
   }
 }
 
-exports.update = async (ilp) => {
+exports.update = async (record) => {
   const fields = {
-    transferId: ilp.transferId,
-    packet: ilp.packet,
-    condition: ilp.condition,
-    fulfilment: ilp.fulfilment
+    transferId: record.transferId,
+    value: record.value
   }
   try {
-    return await Db.ilp.update({ilpId: ilp.ilpId}, Util.filterUndefined(fields))
+    return await Db.ilpPacket.update({transferId: record.transferId}, Util.filterUndefined(fields))
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.destroyByTransferId = async (ilp) => {
+exports.destroyByTransferId = async (record) => {
   try {
-    return await Db.ilp.destroy({transferId: ilp.transferId})
+    return await Db.ilpPacket.destroy({transferId: record.transferId})
   } catch (err) {
     throw new Error(err.message)
   }

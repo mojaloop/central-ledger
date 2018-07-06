@@ -3,6 +3,7 @@
 exports.up = function (knex, Promise) {
   return knex.schema.createTableIfNotExists('transferFulfilment', (t) => {
     t.string('transferFulfilmentId', 36).primary().notNullable()
+    t.foreign('transferFulfilmentId').references('transferFulfilmentId').inTable('transferFulfilmentDuplicateCheck')
     t.string('transferId', 36).notNullable()
     t.foreign('transferId').references('transferId').inTable('transfer')
     t.string('ilpFulfilment', 256).notNullable()

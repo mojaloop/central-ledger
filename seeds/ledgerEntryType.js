@@ -2,15 +2,15 @@
 
 const ledgerEntryTypes = [
   {
-    'name': 'PRINCIPLE-VALUE',
+    'name': 'PRINCIPLE_VALUE',
     'description': 'The principle amount to be settled between parties, derived on quotes between DFSPs'
   },
   {
-    'name': 'INTERCHANGE-FEE',
+    'name': 'INTERCHANGE_FEE',
     'description': 'Fees to be paid between DFSP'
   },
   {
-    'name': 'HUB-FEE',
+    'name': 'HUB_FEE',
     'description': 'Fees to be paid from the DFSPs to the Hub Operator'
   }
 ]

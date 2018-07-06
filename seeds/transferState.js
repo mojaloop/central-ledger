@@ -2,7 +2,7 @@
 
 const transferStates = [
   {
-    'transferStateId': 'RECEIVED-PREPARE',
+    'transferStateId': 'RECEIVED_PREPARE',
     'enumeration': 'RECEIVED',
     'description': 'Next ledger has received the transfer.'
   },
@@ -12,7 +12,7 @@ const transferStates = [
     'description': 'Next ledger has reserved the transfer.'
   },
   {
-    'transferStateId': 'RECEIVED-FULFIL',
+    'transferStateId': 'RECEIVED_FULFIL',
     'enumeration': 'RESERVED',
     'description': 'Next ledger has reserved the transfer, and has beenn assigned to a settlement window'
   },
@@ -37,7 +37,7 @@ const transferStates = [
     'description': 'Next ledger has aborted the transfer due a rejection or failure to perform the transfer.'
   },
   {
-    'transferStateId': 'PENDING-SETTLEMENT',
+    'transferStateId': 'PENDING_SETTLEMENT',
     'enumeration': 'COMMITTED',
     'description': 'Ledger has scheduled transfer for settlement'
   },

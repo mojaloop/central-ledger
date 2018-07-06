@@ -2,11 +2,11 @@
 
 const transferParticipantRoleTypes = [
   {
-    'name': 'PAYER-DFSP',
+    'name': 'PAYER_DFSP',
     'description': 'The participant is the Payer DFSP in this transfer and is sending the funds'
   },
   {
-    'name': 'PAYEE-DFSP',
+    'name': 'PAYEE_DFSP',
     'description': 'The participant is the Payee DFSP in this transfer and is receiving the funds'
   },
   {

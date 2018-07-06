@@ -39,7 +39,7 @@ const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
-const TransferState = require('../../../src/domain/transfer/state')
+const TransferState = require('../../../src/domain/enum').TransferState
 
 const POSITION = 'position'
 const TRANSFER = 'transfer'

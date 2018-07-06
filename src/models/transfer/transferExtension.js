@@ -37,9 +37,7 @@ exports.saveExtension = async (extension) => {
     let ext = {
       transferId: extension.transferId,
       key: extension.key,
-      value: extension.value,
-      changedDate: extension.changedDate,
-      changedBy: extension.changedBy
+      value: extension.value
     }
     return await Db.transferExtension.insert(ext)
   } catch (err) {

@@ -1,11 +1,12 @@
 'use strict'
 
 const _ = require('lodash')
-const ParticipantService = require('../../domain/participant')
-const TransferState = require('./state')
+const Enum = require('../enum')
+const ParticipantFacade = require('../../models/participant/facade')
 const TransfersModel = require('../../models/transfer/facade')
-const ilpModel = require('../../models/transfer/ilpPacket')
-const extensionModel = require('../../models/transfer/transferExtension')
+const transferParticipantModel = require('../../models/transfer/transferParticipant')
+const ilpPacketModel = require('../../models/transfer/ilpPacket')
+const transferExtensionModel = require('../../models/transfer/transferExtension')
 const transferStateChangeModel = require('../../models/transfer/transferStateChange')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
@@ -14,64 +15,88 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const names = [payload.payeeFsp, payload.payerFsp]
 
     for (let name of names) {
-      const participant = await ParticipantService.getByName(name)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency)
       participants.push(participant)
     }
 
-    const participantIds = await _.reduce(participants, (m, acct) => _.set(m, acct.name, acct.participantId), {})
+    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
+      _.set(m, acct.name, acct.participantCurrencyId), {})
 
     const transferRecord = {
       transferId: payload.transferId,
-      payeeParticipantId: participantIds[payload.payeeFsp],
-      payerParticipantId: participantIds[payload.payerFsp],
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
+      ilpCondition: payload.condition,
       expirationDate: new Date(payload.expiration)
     }
 
-    const ilpRecord = {
+    const ilpPacketRecord = {
       transferId: payload.transferId,
-      packet: payload.ilpPacket,
-      condition: payload.condition,
-      fulfilment: null
+      value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? TransferState.RECEIVED : TransferState.ABORTED)
+    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.ABORTED)
 
     const transferStateRecord = {
       transferId: payload.transferId,
       transferStateId: state,
       reason: stateReason,
-      changedDate: new Date()
+      createdDate: new Date()
     }
 
+    const payerTransferParticipantRecord = {
+      transferId: payload.transferId,
+      participantCurrencyId: participantCurrencyIds[payload.payerFsp],
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      amount: payload.amount.amount
+    }
+
+    const payeeTransferParticipantRecord = {
+      transferId: payload.transferId,
+      participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      amount: payload.amount.amount
+    }
     // TODO: Move inserts into a Transaction
 
-    // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
+    // first save transfer to ensure foreign key integrity
     await TransfersModel.saveTransfer(transferRecord)
 
-    var extensionsRecordList = []
+    await transferParticipantModel.saveTransferParticipant(payerTransferParticipantRecord)
+    await transferParticipantModel.saveTransferParticipant(payeeTransferParticipantRecord)
+    payerTransferParticipantRecord.name = payload.payerFsp
+    payeeTransferParticipantRecord.name = payload.payeeFsp
+
+    var transferExtensionsRecordList = []
 
     if (payload.extensionList && payload.extensionList.extension) {
-      extensionsRecordList = payload.extensionList.extension.map(ext => {
+      transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
         return {
           transferId: payload.transferId,
           key: ext.key,
-          value: ext.value,
-          changedDate: new Date(),
-          changedBy: 'user' // this needs to be changed and cannot be null
+          value: ext.value
         }
       })
-      for (let ext of extensionsRecordList) {
-        await extensionModel.saveExtension(ext)
+      for (let ext of transferExtensionsRecordList) {
+        await transferExtensionModel.saveExtension(ext)
       }
     }
 
-    await ilpModel.saveIlp(ilpRecord)
+    await ilpPacketModel.saveIlpPacket(ilpPacketRecord)
 
     await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
 
-    return {isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList}
+    return {
+      isSaveTransferPrepared: true,
+      transferRecord,
+      payerTransferParticipantRecord,
+      payeeTransferParticipantRecord,
+      ilpPacketRecord,
+      transferStateRecord,
+      transferExtensionsRecordList
+    }
   } catch (e) {
     throw e
   }
@@ -79,7 +104,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
 const saveTransferExecuted = async ({payload, timestamp}) => {
   const fields = {
-    state: TransferState.COMMITTED,
+    state: Enum.TransferState.COMMITTED,
     fulfilment: payload.fulfilment,
     executedDate: new Date(timestamp)
   }
@@ -91,7 +116,7 @@ const updateTransferState = async (payload, state) => {
     transferId: payload.transferId,
     transferStateId: state,
     reason: '',
-    changedDate: new Date()
+    createdDate: new Date()
   }
   return await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
 }
@@ -104,14 +129,14 @@ const saveTransferRejected = async (stateReason, transferId) => {
     let transferStateChange
     if (Array.isArray(existingtransferStateChange)) {
       for (let transferState of existingtransferStateChange) {
-        if (transferState.transferStateId === TransferState.ABORTED) {
+        if (transferState.transferStateId === Enum.TransferState.ABORTED) {
           existingAbort = true
           transferStateChange = transferState
           break
         }
       }
     } else {
-      if (existingtransferStateChange.transferStateId === TransferState.ABORTED) {
+      if (existingtransferStateChange.transferStateId === Enum.TransferState.ABORTED) {
         existingAbort = true
         transferStateChange = existingtransferStateChange
       }
@@ -122,7 +147,7 @@ const saveTransferRejected = async (stateReason, transferId) => {
       transferStateChange.transferId = transferId
       transferStateChange.reason = stateReason
       transferStateChange.changedDate = new Date()
-      transferStateChange.transferStateId = TransferState.ABORTED
+      transferStateChange.transferStateId = Enum.TransferState.ABORTED
       await transferStateChangeModel.saveTransferStateChange(transferStateChange)
       return {alreadyRejected: false, transferStateChange}
     } else {

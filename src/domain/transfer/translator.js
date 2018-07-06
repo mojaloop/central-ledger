@@ -70,23 +70,25 @@ const fromTransferReadModel = (t) => fromTransferAggregate({
   extensionList: t.extensionList
 })
 
-const fromSaveTransferPrepared = (t) => fromTransferAggregate({
-  transferId: t.transferRecord.transferId,
-  payeeFsp: t.transferRecord.payeeFsp,
-  payerFsp: t.transferRecord.payerFsp,
-  amount:
-  {
-    currency: t.transferRecord.currency,
-    amount: t.transferRecord.amount
-  },
-  transferStatus: t.transferStateRecord.transferStateId,
-  completedTimestamp: t.transferStateRecord.changedDate,
-  ilpPacket: t.ilpRecord.ilpPacket || t.ilpRecord.packet,
-  fulfilment: t.ilpRecord.fulfilment,
-  condition: t.ilpRecord.condition,
-  expiration: t.transferRecord.expirationDate,
-  extensionList: t.extensionsRecordList
-})
+const fromSaveTransferPrepared = (t) => {
+  fromTransferAggregate({
+    transferId: t.transferRecord.transferId,
+    payeeFsp: t.payeeTransferParticipantRecord.name,
+    payerFsp: t.payerTransferParticipantRecord.name,
+    amount:
+    {
+      currency: t.transferRecord.currencyId,
+      amount: t.transferRecord.amount
+    },
+    transferState: t.transferStateRecord.transferStateId,
+    completedTimestamp: t.transferStateRecord.createdDate,
+    ilpPacket: t.ilpPacketRecord.value,
+    fulfilment: null,
+    condition: t.transferRecord.ilpCondition,
+    expiration: t.transferRecord.expirationDate,
+    extensionList: t.transferExtensionsRecordList
+  })
+}
 
 // TODO: Need to fix this method
 const toTransfer = (t) => {
