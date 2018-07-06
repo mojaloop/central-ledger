@@ -58,6 +58,7 @@ const positions = async (error, messages) => {
     } else {
       message = messages
     }
+    Logger.info(`guid=${message.value.id}:uuid - startPositionHandler:process`)
     Logger.info('TransferHandler::position')
     const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, POSITION, PREPARE))
     const payload = message.value.content.payload
@@ -73,7 +74,7 @@ const positions = async (error, messages) => {
     await consumer.commitMessageSync(message)
     // Will follow framework flow in future
     await Utility.produceGeneralMessage(TRANSFER, TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
-
+    Logger.info(`guid=${message.value.id}:uuid - endPositionHandler:process`)
     return true
   } catch (error) {
     Logger.error(error)

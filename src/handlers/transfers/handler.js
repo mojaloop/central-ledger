@@ -91,6 +91,7 @@ const prepare = async (error, messages) => {
       message = messages
     }
     Logger.info('TransferHandler::prepare')
+    Logger.info(`guid=${message.value.id}:uuid - startPrepareTransferHandler:process`)
     const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, PREPARE))
     const payload = message.value.content.payload
     let {validationPassed, reasons} = await Validator.validateByName(payload)
@@ -104,6 +105,7 @@ const prepare = async (error, messages) => {
         await consumer.commitMessageSync(message)
         // position topic to be created and inserted here
         await Utility.produceParticipantMessage(payload.payerFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+        Logger.info(`guid=${message.value.id}:uuid - endPrepareTransferHandler:process`)
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
@@ -153,6 +155,7 @@ const fulfil = async (error, messages) => {
     } else {
       message = messages
     }
+    Logger.info(`guid=${message.value.id}:uuid - startFulfilHandler:process`)
     Logger.info('FulfilHandler::fulfil')
     const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, FULFIL))
     const metadata = message.value.metadata
@@ -186,6 +189,7 @@ const fulfil = async (error, messages) => {
         await ilp.update({ilpId: existingTransfer.ilpId, fulfilment: payload.fulfilment})
         await consumer.commitMessageSync(message)
         await Utility.produceParticipantMessage(existingTransfer.payeeFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+        Logger.info(`guid=${message.value.id}:uuid - endFulfilHandler:process`)
         return true
       }
     } else if (metadata.event.type === FULFIL && metadata.event.action === REJECT) {
@@ -236,6 +240,8 @@ const transfer = async (error, messages) => {
       message = messages
     }
 
+    Logger.info(`guid=${message.value.id}:uuid - startTransferHandler:process`)
+
     // const {metadata, from, to, content, id} = message.value
     const {metadata} = message.value
     const {action, state} = metadata.event
@@ -250,6 +256,7 @@ const transfer = async (error, messages) => {
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
 
       await consumer.commitMessageSync(message)
+      Logger.info(`guid=${message.value.id}:uuid - endTransferHandler:process`)
 
       return true
     } else if (action.toLowerCase() === 'commit' && status.toLowerCase() === 'success') {
@@ -263,6 +270,7 @@ const transfer = async (error, messages) => {
       // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
 
       await consumer.commitMessageSync(message)
+      Logger.info(`guid=${message.value.id}:uuid - endTransferHandler:process`)
 
       return true
     } else {

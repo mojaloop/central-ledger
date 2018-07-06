@@ -1,6 +1,7 @@
 {
   "PORT": 3000,
   "ADMIN_PORT": 3001,
+  "ADMIN_SECRET": "BLEH",
   "HOSTNAME": "http://central-ledger",
   "ENABLE_TOKEN_AUTH": false,
   "ENABLE_BASIC_AUTH": false,
@@ -11,7 +12,7 @@
     "SCALE": 2
   },
   "SIDECAR": {
-    "DISABLED": false,
+    "DISABLED": true,
     "HOST": "localhost",
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,
