@@ -4,7 +4,7 @@ const Test = require('tape')
 const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
 
-Test('POST /charges', putTest => {
+Test('POST /charge', putTest => {
   putTest.test('should create a charge', test => {
     const chargeName = Fixtures.generateRandomName()
     const payload = {
@@ -16,8 +16,8 @@ Test('POST /charges', putTest => {
       maximum: '100.00',
       code: '003',
       is_active: true,
-      payer: 'sender',
-      payee: 'receiver'
+      payerParticipantId: 'sender',
+      payeeParticipantId: 'receiver'
     }
 
     Base.createCharge(payload)
@@ -31,8 +31,8 @@ Test('POST /charges', putTest => {
         test.equal(res.body.maximum, payload.maximum)
         test.equal(res.body.code, payload.code)
         test.equal(res.body.is_active, payload.is_active)
-        test.equal(res.body.payer, payload.payer)
-        test.equal(res.body.payee, payload.payee)
+        test.equal(res.body.payerParticipantId, payload.payerParticipantId)
+        test.equal(res.body.payeeParticipantId, payload.payeeParticipantId)
         test.end()
       })
   })
@@ -40,7 +40,7 @@ Test('POST /charges', putTest => {
   putTest.end()
 })
 
-Test('POST /charges', putTest => {
+Test('POST /charge', putTest => {
   putTest.test('should throw an error when creating a duplicate charge', test => {
     const chargeName = Fixtures.generateRandomName()
     const payload = {
@@ -52,8 +52,8 @@ Test('POST /charges', putTest => {
       maximum: '100.00',
       code: '003',
       is_active: true,
-      payer: 'sender',
-      payee: 'receiver'
+      payerParticipantId: 'sender',
+      payeeParticipantId: 'receiver'
     }
 
     Base.createCharge(payload)

@@ -1,103 +1,153 @@
 'use strict'
 
 const _ = require('lodash')
-const P = require('bluebird')
-const Moment = require('moment')
-const DA = require('deasync-promise')
-const Logger = require('@mojaloop/central-services-shared').Logger
-const UrlParser = require('../../lib/urlparser')
-const Util = require('../../lib/util')
-const AccountService = require('../../domain/account')
+const ParticipantService = require('../../domain/participant')
 const TransferState = require('./state')
-const TransferRejectionType = require('./rejection-type')
-const TransfersReadModel = require('./models/transfers-read-model')
+const TransfersModel = require('./models/transfer-read-model')
+const ilpModel = require('../../models/ilp')
+const extensionModel = require('../../models/extensions')
+const transferStateChangeModel = require('./models/transferStateChanges')
+const ExecuteTransfersModel = require('../../models/executed-transfers')
+const SettledTransfersModel = require('../../models/settled-transfers')
 
-const saveTransferPrepared = ({ aggregate, payload, timestamp }) => {
-  const debitAccount = UrlParser.nameFromAccountUri(payload.debits[0].account)
-  const creditAccount = UrlParser.nameFromAccountUri(payload.credits[0].account)
+const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+  try {
+    const participants = []
+    const names = [payload.payeeFsp, payload.payerFsp]
 
-  return P.all([debitAccount, creditAccount].map(name => AccountService.getByName(name)))
-    .then(accounts => {
-      const accountIds = _.reduce(accounts, (m, acct) => _.set(m, acct.name, acct.accountId), {})
+    for (let name of names) {
+      const participant = await ParticipantService.getByName(name)
+      participants.push(participant)
+    }
 
-      const record = {
-        transferUuid: aggregate.id,
-        state: TransferState.PREPARED,
-        ledger: payload.ledger,
-        debitAccountId: accountIds[debitAccount],
-        debitAmount: payload.debits[0].amount,
-        debitMemo: payload.debits[0].memo,
-        creditAccountId: accountIds[creditAccount],
-        creditAmount: payload.credits[0].amount,
-        creditMemo: payload.credits[0].memo,
-        executionCondition: payload.execution_condition,
-        cancellationCondition: payload.cancellation_condition,
-        rejectionReason: payload.rejection_reason,
-        expiresAt: payload.expires_at,
-        additionalInfo: payload.additional_info,
-        preparedDate: Moment(timestamp)
+    const participantIds = await _.reduce(participants, (m, acct) => _.set(m, acct.name, acct.participantId), {})
+
+    const transferRecord = {
+      transferId: payload.transferId,
+      payeeParticipantId: participantIds[payload.payeeFsp],
+      payerParticipantId: participantIds[payload.payerFsp],
+      amount: payload.amount.amount,
+      currencyId: payload.amount.currency,
+      expirationDate: new Date(payload.expiration)
+    }
+
+    const ilpRecord = {
+      transferId: payload.transferId,
+      packet: payload.ilpPacket,
+      condition: payload.condition,
+      fulfilment: null
+    }
+
+    const state = ((hasPassedValidation) ? TransferState.RECEIVED_PREPARE : TransferState.ABORTED)
+
+    const transferStateRecord = {
+      transferId: payload.transferId,
+      transferStateId: state,
+      reason: stateReason,
+      changedDate: new Date()
+    }
+
+    // TODO: Move inserts into a Transaction
+
+    // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
+    await TransfersModel.saveTransfer(transferRecord)
+
+    var extensionsRecordList = []
+
+    if (payload.extensionList && payload.extensionList.extension) {
+      extensionsRecordList = payload.extensionList.extension.map(ext => {
+        return {
+          transferId: payload.transferId,
+          key: ext.key,
+          value: ext.value,
+          changedDate: new Date(),
+          changedBy: 'user' // this needs to be changed and cannot be null
+        }
+      })
+      for (let ext of extensionsRecordList) {
+        await extensionModel.saveExtension(ext)
       }
+    }
 
-      return TransfersReadModel.saveTransfer(record)
-    })
+    await ilpModel.saveIlp(ilpRecord)
+
+    await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
+
+    return {isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList}
+  } catch (e) {
+    throw e
+  }
 }
 
-const saveTransferExecuted = ({ aggregate, payload, timestamp }) => {
+const saveTransferExecuted = async ({payload, timestamp}) => {
   const fields = {
-    state: TransferState.EXECUTED,
-    fulfillment: payload.fulfillment,
-    executedDate: Moment(timestamp)
+    state: TransferState.COMMITTED,
+    fulfilment: payload.fulfilment,
+    executedDate: new Date(timestamp)
   }
-  return TransfersReadModel.updateTransfer(aggregate.id, fields)
+  return await TransfersModel.updateTransfer(payload.id, fields)
 }
-
-const saveTransferRejected = ({ aggregate, payload, timestamp }) => {
-  const fields = {
-    state: TransferState.REJECTED,
-    rejectionReason: payload.rejection_reason,
-    rejectedDate: Moment(timestamp)
+// This update should only be done if the transfer id only has the state RECEIVED //TODO
+const updateTransferState = async (payload, state) => {
+  const transferStateRecord = {
+    transferId: payload.transferId,
+    transferStateId: state,
+    reason: '',
+    changedDate: new Date()
   }
-  if (payload.rejection_reason === TransferRejectionType.CANCELLED) {
-    Util.assign(fields, {
-      creditRejected: 1,
-      creditRejectionMessage: payload.message || ''
-    })
+  return await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
+}
+
+const saveTransferRejected = async (stateReason, transferId) => {
+  try {
+    const existingTransferStateChanges = await transferStateChangeModel.getByTransferId(transferId)
+
+    let existingAbort = false
+    let transferStateChange
+    if (Array.isArray(existingTransferStateChanges)) {
+      for (let transferState of existingTransferStateChanges) {
+        if (transferState.transferStateId === TransferState.ABORTED) {
+          existingAbort = true
+          transferStateChange = transferState
+          break
+        }
+      }
+    } else {
+      if (existingTransferStateChanges.transferStateId === TransferState.ABORTED) {
+        existingAbort = true
+        transferStateChange = existingTransferStateChanges
+      }
+    }
+    if (!existingAbort) {
+      transferStateChange = {}
+      transferStateChange.transferStateChangeId = null
+      transferStateChange.transferId = transferId
+      transferStateChange.reason = stateReason
+      transferStateChange.changedDate = new Date()
+      transferStateChange.transferStateId = TransferState.ABORTED
+      await transferStateChangeModel.saveTransferStateChange(transferStateChange)
+      return {alreadyRejected: false, transferStateChange}
+    } else {
+      return {alreadyRejected: true, transferStateChange}
+    }
+  } catch (e) {
+    throw e
   }
-  return TransfersReadModel.updateTransfer(aggregate.id, fields)
 }
 
-const initialize = (params, done) => {
-  return TransfersReadModel.truncateTransfers()
-    .then(() => done())
-    .catch(err => {
-      Logger.error('Error truncating read model', err)
-    })
+const saveExecutedTransfer = async (transfer) => {
+  await ExecuteTransfersModel.create(transfer.payload.id)
 }
 
-const handleTransferPrepared = (event) => {
-  return DA(saveTransferPrepared(event)
-    .catch(err => {
-      Logger.error('Error handling TransferPrepared event', err)
-    }))
-}
-
-const handleTransferExecuted = (event) => {
-  return DA(saveTransferExecuted(event)
-    .catch(err => {
-      Logger.error('Error handling TransferExecuted event', err)
-    }))
-}
-
-const handleTransferRejected = (event) => {
-  return DA(saveTransferRejected(event)
-    .catch(err => {
-      Logger.error('Error handling TransferRejected event', err)
-    }))
+const saveSettledTransfers = async ({id, settlement_id}) => {
+  await SettledTransfersModel.create({id, settlement_id})
 }
 
 module.exports = {
-  initialize,
-  handleTransferExecuted,
-  handleTransferPrepared,
-  handleTransferRejected
+  saveTransferPrepared,
+  saveTransferExecuted,
+  saveTransferRejected,
+  saveExecutedTransfer,
+  saveSettledTransfers,
+  updateTransferState
 }

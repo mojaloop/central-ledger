@@ -30,11 +30,11 @@ exports.prepareTransfer = async function (request, h) {
 
 exports.fulfillTransfer = async function (request, h) {
   Sidecar.logRequest(request)
-  const fulfillment = {
+  const fulfilment = {
     id: request.params.id,
-    fulfillment: request.payload
+    fulfilment: request.payload
   }
-  const transfer = await TransferService.fulfill(fulfillment)
+  const transfer = await TransferService.fulfil(fulfilment)
   return h.response(transfer).code(200)
 }
 
@@ -43,8 +43,8 @@ exports.rejectTransfer = async function (request, h) {
   const rejection = {
     id: request.params.id,
     rejection_reason: TransferRejectionType.CANCELLED,
-    message: request.payload,
-    requestingAccount: request.auth.credentials
+    message: request.payload.reason,
+    requestingParticipant: request.auth.credentials
   }
   const result = await TransferService.reject(rejection)
   return h.response(rejection.message).code(result.alreadyRejected ? 200 : 201)

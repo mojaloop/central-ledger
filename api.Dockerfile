@@ -4,10 +4,11 @@ USER root
 WORKDIR /opt/central-ledger
 COPY src /opt/central-ledger/src
 COPY migrations /opt/central-ledger/migrations
+COPY seeds /opt/central-ledger/seeds
 COPY config /opt/central-ledger/config
 COPY package.json server.sh /opt/central-ledger/
 
-RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake \
+RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
     && cd $(npm root -g)/npm \
     && npm install -g node-gyp \
     && apk --no-cache add git

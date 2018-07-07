@@ -1,81 +1,109 @@
 'use strict'
 
-const UrlParser = require('../../lib/urlparser')
 const Util = require('../../lib/util')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const transferProperties = [
-  'additional_info',
-  'cancellation_condition',
-  'credits',
-  'debits',
-  'execution_condition',
-  'expires_at',
-  'expiry_duration',
-  'id',
-  'ledger',
-  'rejection_reason',
-  'state',
-  'timeline'
+  'transferId',
+  'amount',
+  'transferState',
+  'completedTimestamp',
+  'ilpPacket',
+  'fulfilment',
+  'condition',
+  'expiration',
+  'extensionList'
 ]
 
-const formatAsset = (asset) => Util.mergeAndOmitNil(asset, {
-  account: UrlParser.toAccountUri(asset.account),
+const formatAmount = (asset) => Util.mergeAndOmitNil(asset, {
   amount: Util.formatAmount(asset.amount),
-  memo: Util.parseJson(asset.memo),
-  rejection_message: Util.parseJson(asset.rejection_message)
+  currency: asset.currency
 })
 
-const formatAssets = (assets) => (Array.isArray(assets) ? assets.map(formatAsset) : assets)
+const formatExtensionKeyValue = (asset) => Util.mergeAndOmitNil(asset, {
+  key: asset.key,
+  value: asset.value
+})
+
+const formatExtension = (assets) => (Array.isArray(assets) ? assets.map(formatExtensionKeyValue) : assets)
+
+const formatExtensionList = (assets) => {
+  if (assets) {
+    return {
+      extension: formatExtension(assets)
+    }
+  } else {
+    return null
+  }
+}
 
 const fromTransferAggregate = (t) => {
   const cleanProperties = Util.omitNil({
-    id: UrlParser.toTransferUri(t.id),
-    credits: formatAssets(t.credits),
-    debits: formatAssets(t.debits),
-    timeline: Util.omitNil(t.timeline)
+    transferId: t.transferId,
+    amount: formatAmount(t.amount),
+    transferState: Util.omitNil(t.transferState),
+    completedTimestamp: Util.omitNil(t.completedTimestamp),
+    ilpPacket: t.ilpPacket,
+    fulfilment: t.fulfilment,
+    condition: t.condition,
+    expiration: Util.omitNil(t.expirationDate),
+    extensionList: formatExtensionList(t.extensionList)
   })
   return Util.mergeAndOmitNil(Util.pick(t, transferProperties), cleanProperties)
 }
 
 const fromTransferReadModel = (t) => fromTransferAggregate({
-  id: t.transferUuid,
-  ledger: t.ledger,
-  debits: [{
-    account: t.debitAccountName,
-    amount: t.debitAmount,
-    memo: t.debitMemo
-  }],
-  credits: [{
-    account: t.creditAccountName,
-    amount: t.creditAmount,
-    memo: t.creditMemo,
-    rejected: t.creditRejected === 1,
-    rejection_message: t.creditRejectionMessage
-  }],
-  cancellation_condition: t.cancellationCondition,
-  execution_condition: t.executionCondition,
-  expires_at: t.expiresAt,
-  state: t.state,
-  timeline: Util.omitNil({
-    prepared_at: t.preparedDate,
-    executed_at: t.executedDate,
-    rejected_at: t.rejectedDate
-  }),
-  rejection_reason: t.rejectionReason
+  transferId: t.transferId,
+  payeeFsp: t.payeeFsp,
+  payerFsp: t.payerFsp,
+  amount:
+  {
+    currency: t.currency,
+    amount: t.amount
+  },
+  transferState: t.transferState,
+  completedTimestamp: t.completedTimestamp,
+  ilpPacket: t.ilpPacket,
+  fulfilment: t.fulfilment,
+  condition: t.condition,
+  expiration: t.expirationDate,
+  extensionList: t.extensionList
 })
 
+const fromSaveTransferPrepared = (t) => fromTransferAggregate({
+  transferId: t.transferRecord.transferId,
+  payeeFsp: t.transferRecord.payeeFsp,
+  payerFsp: t.transferRecord.payerFsp,
+  amount:
+  {
+    currency: t.transferRecord.currency,
+    amount: t.transferRecord.amount
+  },
+  transferStatus: t.transferStateRecord.transferStateId,
+  completedTimestamp: t.transferStateRecord.changedDate,
+  ilpPacket: t.ilpRecord.ilpPacket || t.ilpRecord.packet,
+  fulfilment: t.ilpRecord.fulfilment,
+  condition: t.ilpRecord.condition,
+  expiration: t.transferRecord.expirationDate,
+  extensionList: t.extensionsRecordList
+})
+
+// TODO: Need to fix this method
 const toTransfer = (t) => {
-  if (t.id) {
-    return fromTransferAggregate(t)
-  } else if (t.transferUuid) {
-    return fromTransferReadModel(t)
+  // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
+  if (t.isTransferReadModel) {
+    Logger.debug('In aggregate transfer translator for isTransferReadModel')
+    return fromTransferReadModel(t) // TODO: Remove this once the DB validation is done for 't'
+  } else if (t.isSaveTransferPrepared) {
+    Logger.debug('In aggregate transfer translator for isSaveTransferPrepared')
+    return fromSaveTransferPrepared(t) // TODO: Remove this once the DB validation is done for 't'
   } else throw new Error(`Unable to translate to transfer: ${t}`)
 }
 
-const fromPayload = (payload) => Util.merge(payload, { id: UrlParser.idFromTransferUri(payload.id) })
+// const fromPayload = (payload) => Util.merge(payload, { id: UrlParser.idFromTransferUri(payload.id) })
 
 module.exports = {
-  toTransfer,
-  fromPayload
+  toTransfer
+  // fromPayload
 }
 

@@ -14,12 +14,12 @@ function createChargePayload (name) {
     maximum: '100.00',
     code: '1',
     is_active: true,
-    payer: 'receiver',
-    payee: 'sender'
+    payerParticipantId: 'receiver',
+    payeeParticipantId: 'sender'
   }
 }
 
-Test('charges model', modelTest => {
+Test('charge model', modelTest => {
   modelTest.test('create should', createTest => {
     createTest.test('create a new charge', test => {
       const chargeName = Fixtures.generateRandomName()
@@ -44,7 +44,7 @@ Test('charges model', modelTest => {
     createTest.end()
   })
 
-  Test('charges model', modelTest => {
+  Test('charge model', modelTest => {
     modelTest.test('update should', updateTest => {
       updateTest.test('update a new charge', test => {
         const chargeName = Fixtures.generateRandomName()
@@ -79,7 +79,7 @@ Test('charges model', modelTest => {
   })
 
   modelTest.test('getAll should', getAllTest => {
-    getAllTest.test('return all charges', test => {
+    getAllTest.test('return all charge', test => {
       const charge1Name = Fixtures.generateRandomName()
       const charge2Name = Fixtures.generateRandomName()
 
@@ -89,10 +89,10 @@ Test('charges model', modelTest => {
       Model.create(chargePayload1)
         .then(() => Model.create(chargePayload2))
         .then(() => Model.getAll())
-        .then((charges) => {
-          test.ok(charges.length > 0)
-          test.ok(charges.find(a => a.name === charge1Name))
-          test.ok(charges.find(a => a.name === charge2Name))
+        .then((charge) => {
+          test.ok(charge.length > 0)
+          test.ok(charge.find(a => a.name === charge1Name))
+          test.ok(charge.find(a => a.name === charge2Name))
           test.end()
         })
     })
@@ -101,7 +101,7 @@ Test('charges model', modelTest => {
   })
 
   modelTest.test('getAllSenderAsPayer should', getAllTest => {
-    getAllTest.test('return all charges where the sender is the payer', test => {
+    getAllTest.test('return all charge where the sender is the payerParticipantId', test => {
       const charge1Name = Fixtures.generateRandomName()
       const charge2Name = Fixtures.generateRandomName()
       const charge3Name = Fixtures.generateRandomName()
@@ -109,16 +109,16 @@ Test('charges model', modelTest => {
       const chargePayload1 = createChargePayload(charge1Name)
       const chargePayload2 = createChargePayload(charge2Name)
       const chargePayload3 = createChargePayload(charge3Name)
-      chargePayload3.payer = 'sender'
-      chargePayload3.payee = 'receiver'
+      chargePayload3.payerParticipantId = 'sender'
+      chargePayload3.payeeParticipantId = 'receiver'
 
       Model.create(chargePayload1)
         .then(() => Model.create(chargePayload2))
         .then(() => Model.create(chargePayload3))
         .then(() => Model.getAllSenderAsPayer())
-        .then((charges) => {
-          test.ok(charges.length === 1)
-          test.ok(charges.find(a => a.name === charge3Name))
+        .then((charge) => {
+          test.ok(charge.length === 1)
+          test.ok(charge.find(a => a.name === charge3Name))
           test.end()
         })
     })

@@ -136,15 +136,15 @@ Test('Charge service', serviceTest => {
       const charge1 = createCharge('acharge1', 'percent')
       const charge2 = createCharge('bcharge2', 'flat')
       const charge3 = createCharge('ccharge3', 'flat', '0.00', '100.00')
-      const charges = [charge1, charge2, charge3]
+      const charge = [charge1, charge2, charge3]
 
-      Model.getAll.returns(P.resolve(charges))
+      Model.getAll.returns(P.resolve(charge))
       const transfer = {
-        creditAmount: '1.00'
+        payerAmount: '1.00'
       }
       ChargeService.getAllForTransfer(transfer)
         .then(result => {
-          test.deepEqual(result, charges)
+          test.deepEqual(result, charge)
           test.end()
         })
     })
@@ -156,13 +156,13 @@ Test('Charge service', serviceTest => {
       const charge1 = createCharge('acharge1')
       const charge2 = createCharge('bcharge2', 'flat')
       const charge3 = createCharge('ccharge3', 'flat', '50.00', '100.00')
-      const charges = [charge1, charge2, charge3]
+      const charge = [charge1, charge2, charge3]
 
       const amount = 20.00
       const transaction = {
         'amount': amount
       }
-      Model.getAllSenderAsPayer.returns(P.resolve(charges))
+      Model.getAllSenderAsPayer.returns(P.resolve(charge))
       ChargeService.quote(transaction)
         .then(result => {
           test.equal(result.length, 2)

@@ -1,25 +1,28 @@
 'use strict'
 
-const Eventric = require('../../../eventric')
+const Projection = require('../../../domain/transfer/projection')
 
-const prepare = (transfer) => {
-  return Eventric.getContext().then(ctx => ctx.command('PrepareTransfer', transfer))
+const prepare = async (transfer, stateReason = null, hasPassedValidation = true) => {
+  try {
+    return await Projection.saveTransferPrepared(transfer, stateReason, hasPassedValidation)
+  } catch (error) {
+    throw error
+  }
 }
 
-const fulfill = (fulfillment) => {
-  return Eventric.getContext().then(ctx => ctx.command('FulfillTransfer', fulfillment))
-}
-
-const reject = (rejection) => {
-  return Eventric.getContext().then(ctx => ctx.command('RejectTransfer', rejection))
+const reject = async (stateReason, transferId) => {
+  try {
+    return await Projection.saveTransferRejected(stateReason, transferId)
+  } catch (error) {
+    throw error
+  }
 }
 
 const settle = ({id, settlement_id}) => {
-  return Eventric.getContext().then(ctx => ctx.command('SettleTransfer', {id, settlement_id}))
+  return Projection.saveSettledTransfers({id, settlement_id})
 }
 
 module.exports = {
-  fulfill,
   prepare,
   reject,
   settle

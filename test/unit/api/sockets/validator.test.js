@@ -4,14 +4,14 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Validator = require('../../../../src/api/sockets/validator')
-const AccountService = require('../../../../src/domain/account')
+const ParticipantService = require('../../../../src/domain/participant')
 
 Test('subscription validator', validatorTest => {
   let sandbox
 
   validatorTest.beforeEach(test => {
     sandbox = Sinon.sandbox.create()
-    sandbox.stub(AccountService, 'exists')
+    sandbox.stub(ParticipantService, 'exists')
     test.end()
   })
 
@@ -69,18 +69,18 @@ Test('subscription validator', validatorTest => {
       })
     })
 
-    requestTest.test('throw error if method is not "subscribe_account"', test => {
-      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'not subscribe account' })
+    requestTest.test('throw error if method is not "subscribe_participant"', test => {
+      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'not subscribe participant' })
       Validator.validateSubscriptionRequest(request, (err, result) => {
         test.equal(err.payload.id, 'InvalidSubscriptionRequestError')
         test.equal(err.payload.message, 'Invalid subscription request')
-        test.equal(err.payload.validationErrors[0].message, 'method must be one of [subscribe_account]')
+        test.equal(err.payload.validationErrors[0].message, 'method must be one of [subscribe_participant]')
         test.end()
       })
     })
 
     requestTest.test('throw error if params is not present', test => {
-      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_account' })
+      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_participant' })
       Validator.validateSubscriptionRequest(request, (err, result) => {
         test.equal(err.payload.id, 'InvalidSubscriptionRequestError')
         test.equal(err.payload.message, 'Invalid subscription request')
@@ -89,21 +89,21 @@ Test('subscription validator', validatorTest => {
       })
     })
 
-    requestTest.test('throw error if params.accounts is not present', test => {
-      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_account', params: {} })
+    requestTest.test('throw error if params.participant is not present', test => {
+      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_participant', params: {} })
       Validator.validateSubscriptionRequest(request, (err, result) => {
         test.equal(err.payload.id, 'InvalidSubscriptionRequestError')
         test.equal(err.payload.message, 'Invalid subscription request')
         const validationError = err.payload.validationErrors[0]
-        test.equal(validationError.message, 'accounts is required')
-        test.equal(validationError.params.key, 'accounts')
+        test.equal(validationError.message, 'participant is required')
+        test.equal(validationError.params.key, 'participant')
         test.end()
       })
     })
 
-    requestTest.test('throw error if account not parseable uri', test => {
-      const accounts = ['test1']
-      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_account', params: { accounts: accounts } })
+    requestTest.test('throw error if participant not parseable uri', test => {
+      const participant = ['test1']
+      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_participant', params: { participant: participant } })
       Validator.validateSubscriptionRequest(request, (err, result) => {
         test.equal(err.payload.id, 'InvalidSubscriptionRequestError')
         test.equal(err.payload.message, 'Invalid subscription request')
@@ -115,12 +115,12 @@ Test('subscription validator', validatorTest => {
       })
     })
 
-    requestTest.test('throw error if account does not exist', test => {
+    requestTest.test('throw error if participant does not exist', test => {
       const errorMessage = 'error message'
-      AccountService.exists.returns(P.reject(new Error(errorMessage)))
-      const accountUrl = 'http://central-ledger/accounts/dfsp1'
-      const accounts = [accountUrl]
-      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_account', params: { accounts } })
+      ParticipantService.exists.returns(P.reject(new Error(errorMessage)))
+      const participantUrl = 'http://central-ledger/participants/dfsp1'
+      const participant = [participantUrl]
+      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_participant', params: { participant } })
       Validator.validateSubscriptionRequest(request, (err, result) => {
         test.equal(err.payload.id, 'InvalidSubscriptionRequestError')
         test.equal(err.payload.message, 'Invalid subscription request')
@@ -130,16 +130,16 @@ Test('subscription validator', validatorTest => {
       })
     })
 
-    requestTest.test('return id, jsonrpc and accounts if valid', test => {
-      const account = {}
-      AccountService.exists.returns(P.resolve(account))
-      const accounts = ['http://ledger1/accounts/test1', 'http://ledger1/accounts/test2']
-      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_account', params: { accounts: accounts, eventType: '*' } })
+    requestTest.test('return id, jsonrpc and participant if valid', test => {
+      const participant = {}
+      ParticipantService.exists.returns(P.resolve(participant))
+      const participants = ['http://ledger1/participants/test1', 'http://ledger1/participants/test2']
+      const request = JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'subscribe_participant', params: { participant: participant, eventType: '*' } })
       Validator.validateSubscriptionRequest(request, (err, result) => {
         test.notOk(err)
         test.equal(result.id, 1)
         test.equal(result.jsonrpc, '2.0')
-        test.deepEqual(result.accountUris, accounts)
+        test.deepEqual(result.participantUris, participants)
         test.end()
       })
     })

@@ -6,7 +6,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Config = require(`${src}/lib/config`)
 const Service = require(`${src}/domain/position`)
-const Account = require(`${src}/domain/account`)
+const Participant = require(`${src}/domain/participant`)
 const Fee = require(`${src}/domain/fee`)
 const SettleableTransfersReadModel = require(`${src}/models/settleable-transfers-read-model`)
 
@@ -14,19 +14,19 @@ Test('Position Service tests', (serviceTest) => {
   let sandbox
   let originalHostName
   let hostname = 'http://some-host'
-  let accounts = [{ accountId: 1, name: 'dfsp1' }, { accountId: 2, name: 'dfsp2' }, { accountId: 3, name: 'dfsp3' }, { accountId: 4, name: 'dfsp4' }]
+  let participant = [{ participantId: 1, name: 'dfsp1' }, { participantId: 2, name: 'dfsp2' }, { participantId: 3, name: 'dfsp3' }, { participantId: 4, name: 'dfsp4' }]
 
   serviceTest.beforeEach(t => {
     sandbox = Sinon.sandbox.create()
     originalHostName = Config.HOSTNAME
     Config.HOSTNAME = hostname
-    sandbox.stub(Account, 'getAll')
-    sandbox.stub(Account, 'getById')
+    sandbox.stub(Participant, 'getAll')
+    sandbox.stub(Participant, 'getById')
     sandbox.stub(SettleableTransfersReadModel, 'getUnsettledTransfers')
-    sandbox.stub(SettleableTransfersReadModel, 'getUnsettledTransfersByAccount')
-    sandbox.stub(Fee, 'getUnsettledFeesByAccount')
-    sandbox.stub(Fee, 'getUnsettledFees')
-    Account.getAll.returns(P.resolve(accounts))
+    sandbox.stub(SettleableTransfersReadModel, 'getUnsettledTransfersByParticipant')
+    sandbox.stub(Fee, 'getUnsettledFeeByParticipant')
+    sandbox.stub(Fee, 'getUnsettledFee')
+    Participant.getAll.returns(P.resolve(participant))
     t.end()
   })
 
@@ -36,14 +36,14 @@ Test('Position Service tests', (serviceTest) => {
     t.end()
   })
 
-  function buildEmptyPosition (accountName) {
-    return buildPosition(accountName, '0', '0', '0', '0', '0', '0', '0')
+  function buildEmptyPosition (participantName) {
+    return buildPosition(participantName, '0', '0', '0', '0', '0', '0', '0')
   }
 
-  function buildPosition (accountName, tPayments, tReceipts, tNet, fPayments, fReceipts, fNet, net) {
+  function buildPosition (participantName, tPayments, tReceipts, tNet, fPayments, fReceipts, fNet, net) {
     return {
-      account: `${hostname}/accounts/${accountName}`,
-      fees: {
+      participant: `${hostname}/participants/${participantName}`,
+      fee: {
         payments: fPayments,
         receipts: fReceipts,
         net: fNet
@@ -57,63 +57,63 @@ Test('Position Service tests', (serviceTest) => {
     }
   }
 
-  function buildTransfer (debitAccount, debitAmount, creditAccount, creditAmount) {
+  function buildTransfer (debitParticipant, payeeAmount, creditParticipant, payerAmount) {
     return {
-      debitAccountName: debitAccount,
-      debitAmount: debitAmount,
-      creditAccountName: creditAccount,
-      creditAmount: creditAmount
+      debitParticipantName: debitParticipant,
+      payeeAmount: payeeAmount,
+      creditParticipantName: creditParticipant,
+      payerAmount: payerAmount
     }
   }
 
-  function buildFee (payerAccount, payerAmount, payeeAccount, payeeAmount) {
+  function buildFee (payerParticipant, payerAmount, payeeParticipant, payeeAmount) {
     return {
-      payerAccountName: payerAccount,
+      payerParticipantName: payerParticipant,
       payerAmount: payerAmount,
-      payeeAccountName: payeeAccount,
+      payeeParticipantName: payeeParticipant,
       payeeAmount: payeeAmount
     }
   }
 
-  serviceTest.test('calculateForAllAccounts should', (calcAllTest) => {
-    calcAllTest.test('return no positions if no accounts retrieved', (test) => {
-      Account.getAll.returns(P.resolve([]))
+  serviceTest.test('calculateForAllParticipants should', (calcAllTest) => {
+    calcAllTest.test('return no positions if no participant retrieved', (test) => {
+      Participant.getAll.returns(P.resolve([]))
 
       let transfers = [
-        buildTransfer(accounts[0].name, 3, accounts[1].name, 3)
+        buildTransfer(participant[0].name, 3, participant[1].name, 3)
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfers.returns(P.resolve(transfers))
-      Fee.getUnsettledFees.returns(P.resolve([]))
+      Fee.getUnsettledFee.returns(P.resolve([]))
 
       let expected = []
-      Service.calculateForAllAccounts()
+      Service.calculateForAllParticipants()
         .then(positions => {
-          test.ok(Account.getAll.called)
+          test.ok(Participant.getAll.called)
           test.notOk(SettleableTransfersReadModel.getUnsettledTransfers.called)
-          test.notOk(Fee.getUnsettledFees.called)
+          test.notOk(Fee.getUnsettledFee.called)
           test.deepEqual(positions, expected)
           test.end()
         })
     })
 
-    calcAllTest.test('return empty positions for all accounts if no settleable transfers', (assert) => {
+    calcAllTest.test('return empty positions for all participant if no settleable transfers', (assert) => {
       let expected = [
-        buildEmptyPosition(accounts[0].name),
-        buildEmptyPosition(accounts[1].name),
-        buildEmptyPosition(accounts[2].name),
-        buildEmptyPosition(accounts[3].name)
+        buildEmptyPosition(participant[0].name),
+        buildEmptyPosition(participant[1].name),
+        buildEmptyPosition(participant[2].name),
+        buildEmptyPosition(participant[3].name)
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfers.returns(P.resolve([]))
-      Fee.getUnsettledFees.returns(P.resolve([]))
+      Fee.getUnsettledFee.returns(P.resolve([]))
 
-      Service.calculateForAllAccounts()
+      Service.calculateForAllParticipants()
         .then(positions => {
-          assert.ok(Account.getAll.called)
+          assert.ok(Participant.getAll.called)
           assert.ok(SettleableTransfersReadModel.getUnsettledTransfers.called)
-          assert.ok(Fee.getUnsettledFees.called)
-          assert.equal(positions.length, accounts.length)
+          assert.ok(Fee.getUnsettledFee.called)
+          assert.equal(positions.length, participant.length)
           assert.deepEqual(positions, expected)
           assert.end()
         })
@@ -121,29 +121,29 @@ Test('Position Service tests', (serviceTest) => {
 
     calcAllTest.test('return expected positions if settleable transfers exist', (assert) => {
       let transfers = [
-        buildTransfer(accounts[0].name, 3, accounts[1].name, 3),
-        buildTransfer(accounts[0].name, 2, accounts[2].name, 2)
+        buildTransfer(participant[0].name, 3, participant[1].name, 3),
+        buildTransfer(participant[0].name, 2, participant[2].name, 2)
       ]
-      let fees = [
-        buildFee(accounts[0].name, 1, accounts[1].name, 1),
-        buildFee(accounts[2].name, 6, accounts[0].name, 6)
+      let fee = [
+        buildFee(participant[0].name, 1, participant[1].name, 1),
+        buildFee(participant[2].name, 6, participant[0].name, 6)
       ]
 
       SettleableTransfersReadModel.getUnsettledTransfers.returns(P.resolve(transfers))
-      Fee.getUnsettledFees.returns(P.resolve(fees))
+      Fee.getUnsettledFee.returns(P.resolve(fee))
 
       let expected = [
-        buildPosition(accounts[0].name, '5', '0', '-5', '1', '6', '5', '0'),
-        buildPosition(accounts[1].name, '0', '3', '3', '0', '1', '1', '4'),
-        buildPosition(accounts[2].name, '0', '2', '2', '6', '0', '-6', '-4'),
-        buildEmptyPosition(accounts[3].name)
+        buildPosition(participant[0].name, '5', '0', '-5', '1', '6', '5', '0'),
+        buildPosition(participant[1].name, '0', '3', '3', '0', '1', '1', '4'),
+        buildPosition(participant[2].name, '0', '2', '2', '6', '0', '-6', '-4'),
+        buildEmptyPosition(participant[3].name)
       ]
 
-      Service.calculateForAllAccounts()
+      Service.calculateForAllParticipants()
         .then(positions => {
-          assert.ok(Account.getAll.called)
+          assert.ok(Participant.getAll.called)
           assert.ok(SettleableTransfersReadModel.getUnsettledTransfers.calledOnce)
-          assert.ok(Fee.getUnsettledFees.calledOnce)
+          assert.ok(Fee.getUnsettledFee.calledOnce)
           assert.deepEqual(positions, expected)
           assert.end()
         })
@@ -152,11 +152,11 @@ Test('Position Service tests', (serviceTest) => {
     calcAllTest.end()
   })
 
-  serviceTest.test('calculateForAccount should', (calcAccountTest) => {
-    calcAccountTest.test('return empty positions for account if no settleable transfers or fees', (test) => {
+  serviceTest.test('calculateForParticipant should', (calcParticipantTest) => {
+    calcParticipantTest.test('return empty positions for participant if no settleable transfers or fee', (test) => {
       const expected = {
-        account: `${hostname}/accounts/${accounts[0].name}`,
-        fees: {
+        participant: `${hostname}/participants/${participant[0].name}`,
+        fee: {
           payments: '0',
           receipts: '0',
           net: '0'
@@ -168,38 +168,38 @@ Test('Position Service tests', (serviceTest) => {
         },
         net: '0'
       }
-      const account = {
+      const participant = {
         name: 'dfsp1',
         id: 11
       }
-      SettleableTransfersReadModel.getUnsettledTransfersByAccount.returns(P.resolve([]))
-      Fee.getUnsettledFeesByAccount.returns(P.resolve([]))
+      SettleableTransfersReadModel.getUnsettledTransfersByParticipant.returns(P.resolve([]))
+      Fee.getUnsettledFeeByParticipant.returns(P.resolve([]))
 
-      Service.calculateForAccount(account)
+      Service.calculateForParticipant(participant)
         .then(positions => {
-          test.ok(SettleableTransfersReadModel.getUnsettledTransfersByAccount.called)
-          test.ok(Fee.getUnsettledFeesByAccount.called)
+          test.ok(SettleableTransfersReadModel.getUnsettledTransfersByParticipant.called)
+          test.ok(Fee.getUnsettledFeeByParticipant.called)
           test.deepEqual(positions, expected)
           test.end()
         })
     })
 
-    calcAccountTest.test('return expected positions if settleable transfers and fees exist', (test) => {
+    calcParticipantTest.test('return expected positions if settleable transfers and fee exist', (test) => {
       let transfers = [
-        buildTransfer(accounts[0].name, 10, accounts[1].name, 10),
-        buildTransfer(accounts[1].name, 5, accounts[0].name, 5)
+        buildTransfer(participant[0].name, 10, participant[1].name, 10),
+        buildTransfer(participant[1].name, 5, participant[0].name, 5)
       ]
-      let fees = [
-        buildFee(accounts[0].name, 1, accounts[1].name, 1),
-        buildFee(accounts[2].name, 6, accounts[0].name, 6)
+      let fee = [
+        buildFee(participant[0].name, 1, participant[1].name, 1),
+        buildFee(participant[2].name, 6, participant[0].name, 6)
       ]
 
-      SettleableTransfersReadModel.getUnsettledTransfersByAccount.returns(P.resolve(transfers))
-      Fee.getUnsettledFeesByAccount.returns(P.resolve(fees))
+      SettleableTransfersReadModel.getUnsettledTransfersByParticipant.returns(P.resolve(transfers))
+      Fee.getUnsettledFeeByParticipant.returns(P.resolve(fee))
 
       let expected = {
-        account: `${hostname}/accounts/${accounts[0].name}`,
-        fees: {
+        participant: `${hostname}/participants/${participant[0].name}`,
+        fee: {
           payments: '1',
           receipts: '6',
           net: '5'
@@ -211,20 +211,20 @@ Test('Position Service tests', (serviceTest) => {
         },
         net: '0'
       }
-      const account = {
+      const participant = {
         name: 'dfsp1',
         id: 11
       }
-      Service.calculateForAccount(account)
+      Service.calculateForParticipant(participant)
         .then(positions => {
-          test.ok(SettleableTransfersReadModel.getUnsettledTransfersByAccount.calledOnce)
-          test.ok(Fee.getUnsettledFeesByAccount.calledOnce)
+          test.ok(SettleableTransfersReadModel.getUnsettledTransfersByParticipant.calledOnce)
+          test.ok(Fee.getUnsettledFeeByParticipant.calledOnce)
           test.deepEqual(positions, expected)
           test.end()
         })
     })
 
-    calcAccountTest.end()
+    calcParticipantTest.end()
   })
 
   serviceTest.end()

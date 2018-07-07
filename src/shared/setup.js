@@ -5,7 +5,6 @@ const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const P = require('bluebird')
 const Migrator = require('../lib/migrator')
 const Db = require('../db')
-const Eventric = require('../eventric')
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
 const Sidecar = require('../lib/sidecar')
@@ -13,18 +12,15 @@ const RequestLogger = require('../lib/request-logger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlparser')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Account = require('../domain/account')
+// const Participant = require('../domain/participant')
 const Boom = require('boom')
+const RegisterHandlers = require('../handlers/handlers')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
 }
 
-const connectDatabase = () => Db.connect(Config.DATABASE_URI)
-
-const startEventric = (loadEventric) => {
-  return loadEventric ? Eventric.getContext() : P.resolve()
-}
+const connectDatabase = async () => await Db.connect(Config.DATABASE_URI)
 
 const createServer = (port, modules) => {
   return (async () => {
@@ -58,15 +54,14 @@ const createServer = (port, modules) => {
 }
 
 // Migrator.migrate is called before connecting to the database to ensure all new tables are loaded properly.
-// Eventric.getContext is called to replay all events through projections (creating the read-model) before starting the server.
-const initialize = async function ({service, port, modules = [], loadEventric = false, runMigrations = false}) {
+const initialize = async function ({service, port, modules = [], runMigrations = false}) {
   await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)
-  await startEventric(loadEventric)
   const server = await createServer(port, modules)
   if (service === 'api') {
-    await Account.createLedgerAccount(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
+    await RegisterHandlers.registerAllHandlers()
+    // await Participant.createLedgerParticipant(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
   }
   return server
 }
