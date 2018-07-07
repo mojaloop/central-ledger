@@ -2,12 +2,12 @@
 
 exports.up = function (knex, Promise) {
   return knex.schema.table('settlement', (t) => {
-    t.index('transferSettlementBatchId')
+    t.index('settlementWindowId')
   })
 }
 
 exports.down = function (knex, Promise) {
   return knex.schema.table('settlement', (t) => {
-    t.dropIndex('transferSettlementBatchId')
+    t.dropIndex('settlementWindowId')
   })
 }
