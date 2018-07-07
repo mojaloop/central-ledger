@@ -69,7 +69,7 @@ const stateReason = 'reasonOne'
 
 const transferStateRecord = {
   transferId: payload.transferId,
-  transferStateId: TransferState.RECEIVED,
+  transferStateId: TransferState.RECEIVED_PREPARE,
   reason: null,
   changedDate: new Date()
 }
