@@ -88,9 +88,22 @@ const update = async function (request, h) {
   }
 }
 
+const addEndpoint = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    console.log(request.params)
+    console.log(request.payload)
+    const result = await Participant.addEndpoint(request.params.name, request.payload)
+    return result
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
+
 module.exports = {
   create,
   getAll,
   getByName,
-  update
+  update,
+  addEndpoint
 }

@@ -56,3 +56,29 @@ exports.destroyByName = async (participant) => {
     throw new Error(err.message)
   }
 }
+
+exports.addEndpoint = async (participant, endpoint) => {
+  console.log('reached herereererererererererer')
+  console.log(participant, endpoint)
+  try {
+    let result = await Db.participantEndpoint.insert({
+      participantId: participant.participantId,
+      endpointTypeId: 1,
+      value: endpoint.value,
+      isActive: 1,
+      createdBy: 'unknown'
+    })
+    return result
+  } catch (err) {
+    console.log(err)
+    throw new Error(err.message)
+  }
+}
+
+exports.getEndpoint = async (participant, endpointType) => {
+  try {
+    return await Db.participantEndpoint.findOne({ participantId: participant.participantId, isActive: 1 })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}

@@ -71,6 +71,19 @@ const update = async (name, payload) => {
   }
 }
 
+const addEndpoint = async (name, payload) => {
+  try {
+    const participant = await Model.getByName(name)
+    participantExists(participant)
+    await Model.addEndpoint(participant, payload.endpoint)
+    // participant.isActive = +payload.isActive
+    // participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+    return participant
+  } catch (err) {
+    throw err
+  }
+}
+
 // const exists = async (participantUri) => {
 //   try {
 //     const name = UrlParser.nameFromParticipantUri(participantUri)
@@ -136,7 +149,8 @@ module.exports = {
   getById,
   getByName,
   participantExists,
-  update
+  update,
+  addEndpoint
   // exists,
   // verify,
   // createLedgerParticipant,
