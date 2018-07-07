@@ -1,3 +1,4 @@
+/*
 'use strict'
 
 const P = require('bluebird')
@@ -120,3 +121,4 @@ module.exports = {
   updateUserCredentials,
   updateAccountSettlement
 }
+*/

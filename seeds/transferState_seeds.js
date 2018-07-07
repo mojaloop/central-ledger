@@ -2,17 +2,7 @@
 
 const transferStates = [
   {
-    'transferStateId': 'PENDING',
-    'enumeration': 'RECEIVED',
-    'description': 'Ledger has received the transfer request'
-  },
-  {
-    'transferStateId': 'ACCEPTED',
-    'enumeration': 'RECEIVED',
-    'description': 'Ledger has validated the  transfer request and passed all validations'
-  },
-  {
-    'transferStateId': 'RECEIVED',
+    'transferStateId': 'RECEIVED-PREPARE',
     'enumeration': 'RECEIVED',
     'description': 'Next ledger has received the transfer.'
   },
@@ -22,18 +12,38 @@ const transferStates = [
     'description': 'Next ledger has reserved the transfer.'
   },
   {
+    'transferStateId': 'RECEIVED-FULFIL',
+    'enumeration': 'RESERVED',
+    'description': 'Next ledger has reserved the transfer, and has beenn assigned to a settlement window'
+  },
+  {
     'transferStateId': 'COMMITTED',
     'enumeration': 'COMMITTED',
     'description': 'Next ledger has successfully performed the transfer.'
   },
   {
-    'transferStateId': 'ABORTED',
+    'transferStateId': 'FAILED',
+    'enumeration': 'ABORTED',
+    'description': 'Aborted the transfer due to failure to perform the transfer.'
+  },
+  {
+    'transferStateId': 'EXPIRED',
+    'enumeration': 'ABORTED',
+    'description': 'Aborted the transfer due to expiration.'
+  },
+  {
+    'transferStateId': 'REJECTED',
     'enumeration': 'ABORTED',
     'description': 'Next ledger has aborted the transfer due a rejection or failure to perform the transfer.'
   },
   {
-    'transferStateId': 'SETTLED',
+    'transferStateId': 'PENDING-SETTLEMENT',
     'enumeration': 'COMMITTED',
+    'description': 'Ledger has scheduled transfer for settlement'
+  },
+  {
+    'transferStateId': 'SETTLED',
+    'enumeration': 'SETTLED',
     'description': 'Ledger has settled the transfer'
   }
 ]

@@ -38,7 +38,7 @@ const Model = require('../../../src/domain/transfer/models/transferStateChanges'
 //     "amount": 100,
 //     "currencyId": "USD",
 //     "expirationDate": null,
-//     "transferSettlementBatchId": null,
+//     "settlementWindowId": null,
 //     "currency": "USD",
 //     "payerFsp": "payer15272393021259681",
 //     "payeeFsp": "payee15272393021389056",

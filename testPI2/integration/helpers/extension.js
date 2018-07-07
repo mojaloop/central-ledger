@@ -44,7 +44,7 @@ const Model = require('../../../src/models/extensions')
 //     "amount": 100,
 //     "currencyId": "USD",
 //     "expirationDate": null,
-//     "transferSettlementBatchId": null,
+//     "settlementWindowId": null,
 //     "currency": "USD",
 //     "payerFsp": "payer15272357607931221",
 //     "payeeFsp": "payee1527235760806628",
