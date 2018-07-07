@@ -5,6 +5,7 @@ module.exports = {
   // EXECUTED: 'executed',
   // REJECTED: 'rejected',
   // SETTLED: 'settled'
+  RECEIVED_PREPARE: 'RECEIVED-PREPARE',
   RECEIVED: 'RECEIVED',
   RESERVED: 'RESERVED',
   COMMITTED: 'COMMITTED',

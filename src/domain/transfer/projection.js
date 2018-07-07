@@ -38,7 +38,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       fulfilment: null
     }
 
-    const state = ((hasPassedValidation) ? TransferState.RECEIVED : TransferState.ABORTED)
+    const state = ((hasPassedValidation) ? TransferState.RECEIVED_PREPARE : TransferState.ABORTED)
 
     const transferStateRecord = {
       transferId: payload.transferId,
