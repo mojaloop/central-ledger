@@ -83,6 +83,48 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
   }
 }
 
+const addEndpoint = async (name, payload) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    return ParticipantModel.addEndpoint(participant, payload.endpoint)
+  } catch (err) {
+    throw err
+  }
+}
+
+const getEndpoint = async (name, type) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const participantEndpoint = await ParticipantModel.getEndpoint(participant, type)
+    participantEndpointExists(participantEndpoint)
+    return participantEndpoint
+  } catch (err) {
+    throw err
+  }
+}
+
+const getAllEndpoints = async (name) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const participantEndpoints = await ParticipantModel.getAllEndpoints(participant)
+    participantEndpointExists(participantEndpoints)
+    return participantEndpoints
+
+  } catch (err) {
+    throw err
+  }
+}
+
+const participantEndpointExists = (participantEndpoint) => {
+  if (participantEndpoint && participantEndpoint.length > 0) {
+    return participantEndpoint
+  }
+  throw new Error('participantEndpoint does not exist')
+}
+
 // const exists = async (participantUri) => {
 //   try {
 //     const name = UrlParser.nameFromParticipantUri(participantUri)
@@ -114,7 +156,11 @@ module.exports = {
   participantExists,
   update,
   createParticipantCurrency,
-  getParticipantCurrencyById
+  getParticipantCurrencyById,
+  addEndpoint,
+  getEndpoint,
+  getAllEndpoints,
+  participantEndpointExists
   // exists,
   // verify
 }
