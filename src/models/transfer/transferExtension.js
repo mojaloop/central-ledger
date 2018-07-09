@@ -36,6 +36,7 @@ exports.saveExtension = async (extension) => {
   try {
     let ext = {
       transferId: extension.transferId,
+      transferFulfilmentId: extension.transferFulfilmentId,
       key: extension.key,
       value: extension.value
     }

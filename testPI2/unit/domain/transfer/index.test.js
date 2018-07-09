@@ -4,8 +4,8 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const TransferIndex = require('../../../../src/domain/transfer')
-const CommandsIndex = require('../../../../src/domain/transfer/commands')
-const Translator = require('../../../../src/domain/transfer/translator')
+// const CommandsIndex = require('../../../../src/domain/transfer/commands')
+const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const Events = require('../../../../src/lib/events')
 const TransferState = require('../../../../src/domain/transfer/state')
 
@@ -116,7 +116,7 @@ Test('Transfer-Index', transferIndexTest => {
   transferIndexTest.beforeEach(t => {
     sandbox = Sinon.sandbox.create()
     sandbox.stub(CommandsIndex)
-    sandbox.stub(Translator)
+    sandbox.stub(TransferObjectTransform)
     sandbox.stub(Events)
     t.end()
   })
@@ -130,7 +130,7 @@ Test('Transfer-Index', transferIndexTest => {
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
         CommandsIndex.prepare.returns(P.resolve(prepareResponse))
-        Translator.toTransfer.returns(payload)
+        TransferObjectTransform.toTransfer.returns(payload)
         const response = await TransferIndex.prepare(payload)
         test.deepEqual(response.transfer, payload)
         test.end()
@@ -142,7 +142,7 @@ Test('Transfer-Index', transferIndexTest => {
 
     preparedTest.test('prepare transfer throws error', async (test) => {
       CommandsIndex.prepare.throws(new Error())
-      Translator.toTransfer.returns(payload)
+      TransferObjectTransform.toTransfer.returns(payload)
       try {
         await TransferIndex.prepare(payload)
         test.fail('Error not thrown')
@@ -155,7 +155,7 @@ Test('Transfer-Index', transferIndexTest => {
 
     preparedTest.test('prepare transfer throws error', async (test) => {
       CommandsIndex.prepare.returns(P.resolve(prepareResponse))
-      Translator.toTransfer.throws(new Error())
+      TransferObjectTransform.toTransfer.throws(new Error())
       try {
         await TransferIndex.prepare(payload)
         test.fail('Error not thrown')

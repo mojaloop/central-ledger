@@ -1,13 +1,16 @@
 'use strict'
 
 const _ = require('lodash')
-const Enum = require('../enum')
+const Uuid = require('uuid4')
+const Enum = require('../../lib/enum')
 const ParticipantFacade = require('../../models/participant/facade')
-const TransfersModel = require('../../models/transfer/facade')
-const transferParticipantModel = require('../../models/transfer/transferParticipant')
+// const TransferFacade = require('../../models/transfer/facade')
+const TransferModel = require('../../models/transfer/transfer')
+const TransferParticipantModel = require('../../models/transfer/transferParticipant')
 const ilpPacketModel = require('../../models/transfer/ilpPacket')
 const transferExtensionModel = require('../../models/transfer/transferExtension')
 const transferStateChangeModel = require('../../models/transfer/transferStateChange')
+const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -37,7 +40,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.ABORTED)
 
-    const transferStateRecord = {
+    const transferStateChangeRecord = {
       transferId: payload.transferId,
       transferStateId: state,
       reason: stateReason,
@@ -62,15 +65,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     // TODO: Move inserts into a Transaction
 
     // first save transfer to ensure foreign key integrity
-    await TransfersModel.saveTransfer(transferRecord)
+    await TransferModel.saveTransfer(transferRecord)
 
-    await transferParticipantModel.saveTransferParticipant(payerTransferParticipantRecord)
-    await transferParticipantModel.saveTransferParticipant(payeeTransferParticipantRecord)
+    await TransferParticipantModel.saveTransferParticipant(payerTransferParticipantRecord)
+    await TransferParticipantModel.saveTransferParticipant(payeeTransferParticipantRecord)
     payerTransferParticipantRecord.name = payload.payerFsp
     payeeTransferParticipantRecord.name = payload.payeeFsp
 
-    var transferExtensionsRecordList = []
-
+    let transferExtensionsRecordList = []
     if (payload.extensionList && payload.extensionList.extension) {
       transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
         return {
@@ -86,7 +88,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     await ilpPacketModel.saveIlpPacket(ilpPacketRecord)
 
-    await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
+    await transferStateChangeModel.saveTransferStateChange(transferStateChangeRecord)
 
     return {
       isSaveTransferPrepared: true,
@@ -94,7 +96,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       payerTransferParticipantRecord,
       payeeTransferParticipantRecord,
       ilpPacketRecord,
-      transferStateRecord,
+      transferStateChangeRecord,
       transferExtensionsRecordList
     }
   } catch (e) {
@@ -102,23 +104,62 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
   }
 }
 
-const saveTransferExecuted = async ({payload, timestamp}) => {
-  const fields = {
-    state: Enum.TransferState.COMMITTED,
-    fulfilment: payload.fulfilment,
-    executedDate: new Date(timestamp)
-  }
-  return await TransfersModel.updateTransfer(payload.id, fields)
-}
-// This update should only be done if the transfer id only has the state RECEIVED //TODO
-const updateTransferState = async (payload, state) => {
-  const transferStateRecord = {
-    transferId: payload.transferId,
-    transferStateId: state,
-    reason: '',
+const saveTransferExecuted = async (transferId, payload, stateReason = null, hasPassedValidation = true) => {
+  let transferFulfilmentId = Uuid() // TODO: should be generated once before TransferFulfilmentDuplicateCheck (and passed here)
+  const transferFulfilmentRecord = {
+    transferFulfilmentId,
+    transferId,
+    ilpFulfilment: payload.fulfilment,
+    completedDate: new Date(payload.completedTimestamp),
+    isValid: true,
     createdDate: new Date()
   }
-  return await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
+
+  const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.ABORTED)
+  const transferStateChangeRecord = {
+    transferId,
+    transferStateId: state,
+    reason: stateReason,
+    createdDate: new Date()
+  }
+  // TODO: Move inserts into a Transaction
+
+  await TransferFulfilmentModel.saveTransferFulfilment(transferFulfilmentRecord)
+
+  let transferExtensionsRecordList = []
+  if (payload.extensionList && payload.extensionList.extension) {
+    transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+      return {
+        transferId,
+        transferFulfilmentId,
+        key: ext.key,
+        value: ext.value
+      }
+    })
+    for (let ext of transferExtensionsRecordList) {
+      await transferExtensionModel.saveExtension(ext)
+    }
+  }
+
+  await transferStateChangeModel.saveTransferStateChange(transferStateChangeRecord)
+
+  return {
+    isSaveTransferExecuted: true,
+    transferFulfilmentRecord,
+    transferStateChangeRecord,
+    transferExtensionsRecordList
+  }
+}
+
+// This update should only be done if the transfer id only has the state RECEIVED //TODO
+const updateTransferState = async (payload, state) => {
+  const transferStateChangeRecord = {
+    transferId: payload.transferId,
+    transferStateId: state,
+    // reason: '',
+    createdDate: new Date()
+  }
+  return await transferStateChangeModel.saveTransferStateChange(transferStateChangeRecord)
 }
 
 const saveTransferRejected = async (stateReason, transferId) => {

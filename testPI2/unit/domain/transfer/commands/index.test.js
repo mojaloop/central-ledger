@@ -3,7 +3,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
-const CommandsIndex = require('../../../../../src/domain/transfer/commands')
+// const CommandsIndex = require('../../../../../src/domain/transfer/commands')
 const TransfersProjection = require('../../../../../src/domain/transfer/projection')
 const TransferState = require('../../../../../src/domain/transfer/state')
 

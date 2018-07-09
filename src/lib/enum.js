@@ -26,5 +26,10 @@ module.exports = {
     REJECTED: 'REJECTED',
     PENDING_SETTLEMENT: 'PENDING_SETTLEMENT',
     SETTLED: 'SETTLED'
+  },
+
+  rejectionType: {
+    EXPIRED: 'expired',
+    CANCELLED: 'cancelled'
   }
 }
