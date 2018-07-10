@@ -27,6 +27,14 @@
 const Db = require('../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
+const getById = async (transferId) => {
+  try {
+    return await Db.transfer.findOne({ transferId: transferId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 const saveTransfer = async (record) => {
   Logger.debug('save transfer' + record.toString())
   try {
@@ -36,6 +44,17 @@ const saveTransfer = async (record) => {
   }
 }
 
+// const updateTransfer = async (transferId, fields) => {
+//   try {
+//     return await Db.transfer.update({ transferId: transferId }, fields)
+//   } catch (err) {
+//     Logger.info(err)
+//     throw err
+//   }
+// }
+
 module.exports = {
+  getById,
   saveTransfer
+  // , updateTransfer // TODO: obsolete?
 }

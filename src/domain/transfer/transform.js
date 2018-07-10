@@ -101,7 +101,7 @@ const fromSaveTransferExecuted = (t) => {
   }
 }
 
-// TODO: Need to fix this method
+// TODO: Need to fix this method ??
 const toTransfer = (t) => {
   // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
   if (t.isTransferReadModel) {

@@ -1,5 +1,3 @@
-// TODO: determine if it's needed
-
 /*****
  License
  --------------
@@ -19,12 +17,15 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
+
+// TODO: determine if this script is needed (note: it is used for seeds during integration tests)
 
 'use strict'
 
@@ -60,13 +61,6 @@ const getByTransferStateId = (id) => {
   }
 }
 
-// const getAll = () => {
-//   return Db.transferState.query(builder => {
-//     return builder
-//       .select('transferState.*')
-//   })
-// }
-
 const getAll = () => {
   try {
     return Db.transferState.find({})
@@ -79,7 +73,7 @@ const getAll = () => {
 //   return Db.transferState.truncate()
 // }
 
-const destroytransferState = () => {
+const destroyTransferState = () => {
   try {
     return Db.transferState.destroy()
   } catch (err) {
@@ -87,7 +81,7 @@ const destroytransferState = () => {
   }
 }
 
-const destroytransferStateById = (id) => {
+const destroyTransferStateById = (id) => {
   try {
     return Db.transferState.destroy({ transferStateId: id })
   } catch (err) {
@@ -100,6 +94,6 @@ module.exports = {
   getByTransferStateId,
   getAll,
   // truncatetransferState,
-  destroytransferState,
-  destroytransferStateById
+  destroyTransferState,
+  destroyTransferStateById
 }

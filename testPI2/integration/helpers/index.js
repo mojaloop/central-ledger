@@ -35,7 +35,7 @@ exports.prepareNeededData = async (tableName, data) => {
     case 'extension':
       return require('./extension').prepareData()
     case 'transferState':
-      return require('./transferState').prepareData()
+      return require('./transferState--').prepareData()
     case 'transferStateChange':
       return require('./transferStateChange').prepareData()
     case 'transferModel':

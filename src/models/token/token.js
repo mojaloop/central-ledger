@@ -16,7 +16,7 @@ const byParticipant = ({ participantId }) => {
 }
 
 const removeExpired = () => {
-  return Db.tokens.destroy({ 'expiration <=': Time.getCurrentUTCTimeInMilliseconds() })
+  return Db.token.destroy({ 'expiration <=': Time.getCurrentUTCTimeInMilliseconds() })
 }
 
 module.exports = {

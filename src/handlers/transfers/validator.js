@@ -101,7 +101,7 @@ const validateAmount = (amount) => {
 
 // NOTE: This logic is based on v1.0 of the Mojaloop Specification as described in section 6.5.1.2
 const validateFulfilCondition = (fulfilment, condition) => {
-  // @TODO: The following hashing code should be moved into a re-usable common-shared-service at a later point
+  // TODO: The following hashing code should be moved into a re-usable common-shared-service at a later point
   var hashSha256 = Crypto.createHash('sha256')
   var calculatedCondition = fulfilment
   calculatedCondition = hashSha256.update(calculatedCondition)

@@ -23,7 +23,7 @@
  ******/
 'use strict'
 
-const Model = require('../../../src/models/transfer/transferState')
+const Model = require('../../../src/models/transfer/transferState--')
 
 const testtransferState = [
   {
@@ -63,7 +63,7 @@ exports.prepareData = async () => {
 exports.deletePreparedData = async () => {
   let result = []
   for (let state of testtransferState) {
-    result.push(await Model.destroytransferStateById(state.transferStateId))
+    result.push(await Model.destroyTransferStateById(state.transferStateId))
   }
   return result
 }

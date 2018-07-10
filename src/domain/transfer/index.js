@@ -1,6 +1,7 @@
 'use strict'
 
 const P = require('bluebird')
+const TransferModel = require('../../models/transfer/transfer')
 const TransferFacade = require('../../models/transfer/facade')
 const SettlementFacade = require('../../models/settlement/facade')
 const SettlementModel = require('../../models/settlement/settlement')
@@ -9,6 +10,10 @@ const TransferObjectTransform = require('./transform')
 const Enum = require('../../lib/enum')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
+
+const getTransferById = (id) => {
+  return TransferModel.getById(id)
+}
 
 const getById = (id) => {
   return TransferFacade.getById(id)
@@ -79,10 +84,11 @@ const fulfil = (transferId, fulfilment) => {
 }
 
 const rejectExpired = () => {
-  const rejections = TransferFacade.findExpired().then(expired => expired.map(x => expire(x.transferId)))
-  return P.all(rejections).then(rejections => {
-    return rejections.map(r => r.transfer.id)
-  })
+  // TODO: create/recover findExpired method
+  // const rejections = TransferFacade.findExpired().then(expired => expired.map(x => expire(x.transferId)))
+  // return P.all(rejections).then(rejections => {
+  //   return rejections.map(r => r.transfer.id)
+  // })
 }
 
 const settle = async () => {
@@ -107,6 +113,7 @@ const settle = async () => {
 
 module.exports = {
   fulfil,
+  getTransferById,
   getById,
   getAll,
   getFulfillment,

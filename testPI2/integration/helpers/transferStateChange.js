@@ -26,7 +26,7 @@
 
 const TransferPreparationModule = require('./transfer')
 const TransferModel = require('../../../src/models/transfer/facade')
-const TransferStatePreparationHelper = require('./transferState')
+const TransferStatePreparationHelper = require('./transferState--')
 const Model = require('../../../src/models/transfer/transferStateChange')
 
 // const preparedData = {

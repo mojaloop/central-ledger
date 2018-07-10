@@ -65,7 +65,7 @@ const positions = async (error, messages) => {
       await Projection.updateTransferState(payload, TransferState.RESERVED)
     } else if (message.value.metadata.event.type === POSITION && message.value.metadata.event.action === COMMIT) {
       payload.transferId = message.value.id
-      // TODO: Check RECEIVED_FULFIL state
+      // TODO: Perform check RECEIVED_FULFIL state
       await Projection.updateTransferState(payload, TransferState.COMMITTED)
     } else {
       await consumer.commitMessageSync(message)

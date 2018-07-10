@@ -64,7 +64,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
     // TODO: Move inserts into a Transaction
 
-    // first save transfer to ensure foreign key integrity
+    // First save transfer to ensure foreign key integrity
     await TransferModel.saveTransfer(transferRecord)
 
     await TransferParticipantModel.saveTransferParticipant(payerTransferParticipantRecord)
