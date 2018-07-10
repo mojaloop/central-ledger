@@ -37,7 +37,7 @@ const getById = async (id) => {
       let transferResult = await builder
         .where({
           'transfer.transferId': id,
-          'tprt1.name': 'PAYER_DFSP',
+          'tprt1.name': 'PAYER_DFSP', // TODO: look at refactoring the sql completely and use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
         })
         // PAYER
@@ -96,7 +96,7 @@ const getAll = async () => {
     return await Db.transfer.query(async (builder) => {
       let transferResultList = await builder
         .where({
-          'tprt1.name': 'PAYER_DFSP',
+          'tprt1.name': 'PAYER_DFSP', // TODO: look at refactoring the sql completely and use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
         })
         // PAYER

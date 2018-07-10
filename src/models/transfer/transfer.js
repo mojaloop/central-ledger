@@ -44,17 +44,7 @@ const saveTransfer = async (record) => {
   }
 }
 
-// const updateTransfer = async (transferId, fields) => {
-//   try {
-//     return await Db.transfer.update({ transferId: transferId }, fields)
-//   } catch (err) {
-//     Logger.info(err)
-//     throw err
-//   }
-// }
-
 module.exports = {
   getById,
   saveTransfer
-  // , updateTransfer // TODO: obsolete?
 }

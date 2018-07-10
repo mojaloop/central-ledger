@@ -25,6 +25,7 @@
  --------------
  ******/
 
+// TODO: migrate to transferExtension.js
 'use strict'
 
 const Db = require('../../db')
