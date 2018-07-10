@@ -13,7 +13,7 @@ const Events = require('../../../../src/lib/events')
 const Service = require('../../../../src/domain/transfer')
 const TransferState = require('../../../../src/domain/transfer/state')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
-const RejectionType = require(`${src}/domain/enum`).rejectionType
+// const RejectionType = require(`${src}/domain/enum`).rejectionType
 const Errors = require('../../../../src/errors')
 
 const createTransfer = (transferId = '3a2a1d9e-8640-4d2d-b06c-84f2cd613204') => {

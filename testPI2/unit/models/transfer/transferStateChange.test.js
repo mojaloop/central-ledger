@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -27,9 +29,9 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../../../src/db/index')
+const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../../src/domain/transfer/models/transferStateChange')
+const Model = require('../../../../src/models/transfer/transferStateChange')
 
 Test('TransferStateChange model', async (transferStateChangeModel) => {
   let sandbox

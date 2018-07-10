@@ -29,7 +29,7 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/models/extensions')
+const Model = require('../../../../src/models/transfer/transferExtension')
 
 Test('Extension model', async (extensionModelTest) => {
   let sandbox
