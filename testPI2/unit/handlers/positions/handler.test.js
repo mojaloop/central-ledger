@@ -13,7 +13,7 @@ const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consume
 const DAO = require('../../../../src/handlers/lib/dao')
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const TransferStateChange = require('../../../../src/domain/transfer/models/transferStateChange')
+const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
