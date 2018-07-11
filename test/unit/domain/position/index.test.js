@@ -17,7 +17,7 @@ Test('Position Service tests', (serviceTest) => {
   let participant = [{ participantId: 1, name: 'dfsp1' }, { participantId: 2, name: 'dfsp2' }, { participantId: 3, name: 'dfsp3' }, { participantId: 4, name: 'dfsp4' }]
 
   serviceTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     originalHostName = Config.HOSTNAME
     Config.HOSTNAME = hostname
     sandbox.stub(Participant, 'getAll')

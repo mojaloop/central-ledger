@@ -37,7 +37,7 @@ Test('Socket Module', moduleTest => {
   }
 
   moduleTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(WS, 'Server')
     socketManager = {
       send: sandbox.stub()

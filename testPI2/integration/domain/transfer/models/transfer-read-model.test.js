@@ -37,7 +37,7 @@ const Model = require('../../../../../src/models/transfer/facade')
 const HelperModule = require('../../../helpers/index')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
-  let sandbox = Sinon.sandbox.create()
+  let sandbox = Sinon.createSandbox()
   var transferPrepareResult = {}
 
   await transferReadModelTest.test('setup', async (assert) => {

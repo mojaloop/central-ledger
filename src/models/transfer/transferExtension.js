@@ -28,11 +28,9 @@
 'use strict'
 
 const Db = require('../../db/index')
-// const Moment = require('moment')
 const Util = require('../../lib/util')
-// const Time = require('../lib/time')
 
-exports.saveExtension = async (extension) => {
+const saveTransferExtension = async (extension) => {
   try {
     let ext = {
       transferId: extension.transferId,
@@ -46,35 +44,23 @@ exports.saveExtension = async (extension) => {
   }
 }
 
-// exports.getById = async (id) => {
-//   try {
-//     return await Db.ilp.findOne({ ilpId: id })
-//   } catch (err) {
-//     throw new Error(err.message)
-//   }
-// }
-
-exports.getByTransferId = async (transferId) => {
+const getByTransferId = async (transferId) => {
   try {
     return await Db.transferExtension.findOne({ transferId: transferId })
-    // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
-    // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.getByExtensionId = async (extensionId) => {
+const getByExtensionId = async (extensionId) => {
   try {
     return await Db.transferExtension.findOne({ extensionId: extensionId })
-    // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
-    // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.update = async (extension) => {
+const update = async (extension) => {
   const fields = {
     transferId: extension.transferId,
     key: extension.key,
@@ -89,10 +75,18 @@ exports.update = async (extension) => {
   }
 }
 
-exports.destroyByTransferId = async (extension) => {
+const destroyByTransferId = async (extension) => {
   try {
     return await Db.transferExtension.destroy({transferId: extension.transferId})
   } catch (err) {
     throw new Error(err.message)
   }
+}
+
+module.exports = {
+  saveTransferExtension,
+  getByTransferId,
+  getByExtensionId,
+  update,
+  destroyByTransferId
 }

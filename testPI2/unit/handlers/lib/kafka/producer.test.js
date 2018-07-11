@@ -68,7 +68,7 @@ Test('Producer', producerTest => {
   let config = {}
 
   producerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
@@ -99,7 +99,7 @@ Test('Producer Failure', producerTest => {
   let config = {}
 
   producerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'connect').throws(new Error())
     sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())

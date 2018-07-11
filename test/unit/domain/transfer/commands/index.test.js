@@ -9,7 +9,7 @@ Test('Transfer index test', indexTest => {
   let sandbox
 
   indexTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     t.end()
   })
 

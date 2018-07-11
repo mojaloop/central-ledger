@@ -10,7 +10,7 @@ Test('crypto conditions', conditionsTest => {
   let sandbox
 
   conditionsTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(FiveBellsConditions, 'validateCondition')
     sandbox.stub(FiveBellsConditions, 'validateFulfillment')
     sandbox.stub(FiveBellsConditions, 'fulfillmentToCondition')

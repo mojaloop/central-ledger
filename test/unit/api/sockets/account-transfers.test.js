@@ -13,7 +13,7 @@ Test('ParticipantTransfers', transfersTest => {
   let socketManager
 
   transfersTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(ParticipantService, 'exists')
     sandbox.stub(UrlParser)
 

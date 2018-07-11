@@ -71,7 +71,7 @@ Test('transferState Model Test', async (transferStateTest) => {
 
   await transferStateTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.sandbox.create()
+      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI)
       for (let state of transferTestStates) {
         var result = await Model.getByTransferStateId(state.transferStateId)

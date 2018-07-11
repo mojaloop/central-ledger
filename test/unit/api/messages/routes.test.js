@@ -28,7 +28,7 @@ Test('POST /messages', postTest => {
   let sandbox
 
   postTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Participants, 'exists')
     sandbox.stub(Sidecar, 'logRequest')
     Participants.exists.returns(P.resolve({}))

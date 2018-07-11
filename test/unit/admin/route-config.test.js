@@ -12,7 +12,7 @@ Test('routeConfig', routeConfigTest => {
   let sandbox
 
   routeConfigTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Auth)
     test.end()
   })

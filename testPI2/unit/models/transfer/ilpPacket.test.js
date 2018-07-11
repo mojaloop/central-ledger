@@ -48,7 +48,7 @@ Test('Ilp model', async (ilpTest) => {
   const ilp = ilpTestValues[0]
   const ilpId = 1
 
-  sandbox = Sinon.sandbox.create()
+  sandbox = Sinon.createSandbox()
   Db.ilp = {
     select: sandbox.stub(),
     insert: sandbox.stub(),

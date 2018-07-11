@@ -54,7 +54,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.sandbox.create()
+      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()

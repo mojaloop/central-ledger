@@ -129,7 +129,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
   let sandbox
 
   transfersProjectionTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransfersReadModel)
     sandbox.stub(extensionModel)
     sandbox.stub(ilpModel)

@@ -51,7 +51,7 @@ Test('Handler Test', handlerTest => {
   let sandbox
 
   handlerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransferService, 'rejectExpired')
     sandbox.stub(TransferService, 'settle')
     sandbox.stub(FeeService, 'settleFeeForTransfers')

@@ -12,7 +12,7 @@ Test('Message Handler', handlerTest => {
   let sandbox
 
   handlerTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Validator, 'validate')
     sandbox.stub(Events, 'sendMessage')
     sandbox.stub(Sidecar, 'logRequest')

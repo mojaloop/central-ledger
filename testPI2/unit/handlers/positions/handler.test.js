@@ -102,7 +102,7 @@ Test('Transfer handler', transferHandlerTest => {
   let sandbox
 
   transferHandlerTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(DAO)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'connect').returns(P.resolve())

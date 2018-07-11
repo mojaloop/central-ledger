@@ -103,7 +103,7 @@ Test('Transfer model', async (transferTest) => {
 // }
 
   await transferTest.test('setup', async (assert) => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     Db.transfer = {
       insert: sandbox.stub(),
       find: sandbox.stub(),

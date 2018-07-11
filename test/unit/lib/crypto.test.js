@@ -13,7 +13,7 @@ Test('crypto', cryptoTest => {
   let sodiumApi
 
   cryptoTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sodiumApi = {
       randombytes_buf: sandbox.stub()
     }

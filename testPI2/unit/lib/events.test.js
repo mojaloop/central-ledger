@@ -11,7 +11,7 @@ Test('events', eventTest => {
 
   eventTest.beforeEach(t => {
     Events = require(EventsPath)
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransferObjectTransform, 'toTransfer')
     t.end()
   })

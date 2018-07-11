@@ -47,7 +47,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
     }
   ]
 
-  sandbox = Sinon.sandbox.create()
+  sandbox = Sinon.createSandbox()
   Db.transferStateChange = {
     insert: sandbox.stub(),
     truncate: sandbox.stub(),

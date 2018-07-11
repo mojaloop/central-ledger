@@ -66,4 +66,6 @@ Test('TransferParticipant model', async (transferParticipant) => {
       assert.end()
     }
   })
+
+  transferParticipant.end()
 })

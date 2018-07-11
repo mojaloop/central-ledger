@@ -142,7 +142,7 @@ Test('Transfer-Index', transferIndexTest => {
   let sandbox
 
   transferIndexTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Projection)
     sandbox.stub(TransferObjectTransform)
     sandbox.stub(Events)

@@ -27,7 +27,7 @@ Test('DAO', daoTest => {
   let sandbox
 
   daoTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Participants)
     test.end()
   })

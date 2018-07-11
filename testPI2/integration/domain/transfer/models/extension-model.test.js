@@ -31,7 +31,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/models/extensions')
+const Model = require('../../../../../src/models/transfer/transferExtension')
 const HelperModule = require('../../../helpers/index')
 
 Test('Extension model test', async (extensionTest) => {
@@ -51,7 +51,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.sandbox.create()
+      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()

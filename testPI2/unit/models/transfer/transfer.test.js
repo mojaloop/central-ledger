@@ -77,4 +77,6 @@ Test('Transfer model', async (transfer) => {
       assert.end()
     }
   })
+
+  transfer.end()
 })
