@@ -34,7 +34,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/facade')
-const TransferState = require('../../../../src/domain/transfer/state')
+const TransferState = require('../../../../src/lib/enum').TransferState
 const extensionModel = require('../../../../src/models/transfer/transferExtension')
 
 // const exampleTransfer = {
