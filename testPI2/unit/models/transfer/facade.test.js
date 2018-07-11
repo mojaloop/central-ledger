@@ -34,183 +34,22 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/facade')
-const TransferState = require('../../../../src/lib/enum').TransferState
 const extensionModel = require('../../../../src/models/transfer/transferExtension')
-
-// const exampleTransfer = {
-//   payeeParticipantId: 1,
-//   payerParticipantId: 2,
-//   amount: 100,
-//   currency: 'USD',
-//   internalTransferState: 'RECEIVED',
-//   transferState: 'RECEIVED',
-//   ilpPacket: 'abc',
-//   condition: 'efd',
-//   fullfilment: null,
-//   completedTimeStamp: null,
-//   expirationDate: new Date().setDate((new Date()).getDate() + 7),
-//   settlementWindowId: null
-// }
 
 Test('Transfer model', async (transferTest) => {
   let sandbox
-
-  const payload = {
-    transferId: 't1',
-    payeeFsp: 'payeeFSP',
-    payerFsp: 'payerFSP',
-    amount: {
-      amount: 100,
-      currency: 'USD'
-    },
-    expirationDate: new Date().setDate((new Date()).getDate() + 7),
-    ilpPacket: 'abc',
-    condition: 'efd',
-    fullfilment: null
-  }
-
-  const transferRecord = {
-    transferId: payload.transferId,
-    payeeFsp: 1,
-    payerFsp: 2,
-    amount: payload.amount.amount,
-    currency: payload.amount.currency,
-    expirationDate: new Date(payload.expiration)
-  }
-
-// const ilpRecord = {
-//   transferId: payload.transferId,
-//   packet: payload.ilpPacket,
-//   condition: payload.condition,
-//   fulfilment: null
-// }
-
-// const transferStateRecord = {
-//   transferId: payload.transferId,
-//   transferStateId: 'RECEIVED',
-//   reason: null,
-//   changedDate: new Date()
-// }
-
   const extensionsRecordList = []
-
-// const transferPrepareResult = {
-//   isSaveTransferPrepared: true,
-//   transferRecord,
-//   ilpRecord,
-//   transferStateRecord,
-//   extensionsRecordList
-// }
 
   await transferTest.test('setup', async (assert) => {
     sandbox = Sinon.createSandbox()
     Db.transfer = {
-      insert: sandbox.stub(),
-      find: sandbox.stub(),
-      update: sandbox.stub(),
-      truncate: sandbox.stub(),
-      query: sandbox.stub(),
-      destroy: sandbox.stub()
+      query: sandbox.stub()
     }
     assert.pass('setup OK')
     assert.end()
   })
 
-// saveTransfer
-  await transferTest.test('save transfer test', async (assert) => {
-    try {
-      let saved = {transferId: transferRecord.transferId}
-      Db.transfer.insert.returns(Promise.resolve(saved))
-      let transferCreated = await Model.saveTransfer(payload, null, null)
-      assert.equal(transferCreated, saved, 'transfer is inserted and Id is returned')
-      assert.ok(Db.transfer.insert.calledOnce)
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await transferTest.test('save transfer test should throw an error', async (assert) => {
-    try {
-      let saved = {transferId: transferRecord.transferId}
-      Db.transfer.insert.throws(new Error())
-      let transferCreated = await Model.saveTransfer(payload, null, null)
-      assert.equal(transferCreated, saved, 'transfer is inserted and Id is returned')
-      assert.ok(Db.transfer.insert.calledOnce)
-      assert.fail('Error not thrown')
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
-    }
-  })
-
-// updateTransfer
-  await transferTest.test('updateTransfer should', async (assert) => {
-    try {
-      let fields = {state: TransferState.EXECUTED, fulfilment: 'oAKAAA'}
-      let updatedTransfer = {transferId: payload.transferId}
-      Db.transfer.update = sandbox.stub().returns(Promise.resolve(updatedTransfer))
-      let u = await Model.updateTransfer(payload.transferId, fields)
-      assert.equal(u, updatedTransfer)
-      assert.ok(Db.transfer.update.calledWith({transferId: payload.transferId}, fields))
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await transferTest.test('updateTransfer should throw error', async (assert) => {
-    try {
-      let fields = {state: TransferState.EXECUTED, fulfilment: 'oAKAAA'}
-      let updatedTransfer = {transferId: payload.transferId}
-      Db.transfer.update = sandbox.stub().throws(new Error())
-      let u = await Model.updateTransfer(payload.transferId, fields)
-      assert.equal(u, updatedTransfer)
-      assert.ok(Db.transfer.update.calledWith({transferId: payload.transferId}, fields))
-      assert.fail('Error not thrown')
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
-    }
-  })
-
-// truncateTransfer
-  await transferTest.test('truncateTransfers should', async (assert) => {
-    try {
-      Db.transfer.truncate.returns(Promise.resolve())
-      await Model.truncateTransfers()
-      assert.ok(Db.transfer.truncate.calledOnce)
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await transferTest.test('truncateTransfers should throw an error', async (assert) => {
-    try {
-      Db.transfer.truncate.throws(new Error())
-      await Model.truncateTransfers()
-      assert.ok(Db.transfer.truncate.calledOnce)
-      assert.fail('Error not thrown')
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
-    }
-  })
-
-// getById
+  // getById
   await transferTest.test('return transfer by id', async (assert) => {
     try {
       const transferId1 = 't1'
@@ -273,7 +112,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(firstStub.withArgs().calledOnce)
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`query transfer failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -287,13 +126,13 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`query transfer failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
   })
 
-// getAll
+  // getAll
   await transferTest.test('return all transfers', async (assert) => {
     try {
       const transferId1 = 't1'
@@ -351,7 +190,7 @@ Test('Transfer model', async (transferTest) => {
       sandbox.restore()
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`query transfer failed with error - ${err}`)
       sandbox.restore()
       assert.fail()
       assert.end()
@@ -416,37 +255,12 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`query transfer failed with error - ${err}`)
       sandbox.restore()
       assert.pass('Error thrown')
       assert.end()
     }
   })
 
-// destroy
-  await transferTest.test('destroyByTransferId should', async (assert) => {
-    try {
-      Db.transfer.destroy.returns(Promise.resolve(true))
-      await Model.destroyByTransferId(transferRecord)
-      assert.ok(Db.transfer.destroy.calledOnce)
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await transferTest.test('destroyByTransferId should throw an error', async (assert) => {
-    try {
-      Db.transfer.destroy.throws(new Error())
-      await Model.destroyByTransferId(transferRecord)
-      assert.fail('Error not thrown')
-      assert.end()
-    } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
-    }
-  })
+  transferTest.end()
 })
