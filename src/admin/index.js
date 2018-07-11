@@ -12,4 +12,4 @@ moduleList[0] = Auth
 moduleList[1] = Routes
 moduleList[2] = HandlerRoutes
 
-module.exports = Setup.initialize({ service: 'admin', port: Config.ADMIN_PORT, modules: moduleList, runMigrations: true })
+module.exports = Setup.initialize({ service: 'admin', port: Config.ADMIN_PORT, modules: moduleList })
