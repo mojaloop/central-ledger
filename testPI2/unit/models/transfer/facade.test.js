@@ -126,7 +126,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(Db.transfer.insert.calledOnce)
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -142,7 +142,7 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
@@ -159,7 +159,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(Db.transfer.update.calledWith({transferId: payload.transferId}, fields))
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -176,7 +176,7 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
@@ -190,7 +190,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(Db.transfer.truncate.calledOnce)
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -204,7 +204,7 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
@@ -273,7 +273,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(firstStub.withArgs().calledOnce)
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -287,7 +287,7 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
@@ -351,7 +351,7 @@ Test('Transfer model', async (transferTest) => {
       sandbox.restore()
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       sandbox.restore()
       assert.fail()
       assert.end()
@@ -416,7 +416,7 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       sandbox.restore()
       assert.pass('Error thrown')
       assert.end()
@@ -431,7 +431,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(Db.transfer.destroy.calledOnce)
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -444,7 +444,7 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`create transfer failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
