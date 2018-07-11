@@ -29,7 +29,7 @@ optionally within square brackets <email>.
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -102,7 +102,7 @@ Test('Transfer model', async (transferTest) => {
 //   extensionsRecordList
 // }
 
-  await transferTest.test('setup', async (assert) => {
+  transferTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     Db.transfer = {
       insert: sandbox.stub(),
@@ -112,8 +112,12 @@ Test('Transfer model', async (transferTest) => {
       query: sandbox.stub(),
       destroy: sandbox.stub()
     }
-    assert.pass('setup OK')
-    assert.end()
+    t.end()
+  })
+
+  transferTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
   })
 
 // saveTransfer
@@ -449,4 +453,6 @@ Test('Transfer model', async (transferTest) => {
       assert.end()
     }
   })
+
+  await transferTest.end()
 })

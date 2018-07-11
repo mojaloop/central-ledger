@@ -78,5 +78,5 @@ Test('Transfer model', async (transfer) => {
     }
   })
 
-  transfer.end()
+  await transfer.end()
 })

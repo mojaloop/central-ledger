@@ -185,4 +185,6 @@ Test('transferState model', async (transferStateTest) => {
       assert.end()
     }
   })
+
+  await transferStateTest.end()
 })

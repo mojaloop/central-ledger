@@ -3,7 +3,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Uuid = require('uuid4')
-// const TransferCommands = require('../../../../../src/domain/transfer/commands')
+const TransferCommands = require('../../../../../src/domain/transfer')
 
 Test('Transfer index test', indexTest => {
   let sandbox

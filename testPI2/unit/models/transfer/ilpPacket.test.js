@@ -169,4 +169,6 @@ Test('ilpPacket model', async (ilpTest) => {
       assert.end()
     }
   })
+
+  await ilpTest.end()
 })

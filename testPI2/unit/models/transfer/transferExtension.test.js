@@ -163,4 +163,6 @@ Test('Extension model', async (extensionModelTest) => {
     }
     assert.end()
   })
+
+  await extensionModelTest.end()
 })
