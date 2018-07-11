@@ -40,12 +40,12 @@ const formatExtensionList = (assets) => {
 const fromTransferAggregate = (t) => {
   const cleanProperties = Util.omitNil({
     transferId: t.transferId,
-    amount: formatAmount(t.amount),
+    amount: t.amount ? formatAmount(t.amount) : null,
     transferState: Util.omitNil(t.transferState),
     completedTimestamp: Util.omitNil(t.completedTimestamp),
     ilpPacket: t.ilpPacket,
-    fulfilment: t.fulfilment,
     condition: t.condition,
+    fulfilment: t.fulfilment,
     expiration: Util.omitNil(t.expirationDate),
     extensionList: formatExtensionList(t.extensionList)
   })
@@ -80,8 +80,8 @@ const fromSaveTransferPrepared = (t) => {
       currency: t.transferRecord.currencyId,
       amount: t.transferRecord.amount
     },
-    transferState: t.transferStateRecord.transferStateId,
-    completedTimestamp: t.transferStateRecord.createdDate,
+    transferState: t.transferStateChangeRecord.transferStateId,
+    completedTimestamp: t.transferStateChangeRecord.createdDate,
     ilpPacket: t.ilpPacketRecord.value,
     fulfilment: null,
     condition: t.transferRecord.ilpCondition,
@@ -90,16 +90,29 @@ const fromSaveTransferPrepared = (t) => {
   })
 }
 
-// TODO: Need to fix this method
+const fromSaveTransferExecuted = (t) => {
+  return {
+    transferId: t.transferFulfilmentRecord.transferId,
+    transferFulfilmentId: t.transferFulfilmentRecord.transferFulfilmentId,
+    transferState: t.transferStateChangeRecord.transferStateId,
+    completedTimestamp: t.transferFulfilmentRecord.completedDate,
+    fulfilment: t.transferFulfilmentRecord.ilpFulfilment,
+    extensionList: t.transferExtensionsRecordList
+  }
+}
+
 const toTransfer = (t) => {
   // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
   if (t.isTransferReadModel) {
-    Logger.debug('In aggregate transfer translator for isTransferReadModel')
+    Logger.debug('In aggregate transfer transform for isTransferReadModel')
     return fromTransferReadModel(t) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.isSaveTransferPrepared) {
-    Logger.debug('In aggregate transfer translator for isSaveTransferPrepared')
+    Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
     return fromSaveTransferPrepared(t) // TODO: Remove this once the DB validation is done for 't'
-  } else throw new Error(`Unable to translate to transfer: ${t}`)
+  } else if (t.isSaveTransferExecuted) {
+    Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
+    return fromSaveTransferExecuted(t) // TODO: Remove this once the DB validation is done for 't'
+  } else throw new Error(`Unable to transform to transfer: ${t}`)
 }
 
 // const fromPayload = (payload) => Util.merge(payload, { id: UrlParser.idFromTransferUri(payload.id) })

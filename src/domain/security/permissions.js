@@ -7,6 +7,7 @@ class Permission {
   }
 }
 
+// TODO: currently not used anywhere
 const permissions = {
   PARTICIPANTS_CREATE: new Permission('PARTICIPANTS_CREATE', 'Create a participant'),
   PARTICIPANTS_LIST: new Permission('PARTICIPANTS_LIST', 'List all participants'),

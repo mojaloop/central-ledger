@@ -57,3 +57,6 @@ jspm_packages
 #package-lock.json
 package-lock.json
 .history
+
+#configs
+default.json

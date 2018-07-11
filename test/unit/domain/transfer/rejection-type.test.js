@@ -1,7 +1,7 @@
 'use strict'
 
 const Test = require('tape')
-const RejectionType = require('../../../../src/domain/transfer/rejectionType')
+const RejectionType = require('../../../../src/lib/enum').rejectionType
 
 Test('Rejection Type values', test => {
   test.equal(RejectionType.EXPIRED, 'expired')

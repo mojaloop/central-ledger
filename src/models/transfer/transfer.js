@@ -1,5 +1,3 @@
-// TODO: determine if it's needed
-
 /*****
  License
  --------------
@@ -19,87 +17,34 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-// const Moment = require('moment')
 const Db = require('../../db')
-// const TransferState = require('../state')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-const saveTransferState = async (transferState) => {
-  Logger.debug('save transferState' + transferState.toString())
-
+const getById = async (transferId) => {
   try {
-    return await Db.transferState.insert(transferState)
+    return await Db.transfer.findOne({ transferId: transferId })
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-// const getByTransferStateId = (id) => {
-//   return Db.transferState.query(builder => {
-//     return builder
-//       .where({ transferStateId: id })
-//       .select('transferState.*')
-//       .first()
-//   })
-// }
-
-const getByTransferStateId = (id) => {
+const saveTransfer = async (record) => {
+  Logger.debug('save transfer' + record.toString())
   try {
-    return Db.transferState.findOne({ transferStateId: id })
+    return await Db.transfer.insert(record)
   } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-// const getAll = () => {
-//   return Db.transferState.query(builder => {
-//     return builder
-//       .select('transferState.*')
-//   })
-// }
-
-const getAll = () => {
-  try {
-    return Db.transferState.find({})
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-// const truncatetransferState = () => {
-//   return Db.transferState.truncate()
-// }
-
-const destroytransferState = () => {
-  try {
-    return Db.transferState.destroy()
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-const destroytransferStateById = (id) => {
-  try {
-    return Db.transferState.destroy({ transferStateId: id })
-  } catch (err) {
-    throw new Error(err.message)
+    throw err
   }
 }
 
 module.exports = {
-  saveTransferState,
-  getByTransferStateId,
-  getAll,
-  // truncatetransferState,
-  destroytransferState,
-  destroytransferStateById
+  getById,
+  saveTransfer
 }

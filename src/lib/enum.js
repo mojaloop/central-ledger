@@ -1,6 +1,7 @@
 'use strict'
 
 module.exports = {
+  // Database enumerations sorted alphabetically // TODO: to be replaced by select statements
   EnpointType: {
     FSIOP_CALLBACK_URL: 1,
     ALARM_NOTIFICATION_URL: 2,
@@ -26,5 +27,18 @@ module.exports = {
     REJECTED: 'REJECTED',
     PENDING_SETTLEMENT: 'PENDING_SETTLEMENT',
     SETTLED: 'SETTLED'
+  },
+
+  // Code specific (non-DB) enumerations sorted alphabetically
+  transferEvent: {
+    PREPARE: 'prepare',
+    TRANSFER: 'transfer',
+    FULFIL: 'fulfil',
+    REJECT: 'reject',
+    COMMIT: 'commit'
+  },
+  rejectionType: {
+    EXPIRED: 'expired',
+    CANCELLED: 'cancelled'
   }
 }

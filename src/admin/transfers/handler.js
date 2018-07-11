@@ -1,37 +1,41 @@
 'use strict'
 
-const Transfer = require('../../domain/transfer')
+const TransferService = require('../../domain/transfer')
 
 function entityItem (transfer) {
   return {
     transferId: transfer.transferId,
-    transferBatchId: transfer.transferBatchId,
+    settlementWindowId: transfer.settlementWindowId,
     transferState: transfer.transferState,
-    ledger: transfer.ledger,
-    payeeParticipantId: transfer.payeeParticipantId,
-    payeeAmount: transfer.payeeAmount,
-    payeeNote: transfer.payeeNote,
+    completedTimestamp: transfer.completedTimestamp,
+    debitParticipantName: transfer.payerFsp,
     payerParticipantId: transfer.payerParticipantId,
+    payerParticipantCurrencyId: transfer.payerParticipantCurrencyId,
     payerAmount: transfer.payerAmount,
-    payerNote: transfer.payerNote,
-    payeeRejected: transfer.payeeRejected,
-    payeeRejectionMessage: transfer.payeeRejectionMessage,
-    executionCondition: transfer.executionCondition,
-    cancellationCondition: transfer.cancellationCondition,
+    creditParticipantName: transfer.payeeFsp,
+    payeeParticipantId: transfer.payeeParticipantId,
+    payeeParticipantCurrencyId: transfer.payeeParticipantCurrencyId,
+    payeeAmount: transfer.payeeAmount,
+    condition: transfer.ilpCondition,
     fulfilment: transfer.fulfilment,
-    rejectionReason: transfer.rejectionReason,
+    rejectionReason: transfer.reason,
     expirationDate: transfer.expirationDate,
-    additionalInfo: transfer.additionalInfo,
-    preparedDate: transfer.preparedDate,
-    executedDate: transfer.executedDate,
-    rejectedDate: transfer.rejectedDate,
-    creditParticipantName: transfer.creditParticipantName,
-    debitParticipantName: transfer.debitParticipantName
+    amount: transfer.amount
+    // ledger: transfer.ledger, // TODO: obsolete?
+    // payerNote: transfer.payerNote, // TODO: obsolete?
+    // payeeNote: transfer.payeeNote, // TODO: obsolete?
+    // payeeRejected: transfer.payeeRejected, // TODO: obsolete?
+    // payeeRejectionMessage: transfer.payeeRejectionMessage, // TODO: obsolete?
+    // cancellationCondition: transfer.cancellationCondition, // TODO: obsolete?
+    // additionalInfo: transfer.additionalInfo, // TODO: obsolete
+    // preparedDate: transfer.createdDate, // moved to stateDate
+    // executedDate: transfer.executedDate, // TODO: get transferFulfilment.createdDate
+    // rejectedDate: transfer.rejectedDate, // TODO: get transferStateChange.createdDate (ABORTED)
   }
 }
 
 const getAll = async function (request, h) {
-  const transfers = await Transfer.getAll()
+  const transfers = await TransferService.getAll()
   return transfers.map(entityItem)
 }
 

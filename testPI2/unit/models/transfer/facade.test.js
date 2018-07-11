@@ -17,6 +17,8 @@ their names indented and be marked with a '-'. Email address can be added
 optionally within square brackets <email>.
 * Gates Foundation
 - Name Surname <name.surname@gatesfoundation.com>
+
+* Georgi Georgiev <georgi.georgiev@modusbox.com>
 * Valentin Genev <valentin.genev@modusbox.com>
 * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
 * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -32,7 +34,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/facade')
-const TransferState = require('../../../../src/domain/transfer/state')
+const TransferState = require('../../../../src/lib/enum').TransferState
 const extensionModel = require('../../../../src/models/transfer/transferExtension')
 
 // const exampleTransfer = {

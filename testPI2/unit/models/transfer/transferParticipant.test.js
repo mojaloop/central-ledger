@@ -17,53 +17,9 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
+
 'use strict'
-
-const Model = require('../../../src/models/transfer/transferState--')
-
-const testtransferState = [
-  {
-    'transferStateId': 'TEST_RECEIVED',
-    'enumeration': 'RECEIVED',
-    'description': 'Next ledger has received the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_RESERVED',
-    'enumeration': 'RESERVED',
-    'description': 'Next ledger has reserved the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_COMMITTED',
-    'enumeration': 'COMMITTED',
-    'description': 'Next ledger has successfully performed the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_ABORTED',
-    'enumeration': 'ABORTED',
-    'description': 'Next ledger has aborted the transfer due a rejection or failure to perform the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_SETTLED',
-    'enumeration': 'COMMITTED',
-    'description': 'Ledger has settled the transfer'
-  }
-]
-
-exports.prepareData = async () => {
-  for (let state of testtransferState) {
-    await Model.saveTransferState(state)
-  }
-  return testtransferState
-}
-
-exports.deletePreparedData = async () => {
-  let result = []
-  for (let state of testtransferState) {
-    result.push(await Model.destroyTransferStateById(state.transferStateId))
-  }
-  return result
-}

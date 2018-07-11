@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -28,9 +30,9 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../../../src/db/index')
+const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../../src/domain/transfer/models/transferState')
+const Model = require('../../../../src/models/transfer/transferState--')
 
 Test('transferState model', async (transferStateTest) => {
   let sandbox
@@ -131,11 +133,11 @@ Test('transferState model', async (transferStateTest) => {
     }
   })
 
-  await transferStateTest.test('destroytransferState false transferState', async (assert) => {
-    Db.transferState.destroy.throws(new Error('False destroytransferState transferState'))
+  await transferStateTest.test('destroyTransferState false transferState', async (assert) => {
+    Db.transferState.destroy.throws(new Error('False destroyTransferState transferState'))
 
     try {
-      await Model.destroytransferState()
+      await Model.destroyTransferState()
       assert.fail(' should throws error ')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -143,11 +145,11 @@ Test('transferState model', async (transferStateTest) => {
     assert.end()
   })
 
-  await transferStateTest.test('destroytransferState', async (assert) => {
+  await transferStateTest.test('destroyTransferState', async (assert) => {
     Db.transferState.destroy.returns(1)
 
     try {
-      var result = await Model.destroytransferState()
+      var result = await Model.destroyTransferState()
       assert.deepEqual(result, 1)
       assert.end()
     } catch (err) {
@@ -157,11 +159,11 @@ Test('transferState model', async (transferStateTest) => {
     }
   })
 
-  await transferStateTest.test('destroytransferStateById false transferState', async (assert) => {
-    Db.transferState.destroy.throws(new Error('False destroytransferStateById transferState'))
+  await transferStateTest.test('destroyTransferStateById false transferState', async (assert) => {
+    Db.transferState.destroy.throws(new Error('False destroyTransferStateById transferState'))
 
     try {
-      await Model.destroytransferStateById()
+      await Model.destroyTransferStateById()
       assert.fail(' should throws error ')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -169,11 +171,11 @@ Test('transferState model', async (transferStateTest) => {
     assert.end()
   })
 
-  await transferStateTest.test('destroytransferStateById', async (assert) => {
+  await transferStateTest.test('destroyTransferStateById', async (assert) => {
     Db.transferState.destroy.withArgs({transferStateId: '1'}).returns(1)
 
     try {
-      await Model.destroytransferStateById('1')
+      await Model.destroyTransferStateById('1')
       sandbox.restore()
       assert.end()
     } catch (err) {

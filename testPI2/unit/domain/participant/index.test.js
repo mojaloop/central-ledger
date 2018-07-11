@@ -29,7 +29,9 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/domain/participant/model')
+const ParticipantModel = require('../../../../src/models/participant/participant')
+const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
+
 const Service = require('../../../../src/domain/participant/index')
 
 Test('Participant service', async (participantTest) => {
@@ -37,28 +39,66 @@ Test('Participant service', async (participantTest) => {
 
   const participantFixtures = [
     {
+      participantId: 0,
       name: 'fsp1',
       currency: 'USD',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
     },
     {
+      participantId: 1,
       name: 'fsp2',
       currency: 'EUR',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
+    }
+  ]
+  const participantResult = [
+    {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      currencyList: 'USD'
+    },
+    {
+      participantId: 1,
+      name: 'fsp2',
+      currency: 'EUR',
+      isActive: 1,
+      createdDate: new Date(),
+      currencyList: 'EUR'
+    }
+  ]
+  const participantCurrencyResult = [
+    {
+      participantCurrancyId: 0,
+      participantId: 0,
+      currencyId: 'USD',
+      isActive: 1
+    },
+    {
+      participantCurrancyId: 1,
+      participantId: 1,
+      currencyId: 'EUR',
+      isActive: 1
     }
   ]
 
   let participantMap = new Map()
 
   await participantTest.test('setup', async (assert) => {
-    sandbox = Sinon.sandbox.create()
-    sandbox.stub(Model, 'create')
-    sandbox.stub(Model, 'getByName')
-    sandbox.stub(Model, 'getAll')
-    sandbox.stub(Model, 'getById')
-    sandbox.stub(Model, 'update')
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(ParticipantModel, 'create')
+    sandbox.stub(ParticipantModel, 'getByName')
+    sandbox.stub(ParticipantModel, 'getAll')
+    sandbox.stub(ParticipantModel, 'getById')
+    sandbox.stub(ParticipantModel, 'update')
+
+    sandbox.stub(ParticipantCurrencyModel, 'create')
+    sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
+    sandbox.stub(ParticipantCurrencyModel, 'getById')
 
     Db.participant = {
       insert: sandbox.stub(),
@@ -66,22 +106,37 @@ Test('Participant service', async (participantTest) => {
       findOne: sandbox.stub()
     }
 
+    Db.participantCurrency = {
+      insert: sandbox.stub(),
+      update: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub()
+    }
+
     participantFixtures.forEach((participant, index) => {
-      participantMap.set(index + 1, participant)
+      participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({participant}).returns(index)
-      Model.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
-      Model.getByName.withArgs(participant.name).returns((participant))
-      Model.getById.withArgs(index).returns((participant))
-      Model.update.withArgs(participant, 1).returns((index + 1))
+      ParticipantModel.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
+      ParticipantModel.getByName.withArgs(participant.name).returns((participant))
+      ParticipantModel.getById.withArgs(index).returns((participant))
+      ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
+      ParticipantCurrencyModel.create.withArgs({participantId: index, currencyId: participant.currency}).returns((index + 1))
+      ParticipantCurrencyModel.getById.withArgs(index).returns({
+        participantCurrancyId: participant.participantId,
+        participantId: participant.participantId,
+        currencyId: participant.currency,
+        isActive: 1
+      })
+      ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId).returns(participant.currency)
     })
-    Model.getAll.returns(Promise.resolve(participantFixtures))
+    ParticipantModel.getAll.returns(Promise.resolve(participantResult))
     assert.pass('setup OK')
     assert.end()
   })
 
   await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = {name: 'fsp3'}
-    Model.create.withArgs(falseParticipant).throws(new Error())
+    ParticipantModel.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)
       assert.fail(' should throw')
@@ -107,9 +162,9 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('get with empty name', async (assert) => {
-    Model.getByName.withArgs('').throws(new Error())
+    ParticipantModel.getByName.withArgs('').throws(new Error())
     try {
-      Service.getByName('')
+      await Service.getByName('')
       assert.fail(' should throws with empty name ')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -119,17 +174,19 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getByName', async (assert) => {
     try {
-      assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
-      participantFixtures.forEach(participant => {
-        var result = Service.getByName(participant.name)
+      // assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
+      participantFixtures.forEach(async participant => {
+        var result = await Service.getByName(participant.name)
+        assert.equal(result.participantId, participant.participantId, ' participantIds are equal')
         assert.equal(result.name, participant.name, ' names are equal')
         assert.equal(result.currency, participant.currency, ' currencies match')
-        assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
+        assert.equal(result.isActive, participant.isActive, ' isActive flag match')
+        assert.equal(result.currencyList, participantMap.get(participant.participantId + 1).currencyList, ' currencyList match')
         assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
       })
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`getByName failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -149,7 +206,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll should throw an error', async (assert) => {
     try {
-      Model.getAll.throws(new Error())
+      ParticipantModel.getAll.throws(new Error())
       await Service.getAll()
       assert.fail('Error not thrown')
       assert.end()
@@ -162,10 +219,10 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getById', async (assert) => {
     try {
-      for (let participantId of participantMap.keys()) {
-        let participant = await Service.getById(participantId)
-        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId + 1)))
-      }
+      participantFixtures.forEach(async (participantX, index) => {
+        let participant = await Service.getById(index)
+        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(index + 1)))
+      })
       assert.end()
     } catch (err) {
       Logger.error(`get participant by Id failed with error - ${err}`)
@@ -176,11 +233,11 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('update', async (assert) => {
     try {
-      for (let participant of participantMap.values()) {
-        let updated = await Service.update(participant.name, {is_disabled: 1})
-        assert.equal(updated, participant)
-      }
-      sandbox.restore()
+      participantFixtures.forEach(async (participant, index) => {
+        let updated = await Service.update(participant.name, {isActive: 1})
+        assert.equal(JSON.stringify(updated), JSON.stringify(participantMap.get(index + 1)))
+      })
+      //  sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
@@ -191,14 +248,56 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('update should throw an error', async (assert) => {
+    ParticipantModel.getByName.withArgs(participantFixtures[0].name).throws(new Error())
     try {
-      Model.getByName.throwsException
-      await Service.update(participantFixtures[0].name, {is_disabled: 1})
+      await Service.update(participantFixtures[0].name, {isActive: 1})
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
       assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await participantTest.test('createParticipantCurrency should create the currency', async (assert) => {
+    try {
+      participantFixtures.forEach(async (participant, index) => {
+        var result = await Service.createParticipantCurrency({participantId: participant.participantId, currencyId: participant.currency})
+        assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
+        assert.ok(Sinon.match(result, index + 1), ` returns ${result}`)
+      })
+      assert.end()
+    } catch (err) {
+      Logger.error(`createParticipantCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('createParticipantCurrency with false participant should fail', async (assert) => {
+    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+    ParticipantCurrencyModel.create.withArgs({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency}).throws(new Error())
+    try {
+      await Service.createParticipantCurrency({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency})
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getParticipantCurrencyById should should return the currency', async (assert) => {
+    try {
+      participantFixtures.forEach(async (participant, index) => {
+        var result = await Service.getParticipantCurrencyById(index)
+        console.log(result)
+        assert.deepEqual(result, participantCurrencyResult[index])
+      })
+      assert.end()
+    } catch (err) {
+      Logger.error(`createParticipantCurrency failed with error - ${err}`)
+      assert.fail()
       assert.end()
     }
   })

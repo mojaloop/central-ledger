@@ -27,7 +27,7 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferStatePreparationHelper = require('./transferState')
+const TransferStatePreparationHelper = require('./transferState--')
 const StateChangeModel = require('../../../src/models/transfer/transferStateChange')
 const ExtensionModel = require('../../../src/models/transfer/transferExtension')
 const IlpModel = require('../../../src/models/transfer/ilpPacket')

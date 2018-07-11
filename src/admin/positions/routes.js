@@ -8,13 +8,13 @@ const Joi = require('joi')
 module.exports = [
   {
     method: 'GET',
-    path: '/positions',
+    path: '/TODO/positions',
     handler: Handler.calculateForAllParticipants,
     options: RouteConfig.config(tags, Permissions.POSITIONS_LIST)
   },
   {
     method: 'GET',
-    path: '/positions/{name}',
+    path: '/TODO/positions/{name}',
     handler: Handler.calculateForParticipant,
     options: RouteConfig.config(tags, Permissions.POSITIONS_VIEW, {
       validate: {

@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -30,7 +32,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/domain/participant/model')
+const Model = require('../../../../src/models/participant/participant')
 
 Test('Participant model', async (participantTest) => {
   let sandbox
@@ -39,20 +41,20 @@ Test('Participant model', async (participantTest) => {
     {
       name: 'fsp1',
       currency: 'USD',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
     },
     {
       name: 'fsp2',
       currency: 'EUR',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
     }
   ]
   const participant = participantFixtures[0]
   const participantId = 1
 
-  sandbox = Sinon.sandbox.create()
+  sandbox = Sinon.createSandbox()
   Db.participant = {
     insert: sandbox.stub(),
     update: sandbox.stub(),
@@ -94,7 +96,7 @@ Test('Participant model', async (participantTest) => {
     try {
       Db.participant.insert.withArgs({
         name: participantFixtures[0].name,
-        currencyId: participantFixtures[0].currency
+        createdBy: 'unknown'
       }).throws(new Error())
       var result = await Model.create(participantFixtures[0])
       test.ok(Sinon.match(result, 1), ` returns ${result}`)
@@ -124,7 +126,7 @@ Test('Participant model', async (participantTest) => {
       var result = await Model.getByName(participant.name)
       assert.equal(result.name, participant.name, ' names are equal')
       assert.equal(result.currency, participant.currency, ' currencies match')
-      assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
+      assert.equal(result.isActive, participant.isActive, ' isActive flag match')
       assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
       assert.end()
     } catch (err) {
@@ -191,7 +193,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('update', async (assert) => {
     try {
       Db.participant.update.withArgs(
-        {participantId: 1}, {isDisabled: 1}
+        {participantId: 1}, {isActive: 1}
       ).returns(participantId)
       let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
       assert.equal(updatedId, participantId)
@@ -208,7 +210,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('update should throw an error', async (test) => {
     try {
       Db.participant.update.withArgs(
-        {participantId: 1}, {isDisabled: 1}
+        {participantId: 1}, {isActive: 1}
       ).throws(new Error())
       let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
       test.equal(updatedId, participantId)
