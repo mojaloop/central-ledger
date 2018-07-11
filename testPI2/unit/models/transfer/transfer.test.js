@@ -46,7 +46,8 @@ Test('Transfer model', async (transfer) => {
     sandbox = Sinon.createSandbox()
     Db.transfer = {
       insert: sandbox.stub(),
-      findOne: sandbox.stub()
+      findOne: sandbox.stub(),
+      truncate: sandbox.stub()
     }
     assert.pass('setup OK')
     assert.end()
@@ -78,5 +79,31 @@ Test('Transfer model', async (transfer) => {
     }
   })
 
-  await transfer.end()
+  await transfer.test('truncateTransfer should', async (assert) => {
+    try {
+      Db.transfer.truncate.returns(Promise.resolve())
+      await Model.truncateTransfer()
+      assert.ok(Db.transfer.truncate.calledOnce, 'have been called once')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create transfer failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transfer.test('truncateTransfer should throw an error', async (assert) => {
+    try {
+      Db.transfer.truncate.throws(new Error())
+      await Model.truncateTransfer()
+      assert.ok(Db.transfer.truncate.calledOnce)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create transfer failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+  transfer.end()
 })

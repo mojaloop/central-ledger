@@ -29,7 +29,7 @@
 
 const Db = require('../../db')
 const TransferExtensionModel = require('./transferExtension')
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = async (id) => {
   try {
@@ -149,17 +149,7 @@ const getAll = async () => {
   }
 }
 
-const truncateTransfers = async () => {
-  try {
-    return await Db.transfer.truncate()
-  } catch (err) {
-    Logger.info(err)
-    throw err
-  }
-}
-
 module.exports = {
   getById,
-  getAll,
-  truncateTransfers
+  getAll
 }
