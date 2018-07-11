@@ -154,4 +154,6 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
     }
     sandbox.restore()
   })
+
+  await transferStateChangeModel.end()
 })

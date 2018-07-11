@@ -28,7 +28,6 @@
 'use strict'
 
 const Db = require('../../db/index')
-const Util = require('../../lib/util')
 
 const saveTransferExtension = async (extension) => {
   try {

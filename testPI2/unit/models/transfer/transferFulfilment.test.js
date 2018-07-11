@@ -67,5 +67,5 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
     }
   })
 
-  transferFulfilment.end()
+  await transferFulfilment.end()
 })
