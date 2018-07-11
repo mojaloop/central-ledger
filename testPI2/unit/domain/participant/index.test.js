@@ -291,7 +291,6 @@ Test('Participant service', async (participantTest) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
         var result = await Service.getParticipantCurrencyById(index)
-        console.log(result)
         assert.deepEqual(result, participantCurrencyResult[index])
       })
       assert.end()
@@ -301,4 +300,17 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
+  await participantTest.test('createParticipantCurrency with false participant should fail', async (assert) => {
+    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+    ParticipantCurrencyModel.create.withArgs({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency}).throws(new Error())
+    try {
+      await Service.createParticipantCurrency({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency})
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
 })

@@ -49,6 +49,40 @@ Test('Participant facade', async (facadeTest) => {
   Db.participant = {
     query: sandbox.stub()
   }
+  Db.participantEndpoint = {
+    query: sandbox.stub()
+  }
+  sandbox.stub(Db, 'getKnex')
+  let obj = {
+    transaction : async () =>{}
+  }
+  Db.getKnex.returns(obj)
+  const knex = Db.getKnex()
+  sandbox.stub(knex, 'transaction')
+
+  const endpoints = [
+    {
+      participantEndpointId: 1,
+      participantId: 1,
+      endpointTypeId: 1,
+      value: 'http://localhost:3001/participants/dfsp1/notification1',
+      isActive: 1,
+      createdDate: '2018-07-11',
+      createdBy: 'unknown',
+      name: 'FSIOP_CALLBACK_URL'
+    },
+    {
+      participantEndpointId: 2,
+      participantId: 1,
+      endpointTypeId: 2,
+      value: 'http://localhost:3001/participants/dfsp1/notification2',
+      isActive: 1,
+      createdDate: '2018-07-11',
+      createdBy: 'unknown',
+      name: 'ALARM_NOTIFICATION_URL'
+    }
+  ]
+
 
   await facadeTest.test('getByNameAndCurrency', async (assert) => {
     try {
@@ -88,4 +122,74 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
+
+  await facadeTest.test('getEndpoint', async (assert) => {
+    try {
+      Db.participantEndpoint.query.returns(endpoints[0])
+      var result = await Model.getEndpoint({ participant, endpointType: endpoints[0].name })
+      assert.deepEqual(result, endpoints[0])
+      assert.end()
+    } catch (err) {
+      Logger.error(`getEndpoint failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getEndpoint should throw error', async (assert) => {
+    try {
+      Db.participantEndpoint.query.throws(new Error('message'))
+      await Model.getEndpoint({ participant, endpointType: endpoints[0].name })
+      assert.fail(' should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getEndpoint failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getAllEndpoints', async (assert) => {
+    try {
+      Db.participantEndpoint.query.returns(endpoints)
+      var result = await Model.getAllEndpoints(participant)
+      assert.deepEqual(result, endpoints)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getAllEndpoints failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getAllEndpoints should throw error', async (assert) => {
+    try {
+      Db.participantEndpoint.query.throws(new Error('message'))
+      await Model.getAllEndpoints(participant)
+      assert.fail(' should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getAllEndpoints failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('addEndpoint', async (assert) => {
+    try {
+      knex.transaction.returns(1)
+      let endpoint = {
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
+      }
+      var result = await Model.addEndpoint(participant, endpoint)
+      assert.equal(result, 1)
+      assert.end()
+    } catch (err) {
+      Logger.error(`addEndpoint failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
 })

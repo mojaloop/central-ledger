@@ -2,13 +2,9 @@
 
 const ParticipantModel = require('../../models/participant/participant')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
-// const ValidationError = require('../../errors').ValidationError
-// const UrlParser = require('../../lib/urlParser')
-// const Crypto = require('../../lib/crypto')
+const ParticipantFacade = require('../../models/participant/facade')
 
 const create = async (payload) => {
-  // return Crypto.hash(payload.password)
-  //   .then(hashedPassword => {
   try {
     const participant = await ParticipantModel.create({ name: payload.name, currency: payload.currency })
     if (!participant) throw new Error('Something went wrond. Participant cannot be created')
@@ -87,7 +83,7 @@ const addEndpoint = async (name, payload) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    return ParticipantModel.addEndpoint(participant, payload.endpoint)
+    return ParticipantFacade.addEndpoint(participant, payload.endpoint)
   } catch (err) {
     throw err
   }
@@ -97,7 +93,7 @@ const getEndpoint = async (name, type) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    const participantEndpoint = await ParticipantModel.getEndpoint(participant, type)
+    const participantEndpoint = await ParticipantFacade.getEndpoint(participant, type)
     participantEndpointExists(participantEndpoint)
     return participantEndpoint
   } catch (err) {
@@ -109,7 +105,7 @@ const getAllEndpoints = async (name) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    const participantEndpoints = await ParticipantModel.getAllEndpoints(participant)
+    const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant)
     participantEndpointExists(participantEndpoints)
     return participantEndpoints
 

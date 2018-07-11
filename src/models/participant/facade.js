@@ -47,6 +47,80 @@ const getByNameAndCurrency = async (name, currencyId) => {
   }
 }
 
+
+const getEndpoint = async (participant, endpointType) => {
+  try {
+    return await Db.participantEndpoint.query( builder =>{ 
+      return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
+      .andWhere('participantEndpoint.participantId', participant.participantId)
+      .andWhere('participantEndpoint.isActive', 1)
+      .andWhere('et.name', endpointType).select('participantEndpoint.participantEndpointId', 
+      'participantEndpoint.participantId', 
+      'participantEndpoint.endpointTypeId', 
+      'participantEndpoint.value', 
+      'participantEndpoint.isActive', 
+      'participantEndpoint.createdDate', 
+      'participantEndpoint.createdBy', 
+      'et.name')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+const getAllEndpoints = async (participant) => {
+  try {
+    return await Db.participantEndpoint.query( builder =>{ 
+      return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
+      .andWhere('participantEndpoint.participantId', participant.participantId)
+      .andWhere('participantEndpoint.isActive', 1).select('participantEndpoint.participantEndpointId', 
+      'participantEndpoint.participantId', 
+      'participantEndpoint.endpointTypeId', 
+      'participantEndpoint.value', 
+      'participantEndpoint.isActive', 
+      'participantEndpoint.createdDate', 
+      'participantEndpoint.createdBy', 
+      'et.name')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+const addEndpoint = async (participant, endpoint) => {
+  try {
+    const knex = Db.getKnex()
+    return knex.transaction(async function (trx) {
+      let endpointType = await trx.first('endpointTypeId').from('endpointType').where('name', endpoint.type).andWhere('isActive', 1)
+      return knex('participantEndpoint').transacting(trx).forUpdate().select('*')      
+      .where('participantId', participant.participantId)
+      .andWhere('endpointTypeId', endpointType.endpointTypeId)
+      .andWhere('isActive', 1)
+      .then(function(existingEndpoint) {
+        if(existingEndpoint){
+          return knex('participantEndpoint').transacting(trx).update({isActive: 0}).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
+        }
+      }).then(()=>{
+        let newEndpoint = {
+          participantId: participant.participantId,
+          endpointTypeId: endpointType.endpointTypeId,
+          value: endpoint.value,
+          isActive: 1,
+          createdBy: 'unknown'
+        }
+        return knex('participantEndpoint').transacting(trx).insert(newEndpoint)
+      }).then(trx.commit)
+      .catch(trx.rollback)
+    })
+
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
-  getByNameAndCurrency
+  getByNameAndCurrency,
+  getEndpoint,
+  getAllEndpoints,
+  addEndpoint
 }
