@@ -82,7 +82,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         }
       })
       for (let ext of transferExtensionsRecordList) {
-        await transferExtensionModel.saveExtension(ext)
+        await transferExtensionModel.saveTransferExtension(ext)
       }
     }
 
@@ -137,7 +137,7 @@ const saveTransferExecuted = async (transferId, payload, stateReason = null, has
       }
     })
     for (let ext of transferExtensionsRecordList) {
-      await transferExtensionModel.saveExtension(ext)
+      await transferExtensionModel.saveTransferExtension(ext)
     }
   }
 

@@ -71,7 +71,7 @@ Test('Extension model test', async (extensionTest) => {
     try {
       extensionTestValues.forEach(async (extension) => {
         try {
-          // Prepare helper tests actually the Model.saveExtension and Model.getByTransferId
+          // Prepare helper tests actually the Model.saveTransferExtension and Model.getByTransferId
           let extensionResult = await HelperModule.prepareNeededData('extension')
           let result = extensionResult.extension
 
@@ -105,7 +105,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without transferId should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         key: 'extTestKey1',
         value: 'extTestValue1',
         changedDate: new Date(),
@@ -121,7 +121,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without value should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         key: 'extTestKey1',
         changedDate: new Date(),
@@ -137,7 +137,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without key should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         value: 'extTestValue1',
         changedDate: new Date(),
@@ -153,7 +153,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without changedDate should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         key: 'extTestKey1',
         value: 'extTestValue1',
@@ -169,7 +169,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without changedBy should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         key: 'extTestKey1',
         value: 'extTestValue1',
@@ -204,7 +204,7 @@ Test('Extension model test', async (extensionTest) => {
     }
   })
 
-  await extensionTest.test('getByExtensionId', async (assert) => {
+  await extensionTest.test('getByTransferExtensionId', async (assert) => {
     try {
       for (let [extensionId, extensionObj] of extensionMap.entries()) {
         let extension = extensionObj.extension

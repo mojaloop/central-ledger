@@ -32,13 +32,7 @@ const Util = require('../../lib/util')
 
 const saveTransferExtension = async (extension) => {
   try {
-    let ext = {
-      transferId: extension.transferId,
-      transferFulfilmentId: extension.transferFulfilmentId,
-      key: extension.key,
-      value: extension.value
-    }
-    return await Db.transferExtension.insert(ext)
+    return await Db.transferExtension.insert(extension)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -52,24 +46,9 @@ const getByTransferId = async (transferId) => {
   }
 }
 
-const getByExtensionId = async (extensionId) => {
+const getByTransferExtensionId = async (transferExtensionId) => {
   try {
-    return await Db.transferExtension.findOne({ extensionId: extensionId })
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-const update = async (extension) => {
-  const fields = {
-    transferId: extension.transferId,
-    key: extension.key,
-    value: extension.value,
-    changedDate: extension.changedDate,
-    changedBy: extension.changedBy
-  }
-  try {
-    return await Db.transferExtension.update({extensionId: extension.extensionId}, Util.filterUndefined(fields))
+    return await Db.transferExtension.findOne({ transferExtensionId: transferExtensionId })
   } catch (err) {
     throw new Error(err.message)
   }
@@ -86,7 +65,6 @@ const destroyByTransferId = async (extension) => {
 module.exports = {
   saveTransferExtension,
   getByTransferId,
-  getByExtensionId,
-  update,
+  getByTransferExtensionId,
   destroyByTransferId
 }

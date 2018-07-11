@@ -57,7 +57,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
 
   await stateChangeTest.test('create state change test', async (assert) => {
     try {
-      // Prepare helper tests actually the Model.saveExtension and Model.getByTransferId
+      // Prepare helper tests actually the Model.saveTransferExtension and Model.getByTransferId
       stateChangePrepareResult = await HelperModule.prepareNeededData('transferStateChange')
       assert.comment('the prepared data are: ', JSON.stringify(stateChangePrepareResult, null, 4))
 

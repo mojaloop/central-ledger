@@ -151,7 +151,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.returns(P.resolve())
-      extensionModel.saveExtension.returns(P.resolve())
+      extensionModel.saveTransferExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
 
@@ -170,7 +170,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.returns(P.resolve())
-      extensionModel.saveExtension.returns(P.resolve())
+      extensionModel.saveTransferExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
 
@@ -206,7 +206,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.throws(new Error())
-      extensionModel.saveExtension.returns(P.resolve())
+      extensionModel.saveTransferExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
@@ -223,7 +223,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.returns(P.resolve())
-      extensionModel.saveExtension.throws(new Error())
+      extensionModel.saveTransferExtension.throws(new Error())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
@@ -240,7 +240,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.returns(P.resolve())
-      extensionModel.saveExtension.returns(P.resolve())
+      extensionModel.saveTransferExtension.returns(P.resolve())
       ilpModel.saveIlp.throws(new Error())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
@@ -257,7 +257,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
       TransfersReadModel.saveTransfer.returns(P.resolve())
-      extensionModel.saveExtension.returns(P.resolve())
+      extensionModel.saveTransferExtension.returns(P.resolve())
       ilpModel.saveIlp.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.throws(new Error())
       try {

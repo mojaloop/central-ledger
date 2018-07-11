@@ -39,21 +39,18 @@ Test('Extension model', async (extensionModelTest) => {
       transferId: 1,
       key: 'key1',
       value: 'value1',
-      changedDate: new Date(),
-      changedBy: ''
+      createdDate: new Date()
     },
     {
       transferId: 2,
       key: 'key2',
       value: 'value2',
-      changedDate: new Date(),
-      changedBy: ''
-
+      createdDate: new Date()
     }
   ]
 
   sandbox = Sinon.createSandbox()
-  Db.extension = {
+  Db.transferExtension = {
     insert: sandbox.stub(),
     update: sandbox.stub(),
     findOne: sandbox.stub(),
@@ -61,39 +58,31 @@ Test('Extension model', async (extensionModelTest) => {
   }
 
   await extensionModelTest.test('create false extension', async (assert) => {
-    Db.extension.insert.withArgs({
+    Db.transferExtension.insert.withArgs({
       transferId: 1,
       key: 'key1',
       value: 'value1',
-      changedDate: undefined,
-      changedBy: undefined
-    }).throws(new Error('message'))
+      createdDate: undefined
+    }).throws(new Error())
     try {
       await Model.saveTransferExtension({
         transferId: 1,
         key: 'key1',
         value: 'value1',
-        changedDate: undefined,
-        changedBy: undefined
+        createdDate: undefined
       })
-      assert.fail(' this should throw')
+      assert.fail('should throw error')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
 
   await extensionModelTest.test('save extension', async (assert) => {
-    Db.extension.insert.withArgs({
-      transferId: 1,
-      key: 'key1',
-      value: 'value1',
-      changedDate: new Date(),
-      changedBy: ''
-    }).returns(1)
+    Db.transferExtension.insert.withArgs(transferExtensionModelFixtures[0]).returns(1)
     try {
       var result = await Model.saveTransferExtension(transferExtensionModelFixtures[0])
-      assert.ok(Sinon.match(result, 1), ` returns ${result}`)
+      assert.ok(Sinon.match(result, 1), `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`save extension failed with error - ${err}`)
@@ -103,89 +92,55 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('get extensions by transferId with empty id', async (assert) => {
-    Db.extension.findOne.withArgs({ transferId: '' }).throws(new Error())
+    Db.transferExtension.findOne.withArgs({ transferId: '' }).throws(new Error())
     try {
       await Model.getByTransferId('')
-      assert.fail(' should throws with empty name ')
+      assert.fail('should throw with empty transferId')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
 
-  await extensionModelTest.test('get by extension by transferId', async (assert) => {
-    Db.extension.findOne.withArgs({transferId: 1}).returns(transferExtensionModelFixtures[0])
+  await extensionModelTest.test('get extension by transferId', async (assert) => {
+    Db.transferExtension.findOne.withArgs({transferId: 1}).returns(transferExtensionModelFixtures[0])
     try {
       var result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
-      Logger.error(`get by extension by transferId failed with error - ${err}`)
+      Logger.error(`get extension by transferId failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await extensionModelTest.test('get extensions by transferId with empty id', async (assert) => {
-    Db.extension.findOne.withArgs({ extensionId: '' }).throws(new Error())
+  await extensionModelTest.test('get extensions by transferExtensionId with empty id', async (assert) => {
+    Db.transferExtension.findOne.withArgs({ transferExtensionId: '' }).throws(new Error())
     try {
-      await Model.getByExtensionId('')
-      assert.fail(' should throws with empty name ')
+      await Model.getByTransferExtensionId('')
+      assert.fail('should throw with empty name')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
 
-  await extensionModelTest.test('get by extensionId', async (assert) => {
-    Db.extension.findOne.withArgs({extensionId: 1}).returns(transferExtensionModelFixtures[0])
+  await extensionModelTest.test('get by transferExtensionId', async (assert) => {
+    Db.transferExtension.findOne.withArgs({transferExtensionId: 1}).returns(transferExtensionModelFixtures[0])
     try {
-      var result = await Model.getByExtensionId(1)
+      var result = await Model.getByTransferExtensionId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
-      Logger.error(`get by extensionId failed with error - ${err}`)
+      Logger.error(`get by transferExtensionId failed with error - ${err}`)
       assert.fail()
-      assert.end()
-    }
-  })
-
-  await extensionModelTest.test('update extension with wrong Id', async (assert) => {
-    Db.extension.update.withArgs(
-      { extensionId: 12 },
-      Object.assign({}, transferExtensionModelFixtures[1], { transferId: 1 })
-    ).throws(new Error())
-    try {
-      await Model.update(
-        Object.assign({}, transferExtensionModelFixtures[1], { extensionId: 12, transferId: 1 }), Object.assign(transferExtensionModelFixtures[1], { transferId: 1 }))
-      assert.fail(' should throw without empty extension ')
-    } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
-    }
-    assert.end()
-  })
-
-  await extensionModelTest.test('update extension', async (assert) => {
-    try {
-      Db.extension.update.withArgs(
-        { extensionId: 1 },
-        Object.assign({}, transferExtensionModelFixtures[1], { transferId: 1 })
-      ).returns(1)
-      let updatedId = await Model.update(
-        Object.assign(transferExtensionModelFixtures[1], { extensionId: 1, transferId: 1 }), Object.assign(transferExtensionModelFixtures[1], { transferId: 1 }))
-      assert.equal(updatedId, 1)
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`update extension failed with error - ${err}`)
-      assert.fail()
-      sandbox.restore()
       assert.end()
     }
   })
 
   await extensionModelTest.test('destroy extension', async (assert) => {
-    Db.extension.destroy.withArgs({transferId: 1}).returns(1)
+    Db.transferExtension.destroy.withArgs({transferId: 1}).returns(1)
     try {
       let result = await Model.destroyByTransferId(transferExtensionModelFixtures[0])
       assert.equal(result, 1)
@@ -199,12 +154,12 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('destroy extension with missing transferId', async (assert) => {
-    Db.extension.destroy.withArgs({transferId: 12}).throws(new Error())
+    Db.transferExtension.destroy.withArgs({transferId: 12}).throws(new Error())
     try {
       await Model.destroyByTransferId(Object.assign({}, transferExtensionModelFixtures[0], {transferId: 12}))
-      assert.fail(' should throw without empty extension ')
+      assert.fail('should throw without empty extension ')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
