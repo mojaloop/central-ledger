@@ -34,22 +34,19 @@ const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/ilpPacket')
 
-Test('Ilp model', async (ilpTest) => {
+Test('ilpPacket model', async (ilpTest) => {
   let sandbox
 
-  const ilpTestValues = [
+  const ilpPacketTestValues = [
     {
       transferId: '1',
-      packet: 'test packet',
-      condition: 'test condition',
-      fulfilment: 'test fulfilment'
+      value: 'test packet'
     }
   ]
-  const ilp = ilpTestValues[0]
-  const ilpId = 1
+  const ilpPacket = ilpPacketTestValues[0]
 
   sandbox = Sinon.createSandbox()
-  Db.ilp = {
+  Db.ilpPacket = {
     select: sandbox.stub(),
     insert: sandbox.stub(),
     update: sandbox.stub(),
@@ -59,128 +56,82 @@ Test('Ilp model', async (ilpTest) => {
     destroy: sandbox.stub()
   }
 
-  await ilpTest.test('create false ilp', async (assert) => {
-    const falseIlp = {
-      transferId: '1',
-      packet: '',
-      condition: '',
-      fulfilment: ''
-    }
-
-    Db.ilp.insert.withArgs({
-      transferId: falseIlp.transferId,
-      packet: falseIlp.packet,
-      condition: falseIlp.condition,
-      fulfilment: falseIlp.fulfilment
-    }).throws(new Error('False insert ilp'))
-
+  await ilpTest.test('create false ilpPacket', async (assert) => {
+    const falseIlp = {transferId: '1', value: undefined}
+    Db.ilpPacket.insert.withArgs(falseIlp).throws(new Error())
     try {
-      let r = await Model.create(falseIlp)
-      assert.comment(r)
-      assert.fail(' should throw')
-    } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
-    }
-    assert.end()
-  })
-
-  await ilpTest.test('create ilp', async (assert) => {
-    try {
-      Db.ilp.insert.withArgs({
-        transferId: ilp.transferId,
-        packet: ilp.packet,
-        condition: ilp.condition,
-        fulfilment: ilp.fulfilment
-      }).returns(1)
-      var result = await Model.saveIlp(ilp)
-      assert.ok(result === 1, ` returns ${result}`)
-      assert.end()
-    } catch (err) {
-      Logger.error(`create ilp failed with error - ${err}`)
-      assert.fail(`create ilp failed with error - ${err}`)
-      assert.end()
-    }
-  })
-
-  await ilpTest.test('create false ilp', async (assert) => {
-    const falseIlp = {transferId: '1', packet: undefined, condition: undefined, fulfilment: undefined}
-    Db.ilp.insert.withArgs(falseIlp).throws(new Error())
-    try {
-      let r = await Model.saveIlp(falseIlp)
+      let r = await Model.saveIlpPacket(falseIlp)
       console.log(r)
       assert.fail(' should throw')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
 
-  await ilpTest.test('getByTransferId', async (assert) => {
-    let falseIlp = null
-    Db.ilp.findOne.withArgs({transferId: falseIlp}).throws(new Error())
+  await ilpTest.test('create ilpPacket', async (assert) => {
+    try {
+      Db.ilpPacket.insert.withArgs({
+        transferId: ilpPacket.transferId,
+        value: ilpPacket.value
+      }).returns(1)
+      var result = await Model.saveIlpPacket(ilpPacket)
+      assert.ok(result === 1, `returns ${result}`)
+      assert.end()
+    } catch (err) {
+      Logger.error(`create ilpPacket failed with error - ${err}`)
+      assert.fail(`create ilpPacket failed with error - ${err}`)
+      assert.end()
+    }
+  })
+
+  await ilpTest.test('getByTransferId with null transferId', async (assert) => {
+    Db.ilpPacket.findOne.withArgs({transferId: null}).throws(new Error())
     try {
       await Model.getByTransferId(null)
       assert.fail('should throw')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
 
   await ilpTest.test('getByTransferId', async (assert) => {
-    Db.ilp.findOne.withArgs({transferId: ilpTestValues[0].transferId}).returns(ilpTestValues[0])
+    Db.ilpPacket.findOne.withArgs({transferId: ilpPacketTestValues[0].transferId}).returns(ilpPacketTestValues[0])
     try {
       var result = await Model.getByTransferId('1')
-      assert.equal(result.transferId, ilp.transferId, ' transferIds are equal')
-      assert.equal(result.condition, ilp.condition, ' conditions match')
-      assert.equal(result.fulfilment, ilp.fulfilment, ' fulfillments match')
+      assert.equal(result.transferId, ilpPacket.transferId, 'transferIds are equal')
+      assert.equal(result.condition, ilpPacket.condition, 'conditions match')
+      assert.equal(result.fulfilment, ilpPacket.fulfilment, 'fulfillments match')
       assert.end()
     } catch (err) {
-      Logger.error(`create ilp failed with error - ${err}`)
+      Logger.error(`create ilpPacket failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await ilpTest.test('update false ilp', async (assert) => {
-    const falseIlp = {
+  await ilpTest.test('update false ilpPacket', async (assert) => {
+    const falseIlpPacket = {
       transferId: '',
-      ilpId: '',
-      packet: '',
-      condition: '',
-      fulfilment: ''
+      value: ''
     }
 
-    Db.ilp.update.withArgs({
-      ilpId: falseIlp.ilpId
-    }).throws(new Error('False update ilp'))
+    Db.ilpPacket.update.withArgs({
+      transferId: falseIlpPacket.transferId
+    }).throws(new Error('False update ilpPacket'))
 
     try {
-      await Model.update(falseIlp, falseIlp)
-      assert.fail(' should throws with empty transferId ')
+      await Model.update(falseIlpPacket, falseIlpPacket)
+      assert.fail(' should throw with empty transferId ')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
 
-  await ilpTest.test('update', async (assert) => {
-    try {
-      Db.ilp.update.withArgs(
-        { ilpId: ilpId }, { packet: 'new test packet' }
-      ).returns(ilpId)
-      let updatedId = await Model.update({ ilpId: ilpId, packet: 'new test packet' })
-      assert.equal(updatedId, ilpId)
-      assert.end()
-    } catch (err) {
-      Logger.error(`update ilp failed with error - ${err}`)
-      assert.fail(`update ilp failed with error - ${err}`)
-      assert.end()
-    }
-  })
-
-  await ilpTest.test('destroyByTransferId false ilp', async (assert) => {
-    const falseIlp = {
+  await ilpTest.test('destroyByTransferId false ilpPacket', async (assert) => {
+    const falseIlpPacket = {
       transferId: '',
       ilpId: '',
       packet: '',
@@ -188,32 +139,32 @@ Test('Ilp model', async (ilpTest) => {
       fulfilment: ''
     }
 
-    Db.ilp.destroy.withArgs({
-      transferId: falseIlp.transferId
-    }).throws(new Error('False destroyByTransferId ilp'))
+    Db.ilpPacket.destroy.withArgs({
+      transferId: falseIlpPacket.transferId
+    }).throws(new Error('False destroyByTransferId ilpPacket'))
 
     try {
-      await Model.destroyByTransferId({ transferId: falseIlp.transferId })
+      await Model.destroyByTransferId({ transferId: falseIlpPacket.transferId })
       assert.fail(' should throws with empty transferId ')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })
 
   await ilpTest.test('destroyByTransferId', async (assert) => {
     try {
-      Db.ilp.destroy.withArgs(
-        { transferId: ilpTestValues[0].transferId }
+      Db.ilpPacket.destroy.withArgs(
+        { transferId: ilpPacketTestValues[0].transferId }
       ).returns(1)
 
-      let updatedId = await Model.destroyByTransferId({ transferId: ilpTestValues[0].transferId })
+      let updatedId = await Model.destroyByTransferId({ transferId: ilpPacketTestValues[0].transferId })
       assert.equal(1, updatedId)
       sandbox.restore()
       assert.end()
     } catch (err) {
-      Logger.error(`update ilp failed with error - ${err}`)
-      assert.fail(`update ilp failed with error - ${err}`)
+      Logger.error(`update ilpPacketPacket failed with error - ${err}`)
+      assert.fail(`update ilpPacketPacket failed with error - ${err}`)
       sandbox.restore()
       assert.end()
     }

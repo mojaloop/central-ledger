@@ -43,7 +43,7 @@ exports.saveIlpPacket = async (record) => {
 
 exports.getByTransferId = async (transferId) => {
   try {
-    return await Db.ilp.findOne({ transferId: transferId })
+    return await Db.ilpPacket.findOne({ transferId: transferId })
   } catch (err) {
     throw new Error(err.message)
   }
