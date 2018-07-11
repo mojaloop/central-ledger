@@ -100,7 +100,7 @@ const addEndpoint = async function (request, h) {
 const getEndpoint = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    if(request.query.type){
+    if (request.query.type) {
       const result = await Participant.getEndpoint(request.params.name, request.query.type)
       return {
         endpoints: {
@@ -120,7 +120,6 @@ const getEndpoint = async function (request, h) {
       return {
         endpoints
       }
-
     }
   } catch (err) {
     throw err // Boom.badRequest()

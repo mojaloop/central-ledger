@@ -52,19 +52,19 @@ Test('nameFromParticipantUri', nameFromParticipantUriTest => {
 Test('participantNameFromTransfersRoute', participantNameFromTransfersRouteTest => {
   participantNameFromTransfersRouteTest.test('return null if not url', t => {
     UrlParser.participantNameFromTransfersRoute('fjdklsjfld')
-    .catch(e => {
-      t.equal(e.message, 'No matching participant found in url')
-      t.end()
-    })
+      .catch(e => {
+        t.equal(e.message, 'No matching participant found in url')
+        t.end()
+      })
   })
 
   participantNameFromTransfersRouteTest.test('return name if url matches pattern', t => {
     const participantName = 'participant1'
     UrlParser.participantNameFromTransfersRoute(`/participants/${participantName}/transfers`)
-    .then(name => {
-      t.equal(name, participantName)
-      t.end()
-    })
+      .then(name => {
+        t.equal(name, participantName)
+        t.end()
+      })
   })
 
   participantNameFromTransfersRouteTest.end()

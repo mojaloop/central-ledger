@@ -134,18 +134,20 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
         isActive: 1
       }
       ])
-      const expected = [{
-        participantCurrancyId: 1,
-        participantId: 1,
-        currencyId: 'USD',
-        isActive: 1
-      },
-      {
-        participantCurrancyId: 2,
-        participantId: 1,
-        currencyId: 'EUR',
-        isActive: 1
-      }]
+      const expected = [
+        {
+          participantCurrancyId: 1,
+          participantId: 1,
+          currencyId: 'USD',
+          isActive: 1
+        },
+        {
+          participantCurrancyId: 2,
+          participantId: 1,
+          currencyId: 'EUR',
+          isActive: 1
+        }
+      ]
       let result = await Model.getByParticipantId(1)
       assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()

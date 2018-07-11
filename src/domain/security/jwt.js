@@ -21,16 +21,16 @@ const verify = (token) => {
       return resolve(decoded)
     })
   })
-  .then(decoded => {
-    const partyId = decoded.userInfo.partyId
-    return Promise.props({
-      party: SecurityService.getPartyById(partyId),
-      role: SecurityService.getPartyRole(partyId)
+    .then(decoded => {
+      const partyId = decoded.userInfo.partyId
+      return Promise.props({
+        party: SecurityService.getPartyById(partyId),
+        role: SecurityService.getPartyRole(partyId)
+      })
     })
-  })
-  .catch(Errors.NotFoundError, () => {
-    throw new Errors.UnauthorizedError('Invalid token')
-  })
+    .catch(Errors.NotFoundError, () => {
+      throw new Errors.UnauthorizedError('Invalid token')
+    })
 }
 
 module.exports = {

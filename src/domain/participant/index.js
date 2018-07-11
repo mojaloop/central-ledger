@@ -108,7 +108,6 @@ const getAllEndpoints = async (name) => {
     const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant)
     participantEndpointExists(participantEndpoints)
     return participantEndpoints
-
   } catch (err) {
     throw err
   }

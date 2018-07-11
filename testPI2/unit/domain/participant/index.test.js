@@ -287,7 +287,7 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('getParticipantCurrencyById should should return the currency', async (assert) => {
+  await participantTest.test('getParticipantCurrencyById should return the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
         var result = await Service.getParticipantCurrencyById(index)
@@ -295,22 +295,21 @@ Test('Participant service', async (participantTest) => {
       })
       assert.end()
     } catch (err) {
-      Logger.error(`createParticipantCurrency failed with error - ${err}`)
+      Logger.error(`getParticipantCurrencyById failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await participantTest.test('createParticipantCurrency with false participant should fail', async (assert) => {
+  await participantTest.test('getParticipantCurrencyById with false participant should fail', async (assert) => {
     const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
-    ParticipantCurrencyModel.create.withArgs({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency}).throws(new Error())
+    ParticipantCurrencyModel.getById.withArgs(falseParticipant.currency).throws(new Error())
     try {
-      await Service.createParticipantCurrency({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency})
+      await Service.getParticipantCurrencyById(falseParticipant.currency)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
     }
     assert.end()
   })
-
 })

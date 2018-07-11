@@ -376,7 +376,7 @@ Test('transfer handler', handlerTest => {
       test.notOk(response.credits[0].rejection_message)
       test.equal(response.execution_condition, readModelTransfer.executionCondition)
       test.equal(response.expires_at, readModelTransfer.expirationDate)
-    //  test.equal(response.state, readModelTransfer.state)
+      //  test.equal(response.state, readModelTransfer.state)
       test.ok(response.timeline)
       test.equal(response.timeline.prepared_at, readModelTransfer.preparedDate)
       test.end()

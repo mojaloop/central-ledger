@@ -45,7 +45,7 @@ const getById = async (id) => {
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participantCurrency AS pc1', function () {
           this.on('pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-          .andOn('pc1.currencyId', 'transfer.currencyId')
+            .andOn('pc1.currencyId', 'transfer.currencyId')
         })
         .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
         // PAYEE
@@ -53,7 +53,7 @@ const getById = async (id) => {
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
         .innerJoin('participantCurrency AS pc2', function () {
           this.on('pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-          .andOn('pc2.currencyId', 'transfer.currencyId')
+            .andOn('pc2.currencyId', 'transfer.currencyId')
         })
         .innerJoin('participant AS ca', 'ca.participantId', 'pc2.participantId')
         // OTHER JOINS
@@ -104,7 +104,7 @@ const getAll = async () => {
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
         .innerJoin('participantCurrency AS pc1', function () {
           this.on('pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-          .andOn('pc1.currencyId', 'transfer.currencyId')
+            .andOn('pc1.currencyId', 'transfer.currencyId')
         })
         .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
         // PAYEE
@@ -112,7 +112,7 @@ const getAll = async () => {
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
         .innerJoin('participantCurrency AS pc2', function () {
           this.on('pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-          .andOn('pc2.currencyId', 'transfer.currencyId')
+            .andOn('pc2.currencyId', 'transfer.currencyId')
         })
         .innerJoin('participant AS ca', 'ca.participantId', 'pc2.participantId')
         // OTHER JOINS

@@ -34,10 +34,10 @@ const validateSubscriptionRequest = (data, cb) => {
         return cb(reformatValidationError(err))
       }
       P.all(result.params.participant.map(participantUri => ParticipantService.exists(participantUri)))
-      .then(() => cb(null, { id: result.id, jsonrpc: result.jsonrpc, participantUris: result.params.participant }))
-      .catch(e => {
-        cb(new InvalidSubscriptionRequestError({ message: e.message }))
-      })
+        .then(() => cb(null, { id: result.id, jsonrpc: result.jsonrpc, participantUris: result.params.participant }))
+        .catch(e => {
+          cb(new InvalidSubscriptionRequestError({ message: e.message }))
+        })
     })
   } catch (e) {
     return cb(new InvalidSubscriptionRequestError({ message: e.message }))

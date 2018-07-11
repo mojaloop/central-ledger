@@ -53,8 +53,8 @@ Test('Participant facade', async (facadeTest) => {
     query: sandbox.stub()
   }
   sandbox.stub(Db, 'getKnex')
-  let obj = {
-    transaction : async () =>{}
+  const obj = {
+    transaction: async () => { }
   }
   Db.getKnex.returns(obj)
   const knex = Db.getKnex()
@@ -82,7 +82,6 @@ Test('Participant facade', async (facadeTest) => {
       name: 'ALARM_NOTIFICATION_URL'
     }
   ]
-
 
   await facadeTest.test('getByNameAndCurrency', async (assert) => {
     try {
@@ -178,7 +177,7 @@ Test('Participant facade', async (facadeTest) => {
   await facadeTest.test('addEndpoint', async (assert) => {
     try {
       knex.transaction.returns(1)
-      let endpoint = {
+      const endpoint = {
         type: 'FSIOP_CALLBACK_URL',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
@@ -192,4 +191,21 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
+  await facadeTest.test('addEndpoint should throw error', async (assert) => {
+    try {
+      knex.transaction.throws(new Error('message'))
+      const endpoint = {
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
+      }
+
+      await Model.addEndpoint(participant, endpoint)
+      assert.fail(' should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`addEndpoint failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
 })

@@ -121,4 +121,3 @@ module.exports = {
   toTransfer
   // fromPayload
 }
-

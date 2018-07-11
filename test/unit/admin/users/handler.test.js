@@ -118,4 +118,3 @@ Test('Party handler', handlerTest => {
 
   handlerTest.end()
 })
-

@@ -20,6 +20,7 @@
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",
   "EMAIL_SMTP": "smtp.gmail.com",
+  "DATABASE_URI": "mysql://central_ledger:password@localhost:3306/central_ledger",
   "KAFKA": {
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {

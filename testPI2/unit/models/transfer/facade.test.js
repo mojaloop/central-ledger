@@ -78,29 +78,29 @@ Test('Transfer model', async (transferTest) => {
     expirationDate: new Date(payload.expiration)
   }
 
-// const ilpRecord = {
-//   transferId: payload.transferId,
-//   packet: payload.ilpPacket,
-//   condition: payload.condition,
-//   fulfilment: null
-// }
+  // const ilpRecord = {
+  //   transferId: payload.transferId,
+  //   packet: payload.ilpPacket,
+  //   condition: payload.condition,
+  //   fulfilment: null
+  // }
 
-// const transferStateRecord = {
-//   transferId: payload.transferId,
-//   transferStateId: 'RECEIVED',
-//   reason: null,
-//   changedDate: new Date()
-// }
+  // const transferStateRecord = {
+  //   transferId: payload.transferId,
+  //   transferStateId: 'RECEIVED',
+  //   reason: null,
+  //   changedDate: new Date()
+  // }
 
   const extensionsRecordList = []
 
-// const transferPrepareResult = {
-//   isSaveTransferPrepared: true,
-//   transferRecord,
-//   ilpRecord,
-//   transferStateRecord,
-//   extensionsRecordList
-// }
+  // const transferPrepareResult = {
+  //   isSaveTransferPrepared: true,
+  //   transferRecord,
+  //   ilpRecord,
+  //   transferStateRecord,
+  //   extensionsRecordList
+  // }
 
   await transferTest.test('setup', async (assert) => {
     sandbox = Sinon.sandbox.create()
@@ -116,7 +116,7 @@ Test('Transfer model', async (transferTest) => {
     assert.end()
   })
 
-// saveTransfer
+  // saveTransfer
   await transferTest.test('save transfer test', async (assert) => {
     try {
       let saved = {transferId: transferRecord.transferId}
@@ -148,7 +148,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-// updateTransfer
+  // updateTransfer
   await transferTest.test('updateTransfer should', async (assert) => {
     try {
       let fields = {state: TransferState.EXECUTED, fulfilment: 'oAKAAA'}
@@ -182,7 +182,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-// truncateTransfer
+  // truncateTransfer
   await transferTest.test('truncateTransfers should', async (assert) => {
     try {
       Db.transfer.truncate.returns(Promise.resolve())
@@ -210,7 +210,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-// getById
+  // getById
   await transferTest.test('return transfer by id', async (assert) => {
     try {
       const transferId1 = 't1'
@@ -293,7 +293,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-// getAll
+  // getAll
   await transferTest.test('return all transfers', async (assert) => {
     try {
       const transferId1 = 't1'
@@ -410,7 +410,7 @@ Test('Transfer model', async (transferTest) => {
         'ilp.condition AS condition',
         'ilp.fulfilment AS fulfilment',
         'ilp.ilpId AS ilpId'
-  ).calledOnce)
+      ).calledOnce)
       assert.ok(orderStub.withArgs('tsc.=transferStateChangeId', 'desc').calledOnce)
       sandbox.restore()
       assert.fail('Error not thrown')
@@ -423,7 +423,7 @@ Test('Transfer model', async (transferTest) => {
     }
   })
 
-// destroy
+  // destroy
   await transferTest.test('destroyByTransferId should', async (assert) => {
     try {
       Db.transfer.destroy.returns(Promise.resolve(true))
