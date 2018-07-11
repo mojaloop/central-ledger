@@ -23,3 +23,58 @@
  ******/
 
 'use strict'
+
+const Test = require('tape')
+const Sinon = require('sinon')
+const Db = require('../../../../src/db/index')
+const Logger = require('@mojaloop/central-services-shared').Logger
+const Model = require('../../../../src/models/transfer/transfer')
+
+Test('Transfer model', async (transfer) => {
+  let sandbox
+
+  const transferRecord = {
+    transferId: 'caa0bdb4-b8da-437b-b0b9-25f094cea208',
+    ilpFulfilment: 'oAKAAA',
+    completedDate: new Date() - 60000,
+    isValid: 1,
+    settlementWindowId: 1,
+    createdDate: new Date()
+  }
+
+  await transfer.test('setup', async (assert) => {
+    sandbox = Sinon.createSandbox()
+    Db.transfer = {
+      insert: sandbox.stub(),
+      findOne: sandbox.stub()
+    }
+    assert.pass('setup OK')
+    assert.end()
+  })
+
+  await transfer.test('getById should', async (assert) => {
+    Db.transfer.findOne.returns(Promise.resolve(transferRecord))
+
+    Model.getById(transferRecord.transferId)
+      .then(result => {
+        assert.deepEqual(result, transferRecord, 'match the result object')
+        assert.ok(Db.transfer.findOne.calledWith({transferId: transferRecord.transferId}), 'called with transferId')
+        assert.end()
+      })
+  })
+
+  await transfer.test('save transfer test', async (assert) => {
+    try {
+      let saved = {transferId: transferRecord.transferId}
+      Db.transfer.insert.returns(Promise.resolve(saved))
+      let transferCreated = await Model.saveTransfer(transferRecord)
+      assert.equal(transferCreated, saved, 'transfer is inserted and id is returned')
+      assert.ok(Db.transfer.insert.calledOnce, 'transfer insert is called once')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create transfer fulfilment failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+})

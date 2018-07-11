@@ -29,16 +29,15 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/transferFulfilment')
-const Uuid = require('uuid4')
 
 Test('TransferFulfilment model', async (transferFulfilment) => {
   let sandbox
 
   const transferFulfilmentRecord = {
-    transferFulfilmentId: Uuid(),
-    transferId: Uuid(),
+    transferFulfilmentId: 'fd97a6b8-2bc1-49a3-8e0e-726d21562367',
+    transferId: 'ca61ead2-f7d0-4605-b86e-c23f3eff1d04',
     ilpFulfilment: 'oAKAAA',
-    completedDate: new Date() - 360,
+    completedDate: new Date() - 60000,
     isValid: 1,
     settlementWindowId: 1,
     createdDate: new Date()
