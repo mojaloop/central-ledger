@@ -7,7 +7,7 @@ const allTransferHandlers = require('../../../../src/handlers/transfers/handler'
 const Kafka = require('../../../../src/handlers/lib/kafka')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
-const TransferHandler = require('../../../../src/domain/transfer')
+const TransferHandler = require('../../../../src/handlers/transfers/handler')
 const FiveBellsCondition = require('five-bells-condition')
 const Utility = require('../../../../src/handlers/lib/utility')
 const TransferState = require('../../../../src/lib/enum').TransferState
@@ -150,7 +150,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(FiveBellsCondition)
     sandbox.stub(ilp)
     sandbox.stub(Utility)
-    Utility.produceGeneralMessage.returns(P.resolve())
+    // Utility.produceGeneralMessage.returns(P.resolve())
     test.end()
   })
 
