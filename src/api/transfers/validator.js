@@ -4,10 +4,10 @@ const P = require('bluebird')
 const Decimal = require('decimal.js')
 const Moment = require('moment')
 const Config = require('../../lib/config')
-const UrlParser = require('../../lib/urlparser')
+const UrlParser = require('../../lib/urlParser')
 const Participant = require('../../domain/participant')
 const ValidationError = require('../../errors').ValidationError
-const CryptoConditions = require('../../crypto-conditions')
+const CryptoConditions = require('../../cryptoConditions')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 const allowedScale = Config.AMOUNT.SCALE

@@ -1,9 +1,8 @@
 'use strict'
 
 const Participant = require('../../domain/participant')
-const ParticipantCurrencyModel = require('../../models/participantCurrency')
 const Errors = require('../../errors')
-const UrlParser = require('../../lib/urlparser')
+const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
@@ -58,8 +57,8 @@ const create = async function (request, h) {
       const participantId = await Participant.create(request.payload)
       participant = await Participant.getById(participantId)
     }
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participant.participantId, request.payload.currency)
-    participant.currencyList = [await ParticipantCurrencyModel.getById(participantCurrencyId)]
+    const participantCurrencyId = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency)
+    participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId)]
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
@@ -91,12 +90,39 @@ const update = async function (request, h) {
 const addEndpoint = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    console.log(request.params)
-    console.log(request.payload)
-    const result = await Participant.addEndpoint(request.params.name, request.payload)
-    return result
+    await Participant.addEndpoint(request.params.name, request.payload)
+    return h.response().code(201)
   } catch (err) {
     throw Boom.badRequest()
+  }
+}
+
+const getEndpoint = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    if (request.query.type) {
+      const result = await Participant.getEndpoint(request.params.name, request.query.type)
+      return {
+        endpoints: {
+          type: result[0].name,
+          value: result[0].value
+        }
+      }
+    } else {
+      const result = await Participant.getAllEndpoints(request.params.name)
+      let endpoints = []
+      result.forEach(item => {
+        endpoints.push({
+          type: item.name,
+          value: item.value
+        })
+      })
+      return {
+        endpoints
+      }
+    }
+  } catch (err) {
+    throw err // Boom.badRequest()
   }
 }
 
@@ -105,5 +131,6 @@ module.exports = {
   getAll,
   getByName,
   update,
-  addEndpoint
+  addEndpoint,
+  getEndpoint
 }

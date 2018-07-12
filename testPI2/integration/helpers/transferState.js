@@ -23,9 +23,9 @@
  ******/
 'use strict'
 
-const Model = require('../../../src/domain/transfer/models/transferStates')
+const Model = require('../../../src/models/transfer/transferState--')
 
-const testTransferStates = [
+const testtransferState = [
   {
     'transferStateId': 'TEST_RECEIVED',
     'enumeration': 'RECEIVED',
@@ -54,16 +54,16 @@ const testTransferStates = [
 ]
 
 exports.prepareData = async () => {
-  for (let state of testTransferStates) {
+  for (let state of testtransferState) {
     await Model.saveTransferState(state)
   }
-  return testTransferStates
+  return testtransferState
 }
 
 exports.deletePreparedData = async () => {
   let result = []
-  for (let state of testTransferStates) {
-    result.push(await Model.destroyTransferStatesById(state.transferStateId))
+  for (let state of testtransferState) {
+    result.push(await Model.destroyTransferStateById(state.transferStateId))
   }
   return result
 }

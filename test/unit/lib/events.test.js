@@ -2,7 +2,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const TransferTranslator = require('../../../src/domain/transfer/translator')
+const TransferObjectTransform = require('../../../src/domain/transfer/transform')
 const EventsPath = '../../../src/lib/events'
 
 Test('events', eventTest => {
@@ -11,8 +11,8 @@ Test('events', eventTest => {
 
   eventTest.beforeEach(t => {
     Events = require(EventsPath)
-    sandbox = Sinon.sandbox.create()
-    sandbox.stub(TransferTranslator, 'toTransfer')
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(TransferObjectTransform, 'toTransfer')
     t.end()
   })
 
@@ -27,7 +27,7 @@ Test('events', eventTest => {
       let spy = Sinon.spy()
       Events.onTransferPrepared(spy)
       let transfer = {id: 12}
-      TransferTranslator.toTransfer.returns(transfer)
+      TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferPrepared(transfer)
       t.ok(spy.calledWith({resource: transfer}))
       t.end()
@@ -37,7 +37,7 @@ Test('events', eventTest => {
       let spy = Sinon.spy()
       Events.onTransferExecuted(spy)
       let transfer = {id: 12}
-      TransferTranslator.toTransfer.returns(transfer)
+      TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferPrepared({})
       t.notOk(spy.called)
       t.end()
@@ -47,7 +47,7 @@ Test('events', eventTest => {
       let spy = Sinon.spy()
       Events.onTransferRejected(spy)
       let transfer = {id: 12}
-      TransferTranslator.toTransfer.returns(transfer)
+      TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferPrepared({})
       t.notOk(spy.called)
       t.end()
@@ -61,7 +61,7 @@ Test('events', eventTest => {
       let spy = Sinon.spy()
       Events.onTransferExecuted(spy)
       let transfer = {id: 12}
-      TransferTranslator.toTransfer.returns(transfer)
+      TransferObjectTransform.toTransfer.returns(transfer)
       let relatedResources = {execution_condition_fulfillment: 'oAKAAA'}
       Events.emitTransferExecuted(transfer, relatedResources)
       t.ok(spy.calledWith({resource: transfer, related_resources: relatedResources}))
@@ -72,7 +72,7 @@ Test('events', eventTest => {
       let spy = Sinon.spy()
       Events.onTransferPrepared(spy)
       let transfer = {id: 12}
-      TransferTranslator.toTransfer.returns(transfer)
+      TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferExecuted({})
       t.notOk(spy.called)
       t.end()
@@ -82,7 +82,7 @@ Test('events', eventTest => {
       let spy = Sinon.spy()
       Events.onTransferRejected(spy)
       let transfer = {id: 12}
-      TransferTranslator.toTransfer.returns(transfer)
+      TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferExecuted({})
       t.notOk(spy.called)
       t.end()
@@ -96,7 +96,7 @@ Test('events', eventTest => {
       let spy = Sinon.spy()
       Events.onTransferRejected(spy)
       let transfer = {id: 12}
-      TransferTranslator.toTransfer.returns(transfer)
+      TransferObjectTransform.toTransfer.returns(transfer)
       let resource = {id: 12}
       let relatedResources = {execution_condition_fulfillment: 'oAKAAA'}
       Events.emitTransferRejected(resource, relatedResources)

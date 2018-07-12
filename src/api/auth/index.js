@@ -24,4 +24,3 @@ exports.strategy = (optional = false) => {
     strategy
   }
 }
-

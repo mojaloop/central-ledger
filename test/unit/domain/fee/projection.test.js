@@ -15,7 +15,7 @@ Test('Fee-Projection', feeProjectionTest => {
   let sandbox
 
   feeProjectionTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(FeeService, 'generateFeeForTransfer')
     sandbox.stub(Logger, 'error')
     t.end()

@@ -5,14 +5,14 @@ const Sinon = require('sinon')
 const EventEmitter = require('events').EventEmitter
 const SocketValidator = require('../../../../src/api/sockets/validator')
 const WebSocket = require('../../../../src/api/sockets/websocket')
-const RequestLogger = require('../../../../src/lib/request-logger')
+const RequestLogger = require('../../../../src/lib/requestLogger')
 
 Test('WebSocket', socketTest => {
   let sandbox
   let socketManager
 
   socketTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(SocketValidator, 'validateSubscriptionRequest')
     sandbox.stub(RequestLogger, 'logWebsocket')
     socketManager = {

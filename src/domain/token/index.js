@@ -1,7 +1,7 @@
 'use strict'
 
 const Crypto = require('../../lib/crypto')
-const Model = require('./model')
+const TokenModel = require('../../models/token/token')
 const Config = require('../../lib/config')
 const Time = require('../../lib/time')
 
@@ -19,17 +19,17 @@ const getTokenExpiration = () => {
 
 const create = ({ participantId }) => {
   return generateToken().then(result => {
-    return Model.create({ participantId, token: result.tokenHash, expiration: getTokenExpiration() })
+    return TokenModel.create({ participantId, token: result.tokenHash, expiration: getTokenExpiration() })
       .then(() => ({ token: result.token }))
   })
 }
 
 const byParticipant = ({ participantId }) => {
-  return Model.byParticipant({ participantId })
+  return TokenModel.byParticipant({ participantId })
 }
 
 const removeExpired = () => {
-  return Model.removeExpired()
+  return TokenModel.removeExpired()
 }
 
 module.exports = {

@@ -13,7 +13,7 @@ Test('messages request validator', validatorTest => {
   let sandbox
 
   validatorTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Participants, 'exists')
     Participants.exists.returns(P.resolve({}))
     test.end()

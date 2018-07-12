@@ -8,7 +8,7 @@ const tags = ['api', 'token']
 module.exports = [
   {
     method: 'POST',
-    path: '/auth_token',
+    path: '/TODO/auth_token',
     handler: Handler.create,
     options: {
       tags,

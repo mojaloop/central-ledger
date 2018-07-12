@@ -9,8 +9,8 @@ const Db = require('../../../src/db')
 const Config = require('../../../src/lib/config')
 // const Participant = require('../../../src/domain/participant')
 const Plugins = require('../../../src/shared/plugins')
-const RequestLogger = require('../../../src/lib/request-logger')
-const UrlParser = require('../../../src/lib/urlparser')
+const RequestLogger = require('../../../src/lib/requestLogger')
+const UrlParser = require('../../../src/lib/urlParser')
 const Sidecar = require('../../../src/lib/sidecar')
 const Proxyquire = require('proxyquire')
 
@@ -24,7 +24,7 @@ Test('setup', setupTest => {
   let Setup
 
   setupTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Hapi, 'Server')
     sandbox.stub(Plugins, 'registerPlugins')
     sandbox.stub(Migrator)

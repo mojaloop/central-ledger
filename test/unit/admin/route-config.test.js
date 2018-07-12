@@ -4,7 +4,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Permissions = require('../../../src/domain/security/permissions')
 const Auth = require('../../../src/admin/auth')
-const RouteConfig = require('../../../src/admin/route-config')
+const RouteConfig = require('../../../src/admin/routeConfig')
 
 const tags = ['tag1', 'tag2']
 
@@ -12,7 +12,7 @@ Test('routeConfig', routeConfigTest => {
   let sandbox
 
   routeConfigTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Auth)
     test.end()
   })

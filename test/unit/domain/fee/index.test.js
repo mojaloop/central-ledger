@@ -9,7 +9,7 @@ const SettledFeeService = require('../../../../src/models/settled-fee')
 const SettlementModel = require('../../../../src/models/settlement')
 const Charge = require('../../../../src/domain/charge')
 const Participant = require('../../../../src/domain/participant')
-const TransferQueries = require('../../../../src/domain/transfer/queries')
+const TransferService = require('../../../../src/domain/transfer')
 const Util = require('../../../../src/lib/util')
 const Config = require('../../../../src/lib/config')
 
@@ -27,7 +27,7 @@ Test('Fee service', serviceTest => {
   let sandbox
 
   serviceTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Model, 'create')
     sandbox.stub(Model, 'doesExist')
     sandbox.stub(Model, 'getAllForTransfer')
@@ -38,7 +38,7 @@ Test('Fee service', serviceTest => {
     sandbox.stub(SettledFeeService, 'create')
     sandbox.stub(Charge, 'getAllForTransfer')
     sandbox.stub(Participant, 'getByName')
-    sandbox.stub(TransferQueries, 'getById')
+    sandbox.stub(TransferService, 'getById')
     Config.LEDGER_ACCOUNT_NAME = 'LEDGER_ACCOUNT_NAME'
     test.end()
   })
@@ -103,7 +103,7 @@ Test('Fee service', serviceTest => {
       }
 
       Charge.getAllForTransfer.returns(P.resolve([charge, charge2, charge3]))
-      TransferQueries.getById.returns(P.resolve(transfer))
+      TransferService.getById.returns(P.resolve(transfer))
       Model.create.returns(P.resolve(fee))
       Model.doesExist.returns(P.resolve(null))
       Participant.getByName.withArgs(Config.LEDGER_ACCOUNT_NAME).returns(P.resolve(participant))
@@ -142,7 +142,7 @@ Test('Fee service', serviceTest => {
       }
 
       Charge.getAllForTransfer.returns(P.resolve([charge]))
-      TransferQueries.getById.returns(P.resolve(transfer))
+      TransferService.getById.returns(P.resolve(transfer))
       Model.create.returns(P.resolve({}))
       Model.doesExist.returns(P.resolve(fee))
       FeeService.generateFeeForTransfer(event)

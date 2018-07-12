@@ -22,6 +22,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -36,25 +37,18 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
-const TransferHandler = require('../../domain/transfer')
+const TransferService = require('../../domain/transfer')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
-const TransferQueries = require('../../domain/transfer/queries')
-const TransferState = require('../../domain/transfer/state')
-// const CryptoConditions = require('../../crypto-conditions')
+const TransferState = require('../../lib/enum').TransferState
+const TransferEvent = require('../../lib/enum').transferEvent
+// const CryptoConditions = require('../../cryptoConditions')
 // const FiveBellsCondition = require('five-bells-condition')
 // const Crypto = require('crypto')
-const ilp = require('../../models/ilp')
 
-const TRANSFER = 'transfer'
-const PREPARE = 'prepare'
-const FULFIL = 'fulfil'
-const REJECT = 'reject'
-const COMMIT = 'commit'
-
-// This errorCode and errorDescription are dummy values until a rules engine is established
+// TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorCode = 3100
 const errorDescription = 'Generic validation error'
 
@@ -69,9 +63,9 @@ const errorDescription = 'Generic validation error'
  * ABORT status
  *
  * Validator.validateByName called to validate the payload of the message
- * TransferQueries.getById called and checks if the transfer currently exists
- * TransferHandler.prepare called and creates new entries in transfer tables for successful prepare transfer
- * TransferHandler.reject called and rejects an existing transfer that has been retried and fails validation
+ * TransferService.getById called and checks if the transfer currently exists
+ * TransferService.prepare called and creates new entries in transfer tables for successful prepare transfer
+ * TransferService.reject called and rejects an existing transfer that has been retried and fails validation
  *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
@@ -90,23 +84,22 @@ const prepare = async (error, messages) => {
     } else {
       message = messages
     }
-    Logger.info('TransferHandler::prepare')
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TRANSFER, PREPARE))
+    Logger.info('TransferService::prepare')
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEvent.TRANSFER, TransferEvent.PREPARE))
     const payload = message.value.content.payload
     let {validationPassed, reasons} = await Validator.validateByName(payload)
     if (validationPassed) {
-      Logger.info('TransferHandler::prepare::validationPassed')
-      const existingTransfer = await TransferQueries.getById(payload.transferId)
+      Logger.info('TransferService::prepare::validationPassed')
+      const existingTransfer = await TransferService.getTransferById(payload.transferId)
       if (!existingTransfer) {
-        Logger.info('TransferHandler::prepare::validationPassed::newEntry')
-        // const result = await TransferHandler.prepare(payload)
-        await TransferHandler.prepare(payload)
+        Logger.info('TransferService::prepare::validationPassed::newEntry')
+        await TransferService.prepare(payload)
         await consumer.commitMessageSync(message)
         // position topic to be created and inserted here
-        await Utility.produceParticipantMessage(payload.payerFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+        await Utility.produceParticipantMessage(payload.payerFsp, Utility.ENUMS.POSITION, TransferEvent.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
         return true
       } else {
-        Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
+        Logger.info('TransferService::prepare::validationFailed::existingEntry')
         await consumer.commitMessageSync(message)
         // notification of duplicate to go here
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
@@ -114,21 +107,21 @@ const prepare = async (error, messages) => {
         return true
       }
     } else {
-      Logger.info('TransferHandler::prepare::validationFailed')
+      Logger.info('TransferService::prepare::validationFailed')
       // need to determine what happens with existing transfer with a validation failure
-      const existingTransfer = await TransferQueries.getById(payload.transferId)
+      const existingTransfer = await TransferService.getById(payload.transferId)
       if (!existingTransfer) {
-        Logger.info('TransferHandler::prepare::validationFailed::newEntry')
-        await TransferHandler.prepare(payload, reasons.toString(), false)
+        Logger.info('TransferService::prepare::validationFailed::newEntry')
+        await TransferService.prepare(payload, reasons.toString(), false)
         // notification of prepare transfer to go here
         await consumer.commitMessageSync(message)
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
         return true
       } else {
-        Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
-        // const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
-        await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
+        Logger.info('TransferService::prepare::validationFailed::existingEntry')
+        // const {alreadyRejected, transfer} = await TransferService.reject(reasons.toString(), existingTransfer.transferId)
+        await TransferService.reject(reasons.toString(), existingTransfer.transferId)
         await consumer.commitMessageSync(message)
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
@@ -154,12 +147,12 @@ const fulfil = async (error, messages) => {
       message = messages
     }
     Logger.info('FulfilHandler::fulfil')
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, FULFIL))
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEvent.TRANSFER, TransferEvent.FULFIL))
     const metadata = message.value.metadata
     const transferId = message.value.id
     const payload = message.value.content.payload
-    if (metadata.event.type === FULFIL && metadata.event.action === COMMIT) {
-      const existingTransfer = await TransferQueries.getById(transferId)
+    if (metadata.event.type === TransferEvent.FULFIL && metadata.event.action === TransferEvent.COMMIT) {
+      const existingTransfer = await TransferService.getById(transferId)
 
       // @NOTE: This has been commented out as it does not conform to the Mojaloop Specification. The Crypo-conditions are generic and do not conform to any specific protocol, but rather must be determined by the implemented schema
       // const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
@@ -177,20 +170,25 @@ const fulfil = async (error, messages) => {
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
-        Logger.info('FulfilHandler::fulfil::validationFailed::existingEntry')
+        Logger.info('FulfilHandler::fulfil::validationFailed::nonReservedState')
+        await consumer.commitMessageSync(message)
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        return true
+      } else if (existingTransfer.expirationDate <= new Date()) { // TODO: add to sequence diagram - seq-fulfil-2.1.1.svg
+        Logger.info('FulfilHandler::fulfil::validationFailed::transferExpired')
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else { // validations success
         Logger.info('FulfilHandler::fulfil::validationPassed')
-        await ilp.update({ilpId: existingTransfer.ilpId, fulfilment: payload.fulfilment})
+        await TransferService.fulfil(transferId, payload)
         await consumer.commitMessageSync(message)
-        await Utility.produceParticipantMessage(existingTransfer.payeeFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+        await Utility.produceParticipantMessage(existingTransfer.payeeFsp, Utility.ENUMS.POSITION, TransferEvent.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
         return true
       }
-    } else if (metadata.event.type === FULFIL && metadata.event.action === REJECT) {
+    } else if (metadata.event.type === TransferEvent.FULFIL && metadata.event.action === TransferEvent.REJECT) {
       throw new Error('Not implemented')
-      // TODO: fulfil reject flow {2.2.1.} to be implemented here
+      // TODO: Fulfil reject flow {2.2.1.} to be implemented here
     } else {
       Logger.info('FulfilHandler::fulfil::invalidEventAction')
       await consumer.commitMessageSync(message)
@@ -204,11 +202,11 @@ const fulfil = async (error, messages) => {
 }
 
 const reject = async () => {
-  // TODO: delete method and use fulfil reject condition (see line 177)
+  // TODO: Delete method and use fulfil reject condition (see metadata.event.action === TransferEvent.REJECT)
   throw new Error('Not implemented')
 }
 /**
- * @function TransferTransferHandler
+ * @function TransferTransferService
  *
  * @async
  * @description This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),
@@ -223,7 +221,7 @@ const reject = async () => {
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const transfer = async (error, messages) => {
-  Logger.info('TransferHandler::transfer')
+  Logger.info('TransferService::transfer')
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -240,12 +238,12 @@ const transfer = async (error, messages) => {
     const {metadata} = message.value
     const {action, state} = metadata.event
     const status = state.status
-    Logger.info('TransferHandler::transfer action: ' + action)
-    Logger.info('TransferHandler::transfer status: ' + status)
+    Logger.info('TransferService::transfer action: ' + action)
+    Logger.info('TransferService::transfer status: ' + status)
 
     // Validate event - Rule: type == 'transfer' && action == 'commit'
     if (action.toLowerCase() === 'prepare' && status.toLowerCase() === 'success') {
-      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEvent.TRANSFER, TransferEvent.TRANSFER))
 
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
 
@@ -253,7 +251,7 @@ const transfer = async (error, messages) => {
 
       return true
     } else if (action.toLowerCase() === 'commit' && status.toLowerCase() === 'success') {
-      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEvent.TRANSFER, TransferEvent.TRANSFER))
 
       // send notification message to Payee
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
@@ -266,10 +264,10 @@ const transfer = async (error, messages) => {
 
       return true
     } else {
-      Logger.warning('TransferHandler::transfer - Unknown event...nothing to do here')
+      Logger.warning('TransferService::transfer - Unknown event...nothing to do here')
       return true
     }
-    // const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
+    // const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEvent.TRANSFER, TransferEvent.TRANSFER))
     // await consumer.commitMessageSync(message)
     // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
     // return true
@@ -292,8 +290,8 @@ const createPrepareHandler = async (participantName) => {
   try {
     const prepareHandler = {
       command: prepare,
-      topicName: Utility.transformAccountToTopicName(participantName, TRANSFER, PREPARE),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
+      topicName: Utility.transformAccountToTopicName(participantName, TransferEvent.TRANSFER, TransferEvent.PREPARE),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEvent.TRANSFER.toUpperCase(), TransferEvent.PREPARE.toUpperCase())
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
@@ -305,19 +303,19 @@ const createPrepareHandler = async (participantName) => {
 }
 
 /**
- * @function RegisterTransferHandler
+ * @function RegisterTransferService
  *
  * @async
  * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * createTransferHandler called to create the handler for each participant
+ * createTransferService called to create the handler for each participant
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerTransferHandler = async () => {
+const registerTransferService = async () => {
   try {
     const transferHandler = {
       command: transfer,
-      topicName: Utility.transformGeneralTopicName(TRANSFER, TRANSFER),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), TRANSFER.toUpperCase())
+      topicName: Utility.transformGeneralTopicName(TransferEvent.TRANSFER, TransferEvent.TRANSFER),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEvent.TRANSFER.toUpperCase(), TransferEvent.TRANSFER.toUpperCase())
     }
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
@@ -340,8 +338,8 @@ const registerFulfillHandler = async () => {
   try {
     const fulfillHandler = {
       command: fulfil,
-      topicName: Utility.transformGeneralTopicName(TRANSFER, FULFIL),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), FULFIL.toUpperCase())
+      topicName: Utility.transformGeneralTopicName(TransferEvent.TRANSFER, TransferEvent.FULFIL),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEvent.TRANSFER.toUpperCase(), TransferEvent.FULFIL.toUpperCase())
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
@@ -364,8 +362,8 @@ const registerRejectHandler = async () => {
   try {
     const rejectHandler = {
       command: reject,
-      topicName: Utility.transformGeneralTopicName(TRANSFER, REJECT),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TRANSFER.toUpperCase(), REJECT.toUpperCase())
+      topicName: Utility.transformGeneralTopicName(TransferEvent.TRANSFER, TransferEvent.REJECT),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEvent.TRANSFER.toUpperCase(), TransferEvent.REJECT.toUpperCase())
     }
     rejectHandler.config.rdkafkaConf['client.id'] = rejectHandler.topicName
     await Kafka.Consumer.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
@@ -414,7 +412,7 @@ const registerAllHandlers = async () => {
     await registerPrepareHandlers()
     await registerFulfillHandler()
     await registerRejectHandler()
-    await registerTransferHandler()
+    await registerTransferService()
     return true
   } catch (e) {
     throw e
@@ -422,7 +420,7 @@ const registerAllHandlers = async () => {
 }
 
 module.exports = {
-  registerTransferHandler,
+  registerTransferService,
   registerPrepareHandlers,
   registerFulfillHandler,
   registerRejectHandler,

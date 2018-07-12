@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
@@ -25,8 +27,8 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
-const Model = require('../../../src/models/extensions')
+const TransferModel = require('../../../src/models/transfer/facade')
+const Model = require('../../../src/models/transfer/transferExtension')
 
 // const returnObject = {
 //   "extension": {
@@ -76,7 +78,7 @@ exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
 
-    await Model.saveExtension({
+    await Model.saveTransferExtension({
       transferId: transferResult.transferId,
       key: 'extension.key',
       value: 'extension.value',

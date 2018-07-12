@@ -25,9 +25,9 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
-const TransferStatePreparationHelper = require('./transferState')
-const Model = require('../../../src/domain/transfer/models/transferStateChanges')
+const TransferModel = require('../../../src/models/transfer/facade')
+const TransferStatePreparationHelper = require('./transferState--')
+const Model = require('../../../src/models/transfer/transferStateChange')
 
 // const preparedData = {
 //   "success": true,

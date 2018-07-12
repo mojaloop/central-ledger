@@ -25,7 +25,7 @@ Test('Charge service', serviceTest => {
   let sandbox
 
   serviceTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Model)
     test.end()
   })
@@ -183,4 +183,3 @@ Test('Charge service', serviceTest => {
 
   serviceTest.end()
 })
-

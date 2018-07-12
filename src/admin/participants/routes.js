@@ -3,7 +3,7 @@
 const Handler = require('./handler')
 const Joi = require('joi')
 const Permissions = require('../../domain/security/permissions')
-const RouteConfig = require('../route-config')
+const RouteConfig = require('../routeConfig')
 
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
@@ -109,6 +109,16 @@ module.exports = [
             value: Joi.string().required().description('Endpoint Value')
           }).required().description('Endpoint Details')
         }
+      }
+    })
+  },
+  {
+    method: 'GET',
+    path: '/participants/{name}/endpoints',
+    handler: Handler.getEndpoint,
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_VIEW, {
+      params: {
+        name: Joi.string().required().description('Participant name')
       }
     })
   }

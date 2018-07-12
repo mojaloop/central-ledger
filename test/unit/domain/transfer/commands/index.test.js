@@ -3,13 +3,13 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Uuid = require('uuid4')
-const TransferCommands = require('../../../../../src/domain/transfer/commands')
+const TransferCommands = require('../../../../../src/domain/transfer')
 
 Test('Transfer index test', indexTest => {
   let sandbox
 
   indexTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     t.end()
   })
 
@@ -42,11 +42,11 @@ Test('Transfer index test', indexTest => {
 
       let payload = {}
       TransferCommands.fulfil(payload)
-      .then(result => {
-        t.ok(command.calledWith('FulfillTransfer', payload))
-        t.equal(result, expected)
-        t.end()
-      })
+        .then(result => {
+          t.ok(command.calledWith('FulfillTransfer', payload))
+          t.equal(result, expected)
+          t.end()
+        })
     })
     fulfillTest.end()
   })
@@ -59,11 +59,11 @@ Test('Transfer index test', indexTest => {
 
       let rejection = { id: Uuid(), rejection_reason: 'another excuse' }
       TransferCommands.reject(rejection)
-      .then(result => {
-        t.ok(command.calledWith('RejectTransfer', Sinon.match({ id: rejection.id, rejection_reason: rejection.rejection_reason })))
-        t.equal(result, expected)
-        t.end()
-      })
+        .then(result => {
+          t.ok(command.calledWith('RejectTransfer', Sinon.match({ id: rejection.id, rejection_reason: rejection.rejection_reason })))
+          t.equal(result, expected)
+          t.end()
+        })
     })
     rejectTest.end()
   })
@@ -75,11 +75,11 @@ Test('Transfer index test', indexTest => {
       command.returns(expected)
       let payload = {id: Uuid(), settlement_id: Uuid()}
       TransferCommands.settle(payload)
-      .then(result => {
-        t.ok(command.calledWith('SettleTransfer', Sinon.match(payload)))
-        t.equal(result, expected)
-        t.end()
-      })
+        .then(result => {
+          t.ok(command.calledWith('SettleTransfer', Sinon.match(payload)))
+          t.equal(result, expected)
+          t.end()
+        })
     })
     settleTest.end()
   })

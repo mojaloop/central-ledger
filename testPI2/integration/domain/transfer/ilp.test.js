@@ -31,7 +31,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
-const Service = require('../../../../src/models/ilp')
+const Service = require('../../../../src/models/ilpPacket')
 const HelperModule = require('../../helpers/index')
 
 Test('Ilp service tests', async (ilpTest) => {
@@ -50,7 +50,7 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.sandbox.create()
+      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()

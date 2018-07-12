@@ -5,10 +5,10 @@ const Sinon = require('sinon')
 const EventEmitter = require('events').EventEmitter
 const WS = require('ws')
 const Index = require('../../../../src/api/sockets')
-const SocketManager = require('../../../../src/api/sockets/socket-manager')
+const SocketManager = require('../../../../src/api/sockets/socketManager')
 const Events = require('../../../../src/lib/events')
 const WebSocket = require('../../../../src/api/sockets/websocket')
-const ParticipantTransfers = require('../../../../src/api/sockets/participant-transfers')
+const ParticipantTransfers = require('../../../../src/api/sockets/participantTransfers')
 
 const assertEvent = (assert, message, event, resource, relatedResources) => {
   assert.equal(message.jsonrpc, '2.0')
@@ -37,7 +37,7 @@ Test('Socket Module', moduleTest => {
   }
 
   moduleTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(WS, 'Server')
     socketManager = {
       send: sandbox.stub()

@@ -31,7 +31,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/models/extensions')
+const Model = require('../../../../../src/models/transfer/transferExtension')
 const HelperModule = require('../../../helpers/index')
 
 Test('Extension model test', async (extensionTest) => {
@@ -51,7 +51,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.sandbox.create()
+      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -71,7 +71,7 @@ Test('Extension model test', async (extensionTest) => {
     try {
       extensionTestValues.forEach(async (extension) => {
         try {
-          // Prepare helper tests actually the Model.saveExtension and Model.getByTransferId
+          // Prepare helper tests actually the Model.saveTransferExtension and Model.getByTransferId
           let extensionResult = await HelperModule.prepareNeededData('extension')
           let result = extensionResult.extension
 
@@ -105,7 +105,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without transferId should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         key: 'extTestKey1',
         value: 'extTestValue1',
         changedDate: new Date(),
@@ -121,7 +121,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without value should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         key: 'extTestKey1',
         changedDate: new Date(),
@@ -137,7 +137,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without key should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         value: 'extTestValue1',
         changedDate: new Date(),
@@ -153,7 +153,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without changedDate should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         key: 'extTestKey1',
         value: 'extTestValue1',
@@ -169,7 +169,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension without changedBy should throw error', async (assert) => {
     try {
-      await Model.saveExtension({
+      await Model.saveTransferExtension({
         transferId: '1',
         key: 'extTestKey1',
         value: 'extTestValue1',
@@ -204,7 +204,7 @@ Test('Extension model test', async (extensionTest) => {
     }
   })
 
-  await extensionTest.test('getByExtensionId', async (assert) => {
+  await extensionTest.test('getByTransferExtensionId', async (assert) => {
     try {
       for (let [extensionId, extensionObj] of extensionMap.entries()) {
         let extension = extensionObj.extension

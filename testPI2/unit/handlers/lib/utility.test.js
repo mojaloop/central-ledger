@@ -95,7 +95,7 @@ Test('Utility Test', utilityTest => {
   let sandbox
 
   utilityTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())

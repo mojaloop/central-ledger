@@ -17,8 +17,8 @@ const Participant = require('../../../src/domain/participant')
 // const PositionHandler = require('../../../src/handlers/positions/handler')
 // const NotificationHandler = require('../../../src/handlers/notification/handler')
 // const TransferProjection = require('../../../src/domain/transfer/projection')
-const TransferState = require('../../../src/domain/transfer/state')
-const TransferReadModel = require('../../../src/domain/transfer/models/transfer-read-model')
+const TransferState = require('../../../src/lib/enum').TransferState
+const TransferReadModel = require('../../../src/models/transfer/facade')
 const Moment = require('moment')
 
 const transfer = {

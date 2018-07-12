@@ -33,11 +33,11 @@ const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/domain/transfer/models/transfer-read-model')
+const Model = require('../../../../../src/models/transfer/facade')
 const HelperModule = require('../../../helpers/index')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
-  let sandbox = Sinon.sandbox.create()
+  let sandbox = Sinon.createSandbox()
   var transferPrepareResult = {}
 
   await transferReadModelTest.test('setup', async (assert) => {

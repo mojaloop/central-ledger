@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Participant = require('../../../../src/domain/participant')
 const Validator = require('../../../../src/handlers/transfers/validator')
-const CryptoConditions = require('../../../../src/crypto-conditions')
+const CryptoConditions = require('../../../../src/cryptoConditions')
 
 let payload
 
@@ -37,7 +37,7 @@ Test('transfer validator', validatorTest => {
         ]
       }
     }
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Participant)
     sandbox.stub(CryptoConditions, 'validateCondition')
     test.end()

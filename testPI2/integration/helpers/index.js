@@ -31,11 +31,11 @@ exports.prepareNeededData = async (tableName, data) => {
 
   switch (tableName) {
     case 'ilp':
-      return require('./ilp').prepareData()
+      return require('./ilpPacket').prepareData()
     case 'extension':
       return require('./extension').prepareData()
     case 'transferState':
-      return require('./transferState').prepareData()
+      return require('./transferState--').prepareData()
     case 'transferStateChange':
       return require('./transferStateChange').prepareData()
     case 'transferModel':
@@ -55,7 +55,7 @@ exports.deletePreparedData = async (tableName, data) => {
       if (!data || !data.ilpId || !data.transferId || !data.payerName || !data.payeeName) {
         throw new Error('Please provide ilpId, transferId, payerName and payeeName in order to delete the prepared data!')
       }
-      return require('./ilp').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
+      return require('./ilpPacket').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'extension':
       if (!data || !data.extensionId || !data.transferId || !data.payerName || !data.payeeName) {
         throw new Error('Please provide ilpId, transferId in order to delete the prepared data!')

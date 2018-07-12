@@ -14,7 +14,7 @@ Test('transfers handler', handlerTest => {
   let hostname = 'http://some-host'
 
   handlerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     originalHostName = Config.HOSTNAME
     Config.HOSTNAME = hostname
     sandbox.stub(Transfer)

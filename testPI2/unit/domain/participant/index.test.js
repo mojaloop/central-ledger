@@ -25,40 +25,107 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/domain/participant/model')
+const ParticipantModel = require('../../../../src/models/participant/participant')
+const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
+const ParticipantFacade = require('../../../../src/models/participant/facade')
+
 const Service = require('../../../../src/domain/participant/index')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
-
   const participantFixtures = [
     {
+      participantId: 0,
       name: 'fsp1',
       currency: 'USD',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
     },
     {
+      participantId: 1,
       name: 'fsp2',
       currency: 'EUR',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
+    }
+  ]
+  const participantResult = [
+    {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      currencyList: 'USD'
+    },
+    {
+      participantId: 1,
+      name: 'fsp2',
+      currency: 'EUR',
+      isActive: 1,
+      createdDate: new Date(),
+      currencyList: 'EUR'
+    }
+  ]
+  const participantCurrencyResult = [
+    {
+      participantCurrancyId: 0,
+      participantId: 0,
+      currencyId: 'USD',
+      isActive: 1
+    },
+    {
+      participantCurrancyId: 1,
+      participantId: 1,
+      currencyId: 'EUR',
+      isActive: 1
+    }
+  ]
+
+  const endpoints = [
+    {
+      participantEndpointId: 1,
+      participantId: 0,
+      endpointTypeId: 1,
+      value: 'http://localhost:3001/participants/dfsp1/notification1',
+      isActive: 1,
+      createdDate: '2018-07-11',
+      createdBy: 'unknown',
+      name: 'FSIOP_CALLBACK_URL'
+    },
+    {
+      participantEndpointId: 2,
+      participantId: 0,
+      endpointTypeId: 2,
+      value: 'http://localhost:3001/participants/dfsp1/notification2',
+      isActive: 1,
+      createdDate: '2018-07-11',
+      createdBy: 'unknown',
+      name: 'ALARM_NOTIFICATION_URL'
     }
   ]
 
   let participantMap = new Map()
 
-  await participantTest.test('setup', async (assert) => {
-    sandbox = Sinon.sandbox.create()
-    sandbox.stub(Model, 'create')
-    sandbox.stub(Model, 'getByName')
-    sandbox.stub(Model, 'getAll')
-    sandbox.stub(Model, 'getById')
-    sandbox.stub(Model, 'update')
+  participantTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(ParticipantModel, 'create')
+    sandbox.stub(ParticipantModel, 'getByName')
+    sandbox.stub(ParticipantModel, 'getAll')
+    sandbox.stub(ParticipantModel, 'getById')
+    sandbox.stub(ParticipantModel, 'update')
+
+    sandbox.stub(ParticipantCurrencyModel, 'create')
+    sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
+    sandbox.stub(ParticipantCurrencyModel, 'getById')
+
+    sandbox.stub(ParticipantFacade, 'getEndpoint')
+    sandbox.stub(ParticipantFacade, 'getAllEndpoints')
+    sandbox.stub(ParticipantFacade, 'addEndpoint')
 
     Db.participant = {
       insert: sandbox.stub(),
@@ -66,22 +133,41 @@ Test('Participant service', async (participantTest) => {
       findOne: sandbox.stub()
     }
 
+    Db.participantCurrency = {
+      insert: sandbox.stub(),
+      update: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub()
+    }
+
     participantFixtures.forEach((participant, index) => {
-      participantMap.set(index + 1, participant)
+      participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({participant}).returns(index)
-      Model.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
-      Model.getByName.withArgs(participant.name).returns((participant))
-      Model.getById.withArgs(index).returns((participant))
-      Model.update.withArgs(participant, 1).returns((index + 1))
+      ParticipantModel.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
+      ParticipantModel.getByName.withArgs(participant.name).returns(participantResult[index])
+      ParticipantModel.getById.withArgs(index).returns(participantResult[index])
+      ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
+      ParticipantCurrencyModel.create.withArgs({participantId: index, currencyId: participant.currency}).returns((index + 1))
+      ParticipantCurrencyModel.getById.withArgs(index).returns({
+        participantCurrancyId: participant.participantId,
+        participantId: participant.participantId,
+        currencyId: participant.currency,
+        isActive: 1
+      })
+      ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId).returns(participant.currency)
     })
-    Model.getAll.returns(Promise.resolve(participantFixtures))
-    assert.pass('setup OK')
-    assert.end()
+    ParticipantModel.getAll.returns(Promise.resolve(participantResult))
+    t.end()
+  })
+
+  participantTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
   })
 
   await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = {name: 'fsp3'}
-    Model.create.withArgs(falseParticipant).throws(new Error())
+    ParticipantModel.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)
       assert.fail(' should throw')
@@ -107,9 +193,9 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('get with empty name', async (assert) => {
-    Model.getByName.withArgs('').throws(new Error())
+    ParticipantModel.getByName.withArgs('').throws(new Error())
     try {
-      Service.getByName('')
+      await Service.getByName('')
       assert.fail(' should throws with empty name ')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -119,17 +205,19 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getByName', async (assert) => {
     try {
-      assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
-      participantFixtures.forEach(participant => {
-        var result = Service.getByName(participant.name)
+      // assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
+      participantFixtures.forEach(async participant => {
+        var result = await Service.getByName(participant.name)
+        assert.equal(result.participantId, participant.participantId, ' participantIds are equal')
         assert.equal(result.name, participant.name, ' names are equal')
         assert.equal(result.currency, participant.currency, ' currencies match')
-        assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
+        assert.equal(result.isActive, participant.isActive, ' isActive flag match')
+        assert.equal(result.currencyList, participantMap.get(participant.participantId + 1).currencyList, ' currencyList match')
         assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
       })
       assert.end()
     } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
+      Logger.error(`getByName failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -138,7 +226,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getAll', async (assert) => {
     try {
       var result = await Service.getAll()
-      assert.deepEqual(result, participantFixtures)
+      assert.deepEqual(result, participantResult)
       assert.end()
     } catch (err) {
       Logger.error(`get all participants failed with error - ${err}`)
@@ -149,7 +237,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll should throw an error', async (assert) => {
     try {
-      Model.getAll.throws(new Error())
+      ParticipantModel.getAll.throws(new Error())
       await Service.getAll()
       assert.fail('Error not thrown')
       assert.end()
@@ -162,10 +250,10 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getById', async (assert) => {
     try {
-      for (let participantId of participantMap.keys()) {
-        let participant = await Service.getById(participantId)
-        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId + 1)))
-      }
+      participantFixtures.forEach(async (participantX, index) => {
+        let participant = await Service.getById(index)
+        assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(index + 1)))
+      })
       assert.end()
     } catch (err) {
       Logger.error(`get participant by Id failed with error - ${err}`)
@@ -176,11 +264,11 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('update', async (assert) => {
     try {
-      for (let participant of participantMap.values()) {
-        let updated = await Service.update(participant.name, {is_disabled: 1})
-        assert.equal(updated, participant)
-      }
-      sandbox.restore()
+      participantFixtures.forEach(async (participant, index) => {
+        let updated = await Service.update(participant.name, {isActive: 1})
+        assert.equal(JSON.stringify(updated), JSON.stringify(participantMap.get(index + 1)))
+      })
+      //  sandbox.restore()
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
@@ -191,9 +279,9 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('update should throw an error', async (assert) => {
+    ParticipantModel.getByName.withArgs(participantFixtures[0].name).throws(new Error())
     try {
-      Model.getByName.throwsException
-      await Service.update(participantFixtures[0].name, {is_disabled: 1})
+      await Service.update(participantFixtures[0].name, {isActive: 1})
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
@@ -202,4 +290,166 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
+  await participantTest.test('createParticipantCurrency should create the currency', async (assert) => {
+    try {
+      participantFixtures.forEach(async (participant, index) => {
+        var result = await Service.createParticipantCurrency({participantId: participant.participantId, currencyId: participant.currency})
+        assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
+        assert.ok(Sinon.match(result, index + 1), ` returns ${result}`)
+      })
+      assert.end()
+    } catch (err) {
+      Logger.error(`createParticipantCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('createParticipantCurrency with false participant should fail', async (assert) => {
+    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+    ParticipantCurrencyModel.create.withArgs({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency}).throws(new Error())
+    try {
+      await Service.createParticipantCurrency({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency})
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getParticipantCurrencyById should return the currency', async (assert) => {
+    try {
+      participantFixtures.forEach(async (participant, index) => {
+        var result = await Service.getParticipantCurrencyById(index)
+        assert.deepEqual(result, participantCurrencyResult[index])
+      })
+      assert.end()
+    } catch (err) {
+      Logger.error(`getParticipantCurrencyById failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getParticipantCurrencyById with false participant should fail', async (assert) => {
+    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+    ParticipantCurrencyModel.getById.withArgs(falseParticipant.currency).throws(new Error())
+    try {
+      await Service.getParticipantCurrencyById(falseParticipant.currency)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getEndpoint', async (assert) => {
+    try {
+      const endpoint = {
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
+      }
+      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+      ParticipantFacade.getEndpoint.withArgs(participantFixtures[0], endpoint.type).returns([endpoints[0]])
+      const result = await Service.getEndpoint(participantFixtures[0].name, endpoint.type)
+      assert.deepEqual(result[0], endpoints[0], 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get endpoint failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getEndpoint should fail if no endpoints found', async (assert) => {
+    const endpoint = {
+      type: 'FSIOP_CALLBACK_URL',
+      value: 'http://localhost:3001/participants/dfsp1/notification1'
+    }
+    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+    ParticipantFacade.getEndpoint.withArgs(participantFixtures[0], endpoint.type).returns(null)
+
+    try {
+      await Service.getEndpoint(participantFixtures[0], endpoint.type)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getAllEndpoints', async (assert) => {
+    try {
+      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+      ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0]).returns(endpoints)
+      const result = await Service.getAllEndpoints(participantFixtures[0].name)
+      assert.deepEqual(result, endpoints, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getAllEndpoints failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getAllEndpoints should fail if no endpoints found', async (assert) => {
+    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+    ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0]).returns(null)
+
+    try {
+      await Service.getAllEndpoints(participantFixtures[0].name)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('addEndpoint', async (assert) => {
+    try {
+      const payload = {
+        endpoint: {
+          type: 'FSIOP_CALLBACK_URL',
+          value: 'http://localhost:3001/participants/dfsp1/notification1'
+        }
+      }
+      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+      ParticipantFacade.addEndpoint.withArgs(participantFixtures[0], payload.endpoint).returns(1)
+      const result = await Service.addEndpoint(participantFixtures[0].name, payload)
+      assert.deepEqual(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`addEndpoint failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('addEndpoint should fail if cant add endpoint', async (assert) => {
+    const payload = {
+      endpoint: {
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
+      }
+    }
+    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+    ParticipantFacade.addEndpoint.withArgs(participantFixtures[0], payload.endpoint).throws(new Error())
+
+    try {
+      await Service.addEndpoint(participantFixtures[0].name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.end()
 })

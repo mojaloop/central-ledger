@@ -1,14 +1,16 @@
 'use strict'
 
 const _ = require('lodash')
-const ParticipantService = require('../../domain/participant')
-const TransferState = require('./state')
-const TransfersModel = require('./models/transfer-read-model')
-const ilpModel = require('../../models/ilp')
-const extensionModel = require('../../models/extensions')
-const transferStateChangeModel = require('./models/transferStateChanges')
-const ExecuteTransfersModel = require('../../models/executed-transfers')
-const SettledTransfersModel = require('../../models/settled-transfers')
+const Uuid = require('uuid4')
+const Enum = require('../../lib/enum')
+const ParticipantFacade = require('../../models/participant/facade')
+// const TransferFacade = require('../../models/transfer/facade')
+const TransferModel = require('../../models/transfer/transfer')
+const TransferParticipantModel = require('../../models/transfer/transferParticipant')
+const ilpPacketModel = require('../../models/transfer/ilpPacket')
+const transferExtensionModel = require('../../models/transfer/transferExtension')
+const transferStateChangeModel = require('../../models/transfer/transferStateChange')
+const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -16,106 +18,168 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const names = [payload.payeeFsp, payload.payerFsp]
 
     for (let name of names) {
-      const participant = await ParticipantService.getByName(name)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency)
       participants.push(participant)
     }
 
-    const participantIds = await _.reduce(participants, (m, acct) => _.set(m, acct.name, acct.participantId), {})
+    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
+      _.set(m, acct.name, acct.participantCurrencyId), {})
 
     const transferRecord = {
       transferId: payload.transferId,
-      payeeParticipantId: participantIds[payload.payeeFsp],
-      payerParticipantId: participantIds[payload.payerFsp],
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
+      ilpCondition: payload.condition,
       expirationDate: new Date(payload.expiration)
     }
 
-    const ilpRecord = {
+    const ilpPacketRecord = {
       transferId: payload.transferId,
-      packet: payload.ilpPacket,
-      condition: payload.condition,
-      fulfilment: null
+      value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? TransferState.RECEIVED : TransferState.ABORTED)
+    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.REJECTED)
 
-    const transferStateRecord = {
+    const transferStateChangeRecord = {
       transferId: payload.transferId,
       transferStateId: state,
       reason: stateReason,
-      changedDate: new Date()
+      createdDate: new Date()
     }
 
+    const payerTransferParticipantRecord = {
+      transferId: payload.transferId,
+      participantCurrencyId: participantCurrencyIds[payload.payerFsp],
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      amount: payload.amount.amount
+    }
+
+    const payeeTransferParticipantRecord = {
+      transferId: payload.transferId,
+      participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      amount: payload.amount.amount
+    }
     // TODO: Move inserts into a Transaction
 
-    // first save transfer to make sure the foreign key integrity for ilp, transferStateChange and extensions
-    await TransfersModel.saveTransfer(transferRecord)
+    // First save transfer to ensure foreign key integrity
+    await TransferModel.saveTransfer(transferRecord)
 
-    var extensionsRecordList = []
+    await TransferParticipantModel.saveTransferParticipant(payerTransferParticipantRecord)
+    await TransferParticipantModel.saveTransferParticipant(payeeTransferParticipantRecord)
+    payerTransferParticipantRecord.name = payload.payerFsp
+    payeeTransferParticipantRecord.name = payload.payeeFsp
 
+    let transferExtensionsRecordList = []
     if (payload.extensionList && payload.extensionList.extension) {
-      extensionsRecordList = payload.extensionList.extension.map(ext => {
+      transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
         return {
           transferId: payload.transferId,
           key: ext.key,
-          value: ext.value,
-          changedDate: new Date(),
-          changedBy: 'user' // this needs to be changed and cannot be null
+          value: ext.value
         }
       })
-      for (let ext of extensionsRecordList) {
-        await extensionModel.saveExtension(ext)
+      for (let ext of transferExtensionsRecordList) {
+        await transferExtensionModel.saveTransferExtension(ext)
       }
     }
 
-    await ilpModel.saveIlp(ilpRecord)
+    await ilpPacketModel.saveIlpPacket(ilpPacketRecord)
 
-    await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
+    await transferStateChangeModel.saveTransferStateChange(transferStateChangeRecord)
 
-    return {isSaveTransferPrepared: true, transferRecord, ilpRecord, transferStateRecord, extensionsRecordList}
+    return {
+      isSaveTransferPrepared: true,
+      transferRecord,
+      payerTransferParticipantRecord,
+      payeeTransferParticipantRecord,
+      ilpPacketRecord,
+      transferStateChangeRecord,
+      transferExtensionsRecordList
+    }
   } catch (e) {
     throw e
   }
 }
 
-const saveTransferExecuted = async ({payload, timestamp}) => {
-  const fields = {
-    state: TransferState.COMMITTED,
-    fulfilment: payload.fulfilment,
-    executedDate: new Date(timestamp)
+const saveTransferExecuted = async (transferId, payload, stateReason = null, hasPassedValidation = true) => {
+  let transferFulfilmentId = Uuid() // TODO: should be generated once before TransferFulfilmentDuplicateCheck (and passed here)
+  const transferFulfilmentRecord = {
+    transferFulfilmentId,
+    transferId,
+    ilpFulfilment: payload.fulfilment,
+    completedDate: new Date(payload.completedTimestamp),
+    isValid: true,
+    createdDate: new Date()
   }
-  return await TransfersModel.updateTransfer(payload.id, fields)
+
+  const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.ABORTED)
+  const transferStateChangeRecord = {
+    transferId,
+    transferStateId: state,
+    reason: stateReason,
+    createdDate: new Date()
+  }
+  // TODO: Move inserts into a Transaction
+
+  await TransferFulfilmentModel.saveTransferFulfilment(transferFulfilmentRecord)
+
+  let transferExtensionsRecordList = []
+  if (payload.extensionList && payload.extensionList.extension) {
+    transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+      return {
+        transferId,
+        transferFulfilmentId,
+        key: ext.key,
+        value: ext.value
+      }
+    })
+    for (let ext of transferExtensionsRecordList) {
+      await transferExtensionModel.saveTransferExtension(ext)
+    }
+  }
+
+  await transferStateChangeModel.saveTransferStateChange(transferStateChangeRecord)
+
+  return {
+    isSaveTransferExecuted: true,
+    transferFulfilmentRecord,
+    transferStateChangeRecord,
+    transferExtensionsRecordList
+  }
 }
+
 // This update should only be done if the transfer id only has the state RECEIVED //TODO
 const updateTransferState = async (payload, state) => {
-  const transferStateRecord = {
+  const transferStateChangeRecord = {
     transferId: payload.transferId,
     transferStateId: state,
-    reason: '',
-    changedDate: new Date()
+    // reason: '',
+    createdDate: new Date()
   }
-  return await transferStateChangeModel.saveTransferStateChange(transferStateRecord)
+  return await transferStateChangeModel.saveTransferStateChange(transferStateChangeRecord)
 }
 
 const saveTransferRejected = async (stateReason, transferId) => {
   try {
-    const existingTransferStateChanges = await transferStateChangeModel.getByTransferId(transferId)
+    const existingtransferStateChange = await transferStateChangeModel.getByTransferId(transferId)
 
     let existingAbort = false
     let transferStateChange
-    if (Array.isArray(existingTransferStateChanges)) {
-      for (let transferState of existingTransferStateChanges) {
-        if (transferState.transferStateId === TransferState.ABORTED) {
+    if (Array.isArray(existingtransferStateChange)) {
+      for (let transferState of existingtransferStateChange) {
+        if (transferState.transferStateId === Enum.TransferState.ABORTED) {
           existingAbort = true
           transferStateChange = transferState
           break
         }
       }
     } else {
-      if (existingTransferStateChanges.transferStateId === TransferState.ABORTED) {
+      if (existingtransferStateChange.transferStateId === Enum.TransferState.ABORTED) {
         existingAbort = true
-        transferStateChange = existingTransferStateChanges
+        transferStateChange = existingtransferStateChange
       }
     }
     if (!existingAbort) {
@@ -124,7 +188,7 @@ const saveTransferRejected = async (stateReason, transferId) => {
       transferStateChange.transferId = transferId
       transferStateChange.reason = stateReason
       transferStateChange.changedDate = new Date()
-      transferStateChange.transferStateId = TransferState.ABORTED
+      transferStateChange.transferStateId = Enum.TransferState.ABORTED
       await transferStateChangeModel.saveTransferStateChange(transferStateChange)
       return {alreadyRejected: false, transferStateChange}
     } else {
@@ -135,19 +199,9 @@ const saveTransferRejected = async (stateReason, transferId) => {
   }
 }
 
-const saveExecutedTransfer = async (transfer) => {
-  await ExecuteTransfersModel.create(transfer.payload.id)
-}
-
-const saveSettledTransfers = async ({id, settlement_id}) => {
-  await SettledTransfersModel.create({id, settlement_id})
-}
-
 module.exports = {
   saveTransferPrepared,
   saveTransferExecuted,
   saveTransferRejected,
-  saveExecutedTransfer,
-  saveSettledTransfers,
   updateTransferState
 }

@@ -11,7 +11,7 @@ Test('token auth strategy', tokenTest => {
   let sandbox
 
   tokenTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(JWT)
     test.end()
   })

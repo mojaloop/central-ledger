@@ -35,7 +35,7 @@
 'use strict'
 
 const ParticipantPreparationModule = require('./participant')
-const Model = require('../../../src/domain/transfer/models/transfer-read-model')
+const Model = require('../../../src/models/transfer/facade')
 
 exports.prepareData = async () => {
   try {

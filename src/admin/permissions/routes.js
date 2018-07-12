@@ -2,7 +2,7 @@
 
 const Handler = require('./handler')
 const Permissions = require('../../domain/security/permissions')
-const RouteConfig = require('../route-config')
+const RouteConfig = require('../routeConfig')
 const tags = ['api', 'permissions']
 
 module.exports = [

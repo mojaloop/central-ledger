@@ -1,21 +1,12 @@
 'use strict'
 
-// const P = require('bluebird')
-const Model = require('./model')
-const ParticipantCurrencyModel = require('../../models/participantCurrency')
-// const ValidationError = require('../../errors').ValidationError
-// const UrlParser = require('../../lib/urlparser')
-// const Crypto = require('../../lib/crypto')
-
-// const createParticipant = async (name, currency) => {
-//   return Model.create({ name, currency }) // hashedPassword, emailAddress })
-// }
+const ParticipantModel = require('../../models/participant/participant')
+const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
+const ParticipantFacade = require('../../models/participant/facade')
 
 const create = async (payload) => {
-  // return Crypto.hash(payload.password)
-  //   .then(hashedPassword => {
   try {
-    const participant = await Model.create({ name: payload.name, currency: payload.currency })
+    const participant = await ParticipantModel.create({ name: payload.name, currency: payload.currency })
     if (!participant) throw new Error('Something went wrond. Participant cannot be created')
     return participant
   } catch (err) {
@@ -25,7 +16,7 @@ const create = async (payload) => {
 
 const getAll = async () => {
   try {
-    let all = await Model.getAll()
+    let all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
       participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     }))
@@ -36,7 +27,7 @@ const getAll = async () => {
 }
 
 const getById = async (id) => {
-  let participant = await Model.getById(id)
+  let participant = await ParticipantModel.getById(id)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
@@ -44,7 +35,7 @@ const getById = async (id) => {
 }
 
 const getByName = async (name) => {
-  let participant = await Model.getByName(name)
+  let participant = await ParticipantModel.getByName(name)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
@@ -60,9 +51,9 @@ const participantExists = (participant) => {
 
 const update = async (name, payload) => {
   try {
-    const participant = await Model.getByName(name)
+    const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    await Model.update(participant, payload.isActive)
+    await ParticipantModel.update(participant, payload.isActive)
     participant.isActive = +payload.isActive
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     return participant
@@ -71,17 +62,62 @@ const update = async (name, payload) => {
   }
 }
 
-const addEndpoint = async (name, payload) => {
+const createParticipantCurrency = async (participantId, currencyId) => {
   try {
-    const participant = await Model.getByName(name)
-    participantExists(participant)
-    await Model.addEndpoint(participant, payload.endpoint)
-    // participant.isActive = +payload.isActive
-    // participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-    return participant
+    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId)
+    return participantCurrency
   } catch (err) {
     throw err
   }
+}
+
+const getParticipantCurrencyById = async (participantCurrencyId) => {
+  try {
+    return await ParticipantCurrencyModel.getById(participantCurrencyId)
+  } catch (err) {
+    throw err
+  }
+}
+
+const addEndpoint = async (name, payload) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    return ParticipantFacade.addEndpoint(participant, payload.endpoint)
+  } catch (err) {
+    throw err
+  }
+}
+
+const getEndpoint = async (name, type) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const participantEndpoint = await ParticipantFacade.getEndpoint(participant, type)
+    participantEndpointExists(participantEndpoint)
+    return participantEndpoint
+  } catch (err) {
+    throw err
+  }
+}
+
+const getAllEndpoints = async (name) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant)
+    participantEndpointExists(participantEndpoints)
+    return participantEndpoints
+  } catch (err) {
+    throw err
+  }
+}
+
+const participantEndpointExists = (participantEndpoint) => {
+  if (participantEndpoint && participantEndpoint.length > 0) {
+    return participantEndpoint
+  }
+  throw new Error('participantEndpoint does not exist')
 }
 
 // const exists = async (participantUri) => {
@@ -90,7 +126,7 @@ const addEndpoint = async (name, payload) => {
 //     if (!name) {
 //       return new ValidationError(`Invalid participant URI: ${participantUri}`)
 //     }
-//     const participant = await Model.getByName(name)
+//     const participant = await ParticipantModel.getByName(name)
 //     if (participant) {
 //       return participant
 //     }
@@ -101,46 +137,10 @@ const addEndpoint = async (name, payload) => {
 // }
 
 // const verify = async function (name, password) {
-//   const participant = await Model.getByName(name)
+//   const participant = await ParticipantModel.getByName(name)
 //   participantExists(participant)
 //   const userCredentials = await retrievePartyCredentials(participant)
 //   return verifyPartyCredentials(participant, userCredentials, password)
-// }
-
-// const createLedgerParticipant = async (name, password, emailAddress) => {
-//   try {
-//     const participant = await Model.getByName(name)
-//     if (!participant) {
-//       return await create({ name, password, emailAddress })
-//     }
-//     return participant
-//   } catch (err) {
-//     throw err
-//   }
-// }
-
-// const updatePartyCredentials = (participant, payload) => {
-//   return Crypto.hash(payload.password).then(hashedPassword => {
-//     return Model.updatePartyCredentials(participant, hashedPassword).then(() => participant)
-//   })
-// }
-
-// const updateParticipantSettlement = (participant, payload) => {
-//   return Model.updateParticipantSettlement(participant, payload)
-// }
-
-// const retrievePartyCredentials = (participant) => {
-//   return Model.retrievePartyCredentials(participant)
-// }
-
-// const verifyPartyCredentials = (participant, userCredentials, password) => {
-//   return Crypto.verifyHash(userCredentials.password, password)
-//     .then(match => {
-//       if (match) {
-//         return participant
-//       }
-//       throw new Error('Partyname and password are invalid')
-//     })
 // }
 
 module.exports = {
@@ -150,10 +150,12 @@ module.exports = {
   getByName,
   participantExists,
   update,
-  addEndpoint
+  createParticipantCurrency,
+  getParticipantCurrencyById,
+  addEndpoint,
+  getEndpoint,
+  getAllEndpoints,
+  participantEndpointExists
   // exists,
-  // verify,
-  // createLedgerParticipant,
-  // updatePartyCredentials,
-  // updateParticipantSettlement
+  // verify
 }

@@ -2,14 +2,14 @@
 
 const Test = require('tape')
 const Uuid = require('uuid4')
-const UrlParser = require('../../../../src/lib/urlparser')
-const TransferTranslator = require('../../../../src/domain/transfer/translator')
+const UrlParser = require('../../../../src/lib/urlParser')
+const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const Fixtures = require('../../../fixtures')
 
 const executionCondition = 'ni:///sha-256;47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU?fpt=preimage-sha-256&cost=0'
 
-Test('TransferTranslator', transferTranslatorTest => {
-  transferTranslatorTest.test('toTransfer should', function (toTransferTest) {
+Test('TransferObjectTransform', TransferObjectTransformTest => {
+  TransferObjectTransformTest.test('toTransfer should', function (toTransferTest) {
     toTransferTest.test('translate an argument containing a "id" field', function (t) {
       const from = {
         'id': '3a2a1d9e-8640-4d2d-b06c-84f2cd613209',
@@ -75,7 +75,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         rejection_reason: 'some reason'
       }
 
-      let actual = TransferTranslator.toTransfer(from)
+      let actual = TransferObjectTransform.toTransfer(from)
       t.deepEquals(expected, actual)
       t.end()
     })
@@ -85,7 +85,7 @@ Test('TransferTranslator', transferTranslatorTest => {
         '$id': 'bad-id',
         'id': 'good-id'
       }
-      const actual = TransferTranslator.toTransfer(from)
+      const actual = TransferObjectTransform.toTransfer(from)
       test.deepEquals(actual, { id: `http://central-ledger/transfers/${from.id}`, timeline: {} })
       test.end()
     })
@@ -142,7 +142,7 @@ Test('TransferTranslator', transferTranslatorTest => {
           executed_at: '2016-11-17T20:02:19.363Z'
         }
       }
-      let actual = TransferTranslator.toTransfer(from)
+      let actual = TransferObjectTransform.toTransfer(from)
       t.deepEquals(actual, expected)
       t.end()
     })
@@ -201,31 +201,31 @@ Test('TransferTranslator', transferTranslatorTest => {
           rejected_at: '2016-11-17T20:02:19.363Z'
         }
       }
-      const actual = TransferTranslator.toTransfer(from)
+      const actual = TransferObjectTransform.toTransfer(from)
       t.deepEquals(actual, expected)
       t.end()
     })
 
     toTransferTest.test('throw an exception if argument does not contain "id" or "transferId" field', function (t) {
-      t.throws(() => TransferTranslator.toTransfer({}), new Error('Unable to translate to transfer: {}'))
+      t.throws(() => TransferObjectTransform.toTransfer({}), new Error('Unable to translate to transfer: {}'))
       t.end()
     })
 
     toTransferTest.end()
   })
 
-  transferTranslatorTest.test('fromPayload should', fromPayloadTest => {
+  TransferObjectTransformTest.test('fromPayload should', fromPayloadTest => {
     fromPayloadTest.test('convert it from uri to UUID', test => {
       const id = Uuid()
       const transferUri = UrlParser.toTransferUri(id)
       test.notEqual(id, transferUri)
       const payload = { id: transferUri }
-      const result = TransferTranslator.fromRequestToDatabase(payload)
+      const result = TransferObjectTransform.fromRequestToDatabase(payload)
       test.equal(result.id, id.toString())
       test.end()
     })
 
     fromPayloadTest.end()
   })
-  transferTranslatorTest.end()
+  TransferObjectTransformTest.end()
 })

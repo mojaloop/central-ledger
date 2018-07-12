@@ -10,7 +10,7 @@ Test('subscription validator', validatorTest => {
   let sandbox
 
   validatorTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(ParticipantService, 'exists')
     test.end()
   })

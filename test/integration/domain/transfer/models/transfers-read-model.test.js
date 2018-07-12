@@ -7,7 +7,7 @@ const Test = require('tape')
 const Moment = require('moment')
 const Db = require(`${src}/db`)
 const Participant = require(`${src}/domain/participant`)
-const ReadModel = require(`${src}/domain/transfer/models/transfer-read-model`)
+const ReadModel = require(`${src}/models/transfer/facade`)
 const Fixtures = require('../../../../fixtures')
 const TransferState = require('../../../../../src/domain/transfer/state')
 
@@ -44,7 +44,7 @@ Test('transfers read model', modelTest => {
             .then(savedTransfer => {
               test.ok(savedTransfer)
               test.equal(savedTransfer.transferId, transfer.transferId)
-           //   test.equal(savedTransfer.state, transfer.state)
+              //   test.equal(savedTransfer.state, transfer.state)
               test.end()
             })
         })

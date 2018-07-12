@@ -27,20 +27,20 @@ Test('GET /charge', getTest => {
     const chargePayload2 = createChargePayload(charge2Name)
 
     bluebird.all([Base.createCharge(chargePayload1), Base.createCharge(chargePayload2)])
-    .then(([charge1Res, charge2Res]) => {
-      Base.getAdmin('/participants')
-        .expect(200)
-        .expect('Content-Type', /json/)
-        .then(res => {
-          test.equal(res.body[0].name, charge1Res.body.name)
-          test.equal(res.body[0].created, charge1Res.body.created)
-          test.equal(res.body[0].id, charge1Res.body.id)
-          test.equal(res.body[1].name, charge2Res.body.name)
-          test.equal(res.body[1].created, charge2Res.body.created)
-          test.equal(res.body[1].id, charge2Res.body.id)
-          test.end()
-        })
-    })
+      .then(([charge1Res, charge2Res]) => {
+        Base.getAdmin('/participants')
+          .expect(200)
+          .expect('Content-Type', /json/)
+          .then(res => {
+            test.equal(res.body[0].name, charge1Res.body.name)
+            test.equal(res.body[0].created, charge1Res.body.created)
+            test.equal(res.body[0].id, charge1Res.body.id)
+            test.equal(res.body[1].name, charge2Res.body.name)
+            test.equal(res.body[1].created, charge2Res.body.created)
+            test.equal(res.body[1].id, charge2Res.body.id)
+            test.end()
+          })
+      })
   })
 
   getTest.end()
