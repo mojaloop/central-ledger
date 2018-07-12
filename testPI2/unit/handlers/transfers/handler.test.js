@@ -426,9 +426,9 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    registerHandlersTest.test('throws error retrieveAllParticipants', async (test) => {
+    registerHandlersTest.test('throw error retrieveAllParticipants', async (test) => {
       try {
-        Kafka.Consumer.createHandler(topicName, config, command)
+        await Kafka.Consumer.createHandler(topicName, config, command)
         await DAO.retrieveAllParticipants.returns(P.resolve(participants))
         Utility.transformAccountToTopicName.returns(topicName)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -442,9 +442,9 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('throws error registerFulfillHandler', async (test) => {
+    registerHandlersTest.test('throw error registerFulfillHandler', async (test) => {
       try {
-        Kafka.Consumer.createHandler(topicName, config, command)
+        await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerFulfillHandler()
@@ -456,9 +456,9 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('throws error registerRejectHandler', async (test) => {
+    registerHandlersTest.test('throw error registerRejectHandler', async (test) => {
       try {
-        Kafka.Consumer.createHandler(topicName, config, command)
+        await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerRejectHandler()
@@ -470,9 +470,9 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('throws error registerTransferHandler', async (test) => {
+    registerHandlersTest.test('throw error registerTransferHandler', async (test) => {
       try {
-        Kafka.Consumer.createHandler(topicName, config, command)
+        await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerTransferHandler()
