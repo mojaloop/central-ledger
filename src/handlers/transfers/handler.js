@@ -43,6 +43,7 @@ const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferQueries = require('../../domain/transfer/queries')
 const TransferState = require('../../domain/transfer/state')
+const Perf4js = require('@mojaloop/central-services-shared').Perf4js
 // const CryptoConditions = require('../../crypto-conditions')
 // const FiveBellsCondition = require('five-bells-condition')
 // const Crypto = require('crypto')
@@ -79,6 +80,7 @@ const errorDescription = 'Generic validation error'
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const prepare = async (error, messages) => {
+  var metricStartNow = (new Date()).getTime()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -106,6 +108,9 @@ const prepare = async (error, messages) => {
         // position topic to be created and inserted here
         await Utility.produceParticipantMessage(payload.payerFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
         Logger.info(`guid=${message.value.id}:uuid - endPrepareTransferHandler:process`)
+        let metricEndNow = (new Date()).getTime()
+        let metricCenLedgerTransferPrepare = metricEndNow - metricStartNow
+        Perf4js.info(metricStartNow, metricCenLedgerTransferPrepare, 'metricCenLedgerTransferPrepare')
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
@@ -113,6 +118,9 @@ const prepare = async (error, messages) => {
         // notification of duplicate to go here
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
+        let metricEndNow = (new Date()).getTime()
+        let metricCenLedgerTransferPrepare = metricEndNow - metricStartNow
+        Perf4js.info(metricStartNow, metricCenLedgerTransferPrepare, 'metricCenLedgerTransferPrepare')
         return true
       }
     } else {
@@ -126,6 +134,9 @@ const prepare = async (error, messages) => {
         await consumer.commitMessageSync(message)
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
+        let metricEndNow = (new Date()).getTime()
+        let metricCenLedgerTransferPrepare = metricEndNow - metricStartNow
+        Perf4js.info(metricStartNow, metricCenLedgerTransferPrepare, 'metricCenLedgerTransferPrepare')
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
@@ -134,6 +145,9 @@ const prepare = async (error, messages) => {
         await consumer.commitMessageSync(message)
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
+        let metricEndNow = (new Date()).getTime()
+        let metricCenLedgerTransferPrepare = metricEndNow - metricStartNow
+        Perf4js.info(metricStartNow, metricCenLedgerTransferPrepare, 'metricCenLedgerTransferPrepare')
         return true
       }
     }
@@ -144,6 +158,7 @@ const prepare = async (error, messages) => {
 }
 
 const fulfil = async (error, messages) => {
+  var metricStartNow = (new Date()).getTime()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -178,11 +193,17 @@ const fulfil = async (error, messages) => {
         Logger.info('FulfilHandler::fulfil::validationFailed::invalidFulfilment')
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        let metricEndNow = (new Date()).getTime()
+        let metricCenLedgerTransferFulfil = metricEndNow - metricStartNow
+        Perf4js.info(metricStartNow, metricCenLedgerTransferFulfil, 'metricCenLedgerTransferFulfil')
         return true
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info('FulfilHandler::fulfil::validationFailed::existingEntry')
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+        let metricEndNow = (new Date()).getTime()
+        let metricCenLedgerTransferFulfil = metricEndNow - metricStartNow
+        Perf4js.info(metricStartNow, metricCenLedgerTransferFulfil, 'metricCenLedgerTransferFulfil')
         return true
       } else { // validations success
         Logger.info('FulfilHandler::fulfil::validationPassed')
@@ -190,6 +211,9 @@ const fulfil = async (error, messages) => {
         await consumer.commitMessageSync(message)
         await Utility.produceParticipantMessage(existingTransfer.payeeFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
         Logger.info(`guid=${message.value.id}:uuid - endFulfilHandler:process`)
+        let metricEndNow = (new Date()).getTime()
+        let metricCenLedgerTransferFulfil = metricEndNow - metricStartNow
+        Perf4js.info(metricStartNow, metricCenLedgerTransferFulfil, 'metricCenLedgerTransferFulfil')
         return true
       }
     } else if (metadata.event.type === FULFIL && metadata.event.action === REJECT) {
@@ -199,6 +223,9 @@ const fulfil = async (error, messages) => {
       Logger.info('FulfilHandler::fulfil::invalidEventAction')
       await consumer.commitMessageSync(message)
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
+      let metricEndNow = (new Date()).getTime()
+      let metricCenLedgerTransferFulfil = metricEndNow - metricStartNow
+      Perf4js.info(metricStartNow, metricCenLedgerTransferFulfil, 'metricCenLedgerTransferFulfil')
       return true
     }
   } catch (error) {
@@ -227,6 +254,7 @@ const reject = async () => {
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const transfer = async (error, messages) => {
+  var metricStartNow = (new Date()).getTime()
   Logger.info('TransferHandler::transfer')
   if (error) {
     // Logger.error(error)
@@ -257,7 +285,9 @@ const transfer = async (error, messages) => {
 
       await consumer.commitMessageSync(message)
       Logger.info(`guid=${message.value.id}:uuid - endTransferHandler:process`)
-
+      let metricEndNow = (new Date()).getTime()
+      let metricCenLedgerTransferTransfer = metricEndNow - metricStartNow
+      Perf4js.info(metricStartNow, metricCenLedgerTransferTransfer, 'metricCenLedgerTransferTransfer')
       return true
     } else if (action.toLowerCase() === 'commit' && status.toLowerCase() === 'success') {
       const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
@@ -271,10 +301,15 @@ const transfer = async (error, messages) => {
 
       await consumer.commitMessageSync(message)
       Logger.info(`guid=${message.value.id}:uuid - endTransferHandler:process`)
-
+      let metricEndNow = (new Date()).getTime()
+      let metricCenLedgerTransferTransfer = metricEndNow - metricStartNow
+      Perf4js.info(metricStartNow, metricCenLedgerTransferTransfer, 'metricCenLedgerTransferTransfer')
       return true
     } else {
       Logger.warning('TransferHandler::transfer - Unknown event...nothing to do here')
+      let metricEndNow = (new Date()).getTime()
+      let metricCenLedgerTransferTransfer = metricEndNow - metricStartNow
+      Perf4js.info(metricStartNow, metricCenLedgerTransferTransfer, 'metricCenLedgerTransferTransfer')
       return true
     }
     // const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
@@ -297,6 +332,7 @@ const transfer = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const createPrepareHandler = async (participantName) => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const prepareHandler = {
       command: prepare,
@@ -305,6 +341,9 @@ const createPrepareHandler = async (participantName) => {
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerCreatePrepareHandler = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerCreatePrepareHandler, 'metricCenLedgerCreatePrepareHandler')
     return true
   } catch (e) {
     Logger.error(e)
@@ -321,6 +360,7 @@ const createPrepareHandler = async (participantName) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerTransferHandler = async () => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const transferHandler = {
       command: transfer,
@@ -329,6 +369,9 @@ const registerTransferHandler = async () => {
     }
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerCreateTransferHandler = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerCreateTransferHandler, 'metricCenLedgerCreateTransferHandler')
     return true
   } catch (e) {
     Logger.error(e)
@@ -345,6 +388,7 @@ const registerTransferHandler = async () => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerFulfillHandler = async () => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const fulfillHandler = {
       command: fulfil,
@@ -353,6 +397,9 @@ const registerFulfillHandler = async () => {
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerCreateFulfilHandler = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerCreateFulfilHandler, 'metricCenLedgerCreateFulfilHandler')
     return true
   } catch (e) {
     Logger.error(e)
@@ -369,6 +416,7 @@ const registerFulfillHandler = async () => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerRejectHandler = async () => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const rejectHandler = {
       command: reject,
@@ -377,6 +425,9 @@ const registerRejectHandler = async () => {
     }
     rejectHandler.config.rdkafkaConf['client.id'] = rejectHandler.topicName
     await Kafka.Consumer.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerCreateRejectHandler = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerCreateRejectHandler, 'metricCenLedgerCreateRejectHandler')
     return true
   } catch (e) {
     Logger.error(e)
@@ -393,6 +444,7 @@ const registerRejectHandler = async () => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPrepareHandlers = async () => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const participantNames = await DAO.retrieveAllParticipants()
     if (participantNames.length !== 0) {
@@ -402,6 +454,9 @@ const registerPrepareHandlers = async () => {
     } else {
       Logger.info('No participants for prepare handler creation')
     }
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerCreatePrepareHandler = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerCreatePrepareHandler, 'metricCenLedgerCreatePrepareHandler')
     return true
   } catch (e) {
     Logger.error(e)
@@ -418,11 +473,15 @@ const registerPrepareHandlers = async () => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerAllHandlers = async () => {
+  var metricStartNow = (new Date()).getTime()
   try {
     await registerPrepareHandlers()
     await registerFulfillHandler()
     await registerRejectHandler()
     await registerTransferHandler()
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerRegisterAllTransferHandlers = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerRegisterAllTransferHandlers, 'metricCenLedgerRegisterAllTransferHandlers')
     return true
   } catch (e) {
     throw e

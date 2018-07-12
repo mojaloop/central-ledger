@@ -35,6 +35,7 @@
 
 const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Perf4js = require('@mojaloop/central-services-shared').Perf4js
 
 let p
 
@@ -51,15 +52,22 @@ let p
  * @throws {error} - if not successfully create/produced to
  */
 const produceMessage = async (messageProtocol, topicConf, config) => {
+  var metricStartNow = (new Date()).getTime()
   try {
     Logger.info('Producer::start::topic=' + topicConf.topicName)
+    // @TODO Re-work this so that the Producer is not created EVERYTIME
+    // if (!p) {
     p = new Producer(config)
+    // }
     Logger.info('Producer::connect::start')
     await p.connect()
     Logger.info('Producer::connect::end')
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
     await p.sendMessage(messageProtocol, topicConf)
     Logger.info('Producer::end')
+    var metricEndNow = (new Date()).getTime()
+    var metricCenLedgerProduceMessage = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerProduceMessage, 'metricCenLedgerProduceMessage')
     return true
   } catch (e) {
     Logger.error(e)

@@ -35,6 +35,7 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Perf4js = require('@mojaloop/central-services-shared').Perf4js
 const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
@@ -48,6 +49,7 @@ const PREPARE = 'prepare'
 const COMMIT = 'commit'
 
 const positions = async (error, messages) => {
+  var metricStartNow = (new Date()).getTime()
   if (error) {
     Logger.error(error)
   }
@@ -75,6 +77,9 @@ const positions = async (error, messages) => {
     // Will follow framework flow in future
     await Utility.produceGeneralMessage(TRANSFER, TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
     Logger.info(`guid=${message.value.id}:uuid - endPositionHandler:process`)
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerPositions = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerPositions, 'metricCenLedgerPositions')
     return true
   } catch (error) {
     Logger.error(error)
@@ -92,6 +97,7 @@ const positions = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const createPositionHandler = async (participantName) => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const positionHandler = {
       command: positions,
@@ -103,6 +109,9 @@ const createPositionHandler = async (participantName) => {
     Logger.error(error)
     throw error
   }
+  let metricEndNow = (new Date()).getTime()
+  let metricCenLedgerCreatePositionHandlers = metricEndNow - metricStartNow
+  Perf4js.info(metricStartNow, metricCenLedgerCreatePositionHandlers, 'metricCenLedgerCreatePositionHandlers')
 }
 
 /**
@@ -114,6 +123,7 @@ const createPositionHandler = async (participantName) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerPositionHandlers = async () => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const participantList = await DAO.retrieveAllParticipants()
     if (participantList.length !== 0) {
@@ -127,6 +137,9 @@ const registerPositionHandlers = async () => {
     Logger.error(error)
     throw error
   }
+  let metricEndNow = (new Date()).getTime()
+  let metricCenLedgerRegisterPositionHandlers = metricEndNow - metricStartNow
+  Perf4js.info(metricStartNow, metricCenLedgerRegisterPositionHandlers, 'metricCenLedgerRegisterPositionHandlers')
 }
 
 /**
@@ -138,8 +151,12 @@ const registerPositionHandlers = async () => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const registerAllHandlers = async () => {
+  var metricStartNow = (new Date()).getTime()
   try {
     await registerPositionHandlers()
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerRegisterAllPositionHandlers = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerRegisterAllPositionHandlers, 'metricCenLedgerRegisterAllPositionHandlers')
     return true
   } catch (error) {
     throw error

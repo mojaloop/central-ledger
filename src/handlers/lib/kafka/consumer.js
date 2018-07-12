@@ -36,6 +36,7 @@
 
 const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Perf4js = require('@mojaloop/central-services-shared').Perf4js
 
 let listOfConsumers = {}
 
@@ -52,6 +53,8 @@ let listOfConsumers = {}
  * @throws {Error} -  if failure occurs
  */
 const createHandler = async (topicName, config, command) => {
+  var metricStartNow = (new Date()).getTime()
+
   const consumer = new Consumer([topicName], config)
   await consumer.connect().then(async () => {
     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
@@ -62,6 +65,9 @@ const createHandler = async (topicName, config, command) => {
     Logger.info('Consumer error has occurred')
     throw e
   })
+  var metricEndNow = (new Date()).getTime()
+  var metricCenLedgerCreateHandler = metricEndNow - metricStartNow
+  Perf4js.info(metricStartNow, metricCenLedgerCreateHandler, 'metricCenLedgerCreateHandler')
 }
 
 /**

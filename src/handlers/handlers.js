@@ -45,9 +45,11 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Perf4js = require('@mojaloop/central-services-shared').Perf4js
 const requireGlob = require('require-glob')
 
 const registerAllHandlers = async (request, h) => {
+  var metricStartNow = (new Date()).getTime()
   try {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))
@@ -57,6 +59,9 @@ const registerAllHandlers = async (request, h) => {
       Logger.info(JSON.stringify(handlerObject.handler))
       await handlerObject.handler.registerAllHandlers()
     }
+    let metricEndNow = (new Date()).getTime()
+    let metricCenLedgerRegisterAllHandlers = metricEndNow - metricStartNow
+    Perf4js.info(metricStartNow, metricCenLedgerRegisterAllHandlers, 'metricCenLedgerRegisterAllHandlers')
     return true
   } catch (e) {
     Logger.error(e)
