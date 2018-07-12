@@ -86,22 +86,21 @@ const participant2 = {
   isDisabled: false
 }
 
-const payeeTransferParticipant = {
-  transferId: payload.transferId,
-  transferParticipantRoleTypeId: 1,
-  ledgerEntryTypeId: 1,
-  amount: payload.amount,
-  name: payload.payeeFsp
-}
+// const payeeTransferParticipant = {
+//   transferId: payload.transferId,
+//   transferParticipantRoleTypeId: 1,
+//   ledgerEntryTypeId: 1,
+//   amount: payload.amount,
+//   name: payload.payeeFsp
+// }
 
-
-const payerTransferParticipant = {
-  transferId: payload.transferId,
-  transferParticipantRoleTypeId: 1,
-  ledgerEntryTypeId: 1,
-  amount: payload.amount,
-  name: payload.payerFsp
-}
+// const payerTransferParticipant = {
+//   transferId: payload.transferId,
+//   transferParticipantRoleTypeId: 1,
+//   ledgerEntryTypeId: 1,
+//   amount: payload.amount,
+//   name: payload.payerFsp
+// }
 
 const stateReason = 'reasonOne'
 
@@ -380,6 +379,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
         test.end()
       }
     })
+
     updateTransferStateTest.end()
   })
 
