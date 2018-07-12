@@ -18,10 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 
@@ -29,55 +26,49 @@
 
 const Db = require('../../db')
 
-exports.getById = async (id) => {
+const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
   try {
-    return await Db.participant.findOne({ participantId: id })
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-exports.getByName = async (name) => {
-  try {
-    const named = await Db.participant.findOne({ name })
-    return named
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-exports.getAll = async () => {
-  try {
-    const participants = await Db.participant.find({}, { order: 'name asc' })
-    return participants
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-exports.create = async (participant) => {
-  try {
-    return await Db.participant.insert({
-      name: participant.name,
-      createdBy: 'unknown'
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pp.*'
+        )
     })
-  } catch (err) {
-    throw new Error(err.message)
+  } catch (e) {
+    throw e
   }
 }
 
-exports.update = async (participant, isActive) => {
+const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
   try {
-    return await Db.participant.update({ participantId: participant.participantId }, { isActive })
-  } catch (err) {
-    throw new Error(err.message)
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pl.*'
+        )
+    })
+  } catch (e) {
+    throw e
   }
 }
 
-exports.destroyByName = async (participant) => {
-  try {
-    return await Db.participant.destroy({name: participant.name})
-  } catch (err) {
-    throw new Error(err.message)
-  }
+module.exports = {
+  getParticipantPositionByParticipantIdAndCurrencyId,
+  getParticipantLimitByParticipantIdAndCurrencyId
 }

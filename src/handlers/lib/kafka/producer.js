@@ -53,9 +53,9 @@ let listOfProducers = {}
 const produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     let producer
-    if(listOfProducers[topicConf.topicName]){
+    if (listOfProducers[topicConf.topicName]) {
       producer = listOfProducers[topicConf.topicName]
-    }else {
+    } else {
       Logger.info('Producer::start::topic=' + topicConf.topicName)
       producer = new Producer(config)
     }
@@ -83,9 +83,9 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
  */
 const disconnect = async (topicName) => {
   try {
-    if(getProducer(topicName)) {
+    if (getProducer(topicName)) {
       await getProducer(topicName).disconnect()
-    }else{
+    } else {
       throw Error(`no producer found for topic ${topicName}`)
     }
   } catch (e) {

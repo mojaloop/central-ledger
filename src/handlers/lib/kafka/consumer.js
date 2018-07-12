@@ -53,9 +53,9 @@ let listOfConsumers = {}
  */
 const createHandler = async (topicName, config, command) => {
   let consumer
-  if(listOfConsumers[topicName]) {
-     consumer = listOfConsumers[topicName]
-  }else{
+  if (listOfConsumers[topicName]) {
+    consumer = listOfConsumers[topicName]
+  } else {
     consumer = new Consumer([topicName], config)
   }
   await consumer.connect().then(async () => {

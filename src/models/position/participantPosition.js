@@ -18,10 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 
@@ -29,55 +26,32 @@
 
 const Db = require('../../db')
 
-exports.getById = async (id) => {
+const insert = async (participantPosition) => {
   try {
-    return await Db.participant.findOne({ participantId: id })
-  } catch (err) {
-    throw new Error(err.message)
+    return await Db.participantPosition.insert(participantPosition)
+  } catch (e) {
+    throw e
   }
 }
 
-exports.getByName = async (name) => {
+const update = async (participantPosition) => {
   try {
-    const named = await Db.participant.findOne({ name })
-    return named
-  } catch (err) {
-    throw new Error(err.message)
+    return await Db.participantPosition.update({participantCurrencyId: participantPosition.participantCurrencyId}, {value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date()})
+  } catch (e) {
+    throw e
   }
 }
 
-exports.getAll = async () => {
+const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
-    const participants = await Db.participant.find({}, { order: 'name asc' })
-    return participants
-  } catch (err) {
-    throw new Error(err.message)
+    return await Db.participantPosition.findOne({participantCurrencyId})
+  } catch (e) {
+    throw e
   }
 }
 
-exports.create = async (participant) => {
-  try {
-    return await Db.participant.insert({
-      name: participant.name,
-      createdBy: 'unknown'
-    })
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-exports.update = async (participant, isActive) => {
-  try {
-    return await Db.participant.update({ participantId: participant.participantId }, { isActive })
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-exports.destroyByName = async (participant) => {
-  try {
-    return await Db.participant.destroy({name: participant.name})
-  } catch (err) {
-    throw new Error(err.message)
-  }
+module.exports = {
+  insert,
+  update,
+  getPositionByCurrencyId
 }
