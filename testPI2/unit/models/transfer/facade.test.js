@@ -34,7 +34,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/facade')
-const TransferState = require('../../../../src/lib/enum').TransferState
+// const TransferState = require('../../../../src/lib/enum').TransferState
 const extensionModel = require('../../../../src/models/transfer/transferExtension')
 
 // const exampleTransfer = {
@@ -223,7 +223,7 @@ Test('Transfer model', async (transferTest) => {
       let builderStub = sandbox.stub()
       let payerStub = sandbox.stub()
       let payeeStub = sandbox.stub()
-      let stateChangeStub = sandbox.stub()
+      // let stateChangeStub = sandbox.stub()
       let stateStub = sandbox.stub()
       let ilpStub = sandbox.stub()
       let selectStub = sandbox.stub()
