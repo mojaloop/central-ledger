@@ -48,6 +48,8 @@ const Perf4js = require('@mojaloop/central-services-shared').Perf4js
 // const FiveBellsCondition = require('five-bells-condition')
 // const Crypto = require('crypto')
 const ilp = require('../../models/ilp')
+const Config = require('../../lib/config')
+const KafkaConfig = Config.KAFKA_CONFIG
 
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
@@ -104,7 +106,9 @@ const prepare = async (error, messages) => {
         Logger.info('TransferHandler::prepare::validationPassed::newEntry')
         // const result = await TransferHandler.prepare(payload)
         await TransferHandler.prepare(payload)
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         // position topic to be created and inserted here
         await Utility.produceParticipantMessage(payload.payerFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
         Logger.info(`guid=${message.value.id}:uuid - endPrepareTransferHandler:process`)
@@ -114,7 +118,9 @@ const prepare = async (error, messages) => {
         return true
       } else {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         // notification of duplicate to go here
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
@@ -131,7 +137,9 @@ const prepare = async (error, messages) => {
         Logger.info('TransferHandler::prepare::validationFailed::newEntry')
         await TransferHandler.prepare(payload, reasons.toString(), false)
         // notification of prepare transfer to go here
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
         let metricEndNow = (new Date()).getTime()
@@ -142,7 +150,9 @@ const prepare = async (error, messages) => {
         Logger.info('TransferHandler::prepare::validationFailed::existingEntry')
         // const {alreadyRejected, transfer} = await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
         await TransferHandler.reject(reasons.toString(), existingTransfer.transferId)
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCode, errorDescription))
         let metricEndNow = (new Date()).getTime()
@@ -184,14 +194,18 @@ const fulfil = async (error, messages) => {
 
       if (!existingTransfer) {
         Logger.info('FulfilHandler::fulfil::validationFailed::notFound')
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else if (Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) { // NOTE: re-aligned to the Mojaloop specification
       // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
       // } else if (fulfilmentCondition !== existingTransfer.condition) { // TODO: FiveBellsCondition.fulfillmentToCondition always passes
         Logger.info('FulfilHandler::fulfil::validationFailed::invalidFulfilment')
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         let metricEndNow = (new Date()).getTime()
         let metricCenLedgerTransferFulfil = metricEndNow - metricStartNow
@@ -199,7 +213,9 @@ const fulfil = async (error, messages) => {
         return true
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info('FulfilHandler::fulfil::validationFailed::existingEntry')
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         let metricEndNow = (new Date()).getTime()
         let metricCenLedgerTransferFulfil = metricEndNow - metricStartNow
@@ -208,7 +224,9 @@ const fulfil = async (error, messages) => {
       } else { // validations success
         Logger.info('FulfilHandler::fulfil::validationPassed')
         await ilp.update({ilpId: existingTransfer.ilpId, fulfilment: payload.fulfilment})
-        await consumer.commitMessageSync(message)
+        if (KafkaConfig.COMMIT_ENABLED) {
+          await consumer.commitMessageSync(message)
+        }
         await Utility.produceParticipantMessage(existingTransfer.payeeFsp, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
         Logger.info(`guid=${message.value.id}:uuid - endFulfilHandler:process`)
         let metricEndNow = (new Date()).getTime()
@@ -221,7 +239,9 @@ const fulfil = async (error, messages) => {
       // TODO: fulfil reject flow {2.2.1.} to be implemented here
     } else {
       Logger.info('FulfilHandler::fulfil::invalidEventAction')
-      await consumer.commitMessageSync(message)
+      if (KafkaConfig.COMMIT_ENABLED) {
+        await consumer.commitMessageSync(message)
+      }
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
       let metricEndNow = (new Date()).getTime()
       let metricCenLedgerTransferFulfil = metricEndNow - metricStartNow
@@ -282,8 +302,9 @@ const transfer = async (error, messages) => {
       const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TRANSFER, TRANSFER))
 
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      await consumer.commitMessageSync(message)
+      if (KafkaConfig.COMMIT_ENABLED) {
+        await consumer.commitMessageSync(message)
+      }
       Logger.info(`guid=${message.value.id}:uuid - endTransferHandler:process`)
       let metricEndNow = (new Date()).getTime()
       let metricCenLedgerTransferTransfer = metricEndNow - metricStartNow
@@ -299,7 +320,9 @@ const transfer = async (error, messages) => {
       // message.value.to = from
       // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
 
-      await consumer.commitMessageSync(message)
+      if (KafkaConfig.COMMIT_ENABLED) {
+        await consumer.commitMessageSync(message)
+      }
       Logger.info(`guid=${message.value.id}:uuid - endTransferHandler:process`)
       let metricEndNow = (new Date()).getTime()
       let metricCenLedgerTransferTransfer = metricEndNow - metricStartNow

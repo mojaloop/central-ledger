@@ -56,12 +56,13 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     Logger.info('Producer::start::topic=' + topicConf.topicName)
     // @TODO Re-work this so that the Producer is not created EVERYTIME
-    // if (!p) {
-    p = new Producer(config)
-    // }
-    Logger.info('Producer::connect::start')
-    await p.connect()
-    Logger.info('Producer::connect::end')
+    if (!p) {
+      p = new Producer(config)
+
+      Logger.info('Producer::connect::start')
+      await p.connect()
+      Logger.info('Producer::connect::end')
+    }
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
     await p.sendMessage(messageProtocol, topicConf)
     Logger.info('Producer::end')

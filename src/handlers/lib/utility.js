@@ -36,8 +36,8 @@
  */
 
 const Config = require('../../lib/config')
-const Mustache = require('mustache')
 const KafkaConfig = Config.KAFKA_CONFIG
+const Mustache = require('mustache')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Kafka = require('./kafka')

@@ -22,6 +22,7 @@
   "EMAIL_PASSWORD": "April2o0%",
   "EMAIL_SMTP": "smtp.gmail.com",
   "KAFKA": {
+    "COMMIT_ENABLED": false,
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
         "TEMPLATE": "topic-{{participantName}}-{{functionality}}-{{action}}",
@@ -51,13 +52,14 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
-              "enable.auto.commit": false,
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": false,
+              "enable.auto.commit": true,
+              "auto.commit.interval.ms": 200
             }
           }
         },
@@ -78,13 +80,14 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
-              "enable.auto.commit": false,
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": false,
+              "enable.auto.commit": true,
+              "auto.commit.interval.ms": 200
             }
           }
         },
@@ -105,13 +108,14 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
-              "enable.auto.commit": false,
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": false,
+              "enable.auto.commit": true,
+              "auto.commit.interval.ms": 200
             }
           }
         },
@@ -132,13 +136,14 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
-              "enable.auto.commit": false,
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": false,
+              "enable.auto.commit": true,
+              "auto.commit.interval.ms": 200
             }
           }
         }
@@ -161,13 +166,14 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
-              "enable.auto.commit": false,
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": false,
+              "enable.auto.commit": true,
+              "auto.commit.interval.ms": 200
             }
           }
         }
@@ -190,13 +196,14 @@
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
-              "enable.auto.commit": false,
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": false,
+              "enable.auto.commit": true,
+              "auto.commit.interval.ms": 200
             }
           }
         }
