@@ -31,10 +31,11 @@ exports.getAll = async () => {
 
 exports.create = async (participant) => {
   try {
-    return await Db.participant.insert({
+    let result = await Db.participant.insert({
       name: participant.name,
       createdBy: 'unknown'
     })
+    return result
   } catch (err) {
     throw new Error(err.message)
   }
