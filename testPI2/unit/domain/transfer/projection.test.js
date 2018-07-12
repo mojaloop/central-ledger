@@ -173,15 +173,9 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('return object of results', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-<<<<<<< Updated upstream
-      TransfersReadModel.saveTransfer.returns(P.resolve())
-      extensionModel.saveTransferExtension.returns(P.resolve())
-      ilpModel.saveIlp.returns(P.resolve())
-=======
       TransfersModel.saveTransfer.returns(P.resolve())
       extensionModel.saveExtension.returns(P.resolve())
       ilpModel.saveIlpPacket.returns(P.resolve())
->>>>>>> Stashed changes
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       TransferParticipant.saveTransferParticipant.returns(P.resolve())
       ParticipantFacade.getByNameAndCurrency.withArgs(payload.payerFsp, 'USD').returns(P.resolve(participant1))
