@@ -44,7 +44,16 @@ const saveTransfer = async (record) => {
   }
 }
 
+const truncateTransfer = async () => {
+  try {
+    return await Db.transfer.truncate()
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   getById,
-  saveTransfer
+  saveTransfer,
+  truncateTransfer
 }

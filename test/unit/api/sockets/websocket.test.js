@@ -12,7 +12,7 @@ Test('WebSocket', socketTest => {
   let socketManager
 
   socketTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(SocketValidator, 'validateSubscriptionRequest')
     sandbox.stub(RequestLogger, 'logWebsocket')
     socketManager = {

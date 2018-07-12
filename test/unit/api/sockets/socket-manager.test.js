@@ -12,7 +12,7 @@ Test('SocketManager', managerTest => {
 
   managerTest.beforeEach(test => {
     manager = SocketManager.create()
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(RequestLogger, 'logWebsocket')
     test.end()
   })

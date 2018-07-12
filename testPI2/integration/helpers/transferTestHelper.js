@@ -129,7 +129,7 @@ exports.prepareData = async () => {
     let transferResult = await TransferPreparationModule.prepareData() // participants + transfer
     let transferStateResults = await TransferStatePreparationHelper.prepareData() // transfer seed
 
-    await ExtensionModel.saveExtension({
+    await ExtensionModel.saveTransferExtension({
       transferId: transferResult.transferId,
       key: 'extension.key',
       value: 'extension.value',

@@ -26,7 +26,7 @@ Test('setup', setupTest => {
   let Setup
 
   setupTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Hapi, 'Server')
     sandbox.stub(Plugins, 'registerPlugins')
     sandbox.stub(HandlerPlugins, 'plugin')

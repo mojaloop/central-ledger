@@ -17,7 +17,7 @@ Test('Sidecar', sidecarTest => {
   let clientCreateStub
 
   sidecarTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Moment, 'utc')
 
     oldSidecar = Config.SIDECAR

@@ -81,7 +81,7 @@ Test('Settlement Test', settlementTest => {
   let sandbox
 
   settlementTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(SettlementEventListener)
     sandbox.stub(Logger)
     sandbox.stub(Events)

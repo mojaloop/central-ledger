@@ -74,7 +74,7 @@ Test('transfer validator', (test) => {
   }
 
   test.beforeEach((t) => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(UrlParser, 'nameFromParticipantUri')
     sandbox.stub(UrlParser, 'idFromTransferUri')
     sandbox.stub(Participant, 'getByName')

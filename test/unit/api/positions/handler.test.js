@@ -13,7 +13,7 @@ Test('positions handler', (handlerTest) => {
   let hostname = 'http://some-host'
 
   handlerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(PositionService, 'calculateForAllParticipants')
     sandbox.stub(PositionService, 'calculateForParticipant')
     sandbox.stub(Participant, 'getByName')

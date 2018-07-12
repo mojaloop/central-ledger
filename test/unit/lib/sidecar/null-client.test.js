@@ -10,7 +10,7 @@ Test('Null SidecarClient', nullSidecarTest => {
   let sandbox
 
   nullSidecarTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Logger)
     t.end()
   })

@@ -208,4 +208,5 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
+  await facadeTest.end()
 })

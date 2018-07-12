@@ -27,7 +27,7 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Db = require('../../../../src/db/index')
@@ -39,7 +39,7 @@ Test('Participant model', async (participantTest) => {
 
   const participantFixtures = [
     {
-      name: 'fsp1',
+      name: 'fsp1z',
       currency: 'USD',
       isActive: 1,
       createdDate: new Date()
@@ -53,15 +53,22 @@ Test('Participant model', async (participantTest) => {
   ]
   const participant = participantFixtures[0]
   const participantId = 1
+  participantTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    Db.participant = {
+      insert: sandbox.stub(),
+      update: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub(),
+      destroy: sandbox.stub()
+    }
+    t.end()
+  })
 
-  sandbox = Sinon.createSandbox()
-  Db.participant = {
-    insert: sandbox.stub(),
-    update: sandbox.stub(),
-    findOne: sandbox.stub(),
-    find: sandbox.stub(),
-    destroy: sandbox.stub()
-  }
+  participantTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
 
   await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = {name: 'fsp3'}
@@ -255,4 +262,6 @@ Test('Participant model', async (participantTest) => {
       test.end()
     }
   })
+
+  await participantTest.end()
 })

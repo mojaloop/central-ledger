@@ -14,7 +14,7 @@ Test('Worker test', workerTest => {
   let sandbox
 
   workerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransferService, 'rejectExpired')
     sandbox.stub(TokenService, 'removeExpired')
     sandbox.stub(Logger, 'error')

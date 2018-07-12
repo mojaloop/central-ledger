@@ -29,7 +29,7 @@
 
 const Db = require('../../db')
 const TransferExtensionModel = require('./transferExtension')
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = async (id) => {
   try {
@@ -38,27 +38,23 @@ const getById = async (id) => {
         .where({
           'transfer.transferId': id,
           'tprt1.name': 'PAYER_DFSP', // TODO: look at refactoring the sql completely and use transferParticipantRoleTypeId
-          'tprt2.name': 'PAYEE_DFSP'
+          'tprt2.name': 'PAYEE_DFSP',
+          'pc1.currencyId': 'transfer.currencyId',
+          'pc2.currencyId': 'transfer.currencyId'
         })
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc1', function () {
-          this.on('pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-            .andOn('pc1.currencyId', 'transfer.currencyId')
-        })
+        .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
         // PAYEE
         .innerJoin('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc2', function () {
-          this.on('pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-            .andOn('pc2.currencyId', 'transfer.currencyId')
-        })
+        .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
         .innerJoin('participant AS ca', 'ca.participantId', 'pc2.participantId')
         // OTHER JOINS
+        .innerJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
-        .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
         .select(
           'transfer.*',
@@ -97,27 +93,23 @@ const getAll = async () => {
       let transferResultList = await builder
         .where({
           'tprt1.name': 'PAYER_DFSP', // TODO: look at refactoring the sql completely and use transferParticipantRoleTypeId
-          'tprt2.name': 'PAYEE_DFSP'
+          'tprt2.name': 'PAYEE_DFSP',
+          'pc1.currencyId': 'transfer.currencyId',
+          'pc2.currencyId': 'transfer.currencyId'
         })
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc1', function () {
-          this.on('pc1.participantCurrencyId', 'tp1.participantCurrencyId')
-            .andOn('pc1.currencyId', 'transfer.currencyId')
-        })
+        .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
         .innerJoin('participant AS da', 'da.participantId', 'pc1.participantId')
         // PAYEE
         .innerJoin('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId')
-        .innerJoin('participantCurrency AS pc2', function () {
-          this.on('pc2.participantCurrencyId', 'tp2.participantCurrencyId')
-            .andOn('pc2.currencyId', 'transfer.currencyId')
-        })
+        .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
         .innerJoin('participant AS ca', 'ca.participantId', 'pc2.participantId')
         // OTHER JOINS
+        .innerJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
-        .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
         .select(
           'transfer.*',
@@ -149,17 +141,7 @@ const getAll = async () => {
   }
 }
 
-const truncateTransfers = async () => {
-  try {
-    return await Db.transfer.truncate()
-  } catch (err) {
-    Logger.info(err)
-    throw err
-  }
-}
-
 module.exports = {
   getById,
-  getAll,
-  truncateTransfers
+  getAll
 }

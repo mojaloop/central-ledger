@@ -38,7 +38,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.ABORTED)
+    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.REJECTED)
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
@@ -82,7 +82,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         }
       })
       for (let ext of transferExtensionsRecordList) {
-        await transferExtensionModel.saveExtension(ext)
+        await transferExtensionModel.saveTransferExtension(ext)
       }
     }
 
@@ -137,7 +137,7 @@ const saveTransferExecuted = async (transferId, payload, stateReason = null, has
       }
     })
     for (let ext of transferExtensionsRecordList) {
-      await transferExtensionModel.saveExtension(ext)
+      await transferExtensionModel.saveTransferExtension(ext)
     }
   }
 

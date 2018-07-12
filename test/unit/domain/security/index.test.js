@@ -15,7 +15,7 @@ Test('SecurityService test', serviceTest => {
   let sandbox
 
   serviceTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(RoleModel)
     sandbox.stub(PartyModel)
     test.end()

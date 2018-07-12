@@ -12,7 +12,7 @@ Test('participant auth module', authTest => {
   let sandbox
 
   authTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(ParticipantService)
     sandbox.stub(Logger)
     t.end()

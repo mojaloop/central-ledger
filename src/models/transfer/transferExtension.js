@@ -28,71 +28,42 @@
 'use strict'
 
 const Db = require('../../db/index')
-// const Moment = require('moment')
-const Util = require('../../lib/util')
-// const Time = require('../lib/time')
 
-exports.saveExtension = async (extension) => {
+const saveTransferExtension = async (extension) => {
   try {
-    let ext = {
-      transferId: extension.transferId,
-      transferFulfilmentId: extension.transferFulfilmentId,
-      key: extension.key,
-      value: extension.value
-    }
-    return await Db.transferExtension.insert(ext)
+    return await Db.transferExtension.insert(extension)
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-// exports.getById = async (id) => {
-//   try {
-//     return await Db.ilp.findOne({ ilpId: id })
-//   } catch (err) {
-//     throw new Error(err.message)
-//   }
-// }
-
-exports.getByTransferId = async (transferId) => {
+const getByTransferId = async (transferId) => {
   try {
-    return await Db.transferExtension.findOne({ transferId: transferId })
-    // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
-    // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
+    return await Db.transferExtension.find({ transferId: transferId })
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.getByExtensionId = async (extensionId) => {
+const getByTransferExtensionId = async (transferExtensionId) => {
   try {
-    return await Db.transferExtension.findOne({ extensionId: extensionId })
-    // .innerJoin('transfer', 'transfer.transferId', 'ilp.transferId')
-    // .where('expirationDate', '>', `${Time.getCurrentUTCTimeInMilliseconds()}`) // or maybe ${Moment.utc().toISOString()}
+    return await Db.transferExtension.findOne({ transferExtensionId: transferExtensionId })
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.update = async (extension) => {
-  const fields = {
-    transferId: extension.transferId,
-    key: extension.key,
-    value: extension.value,
-    changedDate: extension.changedDate,
-    changedBy: extension.changedBy
-  }
-  try {
-    return await Db.transferExtension.update({extensionId: extension.extensionId}, Util.filterUndefined(fields))
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-exports.destroyByTransferId = async (extension) => {
+const destroyByTransferId = async (extension) => {
   try {
     return await Db.transferExtension.destroy({transferId: extension.transferId})
   } catch (err) {
     throw new Error(err.message)
   }
+}
+
+module.exports = {
+  saveTransferExtension,
+  getByTransferId,
+  getByTransferExtensionId,
+  destroyByTransferId
 }

@@ -15,7 +15,7 @@ Test('JWT', jwtTest => {
   let tokenExpiration
 
   jwtTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(WebToken)
     sandbox.stub(SecurityService)
     tokenExpiration = Config.TOKEN_EXPIRATION

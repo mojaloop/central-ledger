@@ -20,7 +20,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
   let sandbox
 
   transfersProjectionTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransfersReadModel, 'saveTransfer')
     sandbox.stub(TransfersReadModel, 'updateTransfer')
     sandbox.stub(TransfersReadModel, 'truncateTransfers')

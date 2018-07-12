@@ -38,7 +38,7 @@ Test('transfer handler', handlerTest => {
   const hostname = 'http://some-host'
 
   handlerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Validator, 'validate', a => P.resolve(a))
     sandbox.stub(TransferService, 'prepare')
     sandbox.stub(TransferService, 'getById')

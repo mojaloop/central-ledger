@@ -36,7 +36,7 @@ Test('logger', loggerTest => {
   let sandbox
 
   loggerTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Logger, 'info')
     sandbox.stub(Util, 'inspect')
 

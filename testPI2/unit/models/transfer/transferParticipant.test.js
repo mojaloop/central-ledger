@@ -23,3 +23,49 @@
  ******/
 
 'use strict'
+
+const Test = require('tape')
+const Sinon = require('sinon')
+const Db = require('../../../../src/db/index')
+const Logger = require('@mojaloop/central-services-shared').Logger
+const Model = require('../../../../src/models/transfer/transferParticipant')
+
+Test('TransferParticipant model', async (transferParticipant) => {
+  let sandbox
+
+  const transferParticipantRecord = {
+    transferParticipantId: 1,
+    transferId: '1546bcce-0470-44df-aa07-cddccb04495e',
+    participantCurrencyId: 1,
+    transferParticipantRoleTypeId: 1,
+    ledgerEntryTypeId: 1,
+    amount: 100,
+    expirationDate: new Date()
+  }
+
+  await transferParticipant.test('setup', async (assert) => {
+    sandbox = Sinon.createSandbox()
+    Db.transferParticipant = {
+      insert: sandbox.stub()
+    }
+    assert.pass('setup OK')
+    assert.end()
+  })
+
+  await transferParticipant.test('save transfer participant test', async (assert) => {
+    try {
+      let saved = {transferParticipantId: transferParticipantRecord.transferParticipantId}
+      Db.transferParticipant.insert.returns(Promise.resolve(saved))
+      let transferParticipantCreated = await Model.saveTransferParticipant(transferParticipantRecord)
+      assert.equal(transferParticipantCreated, saved, 'transfer participant is inserted and id is returned')
+      assert.ok(Db.transferParticipant.insert.calledOnce, 'transfer participant insert is called once')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create transfer participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferParticipant.end()
+})

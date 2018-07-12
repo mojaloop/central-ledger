@@ -50,7 +50,7 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.sandbox.create()
+      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()

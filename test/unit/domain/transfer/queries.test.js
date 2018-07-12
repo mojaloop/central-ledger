@@ -11,7 +11,7 @@ Test('Transfer Queries tests', queriesTest => {
   let sandbox
 
   queriesTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransferReadModel, 'findExpired')
     sandbox.stub(TransferReadModel, 'getById')
     sandbox.stub(TransferReadModel, 'getAll')

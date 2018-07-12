@@ -11,7 +11,7 @@ Test('participant model', modelTest => {
   let sandbox
 
   modelTest.beforeEach((t) => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
 
     Db.participant = {
       insert: sandbox.stub(),

@@ -12,7 +12,7 @@ Test('Party handler', handlerTest => {
   let sandbox
 
   handlerTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(SecurityService)
     sandbox.stub(Sidecar, 'logRequest')
     test.end()

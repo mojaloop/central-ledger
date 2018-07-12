@@ -26,7 +26,7 @@ Test('Token Auth', tokenTest => {
   let originalTokenExpiration
 
   tokenTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(ParticipantService, 'getByName')
     sandbox.stub(TokenService, 'byParticipant')
     sandbox.stub(Crypto, 'verifyHash')

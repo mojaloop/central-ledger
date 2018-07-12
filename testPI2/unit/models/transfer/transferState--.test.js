@@ -45,7 +45,7 @@ Test('transferState model', async (transferStateTest) => {
   ]
   const transferState = transferStateTestValues[0]
 
-  sandbox = Sinon.sandbox.create()
+  sandbox = Sinon.createSandbox()
   Db.transferState = {
     insert: sandbox.stub(),
     findOne: sandbox.stub(),
@@ -185,4 +185,6 @@ Test('transferState model', async (transferStateTest) => {
       assert.end()
     }
   })
+
+  await transferStateTest.end()
 })

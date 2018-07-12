@@ -13,7 +13,7 @@ Test('Participant service', serviceTest => {
   let sandbox
 
   serviceTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Model)
     sandbox.stub(Crypto)
     test.end()

@@ -37,7 +37,7 @@ Test('transfer validator', validatorTest => {
         ]
       }
     }
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Participant)
     sandbox.stub(CryptoConditions, 'validateCondition')
     test.end()

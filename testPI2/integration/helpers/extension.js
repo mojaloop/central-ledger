@@ -78,7 +78,7 @@ exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
 
-    await Model.saveExtension({
+    await Model.saveTransferExtension({
       transferId: transferResult.transferId,
       key: 'extension.key',
       value: 'extension.value',

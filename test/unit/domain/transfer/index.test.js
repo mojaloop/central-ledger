@@ -31,7 +31,7 @@ Test('Transfer Service tests', serviceTest => {
   let sandbox
 
   serviceTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransferService, 'findExpired')
     sandbox.stub(TransferService, 'getById')
     sandbox.stub(TransferService, 'getAll')

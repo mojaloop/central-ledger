@@ -13,7 +13,7 @@ Test('migrator', migratorTest => {
   let Migrator
 
   migratorTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Migrations)
 
     configuredMigrationsFolder = 'migrations-path'
