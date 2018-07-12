@@ -11,7 +11,7 @@ const create = async (payload) => {
   //   .then(hashedPassword => {
   try {
     const participant = await ParticipantModel.create({ name: payload.name, currency: payload.currency })
-    if (!participant) throw new Error('Something went wrond. Participant cannot be created')
+    if (!participant) throw new Error('Something went wrong. Participant cannot be created')
     return participant
   } catch (err) {
     throw err
