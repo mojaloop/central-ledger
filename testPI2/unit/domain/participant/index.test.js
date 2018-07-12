@@ -33,7 +33,6 @@ const ParticipantModel = require('../../../../src/models/participant/participant
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 
-
 const Service = require('../../../../src/domain/participant/index')
 
 Test('Participant service', async (participantTest) => {
@@ -123,11 +122,11 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantCurrencyModel, 'create')
     sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
     sandbox.stub(ParticipantCurrencyModel, 'getById')
-   
+
     sandbox.stub(ParticipantFacade, 'getEndpoint')
     sandbox.stub(ParticipantFacade, 'getAllEndpoints')
     sandbox.stub(ParticipantFacade, 'addEndpoint')
-    
+
     Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
@@ -398,7 +397,6 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('getAllEndpoints should fail if no endpoints found', async (assert) => {
-
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
     ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0]).returns(null)
@@ -455,4 +453,3 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.end()
 })
-
