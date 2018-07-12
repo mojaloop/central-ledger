@@ -32,12 +32,16 @@ const P = require('bluebird')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const UrlParser = require('../../../../src/lib/urlParser')
 const ParticipantService = require('../../../../src/domain/participant')
+const ParticipantFacade = require('../../../../src/models/participant/facade')
 const TransferState = require('../../../../src/lib/enum').TransferState
 const TransfersReadModel = require('../../../../src/models/transfer/facade')
+const TransfersModel = require('../../../../src/models/transfer/transfer')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
+const TransferParticipant = require('../../../../src/models/transfer/transferParticipant')
 const ilpModel = require('../../../../src/models/transfer/ilpPacket')
 const extensionModel = require('../../../../src/models/transfer/transferExtension')
 const transferStateChangeModel = require('../../../../src/models/transfer/transferStateChange')
+const ProjectionModel = require('../../../../src/domain/transfer/projection')
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -82,22 +86,28 @@ const participant2 = {
   isDisabled: false
 }
 
-const transferRecord = {
-  transferId: payload.transferId,
-  payerParticipantId: participant1.participantId,
-  payeeParticipantId: participant2.participantId,
-  amount: payload.amount.amount,
-  currencyId: payload.amount.currency,
-  expirationDate: new Date(payload.expiration)
-}
+// const payeeTransferParticipant = {
+//   transferId: payload.transferId,
+//   transferParticipantRoleTypeId: 1,
+//   ledgerEntryTypeId: 1,
+//   amount: payload.amount,
+//   name: payload.payeeFsp
+// }
+
+// const payerTransferParticipant = {
+//   transferId: payload.transferId,
+//   transferParticipantRoleTypeId: 1,
+//   ledgerEntryTypeId: 1,
+//   amount: payload.amount,
+//   name: payload.payerFsp
+// }
 
 const stateReason = 'reasonOne'
 
 const transferStateRecord = {
   transferId: payload.transferId,
-  transferStateId: TransferState.RECEIVED,
-  reason: null,
-  changedDate: new Date()
+  transferStateId: TransferState.RECEIVED_PREPARE,
+  reason: null
 }
 
 const newTransferStateRecord = {
@@ -110,20 +120,30 @@ const newTransferStateRecord = {
 
 const ilpRecord = {
   transferId: payload.transferId,
-  packet: payload.ilpPacket,
-  condition: payload.condition,
-  fulfilment: null
+  value: payload.ilpPacket
+  // condition: payload.condition
+  // fulfilment: null
 }
 
 const extensionsRecordList = [
   {
     transferId: payload.transferId,
     key: payload.extensionList.extension[0].key,
-    value: payload.extensionList.extension[0].value,
-    changedDate: new Date(),
-    changedBy: 'user' // this needs to be changed and cannot be null
+    value: payload.extensionList.extension[0].value
+    // changedDate: new Date(),
+    // changedBy: 'user'
   }
 ]
+
+const transferRecord = {
+  transferId: payload.transferId,
+  // payerTransferParticipantRecord: payerTransferParticipant,
+  // payeeTransferParticipantRecord: payeeTransferParticipant,
+  amount: payload.amount.amount,
+  currencyId: payload.amount.currency,
+  expirationDate: new Date(payload.expiration),
+  ilpCondition: payload.condition
+}
 
 Test('Transfers-Projection', transfersProjectionTest => {
   let sandbox
@@ -134,9 +154,11 @@ Test('Transfers-Projection', transfersProjectionTest => {
     sandbox.stub(extensionModel)
     sandbox.stub(ilpModel)
     sandbox.stub(transferStateChangeModel)
+    sandbox.stub(TransfersModel)
     sandbox.stub(UrlParser, 'nameFromParticipantUri')
     sandbox.stub(ParticipantService)
-    sandbox.stub(Logger, 'error')
+    sandbox.stub(TransferParticipant)
+    sandbox.stub(ParticipantFacade)
     t.end()
   })
 
@@ -150,48 +172,63 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('return object of results', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-      TransfersReadModel.saveTransfer.returns(P.resolve())
+      TransfersModel.saveTransfer.returns(P.resolve())
       extensionModel.saveTransferExtension.returns(P.resolve())
-      ilpModel.saveIlp.returns(P.resolve())
+      ilpModel.saveIlpPacket.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
-
-      const result = await TransfersProjection.saveTransferPrepared(payload)
-      test.equal(result.isSaveTransferPrepared, true)
-      test.deepEqual(result.transferRecord, transferRecord)
-      test.deepEqual(result.ilpRecord, ilpRecord)
-      transferStateRecord.changedDate = result.transferStateRecord.changedDate
-      extensionsRecordList[0].changedDate = result.extensionsRecordList[0].changedDate
-      test.deepEqual(result.transferStateRecord, transferStateRecord)
-      test.deepEqual(result.extensionsRecordList, extensionsRecordList)
-      test.end()
+      TransferParticipant.saveTransferParticipant.returns(P.resolve())
+      ParticipantFacade.getByNameAndCurrency.withArgs(payload.payerFsp, 'USD').returns(P.resolve(participant1))
+      ParticipantFacade.getByNameAndCurrency.withArgs(payload.payeeFsp, 'USD').returns(P.resolve(participant2))
+      try {
+        const result = await ProjectionModel.saveTransferPrepared(payload)
+        test.equal(result.isSaveTransferPrepared, true)
+        test.deepEqual(result.transferRecord, transferRecord)
+        test.deepEqual(result.ilpPacketRecord, ilpRecord)
+        transferStateRecord.createdDate = result.transferStateChangeRecord.createdDate
+        test.deepEqual(result.transferStateChangeRecord, transferStateRecord)
+        test.deepEqual(result.transferExtensionsRecordList, extensionsRecordList)
+        test.end()
+      } catch (err) {
+        Logger.error(`projection saveTransferPrepared failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
     })
 
     preparedTest.test('return object of results when status is aborted', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-      TransfersReadModel.saveTransfer.returns(P.resolve())
+      TransfersModel.saveTransfer.returns(P.resolve())
       extensionModel.saveTransferExtension.returns(P.resolve())
-      ilpModel.saveIlp.returns(P.resolve())
+      ilpModel.saveIlpPacket.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
-
-      const result = await TransfersProjection.saveTransferPrepared(payload, 'validation failed', false)
-      test.equal(result.isSaveTransferPrepared, true)
-      test.deepEqual(result.transferRecord, transferRecord)
-      test.deepEqual(result.ilpRecord, ilpRecord)
-      transferStateRecord.changedDate = result.transferStateRecord.changedDate
-      transferStateRecord.reason = 'validation failed'
-      transferStateRecord.transferStateId = 'ABORTED'
-      extensionsRecordList[0].changedDate = result.extensionsRecordList[0].changedDate
-      test.deepEqual(result.transferStateRecord, transferStateRecord)
-      test.deepEqual(result.extensionsRecordList, extensionsRecordList)
-      test.end()
+      TransferParticipant.saveTransferParticipant.returns(P.resolve())
+      ParticipantFacade.getByNameAndCurrency.withArgs(payload.payerFsp, 'USD').returns(P.resolve(participant1))
+      ParticipantFacade.getByNameAndCurrency.withArgs(payload.payeeFsp, 'USD').returns(P.resolve(participant2))
+      try {
+        const result = await TransfersProjection.saveTransferPrepared(payload, 'validation failed', false)
+        test.equal(result.isSaveTransferPrepared, true)
+        test.deepEqual(result.transferRecord, transferRecord)
+        test.deepEqual(result.ilpPacketRecord, ilpRecord)
+//        transferStateRecord.changedDate = result.transferStateChangeRecord.changedDate
+        transferStateRecord.reason = 'validation failed'
+        transferStateRecord.transferStateId = 'REJECTED'
+//        extensionsRecordList[0].changedDate = result.extensionsRecordList[0].changedDate
+        test.deepEqual(result.transferStateChangeRecord.transferStateId, transferStateRecord.transferStateId)
+        test.deepEqual(result.transferExtensionsRecordList, extensionsRecordList)
+        test.end()
+      } catch (err) {
+        Logger.error(`return object of results when status is aborted failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
     })
 
     preparedTest.test('throw an error when unable to save transfer', async (test) => {
       try {
         ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
         ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-        TransfersReadModel.saveTransfer.throws(new Error())
+        TransfersModel.saveTransfer.throws(new Error())
         await TransfersProjection.saveTransferPrepared(payload)
         test.fail('Error not thrown')
         test.end()
@@ -205,9 +242,9 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('save transfer throws error', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-      TransfersReadModel.saveTransfer.throws(new Error())
+      TransfersModel.saveTransfer.throws(new Error())
       extensionModel.saveTransferExtension.returns(P.resolve())
-      ilpModel.saveIlp.returns(P.resolve())
+      ilpModel.saveIlpPacket.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
         await TransfersProjection.saveTransferPrepared(payload)
@@ -222,9 +259,9 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('save extension throws error', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-      TransfersReadModel.saveTransfer.returns(P.resolve())
+      TransfersModel.saveTransfer.returns(P.resolve())
       extensionModel.saveTransferExtension.throws(new Error())
-      ilpModel.saveIlp.returns(P.resolve())
+      ilpModel.saveIlpPacket.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
         await TransfersProjection.saveTransferPrepared(payload)
@@ -239,9 +276,9 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('save ilp throws error', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-      TransfersReadModel.saveTransfer.returns(P.resolve())
+      TransfersModel.saveTransfer.returns(P.resolve())
       extensionModel.saveTransferExtension.returns(P.resolve())
-      ilpModel.saveIlp.throws(new Error())
+      ilpModel.saveIlpPacket.throws(new Error())
       transferStateChangeModel.saveTransferStateChange.returns(P.resolve())
       try {
         await TransfersProjection.saveTransferPrepared(payload)
@@ -256,9 +293,9 @@ Test('Transfers-Projection', transfersProjectionTest => {
     preparedTest.test('save TransferStateChange throws error', async (test) => {
       ParticipantService.getByName.withArgs(payload.payerFsp).returns(P.resolve(participant1))
       ParticipantService.getByName.withArgs(payload.payeeFsp).returns(P.resolve(participant2))
-      TransfersReadModel.saveTransfer.returns(P.resolve())
+      TransfersModel.saveTransfer.returns(P.resolve())
       extensionModel.saveTransferExtension.returns(P.resolve())
-      ilpModel.saveIlp.returns(P.resolve())
+      ilpModel.saveIlpPacket.returns(P.resolve())
       transferStateChangeModel.saveTransferStateChange.throws(new Error())
       try {
         await TransfersProjection.saveTransferPrepared(payload)
@@ -342,6 +379,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
         test.end()
       }
     })
+
     updateTransferStateTest.end()
   })
 

@@ -54,6 +54,7 @@ Test('Extension model', async (extensionModelTest) => {
     insert: sandbox.stub(),
     update: sandbox.stub(),
     findOne: sandbox.stub(),
+    find: sandbox.stub(),
     destroy: sandbox.stub()
   }
 
@@ -92,7 +93,7 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('get extensions by transferId with empty id', async (assert) => {
-    Db.transferExtension.findOne.withArgs({ transferId: '' }).throws(new Error())
+    Db.transferExtension.find.withArgs({ transferId: '' }).throws(new Error())
     try {
       await Model.getByTransferId('')
       assert.fail('should throw with empty transferId')
@@ -103,7 +104,7 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('get extension by transferId', async (assert) => {
-    Db.transferExtension.findOne.withArgs({transferId: 1}).returns(transferExtensionModelFixtures[0])
+    Db.transferExtension.find.withArgs({transferId: 1}).returns(transferExtensionModelFixtures[0])
     try {
       var result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])

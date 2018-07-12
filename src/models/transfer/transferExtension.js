@@ -39,7 +39,7 @@ const saveTransferExtension = async (extension) => {
 
 const getByTransferId = async (transferId) => {
   try {
-    return await Db.transferExtension.findOne({ transferId: transferId })
+    return await Db.transferExtension.find({ transferId: transferId })
   } catch (err) {
     throw new Error(err.message)
   }
