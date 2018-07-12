@@ -25,7 +25,7 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -36,7 +36,6 @@ const Service = require('../../../../src/domain/participant/index')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
-
   const participantFixtures = [
     {
       participantId: 0,
@@ -88,7 +87,7 @@ Test('Participant service', async (participantTest) => {
 
   let participantMap = new Map()
 
-  await participantTest.test('setup', async (assert) => {
+  participantTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(ParticipantModel, 'create')
     sandbox.stub(ParticipantModel, 'getByName')
@@ -117,8 +116,8 @@ Test('Participant service', async (participantTest) => {
       participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({participant}).returns(index)
       ParticipantModel.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
-      ParticipantModel.getByName.withArgs(participant.name).returns((participant))
-      ParticipantModel.getById.withArgs(index).returns((participant))
+      ParticipantModel.getByName.withArgs(participant.name).returns(participantResult[index])
+      ParticipantModel.getById.withArgs(index).returns(participantResult[index])
       ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
       ParticipantCurrencyModel.create.withArgs({participantId: index, currencyId: participant.currency}).returns((index + 1))
       ParticipantCurrencyModel.getById.withArgs(index).returns({
@@ -130,8 +129,12 @@ Test('Participant service', async (participantTest) => {
       ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId).returns(participant.currency)
     })
     ParticipantModel.getAll.returns(Promise.resolve(participantResult))
-    assert.pass('setup OK')
-    assert.end()
+    t.end()
+  })
+
+  participantTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
   })
 
   await participantTest.test('create false participant', async (assert) => {
@@ -195,7 +198,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getAll', async (assert) => {
     try {
       var result = await Service.getAll()
-      assert.deepEqual(result, participantFixtures)
+      assert.deepEqual(result, participantResult)
       assert.end()
     } catch (err) {
       Logger.error(`get all participants failed with error - ${err}`)
@@ -312,4 +315,7 @@ Test('Participant service', async (participantTest) => {
     }
     assert.end()
   })
+
+  await participantTest.end()
 })
+
