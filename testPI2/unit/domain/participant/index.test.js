@@ -352,7 +352,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-      ParticipantFacade.getEndpoint.withArgs(participantFixtures[0], endpoint.type).returns([endpoints[0]])
+      ParticipantFacade.getEndpoint.withArgs(participantFixtures[0].participantId, endpoint.type).returns([endpoints[0]])
       const result = await Service.getEndpoint(participantFixtures[0].name, endpoint.type)
       assert.deepEqual(result[0], endpoints[0], 'Results matched')
       assert.end()
@@ -370,7 +370,7 @@ Test('Participant service', async (participantTest) => {
     }
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-    ParticipantFacade.getEndpoint.withArgs(participantFixtures[0], endpoint.type).returns(null)
+    ParticipantFacade.getEndpoint.withArgs(participantFixtures[0].participantId, endpoint.type).returns(null)
 
     try {
       await Service.getEndpoint(participantFixtures[0], endpoint.type)
@@ -385,7 +385,7 @@ Test('Participant service', async (participantTest) => {
     try {
       ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-      ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0]).returns(endpoints)
+      ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0].participantId).returns(endpoints)
       const result = await Service.getAllEndpoints(participantFixtures[0].name)
       assert.deepEqual(result, endpoints, 'Results matched')
       assert.end()
@@ -399,7 +399,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getAllEndpoints should fail if no endpoints found', async (assert) => {
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-    ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0]).returns(null)
+    ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0].participantId).returns(null)
 
     try {
       await Service.getAllEndpoints(participantFixtures[0].name)
@@ -420,7 +420,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-      ParticipantFacade.addEndpoint.withArgs(participantFixtures[0], payload.endpoint).returns(1)
+      ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload.endpoint).returns(1)
       const result = await Service.addEndpoint(participantFixtures[0].name, payload)
       assert.deepEqual(result, 1, 'Results matched')
       assert.end()
@@ -440,7 +440,7 @@ Test('Participant service', async (participantTest) => {
     }
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-    ParticipantFacade.addEndpoint.withArgs(participantFixtures[0], payload.endpoint).throws(new Error())
+    ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload.endpoint).throws(new Error())
 
     try {
       await Service.addEndpoint(participantFixtures[0].name, payload)

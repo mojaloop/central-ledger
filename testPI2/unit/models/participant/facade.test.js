@@ -150,7 +150,7 @@ Test('Participant facade', async (facadeTest) => {
           select: selectStub.returns([endpoints[0]])
         })
       })
-      const result = await Model.getEndpoint({ participant, endpointType: endpoints[0].name })
+      const result = await Model.getEndpoint({ participantId: participant.participantId, endpointType: endpoints[0].name })
       assert.deepEqual(result[0], endpoints[0])
       assert.ok(builderStub.innerJoin.withArgs('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId').calledOnce)
 
@@ -181,7 +181,7 @@ Test('Participant facade', async (facadeTest) => {
   await facadeTest.test('getEndpoint should throw error', async (assert) => {
     try {
       Db.participantEndpoint.query.throws(new Error('message'))
-      await Model.getEndpoint({ participant, endpointType: endpoints[0].name })
+      await Model.getEndpoint({ participantId: participant.participantId, endpointType: endpoints[0].name })
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
@@ -206,7 +206,7 @@ Test('Participant facade', async (facadeTest) => {
           select: selectStub.returns(endpoints)
         })
       })
-      const result = await Model.getAllEndpoints(participant)
+      const result = await Model.getAllEndpoints(participant.participantId)
       assert.deepEqual(result, endpoints)
       assert.ok(builderStub.innerJoin.withArgs('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId').calledOnce)
 
@@ -236,7 +236,7 @@ Test('Participant facade', async (facadeTest) => {
   await facadeTest.test('getAllEndpoints should throw error', async (assert) => {
     try {
       Db.participantEndpoint.query.throws(new Error('message'))
-      await Model.getAllEndpoints(participant)
+      await Model.getAllEndpoints(participant.participantId)
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
@@ -260,7 +260,7 @@ Test('Participant facade', async (facadeTest) => {
         type: 'FSIOP_CALLBACK_URL',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
-      var result = await Model.addEndpoint(participant, endpoint)
+      var result = await Model.addEndpoint(participant.participantId, endpoint)
       assert.equal(result, 1)
       assert.end()
     } catch (err) {
@@ -278,7 +278,7 @@ Test('Participant facade', async (facadeTest) => {
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
-      await Model.addEndpoint(participant, endpoint)
+      await Model.addEndpoint(participant.participantId, endpoint)
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
