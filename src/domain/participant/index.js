@@ -114,7 +114,7 @@ const getAllEndpoints = async (name) => {
 }
 
 const participantEndpointExists = (participantEndpoint) => {
-  if (participantEndpoint && participantEndpoint.length > 0) {
+  if (Array.isArray(participantEndpoint) && participantEndpoint.length > 0) {
     return participantEndpoint
   }
   throw new Error('participantEndpoint does not exist')
