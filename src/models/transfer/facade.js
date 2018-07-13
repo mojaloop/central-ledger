@@ -37,11 +37,11 @@ const getById = async (id) => {
       let transferResult = await builder
         .where({
           'transfer.transferId': id,
-          'tprt1.name': 'PAYER_DFSP', // TODO: look at refactoring the sql completely and use transferParticipantRoleTypeId
-          'tprt2.name': 'PAYEE_DFSP',
-          'pc1.currencyId': 'transfer.currencyId',
-          'pc2.currencyId': 'transfer.currencyId'
+          'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
+          'tprt2.name': 'PAYEE_DFSP'
         })
+        .whereRaw('pc1.currencyId = transfer.currencyId')
+        .whereRaw('pc2.currencyId = transfer.currencyId')
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')
@@ -92,11 +92,11 @@ const getAll = async () => {
     return await Db.transfer.query(async (builder) => {
       let transferResultList = await builder
         .where({
-          'tprt1.name': 'PAYER_DFSP', // TODO: look at refactoring the sql completely and use transferParticipantRoleTypeId
-          'tprt2.name': 'PAYEE_DFSP',
-          'pc1.currencyId': 'transfer.currencyId',
-          'pc2.currencyId': 'transfer.currencyId'
+          'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
+          'tprt2.name': 'PAYEE_DFSP'
         })
+        .whereRaw('pc1.currencyId = transfer.currencyId')
+        .whereRaw('pc2.currencyId = transfer.currencyId')
         // PAYER
         .innerJoin('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId')
         .innerJoin('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId')

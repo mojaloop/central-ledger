@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -143,7 +145,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('destroy extension', async (assert) => {
     Db.transferExtension.destroy.withArgs({transferId: 1}).returns(1)
     try {
-      let result = await Model.destroyByTransferId(transferExtensionModelFixtures[0])
+      let result = await Model.destroyByTransferId(transferExtensionModelFixtures[0].transferId)
       assert.equal(result, 1)
       assert.end()
     } catch (err) {
@@ -155,9 +157,9 @@ Test('Extension model', async (extensionModelTest) => {
   })
 
   await extensionModelTest.test('destroy extension with missing transferId', async (assert) => {
-    Db.transferExtension.destroy.withArgs({transferId: 12}).throws(new Error())
+    Db.transferExtension.destroy.withArgs({transferId: 10}).throws(new Error())
     try {
-      await Model.destroyByTransferId(Object.assign({}, transferExtensionModelFixtures[0], {transferId: 12}))
+      await Model.destroyByTransferId(10)
       assert.fail('should throw without empty extension ')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err}`)

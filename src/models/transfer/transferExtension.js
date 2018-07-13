@@ -53,9 +53,9 @@ const getByTransferExtensionId = async (transferExtensionId) => {
   }
 }
 
-const destroyByTransferId = async (extension) => {
+const destroyByTransferId = async (transferId) => {
   try {
-    return await Db.transferExtension.destroy({transferId: extension.transferId})
+    return await Db.transferExtension.destroy({transferId})
   } catch (err) {
     throw new Error(err.message)
   }
