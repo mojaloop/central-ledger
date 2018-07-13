@@ -41,6 +41,8 @@ const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const TransferState = require('../../../src/domain/transfer/state')
+const Config = require('../../lib/config')
+const KafkaConfig = Config.KAFKA_CONFIG
 
 const POSITION = 'position'
 const TRANSFER = 'transfer'
@@ -70,10 +72,14 @@ const positions = async (error, messages) => {
       payload.transferId = message.value.id
       await Projection.updateTransferState(payload, TransferState.COMMITTED)
     } else {
-      await consumer.commitMessageSync(message)
+      if (KafkaConfig.COMMIT_ENABLED) {
+        await consumer.commitMessageSync(message)
+      }
       throw new Error('event action or type not valid')
     }
-    await consumer.commitMessageSync(message)
+    if (KafkaConfig.COMMIT_ENABLED) {
+      await consumer.commitMessageSync(message)
+    }
     // Will follow framework flow in future
     await Utility.produceGeneralMessage(TRANSFER, TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
     Logger.info(`guid=${message.value.id}:uuid - endPositionHandler:process`)
