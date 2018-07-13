@@ -85,7 +85,7 @@ Test('Producer', producerTest => {
     produceMessageTest.test('return true', async test => {
       const result = await Producer.produceMessage(messageProtocol, topicConf, config)
       test.equal(result, true)
-      await Producer.disconnect()
+      await Producer.disconnect(topicConf.topicName)
       test.end()
     })
 

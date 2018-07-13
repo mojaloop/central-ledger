@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <valentin.genev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
@@ -57,8 +59,8 @@ exports.deletePreparedData = async (tableName, data) => {
       }
       return require('./ilpPacket').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'extension':
-      if (!data || !data.extensionId || !data.transferId || !data.payerName || !data.payeeName) {
-        throw new Error('Please provide ilpId, transferId in order to delete the prepared data!')
+      if (!data || !data.transferExtensionId || !data.transferId || !data.payerName || !data.payeeName) {
+        throw new Error('Please provide transferExtensionId, transferId in order to delete the prepared data!')
       }
       return require('./extension').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'transferStateChange':

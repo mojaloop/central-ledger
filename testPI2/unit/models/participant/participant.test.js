@@ -29,7 +29,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/participant/participant')
@@ -234,8 +233,8 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('destroyByName', async (assert) => {
     try {
-      Db.participant.destroy.withArgs({name: participant.name}).returns(P.resolve(true))
-      const result = await Model.destroyByName(participant)
+      Db.participant.destroy.withArgs({name: participant.name}).returns(Promise.resolve(true))
+      const result = await Model.destroyByName(participant.name)
       assert.equal(result, true)
       sandbox.restore()
       assert.end()
@@ -250,7 +249,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('destroyByName should throw an error', async (test) => {
     try {
       Db.participant.destroy.withArgs({name: participant.name}).throws(new Error())
-      const result = await Model.destroyByName(participant)
+      const result = await Model.destroyByName(participant.name)
       test.equal(result, true)
       test.fail('Error not thrown')
       sandbox.restore()
