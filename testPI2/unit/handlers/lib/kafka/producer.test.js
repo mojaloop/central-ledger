@@ -126,7 +126,7 @@ Test('Producer Failure', producerTest => {
 
     produceMessageTest.test('throw error when no producer to disconnect', async (test) => {
       try {
-        await Producer.disconnect()
+        await Producer.disconnect(topicConf.topicName)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
