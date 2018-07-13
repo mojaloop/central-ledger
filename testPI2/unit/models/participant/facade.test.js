@@ -27,7 +27,7 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -36,7 +36,25 @@ const Model = require('../../../../src/models/participant/facade')
 Test('Participant facade', async (facadeTest) => {
   let sandbox
 
+  facadeTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    Db.participant = {
+      query: sandbox.stub()
+    }
+    Db.participantEndpoint = {
+      query: sandbox.stub()
+    }
+    t.end()
+  })
+
+  facadeTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
+
+
   const participant = {
+    participantId: 1,
     name: 'fsp1',
     currency: 'USD',
     isActive: 1,
@@ -45,20 +63,14 @@ Test('Participant facade', async (facadeTest) => {
     participantCurrencyId: 1
   }
 
-  sandbox = Sinon.createSandbox()
-  Db.participant = {
-    query: sandbox.stub()
-  }
-  Db.participantEndpoint = {
-    query: sandbox.stub()
-  }
-  sandbox.stub(Db, 'getKnex')
-  const obj = {
-    transaction: async () => { }
-  }
-  Db.getKnex.returns(obj)
-  const knex = Db.getKnex()
-  sandbox.stub(knex, 'transaction')
+  // sandbox = Sinon.createSandbox()
+  // sandbox.stub(Db, 'getKnex')
+  // const obj = {
+  //   transaction: async () => { }
+  // }
+  // Db.getKnex.returns(obj)
+  // const knex = Db.getKnex()
+  // sandbox.stub(knex, 'transaction')
 
   const endpoints = [
     {
@@ -122,11 +134,42 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
+
   await facadeTest.test('getEndpoint', async (assert) => {
     try {
-      Db.participantEndpoint.query.returns(endpoints[0])
-      var result = await Model.getEndpoint({ participant, endpointType: endpoints[0].name })
-      assert.deepEqual(result, endpoints[0])
+      let builderStub = sandbox.stub()
+      let whereStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+
+      Db.participantEndpoint.query.callsArgWith(0, builderStub)
+      Db.participantEndpoint.query.returns([endpoints[0]])
+      builderStub.innerJoin.returns({
+        where: whereStub.returns({
+          select: selectStub.returns([endpoints[0]])
+        })
+      })
+      const result = await Model.getEndpoint({ participant, endpointType: endpoints[0].name })
+      assert.deepEqual(result[0], endpoints[0])
+      assert.ok(builderStub.innerJoin.withArgs('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId').calledOnce)
+
+      assert.ok(whereStub.withArgs({
+        'participantEndpoint.participantId': participant.participantId,
+        'participantEndpoint.isActive': 1,
+        'et.name': endpoints[0].name
+      }))
+
+      assert.ok(selectStub.withArgs(
+        'participantEndpoint.participantEndpointId',
+        'participantEndpoint.participantId',
+        'participantEndpoint.endpointTypeId',
+        'participantEndpoint.value',
+        'participantEndpoint.isActive',
+        'participantEndpoint.createdDate',
+        'participantEndpoint.createdBy',
+        'et.name'
+      ).calledOnce)
       assert.end()
     } catch (err) {
       Logger.error(`getEndpoint failed with error - ${err}`)
@@ -150,9 +193,38 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getAllEndpoints', async (assert) => {
     try {
+      let builderStub = sandbox.stub()
+      let whereStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+
+      Db.participantEndpoint.query.callsArgWith(0, builderStub)
       Db.participantEndpoint.query.returns(endpoints)
-      var result = await Model.getAllEndpoints(participant)
+      builderStub.innerJoin.returns({
+        where: whereStub.returns({
+          select: selectStub.returns(endpoints)
+        })
+      })
+      const result = await Model.getAllEndpoints(participant)
       assert.deepEqual(result, endpoints)
+      assert.ok(builderStub.innerJoin.withArgs('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId').calledOnce)
+
+      assert.ok(whereStub.withArgs({
+        'participantEndpoint.participantId': participant.participantId,
+        'participantEndpoint.isActive': 1
+      }))
+
+      assert.ok(selectStub.withArgs(
+        'participantEndpoint.participantEndpointId',
+        'participantEndpoint.participantId',
+        'participantEndpoint.endpointTypeId',
+        'participantEndpoint.value',
+        'participantEndpoint.isActive',
+        'participantEndpoint.createdDate',
+        'participantEndpoint.createdBy',
+        'et.name'
+      ).calledOnce)
       assert.end()
     } catch (err) {
       Logger.error(`getAllEndpoints failed with error - ${err}`)
@@ -176,6 +248,13 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addEndpoint', async (assert) => {
     try {
+      sandbox.stub(Db, 'getKnex')
+      const obj = {
+        transaction: async () => { }
+      }
+      Db.getKnex.returns(obj)
+      const knex = Db.getKnex()
+      sandbox.stub(knex, 'transaction')
       knex.transaction.returns(1)
       const endpoint = {
         type: 'FSIOP_CALLBACK_URL',

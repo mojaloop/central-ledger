@@ -30,10 +30,10 @@ const getByNameAndCurrency = async (name, currencyId) => {
   try {
     return await Db.participant.query(async (builder) => {
       var result = builder
-        .where({'participant.name': name})
-        .andWhere({'participant.isActive': true})
-        .andWhere({'pc.currencyId': currencyId})
-        .andWhere({'pc.isActive': true})
+        .where({ 'participant.name': name })
+        .andWhere({ 'participant.isActive': true })
+        .andWhere({ 'pc.currencyId': currencyId })
+        .andWhere({ 'pc.isActive': true })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
@@ -49,11 +49,13 @@ const getByNameAndCurrency = async (name, currencyId) => {
 
 const getEndpoint = async (participant, endpointType) => {
   try {
-    return await Db.participantEndpoint.query(builder => {
+    return Db.participantEndpoint.query(builder => {
       return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
-        .andWhere('participantEndpoint.participantId', participant.participantId)
-        .andWhere('participantEndpoint.isActive', 1)
-        .andWhere('et.name', endpointType).select('participantEndpoint.participantEndpointId',
+        .where({
+          'participantEndpoint.participantId': participant.participantId,
+          'participantEndpoint.isActive': 1,
+          'et.name': endpointType
+        }).select('participantEndpoint.participantEndpointId',
           'participantEndpoint.participantId',
           'participantEndpoint.endpointTypeId',
           'participantEndpoint.value',
@@ -69,10 +71,12 @@ const getEndpoint = async (participant, endpointType) => {
 
 const getAllEndpoints = async (participant) => {
   try {
-    return await Db.participantEndpoint.query(builder => {
+    return Db.participantEndpoint.query(builder => {
       return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
-        .andWhere('participantEndpoint.participantId', participant.participantId)
-        .andWhere('participantEndpoint.isActive', 1).select('participantEndpoint.participantEndpointId',
+        .where({
+          'participantEndpoint.participantId': participant.participantId,
+          'participantEndpoint.isActive': 1
+        }).select('participantEndpoint.participantEndpointId',
           'participantEndpoint.participantId',
           'participantEndpoint.endpointTypeId',
           'participantEndpoint.value',
@@ -89,15 +93,17 @@ const getAllEndpoints = async (participant) => {
 const addEndpoint = async (participant, endpoint) => {
   try {
     const knex = Db.getKnex()
-    return knex.transaction(async function (trx) {
-      let endpointType = await trx.first('endpointTypeId').from('endpointType').where('name', endpoint.type).andWhere('isActive', 1)
+    return knex.transaction(async trx => {
+      let endpointType = await trx.first('endpointTypeId').from('endpointType').where({ 'name': endpoint.type, 'isActive': 1 })
       return knex('participantEndpoint').transacting(trx).forUpdate().select('*')
-        .where('participantId', participant.participantId)
-        .andWhere('endpointTypeId', endpointType.endpointTypeId)
-        .andWhere('isActive', 1)
-        .then(function (existingEndpoint) {
+        .where({
+          'participantId': participant.participantId,
+          'endpointTypeId': endpointType.endpointTypeId,
+          'isActive': 1
+        })
+        .then(existingEndpoint => {
           if (existingEndpoint) {
-            return knex('participantEndpoint').transacting(trx).update({isActive: 0}).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
+            return knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
           }
         }).then(() => {
           let newEndpoint = {
