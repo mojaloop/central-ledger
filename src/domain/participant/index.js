@@ -30,7 +30,7 @@ const ParticipantCurrencyModel = require('../../models/participant/participantCu
 const create = async (payload) => {
   try {
     const participant = await ParticipantModel.create({name: payload.name})
-    if (!participant) throw new Error('Something went wrond. Participant cannot be created')
+    if (!participant) throw new Error('Something went wrong. Participant cannot be created')
     return participant
   } catch (err) {
     throw err
