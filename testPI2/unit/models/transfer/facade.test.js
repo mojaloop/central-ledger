@@ -34,73 +34,12 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/facade')
-// const TransferState = require('../../../../src/lib/enum').TransferState
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
-
-// const exampleTransfer = {
-//   payeeParticipantId: 1,
-//   payerParticipantId: 2,
-//   amount: 100,
-//   currency: 'USD',
-//   internalTransferState: 'RECEIVED',
-//   transferState: 'RECEIVED',
-//   ilpPacket: 'abc',
-//   condition: 'efd',
-//   fullfilment: null,
-//   completedTimeStamp: null,
-//   expirationDate: new Date().setDate((new Date()).getDate() + 7),
-//   settlementWindowId: null
-// }
 
 Test('Transfer model', async (transferTest) => {
   let sandbox
 
-  // const payload = {
-  //   transferId: 't1',
-  //   payeeFsp: 'payeeFSP',
-  //   payerFsp: 'payerFSP',
-  //   amount: {
-  //     amount: 100,
-  //     currency: 'USD'
-  //   },
-  //   expirationDate: new Date().setDate((new Date()).getDate() + 7),
-  //   ilpPacket: 'abc',
-  //   condition: 'efd',
-  //   fullfilment: null
-  // }
-
-  // const transferRecord = {
-  //   transferId: payload.transferId,
-  //   payeeFsp: 1,
-  //   payerFsp: 2,
-  //   amount: payload.amount.amount,
-  //   currency: payload.amount.currency,
-  //   expirationDate: new Date(payload.expiration)
-  // }
-
-  // const ilpRecord = {
-  //   transferId: payload.transferId,
-  //   packet: payload.ilpPacket,
-  //   condition: payload.condition,
-  //   fulfilment: null
-  // }
-
-  // const transferStateRecord = {
-  //   transferId: payload.transferId,
-  //   transferStateId: 'RECEIVED',
-  //   reason: null,
-  //   changedDate: new Date()
-  // }
-
   const extensionsRecordList = [{key: 'key1', value: 'value1'}, {key: 'key2', value: 'value2'}]
-
-  // const transferPrepareResult = {
-  //   isSaveTransferPrepared: true,
-  //   transferRecord,
-  //   ilpRecord,
-  //   transferStateRecord,
-  //   extensionsRecordList
-  // }
 
   transferTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
@@ -127,6 +66,8 @@ Test('Transfer model', async (transferTest) => {
       const transfers = [{transferId: transferId1, extensionList: extensionsRecordList}, {transferId: transferId2}]
 
       let builderStub = sandbox.stub()
+      let whereRawPc1 = sandbox.stub()
+      let whereRawPc2 = sandbox.stub()
       let payerTransferStub = sandbox.stub()
       let payerRoleTypeStub = sandbox.stub()
       let payerCurrencyStub = sandbox.stub()
@@ -149,20 +90,24 @@ Test('Transfer model', async (transferTest) => {
       Db.transfer.query.returns(transfers[0])
 
       builderStub.where.returns({
-        innerJoin: payerTransferStub.returns({
-          innerJoin: payerRoleTypeStub.returns({
-            innerJoin: payerCurrencyStub.returns({
-              innerJoin: payerParticipantStub.returns({
-                innerJoin: payeeTransferStub.returns({
-                  innerJoin: payeeRoleTypeStub.returns({
-                    innerJoin: payeeCurrencyStub.returns({
-                      innerJoin: payeeParticipantStub.returns({
-                        innerJoin: ilpPacketStub.returns({
-                          leftJoin: stateChangeStub.returns({
-                            leftJoin: transferFulfilmentStub.returns({
-                              select: selectStub.returns({
-                                orderBy: orderByStub.returns({
-                                  first: firstStub.returns(transfers)
+        whereRaw: whereRawPc1.returns({
+          whereRaw: whereRawPc2.returns({
+            innerJoin: payerTransferStub.returns({
+              innerJoin: payerRoleTypeStub.returns({
+                innerJoin: payerCurrencyStub.returns({
+                  innerJoin: payerParticipantStub.returns({
+                    innerJoin: payeeTransferStub.returns({
+                      innerJoin: payeeRoleTypeStub.returns({
+                        innerJoin: payeeCurrencyStub.returns({
+                          innerJoin: payeeParticipantStub.returns({
+                            innerJoin: ilpPacketStub.returns({
+                              leftJoin: stateChangeStub.returns({
+                                leftJoin: transferFulfilmentStub.returns({
+                                  select: selectStub.returns({
+                                    orderBy: orderByStub.returns({
+                                      first: firstStub.returns(transfers)
+                                    })
+                                  })
                                 })
                               })
                             })
@@ -186,10 +131,10 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(builderStub.where.withArgs({
         'transfer.transferId': transferId1,
         'tprt1.name': 'PAYER_DFSP',
-        'tprt2.name': 'PAYEE_DFSP',
-        'pc1.currencyId': 'transfer.currencyId',
-        'pc2.currencyId': 'transfer.currencyId'
-      }))
+        'tprt2.name': 'PAYEE_DFSP'
+      }).calledOnce)
+      assert.ok(whereRawPc1.withArgs('pc1.currencyId = transfer.currencyId').calledOnce)
+      assert.ok(whereRawPc2.withArgs('pc2.currencyId = transfer.currencyId').calledOnce)
       assert.ok(payerTransferStub.withArgs('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId').calledOnce)
       assert.ok(payerRoleTypeStub.withArgs('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId').calledOnce)
       assert.ok(payerCurrencyStub.withArgs('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId').calledOnce)
@@ -250,6 +195,8 @@ Test('Transfer model', async (transferTest) => {
       const transfers = [{transferId: transferId1, extensionList: extensionsRecordList}, {transferId: transferId2}]
 
       let builderStub = sandbox.stub()
+      let whereRawPc1 = sandbox.stub()
+      let whereRawPc2 = sandbox.stub()
       let payerTransferStub = sandbox.stub()
       let payerRoleTypeStub = sandbox.stub()
       let payerCurrencyStub = sandbox.stub()
@@ -271,19 +218,23 @@ Test('Transfer model', async (transferTest) => {
       Db.transfer.query.returns(transfers)
 
       builderStub.where.returns({
-        innerJoin: payerTransferStub.returns({
-          innerJoin: payerRoleTypeStub.returns({
-            innerJoin: payerCurrencyStub.returns({
-              innerJoin: payerParticipantStub.returns({
-                innerJoin: payeeTransferStub.returns({
-                  innerJoin: payeeRoleTypeStub.returns({
-                    innerJoin: payeeCurrencyStub.returns({
-                      innerJoin: payeeParticipantStub.returns({
-                        innerJoin: ilpPacketStub.returns({
-                          leftJoin: stateChangeStub.returns({
-                            leftJoin: transferFulfilmentStub.returns({
-                              select: selectStub.returns({
-                                orderBy: orderByStub.returns(transfers)
+        whereRaw: whereRawPc1.returns({
+          whereRaw: whereRawPc2.returns({
+            innerJoin: payerTransferStub.returns({
+              innerJoin: payerRoleTypeStub.returns({
+                innerJoin: payerCurrencyStub.returns({
+                  innerJoin: payerParticipantStub.returns({
+                    innerJoin: payeeTransferStub.returns({
+                      innerJoin: payeeRoleTypeStub.returns({
+                        innerJoin: payeeCurrencyStub.returns({
+                          innerJoin: payeeParticipantStub.returns({
+                            innerJoin: ilpPacketStub.returns({
+                              leftJoin: stateChangeStub.returns({
+                                leftJoin: transferFulfilmentStub.returns({
+                                  select: selectStub.returns({
+                                    orderBy: orderByStub.returns(transfers)
+                                  })
+                                })
                               })
                             })
                           })
@@ -306,10 +257,10 @@ Test('Transfer model', async (transferTest) => {
       assert.equal(found, transfers)
       assert.ok(builderStub.where.withArgs({
         'tprt1.name': 'PAYER_DFSP',
-        'tprt2.name': 'PAYEE_DFSP',
-        'pc1.currencyId': 'transfer.currencyId',
-        'pc2.currencyId': 'transfer.currencyId'
-      }))
+        'tprt2.name': 'PAYEE_DFSP'
+      }).calledOnce)
+      assert.ok(whereRawPc1.withArgs('pc1.currencyId = transfer.currencyId').calledOnce)
+      assert.ok(whereRawPc2.withArgs('pc2.currencyId = transfer.currencyId').calledOnce)
       assert.ok(payerTransferStub.withArgs('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId').calledOnce)
       assert.ok(payerRoleTypeStub.withArgs('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId').calledOnce)
       assert.ok(payerCurrencyStub.withArgs('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId').calledOnce)

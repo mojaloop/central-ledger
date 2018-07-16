@@ -52,7 +52,12 @@ let listOfConsumers = {}
  * @throws {Error} -  if failure occurs
  */
 const createHandler = async (topicName, config, command) => {
-  const consumer = new Consumer([topicName], config)
+  let consumer
+  if (listOfConsumers[topicName]) {
+    consumer = listOfConsumers[topicName]
+  } else {
+    consumer = new Consumer([topicName], config)
+  }
   await consumer.connect().then(async () => {
     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
     await consumer.consume(command)

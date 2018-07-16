@@ -1,3 +1,27 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ --------------
+ ******/
+
 'use strict'
 
 /**
@@ -10,8 +34,8 @@ const ParticipantFacade = require('../../models/participant/facade')
 
 const create = async (payload) => {
   try {
-    const participant = await ParticipantModel.create({ name: payload.name, currency: payload.currency })
-    if (!participant) throw new Error('Something went wrond. Participant cannot be created')
+    const participant = await ParticipantModel.create({name: payload.name})
+    if (!participant) throw new Error('Something went wrong. Participant cannot be created')
     return participant
   } catch (err) {
     throw err
@@ -83,22 +107,32 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
   }
 }
 
+const destroyByName = async (name) => {
+  try {
+    let participant = await ParticipantModel.getByName(name)
+    await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
+    return await ParticipantModel.destroyByName(name)
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 /**
  * @function AddEndpoint
  *
  * @async
  * @description This adds the endpoint details for a participant
- * 
+ *
  * ParticipantModel.getByName called to get the participant details from the participant name
  * ParticipantFacade.addEndpoint called to add the participant endpoint details
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
  * @param {object} payload - the payload containing and endpoint object with 'type' and 'value' of the endpoint.
  * Example: {
- *	    "endpoint": {
- *		  "type": "FSIOP_CALLBACK_URL",
- *		  "value": "http://localhost:3001/participants/dfsp1/notification12"
- *	  }
+ *      "endpoint": {
+ *      "type": "FSIOP_CALLBACK_URL",
+ *      "value": "http://localhost:3001/participants/dfsp1/notification12"
+ *    }
  * }
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
@@ -118,13 +152,13 @@ const addEndpoint = async (name, payload) => {
  *
  * @async
  * @description This retuns the active endpoint value for a give participant and type of endpoint
- * 
+ *
  * ParticipantModel.getByName called to get the participant details from the participant name
  * ParticipantFacade.getEndpoint called to get the participant endpoint details
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
  * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
- * 
+ *
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
 
@@ -145,7 +179,7 @@ const getEndpoint = async (name, type) => {
  *
  * @async
  * @description This retuns all the active endpoints for a give participant
- * 
+ *
  * ParticipantModel.getByName called to get the participant details from the participant name
  * ParticipantFacade.getAllEndpoints called to get the participant endpoint details
  *
@@ -185,29 +219,6 @@ const participantEndpointExists = (participantEndpoint) => {
   throw new Error('participantEndpoint does not exist')
 }
 
-// const exists = async (participantUri) => {
-//   try {
-//     const name = UrlParser.nameFromParticipantUri(participantUri)
-//     if (!name) {
-//       return new ValidationError(`Invalid participant URI: ${participantUri}`)
-//     }
-//     const participant = await ParticipantModel.getByName(name)
-//     if (participant) {
-//       return participant
-//     }
-//     throw new ValidationError(`Participant ${name} not found`)
-//   } catch (err) {
-//     throw err
-//   }
-// }
-
-// const verify = async function (name, password) {
-//   const participant = await ParticipantModel.getByName(name)
-//   participantExists(participant)
-//   const userCredentials = await retrievePartyCredentials(participant)
-//   return verifyPartyCredentials(participant, userCredentials, password)
-// }
-
 module.exports = {
   create,
   getAll,
@@ -217,10 +228,9 @@ module.exports = {
   update,
   createParticipantCurrency,
   getParticipantCurrencyById,
+  destroyByName,
   addEndpoint,
   getEndpoint,
   getAllEndpoints,
   participantEndpointExists
-  // exists,
-  // verify
 }

@@ -27,52 +27,8 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/models/transfer/facade')
+const TransferModel = require('../../../src/models/transfer/transfer')
 const Model = require('../../../src/models/transfer/transferExtension')
-
-// const returnObject = {
-//   "extension": {
-//     "extensionId": 77,
-//     "transferId": "tr15272357608111536",
-//     "key": "extension.key",
-//     "value": "extension.value",
-//     "changedDate": "2018-05-25T08:09:21.000Z",
-//     "changedBy": "extension.changedBy"
-//   },
-//   "transfer": {
-//     "transferId": "tr15272357608111536",
-//     "payeeParticipantId": 106,
-//     "payerParticipantId": 105,
-//     "amount": 100,
-//     "currencyId": "USD",
-//     "expirationDate": null,
-//     "settlementWindowId": null,
-//     "currency": "USD",
-//     "payerFsp": "payer15272357607931221",
-//     "payeeFsp": "payee1527235760806628",
-//     "transferState": null,
-//     "completedTimestamp": null,
-//     "ilpPacket": null,
-//     "condition": null,
-//     "fulfilment": null
-//   },
-//   "participants": {
-//     "participantPayer": {
-//       "participantId": 105,
-//       "currencyId": "USD",
-//       "name": "payer15272357607931221",
-//       "createdDate": "2018-05-25T05:09:20.000Z",
-//       "isDisabled": 0
-//     },
-//     "participantPayee": {
-//       "participantId": 106,
-//       "currencyId": "USD",
-//       "name": "payee1527235760806628",
-//       "createdDate": "2018-05-25T05:09:20.000Z",
-//       "isDisabled": 0
-//     }
-//   }
-// }
 
 exports.prepareData = async () => {
   try {
@@ -82,9 +38,7 @@ exports.prepareData = async () => {
       transferId: transferResult.transferId,
       key: 'extension.key',
       value: 'extension.value',
-      changedDate: new Date(),
-      changedBy: 'extension.changedBy'
-
+      createdDate: new Date()
     })
     let transfer = await TransferModel.getById(transferResult.transferId)
     let extension = await Model.getByTransferId(transferResult.transferId)
@@ -104,9 +58,7 @@ exports.prepareData = async () => {
 
 exports.deletePreparedData = async (extensionId, transferId, payerName, payeeName) => {
   try {
-    return await Model.destroyByTransferId({
-      transferId: transferId
-    }).then(async () => {
+    return await Model.destroyByTransferId(transferId).then(async () => {
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {

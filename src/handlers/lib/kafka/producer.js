@@ -36,7 +36,7 @@
 const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-let p
+let listOfProducers = {}
 
 /**
  * @function ProduceMessage
@@ -52,13 +52,19 @@ let p
  */
 const produceMessage = async (messageProtocol, topicConf, config) => {
   try {
-    Logger.info('Producer::start::topic=' + topicConf.topicName)
-    p = new Producer(config)
+    let producer
+    if (listOfProducers[topicConf.topicName]) {
+      producer = listOfProducers[topicConf.topicName]
+    } else {
+      Logger.info('Producer::start::topic=' + topicConf.topicName)
+      producer = new Producer(config)
+    }
     Logger.info('Producer::connect::start')
-    await p.connect()
+    await producer.connect()
     Logger.info('Producer::connect::end')
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
-    await p.sendMessage(messageProtocol, topicConf)
+    await producer.sendMessage(messageProtocol, topicConf)
+    listOfProducers[topicConf.topicName] = producer
     Logger.info('Producer::end')
     return true
   } catch (e) {
@@ -75,11 +81,33 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
  *
  * @returns {object} Promise
  */
-const disconnect = async () => {
+const disconnect = async (topicName) => {
   try {
-    await p.disconnect()
+    if (getProducer(topicName)) {
+      await getProducer(topicName).disconnect()
+    } else {
+      throw Error(`no producer found for topic ${topicName}`)
+    }
   } catch (e) {
     throw e
+  }
+}
+
+/**
+ * @function GetProducer
+ *
+ * @param {string} topicName - the topic name to locate a specific producer
+ *
+ * @description This is used to get a producer with the topic name to send messages to a kafka topic
+ *
+ * @returns {Producer} - Returns consumer
+ * @throws {Error} - if consumer not found for topic name
+ */
+const getProducer = (topicName) => {
+  if (listOfProducers[topicName]) {
+    return listOfProducers[topicName]
+  } else {
+    throw Error(`no producer found for topic ${topicName}`)
   }
 }
 

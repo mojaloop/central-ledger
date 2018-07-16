@@ -42,3 +42,4 @@ Test('executed-transfers model', modelTest => {
 
   modelTest.end()
 })
+

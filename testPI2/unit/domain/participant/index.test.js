@@ -118,10 +118,12 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantModel, 'getAll')
     sandbox.stub(ParticipantModel, 'getById')
     sandbox.stub(ParticipantModel, 'update')
+    sandbox.stub(ParticipantModel, 'destroyByName')
 
     sandbox.stub(ParticipantCurrencyModel, 'create')
     sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
     sandbox.stub(ParticipantCurrencyModel, 'getById')
+    sandbox.stub(ParticipantCurrencyModel, 'destroyByParticipantId')
 
     sandbox.stub(ParticipantFacade, 'getEndpoint')
     sandbox.stub(ParticipantFacade, 'getAllEndpoints')
@@ -130,20 +132,22 @@ Test('Participant service', async (participantTest) => {
     Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
-      findOne: sandbox.stub()
+      findOne: sandbox.stub(),
+      destroy: sandbox.stub()
     }
 
     Db.participantCurrency = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
       findOne: sandbox.stub(),
-      find: sandbox.stub()
+      find: sandbox.stub(),
+      destroy: sandbox.stub()
     }
 
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({participant}).returns(index)
-      ParticipantModel.create.withArgs({name: participant.name, currency: participant.currency}).returns((index + 1))
+      ParticipantModel.create.withArgs({name: participant.name}).returns((index + 1))
       ParticipantModel.getByName.withArgs(participant.name).returns(participantResult[index])
       ParticipantModel.getById.withArgs(index).returns(participantResult[index])
       ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
@@ -155,6 +159,9 @@ Test('Participant service', async (participantTest) => {
         isActive: 1
       })
       ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId).returns(participant.currency)
+      ParticipantModel.destroyByName.withArgs(participant.name).returns(Promise.resolve(true))
+      ParticipantCurrencyModel.destroyByParticipantId.withArgs(participant.participantId).returns(Promise.resolve(true))
+      Db.participant.destroy.withArgs({name: participant.name}).returns(Promise.resolve(true))
     })
     ParticipantModel.getAll.returns(Promise.resolve(participantResult))
     t.end()
@@ -170,9 +177,9 @@ Test('Participant service', async (participantTest) => {
     ParticipantModel.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)
-      assert.fail(' should throw')
+      assert.fail('should throw')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err} `)
     }
     assert.end()
   })
@@ -180,9 +187,9 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create participant', async (assert) => {
     try {
       for (let [index, participant] of participantMap) {
-        var result = await Service.create({name: participant.name, currency: participant.currency})
+        var result = await Service.create({name: participant.name})
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
-        assert.ok(Sinon.match(result, index + 1), ` returns ${result}`)
+        assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
       }
       assert.end()
     } catch (err) {
@@ -196,9 +203,9 @@ Test('Participant service', async (participantTest) => {
     ParticipantModel.getByName.withArgs('').throws(new Error())
     try {
       await Service.getByName('')
-      assert.fail(' should throws with empty name ')
+      assert.fail('should throws with empty name ')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err} `)
     }
     assert.end()
   })
@@ -208,12 +215,12 @@ Test('Participant service', async (participantTest) => {
       // assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
         var result = await Service.getByName(participant.name)
-        assert.equal(result.participantId, participant.participantId, ' participantIds are equal')
-        assert.equal(result.name, participant.name, ' names are equal')
-        assert.equal(result.currency, participant.currency, ' currencies match')
-        assert.equal(result.isActive, participant.isActive, ' isActive flag match')
-        assert.equal(result.currencyList, participantMap.get(participant.participantId + 1).currencyList, ' currencyList match')
-        assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
+        assert.equal(result.participantId, participant.participantId, 'participantIds are equal')
+        assert.equal(result.name, participant.name, 'names are equal')
+        assert.equal(result.currency, participant.currency, 'currencies match')
+        assert.equal(result.isActive, participant.isActive, 'isActive flag match')
+        assert.equal(result.currencyList, participantMap.get(participant.participantId + 1).currencyList, 'currencyList match')
+        assert.ok(Sinon.match(result.createdDate, participant.createdDate), 'created date matches')
       })
       assert.end()
     } catch (err) {
@@ -296,7 +303,7 @@ Test('Participant service', async (participantTest) => {
       participantFixtures.forEach(async (participant, index) => {
         var result = await Service.createParticipantCurrency({participantId: participant.participantId, currencyId: participant.currency})
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
-        assert.ok(Sinon.match(result, index + 1), ` returns ${result}`)
+        assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
       })
       assert.end()
     } catch (err) {
@@ -311,9 +318,9 @@ Test('Participant service', async (participantTest) => {
     ParticipantCurrencyModel.create.withArgs({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency}).throws(new Error())
     try {
       await Service.createParticipantCurrency({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency})
-      assert.fail(' should throw')
+      assert.fail('should throw')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err} `)
     }
     assert.end()
   })
@@ -337,9 +344,37 @@ Test('Participant service', async (participantTest) => {
     ParticipantCurrencyModel.getById.withArgs(falseParticipant.currency).throws(new Error())
     try {
       await Service.getParticipantCurrencyById(falseParticipant.currency)
-      assert.fail(' should throw')
+      assert.fail('should throw')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('destroyByName', async (assert) => {
+    try {
+      participantFixtures.forEach(async (participant, index) => {
+        var result = await Service.destroyByName(participant.name)
+        assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
+        assert.equal(result, true, `equals ${result}`)
+      })
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroy participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyByName should throw an error', async (assert) => {
+    try {
+      const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+      ParticipantModel.getByName.withArgs(falseParticipant.name).returns(falseParticipant)
+      ParticipantModel.destroyByName.withArgs(falseParticipant.name).throws(new Error())
+      await Service.destroyByName(falseParticipant.name)
+      assert.fail('should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, `throws ${err}`)
     }
     assert.end()
   })

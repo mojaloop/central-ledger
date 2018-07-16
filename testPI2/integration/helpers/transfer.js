@@ -17,25 +17,17 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
  ******/
 
-/* transfer model
-    transferId
-    payeeParticipantId
-    payerParticipantId
-    amount
-    currencyId
-    expirationDate
-    settlementWindowId: null
-*/
-
 'use strict'
 
 const ParticipantPreparationModule = require('./participant')
-const Model = require('../../../src/models/transfer/facade')
+const Model = require('../../../src/models/transfer/transfer')
 
 exports.prepareData = async () => {
   try {
@@ -44,13 +36,11 @@ exports.prepareData = async () => {
 
     let transferId = 'tr' + new Date().getTime() + Math.ceil((Math.random() * 10000))
     await Model.saveTransfer({
-      payeeParticipantId: participantPayeeResult.participantId,
-      payerParticipantId: participantPayerResult.participantId,
       transferId: transferId,
       amount: 100,
       currencyId: 'USD',
-      expirationDate: null,
-      settlementWindowId: null
+      ilpCondition: '.',
+      expirationDate: new Date()
     })
 
     return {
@@ -65,12 +55,9 @@ exports.prepareData = async () => {
 
 exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
-    return Model.destroyByTransferId({
-      transferId: transferId
-    }).then(async () => {
+    return Model.destroyById(transferId).then(async () => {
       let participantPayerResult = await ParticipantPreparationModule.deletePreparedData(payerName)
       let participantPayeeResult = await ParticipantPreparationModule.deletePreparedData(payeeName)
-
       return {
         participantPayerResult,
         participantPayeeResult

@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -28,22 +30,22 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../../../src/db/index')
+const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/models/transfer/transferExtension')
-const HelperModule = require('../../../helpers/index')
+const Config = require('../../../../src/lib/config')
+const Model = require('../../../../src/models/transfer/transferExtension')
+const HelperModule = require('../../helpers')
 
 Test('Extension model test', async (extensionTest) => {
   let sandbox
+  let transferId
 
   let extensionTestValues = [
     {
       transferId: '1',
       key: 'extTestKey1',
       value: 'extTestValue1',
-      changedDate: new Date(),
-      changedBy: 'extension.changedBy'
+      createdDate: new Date()
     }
   ]
 
@@ -71,24 +73,23 @@ Test('Extension model test', async (extensionTest) => {
     try {
       extensionTestValues.forEach(async (extension) => {
         try {
-          // Prepare helper tests actually the Model.saveTransferExtension and Model.getByTransferId
           let extensionResult = await HelperModule.prepareNeededData('extension')
-          let result = extensionResult.extension
+          let result = extensionResult.extension[0]
+          transferId = result.transferId
 
           let read = await Model.getByTransferId(extensionResult.transfer.transferId)
 
-          read = Object.assign({}, { extension: read }, {
+          read = Object.assign({}, { extension: read[0] }, {
             participants: extensionResult.participants
           })
 
           extensionMap.set(result.extensionId, read)
 
           assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
-          assert.equal(result.transferId, read.extension.transferId, ' transferId match')
-          assert.equal(result.key, read.extension.key, ' key match')
-          assert.equal(result.value, read.extension.value, ' value match')
-          assert.equal(result.changedDate.toString(), read.extension.changedDate.toString(), ' changedDate match')
-          assert.equal(result.changedBy, read.extension.changedBy, ' changedBy match')
+          assert.equal(result.transferId, read.extension.transferId, 'transferId match')
+          assert.equal(result.key, read.extension.key, 'key match')
+          assert.equal(result.value, read.extension.value, 'value match')
+          assert.equal(result.createdDate.toString(), read.extension.createdDate.toString(), 'createdDate match')
           assert.end()
         } catch (err) {
           Logger.error(`create 1 extension failed with error - ${err}`)
@@ -103,14 +104,14 @@ Test('Extension model test', async (extensionTest) => {
     }
   })
 
-  await extensionTest.test('create extension without transferId should throw error', async (assert) => {
+  await extensionTest.test('create transferExtension without transferId should throw error', async (assert) => {
     try {
       await Model.saveTransferExtension({
         key: 'extTestKey1',
         value: 'extTestValue1',
-        changedDate: new Date(),
-        changedBy: 'extension.changedBy'
+        createdDate: new Date()
       })
+      assert.fail('should throw')
       assert.end()
     } catch (err) {
       Logger.error('create ilp without transferId is failing with message ')
@@ -119,65 +120,33 @@ Test('Extension model test', async (extensionTest) => {
     }
   })
 
-  await extensionTest.test('create extension without value should throw error', async (assert) => {
+  await extensionTest.test('create transferExtension without value should throw error', async (assert) => {
     try {
       await Model.saveTransferExtension({
-        transferId: '1',
+        transferId,
         key: 'extTestKey1',
-        changedDate: new Date(),
-        changedBy: 'extension.changedBy'
+        createdDate: new Date()
       })
+      assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create ilp without transferId is failing with message ')
+      Logger.error('create transferExtension without value is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
   })
 
-  await extensionTest.test('create extension without key should throw error', async (assert) => {
+  await extensionTest.test('create transferExtension without key should throw error', async (assert) => {
     try {
       await Model.saveTransferExtension({
-        transferId: '1',
+        transferId,
         value: 'extTestValue1',
-        changedDate: new Date(),
-        changedBy: 'extension.changedBy'
+        createdDate: new Date()
       })
+      assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create ilp without transferId is failing with message ')
-      assert.ok((('message' in err) && ('stack' in err)), err.message)
-      assert.end()
-    }
-  })
-
-  await extensionTest.test('create extension without changedDate should throw error', async (assert) => {
-    try {
-      await Model.saveTransferExtension({
-        transferId: '1',
-        key: 'extTestKey1',
-        value: 'extTestValue1',
-        changedBy: 'extension.changedBy'
-      })
-      assert.end()
-    } catch (err) {
-      Logger.error('create ilp without transferId is failing with message ')
-      assert.ok((('message' in err) && ('stack' in err)), err.message)
-      assert.end()
-    }
-  })
-
-  await extensionTest.test('create extension without changedBy should throw error', async (assert) => {
-    try {
-      await Model.saveTransferExtension({
-        transferId: '1',
-        key: 'extTestKey1',
-        value: 'extTestValue1',
-        changedDate: new Date()
-      })
-      assert.end()
-    } catch (err) {
-      Logger.error('create ilp without transferId is failing with message ')
+      Logger.error('create transferExtension without key is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
@@ -188,13 +157,12 @@ Test('Extension model test', async (extensionTest) => {
       for (let extensionObj of extensionMap.values()) {
         let extension = extensionObj.extension
         let result = await Model.getByTransferId(extension.transferId)
-        assert.equal(JSON.stringify(extension), JSON.stringify(result))
+        assert.equal(JSON.stringify(extension), JSON.stringify(result[0]))
         assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
-        assert.equal(result.transferId, extension.transferId, ' transferId match')
-        assert.equal(result.key, extension.key, ' key match')
-        assert.equal(result.value, extension.value, ' value match')
-        assert.equal(result.changedDate.toString(), extension.changedDate.toString(), ' changedDate match')
-        assert.equal(result.changedBy, extension.changedBy, ' changedBy match')
+        assert.equal(result[0].transferId, extension.transferId, 'transferId match')
+        assert.equal(result[0].key, extension.key, 'key match')
+        assert.equal(result[0].value, extension.value, 'value match')
+        assert.equal(result[0].createdDate.toString(), extension.createdDate.toString(), 'changedDate match')
       }
       assert.end()
     } catch (err) {
@@ -208,15 +176,14 @@ Test('Extension model test', async (extensionTest) => {
     try {
       for (let [extensionId, extensionObj] of extensionMap.entries()) {
         let extension = extensionObj.extension
-        let result = await Model.getByTransferId(extension.transferId)
+        let result = await Model.getByTransferExtensionId(extension.transferExtensionId)
         assert.equal(JSON.stringify(extension), JSON.stringify(result))
         assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
-        assert.equal(result.extensionId, extensionId, ' extensionId match')
-        assert.equal(result.transferId, extension.transferId, ' transferId match')
-        assert.equal(result.key, extension.key, ' key match')
-        assert.equal(result.value, extension.value, ' value match')
-        assert.equal(result.changedDate.toString(), extension.changedDate.toString(), ' changedDate match')
-        assert.equal(result.changedBy, extension.changedBy, ' changedBy match')
+        assert.equal(result.extensionId, extensionId, 'extensionId match')
+        assert.equal(result.transferId, extension.transferId, 'transferId match')
+        assert.equal(result.key, extension.key, 'key match')
+        assert.equal(result.value, extension.value, 'value match')
+        assert.equal(result.createdDate.toString(), extension.createdDate.toString(), 'createdDate match')
       }
       assert.end()
     } catch (err) {
@@ -226,34 +193,15 @@ Test('Extension model test', async (extensionTest) => {
     }
   })
 
-  await extensionTest.test('update', async (assert) => {
-    try {
-      for (let extensionObj of extensionMap.values()) {
-        let extension = extensionObj.extension
-        let result = await Model.update(Object.assign({}, extension, { value: 'new value' }))
-        let extensionDb = await Model.getByTransferId(extension.transferId)
-        assert.equal(result, 1, ' ilp is updated')
-        assert.equal(extension.extensionId, extensionDb.extensionId, ' ids match')
-        assert.equal(extensionDb.value, 'new value', 'update is real')
-      }
-      assert.end()
-    } catch (err) {
-      Logger.error(`update ilp failed with error - ${err}`)
-      assert.fail(`Update ilp failed - ${err}`)
-      assert.end()
-    }
-  })
-
   await extensionTest.test('teardown', async (assert) => {
     try {
       for (let extensionObj of extensionMap.values()) {
         let extension = extensionObj.extension
         await HelperModule.deletePreparedData('extension', {
-          extensionId: extension.extensionId,
+          transferExtensionId: extension.transferExtensionId,
           transferId: extension.transferId,
           payerName: extensionObj.participants.participantPayer.name,
           payeeName: extensionObj.participants.participantPayee.name
-
         })
       }
       await Db.disconnect()

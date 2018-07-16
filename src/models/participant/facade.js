@@ -34,10 +34,10 @@ const getByNameAndCurrency = async (name, currencyId) => {
   try {
     return await Db.participant.query(async (builder) => {
       var result = builder
-        .where({ 'participant.name': name })
-        .andWhere({ 'participant.isActive': true })
-        .andWhere({ 'pc.currencyId': currencyId })
-        .andWhere({ 'pc.isActive': true })
+        .where({'participant.name': name})
+        .andWhere({'participant.isActive': true})
+        .andWhere({'pc.currencyId': currencyId})
+        .andWhere({'pc.isActive': true})
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
@@ -56,11 +56,11 @@ const getByNameAndCurrency = async (name, currencyId) => {
  *
  * @async
  * @description This retuns the active endpoint value for a give participantId and type of endpoint
- * 
+ *
  *
  * @param {integer} participantId - the id of the participant in the database. Example 1
  * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
- * 
+ *
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
 
@@ -91,7 +91,7 @@ const getEndpoint = async (participantId, endpointType) => {
  *
  * @async
  * @description This retuns all the active endpoints for a give participantId
- * 
+ *
  *
  * @param {integer} participantId - the id of the participant in the database. Example 1
  *
@@ -124,18 +124,18 @@ const getAllEndpoints = async (participantId) => {
  *
  * @async
  * @description This adds the endpoint details for a participant into the database
- * 
- * If there is an existing active endpoint for the give participant and endpointType, That endpoing will be made inactive, 
+ *
+ * If there is an existing active endpoint for the give participant and endpointType, That endpoing will be made inactive,
  * by updating the database entry isActive = 0.
  * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
- * 
+ *
  * @param {integer} participantId - the participant id. Example: 1
  * @param {object} payload - the payload containing and endpoint object with 'type' and 'value' of the endpoint.
  * Example: {
- *	    "endpoint": {
- *		  "type": "FSIOP_CALLBACK_URL",
- *		  "value": "http://localhost:3001/participants/dfsp1/notification12"
- *	  }
+ *      "endpoint": {
+ *      "type": "FSIOP_CALLBACK_URL",
+ *      "value": "http://localhost:3001/participants/dfsp1/notification12"
+ *    }
  * }
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */

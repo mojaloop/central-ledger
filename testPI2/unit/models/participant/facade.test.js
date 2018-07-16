@@ -52,7 +52,6 @@ Test('Participant facade', async (facadeTest) => {
     t.end()
   })
 
-
   const participant = {
     participantId: 1,
     name: 'fsp1',
@@ -133,7 +132,6 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
-
 
   await facadeTest.test('getEndpoint', async (assert) => {
     try {
@@ -272,6 +270,13 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addEndpoint should throw error', async (assert) => {
     try {
+      sandbox.stub(Db, 'getKnex')
+      const obj = {
+        transaction: async () => { }
+      }
+      Db.getKnex.returns(obj)
+      const knex = Db.getKnex()
+      sandbox.stub(knex, 'transaction')
       knex.transaction.throws(new Error('message'))
       const endpoint = {
         type: 'FSIOP_CALLBACK_URL',

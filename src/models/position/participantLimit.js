@@ -17,51 +17,41 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
- * Valentin Genev <valentin.genev@modusbox.com>
+
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Db = require('../../../db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Db = require('../../db')
 
-const saveTransferStateChange = async (stateChange) => {
-  Logger.debug('save transferStateChange' + stateChange.toString())
+const insert = async (participantLimit) => {
   try {
-    return await Db.transferStateChange.insert(stateChange)
-  } catch (err) {
-    throw err
+    return await Db.participantLimit.insert(participantLimit)
+  } catch (e) {
+    throw e
   }
 }
 
-const getByTransferId = async (id) => {
+const update = async (participantLimit) => {
   try {
-    return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
-        .where({'transferStateChange.transferId': id})
-        .select('transferStateChange.*')
-        .orderBy('transferStateChangeId', 'desc')
-        .first()
-      return result
-    })
-  } catch (err) {
-    throw err
+    return await Db.participantLimit.update({participantCurrencyId: participantLimit.participantCurrencyId}, {value: participantLimit.value, isActive: participantLimit.isActive})
+  } catch (e) {
+    throw e
   }
 }
 
-const truncate = async (id) => {
+const getLimitByCurrencyId = async (participantCurrencyId) => {
   try {
-    return await Db.transferStateChange.truncate()
-  } catch (err) {
-    throw err
+    return await Db.participantLimit.findOne({participantCurrencyId})
+  } catch (e) {
+    throw e
   }
 }
 
 module.exports = {
-  saveTransferStateChange,
-  getByTransferId,
-  truncate
+  insert,
+  update,
+  getLimitByCurrencyId
 }

@@ -11,3 +11,4 @@ Test('return error if required field missing', async function (assert) {
   await server.stop()
   assert.end()
 })
+

@@ -47,6 +47,7 @@ Test('Transfer model', async (transfer) => {
     Db.transfer = {
       insert: sandbox.stub(),
       findOne: sandbox.stub(),
+      destroy: sandbox.stub(),
       truncate: sandbox.stub()
     }
     assert.pass('setup OK')
@@ -73,8 +74,35 @@ Test('Transfer model', async (transfer) => {
       assert.ok(Db.transfer.insert.calledOnce, 'transfer insert is called once')
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer fulfilment failed with error - ${err}`)
+      Logger.error(`save transfer failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await transfer.test('destroyById should', async (assert) => {
+    try {
+      Db.transfer.destroy.returns(Promise.resolve())
+      await Model.destroyById(1)
+      assert.ok(Db.transfer.destroy.calledOnce, 'have been called once')
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyById failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transfer.test('destroyById should throw an error', async (assert) => {
+    try {
+      Db.transfer.destroy.throws(new Error())
+      await Model.destroyById(1)
+      assert.ok(Db.transfer.destroy.calledOnce)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyById failed with error - ${err}`)
+      assert.pass('Error thrown')
       assert.end()
     }
   })
@@ -100,7 +128,7 @@ Test('Transfer model', async (transfer) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`truncateTransfer failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }

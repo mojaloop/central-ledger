@@ -29,3 +29,4 @@ Test('GET /participants', getTest => {
 
   getTest.end()
 })
+

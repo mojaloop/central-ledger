@@ -130,3 +130,4 @@ Test('Party model', modelTest => {
 
   modelTest.end()
 })
+

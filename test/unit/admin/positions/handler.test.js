@@ -47,18 +47,18 @@ Test('positions handler', (handlerTest) => {
         receipts: '0',
         net: '-5'
       },
-      {
-        participant: `${hostname}/participants/participant2`,
-        payments: '0',
-        receipts: '3',
-        net: '3'
-      },
-      {
-        participant: `${hostname}/participants/participant3`,
-        payments: '0',
-        receipts: '2',
-        net: '2'
-      }
+        {
+          participant: `${hostname}/participants/participant2`,
+          payments: '0',
+          receipts: '3',
+          net: '3'
+        },
+        {
+          participant: `${hostname}/participants/participant3`,
+          payments: '0',
+          receipts: '2',
+          net: '2'
+        }
       ]
 
       PositionService.calculateForAllParticipants.returns(P.resolve(positions))
