@@ -1,24 +1,41 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ --------------
+ ******/
+
 'use strict'
 
 const Test = require('tape')
-// const Sinon = require('sinon')
-// const P = require('bluebird')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
-// const wait = require('wait-for-stuff')
 
 const Config = require('../../../src/lib/config')
 const Handlers = require('../../../src/handlers/handlers')
 const Db = require('@mojaloop/central-services-database').Db
 const Producer = require('../../../src/handlers/lib/kafka/producer')
 const Utility = require('../../../src/handlers/lib/utility')
-const Participant = require('../../../src/domain/participant')
-// const TransferHandler = require('../../../src/handlers/transfers/handler')
-// const PositionHandler = require('../../../src/handlers/positions/handler')
-// const NotificationHandler = require('../../../src/handlers/notification/handler')
-// const TransferProjection = require('../../../src/domain/transfer/projection')
-const TransferState = require('../../../src/domain/transfer/state')
-const TransferReadModel = require('../../../src/domain/transfer/models/transfer-read-model')
+const ParticipantService = require('../../../src/domain/participant')
+const TransferState = require('../../../src/lib/enum').TransferState
+const TransferFacade = require('../../../src/models/transfer/facade')
 const Moment = require('moment')
 
 const transfer = {
@@ -125,62 +142,18 @@ const participants = [
     currency: 'USD'
   }
 ]
-// const topicConf = {
-//   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'position', 'prepare'),
-//   key: 'producerTest',
-//   partition: 0,
-//   opaqueKey: 0
-// }
 
-// const topicConf = {
-//   topicName: Utility.transformGeneralTopicName('transfer', 'transfer'),
-//   key: 'producerTest',
-//   partition: 0,
-//   opaqueKey: 0
-// }
-
-// const topicConf = {
-//   topicName: Utility.transformGeneralTopicName('transfer', 'transfer'),
-//   key: 'producerTest',
-//   partition: 0,
-//   opaqueKey: 0
-// }
-
-exports.testProducer = async () => {
-
-}
-
-// exports.testProducer = async () => {
-//   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'POSITION', 'PREPARE')
-//   config.logger = Logger
-//   await Producer.produceMessage(messageProtocol, topicConf, config)
-//   return true
-// }
+exports.testProducer = async () => {}
 
 Test('Handlers test', async handlersTest => {
-  // handlersTest.beforeEach(async (test) => {
-  //   await Db.connect(Config.DATABASE_URI)
-  //   await Handlers.registerAllHandlers()
-  //   setTimeout(() => {
-  //     test.end()
-  //   }, 10000)
-  // })
-
   handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
-    // registerAllHandlers.beforeEach(async (test) => {
-    //   await Db.connect(Config.DATABASE_URI)
-    //   await Handlers.registerAllHandlers()
-    //   setTimeout(() => {
-    //     test.end()
-    //   }, 10000)
-    // })
-
     await registerAllHandlers.test('setup', async (test) => {
       await Db.connect(Config.DATABASE_URI)
       for (let payload of participants) {
-        const participant = await Participant.getByName(payload.name)
+        const participant = await ParticipantService.getByName(payload.name)
         if (!participant) {
-          await Participant.create(payload)
+          const participantId = await ParticipantService.create({name: payload.name})
+          await ParticipantService.createParticipantCurrency(participantId, payload.currency)
         }
       }
       await Handlers.registerAllHandlers()
@@ -205,7 +178,7 @@ Test('Handlers test', async handlersTest => {
         while (elapsedSeconds < targetProcessingTimeInSeconds) {
           elapsedSeconds = Moment().diff(startTime, 'seconds')
           // console.log(`elapsedSeconds=${elapsedSeconds}`)
-          var transfer = await TransferReadModel.getById(messageProtocol.id)
+          var transfer = await TransferFacade.getById(messageProtocol.id)
           if (transfer) {
             result = true
             isTransferHandlersPrepareCalled = true
@@ -237,7 +210,7 @@ Test('Handlers test', async handlersTest => {
         while (elapsedSeconds < targetProcessingTimeInSeconds) {
           elapsedSeconds = Moment().diff(startTime, 'seconds')
           // console.log(`elapsedSeconds=${elapsedSeconds}`)
-          var transfer = await TransferReadModel.getById(messageProtocol.id)
+          var transfer = await TransferFacade.getById(messageProtocol.id)
           if (transfer) {
             isFulfilHandlerCalled = true
             isTransferStateCommitted = transfer.transferState === TransferState.COMMITTED
@@ -262,7 +235,7 @@ Test('Handlers test', async handlersTest => {
 })
 
 Test.onFinish(async () => {
-  await Producer.disconnect()
+  await Producer.disconnect(topicConf.topicName)
   // add loop code to disconnect consumers
   process.exit(0)
 })

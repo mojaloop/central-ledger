@@ -1,13 +1,41 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Valentin Genev <valentin.genev@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+ --------------
+ ******/
+
 'use strict'
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const TransferIndex = require('../../../../src/domain/transfer')
-const CommandsIndex = require('../../../../src/domain/transfer/commands')
-const Translator = require('../../../../src/domain/transfer/translator')
+// const CommandsIndex = require('../../../../src/domain/transfer/commands')
+const Projection = require('../../../../src/domain/transfer/projection')
+const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const Events = require('../../../../src/lib/events')
-const TransferState = require('../../../../src/domain/transfer/state')
+const TransferState = require('../../../../src/lib/enum').TransferState
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -114,9 +142,9 @@ Test('Transfer-Index', transferIndexTest => {
   let sandbox
 
   transferIndexTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
-    sandbox.stub(CommandsIndex)
-    sandbox.stub(Translator)
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(Projection)
+    sandbox.stub(TransferObjectTransform)
     sandbox.stub(Events)
     t.end()
   })
@@ -129,8 +157,8 @@ Test('Transfer-Index', transferIndexTest => {
   transferIndexTest.test('prepare should', preparedTest => {
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
-        CommandsIndex.prepare.returns(P.resolve(prepareResponse))
-        Translator.toTransfer.returns(payload)
+        Projection.saveTransferPrepared.returns(P.resolve(prepareResponse))
+        TransferObjectTransform.toTransfer.returns(payload)
         const response = await TransferIndex.prepare(payload)
         test.deepEqual(response.transfer, payload)
         test.end()
@@ -141,8 +169,8 @@ Test('Transfer-Index', transferIndexTest => {
     })
 
     preparedTest.test('prepare transfer throws error', async (test) => {
-      CommandsIndex.prepare.throws(new Error())
-      Translator.toTransfer.returns(payload)
+      Projection.saveTransferPrepared.throws(new Error())
+      TransferObjectTransform.toTransfer.returns(payload)
       try {
         await TransferIndex.prepare(payload)
         test.fail('Error not thrown')
@@ -154,8 +182,8 @@ Test('Transfer-Index', transferIndexTest => {
     })
 
     preparedTest.test('prepare transfer throws error', async (test) => {
-      CommandsIndex.prepare.returns(P.resolve(prepareResponse))
-      Translator.toTransfer.throws(new Error())
+      Projection.saveTransferPrepared.returns(P.resolve(prepareResponse))
+      TransferObjectTransform.toTransfer.throws(new Error())
       try {
         await TransferIndex.prepare(payload)
         test.fail('Error not thrown')
@@ -170,7 +198,7 @@ Test('Transfer-Index', transferIndexTest => {
 
   transferIndexTest.test('prepare should', rejectTest => {
     rejectTest.test('reject transfer payload that passed validation', async (test) => {
-      CommandsIndex.reject.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
+      Projection.saveTransferRejected.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
       const rejectResponse = await TransferIndex.reject(stateReason, payload.transferId)
       rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate
       test.equal(rejectResponse.alreadyRejected, false)
@@ -182,7 +210,7 @@ Test('Transfer-Index', transferIndexTest => {
 
   transferIndexTest.test('prepare should', rejectTest => {
     rejectTest.test('reject transfer throws an error', async (test) => {
-      CommandsIndex.reject.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
+      Projection.saveTransferRejected.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
       try {
         await TransferIndex.reject(stateReason, payload.transferId)
         rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate

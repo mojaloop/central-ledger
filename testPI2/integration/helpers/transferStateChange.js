@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
@@ -24,93 +26,21 @@
 
 'use strict'
 
-const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/domain/transfer/models/transfer-read-model')
+const TransferPreparationModule = require('./transferTestHelper')
+const TransferModel = require('../../../src/models/transfer/facade')
 const TransferStatePreparationHelper = require('./transferState')
-const Model = require('../../../src/domain/transfer/models/transferStateChanges')
-
-// const preparedData = {
-//   "success": true,
-//   "transfer": {
-//     "transferId": "tr15272393021422669",
-//     "payeeParticipantId": 132,
-//     "payerParticipantId": 131,
-//     "amount": 100,
-//     "currencyId": "USD",
-//     "expirationDate": null,
-//     "settlementWindowId": null,
-//     "currency": "USD",
-//     "payerFsp": "payer15272393021259681",
-//     "payeeFsp": "payee15272393021389056",
-//     "transferState": "TEST_RECEIVED",
-//     "completedTimestamp": "2018-05-25T06:08:22.000Z",
-//     "ilpPacket": null,
-//     "condition": null,
-//     "fulfilment": null
-//   },
-//   "transferStateChangeResult": {
-//     "transferStateChangeId": 6,
-//     "transferId": "tr15272393021422669",
-//     "transferStateId": "TEST_RECEIVED",
-//     "reason": null,
-//     "changedDate": "2018-05-25T06:08:22.000Z"
-//   },
-//   "transferStateResults": [
-//     {
-//       "transferStateId": "TEST_RECEIVED",
-//       "enumeration": "RECEIVED",
-//       "description": "Next ledger has received the transfer."
-//     },
-//     {
-//       "transferStateId": "TEST_RESERVED",
-//       "enumeration": "RESERVED",
-//       "description": "Next ledger has reserved the transfer."
-//     },
-//     {
-//       "transferStateId": "TEST_COMMITTED",
-//       "enumeration": "COMMITTED",
-//       "description": "Next ledger has successfully performed the transfer."
-//     },
-//     {
-//       "transferStateId": "TEST_ABORTED",
-//       "enumeration": "ABORTED",
-//       "description": "Next ledger has aborted the transfer due a rejection or failure to perform the transfer."
-//     },
-//     {
-//       "transferStateId": "TEST_SETTLED",
-//       "enumeration": "COMMITTED",
-//       "description": "Ledger has settled the transfer"
-//     }
-//   ],
-//   "participants": {
-//     "participantPayer": {
-//       "participantId": 131,
-//       "currencyId": "USD",
-//       "name": "payer15272393021259681",
-//       "createdDate": "2018-05-25T06:08:22.000Z",
-//       "isDisabled": 0
-//     },
-//     "participantPayee": {
-//       "participantId": 132,
-//       "currencyId": "USD",
-//       "name": "payee15272393021389056",
-//       "createdDate": "2018-05-25T06:08:22.000Z",
-//       "isDisabled": 0
-//     }
-//   }
-// }
+const Model = require('../../../src/models/transfer/transferStateChange')
 
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
-    let transferStateResults = await TransferStatePreparationHelper.prepareData()
-
+    let transferStateResults = TransferStatePreparationHelper.prepareData()
     let saveResult = await Model.saveTransferStateChange({
-      transferId: transferResult.transferId,
+      transferId: transferResult.transfer.transferId,
       transferStateId: transferStateResults[0].transferStateId
     })
-    let transfer = await TransferModel.getById(transferResult.transferId)
-    let transferStateChangeResult = await Model.getByTransferId(transferResult.transferId)
+    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    let transferStateChangeResult = await Model.getByTransferId(transferResult.transfer.transferId)
 
     return {
       success: !!(saveResult),

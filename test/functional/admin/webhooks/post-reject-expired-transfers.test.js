@@ -4,7 +4,7 @@ const Test = require('tape')
 const Base = require('../../base')
 const Fixtures = require('../../../fixtures')
 const State = require('../../../../src/domain/transfer/state')
-const RejectionType = require('../../../../src/domain/transfer/rejection-type')
+const RejectionType = require('../../../../src/domain/transfer').rejectionType
 
 Test('POST /webhooks/reject-expired-transfers', rejectTest => {
   rejectTest.test('should reject expired transfers', test => {

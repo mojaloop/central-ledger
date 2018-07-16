@@ -3,8 +3,8 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const EventEmitter = require('events').EventEmitter
-const SocketManager = require('../../../../src/api/sockets/socket-manager')
-const RequestLogger = require('../../../../src/lib/request-logger')
+const SocketManager = require('../../../../src/api/sockets/socketManager')
+const RequestLogger = require('../../../../src/lib/requestLogger')
 
 Test('SocketManager', managerTest => {
   let manager
@@ -12,7 +12,7 @@ Test('SocketManager', managerTest => {
 
   managerTest.beforeEach(test => {
     manager = SocketManager.create()
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(RequestLogger, 'logWebsocket')
     test.end()
   })

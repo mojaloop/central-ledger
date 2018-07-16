@@ -4,13 +4,13 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Util = require('util')
-const RequestLogger = require('../../../src/lib/request-logger')
+const RequestLogger = require('../../../src/lib/requestLogger')
 
 Test('logger', loggerTest => {
   let sandbox
 
   loggerTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Logger, 'info')
     sandbox.stub(Util, 'inspect')
 

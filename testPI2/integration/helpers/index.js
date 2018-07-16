@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <valentin.genev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
@@ -30,10 +32,10 @@ exports.prepareNeededData = async (tableName, data) => {
   }
 
   switch (tableName) {
-    case 'ilp':
-      return require('./ilp').prepareData()
-    case 'extension':
-      return require('./extension').prepareData()
+    case 'ilpPacket':
+      return require('./ilpPacket').prepareData()
+    case 'transferExtension':
+      return require('./transferExtension').prepareData()
     case 'transferState':
       return require('./transferState').prepareData()
     case 'transferStateChange':
@@ -55,10 +57,10 @@ exports.deletePreparedData = async (tableName, data) => {
       if (!data || !data.ilpId || !data.transferId || !data.payerName || !data.payeeName) {
         throw new Error('Please provide ilpId, transferId, payerName and payeeName in order to delete the prepared data!')
       }
-      return require('./ilp').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
+      return require('./ilpPacket').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'extension':
-      if (!data || !data.extensionId || !data.transferId || !data.payerName || !data.payeeName) {
-        throw new Error('Please provide ilpId, transferId in order to delete the prepared data!')
+      if (!data || !data.transferExtensionId || !data.transferId || !data.payerName || !data.payeeName) {
+        throw new Error('Please provide transferExtensionId, transferId in order to delete the prepared data!')
       }
       return require('./extension').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'transferStateChange':

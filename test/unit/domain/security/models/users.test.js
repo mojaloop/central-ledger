@@ -11,7 +11,7 @@ Test('Party model', modelTest => {
   let sandbox
 
   modelTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
 
     Db.party = {
       insert: sandbox.stub(),

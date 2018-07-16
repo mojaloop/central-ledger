@@ -11,7 +11,7 @@ Test('fee model', modelTest => {
   let sandbox
 
   modelTest.beforeEach((t) => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
 
     Db.fee = {
       insert: sandbox.stub(),

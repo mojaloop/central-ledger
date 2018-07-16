@@ -23,47 +23,16 @@
  ******/
 'use strict'
 
-const Model = require('../../../src/domain/transfer/models/transferStates')
+const transferStateENUM = require('../../../src/lib/enum').TransferState
 
-const testTransferStates = [
-  {
-    'transferStateId': 'TEST_RECEIVED',
-    'enumeration': 'RECEIVED',
-    'description': 'Next ledger has received the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_RESERVED',
-    'enumeration': 'RESERVED',
-    'description': 'Next ledger has reserved the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_COMMITTED',
-    'enumeration': 'COMMITTED',
-    'description': 'Next ledger has successfully performed the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_ABORTED',
-    'enumeration': 'ABORTED',
-    'description': 'Next ledger has aborted the transfer due a rejection or failure to perform the transfer.'
-  },
-  {
-    'transferStateId': 'TEST_SETTLED',
-    'enumeration': 'COMMITTED',
-    'description': 'Ledger has settled the transfer'
-  }
-]
+let transferStateResult = []
 
-exports.prepareData = async () => {
-  for (let state of testTransferStates) {
-    await Model.saveTransferState(state)
-  }
-  return testTransferStates
+for (let transferState of Object.keys(transferStateENUM)) {
+  transferStateResult.push({
+    transferStateId: transferState
+  })
 }
 
-exports.deletePreparedData = async () => {
-  let result = []
-  for (let state of testTransferStates) {
-    result.push(await Model.destroyTransferStatesById(state.transferStateId))
-  }
-  return result
+exports.prepareData = () => {
+  return transferStateResult
 }

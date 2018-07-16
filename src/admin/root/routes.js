@@ -1,6 +1,6 @@
 'use strict'
 
-const RouteConfig = require('../route-config')
+const RouteConfig = require('../routeConfig')
 const tags = ['api', 'root']
 
 module.exports = [

@@ -17,7 +17,7 @@ Test('Api index', indexTest => {
   let sandbox
 
   indexTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Setup)
     sandbox.stub(Logger)
     sandbox.stub(Participant, 'createLedgerParticipant')

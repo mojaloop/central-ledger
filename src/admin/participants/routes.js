@@ -3,10 +3,10 @@
 const Handler = require('./handler')
 const Joi = require('joi')
 const Permissions = require('../../domain/security/permissions')
-const RouteConfig = require('../route-config')
+const RouteConfig = require('../routeConfig')
 
 const tags = ['api', 'participants']
-const nameValidator = Joi.string().alphanum().min(3).max(30).required().description('Name of the participant')
+const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
 // const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
 const currencyValidator = Joi.string().allow([
   'ALL', 'AFN', 'ARS', 'AWG', 'AUD', 'AZN',
@@ -40,13 +40,13 @@ module.exports = [
     method: 'GET',
     path: '/participants',
     handler: Handler.getAll,
-    options: RouteConfig.config(tags, Permissions.ACCOUNTS_LIST)
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_LIST)
   },
   {
     method: 'GET',
     path: '/participants/{name}',
     handler: Handler.getByName,
-    options: RouteConfig.config(tags, Permissions.ACCOUNTS_VIEW, {
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_VIEW, {
       params: {
         name: Joi.string().required().description('Participant name')
       }
@@ -56,7 +56,7 @@ module.exports = [
     method: 'POST',
     path: '/participants',
     handler: Handler.create,
-    options: RouteConfig.config(tags, Permissions.ACCOUNTS_CREATE, {
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_CREATE, {
       payload: {
         allow: ['application/json'],
         failAction: 'error'
@@ -64,7 +64,7 @@ module.exports = [
       validate: {
         payload: {
           name: nameValidator,
-//          password: passwordValidator,
+          // password: passwordValidator,
           currency: currencyValidator // ,
           // emailAddress: Joi.string().email().required()
         }
@@ -75,14 +75,14 @@ module.exports = [
     method: 'PUT',
     path: '/participants/{name}',
     handler: Handler.update,
-    options: RouteConfig.config(tags, Permissions.ACCOUNTS_UPDATE, {
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_UPDATE, {
       payload: {
         allow: ['application/json'],
         failAction: 'error'
       },
       validate: {
         payload: {
-          is_disabled: Joi.boolean().required().description('Participant is_disabled boolean')
+          isActive: Joi.boolean().required().description('Participant isActive boolean')
         },
         params: {
           name: Joi.string().required().description('Participant name')

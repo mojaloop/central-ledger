@@ -1,7 +1,7 @@
 'use strict'
 
 const Validator = require('./validator')
-const RequestLogger = require('./../../lib/request-logger')
+const RequestLogger = require('./../../lib/requestLogger')
 
 const initialize = (socket, socketManager) => {
   socket.send(JSON.stringify({ id: null, jsonrpc: '2.0', method: 'connect' }))

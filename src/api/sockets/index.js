@@ -4,9 +4,9 @@ const WS = require('ws')
 const Url = require('url')
 const Uuid = require('uuid4')
 const Events = require('../../lib/events')
-const SocketManager = require('./socket-manager')
+const SocketManager = require('./socketManager')
 const WebSocket = require('./websocket')
-const ParticipantTransfers = require('./participant-transfers')
+const ParticipantTransfers = require('./participantTransfers')
 
 let manager
 

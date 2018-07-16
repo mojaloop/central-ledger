@@ -5,7 +5,7 @@ const Test = require('tapes')(require('tape'))
 const P = require('bluebird')
 const Config = require('../../../../src/lib/config')
 const Errors = require('../../../../src/errors')
-const UrlParser = require('../../../../src/lib/urlparser')
+const UrlParser = require('../../../../src/lib/urlParser')
 const Handler = require('../../../../src/admin/participants/handler')
 const Participant = require('../../../../src/domain/participant')
 const Sidecar = require('../../../../src/lib/sidecar')
@@ -17,7 +17,7 @@ Test('participant handler', handlerTest => {
   let hostname = 'http://some-host'
 
   handlerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     originalHostName = Config.HOSTNAME
     Config.HOSTNAME = hostname
     sandbox.stub(Participant)

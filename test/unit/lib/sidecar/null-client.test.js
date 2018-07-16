@@ -4,13 +4,13 @@ const src = '../../../../src'
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const NullClient = require(`${src}/lib/sidecar/null-client`)
+const NullClient = require(`${src}/lib/sidecar/nullClient`)
 
 Test('Null SidecarClient', nullSidecarTest => {
   let sandbox
 
   nullSidecarTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Logger)
     t.end()
   })

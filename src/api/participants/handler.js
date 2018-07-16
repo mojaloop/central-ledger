@@ -2,7 +2,7 @@
 
 const Participant = require('../../domain/participant')
 const Config = require('../../lib/config')
-const UrlParser = require('../../lib/urlparser')
+const UrlParser = require('../../lib/urlParser')
 const Util = require('../../lib/util')
 const PositionService = require('../../domain/position')
 const Errors = require('../../errors')

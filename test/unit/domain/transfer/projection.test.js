@@ -6,11 +6,11 @@ const P = require('bluebird')
 const Uuid = require('uuid4')
 const Moment = require('moment')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const UrlParser = require('../../../../src/lib/urlparser')
+const UrlParser = require('../../../../src/lib/urlParser')
 const ParticipantService = require('../../../../src/domain/participant')
 const TransferState = require('../../../../src/domain/transfer/state')
-const TransferRejectionType = require('../../../../src/domain/transfer/rejection-type')
-const TransfersReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
+const TransferRejectionType = require('../../../../src/lib/enum').rejectionType
+const TransfersReadModel = require('../../../../src/models/transfer/facade')
 const TransfersProjection = require('../../../../src/domain/transfer/projection')
 
 const hostname = 'http://some-host'
@@ -20,7 +20,7 @@ Test('Transfers-Projection', transfersProjectionTest => {
   let sandbox
 
   transfersProjectionTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransfersReadModel, 'saveTransfer')
     sandbox.stub(TransfersReadModel, 'updateTransfer')
     sandbox.stub(TransfersReadModel, 'truncateTransfers')

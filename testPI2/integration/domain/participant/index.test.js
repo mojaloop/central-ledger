@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -27,11 +29,10 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
-const Model = require('../../../../src/domain/participant/model')
-const Service = require('../../../../src/domain/participant/index')
+const Service = require('../../../../src/domain/participant')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
@@ -40,13 +41,13 @@ Test('Participant service', async (participantTest) => {
     {
       name: 'fsp1',
       currency: 'USD',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
     },
     {
       name: 'fsp2',
       currency: 'EUR',
-      isDisabled: 0,
+      isActive: 1,
       createdDate: new Date()
     }
   ]
@@ -55,7 +56,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.sandbox.create()
+      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -75,29 +76,20 @@ Test('Participant service', async (participantTest) => {
     try {
       assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        let result = await Service.create({name: participant.name, currency: participant.currency})
+        let result = await Service.create({name: participant.name})
+        await Service.createParticipantCurrency(result, participant.currency)
         let read = await Service.getById(result)
         participantMap.set(result, read)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
-        assert.equal(read.name, participant.name, ' names are equal')
-        assert.equal(read.currencyId, participant.currency, ' currency match')
-        assert.equal(read.isDisabled, participant.isDisabled, ' isDisabled flag match')
-        assert.ok(Sinon.match(read.createdDate, participant.createdDate), ' created date matches')
+        assert.equal(read.name, participant.name, 'names are equal')
+        assert.equal(read.currencyList[0].currencyId, participant.currency, 'currency match')
+        assert.equal(read.isActive, participant.isActive, 'isActive flag matches')
+        assert.ok(Sinon.match(read.createdDate, participant.createdDate), 'created date matches')
       })
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
       assert.fail()
       assert.end()
-    }
-  })
-
-  await participantTest.test('create participant without currency should throw error', async (assert) => {
-    try {
-      assert.plan(1)
-      await Service.create({name: 'fsp3'})
-    } catch (err) {
-      Logger.error('create participant without currency is failing with message ')
-      assert.ok((('message' in err) && ('stack' in err)), err.message)
     }
   })
 
@@ -107,10 +99,10 @@ Test('Participant service', async (participantTest) => {
       participantFixtures.forEach(async participant => {
         try {
           var result = await Service.getByName(participant.name)
-          assert.equal(result.name, participant.name, ' names are equal')
-          assert.equal(result.currencyId, participant.currency, ' currencies match')
-          assert.equal(result.isDisabled, participant.isDisabled, ' isDisabled flag match')
-          assert.ok(Sinon.match(result.createdDate, participant.createdDate), ' created date matches')
+          assert.equal(result.name, participant.name, 'names are equal')
+          assert.equal(result.currencyList[0].currencyId, participant.currency, 'currencies match')
+          assert.equal(result.isDisabled, participant.isDisabled, 'isActive flag matches')
+          assert.ok(Sinon.match(result.createdDate, participant.createdDate), 'created date matches')
         } catch (err) {
           Logger.error(`get participant by name failed with error - ${err}`)
           assert.fail()
@@ -127,7 +119,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getAll', async (assert) => {
     try {
       let result = await Service.getAll()
-      assert.ok(result, ' returns result')
+      assert.ok(result, 'returns result')
       assert.end()
     } catch (err) {
       Logger.error(`get all participants failed with error - ${err}`)
@@ -153,10 +145,10 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('update', async (assert) => {
     try {
       for (let participantId of participantMap.keys()) {
-        let participant = await Service.update(participantMap.get(participantId).name, { is_disabled: 1 })
+        let participant = await Service.update(participantMap.get(participantId).name, { isActive: 0 })
         let p = await Service.getById(participant.participantId)
-        assert.equal(participant.participantId, p.participantId, ' ids match')
-        assert.equal(p.isDisabled, 1, 'update is real')
+        assert.equal(participant.participantId, p.participantId, 'ids match')
+        assert.equal(p.isActive, 0, 'update works')
       }
       assert.end()
     } catch (err) {
@@ -168,9 +160,10 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('teardown', async (assert) => {
     try {
-      participantFixtures.forEach(async (participant) => {
-        await Model.destroyByName(participant)
-      })
+      for (let participant of participantFixtures) {
+        const result = await Service.destroyByName(participant.name)
+        assert.ok(result, `destroy ${participant.name} success`)
+      }
       await Db.disconnect()
       sandbox.restore()
       assert.end()
@@ -180,4 +173,6 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
+  await participantTest.end()
 })

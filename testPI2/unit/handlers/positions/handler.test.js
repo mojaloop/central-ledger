@@ -6,14 +6,13 @@ const P = require('bluebird')
 const allTransferHandlers = require('../../../../src/handlers/positions/handler')
 const Kafka = require('../../../../src/handlers/lib/kafka')
 const Validator = require('../../../../src/handlers/transfers/validator')
-const TransferQueries = require('../../../../src/domain/transfer/queries')
-const TransferHandler = require('../../../../src/domain/transfer')
+const TransferService = require('../../../../src/domain/transfer')
 const Utility = require('../../../../src/handlers/lib/utility')
 const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const DAO = require('../../../../src/handlers/lib/dao')
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const TransferStateChange = require('../../../../src/domain/transfer/models/transferStateChanges')
+const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -102,15 +101,14 @@ Test('Transfer handler', transferHandlerTest => {
   let sandbox
 
   transferHandlerTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(DAO)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'connect').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'consume').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'commitMessageSync').returns(P.resolve())
     sandbox.stub(Validator)
-    sandbox.stub(TransferQueries)
-    sandbox.stub(TransferHandler)
+    sandbox.stub(TransferService)
     sandbox.stub(Utility)
     sandbox.stub(TransferStateChange)
     Utility.transformAccountToTopicName.returns(topicName)

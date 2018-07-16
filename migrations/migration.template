@@ -1,6 +1,6 @@
 'use strict'
 
-exports.up = function(knex, Promise) {
+exports.up = async (knex, Promise) => {
 
 }
 

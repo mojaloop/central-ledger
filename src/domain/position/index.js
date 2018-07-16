@@ -2,11 +2,10 @@
 
 const _ = require('lodash')
 const Decimal = require('decimal.js')
-const UrlParser = require('../../lib/urlparser')
-const PositionCalculator = require('./position-calculator')
+const UrlParser = require('../../lib/urlParser')
+const PositionCalculator = require('./positionCalculator')
 const Participant = require('../../domain/participant')
-const Fee = require('../../domain/fee')
-const SettleableTransfersReadmodel = require('../../models/settleable-transfers-read-model')
+const SettlementFacade = require('../../models/settlement/facade')
 const P = require('bluebird')
 
 const buildPosition = (payments, receipts, net) => {
@@ -80,7 +79,7 @@ exports.calculateForParticipant = (participant) => {
   const transferPositionMap = new Map().set(participantUri, buildEmptyPosition())
   const feePositionMap = new Map().set(participantUri, buildEmptyPosition())
 
-  return P.all([SettleableTransfersReadmodel.getUnsettledTransfersByParticipant(participant.participantId), Fee.getUnsettledFeeByParticipant(participant)]).then(([transfers, fee]) => {
+  return P.all([SettlementFacade.getUnsettledTransfersByParticipant(participant.participantId)]).then(([transfers, fee]) => {
     const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap)).find(x => x.participant === participantUri)
     const feePositions = buildResponse(calculatePositions(fee.map(mapFeeToExecuted), feePositionMap)).find(x => x.participant === participantUri)
 
@@ -101,7 +100,7 @@ exports.calculateForAllParticipants = () => {
         transferPositionMap.set(UrlParser.toParticipantUri(participant.name), buildEmptyPosition())
         feePositionMap.set(UrlParser.toParticipantUri(participant.name), buildEmptyPosition())
       })
-      return P.all([SettleableTransfersReadmodel.getUnsettledTransfers(), Fee.getUnsettledFee()]).then(([transfers, fee]) => {
+      return P.all([SettlementFacade.getUnsettledTransfers()]).then(([transfers, fee]) => {
         const transferPositions = buildResponse(calculatePositions(transfers, transferPositionMap))
         const feePositions = buildResponse(calculatePositions(fee.map(mapFeeToExecuted), feePositionMap))
         var positions = []

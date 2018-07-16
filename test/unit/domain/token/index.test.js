@@ -14,7 +14,7 @@ Test('Token Service', serviceTest => {
   let originalTokenExpiration
 
   serviceTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Crypto)
     sandbox.stub(Model)
     sandbox.stub(Time, 'getCurrentUTCTimeInMilliseconds')

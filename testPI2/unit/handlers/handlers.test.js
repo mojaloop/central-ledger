@@ -11,7 +11,7 @@ Test('handlers', handlersTest => {
   let sandbox
 
   handlersTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(PositionHandler, 'registerAllHandlers').returns(P.resolve(true))
     test.end()
   })

@@ -17,6 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  --------------
@@ -24,7 +26,9 @@
 
 'use strict'
 
-const Model = require('../../../src/domain/participant/model')
+const Model = require('../../../src/domain/participant')
+const CurrencyModel = require('../../../src/models/participant/participantCurrency')
+
 const testParticipant = {
   name: 'fsp',
   currency: 'USD',
@@ -41,7 +45,12 @@ exports.prepareData = async (name) => {
         name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
       }
     ))
-    return await Model.getById(participantId)
+    let participant = await Model.getById(participantId)
+    let currency = await CurrencyModel.create(participant.participantId, 'USD')
+    return {
+      participant,
+      currency
+    }
   } catch (err) {
     throw new Error(err.message)
   }
@@ -53,7 +62,7 @@ exports.deletePreparedData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyByName({ name: participantName })
+    return await Model.destroyByName(participantName)
   } catch (err) {
     throw new Error(err.message)
   }

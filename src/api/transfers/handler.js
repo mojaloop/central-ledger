@@ -2,8 +2,8 @@
 
 const Validator = require('./validator')
 const TransferService = require('../../domain/transfer')
-const TransferRejectionType = require('../../domain/transfer/rejection-type')
-const TransferTranslator = require('../../domain/transfer/translator')
+const RejectionType = require('../../lib/enum').rejectionType
+const TransferObjectTransform = require('../../domain/transfer/transform')
 const NotFoundError = require('../../errors').NotFoundError
 const Sidecar = require('../../lib/sidecar')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -13,7 +13,7 @@ const buildGetTransferResponse = (record) => {
   if (!record) {
     throw new NotFoundError('The requested resource could not be found.')
   }
-  return TransferTranslator.toTransfer(record)
+  return TransferObjectTransform.toTransfer(record)
 }
 
 exports.prepareTransfer = async function (request, h) {
@@ -42,7 +42,7 @@ exports.rejectTransfer = async function (request, h) {
   Sidecar.logRequest(request)
   const rejection = {
     id: request.params.id,
-    rejection_reason: TransferRejectionType.CANCELLED,
+    rejection_reason: RejectionType.CANCELLED,
     message: request.payload.reason,
     requestingParticipant: request.auth.credentials
   }

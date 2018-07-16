@@ -11,7 +11,7 @@ Test('token handler', handlerTest => {
   let sandbox
 
   handlerTest.beforeEach(test => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TokenService)
     sandbox.stub(Sidecar, 'logRequest')
     test.end()

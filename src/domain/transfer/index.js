@@ -1,22 +1,26 @@
 'use strict'
 
 const P = require('bluebird')
-const TransferQueries = require('./queries')
-const SettleableTransfersReadModel = require('../../models/settleable-transfers-read-model')
-const SettlementModel = require('../../models/settlement')
-const Commands = require('./commands')
-const Translator = require('./translator')
-const RejectionType = require('./rejection-type')
-const State = require('./state')
+const TransferModel = require('../../models/transfer/transfer')
+const TransferFacade = require('../../models/transfer/facade')
+const SettlementFacade = require('../../models/settlement/facade')
+const SettlementModel = require('../../models/settlement/settlement')
+const Projection = require('./projection')
+const TransferObjectTransform = require('./transform')
+const Enum = require('../../lib/enum')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
 
+const getTransferById = (id) => {
+  return TransferModel.getById(id)
+}
+
 const getById = (id) => {
-  return TransferQueries.getById(id)
+  return TransferFacade.getById(id)
 }
 
 const getAll = () => {
-  return TransferQueries.getAll()
+  return TransferFacade.getAll()
 }
 
 const getFulfillment = (id) => {
@@ -28,7 +32,7 @@ const getFulfillment = (id) => {
       if (!transfer.executionCondition) {
         throw new Errors.TransferNotConditionalError()
       }
-      if (transfer.state === State.REJECTED) {
+      if (transfer.state === Enum.TransferState.REJECTED) {
         throw new Errors.AlreadyRolledBackError()
       }
       if (!transfer.fulfilment) {
@@ -40,8 +44,8 @@ const getFulfillment = (id) => {
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
-    const result = await Commands.prepare(payload, stateReason, hasPassedValidation)
-    const t = Translator.toTransfer(result)
+    const result = await Projection.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    const t = TransferObjectTransform.toTransfer(result)
     Events.emitTransferPrepared(t)
     return {transfer: t}
   } catch (e) {
@@ -50,8 +54,8 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
 }
 
 const reject = async (stateReason, transferId) => {
-  const {alreadyRejected, transferStateChange} = await Commands.reject(stateReason, transferId)
-  // const t = Translator.toTransfer(result)
+  const {alreadyRejected, transferStateChange} = await Projection.saveTransferRejected(stateReason, transferId)
+  // const t = TransferObjectTransform.toTransfer(result)
   if (!alreadyRejected) {
     Events.emitTransferRejected(transferStateChange)
   }
@@ -59,13 +63,13 @@ const reject = async (stateReason, transferId) => {
 }
 
 const expire = (id) => {
-  return reject({id, rejection_reason: RejectionType.EXPIRED})
+  return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
 }
 
-const fulfil = (fulfilment) => {
-  return Commands.fulfil(fulfilment)
+const fulfil = (transferId, fulfilment) => {
+  return Projection.saveTransferExecuted(transferId, fulfilment)
     .then(transfer => {
-      const t = Translator.toTransfer(transfer)
+      const t = TransferObjectTransform.toTransfer(transfer)
       Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfilment.fulfilment})
       return t
     })
@@ -80,18 +84,19 @@ const fulfil = (fulfilment) => {
 }
 
 const rejectExpired = () => {
-  const rejections = TransferQueries.findExpired().then(expired => expired.map(x => expire(x.transferId)))
-  return P.all(rejections).then(rejections => {
-    return rejections.map(r => r.transfer.id)
-  })
+  // TODO: create/recover findExpired method
+  // const rejections = TransferFacade.findExpired().then(expired => expired.map(x => expire(x.transferId)))
+  // return P.all(rejections).then(rejections => {
+  //   return rejections.map(r => r.transfer.id)
+  // })
 }
 
 const settle = async () => {
   const settlementId = SettlementModel.generateId()
   const settledTransfers = SettlementModel.create(settlementId, 'transfer').then(() => {
-    return SettleableTransfersReadModel.getSettleableTransfers().then(transfers => {
+    return SettlementFacade.getSettleableTransfers().then(transfers => {
       transfers.forEach(transfer => {
-        Commands.settle({id: transfer.transferId, settlement_id: settlementId})
+        Projection.saveSettledTransfers({id: transfer.transferId, settlement_id: settlementId})
       })
       return transfers
     })
@@ -108,6 +113,7 @@ const settle = async () => {
 
 module.exports = {
   fulfil,
+  getTransferById,
   getById,
   getAll,
   getFulfillment,

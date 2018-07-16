@@ -4,14 +4,14 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Uuid = require('uuid4')
-const TransferReadModel = require('../../../../src/domain/transfer/models/transfer-read-model')
-const TransferQueries = require('../../../../src/domain/transfer/queries')
+const TransferReadModel = require('../../../../src/models/transfer/facade')
+const TransferService = require('../../../../src/domain/transfer')
 
 Test('Transfer Queries tests', queriesTest => {
   let sandbox
 
   queriesTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(TransferReadModel, 'findExpired')
     sandbox.stub(TransferReadModel, 'getById')
     sandbox.stub(TransferReadModel, 'getAll')
@@ -29,7 +29,7 @@ Test('Transfer Queries tests', queriesTest => {
       const transfer = {}
       const transferPromise = P.resolve(transfer)
       TransferReadModel.getById.withArgs(id).returns(transferPromise)
-      test.equal(TransferQueries.getById(id), transferPromise)
+      test.equal(TransferService.getById(id), transferPromise)
       test.end()
     })
     getByIdTest.end()
@@ -40,7 +40,7 @@ Test('Transfer Queries tests', queriesTest => {
       const transfer = {}
       const transferPromise = P.resolve(transfer)
       TransferReadModel.getAll.returns(transferPromise)
-      test.equal(TransferQueries.getAll(), transferPromise)
+      test.equal(TransferService.getAll(), transferPromise)
       test.end()
     })
     getAllTest.end()
@@ -51,7 +51,7 @@ Test('Transfer Queries tests', queriesTest => {
       let transfers = [{ transferId: 1 }, { transferId: 2 }]
       TransferReadModel.findExpired.returns(P.resolve(transfers))
 
-      TransferQueries.findExpired()
+      TransferService.findExpired()
         .then(expiredTransfers => {
           test.deepEqual(expiredTransfers, transfers)
           test.end()

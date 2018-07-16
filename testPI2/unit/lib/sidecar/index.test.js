@@ -17,7 +17,7 @@ Test('Sidecar', sidecarTest => {
   let clientCreateStub
 
   sidecarTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(Moment, 'utc')
 
     oldSidecar = Config.SIDECAR
@@ -27,7 +27,7 @@ Test('Sidecar', sidecarTest => {
     nullClientCreateStub = sandbox.stub()
     clientCreateStub = sandbox.stub()
 
-    stubs = { './null-client': { create: nullClientCreateStub }, '@mojaloop/forensic-logging-client': { create: clientCreateStub } }
+    stubs = { './nullClient': { create: nullClientCreateStub }, '@mojaloop/forensic-logging-client': { create: clientCreateStub } }
 
     t.end()
   })
