@@ -32,10 +32,10 @@ exports.prepareNeededData = async (tableName, data) => {
   }
 
   switch (tableName) {
-    case 'ilp':
-      return require('./ilp').prepareData()
-    case 'extension':
-      return require('./extension').prepareData()
+    case 'ilpPacket':
+      return require('./ilpPacket').prepareData()
+    case 'transferExtension':
+      return require('./transferExtension').prepareData()
     case 'transferState':
       return require('./transferState').prepareData()
     case 'transferStateChange':

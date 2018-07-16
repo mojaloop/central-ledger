@@ -66,7 +66,7 @@ Test('Ilp service tests', async (ilpTest) => {
     try {
       ilpTestValues.forEach(async ilp => {
         try {
-          let ilpResult = await HelperModule.prepareNeededData('ilp')
+          let ilpResult = await HelperModule.prepareNeededData('ilpPacket')
           let result = ilpResult.ilp
 
           let read = await Service.getByTransferId(ilpResult.transfer.transferId)

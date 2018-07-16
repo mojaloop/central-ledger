@@ -28,13 +28,13 @@
 
 const TransferPreparationModule = require('./transferTestHelper')
 const TransferModel = require('../../../src/models/transfer/facade')
-const Model = require('../../../src/models/transfer/ilpPacket')
+const IlpPacketModel = require('../../../src/models/transfer/ilpPacket')
 
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
     let transfer = await TransferModel.getById(transferResult.transfer.transferId)
-    let ilp = await Model.getByTransferId(transferResult.transfer.transferId)
+    let ilp = await IlpPacketModel.getByTransferId(transferResult.transfer.transferId)
 
     return {
       ilp,
@@ -49,7 +49,7 @@ exports.prepareData = async () => {
 
 exports.deletePreparedData = async (ilpId, transferId, payerName, payeeName) => {
   try {
-    return await Model.destroyByTransferId({
+    return await IlpPacketModel.destroyByTransferId({
       transferId: transferId
     }).then(async () => {
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)

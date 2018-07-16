@@ -70,7 +70,7 @@ Test('Extension model test', async (extensionTest) => {
     try {
       extensionTestValues.forEach(async (extension) => {
         try {
-          let extensionResult = await HelperModule.prepareNeededData('extension')
+          let extensionResult = await HelperModule.prepareNeededData('transferExtension')
           let result = extensionResult.extension[0]
           transferId = result.transferId
 

@@ -34,16 +34,5 @@ for (let transferState of Object.keys(transferStateENUM)) {
 }
 
 exports.prepareData = () => {
-  // for (let state of testtransferState) {
-  //   await Model.saveTransferState(state)
-  // }
   return transferStateResult
 }
-
-// exports.deletePreparedData = async () => {
-//   let result = []
-//   for (let state of testtransferState) {
-//     result.push(await Model.destroyTransferStateById(state.transferStateId))
-//   }
-//   return result
-// }

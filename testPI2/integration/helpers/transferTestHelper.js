@@ -29,7 +29,7 @@
 const TransferPreparationModule = require('./transfer')
 const TransferStatePreparationHelper = require('./transferState')
 const StateChangeModel = require('../../../src/models/transfer/transferStateChange')
-const ExtensionModel = require('../../../src/models/transfer/transferExtension')
+const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const IlpModel = require('../../../src/models/transfer/ilpPacket')
 const TransferModel = require('../../../src/models/transfer/facade')
 const TransferFulfilmentModel = require('../../../src/models/transfer/transferFulfilment')
@@ -37,105 +37,14 @@ const TransferParticipantModel = require('../../../src/models/transfer/transferP
 
 const Uuid = require('uuid4')
 
-// const preparedData = {
-//   'ilp': {
-//     'ilpId': 4,
-//     'transferId': 'tr15277490950618416',
-//     'packet': 'test packet',
-//     'condition': 'test condition',
-//     'fulfilment': 'test fulfilment',
-//     'payeeParticipantId': 12,
-//     'payerParticipantId': 11,
-//     'amount': 100,
-//     'currencyId': 'USD',
-//     'expirationDate': null,
-//     'settlementWindowId': null
-//   },
-//   'extension': {
-//     'extensionId': 4,
-//     'transferId': 'tr15277490950618416',
-//     'key': 'extension.key',
-//     'value': 'extension.value',
-//     'changedDate': '2018-05-31T06:44:55.000Z',
-//     'changedBy': 'extension.changedBy'
-//   },
-//   'transfer': {
-//     'transferId': 'tr15277490950618416',
-//     'payeeParticipantId': 12,
-//     'payerParticipantId': 11,
-//     'amount': 100,
-//     'currencyId': 'USD',
-//     'expirationDate': null,
-//     'settlementWindowId': null,
-//     'currency': 'USD',
-//     'payerFsp': 'payer1527749095045383',
-//     'payeeFsp': 'payee15277490950569075',
-//     'transferState': 'TEST_RECEIVED',
-//     'completedTimestamp': '2018-05-31T03:44:55.000Z',
-//     'ilpPacket': 'test packet',
-//     'condition': 'test condition',
-//     'fulfilment': 'test fulfilment'
-//   },
-//   'transferStateResults': [
-//     {
-//       'transferStateId': 'TEST_RECEIVED',
-//       'enumeration': 'RECEIVED',
-//       'description': 'Next ledger has received the transfer.'
-//     },
-//     {
-//       'transferStateId': 'TEST_RESERVED',
-//       'enumeration': 'RESERVED',
-//       'description': 'Next ledger has reserved the transfer.'
-//     },
-//     {
-//       'transferStateId': 'TEST_COMMITTED',
-//       'enumeration': 'COMMITTED',
-//       'description': 'Next ledger has successfully performed the transfer.'
-//     },
-//     {
-//       'transferStateId': 'TEST_ABORTED',
-//       'enumeration': 'ABORTED',
-//       'description': 'Next ledger has aborted the transfer due a rejection or failure to perform the transfer.'
-//     },
-//     {
-//       'transferStateId': 'TEST_SETTLED',
-//       'enumeration': 'COMMITTED',
-//       'description': 'Ledger has settled the transfer'
-//     }
-//   ],
-//   'transferStateChangeResult': {
-//     'transferStateChangeId': 4,
-//     'transferId': 'tr15277490950618416',
-//     'transferStateId': 'TEST_RECEIVED',
-//     'reason': null,
-//     'changedDate': '2018-05-31T03:44:55.000Z'
-//   },
-//   'participants': {
-//     'participantPayer': {
-//       'participantId': 11,
-//       'currencyId': 'USD',
-//       'name': 'payer1527749095045383',
-//       'createdDate': '2018-05-31T03:44:55.000Z',
-//       'isDisabled': 0
-//     },
-//     'participantPayee': {
-//       'participantId': 12,
-//       'currencyId': 'USD',
-//       'name': 'payee15277490950569075',
-//       'createdDate': '2018-05-31T03:44:55.000Z',
-//       'isDisabled': 0
-//     }
-//   }
-// }
-
-// TODO add data to transferParticipant, transferParticipantRoleType, transferFulfilment
+// TODO: add data to transferParticipant, transferParticipantRoleType, transferFulfilment
 
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData() // participants + transfer
     let transferStateResults = TransferStatePreparationHelper.prepareData() // transfer seed
 
-    await ExtensionModel.saveTransferExtension({
+    await TransferExtensionModel.saveTransferExtension({
       transferId: transferResult.transfer.transferId,
       key: 'extension.key',
       value: 'extension.value',
@@ -156,7 +65,7 @@ exports.prepareData = async () => {
 
     let transferStateChangeResult = await StateChangeModel.getByTransferId(transferResult.transfer.transferId)
     let ilp = await IlpModel.getByTransferId(transferResult.transfer.transferId)
-    let extension = await ExtensionModel.getByTransferId(transferResult.transfer.transferId)
+    let extension = await TransferExtensionModel.getByTransferId(transferResult.transfer.transferId)
     // let transfer = await TransferModel.getById(transferResult.transfer.transferId)
     await TransferFulfilmentModel.saveTransferFulfilment({
       transferFulfilmentId: Uuid(),
@@ -211,10 +120,10 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
       await IlpModel.destroyByTransferId({
         transferId: transferId
       }).then(async () => {
-        await ExtensionModel.destroyByTransferId({
+        await TransferExtensionModel.destroyByTransferId({
           transferId: transferId
         }).then(async () => {
-//          await TransferStatePreparationHelper.deletePreparedData()
+          // await TransferStatePreparationHelper.deletePreparedData()
           await TransferModel.destroyByTransferId({transferId: 'test_tr_id'}).then(async () => {
             await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
           })
