@@ -27,38 +27,38 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/models/transfer/facade')
-const Model = require('../../../src/models/transfer/ilpPacket')
+const TransferModel = require('../../../src/models/transfer/transfer')
+const Model = require('../../../src/models/transfer/transferExtension')
 
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
 
-    await Model.saveIlp({
-      transferId: transferResult.transferId,
-      packet: 'test packet',
-      condition: 'test condition',
-      fulfilment: 'test fulfilment'
+    await Model.saveTransferExtension({
+      transferId: transferResult.transfer.transferId,
+      key: 'extension.key',
+      value: 'extension.value',
+      createdDate: new Date()
     })
-    let transfer = await TransferModel.getById(transferResult.transferId)
-    let ilp = await Model.getByTransferId(transferResult.transferId)
+    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    let extension = await Model.getByTransferId(transferResult.transfer.transferId)
 
     return {
-      ilp,
+      extension,
       transfer,
-      participantPayer: transferResult.participantPayerResult,
-      participantPayee: transferResult.participantPayeeResult
+      participants: {
+        participantPayer: transferResult.participantPayerResult,
+        participantPayee: transferResult.participantPayeeResult
+      }
     }
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.deletePreparedData = async (ilpId, transferId, payerName, payeeName) => {
+exports.deletePreparedData = async (extensionId, transferId, payerName, payeeName) => {
   try {
-    return await Model.destroyByTransferId({
-      transferId: transferId
-    }).then(async () => {
+    return await Model.destroyByTransferId(transferId).then(async () => {
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {

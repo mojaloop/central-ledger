@@ -26,7 +26,9 @@
 
 'use strict'
 
-const Model = require('../../../src/models/participant/participant')
+const Model = require('../../../src/domain/participant')
+const CurrencyModel = require('../../../src/models/participant/participantCurrency')
+
 const testParticipant = {
   name: 'fsp',
   currency: 'USD',
@@ -43,7 +45,12 @@ exports.prepareData = async (name) => {
         name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
       }
     ))
-    return await Model.getById(participantId)
+    let participant = await Model.getById(participantId)
+    let currency = await CurrencyModel.create(participant.participantId, 'USD')
+    return {
+      participant,
+      currency
+    }
   } catch (err) {
     throw new Error(err.message)
   }

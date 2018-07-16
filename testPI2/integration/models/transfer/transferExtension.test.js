@@ -29,7 +29,6 @@
 'use strict'
 
 const Test = require('tape')
-const Sinon = require('sinon')
 const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
@@ -37,7 +36,6 @@ const Model = require('../../../../src/models/transfer/transferExtension')
 const HelperModule = require('../../helpers')
 
 Test('Extension model test', async (extensionTest) => {
-  let sandbox
   let transferId
 
   let extensionTestValues = [
@@ -53,7 +51,6 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -73,7 +70,7 @@ Test('Extension model test', async (extensionTest) => {
     try {
       extensionTestValues.forEach(async (extension) => {
         try {
-          let extensionResult = await HelperModule.prepareNeededData('extension')
+          let extensionResult = await HelperModule.prepareNeededData('transferExtension')
           let result = extensionResult.extension[0]
           transferId = result.transferId
 
@@ -192,25 +189,5 @@ Test('Extension model test', async (extensionTest) => {
       assert.end()
     }
   })
-
-  await extensionTest.test('teardown', async (assert) => {
-    try {
-      for (let extensionObj of extensionMap.values()) {
-        let extension = extensionObj.extension
-        await HelperModule.deletePreparedData('extension', {
-          transferExtensionId: extension.transferExtensionId,
-          transferId: extension.transferId,
-          payerName: extensionObj.participants.participantPayer.name,
-          payeeName: extensionObj.participants.participantPayee.name
-        })
-      }
-      await Db.disconnect()
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`extension teardown failed with error - ${err}`)
-      assert.fail(`extension teardown failed - ${err}`)
-      assert.end()
-    }
-  })
+  extensionTest.end()
 })

@@ -29,7 +29,6 @@
 'use strict'
 
 const Test = require('tape')
-const Sinon = require('sinon')
 const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
@@ -37,14 +36,10 @@ const Service = require('../../../../src/models/transfer/ilpPacket')
 const HelperModule = require('../../helpers')
 
 Test('Ilp service tests', async (ilpTest) => {
-  let sandbox
-
   let ilpTestValues = [
     {
       transferId: '1',
-      packet: 'test packet',
-      condition: 'test condition',
-      fulfilment: 'test fulfilment'
+      value: 'test packet'
     }
   ]
 
@@ -52,7 +47,6 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('setup', async (assert) => {
     try {
-      sandbox = Sinon.createSandbox()
       await Db.connect(Config.DATABASE_URI).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -72,27 +66,25 @@ Test('Ilp service tests', async (ilpTest) => {
     try {
       ilpTestValues.forEach(async ilp => {
         try {
-          let ilpResult = await HelperModule.prepareNeededData('ilp')
+          let ilpResult = await HelperModule.prepareNeededData('ilpPacket')
           let result = ilpResult.ilp
 
           let read = await Service.getByTransferId(ilpResult.transfer.transferId)
 
           read = Object.assign({}, read, {
             participantPayer: {
-              name: ilpResult.participantPayer.name
+              name: ilpResult.transfer.payerFsp
             },
             participantPayee: {
-              name: ilpResult.participantPayee.name
+              name: ilpResult.transfer.payeeFsp
             }
           })
 
-          ilpMap.set(result.ilpId, read)
+          ilpMap.set(result.transferId, read)
 
           assert.comment(`Testing with ilp \n ${JSON.stringify(ilp, null, 2)}`)
           assert.equal(result.transferId, read.transferId, ' transferId match')
-          assert.equal(result.packet, read.packet, ' packet match')
-          assert.equal(result.condition, read.condition, ' condition match')
-          assert.equal(result.fulfilment, read.fulfilment, ' fulfilment match')
+          assert.equal(result.value, read.value, ' packet match')
           assert.end()
         } catch (err) {
           Logger.error(`create 1 ilp failed with error - ${err}`)
@@ -109,10 +101,8 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('create ilp without transferId should throw error', async (assert) => {
     try {
-      await Service.create({
-        packet: 'test packet',
-        condition: 'test condition',
-        fulfilment: 'test fulfilment'
+      await Service.saveIlpPacket({
+        value: 'test packet'
       })
       assert.end()
     } catch (err) {
@@ -124,10 +114,8 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('create ilp without packet should throw error', async (assert) => {
     try {
-      await Service.create({
-        transferId: '10',
-        condition: 'test condition',
-        fulfilment: 'test fulfilment'
+      await Service.saveIlpPacket({
+        transferId: '10'
       })
       assert.end()
     } catch (err) {
@@ -137,25 +125,10 @@ Test('Ilp service tests', async (ilpTest) => {
     }
   })
 
-  await ilpTest.test('create ilp without condition should throw error', async (assert) => {
-    try {
-      await Service.create({
-        transferId: '10',
-        packet: 'test packet',
-        fulfilment: 'test fulfilment'
-      })
-      assert.end()
-    } catch (err) {
-      Logger.error('create ilp without condition is failing with message ')
-      assert.ok((('message' in err) && ('stack' in err)), err.message)
-      assert.end()
-    }
-  })
-
   await ilpTest.test('getByTransferId', async (assert) => {
     try {
       for (let ilp of ilpMap.values()) {
-        let result = await Service.getByTransferId(ilpMap.get(ilp.ilpId).transferId)
+        let result = await Service.getByTransferId(ilpMap.get(ilp.transferId).transferId)
         assert.equal(JSON.stringify(Object.assign({},
           result,
           {
@@ -185,11 +158,11 @@ Test('Ilp service tests', async (ilpTest) => {
   await ilpTest.test('update', async (assert) => {
     try {
       for (let ilp of ilpMap.values()) {
-        let result = await Service.update({ ilpId: ilp.ilpId, packet: 'new test packet' })
+        let result = await Service.update({ transferId: ilp.transferId, value: 'new test packet' })
         let ilpDb = await Service.getByTransferId(ilp.transferId)
         assert.equal(result, 1, ' ilp is updated')
-        assert.equal(ilp.ilpId, ilpDb.ilpId, ' ids match')
-        assert.equal(ilpDb.packet, 'new test packet', 'update is real')
+        assert.equal(ilp.transferId, ilpDb.transferId, ' ids match')
+        assert.equal(ilpDb.value, 'new test packet', 'update is real')
       }
       assert.end()
     } catch (err) {
@@ -198,24 +171,5 @@ Test('Ilp service tests', async (ilpTest) => {
       assert.end()
     }
   })
-
-  await ilpTest.test('teardown', async (assert) => {
-    try {
-      for (let ilp of ilpMap.values()) {
-        await HelperModule.deletePreparedData('ilp', {
-          ilpId: ilp.ilpId,
-          transferId: ilp.transferId,
-          payerName: ilp.participantPayer.name,
-          payeeName: ilp.participantPayee.name
-        })
-      }
-      await Db.disconnect()
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`ilp teardown failed with error - ${err}`)
-      assert.fail(`Ilp teardown failed - ${err}`)
-      assert.end()
-    }
-  })
+  ilpTest.end()
 })

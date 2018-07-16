@@ -128,8 +128,8 @@ const getAll = async () => {
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
           'tf.ilpFulfilment AS fulfilment'
-        )
-        .orderBy('tsc.transferStateChangeId', 'desc')
+          )
+       .orderBy('tsc.transferStateChangeId', 'desc')
       for (let transferResult of transferResultList) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(transferResult.transferId)
         transferResult.isTransferReadModel = true
