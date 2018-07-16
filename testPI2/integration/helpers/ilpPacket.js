@@ -26,39 +26,32 @@
 
 'use strict'
 
-const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/models/transfer/transfer')
-const Model = require('../../../src/models/transfer/transferExtension')
+const TransferPreparationModule = require('./transferTestHelper')
+const TransferModel = require('../../../src/models/transfer/facade')
+const IlpPacketModel = require('../../../src/models/transfer/ilpPacket')
 
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
-
-    await Model.saveTransferExtension({
-      transferId: transferResult.transferId,
-      key: 'extension.key',
-      value: 'extension.value',
-      createdDate: new Date()
-    })
-    let transfer = await TransferModel.getById(transferResult.transferId)
-    let extension = await Model.getByTransferId(transferResult.transferId)
+    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    let ilp = await IlpPacketModel.getByTransferId(transferResult.transfer.transferId)
 
     return {
-      extension,
+      ilp,
       transfer,
-      participants: {
-        participantPayer: transferResult.participantPayerResult,
-        participantPayee: transferResult.participantPayeeResult
-      }
+      participantPayer: transferResult.participantPayerResult,
+      participantPayee: transferResult.participantPayeeResult
     }
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.deletePreparedData = async (extensionId, transferId, payerName, payeeName) => {
+exports.deletePreparedData = async (ilpId, transferId, payerName, payeeName) => {
   try {
-    return await Model.destroyByTransferId(transferId).then(async () => {
+    return await IlpPacketModel.destroyByTransferId({
+      transferId: transferId
+    }).then(async () => {
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {

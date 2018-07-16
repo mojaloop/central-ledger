@@ -28,6 +28,7 @@
 
 const ParticipantPreparationModule = require('./participant')
 const Model = require('../../../src/models/transfer/transfer')
+// const transferFacade = require('../../../src/models/transfer/facade')
 
 exports.prepareData = async () => {
   try {
@@ -39,12 +40,16 @@ exports.prepareData = async () => {
       transferId: transferId,
       amount: 100,
       currencyId: 'USD',
-      ilpCondition: '.',
+      ilpCondition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
       expirationDate: new Date()
     })
 
     return {
-      transferId,
+      transfer: {
+        transferId,
+        amount: 100,
+        currencyId: 'USD'
+      },
       participantPayerResult,
       participantPayeeResult
     }
