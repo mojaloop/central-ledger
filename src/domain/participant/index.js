@@ -39,6 +39,7 @@ const create = async (payload) => {
 
 const getAll = async () => {
   try {
+    // TODO: refactor the query to use the facade layer and join query for both tables
     let all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
       participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
@@ -50,6 +51,7 @@ const getAll = async () => {
 }
 
 const getById = async (id) => {
+  // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getById(id)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
@@ -58,6 +60,7 @@ const getById = async (id) => {
 }
 
 const getByName = async (name) => {
+  // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getByName(name)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
