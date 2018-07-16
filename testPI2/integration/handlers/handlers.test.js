@@ -235,7 +235,7 @@ Test('Handlers test', async handlersTest => {
 })
 
 Test.onFinish(async () => {
-  await Producer.disconnect()
+  await Producer.disconnect(topicConf.topicName)
   // add loop code to disconnect consumers
   process.exit(0)
 })
