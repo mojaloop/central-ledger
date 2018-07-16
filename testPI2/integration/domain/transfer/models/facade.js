@@ -29,15 +29,13 @@
 'use strict'
 
 const Test = require('tape')
-const Sinon = require('sinon')
 const Db = require('../../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../../src/lib/config')
-const Model = require('../../../../../src/models/transfer/facade')
+const TransferFacade = require('../../../../../src/models/transfer/facade')
 const HelperModule = require('../../../helpers/index')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
-  let sandbox = Sinon.createSandbox()
   var transferPrepareResult = {}
 
   await transferReadModelTest.test('setup', async (assert) => {
@@ -60,7 +58,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
 
   await transferReadModelTest.test('get the created transfer test', async function (assert) {
     try {
-      let transfers = await Model.getAll()
+      let transfers = await TransferFacade.getAll()
       assert.true(transfers.length >= 1, 'one or more transfers are returned')
       assert.equal(transfers[0].transferId, transferPrepareResult.transfer.transferId)
       assert.end()
@@ -73,8 +71,8 @@ Test('Transfer read model test', async (transferReadModelTest) => {
 
   await transferReadModelTest.test('get the created transfer change test', async (assert) => {
     try {
-      let transfer = await Model.getById(transferPrepareResult.transfer.transferId)
-      assert.deepEqual(transfer, transferPrepareResult.transfer, 'created and read transfer are equal')
+      let transfer = await TransferFacade.getById(transferPrepareResult.transfer.transferId)
+      assert.equal(transfer.transferId, transferPrepareResult.transfer.transferId, 'created and read transfer are equal')
       assert.end()
     } catch (err) {
       Logger.error(`Setup for test failed with error - ${err}`)
@@ -82,59 +80,5 @@ Test('Transfer read model test', async (transferReadModelTest) => {
       assert.end()
     }
   })
-
-  await transferReadModelTest.test('save transfer', async (assert) => {
-    try {
-      await Model.saveTransfer({
-        payeeParticipantId: transferPrepareResult.participants.participantPayee.participantId,
-        payerParticipantId: transferPrepareResult.participants.participantPayer.participantId,
-        transferId: 'test_tr_id',
-        amount: 100,
-        currencyId: 'USD',
-        expirationDate: null,
-        settlementWindowId: null
-      })
-      let read = await Model.getById('test_tr_id')
-      assert.equal(read.transferId, 'test_tr_id')
-      assert.end()
-    } catch (err) {
-      Logger.error(`Setup for test failed with error - ${err}`)
-      assert.fail(`Setup for test failed with error - ${err}`)
-      assert.end()
-    }
-  })
-
-  await transferReadModelTest.test('update transfer', async (assert) => {
-    try {
-      await Model.updateTransfer(transferPrepareResult.transfer.transferId, {
-        currencyId: 'EUR'
-      })
-      let read = await Model.getById(transferPrepareResult.transfer.transferId)
-      assert.equal(read.currencyId, 'EUR', 'date is updated fine')
-      assert.end()
-    } catch (err) {
-      Logger.error(`Setup for test failed with error - ${err}`)
-      assert.fail(`Setup for test failed with error - ${err}`)
-      assert.end()
-    }
-  })
-
-  await transferReadModelTest.test('teardown', async (assert) => {
-    try {
-      await HelperModule.deletePreparedData('transferModel', {
-        transferId: transferPrepareResult.transfer.transferId,
-        payerName: transferPrepareResult.participants.participantPayer.name,
-        payeeName: transferPrepareResult.participants.participantPayee.name
-
-      }).then(async () => {
-        return await Db.disconnect()
-      })
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`transfer model teardown failed with error - ${err}`)
-      assert.fail(`transfer model teardown failed - ${err}`)
-      assert.end()
-    }
-  })
+  transferReadModelTest.end()
 })

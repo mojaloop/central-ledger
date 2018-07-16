@@ -24,9 +24,9 @@
 
 'use strict'
 
-const TransferPreparationModule = require('./transfer')
+const TransferPreparationModule = require('./transferTestHelper')
 const TransferModel = require('../../../src/models/transfer/facade')
-const TransferStatePreparationHelper = require('./transferState--')
+const TransferStatePreparationHelper = require('./transferState')
 const Model = require('../../../src/models/transfer/transferStateChange')
 
 // const preparedData = {
@@ -103,14 +103,13 @@ const Model = require('../../../src/models/transfer/transferStateChange')
 exports.prepareData = async () => {
   try {
     let transferResult = await TransferPreparationModule.prepareData()
-    let transferStateResults = await TransferStatePreparationHelper.prepareData()
-
+    let transferStateResults = TransferStatePreparationHelper.prepareData()
     let saveResult = await Model.saveTransferStateChange({
-      transferId: transferResult.transferId,
+      transferId: transferResult.transfer.transferId,
       transferStateId: transferStateResults[0].transferStateId
     })
-    let transfer = await TransferModel.getById(transferResult.transferId)
-    let transferStateChangeResult = await Model.getByTransferId(transferResult.transferId)
+    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    let transferStateChangeResult = await Model.getByTransferId(transferResult.transfer.transferId)
 
     return {
       success: !!(saveResult),

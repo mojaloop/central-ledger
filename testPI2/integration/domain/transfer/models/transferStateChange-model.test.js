@@ -29,7 +29,6 @@
 'use strict'
 
 const Test = require('tape')
-const Sinon = require('sinon')
 const Db = require('../../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../../src/lib/config')
@@ -37,9 +36,7 @@ const Model = require('../../../../../src/models/transfer/transferStateChange')
 const HelperModule = require('../../../helpers')
 
 Test('Transfer State Change model test', async (stateChangeTest) => {
-  let sandbox = Sinon.createSandbox()
   var stateChangePrepareResult = {}
-  var latestInsertedTransferStateChange = {}
   await stateChangeTest.test('setup', async (assert) => {
     try {
       await Db.connect(Config.DATABASE_URI).then(async () => {
@@ -70,7 +67,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
         transferId: stateChangePrepareResult.transfer.transferId,
         transferStateId: state.transferStateId,
         reason: null,
-        changedDate: new Date()
+        createdDate: new Date()
       }
 
       createdId = await Model.saveTransferStateChange(transferStateChange)
@@ -78,7 +75,6 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.equal(createdId, result.transferStateChangeId, ' transferId match')
       assert.equal(transferStateChange.transferStateId, result.transferStateId, ' key match')
       assert.equal(transferStateChange.reason, result.reason, ' value match')
-      latestInsertedTransferStateChange = result
       assert.end()
     } catch (err) {
       Logger.error(`create all extension objects failed with error - ${err}`)
@@ -119,40 +115,5 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.end()
     }
   })
-
-  await stateChangeTest.test('getByTransferId', async (assert) => {
-    try {
-      let result = await Model.getByTransferId(stateChangePrepareResult.transfer.transferId)
-
-      assert.equal(JSON.stringify(latestInsertedTransferStateChange), JSON.stringify(result))
-      assert.comment(`Testing with extension \n ${JSON.stringify(result, null, 2)}`)
-      assert.equal(result.transferId, latestInsertedTransferStateChange.transferId, ' transferId match')
-      assert.equal(result.key, latestInsertedTransferStateChange.key, ' key match')
-      assert.equal(result.value, latestInsertedTransferStateChange.value, ' value match')
-      assert.equal(result.changedDate.toString(), latestInsertedTransferStateChange.changedDate.toString(), ' changedDate match')
-      assert.equal(result.changedBy, latestInsertedTransferStateChange.changedBy, ' changedBy match')
-      assert.end()
-    } catch (err) {
-      Logger.error(`get extension by transferId failed with error - ${err}`)
-      assert.fail(`Get extension by transferId failed - ${err}`)
-      assert.end()
-    }
-  })
-
-  await stateChangeTest.test('teardown', async (assert) => {
-    try {
-      await HelperModule.deletePreparedData('transferStateChange', {
-        transferId: stateChangePrepareResult.transfer.transferId,
-        payerName: stateChangePrepareResult.participants.participantPayer.name,
-        payeeName: stateChangePrepareResult.participants.participantPayee.name
-      })
-      await Db.disconnect()
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`extension teardown failed with error - ${err}`)
-      assert.fail(`extension teardown failed - ${err}`)
-      assert.end()
-    }
-  })
+  stateChangeTest.end()
 })

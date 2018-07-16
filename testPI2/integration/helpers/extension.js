@@ -35,13 +35,13 @@ exports.prepareData = async () => {
     let transferResult = await TransferPreparationModule.prepareData()
 
     await Model.saveTransferExtension({
-      transferId: transferResult.transferId,
+      transferId: transferResult.transfer.transferId,
       key: 'extension.key',
       value: 'extension.value',
       createdDate: new Date()
     })
-    let transfer = await TransferModel.getById(transferResult.transferId)
-    let extension = await Model.getByTransferId(transferResult.transferId)
+    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    let extension = await Model.getByTransferId(transferResult.transfer.transferId)
 
     return {
       extension,
