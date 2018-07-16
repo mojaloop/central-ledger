@@ -45,6 +45,11 @@ const transferStates = [
     'transferStateId': 'SETTLED',
     'enumeration': 'SETTLED',
     'description': 'Ledger has settled the transfer'
+  },
+  {
+    'transferStateId': 'ABORTED',
+    'enumeration': 'ABORTED',
+    'description': 'Next ledger has aborted the transfer due to being FAILED, EXPIRED or REJECTED'
   }
 ]
 
