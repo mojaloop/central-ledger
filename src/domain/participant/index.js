@@ -222,6 +222,29 @@ const participantEndpointExists = (participantEndpoint) => {
   throw new Error('participantEndpoint does not exist')
 }
 
+/**
+ * @function DestroyPariticpantEndpointByName
+ *
+ * @async
+ * @description This functions deletes the existing endpoints for a given participant name
+ * else, it will throw and error
+ *
+ * @param {string} name - participant name
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyPariticpantEndpointByName = async (name) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    return ParticipantModel.destroyPariticpantEndpointByParticipantId(participant.participantId)
+  } catch (err) {
+    throw err
+  }
+}
+
+
 module.exports = {
   create,
   getAll,
@@ -235,5 +258,6 @@ module.exports = {
   addEndpoint,
   getEndpoint,
   getAllEndpoints,
-  participantEndpointExists
+  participantEndpointExists,
+  destroyPariticpantEndpointByName
 }

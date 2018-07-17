@@ -152,7 +152,7 @@ const addEndpoint = async (participantId, endpoint) => {
           'isActive': 1
         })
         .then(existingEndpoint => {
-          if (existingEndpoint) {
+          if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
             return knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
           }
         }).then(() => {
