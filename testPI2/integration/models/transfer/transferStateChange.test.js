@@ -89,7 +89,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       await Model.saveTransferStateChange({
         transferStateId: state.transferStateId,
         reason: null,
-        changedDate: new Date()
+        createdDate: new Date()
       })
       assert.fail('should throw')
       assert.end()
@@ -105,7 +105,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       await Model.saveTransferStateChange({
         transferId: stateChangePrepareResult.transfer.transferId,
         reason: null,
-        changedDate: new Date()
+        createdDate: new Date()
       })
       assert.fail('should throw')
       assert.end()

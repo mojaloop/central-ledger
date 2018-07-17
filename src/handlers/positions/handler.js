@@ -115,7 +115,7 @@ const positions = async (error, messages) => {
   }
 }
 
-const createPositionHandlerForPrepare = async (participantName) => {
+const createPositionHandlers = async (participantName) => {
   try {
     const positionHandler = {
       command: positions,
@@ -147,7 +147,7 @@ const registerPositionHandlers = async () => {
     const participantList = await DAO.retrieveAllParticipants()
     if (participantList.length !== 0) {
       for (let name of participantList) {
-        await createPositionHandlerForPrepare(name)
+        await createPositionHandlers(name)
       }
       return true
     } else {
