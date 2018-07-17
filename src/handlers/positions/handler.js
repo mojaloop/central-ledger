@@ -64,6 +64,7 @@ const TransferEventAction = Enum.transferEventAction
 const positions = async (error, messages) => {
   if (error) {
     Logger.error(error)
+    throw error
   }
   let message = {}
   try {
@@ -90,6 +91,7 @@ const positions = async (error, messages) => {
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
       // Consumed timeout for transfer in RECEIVED_PREPARE transferState
+      // TODO: Remove from PositionHandler after mojaloop/docs/CentralServices/arch_diagrams/Arch-Flows.svg is updated to queue directly to NotificationHandler
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       // Consumed timeout for transfer in RESERVED transferState
@@ -98,8 +100,9 @@ const positions = async (error, messages) => {
       // Consumed Fail action
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else {
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action))
       await consumer.commitMessageSync(message)
-      throw new Error('event action or type not valid')
+      throw new Error('Event type or action is invalid')
     }
     await consumer.commitMessageSync(message)
     // Will follow framework flow in future
@@ -149,9 +152,11 @@ const registerPositionHandlers = async () => {
     if (participantList.length !== 0) {
       for (let name of participantList) {
         await createPositionHandler(name)
+        return true
       }
     } else {
       Logger.info('No participants for position handler creation')
+      return false
     }
   } catch (error) {
     Logger.error(error)
@@ -169,8 +174,7 @@ const registerPositionHandlers = async () => {
  */
 const registerAllHandlers = async () => {
   try {
-    await registerPositionHandlers()
-    return true
+    return await registerPositionHandlers()
   } catch (error) {
     throw error
   }

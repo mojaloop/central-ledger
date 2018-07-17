@@ -13,6 +13,7 @@ const DAO = require('../../../../src/handlers/lib/dao')
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
+const transferEventAction = require('../../../../src/lib/enum').transferEventAction
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -95,8 +96,6 @@ const command = () => {}
 
 const participants = ['testName1', 'testName2']
 
-const COMMIT = 'commit'
-
 Test('Transfer handler', transferHandlerTest => {
   let sandbox
 
@@ -132,7 +131,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    registerHandlersTest.test('register a consumer on Kafka', async (test) => {
+    registerHandlersTest.test('Register a consumer on Kafka', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -142,7 +141,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    registerHandlersTest.test('throws error retrieveAllParticipants', async (test) => {
+    registerHandlersTest.test('Throw error retrieveAllParticipants', async (test) => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         await DAO.retrieveAllParticipants.returns(P.resolve(participants))
@@ -157,34 +156,95 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
+    registerHandlersTest.test('Log and skip consumer registration when no participants', async (test) => {
+      try {
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
+        await DAO.retrieveAllParticipants.returns(P.resolve([]))
+        const result = await allTransferHandlers.registerAllHandlers()
+        test.equal(result, false)
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
     registerHandlersTest.end()
   })
 
-  transferHandlerTest.test('positions should be able to ', positionsTest => {
-    positionsTest.test('Update transferStateChange in the database when messages is an array', async (test) => {
+  transferHandlerTest.test('positions should be able to', positionsTest => {
+    positionsTest.test('Update transferStateChange in the database for PREPARE when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Update transferStateChange in the database for COMMIT when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
       test.equal(result, true)
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database when messages is an array', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      messages[0].value.metadata.event.action = COMMIT
+      messages[0].value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
       test.equal(result, true)
       test.end()
     })
 
-    positionsTest.test('throws error when invalid action recieved', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
+      const result = await allTransferHandlers.positions(null, messages)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RESERVED when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
+      const result = await allTransferHandlers.positions(null, messages)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+    positionsTest.test('Update transferStateChange in the database for FAIL when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.FAIL
+      const result = await allTransferHandlers.positions(null, messages)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Throw error when invalid action is recieved', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -200,7 +260,7 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Throws error on positions', async (test) => {
+    positionsTest.test('Throw error on positions', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
