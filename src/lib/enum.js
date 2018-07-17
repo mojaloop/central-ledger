@@ -31,6 +31,7 @@ module.exports = {
 
   // Code specific (non-DB) enumerations sorted alphabetically
   transferEventType: {
+    PREPARE: 'prepare',
     POSITION: 'position',
     TRANSFER: 'transfer',
     FULFIL: 'fulfil'
@@ -38,9 +39,12 @@ module.exports = {
   transferEventAction: {
     PREPARE: 'prepare',
     TRANSFER: 'transfer',
-    FULFIL: 'fulfil',
+    COMMIT: 'commit',
+    ABORT: 'abort',
+    TIMEOUT_RECEIVED: 'timeout-received',
+    TIMEOUT_RESERVED: 'timeout-reserved',
     REJECT: 'reject',
-    COMMIT: 'commit'
+    FAIL: 'fail'
   },
   rejectionType: {
     EXPIRED: 'expired',

@@ -73,14 +73,30 @@ const positions = async (error, messages) => {
       message = messages
     }
     Logger.info('TransferHandler::position')
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
+    let consumer = {}
     const payload = message.value.content.payload
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
+      // Consumed Prepare message for Payer
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
       await Projection.updateTransferState(payload, TransferState.RESERVED)
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
+      // Consumed Commit message for Payee
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.COMMIT))
       payload.transferId = message.value.id
-      // TODO: Perform check RECEIVED_FULFIL state
+      // TODO: Check RECEIVED_FULFIL state
       await Projection.updateTransferState(payload, TransferState.COMMITTED)
+    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
+      // Consumed Reject message for Payee
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
+      // Consumed timeout for transfer in RECEIVED_PREPARE transferState
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
+      // Consumed timeout for transfer in RESERVED transferState
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
+      // Consumed Fail action
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else {
       await consumer.commitMessageSync(message)
       throw new Error('event action or type not valid')
