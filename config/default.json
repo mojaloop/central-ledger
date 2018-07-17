@@ -123,7 +123,7 @@
           "config": {
             "options": {
               "mode": 2,
-              "batchSize": 1,
+              "batchSize": 5,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
@@ -137,6 +137,57 @@
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
               "enable.auto.commit": false
+            },
+            "topicConf": {
+              "auto.offset.reset": "beginning"
+            }
+          }
+        },
+        "FULFIL": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 5,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "position-fulfil",
+              "debug": "all",
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": false
+            },
+            "topicConf": {
+              "auto.offset.reset": "beginning"
+            }
+          }
+        },
+        "ABORT": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 5,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "position-abort",
+              "debug": "all",
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "enable.auto.commit": false
+            },
+            "topicConf": {
+              "auto.offset.reset": "beginning"
             }
           }
         }
@@ -181,7 +232,7 @@
               "retry.backoff.ms": 100,
               "message.send.max.retries": 2,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.messages": 6000,
               "queue.buffering.max.ms": 50,
               "batch.num.messages": 100,
               "api.version.request": true,
@@ -203,7 +254,7 @@
               "retry.backoff.ms": 100,
               "message.send.max.retries": 2,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.messages": 6000,
               "queue.buffering.max.ms": 50,
               "batch.num.messages": 100,
               "api.version.request": true,
@@ -225,7 +276,7 @@
               "retry.backoff.ms": 100,
               "message.send.max.retries": 2,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.messages": 6000,
               "queue.buffering.max.ms": 50,
               "batch.num.messages": 100,
               "api.version.request": true,
@@ -247,7 +298,7 @@
               "retry.backoff.ms": 100,
               "message.send.max.retries": 2,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.messages": 200,
               "queue.buffering.max.ms": 50,
               "batch.num.messages": 100,
               "api.version.request": true,
@@ -271,7 +322,51 @@
               "retry.backoff.ms": 100,
               "message.send.max.retries": 2,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10,
+              "queue.buffering.max.messages": 200,
+              "queue.buffering.max.ms": 50,
+              "batch.num.messages": 100,
+              "api.version.request": true,
+              "dr_cb": true
+            }
+          }
+        },
+        "FULFIL": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "debug": "all",
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "default-client",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 200,
+              "queue.buffering.max.ms": 50,
+              "batch.num.messages": 100,
+              "api.version.request": true,
+              "dr_cb": true
+            }
+          }
+        },        
+        "ABORT": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "debug": "all",
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "default-client",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 200,
               "queue.buffering.max.ms": 50,
               "batch.num.messages": 100,
               "api.version.request": true,

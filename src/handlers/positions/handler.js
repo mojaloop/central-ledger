@@ -82,7 +82,7 @@ const positions = async (error, messages) => {
       await Projection.updateTransferState(payload, TransferState.RESERVED)
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       // Consumed Commit message for Payee
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.COMMIT))
+      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL))
       payload.transferId = message.value.id
       // TODO: Check RECEIVED_FULFIL state
       await Projection.updateTransferState(payload, TransferState.COMMITTED)
@@ -115,23 +115,19 @@ const positions = async (error, messages) => {
   }
 }
 
-/**
- * @function CreatePositionHandler
- *
- * @async
- * @description Registers the handler for each participant topic created. Gets Kafka config from default.json
- *
- * Calls createHandler to register the handler against the Stream Processing API
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const createPositionHandler = async (participantName) => {
+const createPositionHandlerForPrepare = async (participantName) => {
   try {
     const positionHandler = {
       command: positions,
-      topicName: Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.PREPARE),
+      // auto.offset.reset: beginning
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.POSITION.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
-    await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
+    const topicNameList = [
+      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.ABORT),
+      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventType.FULFIL),
+      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.PREPARE)
+    ]
+    await Kafka.Consumer.createHandler(topicNameList, positionHandler.config, positionHandler.command)
   } catch (error) {
     Logger.error(error)
     throw error
@@ -151,9 +147,9 @@ const registerPositionHandlers = async () => {
     const participantList = await DAO.retrieveAllParticipants()
     if (participantList.length !== 0) {
       for (let name of participantList) {
-        await createPositionHandler(name)
-        return true
+        await createPositionHandlerForPrepare(name)
       }
+      return true
     } else {
       Logger.info('No participants for position handler creation')
       return false
