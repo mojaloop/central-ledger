@@ -30,7 +30,12 @@ module.exports = {
   },
 
   // Code specific (non-DB) enumerations sorted alphabetically
-  transferEvent: {
+  transferEventType: {
+    POSITION: 'position',
+    TRANSFER: 'transfer',
+    FULFIL: 'fulfil'
+  },
+  transferEventAction: {
     PREPARE: 'prepare',
     TRANSFER: 'transfer',
     FULFIL: 'fulfil',

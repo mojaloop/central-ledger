@@ -39,14 +39,28 @@ const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
-const TransferState = require('../../../src/lib/enum').TransferState
+const Enum = require('../../lib/enum')
+const TransferState = Enum.TransferState
+const TransferEventType = Enum.transferEventType
+const TransferEventAction = Enum.transferEventAction
 
-const POSITION = 'position'
-const TRANSFER = 'transfer'
-
-const PREPARE = 'prepare'
-const COMMIT = 'commit'
-
+/**
+ * @function positions
+ *
+ * @async
+ * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages,
+ * we will only ever use the first message in non batch processing. We then break down the message into its payload and
+ * begin validating the payload. Once the payload is validated successfully it will be written to the database to
+ * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
+ * ABORT status
+ *
+ * Projection.updateTransferState called and updates transfer state
+ *
+ * @param {error} error - error thrown if something fails within Kafka
+ * @param {array} messages - a list of messages to consume for the relevant topic
+ *
+ * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const positions = async (error, messages) => {
   if (error) {
     Logger.error(error)
@@ -59,11 +73,11 @@ const positions = async (error, messages) => {
       message = messages
     }
     Logger.info('TransferHandler::position')
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, POSITION, PREPARE))
+    const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
     const payload = message.value.content.payload
-    if (message.value.metadata.event.type === POSITION && message.value.metadata.event.action === PREPARE) {
+    if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       await Projection.updateTransferState(payload, TransferState.RESERVED)
-    } else if (message.value.metadata.event.type === POSITION && message.value.metadata.event.action === COMMIT) {
+    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       payload.transferId = message.value.id
       // TODO: Perform check RECEIVED_FULFIL state
       await Projection.updateTransferState(payload, TransferState.COMMITTED)
@@ -73,7 +87,7 @@ const positions = async (error, messages) => {
     }
     await consumer.commitMessageSync(message)
     // Will follow framework flow in future
-    await Utility.produceGeneralMessage(TRANSFER, TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
+    await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
 
     return true
   } catch (error) {
@@ -95,8 +109,8 @@ const createPositionHandler = async (participantName) => {
   try {
     const positionHandler = {
       command: positions,
-      topicName: Utility.transformAccountToTopicName(participantName, POSITION, PREPARE),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, POSITION.toUpperCase(), PREPARE.toUpperCase())
+      topicName: Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.PREPARE),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.POSITION.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
     await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
   } catch (error) {
