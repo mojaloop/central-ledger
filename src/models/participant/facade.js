@@ -47,6 +47,74 @@ const getByNameAndCurrency = async (name, currencyId) => {
   }
 }
 
+
+const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pl.*'
+        )
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, participantLimitTypeId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId,
+          'pl.participantLimitTypeId': participantLimitTypeId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pl.*'
+        )
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pp.*'
+        )
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
-  getByNameAndCurrency
+  getByNameAndCurrency,
+  getParticipantLimitByParticipantIdAndCurrencyId,
+  getParticipantPositionByParticipantIdAndCurrencyId,
+  getParticipantLimitByParticipantCurrencyLimit
 }

@@ -26,42 +26,81 @@
 
 const Db = require('../../db')
 
-const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+const updateParticipantPositionTransferStateTransaction = async (participantCurrencyId, isIncrease, amount, transferStateChange) => {
   try {
-    return await Db.participant.query(async (builder) => {
-      return await builder
-        .where({
-          'participant.participantId': participantId,
-          'pc.currencyId': currencyId
-        })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
-        .select(
-          'participant.*',
-          'pc.*',
-          'pp.*'
-        )
+    const knex = await Db.getKnex()
+    knex.transaction(async (trx) => {
+      const participantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*')
+      let latestPosition
+      if (isIncrease) {
+        latestPosition = participantPosition.value + amount
+      } else {
+        latestPosition = participantPosition - amount
+      }
+      await knex('participantPosition').transacting(trx).update({participantCurrencyId}, {value: latestPosition})
+      await knex('transferStateChange').transacting(trx).insert(transferStateChange)
+      const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({transferId: transferStateChange.transferId}).forUpdate().first().orderBy('transferStateChangeId', 'desc')
+      const participantPositionChange = {
+        participantPositionId: participantPosition.participantPositionId,
+        transferStateChangeId: insertedTransferStateChange.transferStateChangeId
+        value: latestPosition,
+        reservedValue: participantPosition.reservedValue,
+        createdDate: new Date()
+      }
+      await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
+        .then(trx.commit)
+        .catch(trx.rollback)
+    }).catch((err) => {
+      throw err
     })
   } catch (e) {
     throw e
   }
 }
 
-const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+const updateParticipantPositionTransaction = async (participantCurrencyId, sumInTransferBatch) => {
   try {
-    return await Db.participant.query(async (builder) => {
-      return await builder
-        .where({
-          'participant.participantId': participantId,
-          'pc.currencyId': currencyId
-        })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
-        .select(
-          'participant.*',
-          'pc.*',
-          'pl.*'
-        )
+    const knex = await Db.getKnex()
+    let participantPosition = {}
+    let currentPosition = 0, reservedPosition = 0
+    knex.transaction(async (trx) => {
+      participantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*')
+      currentPosition = participantPosition.value
+      reservedPosition = participantPosition.reservedValue
+      participantPosition.reservedValue = reservedPosition + sumInTransferBatch
+      await knex('participantPosition').transacting(trx).update({participantPosition})
+        .then(trx.commit)
+        .catch(trx.rollback)
+    }).catch((err) => {
+      throw err
+    })
+    return {
+      currentPosition,
+      reservedPosition
+    }
+  } catch (e) {
+    throw e
+  }
+}
+
+const updateParticipantPositionBatchTransferStateParticipantPosition = async (transferList, transferStateChangeList, participantCurrencyId, participntPositionChanges, sumReserved, sumTransfersInBatch) => {
+  try {
+    const knex = await Db.getKnex()
+    let participantPositionChangeList = []
+    knex.transaction(async (trx) => {
+      const currentParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*')
+      currentParticipantPosition.value += sumReserved
+      currentParticipantPosition.reservedValue -= sumTransfersInBatch
+      await knex('participantPosition').transacting(trx).update({participantCurrencyId}, currentParticipantPosition)
+      for(let transfer of transferList){
+        await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
+
+        const participantPosition = {
+
+        }
+      }
+    }).catch((err) => {
+      throw err
     })
   } catch (e) {
     throw e
@@ -69,6 +108,6 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
 }
 
 module.exports = {
-  getParticipantPositionByParticipantIdAndCurrencyId,
-  getParticipantLimitByParticipantIdAndCurrencyId
+  updateParticipantPositionTransferStateTransaction,
+  updateParticipantPositionTransaction
 }
