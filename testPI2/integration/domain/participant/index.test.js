@@ -61,8 +61,7 @@ Test('Participant service', async (participantTest) => {
           value: 'http://localhost:3001/participants/dfsp1/notification1'
         }
       }
-    }
-    ,
+    },
     {
       name: 'fsp1',
       payload: {
@@ -180,15 +179,13 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-
   await participantTest.test('add participant endpoint', async (assert) => {
     try {
-        for(const fixture of endpointsFixtures){
+      for (const fixture of endpointsFixtures) {
         let result = await Service.addEndpoint(fixture.name, fixture.payload)
         assert.ok(result, `addEndpoint successful for Participant: ${fixture.name}`)
       }
       assert.end()
-
     } catch (err) {
       Logger.error(`add participant endpoint failed with error - ${err}`)
       assert.fail()

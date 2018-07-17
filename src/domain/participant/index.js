@@ -244,7 +244,6 @@ const destroyPariticpantEndpointByName = async (name) => {
   }
 }
 
-
 module.exports = {
   create,
   getAll,

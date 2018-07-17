@@ -119,6 +119,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantModel, 'getById')
     sandbox.stub(ParticipantModel, 'update')
     sandbox.stub(ParticipantModel, 'destroyByName')
+    sandbox.stub(ParticipantModel, 'destroyPariticpantEndpointByParticipantId')
 
     sandbox.stub(ParticipantCurrencyModel, 'create')
     sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
@@ -479,6 +480,36 @@ Test('Participant service', async (participantTest) => {
 
     try {
       await Service.addEndpoint(participantFixtures[0].name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('destroyPariticpantEndpointByName', async (assert) => {
+    try {
+      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+      ParticipantModel.destroyPariticpantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).returns(true)
+      const result = await Service.destroyPariticpantEndpointByName(participantFixtures[0].name)
+      assert.equal(result, true, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantEndpointByName failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantEndpointByName should fail', async (assert) => {
+
+    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+
+    ParticipantModel.destroyPariticpantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).throws(new Error())
+
+    try {
+      await Service.destroyPariticpantEndpointByName(participantFixtures[0].name)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)

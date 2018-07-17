@@ -85,7 +85,7 @@ exports.destroyByName = async (name) => {
 
 exports.destroyPariticpantEndpointByParticipantId = async (participantId) => {
   try {
-    return  Db.participantEndpoint.destroy({participantId: participantId})
+    return Db.participantEndpoint.destroy({participantId: participantId})
   } catch (err) {
     throw new Error(err.message)
   }
