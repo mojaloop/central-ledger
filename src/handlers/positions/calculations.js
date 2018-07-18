@@ -60,6 +60,7 @@
 const participantFacade = require('../../models/participant/facade')
 const participantModel = require('../../models/participant/participant')
 const positionFacade = require('../../models/position/facade')
+const positionModel = require('../../models/position/participantPosition')
 const transferStateModel = require('../../models/transfer/transferStateChange')
 const transferState = require('../../lib/enum').TransferState
 
@@ -98,16 +99,29 @@ const calculateSumInBatch = (messages) => {
 
 const calculateSingleMessage = async ({ message, sumTransfersInBatch }) => {
   const currency = message.payload.amount.currency
+  
   const participant = await participantFacade.getByNameAndCurrency(message.from, currency)
+  // transaction starts here
   const participantPosition = await positionFacade.getParticipantPositionByParticipantIdAndCurrencyId(participant.participantId, currency) // TODO get participant position for currency from facade getParticipantPositionByParticipantIdAndCurrencyId
-
   const transferAmount = message.payload.amount.amount
   const currentPosition = participantPosition.value
   let reservedPosition = participantPosition.reservedValue
   let effectivePosition = currentPosition + reservedPosition
   const heldPosition = effectivePosition + (sumTransfersInBatch || transferAmount)
   const availablePosition = participantPosition.netDebitCap
+  const reservedValue = reservedPosition + transferAmount
+  await positionModel.update({
+    participantCurrencyId: 
+  })
   // check rule criteria and update sumReserved
+  const participantLimits = await positionFacade.getParticipantLimitByParticipantIdAndCurrencyId(participant.participantId, currency) // TODO add similar facade to have the NET-DEBIT-CAP type only
+  for (let limit of participantLimits) {
+    if (limit.participantLimit.limitType === 'NET-DEBIT-CAP') {
+      let netDebitCap = limit.participantLimit.value
+      break
+    }
+  }
+  let latestPosition = transferAmount + currentPosition + reservedPosition
 
 
   return (message)
@@ -127,7 +141,6 @@ const validateState = async (message) => {
 }
 
 module.exports.calculatePreparePosition = async (message) => {
-  
   if (message.payload && Array.isArray(message.payload)) {
     let { messages, currenciesMap } = calculateSumInBatch(message)
     for (let message of messages) {
