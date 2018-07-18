@@ -37,7 +37,7 @@ Test('setup', setupTest => {
     sandbox.stub(RequestLogger, 'logRequest')
     sandbox.stub(RequestLogger, 'logResponse')
 
-    Sidecar.connect = sandbox.stub()
+    sandbox.stub(Sidecar, 'connect')
     Db.connect = sandbox.stub()
     Db.disconnect = sandbox.stub()
     uuidStub = sandbox.stub()
@@ -95,6 +95,7 @@ Test('setup', setupTest => {
         test.ok(Sidecar.connect.calledWith(service))
         test.notOk(Migrator.migrate.called)
         test.equal(s, server)
+        Sidecar.connect.restore()
         test.end()
       })
     })

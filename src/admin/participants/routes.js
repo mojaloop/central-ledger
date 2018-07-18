@@ -89,5 +89,37 @@ module.exports = [
         }
       }
     })
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/endpoints',
+    handler: Handler.addEndpoint,
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_ENDPOINTS_ADD, {
+      params: {
+        name: Joi.string().required().description('Participant name')
+      },
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          endpoint: Joi.object().keys({
+            type: Joi.string().required().description('Endpoint Type'),
+            value: Joi.string().required().description('Endpoint Value')
+          }).required().description('Endpoint Details')
+        }
+      }
+    })
+  },
+  {
+    method: 'GET',
+    path: '/participants/{name}/endpoints',
+    handler: Handler.getEndpoint,
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_ENDPOINTS_VIEW, {
+      params: {
+        name: Joi.string().required().description('Participant name')
+      }
+    })
   }
 ]
