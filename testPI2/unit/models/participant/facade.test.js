@@ -159,13 +159,7 @@ Test('Participant facade', async (facadeTest) => {
       }))
 
       assert.ok(selectStub.withArgs(
-        'participantEndpoint.participantEndpointId',
-        'participantEndpoint.participantId',
-        'participantEndpoint.endpointTypeId',
-        'participantEndpoint.value',
-        'participantEndpoint.isActive',
-        'participantEndpoint.createdDate',
-        'participantEndpoint.createdBy',
+        'participantEndpoint.*',
         'et.name'
       ).calledOnce)
       assert.end()
@@ -214,13 +208,7 @@ Test('Participant facade', async (facadeTest) => {
       }))
 
       assert.ok(selectStub.withArgs(
-        'participantEndpoint.participantEndpointId',
-        'participantEndpoint.participantId',
-        'participantEndpoint.endpointTypeId',
-        'participantEndpoint.value',
-        'participantEndpoint.isActive',
-        'participantEndpoint.createdDate',
-        'participantEndpoint.createdBy',
+        'participantEndpoint.*',
         'et.name'
       ).calledOnce)
       assert.end()

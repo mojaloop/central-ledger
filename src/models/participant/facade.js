@@ -72,13 +72,7 @@ const getEndpoint = async (participantId, endpointType) => {
           'participantEndpoint.participantId': participantId,
           'participantEndpoint.isActive': 1,
           'et.name': endpointType
-        }).select('participantEndpoint.participantEndpointId',
-          'participantEndpoint.participantId',
-          'participantEndpoint.endpointTypeId',
-          'participantEndpoint.value',
-          'participantEndpoint.isActive',
-          'participantEndpoint.createdDate',
-          'participantEndpoint.createdBy',
+        }).select('participantEndpoint.*',
           'et.name')
     })
   } catch (err) {
@@ -105,13 +99,7 @@ const getAllEndpoints = async (participantId) => {
         .where({
           'participantEndpoint.participantId': participantId,
           'participantEndpoint.isActive': 1
-        }).select('participantEndpoint.participantEndpointId',
-          'participantEndpoint.participantId',
-          'participantEndpoint.endpointTypeId',
-          'participantEndpoint.value',
-          'participantEndpoint.isActive',
-          'participantEndpoint.createdDate',
-          'participantEndpoint.createdBy',
+        }).select('participantEndpoint.*',
           'et.name')
     })
   } catch (err) {
