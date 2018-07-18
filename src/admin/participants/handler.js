@@ -122,7 +122,7 @@ const getEndpoint = async function (request, h) {
       }
     }
   } catch (err) {
-    throw err // Boom.badRequest()
+    throw Boom.badRequest()
   }
 }
 

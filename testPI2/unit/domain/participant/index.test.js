@@ -503,7 +503,6 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('destroyPariticpantEndpointByName should fail', async (assert) => {
-
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
     ParticipantModel.destroyPariticpantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).throws(new Error())

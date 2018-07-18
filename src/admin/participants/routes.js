@@ -94,7 +94,7 @@ module.exports = [
     method: 'POST',
     path: '/participants/{name}/endpoints',
     handler: Handler.addEndpoint,
-    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_CREATE, {
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_ENDPOINTS_ADD, {
       params: {
         name: Joi.string().required().description('Participant name')
       },
@@ -116,7 +116,7 @@ module.exports = [
     method: 'GET',
     path: '/participants/{name}/endpoints',
     handler: Handler.getEndpoint,
-    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_VIEW, {
+    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_ENDPOINTS_VIEW, {
       params: {
         name: Joi.string().required().description('Participant name')
       }
