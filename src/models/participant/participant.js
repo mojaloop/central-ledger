@@ -90,4 +90,3 @@ exports.destroyPariticpantEndpointByParticipantId = async (participantId) => {
     throw new Error(err.message)
   }
 }
-

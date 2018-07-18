@@ -13,6 +13,8 @@ const permissions = {
   PARTICIPANTS_LIST: new Permission('PARTICIPANTS_LIST', 'List all participants'),
   PARTICIPANTS_VIEW: new Permission('PARTICIPANTS_VIEW', 'View participant details'),
   PARTICIPANTS_UPDATE: new Permission('PARTICIPANTS_UPDATE', 'Update participant'),
+  PARTICIPANTS_ENDPOINTS_ADD: new Permission('PARTICIPANTS_ENDPOINTS_ADD', 'Add/Update participant endpoints'),
+  PARTICIPANTS_ENDPOINTS_VIEW: new Permission('PARTICIPANTS_ENDPOINTS_VIEW', 'View participant endpoints'),
   POSITIONS_LIST: new Permission('POSITIONS_LIST', 'List positions for all Participants'),
   POSITIONS_VIEW: new Permission('POSITIONS_VIEW', 'View position for an Participant'),
   PERMISSIONS_LIST: new Permission('PERMISSIONS_LIST', 'List available permissions'),
