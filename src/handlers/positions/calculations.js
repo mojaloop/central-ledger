@@ -72,19 +72,19 @@ const transferState = require('../../lib/enum').TransferState
 * @param messages
 */
 
-const calculateSumInBatch = (messages) => {
+const calculateSumInBatch = async (messages) => {
   let currenciesMap = new Map()
   for (let message of messages) {
     const { amount, currency } = message.payload.amount
     if (currenciesMap.has(currency)) {
       let currentCurrency = currenciesMap.get(currency)
       currenciesMap.set(currency, {
-        messages: currentCurrency.messages.push(message),
+        // messages: currentCurrency.messages.push(message),
         sumTransfersInBatch: currentCurrency.sumTransfersInBatch + amount
       })
     } else {
       currenciesMap.set(currency, {
-        messages: [message],
+        // messages: [message],
         sumTransfersInBatch: amount
       })
     }
@@ -98,33 +98,27 @@ const calculateSumInBatch = (messages) => {
 */
 
 const calculateSingleMessage = async ({ message, sumTransfersInBatch }) => {
-  const currency = message.payload.amount.currency
-  
-  const participant = await participantFacade.getByNameAndCurrency(message.from, currency)
-  // transaction starts here
-  const participantPosition = await positionFacade.getParticipantPositionByParticipantIdAndCurrencyId(participant.participantId, currency) // TODO get participant position for currency from facade getParticipantPositionByParticipantIdAndCurrencyId
-  const transferAmount = message.payload.amount.amount
-  const currentPosition = participantPosition.value
-  let reservedPosition = participantPosition.reservedValue
+  let sumReserved = 0
+  const { currency, amount } = message.payload.amount
+  let participant = await participantFacade.getByNameAndCurrency(message.from, currency)
+  let { currentPosition, reservedPosition } = await positionFacade.updateParticipantPositionTransaction(participant.participantCurrencyId, sumTransfersInBatch)
+  let latestPosition = amount + currentPosition + reservedPosition
+  const heldPosition = effectivePosition + (sumTransfersInBatch || amount)
   let effectivePosition = currentPosition + reservedPosition
-  const heldPosition = effectivePosition + (sumTransfersInBatch || transferAmount)
-  const availablePosition = participantPosition.netDebitCap
-  const reservedValue = reservedPosition + transferAmount
-  await positionModel.update({
-    participantCurrencyId: 
-  })
-  // check rule criteria and update sumReserved
-  const participantLimits = await positionFacade.getParticipantLimitByParticipantIdAndCurrencyId(participant.participantId, currency) // TODO add similar facade to have the NET-DEBIT-CAP type only
-  for (let limit of participantLimits) {
-    if (limit.participantLimit.limitType === 'NET-DEBIT-CAP') {
-      let netDebitCap = limit.participantLimit.value
-      break
+  const participantPosition = await positionFacade.getParticipantPositionByParticipantIdAndCurrencyId(participant.participantId, currency) // TODO get participant position for currency from facade getParticipantPositionByParticipantIdAndCurrencyId
+  let availablePosition = participantPosition.netDebitCap - effectivePosition
+  if (availablePosition >= amount) {
+    let preparedTransfer = {
+      amount,
+      state: transferState.RESERVED
     }
+    availablePosition -= preparedTransfer.amount
+    sumReserved += preparedTransfer.amount
+  } else {
+    throw new Error('TODO ADD ERROR 4001')
   }
-  let latestPosition = transferAmount + currentPosition + reservedPosition
 
 
-  return (message)
 }
 
 const validateState = async (message) => {
