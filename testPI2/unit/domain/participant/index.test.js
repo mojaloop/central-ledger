@@ -147,12 +147,12 @@ Test('Participant service', async (participantTest) => {
 
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participantResult[index])
-      Db.participant.insert.withArgs({participant}).returns(index)
-      ParticipantModel.create.withArgs({name: participant.name}).returns((index + 1))
+      Db.participant.insert.withArgs({ participant }).returns(index)
+      ParticipantModel.create.withArgs({ name: participant.name }).returns((index + 1))
       ParticipantModel.getByName.withArgs(participant.name).returns(participantResult[index])
       ParticipantModel.getById.withArgs(index).returns(participantResult[index])
       ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
-      ParticipantCurrencyModel.create.withArgs({participantId: index, currencyId: participant.currency}).returns((index + 1))
+      ParticipantCurrencyModel.create.withArgs({ participantId: index, currencyId: participant.currency }).returns((index + 1))
       ParticipantCurrencyModel.getById.withArgs(index).returns({
         participantCurrancyId: participant.participantId,
         participantId: participant.participantId,
@@ -162,7 +162,7 @@ Test('Participant service', async (participantTest) => {
       ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId).returns(participant.currency)
       ParticipantModel.destroyByName.withArgs(participant.name).returns(Promise.resolve(true))
       ParticipantCurrencyModel.destroyByParticipantId.withArgs(participant.participantId).returns(Promise.resolve(true))
-      Db.participant.destroy.withArgs({name: participant.name}).returns(Promise.resolve(true))
+      Db.participant.destroy.withArgs({ name: participant.name }).returns(Promise.resolve(true))
     })
     ParticipantModel.getAll.returns(Promise.resolve(participantResult))
     t.end()
@@ -174,7 +174,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('create false participant', async (assert) => {
-    const falseParticipant = {name: 'fsp3'}
+    const falseParticipant = { name: 'fsp3' }
     ParticipantModel.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)
@@ -188,7 +188,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create participant', async (assert) => {
     try {
       for (let [index, participant] of participantMap) {
-        var result = await Service.create({name: participant.name})
+        var result = await Service.create({ name: participant.name })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
       }
@@ -273,7 +273,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('update', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        let updated = await Service.update(participant.name, {isActive: 1})
+        let updated = await Service.update(participant.name, { isActive: 1 })
         assert.equal(JSON.stringify(updated), JSON.stringify(participantMap.get(index + 1)))
       })
       //  sandbox.restore()
@@ -289,7 +289,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('update should throw an error', async (assert) => {
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).throws(new Error())
     try {
-      await Service.update(participantFixtures[0].name, {isActive: 1})
+      await Service.update(participantFixtures[0].name, { isActive: 1 })
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
@@ -302,7 +302,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('createParticipantCurrency should create the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        var result = await Service.createParticipantCurrency({participantId: participant.participantId, currencyId: participant.currency})
+        var result = await Service.createParticipantCurrency({ participantId: participant.participantId, currencyId: participant.currency })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
       })
@@ -315,10 +315,10 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('createParticipantCurrency with false participant should fail', async (assert) => {
-    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
-    ParticipantCurrencyModel.create.withArgs({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency}).throws(new Error())
+    const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
+    ParticipantCurrencyModel.create.withArgs({ participantId: falseParticipant.participantId, currencyId: falseParticipant.currency }).throws(new Error())
     try {
-      await Service.createParticipantCurrency({participantId: falseParticipant.participantId, currencyId: falseParticipant.currency})
+      await Service.createParticipantCurrency({ participantId: falseParticipant.participantId, currencyId: falseParticipant.currency })
       assert.fail('should throw')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err} `)
@@ -341,7 +341,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('getParticipantCurrencyById with false participant should fail', async (assert) => {
-    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+    const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
     ParticipantCurrencyModel.getById.withArgs(falseParticipant.currency).throws(new Error())
     try {
       await Service.getParticipantCurrencyById(falseParticipant.currency)
@@ -369,7 +369,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroyByName should throw an error', async (assert) => {
     try {
-      const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+      const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
       ParticipantModel.getByName.withArgs(falseParticipant.name).returns(falseParticipant)
       ParticipantModel.destroyByName.withArgs(falseParticipant.name).throws(new Error())
       await Service.destroyByName(falseParticipant.name)
@@ -432,10 +432,10 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  await participantTest.test('getAllEndpoints should fail if no endpoints found', async (assert) => {
+  await participantTest.test('getAllEndpoints should throw error', async (assert) => {
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-    ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0].participantId).returns(null)
+    ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0].participantId).throws(new Error())
 
     try {
       await Service.getAllEndpoints(participantFixtures[0].name)
@@ -449,14 +449,12 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('addEndpoint', async (assert) => {
     try {
       const payload = {
-        endpoint: {
-          type: 'FSIOP_CALLBACK_URL',
-          value: 'http://localhost:3001/participants/dfsp1/notification1'
-        }
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
       ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-      ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload.endpoint).returns(1)
+      ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload).returns(1)
       const result = await Service.addEndpoint(participantFixtures[0].name, payload)
       assert.deepEqual(result, 1, 'Results matched')
       assert.end()
@@ -469,14 +467,12 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('addEndpoint should fail if cant add endpoint', async (assert) => {
     const payload = {
-      endpoint: {
-        type: 'FSIOP_CALLBACK_URL',
-        value: 'http://localhost:3001/participants/dfsp1/notification1'
-      }
+      type: 'FSIOP_CALLBACK_URL',
+      value: 'http://localhost:3001/participants/dfsp1/notification1'
     }
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-    ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload.endpoint).throws(new Error())
+    ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload).throws(new Error())
 
     try {
       await Service.addEndpoint(participantFixtures[0].name, payload)

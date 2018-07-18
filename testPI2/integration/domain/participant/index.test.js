@@ -56,19 +56,15 @@ Test('Participant service', async (participantTest) => {
     {
       name: 'fsp1',
       payload: {
-        endpoint: {
-          type: 'FSIOP_CALLBACK_URL',
-          value: 'http://localhost:3001/participants/dfsp1/notification1'
-        }
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
     },
     {
       name: 'fsp1',
       payload: {
-        endpoint: {
-          type: 'ALARM_NOTIFICATION_URL',
-          value: 'http://localhost:3001/participants/dfsp1/notification2'
-        }
+        type: 'ALARM_NOTIFICATION_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification2'
       }
     }
   ]
@@ -97,7 +93,7 @@ Test('Participant service', async (participantTest) => {
     try {
       assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        let result = await Service.create({name: participant.name})
+        let result = await Service.create({ name: participant.name })
         await Service.createParticipantCurrency(result, participant.currency)
         let read = await Service.getById(result)
         participantMap.set(result, read)

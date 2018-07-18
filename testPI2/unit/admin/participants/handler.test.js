@@ -244,10 +244,8 @@ Test('Participant Handler', participantHandlerTest => {
         type: 'FSIOP_CALLBACK_URL'
       }
       const endpoint = {
-        endpoints: {
-          type: 'FSIOP_CALLBACK_URL',
-          value: 'http://localhost:3001/participants/dfsp1/notification1'
-        }
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
       const endpointReturn = [{
         name: 'FSIOP_CALLBACK_URL',
@@ -263,19 +261,7 @@ Test('Participant Handler', participantHandlerTest => {
       const params = {
         name: 'fsp1'
       }
-      const endpoint = {
-        endpoints: [
-          {
-            type: 'FSIOP_CALLBACK_URL',
-            value: 'http://localhost:3001/participants/dfsp1/notification1'
-          },
-          {
-            type: 'ALARM_NOTIFICATION_URL',
-            value: 'http://localhost:3001/participants/dfsp1/notification2'
-          }
-        ]
-      }
-      const endpointReturn = [
+      const endpoints = [
         {
           name: 'FSIOP_CALLBACK_URL',
           value: 'http://localhost:3001/participants/dfsp1/notification1'
@@ -285,10 +271,20 @@ Test('Participant Handler', participantHandlerTest => {
           value: 'http://localhost:3001/participants/dfsp1/notification2'
         }
       ]
+      const endpointsResult = [
+        {
+          type: 'FSIOP_CALLBACK_URL',
+          value: 'http://localhost:3001/participants/dfsp1/notification1'
+        },
+        {
+          type: 'ALARM_NOTIFICATION_URL',
+          value: 'http://localhost:3001/participants/dfsp1/notification2'
+        }
+      ]
 
-      Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpointReturn))
+      Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpoints))
       const result = await Handler.getEndpoint(createRequest({ params }))
-      test.deepEqual(result, endpoint, 'The results match')
+      test.deepEqual(result, endpointsResult, 'The results match')
       test.end()
     })
 
@@ -299,8 +295,10 @@ Test('Participant Handler', participantHandlerTest => {
       const query = {
         type: 'FSIOP_CALLBACK_URL'
       }
+      Participant.getEndpoint.withArgs(params.name, query.type).throws(new Error())
+
       try {
-        await await Handler.getEndpoint(createRequest({ params, query }))
+        await Handler.getEndpoint(createRequest({ params, query }))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')

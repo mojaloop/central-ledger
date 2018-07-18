@@ -144,7 +144,7 @@ const addEndpoint = async (name, payload) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    return ParticipantFacade.addEndpoint(participant.participantId, payload.endpoint)
+    return ParticipantFacade.addEndpoint(participant.participantId, payload)
   } catch (err) {
     throw err
   }
@@ -170,7 +170,6 @@ const getEndpoint = async (name, type) => {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     const participantEndpoint = await ParticipantFacade.getEndpoint(participant.participantId, type)
-    participantEndpointExists(participantEndpoint)
     return participantEndpoint
   } catch (err) {
     throw err
@@ -196,30 +195,10 @@ const getAllEndpoints = async (name) => {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant.participantId)
-    participantEndpointExists(participantEndpoints)
     return participantEndpoints
   } catch (err) {
     throw err
   }
-}
-
-/**
- * @function ParticipantEndpointExists
- *
- * @async
- * @description This functions checks if the participantEndpoint is valid array and its not empty,
- * else, it will throw and error
- *
- * @param {array} participantEndpoint - a list of participantEndpoints
- *
- * @returns {array} - Returns the same participantEndpoint array if successful, or throws an error if failed
- */
-
-const participantEndpointExists = (participantEndpoint) => {
-  if (Array.isArray(participantEndpoint) && participantEndpoint.length > 0) {
-    return participantEndpoint
-  }
-  throw new Error('participantEndpoint does not exist')
 }
 
 /**
@@ -257,6 +236,5 @@ module.exports = {
   addEndpoint,
   getEndpoint,
   getAllEndpoints,
-  participantEndpointExists,
   destroyPariticpantEndpointByName
 }

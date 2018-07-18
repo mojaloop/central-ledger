@@ -104,10 +104,8 @@ module.exports = [
       },
       validate: {
         payload: {
-          endpoint: Joi.object().keys({
-            type: Joi.string().required().description('Endpoint Type'),
-            value: Joi.string().required().description('Endpoint Value')
-          }).required().description('Endpoint Details')
+          type: Joi.string().required().description('Endpoint Type'),
+          value: Joi.string().required().description('Endpoint Value')
         }
       }
     })
