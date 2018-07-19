@@ -89,5 +89,43 @@ module.exports = [
         }
       }
     })
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/endpoints',
+    handler: Handler.addEndpoint,
+    options: {
+      id: 'participants_endpoints_add',
+      tags: tags,
+      description: 'Add/Update participant endpoints',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          type: Joi.string().required().description('Endpoint Type'),
+          value: Joi.string().required().description('Endpoint Value')
+        },
+        params: {
+          name: Joi.string().required().description('Participant name')
+        }
+      }
+    }
+  },
+  {
+    method: 'GET',
+    path: '/participants/{name}/endpoints',
+    handler: Handler.getEndpoint,
+    options: {
+      id: 'participants_endpoints_get',
+      tags: tags,
+      description: 'View participant endpoints',
+      validate: {
+        params: {
+          name: Joi.string().required().description('Participant name')
+        }
+      }
+    }
   }
 ]

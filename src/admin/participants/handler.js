@@ -87,9 +87,52 @@ const update = async function (request, h) {
   }
 }
 
+const addEndpoint = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    await Participant.addEndpoint(request.params.name, request.payload)
+    return h.response().code(201)
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
+
+const getEndpoint = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    if (request.query.type) {
+      const result = await Participant.getEndpoint(request.params.name, request.query.type)
+      let endpoint = {}
+      if (Array.isArray(result) && result.length > 0) {
+        endpoint = {
+          type: result[0].name,
+          value: result[0].value
+        }
+      }
+      return endpoint
+    } else {
+      const result = await Participant.getAllEndpoints(request.params.name)
+      let endpoints = []
+      if (Array.isArray(result) && result.length > 0) {
+        result.forEach(item => {
+          endpoints.push({
+            type: item.name,
+            value: item.value
+          })
+        })
+      }
+      return endpoints
+    }
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
+
 module.exports = {
   create,
   getAll,
   getByName,
-  update
+  update,
+  addEndpoint,
+  getEndpoint
 }

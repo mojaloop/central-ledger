@@ -42,7 +42,7 @@ const updateParticipantPositionTransferStateTransaction = async (participantCurr
       const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({transferId: transferStateChange.transferId}).forUpdate().first().orderBy('transferStateChangeId', 'desc')
       const participantPositionChange = {
         participantPositionId: participantPosition.participantPositionId,
-        transferStateChangeId: insertedTransferStateChange.transferStateChangeId
+        transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
         value: latestPosition,
         reservedValue: participantPosition.reservedValue,
         createdDate: new Date()
@@ -62,7 +62,8 @@ const updateParticipantPositionTransaction = async (participantCurrencyId, sumIn
   try {
     const knex = await Db.getKnex()
     let participantPosition = {}
-    let currentPosition = 0, reservedPosition = 0
+    let currentPosition = 0
+    let reservedPosition = 0
     knex.transaction(async (trx) => {
       participantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*')
       currentPosition = participantPosition.value
@@ -86,19 +87,17 @@ const updateParticipantPositionTransaction = async (participantCurrencyId, sumIn
 const updateParticipantPositionBatchTransferStateParticipantPosition = async (transferList, transferStateChangeList, participantCurrencyId, participntPositionChanges, sumReserved, sumTransfersInBatch) => {
   try {
     const knex = await Db.getKnex()
-    let participantPositionChangeList = []
+    // let participantPositionChangeList = []
     knex.transaction(async (trx) => {
       const currentParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*')
       currentParticipantPosition.value += sumReserved
       currentParticipantPosition.reservedValue -= sumTransfersInBatch
       await knex('participantPosition').transacting(trx).update({participantCurrencyId}, currentParticipantPosition)
-      for(let transfer of transferList){
-        await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
-
-        const participantPosition = {
-
-        }
-      }
+      // for (let transfer of transferList) {
+      //   await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
+      //
+      //   const participantPosition = {}
+      // }
     }).catch((err) => {
       throw err
     })
@@ -109,5 +108,6 @@ const updateParticipantPositionBatchTransferStateParticipantPosition = async (tr
 
 module.exports = {
   updateParticipantPositionTransferStateTransaction,
-  updateParticipantPositionTransaction
+  updateParticipantPositionTransaction,
+  updateParticipantPositionBatchTransferStateParticipantPosition
 }
