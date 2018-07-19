@@ -61,8 +61,9 @@ const participantFacade = require('../../models/participant/facade')
 const participantModel = require('../../models/participant/participant')
 const positionFacade = require('../../models/position/facade')
 const positionModel = require('../../models/position/participantPosition')
+const positionLimitModel = require('../../models/position/participantLimit')
 const transferStateModel = require('../../models/transfer/transferStateChange')
-const transferState = require('../../lib/enum').TransferState
+const transferStates = require('../../lib/enum').TransferState
 
 /**
  * @module src/handlers/positions/calculations
@@ -72,23 +73,27 @@ const transferState = require('../../lib/enum').TransferState
 * @param messages
 */
 
-const calculateSumInBatch = async (messages) => {
-  let currenciesMap = new Map()
+const calculateSumInBatch = (messages) => {
+  let batchMap = new Map()
   for (let message of messages) {
     const { amount, currency } = message.payload.amount
-    if (currenciesMap.has(currency)) {
-      let currentCurrency = currenciesMap.get(currency)
-      currenciesMap.set(currency, {
-        // messages: currentCurrency.messages.push(message),
-        sumTransfersInBatch: currentCurrency.sumTransfersInBatch + amount
+    const transferId = message.id
+    if (batchMap.has(currency)) {
+      let currentBatchElement = batchMap.get(currency)
+      batchMap.set(currency, {
+        messages: currentBatchElement.messages.set(transferId, message),
+        sumTransfersInBatch: currentBatchElement.sumTransfersInBatch + amount
       })
     } else {
-      currenciesMap.set(currency, {
-        // messages: [message],
-        sumTransfersInBatch: amount
+      batchMap.set(currency, {
+        messages: new Map([[transferId, message]]),
+        positionValue: 0,
+        sumTransfersInBatch: amount,
+        availablePosition: 0,
+        sumReserved: 0
       })
     }
-    return (messages, currenciesMap)
+    return (messages, batchMap)
   }
 }
 
@@ -97,35 +102,56 @@ const calculateSumInBatch = async (messages) => {
 * @param sumTransfersInBatch
 */
 
-const calculateSingleMessage = async ({ message, sumTransfersInBatch }) => {
-  let sumReserved = 0
+const calculateSingleMessage = async ({ message, batchMap }) => {
+  // validate (maybe from array from getWhereIn?)
   const { currency, amount } = message.payload.amount
+  const transferId = message.id
+  const batchElement = batchMap.get(currency)
+  let { sumTransfersInBatch } = batchElement
   let participant = await participantFacade.getByNameAndCurrency(message.from, currency)
+  // 7 8 9 10 11
   let { currentPosition, reservedPosition } = await positionFacade.updateParticipantPositionTransaction(participant.participantCurrencyId, sumTransfersInBatch)
-  let latestPosition = amount + currentPosition + reservedPosition
-  const heldPosition = effectivePosition + (sumTransfersInBatch || amount)
-  let effectivePosition = currentPosition + reservedPosition
-  const participantPosition = await positionFacade.getParticipantPositionByParticipantIdAndCurrencyId(participant.participantId, currency) // TODO get participant position for currency from facade getParticipantPositionByParticipantIdAndCurrencyId
-  let availablePosition = participantPosition.netDebitCap - effectivePosition
-  if (availablePosition >= amount) {
-    let preparedTransfer = {
-      amount,
-      state: transferState.RESERVED
+  // 12 13 14
+  const participantPositionLimit = await positionLimitModel.getLimitByCurrencyId(participant.participantCurrencyId)
+  // 17
+  let currentAvailablePosition = participantPositionLimit.value - currentPosition - reservedPosition
+  // 18
+  let success = (currentAvailablePosition >= amount)
+  let transferState = {}
+  if (success) {
+    transferState = {
+      transferId,
+      state: transferStates.RESERVED
     }
-    availablePosition -= preparedTransfer.amount
-    sumReserved += preparedTransfer.amount
+    batchMap.set(currency, Object.assign(batchElement, {
+      availablePosition: currentAvailablePosition - amount,
+      positionReservedValue: reservedPosition + sumTransfersInBatch + amount,
+      positionValue: batchElement.positionValue + amount,
+      sumReserved: batchElement.sumReserved + amount
+    }))
   } else {
-    throw new Error('TODO ADD ERROR 4001')
+    transferState = {
+      transferId: message.payload.transferId,
+      state: transferStates.REJECTED,
+      error: ('TODO ADD ERROR 4001 to the transfer')
+    }
+    batchElement.messages.delete(transferId)
+    batchMap.set(currency, Object.assign(batchElement, {
+      positionReservedValue: reservedPosition + sumTransfersInBatch - amount
+    }))
   }
-
-
+  return {
+    success,
+    transferState,
+    message
+  }
 }
 
 const validateState = async (message) => {
   try {
     let currentTransferState = await transferStateModel.getByTransferId(message.id)
-    if (currentTransferState === transferState.RECEIVED_PREPARE) {
-      return true
+    if (currentTransferState === transferStates.RECEIVED_PREPARE) {
+      return
     } else {
       throw new Error('TODO ADD ERROR 2001')
     }
@@ -134,18 +160,22 @@ const validateState = async (message) => {
   }
 }
 
-module.exports.calculatePreparePosition = async (message) => {
-  if (message.payload && Array.isArray(message.payload)) {
-    let { messages, currenciesMap } = calculateSumInBatch(message)
-    for (let message of messages) {
-      let sumTransfersInBatch = currenciesMap.get(message.payload.amount.currency).sumTransfersInBatch
-      let position = await calculateSingleMessage({ message, sumTransfersInBatch })
+module.exports.calculatePreparePosition = async (incoming) => {
+  let bulkTransferStates = []
+  if (!Array.isArray(incoming)) { incoming = [incoming] }
+  let { messages, batchMap } = calculateSumInBatch(incoming)
+  for (let message of messages) {
+    await validateState(message)
+    let { success, transferState, transfer } = await calculateSingleMessage({ message, batchMap })
+    if (!success) {
+      // create error message from transfer
+        // change the transferState to transferState
+    } else {
+      bulkTransferStates.push(transferState)
     }
-  } else {
-    let currenciesMap = new Map([message.payload.amount.currency], [{
-      message,
-      sumTransfersInBatch: 0
-    }])
-
+  }
+  for (let currencyBatch of batchMap.values()) {
+    // update position per currency
+    // update all state changes in bulk insert
   }
 }

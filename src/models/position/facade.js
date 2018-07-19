@@ -42,7 +42,7 @@ const updateParticipantPositionTransferStateTransaction = async (participantCurr
       const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({transferId: transferStateChange.transferId}).forUpdate().first().orderBy('transferStateChangeId', 'desc')
       const participantPositionChange = {
         participantPositionId: participantPosition.participantPositionId,
-        transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
+        transferStateChangeId: insertedTransferStateChange.transferStateChangeId
         value: latestPosition,
         reservedValue: participantPosition.reservedValue,
         createdDate: new Date()

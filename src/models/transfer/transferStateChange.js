@@ -53,6 +53,18 @@ const getByTransferId = async (id) => {
   }
 }
 
+const getByTransferIdList = async (transfersIdList) => {
+  try {
+    return await Db.transferStateChange.query(async (builder) => {
+      let result = builder
+        .whereIn('transferStateChange.transferId', transfersIdList)
+      return result
+    })
+  } catch (err) {
+    throw (err)
+  }
+}
+
 const truncate = async (id) => {
   try {
     return await Db.transferStateChange.truncate()
@@ -64,5 +76,6 @@ const truncate = async (id) => {
 module.exports = {
   saveTransferStateChange,
   getByTransferId,
+  getByTransferIdList,
   truncate
 }
