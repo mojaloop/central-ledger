@@ -280,5 +280,63 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
+
+  await facadeTest.test('addInitialPositionAndLimits', async (assert) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const obj = {
+        transaction: async () => { }
+      }
+      Db.getKnex.returns(obj)
+      const knex = Db.getKnex()
+      sandbox.stub(knex, 'transaction')
+      knex.transaction.returns(1)
+      const limitPostionObj = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        },
+        initialPosition: 0
+      }
+      var result = await Model.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+      assert.equal(result, 1)
+      assert.end()
+    } catch (err) {
+      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('addInitialPositionAndLimits should throw error', async (assert) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const obj = {
+        transaction: async () => { }
+      }
+      Db.getKnex.returns(obj)
+      const knex = Db.getKnex()
+      sandbox.stub(knex, 'transaction')
+      knex.transaction.throws(new Error('message'))
+      const limitPostionObj = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        },
+        initialPosition: 0
+      }
+
+      await Model.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+      assert.fail(' should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
   await facadeTest.end()
 })

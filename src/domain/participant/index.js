@@ -36,91 +36,91 @@ const ParticipantFacade = require('../../models/participant/facade')
 const Config = require('../../lib/config')
 
 const create = async (payload) => {
-    try {
-        const participant = await ParticipantModel.create({ name: payload.name })
-        if (!participant) throw new Error('Something went wrong. Participant cannot be created')
-        return participant
-    } catch (err) {
-        throw err
-    }
+  try {
+    const participant = await ParticipantModel.create({ name: payload.name })
+    if (!participant) throw new Error('Something went wrong. Participant cannot be created')
+    return participant
+  } catch (err) {
+    throw err
+  }
 }
 
 const getAll = async () => {
-    try {
-        // TODO: refactor the query to use the facade layer and join query for both tables
-        let all = await ParticipantModel.getAll()
-        await Promise.all(all.map(async (participant) => {
-            participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-        }))
-        return all
-    } catch (err) {
-        throw new Error(err.message)
-    }
+  try {
+    // TODO: refactor the query to use the facade layer and join query for both tables
+    let all = await ParticipantModel.getAll()
+    await Promise.all(all.map(async (participant) => {
+      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+    }))
+    return all
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
 const getById = async (id) => {
-    // TODO: refactor the query to use the facade layer and join query for both tables
-    let participant = await ParticipantModel.getById(id)
-    if (participant) {
-        participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-    }
-    return participant
+  // TODO: refactor the query to use the facade layer and join query for both tables
+  let participant = await ParticipantModel.getById(id)
+  if (participant) {
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+  }
+  return participant
 }
 
 const getByName = async (name) => {
-    // TODO: refactor the query to use the facade layer and join query for both tables
-    let participant = await ParticipantModel.getByName(name)
-    if (participant) {
-        participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-    }
-    return participant
+  // TODO: refactor the query to use the facade layer and join query for both tables
+  let participant = await ParticipantModel.getByName(name)
+  if (participant) {
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+  }
+  return participant
 }
 
 const participantExists = (participant) => {
-    if (participant) {
-        return participant
-    }
-    throw new Error('Participant does not exist')
+  if (participant) {
+    return participant
+  }
+  throw new Error('Participant does not exist')
 }
 
 const update = async (name, payload) => {
-    try {
-        const participant = await ParticipantModel.getByName(name)
-        participantExists(participant)
-        await ParticipantModel.update(participant, payload.isActive)
-        participant.isActive = +payload.isActive
-        participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-        return participant
-    } catch (err) {
-        throw err
-    }
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    await ParticipantModel.update(participant, payload.isActive)
+    participant.isActive = +payload.isActive
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+    return participant
+  } catch (err) {
+    throw err
+  }
 }
 
 const createParticipantCurrency = async (participantId, currencyId) => {
-    try {
-        const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId)
-        return participantCurrency
-    } catch (err) {
-        throw err
-    }
+  try {
+    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId)
+    return participantCurrency
+  } catch (err) {
+    throw err
+  }
 }
 
 const getParticipantCurrencyById = async (participantCurrencyId) => {
-    try {
-        return await ParticipantCurrencyModel.getById(participantCurrencyId)
-    } catch (err) {
-        throw err
-    }
+  try {
+    return await ParticipantCurrencyModel.getById(participantCurrencyId)
+  } catch (err) {
+    throw err
+  }
 }
 
 const destroyByName = async (name) => {
-    try {
-        let participant = await ParticipantModel.getByName(name)
-        await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
-        return await ParticipantModel.destroyByName(name)
-    } catch (err) {
-        throw new Error(err.message)
-    }
+  try {
+    let participant = await ParticipantModel.getByName(name)
+    await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
+    return await ParticipantModel.destroyByName(name)
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }
 
 /**
@@ -142,13 +142,13 @@ const destroyByName = async (name) => {
  */
 
 const addEndpoint = async (name, payload) => {
-    try {
-        const participant = await ParticipantModel.getByName(name)
-        participantExists(participant)
-        return ParticipantFacade.addEndpoint(participant.participantId, payload)
-    } catch (err) {
-        throw err
-    }
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    return ParticipantFacade.addEndpoint(participant.participantId, payload)
+  } catch (err) {
+    throw err
+  }
 }
 
 /**
@@ -167,14 +167,14 @@ const addEndpoint = async (name, payload) => {
  */
 
 const getEndpoint = async (name, type) => {
-    try {
-        const participant = await ParticipantModel.getByName(name)
-        participantExists(participant)
-        const participantEndpoint = await ParticipantFacade.getEndpoint(participant.participantId, type)
-        return participantEndpoint
-    } catch (err) {
-        throw err
-    }
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const participantEndpoint = await ParticipantFacade.getEndpoint(participant.participantId, type)
+    return participantEndpoint
+  } catch (err) {
+    throw err
+  }
 }
 
 /**
@@ -192,14 +192,14 @@ const getEndpoint = async (name, type) => {
  */
 
 const getAllEndpoints = async (name) => {
-    try {
-        const participant = await ParticipantModel.getByName(name)
-        participantExists(participant)
-        const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant.participantId)
-        return participantEndpoints
-    } catch (err) {
-        throw err
-    }
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant.participantId)
+    return participantEndpoints
+  } catch (err) {
+    throw err
+  }
 }
 
 /**
@@ -215,13 +215,13 @@ const getAllEndpoints = async (name) => {
  */
 
 const destroyPariticpantEndpointByName = async (name) => {
-    try {
-        const participant = await ParticipantModel.getByName(name)
-        participantExists(participant)
-        return ParticipantModel.destroyPariticpantEndpointByParticipantId(participant.participantId)
-    } catch (err) {
-        throw err
-    }
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    return ParticipantModel.destroyPariticpantEndpointByParticipantId(participant.participantId)
+  } catch (err) {
+    throw err
+  }
 }
 
 /**
@@ -248,37 +248,37 @@ const destroyPariticpantEndpointByName = async (name) => {
  */
 
 const addInitialPositionAndLimits = async (name, payload) => {
-    try {
-        const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency)
-        participantExists(participant)
-        const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
-        const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
-        if (existingLimit || existingPosition) {
-            throw new Error('Participant Limit or Initial Position already set')
-        }
-        const limitPostionObj = payload
-        if (limitPostionObj.initialPosition == null) {
-            limitPostionObj.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
-        }
-        return ParticipantFacade.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
-    } catch (err) {
-        throw err
+  try {
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency)
+    participantExists(participant)
+    const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
+    const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
+    if (existingLimit || existingPosition) {
+      throw new Error('Participant Limit or Initial Position already set')
     }
+    const limitPostionObj = payload
+    if (limitPostionObj.initialPosition == null) {
+      limitPostionObj.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
+    }
+    return ParticipantFacade.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+  } catch (err) {
+    throw err
+  }
 }
 
 module.exports = {
-    create,
-    getAll,
-    getById,
-    getByName,
-    participantExists,
-    update,
-    createParticipantCurrency,
-    getParticipantCurrencyById,
-    destroyByName,
-    addEndpoint,
-    getEndpoint,
-    getAllEndpoints,
-    destroyPariticpantEndpointByName,
-    addInitialPositionAndLimits
+  create,
+  getAll,
+  getById,
+  getByName,
+  participantExists,
+  update,
+  createParticipantCurrency,
+  getParticipantCurrencyById,
+  destroyByName,
+  addEndpoint,
+  getEndpoint,
+  getAllEndpoints,
+  destroyPariticpantEndpointByName,
+  addInitialPositionAndLimits
 }

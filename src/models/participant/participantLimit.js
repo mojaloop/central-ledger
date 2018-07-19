@@ -42,13 +42,13 @@ const Db = require('../../db')
  *
  *
  * @param {integer} participantCurrencyId - the participant currency id. Example: 1
- * 
+ *
  * @returns {object} - Returns the rows from participantLimit table if successful, or throws an error if failed
  */
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantPosition.findOne({ participantCurrencyId })
+    return Db.participantLimit.findOne({ participantCurrencyId })
   } catch (e) {
     throw e
   }

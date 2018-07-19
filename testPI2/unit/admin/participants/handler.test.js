@@ -194,10 +194,8 @@ Test('Participant Handler', participantHandlerTest => {
         name: 'fsp1'
       }
       const payload = {
-        endpoint: {
-          type: 'FSIOP_CALLBACK_URL',
-          value: 'http://localhost:3001/participants/dfsp1/notification1'
-        }
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
       Participant.addEndpoint.withArgs(params.name, payload).returns(P.resolve(1))
@@ -219,10 +217,8 @@ Test('Participant Handler', participantHandlerTest => {
         name: 'fsp1'
       }
       const payload = {
-        endpoint: {
-          type: 'FSIOP_CALLBACK_URL',
-          value: 'http://localhost:3001/participants/dfsp1/notification1'
-        }
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
       Participant.addEndpoint.withArgs(params.name, payload).throws(new Error())
@@ -299,6 +295,83 @@ Test('Participant Handler', participantHandlerTest => {
 
       try {
         await Handler.getEndpoint(createRequest({ params, query }))
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
+    handlerTest.test('addInitialPositionAndLimits should add the limits and initial position', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        },
+        initialPosition: 0
+      }
+
+      Participant.addInitialPositionAndLimits.withArgs(params.name, payload).returns(P.resolve(1))
+      const reply = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.equal(statusCode, 201, 'Participant limit and initial position added successfully')
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.addInitialPositionAndLimits(createRequest({ params, payload }), reply)
+    })
+
+    handlerTest.test('addInitialPositionAndLimits should add the limits and initial position as default 0 if not passed', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        }
+      }
+
+      Participant.addInitialPositionAndLimits.withArgs(params.name, payload).returns(P.resolve(1))
+      const reply = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.equal(statusCode, 201, 'Participant limit and initial position added successfully')
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.addInitialPositionAndLimits(createRequest({ params, payload }), reply)
+    })
+
+    handlerTest.test('addInitialPositionAndLimits should throw error', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        },
+        initialPosition: 0
+      }
+
+      Participant.addInitialPositionAndLimits.withArgs(params.name, payload).throws(new Error())
+
+      try {
+        await Handler.addInitialPositionAndLimits(createRequest({ params, payload }))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
