@@ -31,10 +31,11 @@
 const ParticipantModel = require('../../models/participant/participant')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const ParticipantFacade = require('../../models/participant/facade')
+const Config = require('../../lib/config')
 
 const create = async (payload) => {
   try {
-    const participant = await ParticipantModel.create({name: payload.name})
+    const participant = await ParticipantModel.create({ name: payload.name })
     if (!participant) throw new Error('Something went wrong. Participant cannot be created')
     return participant
   } catch (err) {
@@ -130,12 +131,10 @@ const destroyByName = async (name) => {
  * ParticipantFacade.addEndpoint called to add the participant endpoint details
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {object} payload - the payload containing and endpoint object with 'type' and 'value' of the endpoint.
+ * @param {object} payload - the payload containing 'type' and 'value' of the endpoint.
  * Example: {
- *      "endpoint": {
  *      "type": "FSIOP_CALLBACK_URL",
  *      "value": "http://localhost:3001/participants/dfsp1/notification12"
- *    }
  * }
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
@@ -223,6 +222,43 @@ const destroyPariticpantEndpointByName = async (name) => {
   }
 }
 
+/**
+ * @function AddInitialPositionAndLimits
+ *
+ * @async
+ * @description This creates the initial position and limits for a participant
+ *
+ * ParticipantModel.getByName called to get the participant details from the participant name
+ * ParticipantFacade.addInitialPositionAndLimits called to add the participant initial postion and limits
+ *
+ * @param {string} name - the name of the participant. Example 'dfsp1'
+ * @param {object} payload - the payload containing the currency, limit and initial postion values
+ * Example: {
+ *	"currency": "USD",
+ *   "limit": {
+ *   	"type": "NET_DEBIT_CAP",
+ *       "value": 10000000
+ *       },
+ *   "initialPosition": 0
+ * }
+ * 
+ * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
+ */
+
+const addInitialPositionAndLimits = async (name, payload) => {
+  try {
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency)
+    participantExists(participant)
+    const limitPostionObj = payload
+    if (limitPostionObj.initialPosition == null) {
+      limitPostionObj.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
+    }
+    return ParticipantFacade.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -236,5 +272,6 @@ module.exports = {
   addEndpoint,
   getEndpoint,
   getAllEndpoints,
-  destroyPariticpantEndpointByName
+  destroyPariticpantEndpointByName,
+  addInitialPositionAndLimits
 }

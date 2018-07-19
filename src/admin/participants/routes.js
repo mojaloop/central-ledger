@@ -108,7 +108,7 @@ module.exports = [
           value: Joi.string().required().description('Endpoint Value')
         },
         params: {
-          name: Joi.string().required().description('Participant name')
+          name: nameValidator
         }
       }
     }
@@ -123,7 +123,34 @@ module.exports = [
       description: 'View participant endpoints',
       validate: {
         params: {
-          name: Joi.string().required().description('Participant name')
+          name: nameValidator
+        }
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/initialPositionAndLimits',
+    handler: Handler.addInitialPositionAndLimits,
+    options: {
+      id: 'participants_limits_pos_add',
+      tags: tags,
+      description: 'Add initial participant limits and position',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          currency: currencyValidator,
+          limit: Joi.object().keys({
+            type: Joi.string().required().description('Limit Type'),
+            value: Joi.number().required().description('Limit Value')
+          }).required().description('Participant Limit'),
+          initialPosition: Joi.number().optional().description('Initial Position Value')
+        },
+        params: {
+          name: nameValidator
         }
       }
     }
