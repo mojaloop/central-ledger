@@ -73,28 +73,15 @@ const transferStates = require('../../lib/enum').TransferState
 * @param messages
 */
 
-const calculateSumInBatch = (messages) => {
-  let batchMap = new Map()
+const calculateSumInBatch = async (messages) => {
+  let transferIdsList = []
+  let sumInBatch = 0
   for (let message of messages) {
-    const { amount, currency } = message.payload.amount
-    const transferId = message.id
-    if (batchMap.has(currency)) {
-      let currentBatchElement = batchMap.get(currency)
-      batchMap.set(currency, {
-        messages: currentBatchElement.messages.set(transferId, message),
-        sumTransfersInBatch: currentBatchElement.sumTransfersInBatch + amount
-      })
-    } else {
-      batchMap.set(currency, {
-        messages: new Map([[transferId, message]]),
-        positionValue: 0,
-        sumTransfersInBatch: amount,
-        availablePosition: 0,
-        sumReserved: 0
-      })
-    }
-    return (messages, batchMap)
+    transferIdsList.push[message.id]
+    sumInBatch += message.payload.amount.amount
   }
+  let transferStateChangeList = await transferStateModel.getByTransferIdList(transferIdsList)
+  return { transferIdsList, transferStateChangeList, sumInBatch }
 }
 
 /**
@@ -145,38 +132,4 @@ const calculateSingleMessage = async ({ message, batchMap }) => {
     transferState,
     message
   }
-}
-
-const validateState = async (message) => {
-  try {
-    let currentTransferState = await transferStateModel.getByTransferId(message.id)
-    if (currentTransferState === transferStates.RECEIVED_PREPARE) {
-      return
-    } else {
-      throw new Error('TODO ADD ERROR 2001')
-    }
-  } catch (e) {
-    throw new Error('TODO ADD ERROR 2003')
-  }
-}
-
-module.exports.calculatePreparePosition = async (incoming) => {
-  let bulkTransferStates = []
-  if (!Array.isArray(incoming)) { incoming = [incoming] }
-  let { messages, batchMap } = calculateSumInBatch(incoming)
-  for (let message of messages) {
-    await validateState(message)
-    let { success, transferState, transfer } = await calculateSingleMessage({ message, batchMap })
-    if (!success) {
-      // create error message from transfer
-        // change the transferState to transferState
-    } else {
-      bulkTransferStates.push(transferState)
-    }
-  }
-  for (let currencyBatch of batchMap.values()) {
-    // update position per currency
-  }
-    // update all state changes in bulk insert
-    // send confirmation for all transfers into batchMap.get(currency, )
 }

@@ -61,6 +61,10 @@ Test('Participant model', async (participantTest) => {
       find: sandbox.stub(),
       destroy: sandbox.stub()
     }
+
+    Db.participantEndpoint = {
+      destroy: sandbox.stub()
+    }
     t.end()
   })
 
@@ -256,6 +260,37 @@ Test('Participant model', async (participantTest) => {
       test.end()
     } catch (err) {
       Logger.error(`destroy participant failed with error - ${err}`)
+      test.pass('Error thrown')
+      sandbox.restore()
+      test.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantEndpointByParticipantId', async (assert) => {
+    try {
+      Db.participantEndpoint.destroy.withArgs({participantId: participant.participantId}).returns(Promise.resolve(true))
+      const result = await Model.destroyPariticpantEndpointByParticipantId(participant.participantId)
+      assert.equal(result, true)
+      sandbox.restore()
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantEndpointByParticipantId failed with error - ${err}`)
+      sandbox.restore()
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantEndpointByParticipantId should throw an error', async (test) => {
+    try {
+      Db.participantEndpoint.destroy.withArgs({participantId: participant.participantId}).throws(new Error())
+      const result = await Model.destroyPariticpantEndpointByParticipantId(participant.participantId)
+      test.equal(result, true)
+      test.fail('Error not thrown')
+      sandbox.restore()
+      test.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantEndpointByParticipantId failed with error - ${err}`)
       test.pass('Error thrown')
       sandbox.restore()
       test.end()

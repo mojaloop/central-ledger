@@ -52,6 +52,23 @@ Test('Participant service', async (participantTest) => {
     }
   ]
 
+  const endpointsFixtures = [
+    {
+      name: 'fsp1',
+      payload: {
+        type: 'FSIOP_CALLBACK_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification1'
+      }
+    },
+    {
+      name: 'fsp1',
+      payload: {
+        type: 'ALARM_NOTIFICATION_URL',
+        value: 'http://localhost:3001/participants/dfsp1/notification2'
+      }
+    }
+  ]
+
   let participantMap = new Map()
 
   await participantTest.test('setup', async (assert) => {
@@ -76,7 +93,7 @@ Test('Participant service', async (participantTest) => {
     try {
       assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        let result = await Service.create({name: participant.name})
+        let result = await Service.create({ name: participant.name })
         await Service.createParticipantCurrency(result, participant.currency)
         let read = await Service.getById(result)
         participantMap.set(result, read)
@@ -153,6 +170,99 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     } catch (err) {
       Logger.error(`update participant failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('add participant endpoint', async (assert) => {
+    try {
+      for (const fixture of endpointsFixtures) {
+        let result = await Service.addEndpoint(fixture.name, fixture.payload)
+        assert.ok(result, `addEndpoint successful for Participant: ${fixture.name}`)
+      }
+      assert.end()
+    } catch (err) {
+      Logger.error(`add participant endpoint failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getEndpoint', async (assert) => {
+    try {
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      }
+      const endpoint = {
+        value: 'http://localhost:3001/participants/dfsp1/notification1',
+        isActive: 1,
+        name: 'FSIOP_CALLBACK_URL'
+      }
+      var result = await Service.getEndpoint(participant.name, endpoint.name)
+      assert.equal(result[0].name, endpoint.name, 'endpoint types are equal')
+      assert.equal(result[0].value, endpoint.value, 'endpoint values match')
+      assert.equal(result[0].isActive, endpoint.isActive, 'isActive flag match')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get endpoint failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getAllEndpoints', async (assert) => {
+    try {
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      }
+      const endpoint = [
+        {
+          value: 'http://localhost:3001/participants/dfsp1/notification1',
+          isActive: 1,
+          name: 'FSIOP_CALLBACK_URL'
+        },
+        {
+          value: 'http://localhost:3001/participants/dfsp1/notification2',
+          isActive: 1,
+          name: 'ALARM_NOTIFICATION_URL'
+        }
+      ]
+
+      var result = await Service.getAllEndpoints(participant.name)
+      assert.comment('First endpoint')
+      assert.equal(result[0].name, endpoint[0].name, 'endpoint types are equal')
+      assert.equal(result[0].value, endpoint[0].value, 'endpoint values match')
+      assert.equal(result[0].isActive, endpoint[0].isActive, 'isActive flag match')
+
+      assert.comment('Second endpoint')
+      assert.equal(result[1].name, endpoint[1].name, 'endpoint types are equal')
+      assert.equal(result[1].value, endpoint[1].value, 'endpoint values match')
+      assert.equal(result[1].isActive, endpoint[1].isActive, 'isActive flag match')
+
+      assert.end()
+    } catch (err) {
+      Logger.error(`getAllEndpoints failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantEndpointByName', async (assert) => {
+    try {
+      const result = await Service.destroyPariticpantEndpointByName(participantFixtures[0].name)
+      assert.ok(result, `destroy endpoint for ${participantFixtures[0].name} success`)
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantEndpointByName failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
