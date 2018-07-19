@@ -176,6 +176,7 @@ module.exports.calculatePreparePosition = async (incoming) => {
   }
   for (let currencyBatch of batchMap.values()) {
     // update position per currency
-    // update all state changes in bulk insert
   }
+    // update all state changes in bulk insert
+    // send confirmation for all transfers into batchMap.get(currency, )
 }
