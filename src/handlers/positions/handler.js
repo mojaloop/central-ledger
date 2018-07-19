@@ -35,6 +35,8 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
+const TransferService = require('../../domain/transfer')
+const PositionService = require('../../domain/position')
 const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
@@ -73,33 +75,45 @@ const positions = async (error, messages) => {
     } else {
       message = messages
     }
-    Logger.info('TransferHandler::position')
+    Logger.info('PositionHandler::positions')
     let consumer = {}
     const payload = message.value.content.payload
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
-      // Consumed Prepare message for Payer
+      Logger.info('PositionHandler::positions::prepare')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
       await Projection.updateTransferState(payload, TransferState.RESERVED)
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
-      // Consumed Commit message for Payee
+      Logger.info('PositionHandler::positions::commit')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL))
       payload.transferId = message.value.id
-      // TODO: Check RECEIVED_FULFIL state
-      await Projection.updateTransferState(payload, TransferState.COMMITTED)
+      // Check current transfer state
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
+        Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
+        // TODO: throw Error 2001
+      } else { // transfer state check success
+        Logger.info('PositionHandler::positions::commit::validationPassed')
+        const isIncrease = false
+        const transferStateChange = {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferState.COMMITTED
+        }
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+      }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
-      // Consumed Reject message for Payee
+      Logger.info('PositionHandler::positions::reject')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
-      // Consumed timeout for transfer in RECEIVED_PREPARE transferState
-      // TODO: Remove from PositionHandler after mojaloop/docs/CentralServices/arch_diagrams/Arch-Flows.svg is updated to queue directly to NotificationHandler
+      Logger.info('PositionHandler::positions::timeoutPrepared')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
-      // Consumed timeout for transfer in RESERVED transferState
+      Logger.info('PositionHandler::positions::timeout')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
-      // Consumed Fail action
+      Logger.info('PositionHandler::positions::fail')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else {
+      Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action))
       await consumer.commitMessageSync(message)
       throw new Error('Event type or action is invalid')
@@ -107,7 +121,6 @@ const positions = async (error, messages) => {
     await consumer.commitMessageSync(message)
     // Will follow framework flow in future
     await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
-
     return true
   } catch (error) {
     Logger.error(error)

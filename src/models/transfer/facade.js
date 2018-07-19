@@ -141,7 +141,31 @@ const getAll = async () => {
   }
 }
 
+const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  try {
+    return await Db.transferParticipant.query(async (builder) => {
+      let result = await builder
+        .where({
+          'transferParticipant.transferId': id,
+          'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
+          'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
+        })
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId')
+        .select(
+          'transferParticipant.*',
+          'tsc.transferStateId'
+        )
+        .orderBy('tsc.transferStateChangeId', 'desc')
+        .first()
+      return result
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   getById,
-  getAll
+  getAll,
+  getTransferInfoToChangePosition
 }
