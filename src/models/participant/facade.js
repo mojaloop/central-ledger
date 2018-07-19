@@ -1,4 +1,4 @@
-  /*****
+/*****
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
@@ -34,10 +34,10 @@ const getByNameAndCurrency = async (name, currencyId) => {
   try {
     return await Db.participant.query(async (builder) => {
       var result = builder
-        .where({'participant.name': name})
-        .andWhere({'participant.isActive': true})
-        .andWhere({'pc.currencyId': currencyId})
-        .andWhere({'pc.isActive': true})
+        .where({ 'participant.name': name })
+        .andWhere({ 'participant.isActive': true })
+        .andWhere({ 'pc.currencyId': currencyId })
+        .andWhere({ 'pc.isActive': true })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
@@ -160,7 +160,6 @@ const addEndpoint = async (participantId, endpoint) => {
   }
 }
 
-
 /**
  * @function AddInitialPositionAndLimits
  *
@@ -174,12 +173,12 @@ const addEndpoint = async (participantId, endpoint) => {
  * @param {integer} participantId - the participant id. Example: 1
  * @param {object} limitPostionObj - the payload containing and limit and postion values .
  * Example: {
- *	"currency": "USD",
- *   "limit": {
- *   	  "type": "NET_DEBIT_CAP",
- *      "value": 10000000
- *    },
- *   "initialPosition": 0
+ *  "currency": "USD",
+ *  "limit": {
+ *    "type": "NET_DEBIT_CAP",
+ *    "value": 10000000
+ *  },
+ *  "initialPosition": 0
  * }
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
@@ -202,7 +201,7 @@ const addInitialPositionAndLimits = async (participantCurrencyId, limitPostionOb
           let position = {
             participantCurrencyId,
             value: limitPostionObj.initialPosition,
-            reservedValue: limitPostionObj.initialPosition
+            reservedValue: 0
           }
           return knex('participantPosition').transacting(trx).insert(position)
         })
