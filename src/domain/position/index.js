@@ -5,6 +5,7 @@ const Decimal = require('decimal.js')
 const UrlParser = require('../../lib/urlParser')
 const PositionCalculator = require('./positionCalculator')
 const Participant = require('../../domain/participant')
+const PositionFacade = require('../../models/position/facade')
 const SettlementFacade = require('../../models/settlement/facade')
 const P = require('bluebird')
 
@@ -114,6 +115,10 @@ exports.calculateForAllParticipants = () => {
         return positions
       })
     })
+}
+
+exports.changeParticipantPosition = (participantCurrencyId, isIncrease, amount, transferStateChange) => {
+  return PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
 }
 
 exports.generatePositionPlaceHolder = () => {
