@@ -58,13 +58,13 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
     } else {
       Logger.info('Producer::start::topic=' + topicConf.topicName)
       producer = new Producer(config)
+      Logger.info('Producer::connect::start')
+      await producer.connect()
+      Logger.info('Producer::connect::end')
+      listOfProducers[topicConf.topicName] = producer
     }
-    Logger.info('Producer::connect::start')
-    await producer.connect()
-    Logger.info('Producer::connect::end')
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
     await producer.sendMessage(messageProtocol, topicConf)
-    listOfProducers[topicConf.topicName] = producer
     Logger.info('Producer::end')
     return true
   } catch (e) {
@@ -83,11 +83,7 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
  */
 const disconnect = async (topicName) => {
   try {
-    if (getProducer(topicName)) {
-      await getProducer(topicName).disconnect()
-    } else {
-      throw Error(`no producer found for topic ${topicName}`)
-    }
+    await getProducer(topicName).disconnect()
   } catch (e) {
     throw e
   }
