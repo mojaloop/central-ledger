@@ -26,7 +26,8 @@ module.exports = {
     EXPIRED: 'EXPIRED',
     REJECTED: 'REJECTED',
     PENDING_SETTLEMENT: 'PENDING_SETTLEMENT',
-    SETTLED: 'SETTLED'
+    SETTLED: 'SETTLED',
+    ABORTED: 'ABORTED'
   },
 
   // Code specific (non-DB) enumerations sorted alphabetically
@@ -49,5 +50,8 @@ module.exports = {
   rejectionType: {
     EXPIRED: 'expired',
     CANCELLED: 'cancelled'
+  },
+  limitType: {
+    NET_DEBIT_CAP: 'NET_DEBIT_CAP'
   }
 }

@@ -25,6 +25,9 @@
 'use strict'
 
 const Db = require('../../db')
+const calculator = require('./calculator')
+const Enum = require('../../lib/enum')
+const participantFacade = require('../participant/facade')
 
 const updateParticipantPositionTransferStateTransaction = async (participantCurrencyId, isIncrease, amount, transferStateChange) => {
   try {
@@ -84,22 +87,80 @@ const updateParticipantPositionTransaction = async (participantCurrencyId, sumIn
   }
 }
 
-const updateParticipantPositionBatchTransferStateParticipantPosition = async (transferList, transferStateChangeList, participantCurrencyId, participntPositionChanges, sumReserved, sumTransfersInBatch) => {
+const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
-    // let participantPositionChangeList = []
+    const {transferIdList, participantName, currencyId} = calculator.getValidListOfTransferIds(transferList)
+    const abortedTransferStateChangeList = []
+    const participantCurrency = participantFacade.getByNameAndCurrency(participantName, currencyId)
+    let sumTransfersInBatch = 0
     knex.transaction(async (trx) => {
-      const currentParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*')
-      currentParticipantPosition.value += sumReserved
-      currentParticipantPosition.reservedValue -= sumTransfersInBatch
-      await knex('participantPosition').transacting(trx).update({participantCurrencyId}, currentParticipantPosition)
-      // for (let transfer of transferList) {
-      //   await knex.batchInsert('transferStateChange', transferStateChangeList).transacting(trx)
-      //
-      //   const participantPosition = {}
-      // }
-    }).catch((err) => {
-      throw err
+      try {
+        const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn(transferIdList).forUpdate().first()
+        for (let transferState of initialTransferStateChangeList) {
+          if (transferState.transferStateId === Enum.TransferState.RECEIVED_PREPARE) {
+            transferState.transferStateChangeId = null
+            transferState.transferStateId = Enum.TransferState.RESERVED
+            for (let transfer of transferList) {
+              if (transfer.transferId === transferState.transferId) {
+                sumTransfersInBatch += transfer.amount.amount
+                transfer.transferState = transferState
+              }
+            }
+          } else {
+            transferState.transferStateChangeId = null
+            transferState.transferStateId = Enum.TransferState.FAILED
+            transferState.reason = 'Transfer in incorrect state'
+            abortedTransferStateChangeList.push(transferState)
+          }
+        }
+        const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId: participantCurrency.participantCurrencyId}).forUpdate().first()
+        let currentPosition = initialParticipantPosition.value
+        let reservedPosition = initialParticipantPosition.reservedValue
+        initialParticipantPosition.reservedValue += sumTransfersInBatch
+        await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update(initialParticipantPosition)
+        const participantLimit = participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.limitType.NET_DEBIT_CAP)
+        let availablePosition = participantLimit.participantLimit.value - currentPosition - reservedPosition
+        let batchTransferStateChange = []
+        let abortedBatchTransferChange = []
+        let sumReserved = 0
+        for (let transfer of transferList) {
+          if (availablePosition >= transfer.amount.amount) {
+            availablePosition -= transfer.amount.amount
+            sumReserved += transfer.amount.amount
+            batchTransferStateChange.push(transfer.transferState)
+          } else {
+            transfer.transferState.transferStateId = Enum.TransferState.ABORTED
+            transfer.transferState.reason = 'Net Debit Cap exceeded by this request at this time, please try again later'
+            abortedBatchTransferChange.push(transfer.transferState)
+          }
+        }
+        await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update({value: sumReserved, reservedValue: initialParticipantPosition.reservedValue - sumTransfersInBatch})
+        await knex('transfer').transacting(trx).forUpdate().whereIn(transferIdList).select('*')
+        await knex.batchInsert('transferStateChange', batchTransferStateChange.concat(abortedBatchTransferChange)).transacting(trx)
+        const latestTransferStateChangesList = knex('transferStateChange').transacting(trx).forUpdate().whereIn(transferIdList).select('*')
+        let batchParticipantPositionChange = []
+        for (let transferStateChange of latestTransferStateChangesList) {
+          if (transferStateChange.transferStateId === Enum.TransferState.RESERVED) {
+            for (let transfer of transferList) {
+              currentPosition += transfer.amount.amount
+              sumTransfersInBatch -= transfer.amount.amount
+              const participantPositionChange = {
+                participantPositionId: initialParticipantPosition.participantPositionId,
+                transferStateChangeId: transferStateChange.transferStateChangeId,
+                value: currentPosition,
+                reservedValue: sumTransfersInBatch
+              }
+              batchParticipantPositionChange.push(participantPositionChange)
+            }
+          }
+        }
+        await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
+
+        await trx.commit
+      } catch (e) {
+        await trx.rollback
+      }
     })
   } catch (e) {
     throw e
@@ -109,5 +170,5 @@ const updateParticipantPositionBatchTransferStateParticipantPosition = async (tr
 module.exports = {
   updateParticipantPositionTransferStateTransaction,
   updateParticipantPositionTransaction,
-  updateParticipantPositionBatchTransferStateParticipantPosition
+  prepareChangeParticipantPositionTransaction
 }
