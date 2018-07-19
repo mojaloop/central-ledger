@@ -88,7 +88,7 @@ const positions = async (error, messages) => {
       payload.transferId = message.value.id
       // Check current transfer state
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-      if (transferInfo.transferStateId !== Enum.TransferState.RECEIVED_FULFIL) {
+      if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
         Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
         // TODO: throw Error 2001
       } else { // transfer state check success
@@ -96,11 +96,10 @@ const positions = async (error, messages) => {
         const isIncrease = false
         const transferStateChange = {
           transferId: transferInfo.transferId,
-          transferStateId: transferInfo.transferStateId
+          transferStateId: TransferState.COMMITTED
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
       }
-      await Projection.updateTransferState(payload, TransferState.COMMITTED)
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))

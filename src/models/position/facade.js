@@ -72,18 +72,19 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
 const changeParticipantPositionTransaction = async (participantCurrencyId, isIncrease, amount, transferStateChange) => {
   try {
     const knex = await Db.getKnex()
-    knex.transaction(async (trx) => {
+    await knex.transaction(async (trx) => {
       try {
         const transactionTimestamp = new Date()
         transferStateChange.createdDate = transactionTimestamp
-        const participantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*')
+        const participantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*').first()
         let latestPosition
         if (isIncrease) {
           latestPosition = participantPosition.value + amount
         } else {
-          latestPosition = participantPosition - amount
+          latestPosition = participantPosition.value - amount
         }
-        await knex('participantPosition').transacting(trx).update({participantCurrencyId}, {value: latestPosition, changedDate: transactionTimestamp})
+        latestPosition = parseFloat(latestPosition.toFixed(2))
+        await knex('participantPosition').transacting(trx).where({participantCurrencyId}).update({value: latestPosition, changedDate: transactionTimestamp})
         await knex('transferStateChange').transacting(trx).insert(transferStateChange)
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({transferId: transferStateChange.transferId}).forUpdate().first().orderBy('transferStateChangeId', 'desc')
         const participantPositionChange = {
