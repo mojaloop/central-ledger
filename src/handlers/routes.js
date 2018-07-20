@@ -156,5 +156,14 @@ module.exports = [
       id: 'transferFulfilTestProducer',
       description: 'Produces transfer fulfil message to Kafka'
     }
+  },
+  {
+    method: 'POST',
+    path: '/test/producer/transfer/reject',
+    handler: testProducer.transferReject,
+    options: {
+      id: 'transferRejectTestProducer',
+      description: 'Produces transfer reject message to Kafka'
+    }
   }
 ]

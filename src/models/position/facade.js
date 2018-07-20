@@ -97,7 +97,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isInc
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
         await trx.commit
       } catch (err) {
-        trx.rollback
+        await trx.rollback
         throw err
       }
     }).catch((err) => {

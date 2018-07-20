@@ -13,6 +13,7 @@ const transferStateChangeModel = require('../../models/transfer/transferStateCha
 const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+  // TOßDO: Move inserts into a Transaction
   try {
     const participants = []
     const names = [payload.payeeFsp, payload.payerFsp]
@@ -62,7 +63,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
       amount: payload.amount.amount
     }
-    // TODO: Move inserts into a Transaction
 
     // First save transfer to ensure foreign key integrity
     await TransferModel.saveTransfer(transferRecord)
@@ -105,6 +105,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 }
 
 const saveTransferExecuted = async (transferId, payload, stateReason = null, hasPassedValidation = true) => {
+  // TODO: Move inserts into a Transaction
   let transferFulfilmentId = Uuid() // TODO: should be generated once before TransferFulfilmentDuplicateCheck (and passed here)
   const transferFulfilmentRecord = {
     transferFulfilmentId,
@@ -122,7 +123,6 @@ const saveTransferExecuted = async (transferId, payload, stateReason = null, has
     reason: stateReason,
     createdDate: new Date()
   }
-  // TODO: Move inserts into a Transaction
 
   await TransferFulfilmentModel.saveTransferFulfilment(transferFulfilmentRecord)
 
@@ -162,33 +162,55 @@ const updateTransferState = async (payload, state) => {
   return await transferStateChangeModel.saveTransferStateChange(transferStateChangeRecord)
 }
 
-const saveTransferRejected = async (stateReason, transferId) => {
+const saveTransferRejected = async (transferId, payload) => {
   try {
-    const existingtransferStateChange = await transferStateChangeModel.getByTransferId(transferId)
+    // TODO: ask rmothilal about moving inserts into a Transaction and out of projection.js
+    let transferFulfilmentId = Uuid() // TODO: should be generated once before TransferFulfilmentDuplicateCheck (and passed here)
+    const transferFulfilmentRecord = {
+      transferFulfilmentId,
+      transferId,
+      ilpFulfilment: payload.fulfilment,
+      completedDate: new Date(payload.completedTimestamp),
+      isValid: true,
+      createdDate: new Date()
+    }
+    await TransferFulfilmentModel.saveTransferFulfilment(transferFulfilmentRecord)
 
+    let transferExtensionsRecordList = []
+    if (payload.extensionList && payload.extensionList.extension) {
+      transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+        return {
+          transferId,
+          transferFulfilmentId,
+          key: ext.key,
+          value: ext.value
+        }
+      })
+      for (let ext of transferExtensionsRecordList) {
+        await transferExtensionModel.saveTransferExtension(ext)
+      }
+    }
+
+    let transferStates = await transferStateChangeModel.getByTransferId(transferId)
     let existingAbort = false
     let transferStateChange
-    if (Array.isArray(existingtransferStateChange)) {
-      for (let transferState of existingtransferStateChange) {
-        if (transferState.transferStateId === Enum.TransferState.ABORTED) {
-          existingAbort = true
-          transferStateChange = transferState
-          break
-        }
-      }
-    } else {
-      if (existingtransferStateChange.transferStateId === Enum.TransferState.ABORTED) {
+    if (!Array.isArray(transferStates)) {
+      transferStates = [transferStates]
+    }
+    for (let transferState of transferStates) {
+      if (transferState.transferStateId === Enum.TransferState.ABORTED) {
         existingAbort = true
-        transferStateChange = existingtransferStateChange
+        transferStateChange = transferState
+        break
       }
     }
     if (!existingAbort) {
-      transferStateChange = {}
-      transferStateChange.transferStateChangeId = null
-      transferStateChange.transferId = transferId
-      transferStateChange.reason = stateReason
-      transferStateChange.changedDate = new Date()
-      transferStateChange.transferStateId = Enum.TransferState.ABORTED
+      transferStateChange = {
+        transferId: transferId,
+        reason: payload.reason,
+        createdDate: new Date(),
+        transferStateId: Enum.TransferState.REJECTED
+      }
       await transferStateChangeModel.saveTransferStateChange(transferStateChange)
       return {alreadyRejected: false, transferStateChange}
     } else {

@@ -78,6 +78,7 @@ const positions = async (error, messages) => {
     Logger.info('PositionHandler::positions')
     let consumer = {}
     const payload = message.value.content.payload
+    payload.transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
@@ -85,7 +86,6 @@ const positions = async (error, messages) => {
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL))
-      payload.transferId = message.value.id
       // Check current transfer state
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
@@ -103,6 +103,20 @@ const positions = async (error, messages) => {
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      if (transferInfo.transferStateId !== TransferState.REJECTED) {
+        Logger.info('PositionHandler::positions::reject::validationFailed::notRejectedState')
+        // TODO: throw Error 2001
+      } else { // transfer state check success
+        Logger.info('PositionHandler::positions::reject::validationPassed')
+        const isIncrease = false
+        const transferStateChange = {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferState.ABORTED,
+          reason: payload.reason
+        }
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+      }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
       Logger.info('PositionHandler::positions::timeoutPrepared')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))

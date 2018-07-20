@@ -62,34 +62,34 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   }
 }
 
-const reject = async (stateReason, transferId) => {
-  const {alreadyRejected, transferStateChange} = await Projection.saveTransferRejected(stateReason, transferId)
-  // const t = TransferObjectTransform.toTransfer(result)
-  if (!alreadyRejected) {
-    Events.emitTransferRejected(transferStateChange)
-  }
-  return {alreadyRejected, transferStateChange}
-}
-
 const expire = (id) => {
   return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
 }
 
-const fulfil = (transferId, fulfilment) => {
-  return Projection.saveTransferExecuted(transferId, fulfilment)
+const fulfil = (transferId, payload) => {
+  return Projection.saveTransferExecuted(transferId, payload)
     .then(transfer => {
       const t = TransferObjectTransform.toTransfer(transfer)
-      Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfilment.fulfilment})
+      Events.emitTransferExecuted(t, {execution_condition_fulfillment: payload.fulfilment})
       return t
     })
     .catch(err => {
       if (typeof err === Errors.ExpiredTransferError) {
-        return expire(fulfilment.id)
+        return expire(payload.id)
           .then(() => { throw new Errors.UnpreparedTransferError() })
       } else {
         throw err
       }
     })
+}
+
+const reject = async (transferId, payload) => {
+  const {alreadyRejected, transferStateChange} = await Projection.saveTransferRejected(transferId, payload)
+  // const t = TransferObjectTransform.toTransfer(result)
+  if (!alreadyRejected) {
+    Events.emitTransferRejected(transferStateChange) // TODO: ask rmothilal for the purpose
+  }
+  return {alreadyRejected, transferStateChange}
 }
 
 const rejectExpired = () => {
@@ -128,8 +128,8 @@ module.exports = {
   getTransferInfoToChangePosition,
   getFulfillment,
   prepare,
-  reject,
   fulfil,
+  reject,
   rejectExpired,
   settle
 }
