@@ -33,8 +33,6 @@ const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const Service = require('../../../../src/domain/participant')
-const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
-const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
@@ -264,7 +262,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('add participant limit and initial position', async (assert) => {
-    try {  
+    try {
       let result = await Service.addInitialPositionAndLimits(participantFixtures[0].name, initialPositionAndLimit)
       assert.ok(result, `addInitialPositionAndLimits successful for Participant: ${participantFixtures[0].name}`)
       assert.end()
@@ -277,8 +275,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroy participant position', async (assert) => {
     try {
-        const result = await Service.destroyPariticpantPositionByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
-        assert.ok(result, `destroy participant position for ${participantFixtures[0].name} success`)
+      const result = await Service.destroyPariticpantPositionByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
+      assert.ok(result, `destroy participant position for ${participantFixtures[0].name} success`)
       assert.end()
     } catch (err) {
       Logger.error(`destroy participant position failed with error - ${err}`)
@@ -289,8 +287,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroy participant limits', async (assert) => {
     try {
-        const result = await Service.destroyPariticpantLimitByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
-        assert.ok(result, `destroy participant limits for ${participantFixtures[0].name} success`)
+      const result = await Service.destroyPariticpantLimitByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
+      assert.ok(result, `destroy participant limits for ${participantFixtures[0].name} success`)
       assert.end()
     } catch (err) {
       Logger.error(`destroy participant limits failed with error - ${err}`)

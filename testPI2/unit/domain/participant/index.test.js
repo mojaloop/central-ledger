@@ -135,7 +135,9 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'addInitialPositionAndLimits')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
+    sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
     sandbox.stub(ParticipantPositionModel, 'getByParticipantCurrencyId')
+    sandbox.stub(ParticipantPositionModel, 'destroyByParticipantCurrencyId')
 
     Db.participant = {
       insert: sandbox.stub(),
@@ -725,6 +727,92 @@ Test('Participant service', async (participantTest) => {
 
     try {
       await Service.addInitialPositionAndLimits(participant.name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('destroyPariticpantPositionByNameAndCurrency should delete the position for participant and currency', async (assert) => {
+    try {
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantPositionModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(1)
+
+      const result = await Service.destroyPariticpantPositionByNameAndCurrency(participant.name, participant.currency)
+      assert.equal(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantPositionByNameAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantPositionByNameAndCurrency should throw error', async (assert) => {
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+    ParticipantPositionModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).throws(new Error())
+    try {
+      await await Service.destroyPariticpantPositionByNameAndCurrency(participant.name, participant.currency)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('destroyPariticpantLimitByNameAndCurrency should delete the limits for participant and currency', async (assert) => {
+    try {
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantLimitModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(1)
+
+      const result = await Service.destroyPariticpantLimitByNameAndCurrency(participant.name, participant.currency)
+      assert.equal(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantLimitByNameAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantLimitByNameAndCurrency should delete the position for participant and currency', async (assert) => {
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+    ParticipantLimitModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).throws(new Error())
+    try {
+      await await Service.destroyPariticpantLimitByNameAndCurrency(participant.name, participant.currency)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)

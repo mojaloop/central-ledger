@@ -96,6 +96,17 @@ Test('Participant Handler', participantHandlerTest => {
       test.end()
     })
 
+    handlerTest.test('getByName should throw error', async function (test) {
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
+      try {
+        await Handler.getByName(createRequest({ params: { name: participantFixtures[0].name } }))
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'The requested resource could not be found.')
+        test.end()
+      }
+    })
+
     handlerTest.test('update should update and return the participant', async function (test) {
       Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).returns(P.resolve(participantFixtures[0]))
       const result = await Handler.update(createRequest({ params: { name: participantFixtures[0].name }, payload: { isActive: 1 } }))
