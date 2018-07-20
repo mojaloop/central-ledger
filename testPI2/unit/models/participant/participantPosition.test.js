@@ -55,20 +55,20 @@ Test('Participant Position model', async (participantPositionTest) => {
 
   await participantPositionTest.test('getByParticipantCurrencyId', async (assert) => {
     try {
-      Db.participantPosition.findOne.withArgs({ participantCurrencyId: 1, isActive: 1 }).returns({
+      Db.participantPosition.findOne.withArgs({ participantCurrencyId: 1 }).returns({
         participantPositionId: 1,
         participantCurrencyId: 1,
         value: 0.0,
         reservedValue: 0.0,
         changedDate: '2018-07-19'
-        })
+      })
       const expected = {
         participantPositionId: 1,
         participantCurrencyId: 1,
         value: 0.0,
         reservedValue: 0.0,
         changedDate: '2018-07-19'
-        }
+      }
       let result = await Model.getByParticipantCurrencyId(1)
       assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()
@@ -81,7 +81,7 @@ Test('Participant Position model', async (participantPositionTest) => {
 
   await participantPositionTest.test('getByParticipantCurrencyId should fail', async (test) => {
     try {
-      Db.participantPosition.findOne.withArgs({ participantCurrencyId: 1, isActive: 1 }).throws(new Error())
+      Db.participantPosition.findOne.withArgs({ participantCurrencyId: 1 }).throws(new Error())
       await Model.getByParticipantCurrencyId(1)
       test.fail('Error not thrown')
       test.end()

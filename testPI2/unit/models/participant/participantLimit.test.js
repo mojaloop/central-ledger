@@ -55,7 +55,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
 
   await participantLimitTest.test('getByParticipantCurrencyId', async (assert) => {
     try {
-      Db.participantLimit.findOne.withArgs({ participantCurrencyId: 1 }).returns({
+      Db.participantLimit.findOne.withArgs({ participantCurrencyId: 1, isActive: 1 }).returns({
         participantLimitId: 1,
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
@@ -89,7 +89,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
 
   await participantLimitTest.test('getByParticipantCurrencyId should fail', async (test) => {
     try {
-      Db.participantLimit.findOne.withArgs({ participantCurrencyId: 1 }).throws(new Error())
+      Db.participantLimit.findOne.withArgs({ participantCurrencyId: 1, isActive: 1 }).throws(new Error())
       await Model.getByParticipantCurrencyId(1)
       test.fail('Error not thrown')
       test.end()

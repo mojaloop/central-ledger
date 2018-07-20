@@ -266,6 +266,50 @@ const addInitialPositionAndLimits = async (name, payload) => {
   }
 }
 
+/**
+ * @function DestroyPariticpantPositionByNameAndCurrency
+ *
+ * @async
+ * @description This functions deletes the existing position for a given participant name
+ * else, it will throw and error
+ *
+ * @param {string} name - participant name
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyPariticpantPositionByNameAndCurrency = async (name, currencyId) => {
+  try {
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
+    participantExists(participant)
+    return ParticipantPositionModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * @function DestroyPariticpantLimitByName
+ *
+ * @async
+ * @description This functions deletes the existing limits for a given participant name
+ * else, it will throw and error
+ *
+ * @param {string} name - participant name
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyPariticpantLimitByNameAndCurrency = async (name, currencyId) => {
+  try {
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
+    participantExists(participant)
+    return ParticipantLimitModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -280,5 +324,7 @@ module.exports = {
   getEndpoint,
   getAllEndpoints,
   destroyPariticpantEndpointByName,
-  addInitialPositionAndLimits
+  addInitialPositionAndLimits,
+  destroyPariticpantPositionByNameAndCurrency,
+  destroyPariticpantLimitByNameAndCurrency
 }

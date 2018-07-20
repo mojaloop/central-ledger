@@ -48,13 +48,33 @@ const Db = require('../../db')
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    const res = await Db.participantPosition.findOne({ participantCurrencyId, isActive: 1 })
-    return res
+    return Db.participantPosition.findOne({ participantCurrencyId })
+  } catch (e) {
+    throw e
+  }
+}
+
+/**
+ * @function DestroyByParticipantCurrencyId
+ *
+ * @async
+ * @description This deletes the participant position corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
+  try {
+    return Db.participantPosition.destroy({ participantCurrencyId })
   } catch (e) {
     throw e
   }
 }
 
 module.exports = {
-  getByParticipantCurrencyId
+  getByParticipantCurrencyId,
+  destroyByParticipantCurrencyId
 }

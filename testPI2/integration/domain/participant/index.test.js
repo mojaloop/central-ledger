@@ -33,6 +33,8 @@ const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const Service = require('../../../../src/domain/participant')
+const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
+const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
@@ -68,6 +70,15 @@ Test('Participant service', async (participantTest) => {
       }
     }
   ]
+
+  const initialPositionAndLimit = {
+    currency: 'USD',
+    limit: {
+      type: 'NET_DEBIT_CAP',
+      value: 10000000
+    },
+    initialPosition: 0
+  }
 
   let participantMap = new Map()
 
@@ -154,22 +165,6 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     } catch (err) {
       Logger.error(`get participant by Id failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await participantTest.test('update', async (assert) => {
-    try {
-      for (let participantId of participantMap.keys()) {
-        let participant = await Service.update(participantMap.get(participantId).name, { isActive: 0 })
-        let p = await Service.getById(participant.participantId)
-        assert.equal(participant.participantId, p.participantId, 'ids match')
-        assert.equal(p.isActive, 0, 'update works')
-      }
-      assert.end()
-    } catch (err) {
-      Logger.error(`update participant failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -263,6 +258,58 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     } catch (err) {
       Logger.error(`destroyPariticpantEndpointByName failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('add participant limit and initial position', async (assert) => {
+    try {  
+      let result = await Service.addInitialPositionAndLimits(participantFixtures[0].name, initialPositionAndLimit)
+      assert.ok(result, `addInitialPositionAndLimits successful for Participant: ${participantFixtures[0].name}`)
+      assert.end()
+    } catch (err) {
+      Logger.error(`add participant endpoint failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroy participant position', async (assert) => {
+    try {
+        const result = await Service.destroyPariticpantPositionByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
+        assert.ok(result, `destroy participant position for ${participantFixtures[0].name} success`)
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroy participant position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroy participant limits', async (assert) => {
+    try {
+        const result = await Service.destroyPariticpantLimitByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
+        assert.ok(result, `destroy participant limits for ${participantFixtures[0].name} success`)
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroy participant limits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('update', async (assert) => {
+    try {
+      for (let participantId of participantMap.keys()) {
+        let participant = await Service.update(participantMap.get(participantId).name, { isActive: 0 })
+        let p = await Service.getById(participant.participantId)
+        assert.equal(participant.participantId, p.participantId, 'ids match')
+        assert.equal(p.isActive, 0, 'update works')
+      }
+      assert.end()
+    } catch (err) {
+      Logger.error(`update participant failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
