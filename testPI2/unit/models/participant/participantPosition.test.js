@@ -94,7 +94,7 @@ Test('Participant Position model', async (participantPositionTest) => {
 
   await participantPositionTest.test('destroyByParticipantCurrencyId', async (assert) => {
     try {
-      Db.participantPosition.destroy.withArgs({ participantCurrencyId: 1}).returns(1)
+      Db.participantPosition.destroy.withArgs({ participantCurrencyId: 1 }).returns(1)
       let result = await Model.destroyByParticipantCurrencyId(1)
       assert.equal(result, 1, 'Results match')
       assert.end()

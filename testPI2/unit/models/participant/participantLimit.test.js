@@ -102,7 +102,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
 
   await participantLimitTest.test('destroyByParticipantCurrencyId', async (assert) => {
     try {
-      Db.participantLimit.destroy.withArgs({ participantCurrencyId: 1}).returns(1)
+      Db.participantLimit.destroy.withArgs({ participantCurrencyId: 1 }).returns(1)
       let result = await Model.destroyByParticipantCurrencyId(1)
       assert.equal(result, 1, 'Results match')
       assert.end()
