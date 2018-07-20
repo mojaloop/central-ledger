@@ -1,8 +1,9 @@
 'use strict'
 
 const P = require('bluebird')
-const TransferModel = require('../../models/transfer/transfer')
 const TransferFacade = require('../../models/transfer/facade')
+const TransferModel = require('../../models/transfer/transfer')
+const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
 const SettlementFacade = require('../../models/settlement/facade')
 const SettlementModel = require('../../models/settlement/settlement')
 const Projection = require('./projection')
@@ -21,6 +22,14 @@ const getById = (id) => {
 
 const getAll = () => {
   return TransferFacade.getAll()
+}
+
+const getTransferState = (id) => {
+  return TransferStateChangeModel.getByTransferId(id)
+}
+
+const getTransferInfoToChangePosition = (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  return TransferFacade.getTransferInfoToChangePosition(id, transferParticipantRoleTypeId, ledgerEntryTypeId)
 }
 
 const getFulfillment = (id) => {
@@ -46,7 +55,7 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   try {
     const result = await Projection.saveTransferPrepared(payload, stateReason, hasPassedValidation)
     const t = TransferObjectTransform.toTransfer(result)
-    Events.emitTransferPrepared(t)
+    // Events.emitTransferPrepared(t)
     return {transfer: t}
   } catch (e) {
     throw e
@@ -112,13 +121,15 @@ const settle = async () => {
 }
 
 module.exports = {
-  fulfil,
   getTransferById,
   getById,
   getAll,
+  getTransferState,
+  getTransferInfoToChangePosition,
   getFulfillment,
   prepare,
   reject,
+  fulfil,
   rejectExpired,
   settle
 }

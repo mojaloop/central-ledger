@@ -115,6 +115,7 @@ Test('Producer Failure', producerTest => {
   producerTest.test('produceMessage should', produceMessageTest => {
     produceMessageTest.test('throw error when connect throws error', async test => {
       try {
+        topicConf.topicName = 'invalidTopic'
         await Producer.produceMessage(messageProtocol, topicConf, config)
         test.fail('Error not thrown')
         test.end()

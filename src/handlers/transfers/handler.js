@@ -156,7 +156,7 @@ const fulfil = async (error, messages) => {
     if (metadata.event.type === TransferEventType.FULFIL && metadata.event.action === TransferEventAction.COMMIT) {
       const existingTransfer = await TransferService.getById(transferId)
 
-      // @NOTE: This has been commented out as it does not conform to the Mojaloop Specification. The Crypo-conditions are generic and do not conform to any specific protocol, but rather must be determined by the implemented schema
+      // NOTE: This has been commented out as it does not conform to the Mojaloop Specification. The Crypo-conditions are generic and do not conform to any specific protocol, but rather must be determined by the implemented schema
       // const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
 
       if (!existingTransfer) {

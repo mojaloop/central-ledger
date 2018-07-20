@@ -1,4 +1,4 @@
-  /*****
+/*****
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
@@ -41,7 +41,8 @@ const getByNameAndCurrency = async (name, currencyId) => {
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
-          'pc.participantCurrencyId'
+          'pc.participantCurrencyId',
+          'pc.currencyId'
         )
         .first()
       return result
@@ -50,7 +51,6 @@ const getByNameAndCurrency = async (name, currencyId) => {
     throw e
   }
 }
-
 
 const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
   try {
@@ -73,46 +73,6 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
   }
 }
 
-const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, participantLimitTypeId) => {
-  try {
-    return await Db.participant.query(async (builder) => {
-      return await builder
-        .where({
-          'participant.participantId': participantId,
-          'pc.currencyId': currencyId,
-          'pl.participantLimitTypeId': participantLimitTypeId
-        })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
-        .select(
-          'participant.*',
-          'pc.*',
-          'pl.*'
-        )
-    })
-  } catch (e) {
-    throw e
-  }
-}
-
-const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
-  try {
-    return await Db.participant.query(async (builder) => {
-      return await builder
-        .where({
-          'participant.participantId': participantId,
-          'pc.currencyId': currencyId
-        })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
-        .select(
-          'participant.*',
-          'pc.*',
-          'pp.*'
-        )
-    })
-  } catch (e) {
-    throw e
 /**
  * @function GetEndpoint
  *
@@ -194,7 +154,10 @@ const addEndpoint = async (participantId, endpoint) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      let endpointType = await trx.first('endpointTypeId').from('endpointType').where({ 'name': endpoint.type, 'isActive': 1 })
+      let endpointType = await trx.first('endpointTypeId').from('endpointType').where({
+        'name': endpoint.type,
+        'isActive': 1
+      })
       return knex('participantEndpoint').transacting(trx).forUpdate().select('*')
         .where({
           'participantId': participantId,
@@ -203,7 +166,7 @@ const addEndpoint = async (participantId, endpoint) => {
         })
         .then(existingEndpoint => {
           if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
-            return knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
+            return knex('participantEndpoint').transacting(trx).update({isActive: 0}).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
           }
         }).then(() => {
           let newEndpoint = {
@@ -222,12 +185,59 @@ const addEndpoint = async (participantId, endpoint) => {
   }
 }
 
+const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, participantLimitTypeId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId,
+          'pl.participantLimitTypeId': participantLimitTypeId,
+          'participant.isActive': 1,
+          'pc.IsActive': 1,
+          'pl.isActive': 1
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'participant.participantID AS participantId',
+          'pc.currencyId AS currencyId',
+          'pl.participantLimitTypeId as participantLimitTypeId',
+          'pl.value AS value'
+        ).first()
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pp.*'
+        )
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   getByNameAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
-  getParticipantPositionByParticipantIdAndCurrencyId,
-  getParticipantLimitByParticipantCurrencyLimit,
   getEndpoint,
   getAllEndpoints,
-  addEndpoint
+  addEndpoint,
+  getParticipantPositionByParticipantIdAndCurrencyId,
+  getParticipantLimitByParticipantCurrencyLimit
 }

@@ -24,7 +24,7 @@
 
 'use strict'
 
-const Db = require('../../db')
+const Db = require('../../db/index')
 
 const insert = async (participantLimit) => {
   try {
