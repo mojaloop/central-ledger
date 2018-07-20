@@ -24,10 +24,16 @@
 
 'use strict'
 
-const getValidListOfTransferIds = (transferList) => {
-
+const getListOfTransferIds = (transferList) => {
+  let transferIdList = []
+  const participantName = transferList[0].value.content.payload.payeeFsp
+  let currencyId = transferList[0].value.content.payload.amount.currency
+  for (let transferMessage of transferList) {
+    transferIdList.push(transferMessage.value.content.payload.transferId)
+  }
+  return {transferIdList, participantName, currencyId}
 }
 
 module.exports = {
-  getValidListOfTransferIds
+  getListOfTransferIds
 }

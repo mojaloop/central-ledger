@@ -37,7 +37,6 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
-const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
@@ -69,8 +68,10 @@ const positions = async (error, messages) => {
     throw error
   }
   let message = {}
+  let prepareBatch = []
   try {
     if (Array.isArray(messages)) {
+      prepareBatch = messages
       message = messages[0]
     } else {
       message = messages
@@ -81,7 +82,11 @@ const positions = async (error, messages) => {
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
-      await Projection.updateTransferState(payload, TransferState.RESERVED)
+      await PositionService.calculatePreparePositionsBatch(prepareBatch)
+      for (let prepareMessage of prepareBatch) {
+        await consumer.commitMessageSync(prepareMessage)
+      }
+      return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL))

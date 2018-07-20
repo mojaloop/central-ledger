@@ -55,7 +55,7 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   try {
     const result = await Projection.saveTransferPrepared(payload, stateReason, hasPassedValidation)
     const t = TransferObjectTransform.toTransfer(result)
-    Events.emitTransferPrepared(t)
+    // Events.emitTransferPrepared(t)
     return {transfer: t}
   } catch (e) {
     throw e

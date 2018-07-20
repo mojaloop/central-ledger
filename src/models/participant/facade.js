@@ -41,7 +41,8 @@ const getByNameAndCurrency = async (name, currencyId) => {
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
-          'pc.participantCurrencyId'
+          'pc.participantCurrencyId',
+          'pc.currencyId'
         )
         .first()
       return result
@@ -191,15 +192,19 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
-          'pl.participantLimitTypeId': participantLimitTypeId
+          'pl.participantLimitTypeId': participantLimitTypeId,
+          'participant.isActive': 1,
+          'pc.IsActive': 1,
+          'pl.isActive': 1
         })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
         .select(
-          'participant.*',
-          'pc.*',
-          'pl.*'
-        )
+          'participant.participantID AS participantId',
+          'pc.currencyId AS currencyId',
+          'pl.participantLimitTypeId as participantLimitTypeId',
+          'pl.value AS value'
+        ).first()
     })
   } catch (e) {
     throw e

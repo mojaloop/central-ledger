@@ -52,6 +52,6 @@ module.exports = {
     CANCELLED: 'cancelled'
   },
   limitType: {
-    NET_DEBIT_CAP: 'NET_DEBIT_CAP'
+    NET_DEBIT_CAP: 1
   }
 }
