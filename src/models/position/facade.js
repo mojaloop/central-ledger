@@ -97,6 +97,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const reservedTransferStateChangeList = []
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId)
     let sumTransfersInBatch = 0
+    let allTransfersMap = new Map()
     await knex.transaction(async (trx) => {
       try {
         const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
@@ -117,7 +118,6 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             abortedTransferStateChangeList.push(transferState)
           }
         }
-        Logger.info(JSON.stringify(participantCurrency))
         const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId: participantCurrency.participantCurrencyId}).forUpdate().select('*').first()
         let currentPosition = initialParticipantPosition.value
         let reservedPosition = initialParticipantPosition.reservedValue
@@ -125,19 +125,17 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update(initialParticipantPosition)
         const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.limitType.NET_DEBIT_CAP)
         let availablePosition = participantLimit.value - currentPosition - reservedPosition
-        let batchTransferStateChange = []
-        let abortedBatchTransferChange = []
         let sumReserved = 0
         for (let transfer of transferList) {
           for (let transferState of reservedTransferStateChangeList) {
             if (availablePosition >= transfer.value.content.payload.amount.amount) {
               availablePosition -= transfer.value.content.payload.amount.amount
               sumReserved += transfer.value.content.payload.amount.amount
-              batchTransferStateChange.push(transferState)
+              allTransfersMap.set(transfer.value.content.payload.transferId, transferState)
             } else {
               transferState.transferStateId = Enum.TransferState.ABORTED
               transferState.reason = 'Net Debit Cap exceeded by this request at this time, please try again later'
-              abortedBatchTransferChange.push(transferState)
+              allTransfersMap.set(transfer.value.content.payload.transferId, transferState)
             }
           }
         }
@@ -146,7 +144,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           reservedValue: initialParticipantPosition.reservedValue - sumTransfersInBatch
         })
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
-        await knex.batchInsert('transferStateChange', batchTransferStateChange.concat(abortedBatchTransferChange)).transacting(trx)
+        await knex.batchInsert('transferStateChange', Array.from(allTransfersMap.values())).transacting(trx)
         const latestTransferStateChangesList = await knex('transferStateChange').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
         let batchParticipantPositionChange = []
         for (let transferStateChange of latestTransferStateChangesList) {
@@ -165,7 +163,6 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           }
         }
         await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
-
         await trx.commit
       } catch (e) {
         Logger.info(e)
@@ -173,6 +170,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         throw e
       }
     })
+    return allTransfersMap
   } catch (e) {
     Logger.info(e)
     throw e
