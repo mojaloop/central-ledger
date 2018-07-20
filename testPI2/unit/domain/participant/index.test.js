@@ -31,6 +31,8 @@ const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const ParticipantModel = require('../../../../src/models/participant/participant')
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
+const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
+const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 
 const Service = require('../../../../src/domain/participant/index')
@@ -129,6 +131,13 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'getEndpoint')
     sandbox.stub(ParticipantFacade, 'getAllEndpoints')
     sandbox.stub(ParticipantFacade, 'addEndpoint')
+    sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
+    sandbox.stub(ParticipantFacade, 'addInitialPositionAndLimits')
+
+    sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
+    sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
+    sandbox.stub(ParticipantPositionModel, 'getByParticipantCurrencyId')
+    sandbox.stub(ParticipantPositionModel, 'destroyByParticipantCurrencyId')
 
     Db.participant = {
       insert: sandbox.stub(),
@@ -505,6 +514,305 @@ Test('Participant service', async (participantTest) => {
 
     try {
       await Service.destroyPariticpantEndpointByName(participantFixtures[0].name)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('addInitialPositionAndLimits should add the initial position and limits', async (assert) => {
+    try {
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        },
+        initialPosition: 0
+      }
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+      ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+      ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+      ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).returns(1)
+
+      const result = await Service.addInitialPositionAndLimits(participant.name, payload)
+      assert.deepEqual(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('addInitialPositionAndLimits should add the initial position from config and limits if initial position is not passed', async (assert) => {
+    try {
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        }
+      }
+
+      const limitPostionObj = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        },
+        initialPosition: 0
+      }
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+      ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+      ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+      ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, limitPostionObj).returns(1)
+
+      const result = await Service.addInitialPositionAndLimits(participant.name, payload)
+      assert.deepEqual(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('addInitialPositionAndLimits should fail if participant and currency not found', async (assert) => {
+    const payload = {
+      currency: 'USD',
+      limit: {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000
+      },
+      initialPosition: 0
+    }
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).throws(new Error())
+
+    try {
+      await Service.addInitialPositionAndLimits(participant.name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('addInitialPositionAndLimits should fail if cant add initial position and limit', async (assert) => {
+    const payload = {
+      currency: 'USD',
+      limit: {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000
+      },
+      initialPosition: 0
+    }
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+    ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+    ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).throws(new Error())
+
+    try {
+      await Service.addInitialPositionAndLimits(participant.name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('addInitialPositionAndLimits should fail if initial position already exists', async (assert) => {
+    const payload = {
+      currency: 'USD',
+      limit: {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000
+      },
+      initialPosition: 0
+    }
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    const participantPosition = {
+      participantPositionId: 1,
+      participantCurrencyId: 1,
+      value: 0.0,
+      reservedValue: 0.0,
+      changedDate: new Date()
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+    ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(participantPosition)
+    ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).returns(1)
+
+    try {
+      await Service.addInitialPositionAndLimits(participant.name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('addInitialPositionAndLimits should fail if participant limit already exists', async (assert) => {
+    const payload = {
+      currency: 'USD',
+      limit: {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000
+      },
+      initialPosition: 0
+    }
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    const participantLimit = {
+      participantLimitId: 1,
+      participantCurrencyId: 1,
+      participantLimitTypeId: 1,
+      value: 1000000.00,
+      thresholdAlarmPercentage: 10.0,
+      startAfterParticipantPositionChangeId: null,
+      isActive: 1,
+      createdDate: new Date(),
+      createdBy: 'unknown'
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(participantLimit)
+    ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
+    ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).returns(1)
+
+    try {
+      await Service.addInitialPositionAndLimits(participant.name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('destroyPariticpantPositionByNameAndCurrency should delete the position for participant and currency', async (assert) => {
+    try {
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantPositionModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(1)
+
+      const result = await Service.destroyPariticpantPositionByNameAndCurrency(participant.name, participant.currency)
+      assert.equal(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantPositionByNameAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantPositionByNameAndCurrency should throw error', async (assert) => {
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+    ParticipantPositionModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).throws(new Error())
+    try {
+      await await Service.destroyPariticpantPositionByNameAndCurrency(participant.name, participant.currency)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('destroyPariticpantLimitByNameAndCurrency should delete the limits for participant and currency', async (assert) => {
+    try {
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantLimitModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(1)
+
+      const result = await Service.destroyPariticpantLimitByNameAndCurrency(participant.name, participant.currency)
+      assert.equal(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`destroyPariticpantLimitByNameAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('destroyPariticpantLimitByNameAndCurrency should delete the position for participant and currency', async (assert) => {
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+    ParticipantLimitModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).throws(new Error())
+    try {
+      await await Service.destroyPariticpantLimitByNameAndCurrency(participant.name, participant.currency)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)

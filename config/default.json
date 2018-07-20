@@ -20,6 +20,7 @@
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",
   "EMAIL_SMTP": "smtp.gmail.com",
+  "PARTICIPANT_INITIAL_POSTITION": 0,
   "KAFKA": {
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
