@@ -193,6 +193,18 @@ Test('Producer Failure', producerTest => {
       }
     })
 
+    produceMessageTest.test('throw error when a non-string value is passed into disconnect', async (test) => {
+      try {
+        var badTopicName = { }
+        await Producer.disconnect(badTopicName)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
+
     produceMessageTest.end()
   })
   producerTest.end()
