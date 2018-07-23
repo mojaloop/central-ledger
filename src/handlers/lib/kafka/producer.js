@@ -77,20 +77,20 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
 /**
  * @function Disconnect
  *
- * @param {string} topicName - Producer of the specified topic to be disconnected. If this is null, then ALL producers will be disconnected.
+ * @param {string} topicName - Producer of the specified topic to be disconnected. If this is null, then ALL producers will be disconnected. Defaults: null.
  *
  * @description Disconnects a specific producer, or ALL producers from Kafka
  *
  * @returns {object} Promise
  */
-const disconnect = async (topicName) => {
+const disconnect = async (topicName = null) => {
   if (topicName && typeof topicName === 'string') {
     try {
       await getProducer(topicName).disconnect()
     } catch (e) {
       throw e
     }
-  } else if (typeof topicName === 'undefined') {
+  } else if (topicName === null) {
     let isError = false
     let errorTopicList = []
 
