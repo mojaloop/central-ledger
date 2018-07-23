@@ -118,6 +118,34 @@ Test('Producer', producerTest => {
       test.end()
     })
 
+    produceMessageTest.test('disconnect specific topic correctly', async test => {
+      try {
+        topicConf.topicName = 'someTopic'
+        await Producer.produceMessage(messageProtocol, topicConf, config)
+        await Producer.disconnect(topicConf.topicName)
+        test.pass('Disconnect specific topic successfully')
+        test.end()
+      } catch (e) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    produceMessageTest.test('disconnect all topics correctly', async test => {
+      try {
+        topicConf.topicName = 'someTopic1'
+        await Producer.produceMessage(messageProtocol, topicConf, config)
+        topicConf.topicName = 'someTopic2'
+        await Producer.produceMessage(messageProtocol, topicConf, config)
+        await Producer.disconnect()
+        test.pass('Disconnected all topics successfully')
+        test.end()
+      } catch (e) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
     produceMessageTest.end()
   })
   producerTest.end()

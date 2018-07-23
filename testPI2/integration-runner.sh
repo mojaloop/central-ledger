@@ -55,7 +55,7 @@ stop_docker() {
   >&1 echo "$APP_HOST environment is shutting down"
   (docker stop $APP_HOST && docker rm $APP_HOST) > /dev/null 2>&1
   >&1 echo "Deleting test network: $DOCKER_NETWORK"
-  docker network rm integration-test-net
+  docker network rm $DOCKER_NETWORK
 }
 
 clean_docker() {
@@ -185,6 +185,8 @@ stop_docker
 
 >&1 echo "Building Docker Image $DOCKER_IMAGE:$DOCKER_TAG with $DOCKER_FILE"
 docker build --no-cache -t $DOCKER_IMAGE:$DOCKER_TAG -f $DOCKER_FILE .
+# The bellow command is used for testing locally
+#docker build -t $DOCKER_IMAGE:$DOCKER_TAG -f $DOCKER_FILE .
 
 if [ "$?" != 0 ]
 then
