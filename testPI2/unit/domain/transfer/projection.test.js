@@ -362,28 +362,28 @@ Test('Transfers-Projection', transfersProjectionTest => {
   //   rejectTest.end()
   // })
 
-  transfersProjectionTest.test('projection updateTransferState should', updateTransferStateTest => {
-    updateTransferStateTest.test('successfully add an entry of transferStateRecord to DB', async (test) => {
-      transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
-      let result = await TransfersProjection.updateTransferState(payload, TransferState.RESERVED)
-      test.equal(result, true)
-      test.end()
-    })
+  // transfersProjectionTest.test('projection updateTransferState should', updateTransferStateTest => {
+  //   updateTransferStateTest.test('successfully add an entry of transferStateRecord to DB', async (test) => {
+  //     transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
+  //     let result = await TransfersProjection.updateTransferState(payload, TransferState.RESERVED)
+  //     test.equal(result, true)
+  //     test.end()
+  //   })
 
-    updateTransferStateTest.test('Throws error on updateTransferState', async (test) => {
-      try {
-        transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
-        await TransfersProjection.updateTransferState(null)
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
+  //   updateTransferStateTest.test('Throws error on updateTransferState', async (test) => {
+  //     try {
+  //       transferStateChangeModel.saveTransferStateChange.returns(P.resolve(true))
+  //       await TransfersProjection.updateTransferState(null)
+  //       test.fail('Error not thrown')
+  //       test.end()
+  //     } catch (e) {
+  //       test.pass('Error thrown')
+  //       test.end()
+  //     }
+  //   })
 
-    updateTransferStateTest.end()
-  })
+  //   updateTransferStateTest.end()
+  // })
 
   transfersProjectionTest.end()
 })

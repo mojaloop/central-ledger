@@ -74,8 +74,6 @@ const participant2 = {
   isDisabled: false
 }
 
-const stateReason = 'reasonOne'
-
 const ilpRecord = {
   transferId: payload.transferId,
   packet: payload.ilpPacket,
@@ -115,19 +113,6 @@ const prepareResponse = {
   ilpRecord,
   transferStateRecord,
   extensionsRecordList
-}
-
-const newTransferStateChange = {
-  transferStateChangeId: null,
-  transferId: payload.transferId,
-  transferStateId: TransferState.ABORTED,
-  reason: stateReason,
-  changedDate: new Date()
-}
-
-const rejectResponse = {
-  alreadyRejected: false,
-  newTransferStateChange
 }
 
 // const newTransferStateRecord = {
@@ -194,34 +179,6 @@ Test('Transfer-Index', transferIndexTest => {
       }
     })
     preparedTest.end()
-  })
-
-  transferIndexTest.test('prepare should', rejectTest => {
-    rejectTest.test('reject transfer payload that passed validation', async (test) => {
-      Projection.saveTransferRejected.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
-      const rejectResponse = await TransferIndex.reject(stateReason, payload.transferId)
-      rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate
-      test.equal(rejectResponse.alreadyRejected, false)
-      test.deepEqual(rejectResponse.transferStateChange, newTransferStateChange)
-      test.end()
-    })
-    rejectTest.end()
-  })
-
-  transferIndexTest.test('prepare should', rejectTest => {
-    rejectTest.test('reject transfer throws an error', async (test) => {
-      Projection.saveTransferRejected.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
-      try {
-        await TransferIndex.reject(stateReason, payload.transferId)
-        rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-    rejectTest.end()
   })
 
   transferIndexTest.end()

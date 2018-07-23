@@ -80,10 +80,7 @@ const fulfil = {
   }
 }
 
-const reject = Object.assign({}, fulfil, {
-  transferState: TransferState.ABORTED,
-  reason: 'ABCDE12345'
-})
+const reject = Object.assign({}, fulfil, {transferState: TransferState.ABORTED})
 
 let messageProtocol = {
   id: transfer.transferId,
@@ -144,16 +141,9 @@ exports.transferFulfil = async () => {
   await Producer.produceMessage(messageProtocolFulfil, topicConfTransferFulfil, config)
   return true
 }
-
-const topicConfTransferReject = {
-  topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL),
-  key: 'producerTest',
-  partition: 0,
-  opaqueKey: 0
-}
 exports.transferReject = async () => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger
-  await Producer.produceMessage(messageProtocolReject, topicConfTransferReject, config)
+  await Producer.produceMessage(messageProtocolReject, topicConfTransferFulfil, config)
   return true
 }

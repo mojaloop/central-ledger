@@ -158,19 +158,12 @@ const fulfil = async (error, messages) => {
           metadata.event.action === TransferEventAction.REJECT)) {
       const existingTransfer = await TransferService.getById(transferId)
 
-      // NOTE: This has been commented out as it does not conform to the Mojaloop Specification.
-      // The Crypo-conditions are generic and do not conform to any specific protocol, but rather
-      // must be determined by the implemented schema
-      // const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(payload.fulfilment)
-
       if (!existingTransfer) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::notFound`)
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-      } else if (Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) { // NOTE: re-aligned to the Mojaloop specification
-        // } else if (CryptoConditions.validateFulfillment(payload.fulfilment, existingTransfer.condition)) { // TODO: when implemented
-        // } else if (fulfilmentCondition !== existingTransfer.condition) { // TODO: FiveBellsCondition.fulfillmentToCondition always passes
+      } else if (Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::invalidFulfilment`)
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
@@ -180,7 +173,7 @@ const fulfil = async (error, messages) => {
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-      } else if (existingTransfer.expirationDate <= new Date()) { // TODO: add to sequence diagram - seq-fulfil-2.1.1.svg
+      } else if (existingTransfer.expirationDate <= new Date()) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::transferExpired`)
         await consumer.commitMessageSync(message)
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.FAILURE)
@@ -206,10 +199,6 @@ const fulfil = async (error, messages) => {
     Logger.error(error)
     throw error
   }
-}
-
-const reject = (error, messages) => {
-  return fulfil(error, messages)
 }
 
 /**
@@ -371,30 +360,6 @@ const registerFulfillHandler = async () => {
 }
 
 /**
- * @function RegisterRejectHandler
- *
- * @async
- * @description Registers the one handler for reject transfer. Gets Kafka config from default.json
- * Calls createHandler to register the handler against the Stream Processing API
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const registerRejectHandler = async () => {
-  try {
-    const rejectHandler = {
-      command: reject,
-      topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
-    }
-    rejectHandler.config.rdkafkaConf['client.id'] = rejectHandler.topicName
-    await Kafka.Consumer.createHandler(rejectHandler.topicName, rejectHandler.config, rejectHandler.command)
-    return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
-  }
-}
-
-/**
  * @function RegisterPrepareHandlers
  *
  * @async
@@ -431,7 +396,6 @@ const registerAllHandlers = async () => {
   try {
     await registerPrepareHandlers()
     await registerFulfillHandler()
-    await registerRejectHandler()
     await registerTransferService()
     return true
   } catch (e) {
@@ -443,10 +407,8 @@ module.exports = {
   registerTransferService,
   registerPrepareHandlers,
   registerFulfillHandler,
-  registerRejectHandler,
   registerAllHandlers,
   prepare,
   fulfil,
-  reject,
   transfer
 }

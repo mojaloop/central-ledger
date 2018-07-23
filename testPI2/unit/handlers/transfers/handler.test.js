@@ -456,20 +456,6 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('throw error registerRejectHandler', async (test) => {
-      try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.throws(new Error())
-        await allTransferHandlers.registerRejectHandler()
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-
     registerHandlersTest.test('throw error registerTransferHandler', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)

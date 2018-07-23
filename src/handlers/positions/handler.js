@@ -37,7 +37,6 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
-const Projection = require('../../domain/transfer/projection')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
@@ -55,8 +54,6 @@ const TransferEventAction = Enum.transferEventAction
  * begin validating the payload. Once the payload is validated successfully it will be written to the database to
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
  * ABORT status
- *
- * Projection.updateTransferState called and updates transfer state
  *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
@@ -82,7 +79,7 @@ const positions = async (error, messages) => {
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
-      await Projection.updateTransferState(payload, TransferState.RESERVED)
+      await TransferService.saveTransferStateChange({transferId: payload.transferId, transferStateId: TransferState.RESERVED})
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL))
@@ -113,7 +110,7 @@ const positions = async (error, messages) => {
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.ABORTED,
-          reason: payload.reason
+          reason: transferInfo.reason
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
       }

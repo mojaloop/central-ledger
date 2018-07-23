@@ -66,30 +66,35 @@ const expire = (id) => {
   return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
 }
 
-const fulfil = (transferId, payload) => {
-  return Projection.saveTransferExecuted(transferId, payload)
-    .then(transfer => {
-      const t = TransferObjectTransform.toTransfer(transfer)
-      Events.emitTransferExecuted(t, {execution_condition_fulfillment: payload.fulfilment})
-      return t
-    })
-    .catch(err => {
-      if (typeof err === Errors.ExpiredTransferError) {
-        return expire(payload.id)
-          .then(() => { throw new Errors.UnpreparedTransferError() })
-      } else {
-        throw err
-      }
-    })
+const fulfil = async (transferId, payload) => {
+  try {
+    const isCommit = true
+    const transfer = await TransferFacade.saveTransferFulfiled(transferId, payload, isCommit)
+    return TransferObjectTransform.toTransfer(transfer)
+  } catch (err) {
+    if (typeof err === Errors.ExpiredTransferError) {
+      await expire(payload.id)
+      throw new Errors.UnpreparedTransferError()
+    } else {
+      throw err
+    }
+  }
 }
 
 const reject = async (transferId, payload) => {
-  const {alreadyRejected, transferStateChange} = await Projection.saveTransferRejected(transferId, payload)
-  // const t = TransferObjectTransform.toTransfer(result)
-  if (!alreadyRejected) {
-    Events.emitTransferRejected(transferStateChange) // TODO: ask rmothilal for the purpose
+  try {
+    const isCommit = false
+    const stateReason = 'Transaction failed due to user rejection' // TODO: move to generic reason
+    const transfer = await TransferFacade.saveTransferFulfiled(transferId, payload, isCommit, stateReason)
+    return TransferObjectTransform.toTransfer(transfer)
+  } catch (err) {
+    if (typeof err === Errors.ExpiredTransferError) {
+      await expire(payload.id)
+      throw new Errors.UnpreparedTransferError()
+    } else {
+      throw err
+    }
   }
-  return {alreadyRejected, transferStateChange}
 }
 
 const rejectExpired = () => {
@@ -120,6 +125,10 @@ const settle = async () => {
   })
 }
 
+const saveTransferStateChange = async (stateRecord) => {
+  TransferStateChangeModel.saveTransferStateChange(stateRecord)
+}
+
 module.exports = {
   getTransferById,
   getById,
@@ -131,6 +140,7 @@ module.exports = {
   fulfil,
   reject,
   rejectExpired,
-  settle
+  settle,
+  saveTransferStateChange
 }
 
