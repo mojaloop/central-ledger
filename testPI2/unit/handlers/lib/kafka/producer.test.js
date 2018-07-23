@@ -1,3 +1,32 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+
+ --------------
+ ******/
 'use strict'
 
 const Sinon = require('sinon')
@@ -68,7 +97,7 @@ Test('Producer', producerTest => {
   let config = {}
 
   producerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
@@ -85,8 +114,36 @@ Test('Producer', producerTest => {
     produceMessageTest.test('return true', async test => {
       const result = await Producer.produceMessage(messageProtocol, topicConf, config)
       test.equal(result, true)
-      await Producer.disconnect()
+      await Producer.disconnect(topicConf.topicName)
       test.end()
+    })
+
+    produceMessageTest.test('disconnect specific topic correctly', async test => {
+      try {
+        topicConf.topicName = 'someTopic'
+        await Producer.produceMessage(messageProtocol, topicConf, config)
+        await Producer.disconnect(topicConf.topicName)
+        test.pass('Disconnect specific topic successfully')
+        test.end()
+      } catch (e) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    produceMessageTest.test('disconnect all topics correctly', async test => {
+      try {
+        topicConf.topicName = 'someTopic1'
+        await Producer.produceMessage(messageProtocol, topicConf, config)
+        topicConf.topicName = 'someTopic2'
+        await Producer.produceMessage(messageProtocol, topicConf, config)
+        await Producer.disconnect()
+        test.pass('Disconnected all topics successfully')
+        test.end()
+      } catch (e) {
+        test.fail('Error thrown')
+        test.end()
+      }
     })
 
     produceMessageTest.end()
@@ -99,7 +156,7 @@ Test('Producer Failure', producerTest => {
   let config = {}
 
   producerTest.beforeEach(t => {
-    sandbox = Sinon.sandbox.create()
+    sandbox = Sinon.createSandbox()
     sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(KafkaProducer.prototype, 'connect').throws(new Error())
     sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
@@ -115,6 +172,7 @@ Test('Producer Failure', producerTest => {
   producerTest.test('produceMessage should', produceMessageTest => {
     produceMessageTest.test('throw error when connect throws error', async test => {
       try {
+        topicConf.topicName = 'invalidTopic'
         await Producer.produceMessage(messageProtocol, topicConf, config)
         test.fail('Error not thrown')
         test.end()
@@ -126,7 +184,7 @@ Test('Producer Failure', producerTest => {
 
     produceMessageTest.test('throw error when no producer to disconnect', async (test) => {
       try {
-        await Producer.disconnect()
+        await Producer.disconnect(topicConf.topicName)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
