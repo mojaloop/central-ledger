@@ -70,7 +70,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
   })
 
   await participantCurrencyTest.test('create participant currency should throw an error', async (assert) => {
-    Db.participantCurrency.insert.withArgs({participantId: 1, currencyId: 'USD', createdBy: 'unknown'}).throws(new Error('message'))
+    Db.participantCurrency.insert.throws(new Error('message'))
     try {
       let r = await Model.create({participantId: 1, currencyId: 'USD', createdBy: 'unknown'})
       assert.comment(r)

@@ -1,4 +1,4 @@
-  /*****
+/*****
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
@@ -34,10 +34,10 @@ const getByNameAndCurrency = async (name, currencyId) => {
   try {
     return await Db.participant.query(async (builder) => {
       var result = builder
-        .where({'participant.name': name})
-        .andWhere({'participant.isActive': true})
-        .andWhere({'pc.currencyId': currencyId})
-        .andWhere({'pc.isActive': true})
+        .where({ 'participant.name': name })
+        .andWhere({ 'participant.isActive': true })
+        .andWhere({ 'pc.currencyId': currencyId })
+        .andWhere({ 'pc.isActive': true })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
@@ -118,7 +118,7 @@ const getAllEndpoints = async (participantId) => {
  * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
  *
  * @param {integer} participantId - the participant id. Example: 1
- * @param {object} payload - the payload containing and endpoint object with 'type' and 'value' of the endpoint.
+ * @param {object} payload - the payload containing object with 'type' and 'value' of the endpoint.
  * Example: {
  *      "endpoint": {
  *      "type": "FSIOP_CALLBACK_URL",
@@ -160,9 +160,63 @@ const addEndpoint = async (participantId, endpoint) => {
   }
 }
 
+/**
+ * @function AddInitialPositionAndLimits
+ *
+ * @async
+ * @description This adds the limits and initial postion details for a participant into the database
+ *
+ * This is one time process, the initial postion and limits can be set only once
+ * by updating the database entry isActive = 0.
+ * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
+ *
+ * @param {integer} participantId - the participant id. Example: 1
+ * @param {object} limitPostionObj - the payload containing and limit and postion values .
+ * Example: {
+ *  "currency": "USD",
+ *  "limit": {
+ *    "type": "NET_DEBIT_CAP",
+ *    "value": 10000000
+ *  },
+ *  "initialPosition": 0
+ * }
+ * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
+ */
+
+const addInitialPositionAndLimits = async (participantCurrencyId, limitPostionObj) => {
+  try {
+    const knex = Db.getKnex()
+    return knex.transaction(async trx => {
+      let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 })
+      const newLimit = {
+        participantCurrencyId,
+        participantLimitTypeId: limitType.participantLimitTypeId,
+        value: limitPostionObj.limit.value,
+        isActive: 1,
+        createdBy: 'unknown'
+
+      }
+      return knex('participantLimit').transacting(trx).insert(newLimit)
+        .then(() => {
+          let position = {
+            participantCurrencyId,
+            value: limitPostionObj.initialPosition,
+            reservedValue: 0
+          }
+          return knex('participantPosition').transacting(trx).insert(position)
+        })
+        .then(trx.commit)
+        .catch(trx.rollback)
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
   getByNameAndCurrency,
   getEndpoint,
   getAllEndpoints,
-  addEndpoint
+  addEndpoint,
+  addInitialPositionAndLimits
 }
