@@ -138,6 +138,35 @@ const addInitialPositionAndLimits = async function (request, h) {
   }
 }
 
+const getLimits = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    const result = await Participant.getLimits(request.params.name, request.query.currency)
+    let limits = []
+    if (Array.isArray(result) && result.length > 0) {
+      result.forEach(item => {
+        limits.push({
+          type: item.name,
+          value: item.value
+        })
+      })
+    }
+    return limits
+
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
+
+const adjustLimits = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    await Participant.adjustLimits(request.params.name, request.payload)
+    return h.response().code(201)
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
 module.exports = {
   create,
   getAll,
@@ -145,5 +174,7 @@ module.exports = {
   update,
   addEndpoint,
   getEndpoint,
-  addInitialPositionAndLimits
+  addInitialPositionAndLimits,
+  getLimits,
+  adjustLimits
 }

@@ -310,6 +310,63 @@ const destroyPariticpantLimitByNameAndCurrency = async (name, currencyId) => {
   }
 }
 
+/**
+ * @function GetLimits
+ *
+ * @async
+ * @description This retuns the active endpoint value for a give participant and type of endpoint
+ *
+ * ParticipantModel.getByNameAndCurrency called to get the participant and currency details from the participant name
+ * ParticipantFacade.getEndpoint called to get the participant endpoint details
+ *
+ * @param {string} name - the name of the participant. Example 'dfsp1'
+ * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
+ *
+ * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
+ */
+
+const getLimits = async (name, currencyId) => {
+  try {
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
+    participantExists(participant)
+    return ParticipantFacade.getParicipantLimitsByCurrencyId(participant.participantCurrencyId)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * @function AdjustLimits
+ *
+ * @async
+ * @description This adds/updates limits for a participant
+ *
+ * ParticipantFacade.getByNameAndCurrency called to get the participant details from the participant name
+ * ParticipantFacade.addInitialPositionAndLimits called to add the participant initial postion and limits
+ *
+ * @param {string} name - the name of the participant. Example 'dfsp1'
+ * @param {object} payload - the payload containing the currency, limit and initial postion values
+ * Example: {
+ *  "currency": "USD",
+ *  "limit": {
+ *    "type": "NET_DEBIT_CAP",
+ *    "value": 10000000
+ *  }
+ * }
+ *
+ * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
+ */
+
+const adjustLimits = async (name, payload) => {
+  try {
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency)
+    participantExists(participant)
+    return ParticipantFacade.adjustLimits(participant.participantCurrencyId, payload.limit)
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -326,5 +383,7 @@ module.exports = {
   destroyPariticpantEndpointByName,
   addInitialPositionAndLimits,
   destroyPariticpantPositionByNameAndCurrency,
-  destroyPariticpantLimitByNameAndCurrency
+  destroyPariticpantLimitByNameAndCurrency,
+  getLimits,
+  adjustLimits
 }

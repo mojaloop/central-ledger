@@ -118,7 +118,7 @@ const getAllEndpoints = async (participantId) => {
  * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
  *
  * @param {integer} participantId - the participant id. Example: 1
- * @param {object} payload - the payload containing object with 'type' and 'value' of the endpoint.
+ * @param {object} endpoint - the payload containing object with 'type' and 'value' of the endpoint.
  * Example: {
  *      "endpoint": {
  *      "type": "FSIOP_CALLBACK_URL",
@@ -213,10 +213,92 @@ const addInitialPositionAndLimits = async (participantCurrencyId, limitPostionOb
   }
 }
 
+/**
+ * @function AdjustLimits
+ *
+ * @async
+ * @description This adds the Limit details for a participant into the database
+ *
+ * If there is an existing active limit for the give participant and limitType, That limit will be made inactive,
+ * by updating the database entry isActive = 0.
+ * Then new limit entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ * @param {object} limit - the payload containing object with 'type' and 'value' of the limit.
+ * Example: {
+ * "currency": "USD",
+ *   "limit": {
+ *   	 "type": "NET_DEBIT_CAP",
+ *     "value": 10000000
+ *   }
+ * }
+* @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
+ */
+
+const adjustLimits = async (participantCurrencyId, limit) => {
+  try {
+    const knex = Db.getKnex()
+    return knex.transaction(async trx => {
+      let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
+      return knex('participantLimit').transacting(trx).forUpdate().select('*')
+        .where({
+          'participantCurrencyId': participantCurrencyId,
+          'participantLimitTypeId': limitType.participantLimitTypeId,
+          'isActive': 1
+        })
+        .then(existingLimit => {
+          if (Array.isArray(existingLimit) && existingLimit.length > 0) {
+            return knex('participantLimit').transacting(trx).update({ isActive: 0 }).where('participantLimitId', existingLimit[0].participantLimitId)
+          }
+        }).then(() => {
+          let newLimit = {
+            participantCurrencyId: participantCurrencyId,
+            participantLimitTypeId: limitType.participantLimitTypeId,
+            value: limit.value,
+            isActive: 1,
+            createdBy: 'unknown'
+          }
+          return knex('participantLimit').transacting(trx).insert(newLimit)
+        }).then(trx.commit)
+        .catch(trx.rollback)
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+/**
+ * @function GetParicipantLimitsByCurrencyId
+ *
+ * @async
+ * @description This retuns all the active endpoints for a give participantId
+ *
+ *
+ * @param {integer} participantCurrencyId - the id of the participant currency in the database. Example 1
+ *
+ * @returns {array} - Returns an array containing the list of all active limits for the participant/currency if successful, or throws an error if failed
+ */
+
+const getParicipantLimitsByCurrencyId = async (participantCurrencyId) => {
+  try {
+    return Db.participantLimit.query(builder => {
+      return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
+        .where({
+          'participantLimit.participantCurrencyId': participantCurrencyId,
+          'participantLimit.isActive': 1
+        }).select('participantLimit.*',
+          'lt.name')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
 module.exports = {
   getByNameAndCurrency,
   getEndpoint,
   getAllEndpoints,
   addEndpoint,
-  addInitialPositionAndLimits
+  addInitialPositionAndLimits,
+  adjustLimits,
+  getParicipantLimitsByCurrencyId
 }
