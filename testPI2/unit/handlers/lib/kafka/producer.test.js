@@ -29,10 +29,12 @@
  ******/
 'use strict'
 
+const src = '../../../../../src/'
 const Sinon = require('sinon')
+const rewire = require('rewire')
 const Test = require('tapes')(require('tape'))
 const KafkaProducer = require('@mojaloop/central-services-shared').Kafka.Producer
-const Producer = require('../../../../../src/handlers/lib/kafka/producer')
+const Producer = require(`${src}/handlers/lib/kafka/producer`)
 const P = require('bluebird')
 const Uuid = require('uuid4')
 
@@ -96,21 +98,21 @@ Test('Producer', producerTest => {
   let sandbox
   let config = {}
 
-  producerTest.beforeEach(t => {
-    sandbox = Sinon.createSandbox()
-    sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
-    sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
-    sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
-    sandbox.stub(KafkaProducer.prototype, 'disconnect').returns(P.resolve())
-    t.end()
-  })
-
-  producerTest.afterEach(t => {
-    sandbox.restore()
-    t.end()
-  })
-
   producerTest.test('produceMessage should', produceMessageTest => {
+    produceMessageTest.beforeEach(t => {
+      sandbox = Sinon.createSandbox()
+      sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'disconnect').returns(P.resolve())
+      t.end()
+    })
+
+    produceMessageTest.afterEach(t => {
+      sandbox.restore()
+      t.end()
+    })
+
     produceMessageTest.test('return true', async test => {
       const result = await Producer.produceMessage(messageProtocol, topicConf, config)
       test.equal(result, true)
@@ -148,28 +150,161 @@ Test('Producer', producerTest => {
 
     produceMessageTest.end()
   })
-  producerTest.end()
-})
 
-Test('Producer Failure', producerTest => {
-  let sandbox
-  let config = {}
+  producerTest.test('getProducer should', getProducerTest => {
+    getProducerTest.beforeEach(t => {
+      sandbox = Sinon.createSandbox()
+      sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'disconnect').returns(P.resolve())
+      t.end()
+    })
 
-  producerTest.beforeEach(t => {
-    sandbox = Sinon.createSandbox()
-    sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
-    sandbox.stub(KafkaProducer.prototype, 'connect').throws(new Error())
-    sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
-    sandbox.stub(KafkaProducer.prototype, 'disconnect').throws(new Error())
-    t.end()
+    getProducerTest.afterEach(t => {
+      sandbox.restore()
+      t.end()
+    })
+
+    getProducerTest.test('fetch a specific Producers', async test => {
+      await Producer.produceMessage({}, {topicName: 'test'}, {})
+      test.ok(Producer.getProducer('test'))
+      test.end()
+    })
+
+    getProducerTest.test('throw an exception for a specific Producers not found', async test => {
+      try {
+        test.ok(Producer.getProducer('undefined'))
+        test.fail('Error not thrown!')
+      } catch (e) {
+        test.ok(e.toString() === 'Error: No producer found for topic undefined')
+      }
+      test.end()
+    })
+
+    getProducerTest.end()
   })
 
-  producerTest.afterEach(t => {
-    sandbox.restore()
-    t.end()
+  producerTest.test('disconnect should', disconnectTest => {
+    disconnectTest.beforeEach(t => {
+      sandbox = Sinon.createSandbox()
+      sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'connect').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'disconnect').returns(P.resolve())
+      t.end()
+    })
+
+    disconnectTest.afterEach(t => {
+      sandbox.restore()
+      t.end()
+    })
+    disconnectTest.test('disconnect from kafka', async test => {
+      await Producer.produceMessage({}, {topicName: 'test'}, {})
+      test.ok(Producer.disconnect('test'))
+      test.end()
+    })
+
+    disconnectTest.test('disconnect specific topic correctly', async test => {
+      try {
+        var topicName = 'someTopic'
+        test.ok(await Producer.produceMessage({}, {topicName: topicName}, {}))
+        await Producer.disconnect(topicName)
+        test.pass('Disconnect specific topic successfully')
+        test.end()
+      } catch (e) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    disconnectTest.test('disconnect all topics correctly', async test => {
+      try {
+        var topicName = 'someTopic1'
+        test.ok(await Producer.produceMessage({}, {topicName: topicName}, {}))
+        await Producer.disconnect(topicName)
+        topicName = 'someTopic2'
+        test.ok(await Producer.produceMessage({}, {topicName: topicName}, {}))
+        await Producer.disconnect()
+        test.pass('Disconnected all topics successfully')
+        test.end()
+      } catch (e) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    disconnectTest.test('throw error if failure to disconnect from kafka when disconnecting all Producers', async test => {
+      try {
+        // setup stubs for getProducer method
+        var topicNameSuccess = 'topic1'
+        var topicNameFailure = 'topic2'
+        var getProducerStub = sandbox.stub()
+        getProducerStub.returns(new KafkaProducer({}))
+        getProducerStub.withArgs(topicNameFailure).throws(`No producer found for topic ${topicNameFailure}`)
+
+        // lets rewire the producer import
+        var KafkaProducerProxy = rewire(`${src}/handlers/lib/kafka/producer`)
+
+        // lets override the getProducer method within the import
+        KafkaProducerProxy.__set__('getProducer', getProducerStub)
+
+        await KafkaProducerProxy.produceMessage({}, {topicName: topicNameSuccess}, {})
+        await KafkaProducerProxy.produceMessage({}, {topicName: topicNameFailure}, {})
+
+        await KafkaProducerProxy.disconnect()
+
+        test.fail()
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.ok(e.toString() === `Error: The following Producers could not be disconnected: [{"topic":"${topicNameFailure}","error":"No producer found for topic ${topicNameFailure}"}]`)
+        test.end()
+      }
+      getProducerStub.restore()
+    })
+
+    disconnectTest.test('throw error if failure to disconnect from kafka if topic does not exist', async test => {
+      try {
+        var topicName = 'someTopic'
+        await Producer.produceMessage({}, {topicName: topicName}, {})
+        await Producer.disconnect('undefined')
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.end()
+      }
+    })
+
+    disconnectTest.test('throw error when a non-string value is passed into disconnect', async (test) => {
+      try {
+        var badTopicName = { }
+        await Producer.disconnect(badTopicName)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error Thrown')
+        test.end()
+      }
+    })
+
+    disconnectTest.end()
   })
 
-  producerTest.test('produceMessage should', produceMessageTest => {
+  producerTest.test('produceMessage failure should', produceMessageTest => {
+    produceMessageTest.beforeEach(t => {
+      sandbox = Sinon.createSandbox()
+      sandbox.stub(KafkaProducer.prototype, 'constructor').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'connect').throws(new Error())
+      sandbox.stub(KafkaProducer.prototype, 'sendMessage').returns(P.resolve())
+      sandbox.stub(KafkaProducer.prototype, 'disconnect').throws(new Error())
+      t.end()
+    })
+
+    produceMessageTest.afterEach(t => {
+      sandbox.restore()
+      t.end()
+    })
+
     produceMessageTest.test('throw error when connect throws error', async test => {
       try {
         topicConf.topicName = 'invalidTopic'
@@ -182,18 +317,8 @@ Test('Producer Failure', producerTest => {
       }
     })
 
-    produceMessageTest.test('throw error when no producer to disconnect', async (test) => {
-      try {
-        await Producer.disconnect(topicConf.topicName)
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error Thrown')
-        test.end()
-      }
-    })
-
     produceMessageTest.end()
   })
+
   producerTest.end()
 })
