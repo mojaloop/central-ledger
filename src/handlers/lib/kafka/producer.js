@@ -100,11 +100,11 @@ const disconnect = async (topicName = null) => {
         await getProducer(tpName).disconnect()
       } catch (e) {
         isError = true
-        errorTopicList.push(tpName)
+        errorTopicList.push({ topic: tpName, error: e.toString() })
       }
     }
     if (isError) {
-      throw Error(`The following Producers could not be disconnected: ${errorTopicList}`)
+      throw Error(`The following Producers could not be disconnected: ${JSON.stringify(errorTopicList)}`)
     }
   } else {
     throw Error(`Unable to disconnect Producer: ${topicName}`)
@@ -130,6 +130,7 @@ const getProducer = (topicName) => {
 }
 
 module.exports = {
+  getProducer,
   produceMessage,
   disconnect
 }
