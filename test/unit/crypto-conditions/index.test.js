@@ -12,8 +12,8 @@ Test('crypto conditions', conditionsTest => {
   conditionsTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(FiveBellsConditions, 'validateCondition')
-    sandbox.stub(FiveBellsConditions, 'validateFulfillment')
-    sandbox.stub(FiveBellsConditions, 'fulfillmentToCondition')
+    sandbox.stub(FiveBellsConditions, 'validateFulfilment')
+    sandbox.stub(FiveBellsConditions, 'fulfilmentToCondition')
     test.end()
   })
 
@@ -47,14 +47,14 @@ Test('crypto conditions', conditionsTest => {
     validateConditionTest.end()
   })
 
-  conditionsTest.test('validateFulfillment should', validateFulfillmentTest => {
-    validateFulfillmentTest.test('throw InvalidBodyError if five-bells fulfillmentToCondition throws', test => {
+  conditionsTest.test('validateFulfilment should', validateFulfilmentTest => {
+    validateFulfilmentTest.test('throw InvalidBodyError if five-bells fulfilmentToCondition throws', test => {
       const fulfilment = 'some-fulfilment'
       const condition = 'some-condition'
       const error = new Error('message')
-      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfilment).throws(error)
+      FiveBellsConditions.fulfilmentToCondition.withArgs(fulfilment).throws(error)
       try {
-        Conditions.validateFulfillment(fulfilment, condition)
+        Conditions.validateFulfilment(fulfilment, condition)
         test.fail('Should have thrown')
       } catch (error) {
         test.assert(error instanceof Errors.InvalidBodyError)
@@ -63,14 +63,14 @@ Test('crypto conditions', conditionsTest => {
       test.end()
     })
 
-    validateFulfillmentTest.test('throw InvalidBodyError if five-bell validateFulfillment throws error', test => {
+    validateFulfilmentTest.test('throw InvalidBodyError if five-bell validateFulfilment throws error', test => {
       const condition = 'some-condition'
       const fulfilment = 'some-fulfilment'
       const error = new Error('message')
-      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfilment).returns(condition)
+      FiveBellsConditions.fulfilmentToCondition.withArgs(fulfilment).returns(condition)
       FiveBellsConditions.validateFulfillment.withArgs(fulfilment, condition).throws(error)
       try {
-        Conditions.validateFulfillment(fulfilment, condition)
+        Conditions.validateFulfilment(fulfilment, condition)
         test.fail('Should have thrown')
       } catch (error) {
         test.assert(error instanceof Errors.InvalidBodyError)
@@ -79,12 +79,12 @@ Test('crypto conditions', conditionsTest => {
       test.end()
     })
 
-    validateFulfillmentTest.test('throw UnmetConditionError if fulfillmentCondition does not equal condition', test => {
+    validateFulfilmentTest.test('throw UnmetConditionError if fulfilmentCondition does not equal condition', test => {
       const fulfilment = 'some-fulfilment'
       const condition = 'some-condition'
-      FiveBellsConditions.fulfillmentToCondition.withArgs(fulfilment).returns('not' + condition)
+      FiveBellsConditions.fulfilmentToCondition.withArgs(fulfilment).returns('not' + condition)
       try {
-        Conditions.validateFulfillment(fulfilment, condition)
+        Conditions.validateFulfilment(fulfilment, condition)
         test.fail('Should have thrown')
       } catch (error) {
         test.assert(error instanceof Errors.UnmetConditionError)
@@ -93,16 +93,16 @@ Test('crypto conditions', conditionsTest => {
       test.end()
     })
 
-    validateFulfillmentTest.test('return true if five-bell fulfilment returns true', test => {
+    validateFulfilmentTest.test('return true if five-bell fulfilment returns true', test => {
       const condition = 'some-condition'
       const fulfilment = 'some-fulfilment'
-      FiveBellsConditions.fulfillmentToCondition.returns(condition)
+      FiveBellsConditions.fulfilmentToCondition.returns(condition)
       FiveBellsConditions.validateFulfillment.withArgs(fulfilment, condition).returns(true)
-      test.equal(Conditions.validateFulfillment(fulfilment, condition), true)
+      test.equal(Conditions.validateFulfilment(fulfilment, condition), true)
       test.end()
     })
 
-    validateFulfillmentTest.end()
+    validateFulfilmentTest.end()
   })
 
   conditionsTest.end()

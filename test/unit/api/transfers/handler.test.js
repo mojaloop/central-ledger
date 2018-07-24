@@ -44,7 +44,7 @@ Test('transfer handler', handlerTest => {
     sandbox.stub(TransferService, 'getById')
     sandbox.stub(TransferService, 'reject')
     sandbox.stub(TransferService, 'fulfil')
-    sandbox.stub(TransferService, 'getFulfillment')
+    sandbox.stub(TransferService, 'getFulfilment')
     sandbox.stub(Sidecar, 'logRequest')
     originalHostName = Config.HOSTNAME
     Config.HOSTNAME = hostname
@@ -407,12 +407,12 @@ Test('transfer handler', handlerTest => {
     getTransferByIdTest.end()
   })
 
-  handlerTest.test('getTransferFulfillment should', getTransferFulfillmentTest => {
-    getTransferFulfillmentTest.test('get fulfilment by transfer id', async function (test) {
+  handlerTest.test('getTransferFulfilment should', getTransferFulfilmentTest => {
+    getTransferFulfilmentTest.test('get fulfilment by transfer id', async function (test) {
       const id = Uuid()
       const fulfilment = 'oAKAAA'
 
-      TransferService.getFulfillment.withArgs(id).returns(P.resolve(fulfilment))
+      TransferService.getFulfilment.withArgs(id).returns(P.resolve(fulfilment))
 
       const reply = {
         response: (response) => {
@@ -426,21 +426,21 @@ Test('transfer handler', handlerTest => {
         }
       }
 
-      await Handler.getTransferFulfillment(createRequest(id), reply)
+      await Handler.getTransferFulfilment(createRequest(id), reply)
     })
 
-    getTransferFulfillmentTest.test('reply with error if service throws', async function (test) {
+    getTransferFulfilmentTest.test('reply with error if service throws', async function (test) {
       const error = new Error()
-      TransferService.getFulfillment.returns(P.reject(error))
+      TransferService.getFulfilment.returns(P.reject(error))
       try {
-        await Handler.getTransferFulfillment(createRequest(), {})
+        await Handler.getTransferFulfilment(createRequest(), {})
       } catch (e) {
         test.equal(e, error)
         test.end()
       }
     })
 
-    getTransferFulfillmentTest.end()
+    getTransferFulfilmentTest.end()
   })
 
   handlerTest.end()

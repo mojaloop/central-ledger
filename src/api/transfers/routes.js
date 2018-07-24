@@ -62,7 +62,7 @@ module.exports = [{
   path: '/transfers/{id}/fulfilment',
   handler: Handler.fulfillTransfer,
   options: {
-    id: 'transfer_fulfillment',
+    id: 'transfer_fulfilment',
     tags: tags,
     auth: Auth.strategy(),
     description: 'Fulfil a transfer',
@@ -102,7 +102,7 @@ module.exports = [{
 {
   method: 'GET',
   path: '/transfers/{id}/fulfilment',
-  handler: Handler.getTransferFulfillment,
+  handler: Handler.getTransferFulfilment,
   options: {
     tags: tags,
     description: 'Get transfer fulfilment',

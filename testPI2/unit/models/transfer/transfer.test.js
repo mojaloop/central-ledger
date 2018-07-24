@@ -65,7 +65,20 @@ Test('Transfer model', async (transfer) => {
       })
   })
 
-  await transfer.test('save transfer test', async (assert) => {
+  await transfer.test('getById should', async (assert) => {
+    try {
+      Db.transfer.findOne.throws(new Error())
+      await Model.getById(transferRecord.transferId)
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByTransferId failed with error - ${err}`)
+      assert.pass('throw error')
+      assert.end()
+    }
+  })
+
+  await transfer.test('saveTransfer test', async (assert) => {
     try {
       let saved = {transferId: transferRecord.transferId}
       Db.transfer.insert.returns(Promise.resolve(saved))
@@ -74,8 +87,21 @@ Test('Transfer model', async (transfer) => {
       assert.ok(Db.transfer.insert.calledOnce, 'transfer insert is called once')
       assert.end()
     } catch (err) {
-      Logger.error(`save transfer failed with error - ${err}`)
+      Logger.error(`saveTransfer failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await transfer.test('saveTransfer should', async (assert) => {
+    try {
+      Db.transfer.insert.throws(new Error())
+      await Model.saveTransfer(transferRecord)
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByTransferId failed with error - ${err}`)
+      assert.pass('throw error')
       assert.end()
     }
   })

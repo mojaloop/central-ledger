@@ -12,6 +12,9 @@ module.exports = {
     INTERCHANGE_FEE: 2,
     HUB_FEE: 3
   },
+  ParticipantLimitType: {
+    NET_DEBIT_CAP: 1
+  },
   TransferParticipantRoleType: {
     PAYER_DFSP: 1,
     PAYEE_DFSP: 2,

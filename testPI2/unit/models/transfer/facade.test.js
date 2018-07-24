@@ -25,8 +25,6 @@
  --------------
  ******/
 
-// TODO
-
 'use strict'
 
 const Test = require('tapes')(require('tape'))
@@ -35,11 +33,13 @@ const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/facade')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
+const Enum = require('../../../../src/lib/enum')
+// const Proxyquire = require('proxyquire')
 
-Test('Transfer model', async (transferTest) => {
+Test('Transfer facade', async (transferTest) => {
   let sandbox
 
-  const extensionsRecordList = [{key: 'key1', value: 'value1'}, {key: 'key2', value: 'value2'}]
+  const transferExtensions = [{key: 'key1', value: 'value1'}, {key: 'key2', value: 'value2'}]
 
   transferTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
@@ -50,6 +50,9 @@ Test('Transfer model', async (transferTest) => {
       truncate: sandbox.stub(),
       query: sandbox.stub(),
       destroy: sandbox.stub()
+    }
+    Db.transferParticipant = {
+      query: sandbox.stub()
     }
     t.end()
   })
@@ -63,7 +66,7 @@ Test('Transfer model', async (transferTest) => {
     try {
       const transferId1 = 't1'
       const transferId2 = 't2'
-      const transfers = [{transferId: transferId1, extensionList: extensionsRecordList}, {transferId: transferId2}]
+      const transfers = [{transferId: transferId1, extensionList: transferExtensions}, {transferId: transferId2}]
 
       let builderStub = sandbox.stub()
       let whereRawPc1 = sandbox.stub()
@@ -124,7 +127,7 @@ Test('Transfer model', async (transferTest) => {
       })
 
       sandbox.stub(transferExtensionModel, 'getByTransferId')
-      transferExtensionModel.getByTransferId.returns(extensionsRecordList)
+      transferExtensionModel.getByTransferId.returns(transferExtensions)
 
       let found = await Model.getById(transferId1)
       assert.equal(found, transfers[0])
@@ -168,7 +171,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(firstStub.withArgs().calledOnce)
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`getById failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -182,7 +185,7 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`getById failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
@@ -192,7 +195,7 @@ Test('Transfer model', async (transferTest) => {
     try {
       const transferId1 = 't1'
       const transferId2 = 't2'
-      const transfers = [{transferId: transferId1, extensionList: extensionsRecordList}, {transferId: transferId2}]
+      const transfers = [{transferId: transferId1, extensionList: transferExtensions}, {transferId: transferId2}]
 
       let builderStub = sandbox.stub()
       let whereRawPc1 = sandbox.stub()
@@ -250,7 +253,7 @@ Test('Transfer model', async (transferTest) => {
       })
 
       sandbox.stub(transferExtensionModel, 'getByTransferId')
-      transferExtensionModel.getByTransferId.returns(extensionsRecordList)
+      transferExtensionModel.getByTransferId.returns(transferExtensions)
 
       let found = await Model.getAll()
 
@@ -293,7 +296,7 @@ Test('Transfer model', async (transferTest) => {
       assert.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`getAll failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
@@ -306,11 +309,130 @@ Test('Transfer model', async (transferTest) => {
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
-      Logger.error(`create transfer failed with error - ${err}`)
+      Logger.error(`getAll failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
   })
 
+  await transferTest.test('getTransferInfoToChangePosition should return transfer', async (assert) => {
+    try {
+      const transferId = 't1'
+      const transfer = {transferId, extensionList: transferExtensions}
+      const transferParticipantRoleType = Enum.TransferParticipantRoleType.PAYER_DFSP
+      const ledgerEntryType = Enum.LedgerEntryType.PRINCIPLE_VALUE
+
+      let builderStub = sandbox.stub()
+      let transferStateChange = sandbox.stub()
+      let selectStub = sandbox.stub()
+      let orderByStub = sandbox.stub()
+      let firstStub = sandbox.stub()
+
+      builderStub.where = sandbox.stub()
+      Db.transferParticipant.query.callsArgWith(0, builderStub)
+      Db.transferParticipant.query.returns(transfer)
+
+      builderStub.where.returns({
+        innerJoin: transferStateChange.returns({
+          select: selectStub.returns({
+            orderBy: orderByStub.returns({
+              first: firstStub.returns(transfer)
+            })
+          })
+        })
+      })
+
+      let found = await Model.getTransferInfoToChangePosition(transferId, transferParticipantRoleType, ledgerEntryType)
+      assert.equal(found, transfer)
+      assert.ok(builderStub.where.withArgs({
+        'transferParticipant.transferId': transferId,
+        'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleType,
+        'transferParticipant.ledgerEntryTypeId': ledgerEntryType
+      }).calledOnce)
+      assert.ok(transferStateChange.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId').calledOnce)
+      assert.ok(selectStub.withArgs(
+        'transferParticipant.*',
+        'tsc.transferStateId',
+        'tsc.reason'
+      ).calledOnce)
+      assert.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      assert.ok(firstStub.withArgs().calledOnce)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getTransferInfoToChangePosition failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferTest.test('getTransferInfoToChangePosition should throw an error', async (assert) => {
+    try {
+      const transferId = 't1'
+      Db.transferParticipant.query.throws(new Error())
+      await Model.getTransferInfoToChangePosition(transferId)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getTransferInfoToChangePosition failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await transferTest.test('saveTransferFulfiled should return transfer', async (assert) => {
+    try {
+      const transferId = 't1'
+      const payload = {
+        fulfilment: 'f1',
+        completedTimestamp: new Date(),
+        extensionList: {
+          extension: transferExtensions
+        }
+      }
+      const isCommit = true
+      const stateReason = null
+      const hasPassedValidation = true
+      // const saveTransferFulfiledExecuted = true
+      // const transferFulfilmentRecord = {transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: 'date1', isValid: true, createdDate: 'date2'}
+      // const transferStateChangeRecord = {transferId, transferStateId: 'state', reason: stateReason, createdDate: 'date3'}
+      // const saveTransferFulfiledResult = {saveTransferFulfiledExecuted, transferFulfilmentRecord, transferStateChangeRecord, transferExtensions}
+
+      sandbox.stub(Db, 'getKnex')
+      const obj = {
+        transaction: async () => { }
+      }
+      Db.getKnex.returns(obj)
+
+      // let uuidStub = sandbox.stub()
+      // let Setup = Proxyquire('../../../../src/models/transfer/facade.js', { 'uuid4': uuidStub })
+      // uuidStub = 'tf1'
+      // let trxStub = sandbox.stub()
+      // const knex = sandbox.stub()
+      // knex.transaction.callsArgWith(0, trxStub)
+
+      /* const response = */await Model.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+      // assert.equal(response, saveTransferFulfiledResult)
+      assert.pass('saveTransferFulfiled called')
+      assert.end()
+    } catch (err) {
+      Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferTest.test('saveTransferFulfiled should throw an error', async (assert) => {
+    try {
+      const transferId = 't1'
+      Db.transferParticipant.query.throws(new Error())
+      await Model.saveTransferFulfiled(transferId)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
   await transferTest.end()
 })

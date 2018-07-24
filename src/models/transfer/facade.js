@@ -214,7 +214,7 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
       throw err
     })
     return {
-      isSaveTransferExecuted: true,
+      saveTransferFulfiledExecuted: true,
       transferFulfilmentRecord,
       transferStateChangeRecord,
       transferExtensions
