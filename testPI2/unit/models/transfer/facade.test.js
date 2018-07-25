@@ -66,7 +66,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
     t.end()
   })
 
-  await transferFacadeTest.test('getById should return transfer by id', async (assert) => {
+  await transferFacadeTest.test('getById should return transfer by id', async (test) => {
     try {
       const transferId1 = 't1'
       const transferId2 = 't2'
@@ -134,26 +134,26 @@ Test('Transfer facade', async (transferFacadeTest) => {
       transferExtensionModel.getByTransferId.returns(transferExtensions)
 
       let found = await Model.getById(transferId1)
-      assert.equal(found, transfers[0])
-      assert.ok(builderStub.where.withArgs({
+      test.equal(found, transfers[0])
+      test.ok(builderStub.where.withArgs({
         'transfer.transferId': transferId1,
         'tprt1.name': 'PAYER_DFSP',
         'tprt2.name': 'PAYEE_DFSP'
       }).calledOnce)
-      assert.ok(whereRawPc1.withArgs('pc1.currencyId = transfer.currencyId').calledOnce)
-      assert.ok(whereRawPc2.withArgs('pc2.currencyId = transfer.currencyId').calledOnce)
-      assert.ok(payerTransferStub.withArgs('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(payerRoleTypeStub.withArgs('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId').calledOnce)
-      assert.ok(payerCurrencyStub.withArgs('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId').calledOnce)
-      assert.ok(payerParticipantStub.withArgs('participant AS da', 'da.participantId', 'pc1.participantId').calledOnce)
-      assert.ok(payeeTransferStub.withArgs('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(payeeRoleTypeStub.withArgs('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId').calledOnce)
-      assert.ok(payeeCurrencyStub.withArgs('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId').calledOnce)
-      assert.ok(payeeParticipantStub.withArgs('participant AS ca', 'ca.participantId', 'pc2.participantId').calledOnce)
-      assert.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(selectStub.withArgs(
+      test.ok(whereRawPc1.withArgs('pc1.currencyId = transfer.currencyId').calledOnce)
+      test.ok(whereRawPc2.withArgs('pc2.currencyId = transfer.currencyId').calledOnce)
+      test.ok(payerTransferStub.withArgs('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId').calledOnce)
+      test.ok(payerRoleTypeStub.withArgs('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId').calledOnce)
+      test.ok(payerCurrencyStub.withArgs('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId').calledOnce)
+      test.ok(payerParticipantStub.withArgs('participant AS da', 'da.participantId', 'pc1.participantId').calledOnce)
+      test.ok(payeeTransferStub.withArgs('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId').calledOnce)
+      test.ok(payeeRoleTypeStub.withArgs('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId').calledOnce)
+      test.ok(payeeCurrencyStub.withArgs('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId').calledOnce)
+      test.ok(payeeParticipantStub.withArgs('participant AS ca', 'ca.participantId', 'pc2.participantId').calledOnce)
+      test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
+      test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
+      test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
+      test.ok(selectStub.withArgs(
         'transfer.*',
         'transfer.currencyId AS currency',
         'pc1.participantCurrencyId AS payerParticipantCurrencyId',
@@ -171,17 +171,17 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'transfer.ilpCondition AS condition',
         'tf.ilpFulfilment AS fulfilment'
       ).calledOnce)
-      assert.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
-      assert.ok(firstStub.withArgs().calledOnce)
-      assert.end()
+      test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      test.ok(firstStub.withArgs().calledOnce)
+      test.end()
     } catch (err) {
       Logger.error(`getById failed with error - ${err}`)
-      assert.fail()
-      assert.end()
+      test.fail()
+      test.end()
     }
   })
 
-  await transferFacadeTest.test('getById should find zero records', async (assert) => {
+  await transferFacadeTest.test('getById should find zero records', async (test) => {
     try {
       const transferId1 = 't1'
       let builderStub = sandbox.stub()
@@ -206,30 +206,30 @@ Test('Transfer facade', async (transferFacadeTest) => {
                                       first: sandbox.stub().returns(null)
                                     }) }) }) }) }) }) }) }) }) }) }) }) }) }) }) })
       let found = await Model.getById(transferId1)
-      assert.equal(found, null, 'no transfers were found')
-      assert.end()
+      test.equal(found, null, 'no transfers were found')
+      test.end()
     } catch (err) {
       Logger.error(`getById failed with error - ${err}`)
-      assert.fail('Error thrown')
-      assert.end()
+      test.fail('Error thrown')
+      test.end()
     }
   })
 
-  await transferFacadeTest.test('getById should throw an error', async (assert) => {
+  await transferFacadeTest.test('getById should throw an error', async (test) => {
     try {
       const transferId1 = 't1'
       Db.transfer.query.throws(new Error())
       await Model.getById(transferId1)
-      assert.fail('Error not thrown')
-      assert.end()
+      test.fail('Error not thrown')
+      test.end()
     } catch (err) {
       Logger.error(`getById failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
+      test.pass('Error thrown')
+      test.end()
     }
   })
 
-  await transferFacadeTest.test('getAll should return all transfers', async (assert) => {
+  await transferFacadeTest.test('getAll should return all transfers', async (test) => {
     try {
       const transferId1 = 't1'
       const transferId2 = 't2'
@@ -295,25 +295,25 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
       let found = await Model.getAll()
 
-      assert.equal(found, transfers)
-      assert.ok(builderStub.where.withArgs({
+      test.equal(found, transfers)
+      test.ok(builderStub.where.withArgs({
         'tprt1.name': 'PAYER_DFSP',
         'tprt2.name': 'PAYEE_DFSP'
       }).calledOnce)
-      assert.ok(whereRawPc1.withArgs('pc1.currencyId = transfer.currencyId').calledOnce)
-      assert.ok(whereRawPc2.withArgs('pc2.currencyId = transfer.currencyId').calledOnce)
-      assert.ok(payerTransferStub.withArgs('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(payerRoleTypeStub.withArgs('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId').calledOnce)
-      assert.ok(payerCurrencyStub.withArgs('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId').calledOnce)
-      assert.ok(payerParticipantStub.withArgs('participant AS da', 'da.participantId', 'pc1.participantId').calledOnce)
-      assert.ok(payeeTransferStub.withArgs('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(payeeRoleTypeStub.withArgs('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId').calledOnce)
-      assert.ok(payeeCurrencyStub.withArgs('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId').calledOnce)
-      assert.ok(payeeParticipantStub.withArgs('participant AS ca', 'ca.participantId', 'pc2.participantId').calledOnce)
-      assert.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
-      assert.ok(selectStub.withArgs(
+      test.ok(whereRawPc1.withArgs('pc1.currencyId = transfer.currencyId').calledOnce)
+      test.ok(whereRawPc2.withArgs('pc2.currencyId = transfer.currencyId').calledOnce)
+      test.ok(payerTransferStub.withArgs('transferParticipant AS tp1', 'tp1.transferId', 'transfer.transferId').calledOnce)
+      test.ok(payerRoleTypeStub.withArgs('transferParticipantRoleType AS tprt1', 'tprt1.transferParticipantRoleTypeId', 'tp1.transferParticipantRoleTypeId').calledOnce)
+      test.ok(payerCurrencyStub.withArgs('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId').calledOnce)
+      test.ok(payerParticipantStub.withArgs('participant AS da', 'da.participantId', 'pc1.participantId').calledOnce)
+      test.ok(payeeTransferStub.withArgs('transferParticipant AS tp2', 'tp2.transferId', 'transfer.transferId').calledOnce)
+      test.ok(payeeRoleTypeStub.withArgs('transferParticipantRoleType AS tprt2', 'tprt2.transferParticipantRoleTypeId', 'tp2.transferParticipantRoleTypeId').calledOnce)
+      test.ok(payeeCurrencyStub.withArgs('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId').calledOnce)
+      test.ok(payeeParticipantStub.withArgs('participant AS ca', 'ca.participantId', 'pc2.participantId').calledOnce)
+      test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
+      test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
+      test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
+      test.ok(selectStub.withArgs(
         'transfer.*',
         'transfer.currencyId AS currency',
         'pc1.participantCurrencyId AS payerParticipantCurrencyId',
@@ -331,29 +331,29 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'transfer.ilpCondition AS condition',
         'tf.ilpFulfilment AS fulfilment'
       ).calledOnce)
-      assert.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
-      assert.end()
+      test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      test.end()
     } catch (err) {
       Logger.error(`getAll failed with error - ${err}`)
-      assert.fail()
-      assert.end()
+      test.fail()
+      test.end()
     }
   })
 
-  await transferFacadeTest.test('getAll should throw an error', async (assert) => {
+  await transferFacadeTest.test('getAll should throw an error', async (test) => {
     try {
       Db.transfer.query.throws(new Error())
       await Model.getAll()
-      assert.fail('Error not thrown')
-      assert.end()
+      test.fail('Error not thrown')
+      test.end()
     } catch (err) {
       Logger.error(`getAll failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
+      test.pass('Error thrown')
+      test.end()
     }
   })
 
-  await transferFacadeTest.test('getTransferInfoToChangePosition should return transfer', async (assert) => {
+  await transferFacadeTest.test('getTransferInfoToChangePosition should return transfer', async (test) => {
     try {
       const transferId = 't1'
       const transfer = {transferId, extensionList: transferExtensions}
@@ -381,39 +381,39 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
 
       let found = await Model.getTransferInfoToChangePosition(transferId, transferParticipantRoleType, ledgerEntryType)
-      assert.equal(found, transfer)
-      assert.ok(builderStub.where.withArgs({
+      test.equal(found, transfer)
+      test.ok(builderStub.where.withArgs({
         'transferParticipant.transferId': transferId,
         'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleType,
         'transferParticipant.ledgerEntryTypeId': ledgerEntryType
       }).calledOnce)
-      assert.ok(transferStateChange.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId').calledOnce)
-      assert.ok(selectStub.withArgs(
+      test.ok(transferStateChange.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId').calledOnce)
+      test.ok(selectStub.withArgs(
         'transferParticipant.*',
         'tsc.transferStateId',
         'tsc.reason'
       ).calledOnce)
-      assert.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
-      assert.ok(firstStub.withArgs().calledOnce)
-      assert.end()
+      test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      test.ok(firstStub.withArgs().calledOnce)
+      test.end()
     } catch (err) {
       Logger.error(`getTransferInfoToChangePosition failed with error - ${err}`)
-      assert.fail()
-      assert.end()
+      test.fail()
+      test.end()
     }
   })
 
-  await transferFacadeTest.test('getTransferInfoToChangePosition should throw an error', async (assert) => {
+  await transferFacadeTest.test('getTransferInfoToChangePosition should throw an error', async (test) => {
     try {
       const transferId = 't1'
       Db.transferParticipant.query.throws(new Error())
       await Model.getTransferInfoToChangePosition(transferId)
-      assert.fail('Error not thrown')
-      assert.end()
+      test.fail('Error not thrown')
+      test.end()
     } catch (err) {
       Logger.error(`getTransferInfoToChangePosition failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
+      test.pass('Error thrown')
+      test.end()
     }
   })
 
@@ -447,7 +447,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         uuid4: sandbox.stub().returns(transferFulfilmentRecord.transferFulfilmentId)
       })
 
-      await saveTransferFulfiled.test('return transfer in RECEIVED_FULFIL state', async (assert) => {
+      await saveTransferFulfiled.test('return transfer in RECEIVED_FULFIL state', async (test) => {
         try {
           isCommit = true
           hasPassedValidation = true
@@ -469,25 +469,25 @@ Test('Transfer facade', async (transferFacadeTest) => {
           })
 
           const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          assert.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
-          assert.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
-          assert.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
-          assert.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
-          assert.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-          assert.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
+          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
+          test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+          test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
+          test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
           for (let extension of transferExtensionRecords) {
-            assert.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
+            test.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
           }
-          assert.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
-          assert.end()
+          test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+          test.end()
         } catch (err) {
           Logger.error(`saveTransferFulfiled failed with error - ${err}`)
-          assert.fail()
-          assert.end()
+          test.fail()
+          test.end()
         }
       })
 
-      await saveTransferFulfiled.test('return transfer in REJECTED state', async (assert) => {
+      await saveTransferFulfiled.test('return transfer in REJECTED state', async (test) => {
         try {
           isCommit = false
           hasPassedValidation = true
@@ -509,25 +509,25 @@ Test('Transfer facade', async (transferFacadeTest) => {
           })
 
           const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          assert.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
-          assert.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
-          assert.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
-          assert.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
-          assert.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-          assert.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
+          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
+          test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+          test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
+          test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
           for (let extension of transferExtensionRecords) {
-            assert.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
+            test.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
           }
-          assert.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
-          assert.end()
+          test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+          test.end()
         } catch (err) {
           Logger.error(`saveTransferFulfiled failed with error - ${err}`)
-          assert.fail()
-          assert.end()
+          test.fail()
+          test.end()
         }
       })
 
-      await saveTransferFulfiled.test('return transfer in ABORTED state', async (assert) => {
+      await saveTransferFulfiled.test('return transfer in ABORTED state', async (test) => {
         try {
           hasPassedValidation = false
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
@@ -548,25 +548,25 @@ Test('Transfer facade', async (transferFacadeTest) => {
           })
 
           const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          assert.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
-          assert.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
-          assert.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
-          assert.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
-          assert.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-          assert.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
+          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
+          test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+          test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
+          test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
           for (let extension of transferExtensionRecords) {
-            assert.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
+            test.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
           }
-          assert.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
-          assert.end()
+          test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+          test.end()
         } catch (err) {
           Logger.error(`saveTransferFulfiled failed with error - ${err}`)
-          assert.fail()
-          assert.end()
+          test.fail()
+          test.end()
         }
       })
 
-      await saveTransferFulfiled.test('rollback and throw error', async (assert) => {
+      await saveTransferFulfiled.test('rollback and throw error', async (test) => {
         try {
           hasPassedValidation = false
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
@@ -588,12 +588,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
           })
 
           await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          assert.fail('Error not thrown!')
-          assert.end()
+          test.fail('Error not thrown!')
+          test.end()
         } catch (err) {
           Logger.error(`saveTransferFulfiled failed with error - ${err}`)
-          assert.pass('Error thrown')
-          assert.end()
+          test.pass('Error thrown')
+          test.end()
         }
       })
 
@@ -605,18 +605,19 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
-  await transferFacadeTest.test('saveTransferFulfiled should throw an error', async (assert) => {
+  await transferFacadeTest.test('saveTransferFulfiled should throw an error', async (test) => {
     try {
       const transferId = 't1'
       Db.transferParticipant.query.throws(new Error())
       await Model.saveTransferFulfiled(transferId)
-      assert.fail('Error not thrown')
-      assert.end()
+      test.fail('Error not thrown')
+      test.end()
     } catch (err) {
       Logger.error(`saveTransferFulfiled failed with error - ${err}`)
-      assert.pass('Error thrown')
-      assert.end()
+      test.pass('Error thrown')
+      test.end()
     }
   })
+
   await transferFacadeTest.end()
 })
