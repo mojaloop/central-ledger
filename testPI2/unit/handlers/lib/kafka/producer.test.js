@@ -250,11 +250,6 @@ Test('Producer', producerTest => {
         // lets override the getProducer method within the import
         KafkaProducerProxy.__set__('getProducer', getProducerStub)
 
-        // Proxyquire doesnt seem to work here??
-        // var KafkaProducerProxy = Proxyquire(`${src}/handlers/lib/kafka/producer`, {
-        //   getProducer: getProducerStub
-        // })
-
         await KafkaProducerProxy.produceMessage({}, {topicName: topicNameSuccess}, {})
         await KafkaProducerProxy.produceMessage({}, {topicName: topicNameFailure}, {})
 
