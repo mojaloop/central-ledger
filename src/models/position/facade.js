@@ -98,10 +98,16 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId)
     let sumTransfersInBatch = 0
     let allTransfersMap = new Map()
+    const initialTransferStateChangeList = []
     await knex.transaction(async (trx) => {
       try {
-        const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
+        // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
+        for (let id of transferIdList) {
+          initialTransferStateChangeList.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
+        }
+        let transferStateChangeMap = new Map()
         for (let transferState of initialTransferStateChangeList) {
+          // if (!transferStateChangeMap.has(transferState.transferId)) {
           if (transferState.transferStateId === Enum.TransferState.RECEIVED_PREPARE) {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.TransferState.RESERVED
@@ -111,12 +117,31 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
                 sumTransfersInBatch += transfer.value.content.payload.amount.amount
               }
             }
+            transferStateChangeMap.set(transferState.transferId, [transferState])
           } else {
             transferState.transferStateChangeId = null
-            transferState.transferStateId = Enum.TransferState.FAILED
+            transferState.transferStateId = Enum.TransferState.ABORTED
             transferState.reason = 'Transfer in incorrect state'
             abortedTransferStateChangeList.push(transferState)
+            transferStateChangeMap.set(transferState.transferId, [transferState])
           }
+          // } else {
+          //   let transferStateMapEntryList = transferStateChangeMap.get(transferState.transferId)
+          //   const found
+          //   for(let entry of transferStateMapEntryList) {
+          //     const foundVal = reservedTransferStateChangeList.find(function (reservedEntry) {
+          //       return reservedEntry.transferId === transferState.transferId
+          //     })
+          //
+          //     for(let reservedEntry of reservedTransferStateChangeList){
+          //       if(reservedEntry.transferId === transferState.transferId){
+          //         remove entry from reservedTransferStateChangeList
+          //       }
+          //     }
+          //     if()
+          //   }
+          //   transferStateChangeMap.set(transferState.transferId, transferStateMapEntryList)
+          // }
         }
         const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId: participantCurrency.participantCurrencyId}).forUpdate().select('*').first()
         let currentPosition = initialParticipantPosition.value
@@ -140,7 +165,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           }
         }
         await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update({
-          value: sumReserved,
+          value: initialParticipantPosition.value + sumReserved,
           reservedValue: initialParticipantPosition.reservedValue - sumTransfersInBatch
         })
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
