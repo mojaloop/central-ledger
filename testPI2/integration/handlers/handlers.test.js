@@ -147,7 +147,7 @@ exports.testProducer = async () => {}
 
 Test('Handlers test', async handlersTest => {
   handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
-    await registerAllHandlers.test('setup', async (test) => {
+    await registerAllHandlers.test('setup handlers', async (test) => {
       await Db.connect(Config.DATABASE_URI)
       for (let payload of participants) {
         const participant = await ParticipantService.getByName(payload.name)
@@ -162,7 +162,13 @@ Test('Handlers test', async handlersTest => {
       }, 20000)
     })
 
-    await registerAllHandlers.test('register all kafka handlers', async (test) => {
+    await registerAllHandlers.end()
+  })
+
+  // TODO: setup participantLimit & initial participantPosition using ../helpers/participantLimit
+
+  handlersTest.test('transferFulfilCommit should', async transferFulfilCommit => {
+    await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       var startTime = Moment()
       var targetProcessingTimeInSeconds = 25
       var elapsedSeconds = 0
@@ -184,7 +190,6 @@ Test('Handlers test', async handlersTest => {
             isTransferHandlersPrepareCalled = true
           }
         }
-
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(isTransferHandlersPrepareCalled, true, 'Prepare callback was executed')
         test.equal(result, true, `Prepare callback was executed returned ${result}`)
@@ -192,7 +197,7 @@ Test('Handlers test', async handlersTest => {
       }, 30000)
     })
 
-    await registerAllHandlers.test('register all kafka handlers', async (test) => {
+    await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
       var startTime = Moment()
       var targetProcessingTimeInSeconds = 25
       var elapsedSeconds = 0
@@ -228,8 +233,12 @@ Test('Handlers test', async handlersTest => {
       }, 30000)
     })
 
-    registerAllHandlers.end()
+    transferFulfilCommit.end()
   })
+
+  // TODO: handlersTest.test('transferFulfilReject should', async transferFulfilReject => {
+
+  // TODO: handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
 
   handlersTest.end()
 })
