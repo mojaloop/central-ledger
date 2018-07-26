@@ -18,34 +18,44 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Db = require('../../db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Model = require('../../../src/domain/participant')
 
-const getByTransferId = async (transferId) => {
-  Logger.debug('getByTransferId ' + transferId.toString())
+const endpointsFixtures = {
+  FSIOP_CALLBACK_URL: {
+    type: 'FSIOP_CALLBACK_URL',
+    value: 'http://localhost:3001/participants/dfsp1/notification1'
+  },
+  ALARM_NOTIFICATION_URL: {
+    type: 'ALARM_NOTIFICATION_URL',
+    value: 'http://localhost:3001/participants/dfsp1/notification2'
+  }
+}
+exports.prepareData = async (name, endpointType) => {
   try {
-    return await Db.transferFulfilment.find({transferId: transferId})
+    if (endpointsFixtures[endpointType] == null) {
+      throw new Error('invalid endpointType')
+    }
+    await Model.addEndpoint(name, endpointsFixtures[endpointType])
+    return endpointsFixtures[endpointType]
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-const saveTransferFulfilment = async (record) => {
-  Logger.debug('save transferFulfilment ' + record.toString())
-  try {
-    return await Db.transferFulfilment.insert(record)
-  } catch (err) {
-    throw err
+exports.deletePreparedData = async (participantName) => {
+  if (!participantName) {
+    throw new Error('Please provide a valid participant name!')
   }
-}
 
-module.exports = {
-  getByTransferId,
-  saveTransferFulfilment
+  try {
+    return await Model.destroyPariticpantEndpointByName(participantName)
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }

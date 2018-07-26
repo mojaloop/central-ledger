@@ -200,17 +200,17 @@ Test('Position handler', transferHandlerTest => {
     //   test.end()
     // })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
-      Utility.transformGeneralTopicName.returns(topicName)
-      Utility.getKafkaConfig.returns(config)
-      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      messages[0].value.metadata.event.action = transferEventAction.REJECT
-      const result = await allTransferHandlers.positions(null, messages)
-      Logger.info(result)
-      test.equal(result, true)
-      test.end()
-    })
+    // positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => { // TODO: extend and enable unit test
+    //   await Kafka.Consumer.createHandler(topicName, config, command)
+    //   Utility.transformGeneralTopicName.returns(topicName)
+    //   Utility.getKafkaConfig.returns(config)
+    //   TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+    //   messages[0].value.metadata.event.action = transferEventAction.REJECT
+    //   const result = await allTransferHandlers.positions(null, messages)
+    //   Logger.info(result)
+    //   test.equal(result, true)
+    //   test.end()
+    // })
 
     positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)

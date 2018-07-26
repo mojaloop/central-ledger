@@ -6,7 +6,7 @@ const AlreadyRolledBackError = require('./already-rolled-back')
 const ExpiredTransferError = require('./expired-transfer-error')
 const InvalidBodyError = require('./invalid-body')
 const InvalidModificationError = require('./invalid-modification')
-const MissingFulfillmentError = require('./missing-fulfilment')
+const MissingFulfilmentError = require('./missing-fulfilment')
 const RecordExistsError = require('./record-exists-error')
 const TransferNotConditionalError = require('./transfer-not-conditional')
 const TransferNotFoundError = require('./transfer-not-found')
@@ -22,7 +22,7 @@ module.exports = {
   ExpiredTransferError,
   InvalidBodyError,
   InvalidModificationError,
-  MissingFulfillmentError,
+  MissingFulfilmentError,
   RecordExistsError,
   TransferNotConditionalError,
   TransferNotFoundError,

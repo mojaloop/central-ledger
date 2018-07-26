@@ -55,7 +55,7 @@ exports.getTransferById = async function (request, h) {
   return buildGetTransferResponse(record)
 }
 
-exports.getTransferFulfillment = async function (request, h) {
-  const result = await TransferService.getFulfillment(request.params.id)
+exports.getTransferFulfilment = async function (request, h) {
+  const result = await TransferService.getFulfilment(request.params.id)
   return h.response(result).type('text/plain')
 }

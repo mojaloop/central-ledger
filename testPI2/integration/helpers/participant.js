@@ -21,6 +21,7 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -45,8 +46,8 @@ exports.prepareData = async (name) => {
         name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
       }
     ))
+    let currency = await CurrencyModel.create(participantId, 'USD')
     let participant = await Model.getById(participantId)
-    let currency = await CurrencyModel.create(participant.participantId, 'USD')
     return {
       participant,
       currency

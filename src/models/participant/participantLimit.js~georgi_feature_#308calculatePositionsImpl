@@ -19,33 +19,62 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Valentin Genev <valentin.genev@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Db = require('../../db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+/**
+ * @module src/models/participant/
+ */
 
-const getByTransferId = async (transferId) => {
-  Logger.debug('getByTransferId ' + transferId.toString())
+const Db = require('../../db')
+
+/**
+ * @function GetByParticipantCurrencyId
+ *
+ * @async
+ * @description This returns the participant Limits corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ *
+ * @returns {object} - Returns the rows from participantLimit table if successful, or throws an error if failed
+ */
+
+const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return await Db.transferFulfilment.find({transferId: transferId})
-  } catch (err) {
-    throw new Error(err.message)
+    return Db.participantLimit.findOne({ participantCurrencyId, isActive: 1 })
+  } catch (e) {
+    throw e
   }
 }
 
-const saveTransferFulfilment = async (record) => {
-  Logger.debug('save transferFulfilment ' + record.toString())
+/**
+ * @function DestroyByParticipantCurrencyId
+ *
+ * @async
+ * @description This deletes the participant Limits corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return await Db.transferFulfilment.insert(record)
-  } catch (err) {
-    throw err
+    return Db.participantLimit.destroy({ participantCurrencyId })
+  } catch (e) {
+    throw e
   }
 }
 
 module.exports = {
-  getByTransferId,
-  saveTransferFulfilment
+  getByParticipantCurrencyId,
+  destroyByParticipantCurrencyId
 }

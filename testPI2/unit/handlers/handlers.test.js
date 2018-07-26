@@ -30,7 +30,7 @@ Test('handlers', handlersTest => {
       TransferHandler.registerAllHandlers.restore()
     })
 
-    registerAllTest.test('throws error when transfer handler throws error', async (test) => {
+    registerAllTest.test('throw error when transfer handler throws error', async (test) => {
       try {
         Sinon.stub(TransferHandler, 'registerAllHandlers').throws(new Error())
         await Handlers.registerAllHandlers()

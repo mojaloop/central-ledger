@@ -18,34 +18,61 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Db = require('../../db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Model = require('../../../src/domain/participant')
 
-const getByTransferId = async (transferId) => {
-  Logger.debug('getByTransferId ' + transferId.toString())
+const initialPositionAndLimit = {
+  currency: 'USD',
+  limit: {
+    type: 'NET_DEBIT_CAP',
+    value: 10000000
+  },
+  initialPosition: 0
+}
+
+exports.prepareInitialPositionAndLimits = async (name, limitValue = null, limitType = null) => {
   try {
-    return await Db.transferFulfilment.find({transferId: transferId})
+    await Model.addInitialPositionAndLimits(name, Object.assign(
+      {},
+      initialPositionAndLimit,
+      {
+        limit: {
+          value: (limitValue || initialPositionAndLimit.limit.value),
+          type: (limitType || initialPositionAndLimit.limit.type) 
+        }
+      }
+    ))
+    return initialPositionAndLimit
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-const saveTransferFulfilment = async (record) => {
-  Logger.debug('save transferFulfilment ' + record.toString())
+exports.deleteInitialPositionData = async (participantName) => {
+  if (!participantName) {
+    throw new Error('Please provide a valid participant name!')
+  }
+
   try {
-    return await Db.transferFulfilment.insert(record)
+    return await Model.destroyPariticpantPositionByNameAndCurrency(participantName, initialPositionAndLimit.currency)
   } catch (err) {
-    throw err
+    throw new Error(err.message)
   }
 }
 
-module.exports = {
-  getByTransferId,
-  saveTransferFulfilment
+exports.deleteInitialLimitData = async (participantName) => {
+  if (!participantName) {
+    throw new Error('Please provide a valid participant name!')
+  }
+
+  try {
+    return await Model.destroyPariticpantLimitByNameAndCurrency(participantName, initialPositionAndLimit.currency)
+  } catch (err) {
+    throw new Error(err.message)
+  }
 }

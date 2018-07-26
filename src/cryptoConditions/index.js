@@ -11,10 +11,10 @@ const validateCondition = (conditionUri) => {
   }
 }
 
-const validateFulfillment = (fulfilment, condition) => {
+const validateFulfilment = (fulfilment, condition) => {
   try {
-    const fulfillmentCondition = FiveBellsCondition.fulfillmentToCondition(fulfilment)
-    if (fulfillmentCondition === condition) {
+    const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(fulfilment)
+    if (fulfilmentCondition === condition) {
       return FiveBellsCondition.validateFulfillment(fulfilment, condition)
     }
   } catch (error) {
@@ -25,5 +25,5 @@ const validateFulfillment = (fulfilment, condition) => {
 
 module.exports = {
   validateCondition,
-  validateFulfillment
+  validateFulfilment
 }

@@ -106,22 +106,6 @@ module.exports = [
     }
   },
   /**
-   * @function RegisterRejectHandlerRoute
-   *
-   * @async
-   * @description Registers consumer handlers for reject transfer this is one topic for all transfers as rejects do not need to keep order
-   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-   */
-  {
-    method: 'POST',
-    path: '/register/transfer/reject',
-    handler: TransferHandler.registerRejectHandler,
-    options: {
-      id: 'reject',
-      description: 'Register reject transfer Kafka consumer handler'
-    }
-  },
-  /**
    * @function RegisterAllPositionHandlersRoute
    *
    * @async
@@ -155,6 +139,15 @@ module.exports = [
     options: {
       id: 'transferFulfilTestProducer',
       description: 'Produces transfer fulfil message to Kafka'
+    }
+  },
+  {
+    method: 'POST',
+    path: '/test/producer/transfer/reject',
+    handler: testProducer.transferReject,
+    options: {
+      id: 'transferRejectTestProducer',
+      description: 'Produces transfer reject message to Kafka'
     }
   }
 ]

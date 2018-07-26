@@ -864,7 +864,7 @@ HTTP/1.1 200 OK
     "accounts": "http://central-ledger/accounts",
     "send_message": "http://central-ledger/messages",
     "transfer": "http://central-ledger/transfers/:id",
-    "transfer_fulfillment": "http://central-ledger/transfers/:id/fulfilment",
+    "transfer_fulfilment": "http://central-ledger/transfers/:id/fulfilment",
     "transfer_rejection": "http://central-ledger/transfers/:id/rejection",
     "notifications": "ws://central-ledger/websocket"
   },
@@ -2332,8 +2332,8 @@ A notification object can have the following fields:
 | ---- | ---- | ----------- |
 | resource | Object | [Transfer object](#transfer-object) that is the subject of the notification |
 | related_resources | Object | *Optional* Additional resources relevant to the event |
-| related\_resources.execution\_condition_fulfillment | String | *Optional* Proof of condition completion |
-| related\_resources.cancellation\_condition_fulfillment | String | *Optional* Proof of condition completion |
+| related\_resources.execution\_condition_fulfilment | String | *Optional* Proof of condition completion |
+| related\_resources.cancellation\_condition_fulfilment | String | *Optional* Proof of condition completion |
 
 ### Metadata Object
 
