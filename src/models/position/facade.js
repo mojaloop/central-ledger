@@ -113,17 +113,18 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
         for (let id in initialTransferStateChangeList) {
           let transferState = initialTransferStateChangeList[id]
-          let transfer = transferList[id]
+          let transfer = transferList[id].value.content.payload
+          let rawMessage = transferList[id]
           if (transferState.transferStateId === Enum.TransferState.RECEIVED_PREPARE) {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.TransferState.RESERVED
-            reservedTransfers.transferId = { transferState, transfer }
-            sumTransfersInBatch += transfer.value.content.payload.amount.amount
+            reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
+            sumTransfersInBatch += transfer.amount.amount
           } else {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.TransferState.ABORTED
             transferState.reason = 'Transfer in incorrect state'
-            abortedTransfers.transferId = { transferState, transfer }
+            abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
           }
         }
         const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId: participantCurrency.participantCurrencyId}).forUpdate().select('*').first()
@@ -138,21 +139,14 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let batchParticipantPositionChange = []
         for (let transferId in reservedTransfers) {
           let { transfer, transferState } = reservedTransfers[transferId]
-          if (availablePosition >= transfer.value.content.payload.amount.amount) {
-            availablePosition -= transfer.value.content.payload.amount.amount
-            sumReserved += transfer.value.content.payload.amount.amount
-            currentPosition += transfer.value.content.payload.amount.amount
-            sumTransfersInBatch -= transfer.value.content.payload.amount.amount
-            const participantPositionChange = {
-              participantPositionId: initialParticipantPosition.participantPositionId,
-              transferStateChangeId: transferState.transferStateChangeId,
-              value: currentPosition,
-              reservedValue: sumTransfersInBatch
-            }
-            batchParticipantPositionChange.push(participantPositionChange)
+          if (availablePosition >= transfer.amount.amount) {
+            availablePosition -= transfer.amount.amount
+            sumReserved += transfer.amount.amount
           } else {
             transferState.transferStateId = Enum.TransferState.ABORTED
             transferState.reason = 'Net Debit Cap exceeded by this request at this time, please try again later'
+            abortedTransfers[transferId] = reservedTransfers[transferId]
+            delete reservedTransfers[transferId]
           }
         }
         await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update({
@@ -160,14 +154,24 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           reservedValue: initialParticipantPosition.reservedValue - sumTransfersInBatch
         })
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
-        await knex.batchInsert('transferStateChange',
-          Array.from(transferIdList.map(transferId =>
-            transferId in reservedTransfers
-              ? reservedTransfers[transferId].transferState
-              : abortedTransfers[transferId].transferState
-          ))
-        ).transacting(trx)
-        await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
+        let reservedTransferStateChangeList = Object.keys(reservedTransfers).length && Array.from(transferIdList.map(transferId => reservedTransfers[transferId].transferState))
+        let abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
+        let reservedTransferStateChangeIdList = Object.keys(reservedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', reservedTransferStateChangeList).transacting(trx)
+        Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
+        let reservedTransfersKeysList = Object.keys(reservedTransfers)
+        for (let keyIndex in reservedTransfersKeysList) {
+          let { transfer } = reservedTransfers[reservedTransfersKeysList[keyIndex]]
+          currentPosition += transfer.amount.amount
+          sumTransfersInBatch -= transfer.amount.amount
+          const participantPositionChange = {
+            participantPositionId: initialParticipantPosition.participantPositionId,
+            transferStateChangeId: reservedTransferStateChangeIdList[keyIndex],
+            value: currentPosition,
+            reservedValue: sumTransfersInBatch
+          }
+          batchParticipantPositionChange.push(participantPositionChange)
+        }
+        await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
         await trx.commit
       } catch (e) {
         Logger.info(e)

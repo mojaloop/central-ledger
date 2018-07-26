@@ -84,11 +84,11 @@ const positions = async (error, messages) => {
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
       const preparedMessagesList = await PositionService.calculatePreparePositionsBatch(prepareBatch)
       for (let prepareMessage of preparedMessagesList) {
-        const transferState = prepareMessage.transferState
+        const { transferState, rawMessage } = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
-          await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, prepareMessage.value, Utility.ENUMS.STATE.SUCCESS)
+          await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, rawMessage.value, Utility.ENUMS.STATE.SUCCESS)
         } else {
-          await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, prepareMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
+          await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
         }
         await consumer.commitMessageSync(prepareMessage)
       }

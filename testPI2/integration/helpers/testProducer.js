@@ -31,13 +31,14 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Utility = require('../../../src/handlers/lib/utility')
 
+
 const transfer = {
   transferId: Uuid(),
   payerFsp: 'dfsp1',
   payeeFsp: 'dfsp2',
   amount: {
     currency: 'USD',
-    amount: Math.floor(Math.random() * 10000) / 100 + 100 // decimal amount between 100.01 and 200.00
+    amount: '466.88'
   },
   ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
   condition: '47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU',
@@ -74,6 +75,7 @@ const fulfil = {
   }
 }
 
+/*
 let messageProtocol = {
   id: transfer.transferId,
   from: transfer.payerFsp,
@@ -97,7 +99,6 @@ let messageProtocol = {
   },
   pp: ''
 }
-
 const messageProtocolFulfil = {
   id: transfer.transferId,
   from: transfer.payerFsp,
@@ -121,6 +122,30 @@ const messageProtocolFulfil = {
   },
   pp: ''
 }
+const messageProtocolFulfilReject = {
+  id: transfer.transferId,
+  from: transfer.payerFsp,
+  to: transfer.payeeFsp,
+  type: 'application/json',
+  content: {
+    header: '',
+    payload: fulfil
+  },
+  metadata: {
+    event: {
+      id: Uuid(),
+      type: 'fulfil',
+      action: 'reject',
+      createdAt: new Date(),
+      state: {
+        status: 'success',
+        code: 0
+      }
+    }
+  },
+  pp: ''
+}
+*/
 
 const topicConfTransferPrepare = {
   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
@@ -128,11 +153,20 @@ const topicConfTransferPrepare = {
   partition: 0,
   opaqueKey: 0
 }
+
 exports.transferPrepare = async () => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
   config.logger = Logger
-  await Producer.produceMessage(messageProtocol, topicConfTransferPrepare, config)
-  return true
+  // extend the message with topic information
+  const transferObj = requestBodys().messageProtocol()
+  console.log('******************************transfer object.....******************************************')
+  console.log(transferObj)
+  console.log(topicConfTransferPrepare)
+
+  console.log('**********************************************************************')
+  await Producer.produceMessage(transferObj, topicConfTransferPrepare, config)
+  return transferObj.id
+  // return true
 }
 
 const topicConfTransferFulfil = {
@@ -141,9 +175,162 @@ const topicConfTransferFulfil = {
   partition: 0,
   opaqueKey: 0
 }
-exports.transferFulfil = async () => {
+exports.transferFulfil = async (transferId) => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFIL')
   config.logger = Logger
-  await Producer.produceMessage(messageProtocolFulfil, topicConfTransferFulfil, config)
+  const fulfilObj = Object.assign({}, requestBodys().messageProtocolFulfil(), { id: transferId })
+  console.log('******************************fulfill object.....******************************************')
+  console.log(fulfilObj)
+  console.log(topicConfTransferFulfil)
+  console.log('**********************************************************************')
+  await Producer.produceMessage(fulfilObj, topicConfTransferFulfil, config)
+  return transferId
+}
+
+exports.transferFulfilReject = async () => {
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'REJECT')
+  config.logger = Logger
+  await Producer.produceMessage(requestBodys().messageProtocolFulfilReject(), topicConfTransferFulfil, config)
   return true
 }
+
+// var prepareCounter = 0
+// var fulfilCounter = 0
+// var abortCounter = 0
+
+// // var conter = 0
+
+// exports.producePrepareForPositions = async () => {
+//   const message = requestBodys().messageProtocol()
+//   await Utility.produceParticipantMessage(message.from, Utility.ENUMS.POSITION, '0.prepare', message, Utility.ENUMS.STATE.SUCCESS)
+// //  await Utility.produceParticipantMessage(, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+// }
+
+// exports.produceFulfilForPositions = async () => {
+//   const message = requestBodys().messageProtocolFulfil()
+//   await Utility.produceParticipantMessage(message.from, Utility.ENUMS.POSITION, '2.fulfil', message, Utility.ENUMS.STATE.SUCCESS)
+// }
+
+// exports.produceAbortForPositions = async () => {
+//   const message = requestBodys().messageProtocolFulfilReject()
+//   await Utility.produceParticipantMessage(message.from, Utility.ENUMS.POSITION, '1.abort', message, Utility.ENUMS.STATE.SUCCESS)
+// }
+
+// const prepareTestMessage = () => {
+//   return {
+//     metadata: {
+//       event: {
+//         id: Uuid(),
+//         type: 'prepare',
+//         state: ''
+//       }
+//     },
+//     value: {
+//       counter: ++prepareCounter,
+//       dfsp: 'dfsp1',
+//       type: 'prepare'
+//     }
+//   }
+// }
+
+// const fulfilTestMessage = () => {
+//   return {
+//     counter: ++fulfilCounter,
+//     dfsp: 'dfsp1',
+//     type: 'fulfil'
+//   }
+// }
+
+// const abortTestMessage = () => {
+//   return {
+//     counter: ++abortCounter,
+//     dfsp: 'dfsp1',
+//     type: 'abort'
+//   }
+// }
+
+const requestBodys = () => {
+  const localTransfer = Object.assign({}, transfer, { transferId: Uuid() })
+  const localFulfil = Object.assign({}, fulfil, { completedTimestamp: new Date() })
+  return {
+    messageProtocol: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localTransfer
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'transfer',
+            action: 'prepare',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    },
+
+    messageProtocolFulfil: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localFulfil
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'fulfil',
+            action: 'commit',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    },
+
+    messageProtocolFulfilReject: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localFulfil
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'fulfil',
+            action: 'reject',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    }
+  }
+}
+
+exports.requestBodys = requestBodys
