@@ -90,7 +90,7 @@ const positions = async (error, messages) => {
         } else {
           await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
         }
-        await consumer.commitMessageSync(prepareMessage)
+        await consumer.commitMessageSync(rawMessage)
       }
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
