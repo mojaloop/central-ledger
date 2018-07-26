@@ -319,7 +319,7 @@ const createPrepareHandler = async (participantName) => {
  * createTransferService called to create the handler for each participant
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerTransferService = async () => {
+const registerTransferHandler = async () => {
   try {
     const transferHandler = {
       command: transfer,
@@ -365,17 +365,25 @@ const registerFulfillHandler = async () => {
  * @async
  * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
  * createPrepareHandler called to create the handler for each participant
+ * @param {string[]} participantNames - Array of Participants to register
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerPrepareHandlers = async () => {
+const registerPrepareHandlers = async (participantNames = []) => {
   try {
-    const participantNames = await DAO.retrieveAllParticipants()
-    if (participantNames.length !== 0) {
-      for (let name of participantNames) {
+    let participantNamesList
+    if (Array.isArray(participantNames) && participantNames.length > 0) {
+      participantNamesList = participantNames
+    } else {
+      participantNamesList = await DAO.retrieveAllParticipants()
+    }
+    if (participantNamesList.length !== 0) {
+      for (let name of participantNamesList) {
+        Logger.info(`Registering prepareHandler for Participant: ${name}`)
         await createPrepareHandler(name)
       }
     } else {
       Logger.info('No participants for prepare handler creation')
+      return false
     }
     return true
   } catch (e) {
@@ -396,7 +404,7 @@ const registerAllHandlers = async () => {
   try {
     await registerPrepareHandlers()
     await registerFulfillHandler()
-    await registerTransferService()
+    await registerTransferHandler()
     return true
   } catch (e) {
     throw e
@@ -404,7 +412,7 @@ const registerAllHandlers = async () => {
 }
 
 module.exports = {
-  registerTransferService,
+  registerTransferHandler,
   registerPrepareHandlers,
   registerFulfillHandler,
   registerAllHandlers,
