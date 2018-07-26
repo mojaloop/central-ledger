@@ -20,6 +20,7 @@
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -34,6 +35,7 @@ const ParticipantCurrencyModel = require('../../../../src/models/participant/par
 const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
+const P = require('bluebird')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -133,6 +135,9 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'addEndpoint')
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
     sandbox.stub(ParticipantFacade, 'addInitialPositionAndLimits')
+    sandbox.stub(ParticipantFacade, 'adjustLimits')
+    sandbox.stub(ParticipantFacade, 'getParicipantLimitsByCurrencyId')
+    sandbox.stub(ParticipantFacade, 'getParicipantLimitsByParicipantId')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
@@ -185,6 +190,18 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = { name: 'fsp3' }
     ParticipantModel.create.withArgs(falseParticipant).throws(new Error())
+    try {
+      await Service.create(falseParticipant)
+      assert.fail('should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, `throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('create false participant should throw error', async (assert) => {
+    const falseParticipant = { name: 'fsp3' }
+    ParticipantModel.create.withArgs(falseParticipant).returns(null)
     try {
       await Service.create(falseParticipant)
       assert.fail('should throw')
@@ -820,5 +837,204 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
+  await participantTest.test('adjustLimits should add/update the limit', async (assert) => {
+    try {
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        }
+      }
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+      ParticipantFacade.adjustLimits.withArgs(participant.participantCurrencyId, payload.limit).returns(1)
+
+      const result = await Service.adjustLimits(participant.name, payload)
+      assert.deepEqual(result, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`adjustLimits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('adjustLimits should throw error', async (assert) => {
+    const payload = {
+      currency: 'USD',
+      limit: {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000
+      }
+    }
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrencyId: 1
+    }
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantFacade.adjustLimits.withArgs(participant.participantCurrencyId, payload.limit).throws(new Error())
+
+    try {
+      await Service.adjustLimits(participant.name, payload)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getLimits', async (assert) => {
+    try {
+      const limit = [{
+        currencyId: 'USD',
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
+      }]
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrancyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+
+      ParticipantFacade.getParicipantLimitsByCurrencyId.withArgs(participant.participantCurrancyId, limit[0].name).returns(P.resolve(limit))
+      const result = await Service.getLimits(participant.name, { currency: participant.currency, type: limit[0].name })
+      assert.deepEqual(result, limit, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get limits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getLimits should return the limits when type is not passed', async (assert) => {
+    try {
+      const limit = [{
+        currencyId: 'USD',
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
+      }]
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrancyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+
+      ParticipantFacade.getParicipantLimitsByCurrencyId.withArgs(participant.participantCurrancyId).returns(P.resolve(limit))
+      const result = await Service.getLimits(participant.name, { currency: participant.currency })
+      assert.deepEqual(result, limit, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get limits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getLimits should return all the limits for the type when the currency is not passed', async (assert) => {
+    try {
+      const limit = [{
+        currencyId: 'USD',
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
+      },
+      {
+        currencyId: 'EUR',
+        name: 'NET_DEBIT_CAP',
+        value: 3000000
+      }]
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrancyId: 1
+      }
+      ParticipantModel.getByName.withArgs(participant.name).returns(participant)
+
+      ParticipantFacade.getParicipantLimitsByParicipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP').returns(P.resolve(limit))
+      const result = await Service.getLimits(participant.name, { type: 'NET_DEBIT_CAP' })
+      assert.deepEqual(result, limit, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get limits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getLimits should return all the limits when the currency or type is not passed', async (assert) => {
+    try {
+      const limit = [{
+        currencyId: 'USD',
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
+      },
+      {
+        currencyId: 'EUR',
+        name: 'NET_DEBIT_CAP',
+        value: 3000000
+      }]
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrancyId: 1
+      }
+      ParticipantModel.getByName.withArgs(participant.name).returns(participant)
+
+      ParticipantFacade.getParicipantLimitsByParicipantId.withArgs(participant.participantId).returns(P.resolve(limit))
+      const result = await Service.getLimits(participant.name, {})
+      assert.deepEqual(result, limit, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get limits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getLimits should throw error', async (assert) => {
+    const participant = {
+      participantId: 0,
+      name: 'fsp1',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: new Date(),
+      participantCurrancyId: 1
+    }
+    ParticipantModel.getByName.withArgs(participant.name).returns(participant)
+    ParticipantFacade.getParicipantLimitsByParicipantId.withArgs(participant.participantId).throws(new Error())
+    try {
+      await await Service.getLimits(participant.name, {})
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
   await participantTest.end()
 })

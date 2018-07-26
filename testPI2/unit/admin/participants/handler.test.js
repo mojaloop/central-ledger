@@ -390,6 +390,152 @@ Test('Participant Handler', participantHandlerTest => {
       }
     })
 
+    handlerTest.test('getLimits should return the participant limits for given currency and type of limit', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      const expected = [{
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP',
+        value: 1000000
+      }]
+      const limitReturn = [{
+        currencyId: 'USD',
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
+      }]
+      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      const result = await Handler.getLimits(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getLimits should return the participant limits for given limit type', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        type: 'NET_DEBIT_CAP'
+      }
+      const expected = [{
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP',
+        value: 1000000
+      }, {
+        currency: 'EUR',
+        type: 'NET_DEBIT_CAP',
+        value: 5000000
+      }]
+      const limitReturn = [{
+        currencyId: 'USD',
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
+      }, {
+        currencyId: 'EUR',
+        name: 'NET_DEBIT_CAP',
+        value: 5000000
+      }]
+      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      const result = await Handler.getLimits(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getLimits should return the participant limits for given currency', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD'
+      }
+      const expected = [{
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP',
+        value: 1000000
+      }]
+      const limitReturn = [{
+        currencyId: 'USD',
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
+      }]
+      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      const result = await Handler.getLimits(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getLimits should throw error', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      Participant.getLimits.withArgs(params.name, query).throws(new Error())
+
+      try {
+        await Handler.getLimits(createRequest({ params, query }))
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
+    handlerTest.test('adjustLimits should add the limits if it doesnt exist', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        }
+      }
+
+      Participant.adjustLimits.withArgs(params.name, payload).returns(P.resolve(1))
+      const reply = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.equal(statusCode, 201, 'Participant limit and initial position added successfully')
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.adjustLimits(createRequest({ params, payload }), reply)
+    })
+
+    handlerTest.test('adjustLimits should throw error', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const payload = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        }
+      }
+
+      Participant.adjustLimits.withArgs(params.name, payload).throws(new Error())
+
+      try {
+        await Handler.adjustLimits(createRequest({ params, payload }))
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
     handlerTest.end()
   })
 

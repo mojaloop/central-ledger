@@ -230,7 +230,7 @@ const destroyPariticpantEndpointByName = async (name) => {
  * @async
  * @description This creates the initial position and limits for a participant
  *
- * ParticipantModel.getByName called to get the participant details from the participant name
+ * ParticipantFacade.getByNameAndCurrency called to get the participant and currency details from the participant name
  * ParticipantFacade.addInitialPositionAndLimits called to add the participant initial postion and limits
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
@@ -316,8 +316,10 @@ const destroyPariticpantLimitByNameAndCurrency = async (name, currencyId) => {
  * @async
  * @description This retuns the active endpoint value for a give participant and type of endpoint
  *
- * ParticipantModel.getByNameAndCurrency called to get the participant and currency details from the participant name
- * ParticipantFacade.getEndpoint called to get the participant endpoint details
+ * ParticipantFacade.getByNameAndCurrency called to get the participant and currency details from the participant name
+ * ParticipantModel.getByName called to get the participant details from the participant name
+ * ParticipantFacade.getParicipantLimitsByCurrencyId called to get the participant limit details from participant currency id
+ * ParticipantFacade.getParicipantLimitsByParicipantId called to get the participant limit details from participant id
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
  * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
@@ -325,11 +327,18 @@ const destroyPariticpantLimitByNameAndCurrency = async (name, currencyId) => {
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
 
-const getLimits = async (name, currencyId) => {
+const getLimits = async (name, { currency = null, type = null }) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
-    participantExists(participant)
-    return ParticipantFacade.getParicipantLimitsByCurrencyId(participant.participantCurrencyId)
+    let participant
+    if (currency != null) {
+      participant = await ParticipantFacade.getByNameAndCurrency(name, currency)
+      participantExists(participant)
+      return ParticipantFacade.getParicipantLimitsByCurrencyId(participant.participantCurrancyId, type)
+    } else {
+      participant = await ParticipantModel.getByName(name)
+      participantExists(participant)
+      return ParticipantFacade.getParicipantLimitsByParicipantId(participant.participantId, type)
+    }
   } catch (err) {
     throw err
   }
@@ -342,10 +351,10 @@ const getLimits = async (name, currencyId) => {
  * @description This adds/updates limits for a participant
  *
  * ParticipantFacade.getByNameAndCurrency called to get the participant details from the participant name
- * ParticipantFacade.addInitialPositionAndLimits called to add the participant initial postion and limits
+ * ParticipantFacade.adjustLimits called to add/update the participant limits
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {object} payload - the payload containing the currency, limit and initial postion values
+ * @param {object} payload - the payload containing the currency and limit values
  * Example: {
  *  "currency": "USD",
  *  "limit": {

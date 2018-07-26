@@ -168,7 +168,8 @@ module.exports = [
           name: nameValidator
         },
         query: {
-          currency: currencyValidator
+          currency: currencyValidator,
+          type: Joi.string().optional().description('Limit Type')
         }
       }
     }

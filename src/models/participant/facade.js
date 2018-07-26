@@ -228,7 +228,7 @@ const addInitialPositionAndLimits = async (participantCurrencyId, limitPostionOb
  * Example: {
  * "currency": "USD",
  *   "limit": {
- *   	 "type": "NET_DEBIT_CAP",
+ *     "type": "NET_DEBIT_CAP",
  *     "value": 10000000
  *   }
  * }
@@ -271,28 +271,77 @@ const adjustLimits = async (participantCurrencyId, limit) => {
  * @function GetParicipantLimitsByCurrencyId
  *
  * @async
- * @description This retuns all the active endpoints for a give participantId
+ * @description This retuns the active participant limits for a give participantCurrencyId and limit type
  *
  *
  * @param {integer} participantCurrencyId - the id of the participant currency in the database. Example 1
+ * @param {string} type - The type of the limit. Example 'NET_DEBIT_CAP'
  *
- * @returns {array} - Returns an array containing the list of all active limits for the participant/currency if successful, or throws an error if failed
+ * @returns {array} - Returns an array containing the list of all active limits for the participant/currency and type if successful, or throws an error if failed
  */
 
-const getParicipantLimitsByCurrencyId = async (participantCurrencyId) => {
+const getParicipantLimitsByCurrencyId = async (participantCurrencyId, type) => {
   try {
     return Db.participantLimit.query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
         .where({
           'participantLimit.participantCurrencyId': participantCurrencyId,
+          'lt.isActive': 1,
           'participantLimit.isActive': 1
-        }).select('participantLimit.*',
-          'lt.name')
+        })
+        .where(q => {
+          if (type != null) {
+            return q.where('lt.name', '=', type)
+          }
+        })
+        .select('participantLimit.*',
+          'lt.name'
+        ).orderBy('lt.name')
     })
   } catch (err) {
     throw new Error(err.message)
   }
 }
+
+/**
+ * @function GetParicipantLimitsByParicipantId
+ *
+ * @async
+ * @description This retuns all the active endpoints for a give participantId  and limit type
+ *
+ *
+ * @param {integer} participantId - the id of the participant currency in the database. Example 1
+ * @param {string} type - The type of the limit. Example 'NET_DEBIT_CAP'
+ *
+ * @returns {array} - Returns an array containing the list of all active limits for the participant and type if successful, or throws an error if failed
+ */
+
+const getParicipantLimitsByParicipantId = async (participantId, type) => {
+  try {
+    return Db.participantLimit.query(builder => {
+      return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
+        .innerJoin('participantCurrency AS pc', 'participantLimit.participantCurrencyId', 'pc.participantCurrencyId')
+        .where({
+          'pc.participantId': participantId,
+          'pc.isActive': 1,
+          'lt.isActive': 1,
+          'participantLimit.isActive': 1
+        })
+        .where(q => {
+          if (type != null) {
+            return q.where('lt.name', '=', type)
+          }
+        })
+        .select('participantLimit.*',
+          'lt.name',
+          'pc.currencyId'
+        ).orderBy('pc.currencyId', 'lt.name')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
   getByNameAndCurrency,
   getEndpoint,
@@ -300,5 +349,6 @@ module.exports = {
   addEndpoint,
   addInitialPositionAndLimits,
   adjustLimits,
-  getParicipantLimitsByCurrencyId
+  getParicipantLimitsByCurrencyId,
+  getParicipantLimitsByParicipantId
 }
