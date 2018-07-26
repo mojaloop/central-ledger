@@ -98,7 +98,6 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const abortedTransfers = {}
     const reservedTransfers = {}
     let sumTransfersInBatch = 0
-    let allTransfersMap = new Map()
     const initialTransferStateChangePromises = []
     let transferIdList = []
 
@@ -162,11 +161,11 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         })
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
         await knex.batchInsert('transferStateChange',
-          Array.from(transferIdList.map(transferId => {
+          Array.from(transferIdList.map(transferId =>
             transferId in reservedTransfers
               ? reservedTransfers[transferId].transferState
               : abortedTransfers[transferId].transferState
-          }))
+          ))
         ).transacting(trx)
         await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
         await trx.commit
@@ -176,11 +175,11 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         throw e
       }
     })
-    return Array.from(transferIdList.map(transferId => {
+    return Array.from(transferIdList.map(transferId =>
       transferId in reservedTransfers
         ? reservedTransfers[transferId]
         : abortedTransfers[transferId]
-    }))
+    ))
   } catch (e) {
     Logger.info(e)
     throw e
