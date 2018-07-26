@@ -18,9 +18,6 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
@@ -28,42 +25,53 @@
 'use strict'
 
 const Model = require('../../../src/domain/participant')
-const CurrencyModel = require('../../../src/models/participant/participantCurrency')
 
-const testParticipant = {
-  name: 'fsp',
+const initialPositionAndLimit = {
   currency: 'USD',
-  isDisabled: 0,
-  createdDate: new Date()
+  limit: {
+    type: 'NET_DEBIT_CAP',
+    value: 10000000
+  },
+  initialPosition: 0
 }
 
-exports.prepareData = async (name) => {
+exports.prepareInitialPositionAndLimits = async (name, limitValue = null, limitType = null) => {
   try {
-    let participantId = await Model.create(Object.assign(
+    await Model.addInitialPositionAndLimits(name, Object.assign(
       {},
-      testParticipant,
+      initialPositionAndLimit,
       {
-        name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
+        limit: {
+          value: (limitValue || initialPositionAndLimit.limit.value),
+          type: (limitType || initialPositionAndLimit.limit.type) 
+        }
       }
     ))
-    let currency = await CurrencyModel.create(participantId, 'USD')
-    let participant = await Model.getById(participantId)
-    return {
-      participant,
-      currency
-    }
+    return initialPositionAndLimit
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.deletePreparedData = async (participantName) => {
+exports.deleteInitialPositionData = async (participantName) => {
   if (!participantName) {
     throw new Error('Please provide a valid participant name!')
   }
 
   try {
-    return await Model.destroyByName(participantName)
+    return await Model.destroyPariticpantPositionByNameAndCurrency(participantName, initialPositionAndLimit.currency)
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.deleteInitialLimitData = async (participantName) => {
+  if (!participantName) {
+    throw new Error('Please provide a valid participant name!')
+  }
+
+  try {
+    return await Model.destroyPariticpantLimitByNameAndCurrency(participantName, initialPositionAndLimit.currency)
   } catch (err) {
     throw new Error(err.message)
   }

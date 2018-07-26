@@ -18,9 +18,6 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
@@ -28,30 +25,24 @@
 'use strict'
 
 const Model = require('../../../src/domain/participant')
-const CurrencyModel = require('../../../src/models/participant/participantCurrency')
 
-const testParticipant = {
-  name: 'fsp',
-  currency: 'USD',
-  isDisabled: 0,
-  createdDate: new Date()
+const endpointsFixtures = {
+  FSIOP_CALLBACK_URL: {
+    type: 'FSIOP_CALLBACK_URL',
+    value: 'http://localhost:3001/participants/dfsp1/notification1'
+  },
+  ALARM_NOTIFICATION_URL: {
+    type: 'ALARM_NOTIFICATION_URL',
+    value: 'http://localhost:3001/participants/dfsp1/notification2'
+  }
 }
-
-exports.prepareData = async (name) => {
+exports.prepareData = async (name, endpointType) => {
   try {
-    let participantId = await Model.create(Object.assign(
-      {},
-      testParticipant,
-      {
-        name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
-      }
-    ))
-    let currency = await CurrencyModel.create(participantId, 'USD')
-    let participant = await Model.getById(participantId)
-    return {
-      participant,
-      currency
+    if (endpointsFixtures[endpointType] == null) {
+      throw new Error('invalid endpointType')
     }
+    await Model.addEndpoint(name, endpointsFixtures[endpointType])
+    return endpointsFixtures[endpointType]
   } catch (err) {
     throw new Error(err.message)
   }
@@ -63,7 +54,7 @@ exports.deletePreparedData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyByName(participantName)
+    return await Model.destroyPariticpantEndpointByName(participantName)
   } catch (err) {
     throw new Error(err.message)
   }
