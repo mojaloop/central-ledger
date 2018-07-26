@@ -119,7 +119,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.TransferState.RESERVED
             reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
-            sumTransfersInBatch += transfer.amount.amount
+            sumTransfersInBatch += parseFloat(transfer.amount.amount)
           } else {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.TransferState.ABORTED
@@ -128,8 +128,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           }
         }
         const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId: participantCurrency.participantCurrencyId}).forUpdate().select('*').first()
-        let currentPosition = initialParticipantPosition.value
-        let reservedPosition = initialParticipantPosition.reservedValue
+        let currentPosition = parseFloat(initialParticipantPosition.value)
+        let reservedPosition = parseFloat(initialParticipantPosition.reservedValue)
         let effectivePosition = currentPosition + reservedPosition
         initialParticipantPosition.reservedValue += sumTransfersInBatch
         await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update(initialParticipantPosition)
@@ -139,9 +139,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let batchParticipantPositionChange = []
         for (let transferId in reservedTransfers) {
           let { transfer, transferState } = reservedTransfers[transferId]
-          if (availablePosition >= transfer.amount.amount) {
-            availablePosition -= transfer.amount.amount
-            sumReserved += transfer.amount.amount
+          if (availablePosition >= parseFloat(transfer.amount.amount)) {
+            availablePosition -= parseFloat(transfer.amount.amount)
+            sumReserved += parseFloat(transfer.amount.amount)
           } else {
             transferState.transferStateId = Enum.TransferState.ABORTED
             transferState.reason = 'Net Debit Cap exceeded by this request at this time, please try again later'
@@ -161,8 +161,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let reservedTransfersKeysList = Object.keys(reservedTransfers)
         for (let keyIndex in reservedTransfersKeysList) {
           let { transfer } = reservedTransfers[reservedTransfersKeysList[keyIndex]]
-          currentPosition += transfer.amount.amount
-          sumTransfersInBatch -= transfer.amount.amount
+          currentPosition += parseFloat(transfer.amount.amount)
+          sumTransfersInBatch -= parseFloat(transfer.amount.amount)
           const participantPositionChange = {
             participantPositionId: initialParticipantPosition.participantPositionId,
             transferStateChangeId: reservedTransferStateChangeIdList[keyIndex],
@@ -171,7 +171,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           }
           batchParticipantPositionChange.push(participantPositionChange)
         }
-        await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
+        batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
         await trx.commit
       } catch (e) {
         Logger.info(e)
