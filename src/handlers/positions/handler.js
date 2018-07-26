@@ -82,9 +82,9 @@ const positions = async (error, messages) => {
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
-      const allTransfersMap = await PositionService.calculatePreparePositionsBatch(prepareBatch)
-      for (let prepareMessage of prepareBatch) {
-        const transferState = allTransfersMap.get(prepareMessage.value.content.payload.transferId)
+      const preparedMessagesList = await PositionService.calculatePreparePositionsBatch(prepareBatch)
+      for (let prepareMessage of preparedMessagesList) {
+        const transferState = prepareMessage.transferState
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
           await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, prepareMessage.value, Utility.ENUMS.STATE.SUCCESS)
         } else {
