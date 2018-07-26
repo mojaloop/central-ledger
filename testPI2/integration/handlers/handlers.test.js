@@ -33,158 +33,204 @@ const Handlers = require('../../../src/handlers/handlers')
 const Db = require('@mojaloop/central-services-database').Db
 const Producer = require('../../../src/handlers/lib/kafka/producer')
 const Utility = require('../../../src/handlers/lib/utility')
-const ParticipantService = require('../../../src/domain/participant')
-const TransferState = require('../../../src/lib/enum').TransferState
+const ParticipantHelper = require('../helpers/participant')
+const ParticipantLimitHelper = require('../helpers/participantLimit')
 const TransferFacade = require('../../../src/models/transfer/facade')
 const Moment = require('moment')
+const Enum = require('../../../src/lib/enum')
+const TransferState = Enum.TransferState
+const TransferEventType = Enum.transferEventType
+const TransferEventAction = Enum.transferEventAction
 
-const transfer = {
-  transferId: Uuid(),
-  payerFsp: 'dfsp1',
-  payeeFsp: 'dfsp2',
+const delay = 20 // seconds
+let testData = {
   amount: {
     currency: 'USD',
-    amount: '433.88'
+    amount: 100
   },
-  ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-  condition: '47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU',
-  expiration: '2018-11-24T08:38:08.699-04:00',
-  extensionList: {
-    extension: [
-      {
-        key: 'key1',
-        value: 'value1'
-      },
-      {
-        key: 'key2',
-        value: 'value2'
-      }
-    ]
-  }
+  payer: {
+    name: 'payer',
+    limit: 500
+  },
+  payee: {
+    name: 'payee',
+    limit: 300
+  },
+  now: new Date(),
+  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 }
 
-const fulfil = {
-  fulfilment: '47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU',
-  completedTimestamp: '2018-10-24T08:38:08.699-04:00',
-  transferState: 'COMMITTED',
-  extensionList: {
-    extension: [
-      {
-        key: 'key1',
-        value: 'value1'
-      },
-      {
-        key: 'key2',
-        value: 'value2'
-      }
-    ]
-  }
-}
+const prepareTestData = async (data) => {
+  await Db.connect(Config.DATABASE_URI)
+  let payer = await ParticipantHelper.prepareData(data.payer.name, data.amount.currency)
+  let payee = await ParticipantHelper.prepareData(data.payee.name, data.amount.currency)
+  await ParticipantLimitHelper.prepareInitialPositionAndLimits(payer.participant.name, data.payer.limit)
+  await ParticipantLimitHelper.prepareInitialPositionAndLimits(payee.participant.name, data.payee.limit)
 
-const messageProtocol = {
-  id: transfer.transferId,
-  from: transfer.payerFsp,
-  to: transfer.payeeFsp,
-  type: 'application/json',
-  content: {
-    header: '',
-    payload: transfer
-  },
-  metadata: {
-    event: {
-      id: Uuid(),
-      type: 'prepare',
-      action: 'prepare',
-      createdAt: new Date(),
-      state: {
-        status: 'success',
-        code: 0
-      }
-    }
-  },
-  pp: ''
-}
-
-const messageProtocolFulfil = Object.assign({}, messageProtocol, {
-  content: {
-    payload: fulfil
-  },
-  metadata: {
-    event: {
-      id: Uuid(),
-      type: 'fulfil',
-      action: 'commit'
+  const transfer = {
+    transferId: Uuid(),
+    payerFsp: payer.participant.name,
+    payeeFsp: payee.participant.name,
+    amount: {
+      currency: data.amount.currency,
+      amount: data.amount.amount
+    },
+    ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+    condition: '47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU',
+    expiration: data.expiration,
+    extensionList: {
+      extension: [
+        {
+          key: 'key1',
+          value: 'value1'
+        },
+        {
+          key: 'key2',
+          value: 'value2'
+        }
+      ]
     }
   }
-})
 
-const topicConf = {
-  topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
-  key: 'producerTest',
-  partition: 0,
-  opaqueKey: 0
-}
-
-const topicConfFulfil = {
-  topicName: Utility.transformGeneralTopicName('transfer', 'fulfil'),
-  key: 'producerTest',
-  partition: 0,
-  opaqueKey: 0
-}
-
-const participants = [
-  {
-    name: 'dfsp1',
-    currency: 'USD'
-  },
-  {
-    name: 'dfsp2',
-    currency: 'USD'
+  const fulfil = {
+    fulfilment: 'oAKAAA',
+    completedTimestamp: data.now,
+    transferState: 'COMMITTED',
+    extensionList: {
+      extension: [
+        {
+          key: 'key1',
+          value: 'value1'
+        },
+        {
+          key: 'key2',
+          value: 'value2'
+        }
+      ]
+    }
   }
-]
+
+  const reject = Object.assign({}, fulfil, {transferState: TransferState.ABORTED})
+
+  const messageProtocol = {
+    id: transfer.transferId,
+    from: transfer.payerFsp,
+    to: transfer.payeeFsp,
+    type: 'application/json',
+    content: {
+      header: '',
+      payload: transfer
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        type: TransferEventAction.PREPARE,
+        action: TransferEventType.PREPARE,
+        createdAt: data.now,
+        state: {
+          status: 'success',
+          code: 0
+        }
+      }
+    },
+    pp: ''
+  }
+
+  const messageProtocolFulfil = JSON.parse(JSON.stringify(messageProtocol))
+  messageProtocolFulfil.content.payload = fulfil
+  messageProtocolFulfil.metadata.event.id = Uuid()
+  messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
+  messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
+
+  const messageProtocolReject = JSON.parse(JSON.stringify(messageProtocolFulfil))
+  messageProtocolReject.content.payload = reject
+  messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
+
+  const topicConfTransferPrepare = {
+    topicName: Utility.transformAccountToTopicName(transfer.payerFsp, TransferEventType.TRANSFER, TransferEventType.PREPARE),
+    key: 'producerTest',
+    partition: 0,
+    opaqueKey: 0
+  }
+
+  const topicConfTransferFulfil = {
+    topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL),
+    key: 'producerTest',
+    partition: 0,
+    opaqueKey: 0
+  }
+
+  const participants = [
+    {
+      name: payer.participant.name,
+      currency: data.amount.currency
+    },
+    {
+      name: payee.participant.name,
+      currency: data.amount.currency
+    }
+  ]
+
+  await Handlers.registerAllHandlers()
+
+  return {
+    transfer,
+    fulfil,
+    reject,
+    messageProtocol,
+    messageProtocolFulfil,
+    messageProtocolReject,
+    topicConfTransferPrepare,
+    topicConfTransferFulfil,
+    participants
+  }
+}
 
 exports.testProducer = async () => {}
 
 Test('Handlers test', async handlersTest => {
-  handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
-    await registerAllHandlers.test('setup handlers', async (test) => {
-      await Db.connect(Config.DATABASE_URI)
-      for (let payload of participants) {
-        const participant = await ParticipantService.getByName(payload.name)
-        if (!participant) {
-          const participantId = await ParticipantService.create({name: payload.name})
-          await ParticipantService.createParticipantCurrency(participantId, payload.currency)
-        }
-      }
-      await Handlers.registerAllHandlers()
-      setTimeout(() => {
-        test.end()
-      }, 20000)
-    })
+  // handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
+  //   await registerAllHandlers.test('setup handlers', async (test) => {
+  //     await Db.connect(Config.DATABASE_URI)
+  //     for (let payload of participants) {
+  //       const participant = await ParticipantService.getByName(payload.name)
+  //       if (!participant) {
+  //         const participantId = await ParticipantService.create({name: payload.name})
+  //         await ParticipantService.createParticipantCurrency(participantId, payload.currency)
+  //       }
+  //     }
+  //     await Handlers.registerAllHandlers()
+  //     setTimeout(() => {
+  //       test.end()
+  //     }, delay * 1000)
+  //   })
 
-    await registerAllHandlers.end()
-  })
-
-  // TODO: setup participantLimit & initial participantPosition using ../helpers/participantLimit
+  //   await registerAllHandlers.end()
+  // })
 
   handlersTest.test('transferFulfilCommit should', async transferFulfilCommit => {
+    const td = await prepareTestData(testData)
+
     await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       var startTime = Moment()
-      var targetProcessingTimeInSeconds = 25
+      var targetProcessingTimeInSeconds = delay
       var elapsedSeconds = 0
       let isTransferHandlersPrepareCalled = false
       let result = null
 
-      const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
       config.logger = Logger
 
-      const producerResponse = await Producer.produceMessage(messageProtocol, topicConf, config)
+      const producerResponse = await Producer.produceMessage(td.messageProtocol, td.topicConfTransferPrepare, config)
 
       setTimeout(async () => {
         while (elapsedSeconds < targetProcessingTimeInSeconds) {
           elapsedSeconds = Moment().diff(startTime, 'seconds')
           // console.log(`elapsedSeconds=${elapsedSeconds}`)
-          var transfer = await TransferFacade.getById(messageProtocol.id)
+          var transfer = await TransferFacade.getById(td.messageProtocol.id)
           if (transfer) {
             result = true
             isTransferHandlersPrepareCalled = true
@@ -194,45 +240,48 @@ Test('Handlers test', async handlersTest => {
         test.equal(isTransferHandlersPrepareCalled, true, 'Prepare callback was executed')
         test.equal(result, true, `Prepare callback was executed returned ${result}`)
         test.end()
-      }, 30000)
+      }, (delay + 5) * 1000)
     })
 
     await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
       var startTime = Moment()
-      var targetProcessingTimeInSeconds = 25
+      var targetProcessingTimeInSeconds = delay
       var elapsedSeconds = 0
       let isFulfilHandlerCalled = false
       let isTransferStateCommitted = false
       let isIlpFulfilmentUpdated = false
       let result = null
 
-      const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFIL')
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
       config.logger = Logger
 
-      const producerResponse = await Producer.produceMessage(messageProtocolFulfil, topicConfFulfil, config)
+      const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
 
       setTimeout(async () => {
         while (elapsedSeconds < targetProcessingTimeInSeconds) {
           elapsedSeconds = Moment().diff(startTime, 'seconds')
           // console.log(`elapsedSeconds=${elapsedSeconds}`)
-          var transfer = await TransferFacade.getById(messageProtocol.id)
+          var transfer = await TransferFacade.getById(td.messageProtocol.id)
           if (transfer) {
             isFulfilHandlerCalled = true
             isTransferStateCommitted = transfer.transferState === TransferState.COMMITTED
-            isIlpFulfilmentUpdated = transfer.fulfilment === fulfil.fulfilment
+            isIlpFulfilmentUpdated = transfer.fulfilment === td.fulfil.fulfilment
             result = true
           }
         }
-
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(isFulfilHandlerCalled, true, 'Fulfil callback was executed')
         test.equal(isTransferStateCommitted, true, 'Transfer state changed to COMMITTED')
         test.equal(isIlpFulfilmentUpdated, true, 'Fulfilment updated ilp table record')
         test.equal(result, true, `Fulfil callback was executed returned ${result}`)
         test.end()
-      }, 30000)
+      }, (delay + 5) * 1000)
     })
 
+    // await Producer.disconnect(td.topicConfTransferPrepare.topicName)
     transferFulfilCommit.end()
   })
 
@@ -244,7 +293,5 @@ Test('Handlers test', async handlersTest => {
 })
 
 Test.onFinish(async () => {
-  await Producer.disconnect(topicConf.topicName)
-  // add loop code to disconnect consumers
   process.exit(0)
 })

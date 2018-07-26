@@ -43,7 +43,7 @@ exports.prepareInitialPositionAndLimits = async (name, limitValue = null, limitT
       {
         limit: {
           value: (limitValue || initialPositionAndLimit.limit.value),
-          type: (limitType || initialPositionAndLimit.limit.type) 
+          type: (limitType || initialPositionAndLimit.limit.type)
         }
       }
     ))
