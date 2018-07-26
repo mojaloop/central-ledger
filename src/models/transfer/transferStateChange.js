@@ -65,6 +65,15 @@ const getByTransferIdList = async (transfersIdList) => {
   }
 }
 
+// const getLatest = async () => {
+//   try {
+//     return await Db.transferStateChange.query(async (builder) => {
+//       let result = builder
+//         .select('transferStateChange')
+//     })
+//   }
+// }
+
 const truncate = async (id) => {
   try {
     return await Db.transferStateChange.truncate()
