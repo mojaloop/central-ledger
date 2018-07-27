@@ -161,7 +161,7 @@ const addEndpoint = async (participantId, endpoint) => {
 }
 
 /**
- * @function AddInitialPositionAndLimits
+ * @function addLimitAndInitialPosition
  *
  * @async
  * @description This adds the limits and initial postion details for a participant into the database
@@ -183,30 +183,38 @@ const addEndpoint = async (participantId, endpoint) => {
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-const addInitialPositionAndLimits = async (participantCurrencyId, limitPostionObj) => {
+const addLimitAndInitialPosition = async (participantCurrencyId, limitPostionObj) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 })
-      const newLimit = {
-        participantCurrencyId,
-        participantLimitTypeId: limitType.participantLimitTypeId,
-        value: limitPostionObj.limit.value,
-        isActive: 1,
-        createdBy: 'unknown'
-
+      try {
+        let result
+        let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 })
+        let participantLimit = {
+          participantCurrencyId,
+          participantLimitTypeId: limitType.participantLimitTypeId,
+          value: limitPostionObj.limit.value,
+          isActive: 1,
+          createdBy: 'unknown'
+        }
+        result = await knex('participantLimit').transacting(trx).insert(participantLimit)
+        participantLimit.participantLimitId = result[0]
+        let participantPosition = {
+          participantCurrencyId,
+          value: limitPostionObj.initialPosition,
+          reservedValue: 0
+        }
+        result = await knex('participantPosition').transacting(trx).insert(participantPosition)
+        participantPosition.participantPositionId = result[0]
+        await trx.commit
+        return {
+          participantLimit,
+          participantPosition
+        }
+      } catch (err) {
+        await trx.rollback
+        throw err
       }
-      return knex('participantLimit').transacting(trx).insert(newLimit)
-        .then(() => {
-          let position = {
-            participantCurrencyId,
-            value: limitPostionObj.initialPosition,
-            reservedValue: 0
-          }
-          return knex('participantPosition').transacting(trx).insert(position)
-        })
-        .then(trx.commit)
-        .catch(trx.rollback)
     })
   } catch (err) {
     throw new Error(err.message)
@@ -218,5 +226,5 @@ module.exports = {
   getEndpoint,
   getAllEndpoints,
   addEndpoint,
-  addInitialPositionAndLimits
+  addLimitAndInitialPosition
 }

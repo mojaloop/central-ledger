@@ -122,7 +122,6 @@ const prepare = async (error, messages) => {
         return true
       } else {
         Logger.info('TransferService::prepare::validationFailed::existingEntry')
-        // const {alreadyRejected, transfer} = await TransferService.reject(reasons.toString(), existingTransfer.transferId)
         await TransferService.reject(reasons.toString(), existingTransfer.transferId)
         await consumer.commitMessageSync(message)
         message.value.content.payload = Utility.createPrepareErrorStatus(errorCode, errorDescription, message.value.content.payload.extensionList)
@@ -336,14 +335,14 @@ const registerTransferHandler = async () => {
 }
 
 /**
- * @function RegisterFulfillHandler
+ * @function registerFulfilHandler
  *
  * @async
  * @description Registers the one handler for fulfil transfer. Gets Kafka config from default.json
  * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerFulfillHandler = async () => {
+const registerFulfilHandler = async () => {
   try {
     const fulfillHandler = {
       command: fulfil,
@@ -403,7 +402,7 @@ const registerPrepareHandlers = async (participantNames = []) => {
 const registerAllHandlers = async () => {
   try {
     await registerPrepareHandlers()
-    await registerFulfillHandler()
+    await registerFulfilHandler()
     await registerTransferHandler()
     return true
   } catch (e) {
@@ -414,7 +413,7 @@ const registerAllHandlers = async () => {
 module.exports = {
   registerTransferHandler,
   registerPrepareHandlers,
-  registerFulfillHandler,
+  registerFulfilHandler,
   registerAllHandlers,
   prepare,
   fulfil,

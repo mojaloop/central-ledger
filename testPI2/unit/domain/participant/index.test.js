@@ -132,7 +132,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'getAllEndpoints')
     sandbox.stub(ParticipantFacade, 'addEndpoint')
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
-    sandbox.stub(ParticipantFacade, 'addInitialPositionAndLimits')
+    sandbox.stub(ParticipantFacade, 'addLimitAndInitialPosition')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
@@ -521,7 +521,7 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('addInitialPositionAndLimits should add the initial position and limits', async (assert) => {
+  await participantTest.test('addLimitAndInitialPosition should add the initial position and limits', async (assert) => {
     try {
       const payload = {
         currency: 'USD',
@@ -542,19 +542,19 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-      ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).returns(1)
+      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
 
-      const result = await Service.addInitialPositionAndLimits(participant.name, payload)
+      const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
       assert.end()
     } catch (err) {
-      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      Logger.error(`addLimitAndInitialPosition failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await participantTest.test('addInitialPositionAndLimits should add the initial position from config and limits if initial position is not passed', async (assert) => {
+  await participantTest.test('addLimitAndInitialPosition should add the initial position from config and limits if initial position is not passed', async (assert) => {
     try {
       const payload = {
         currency: 'USD',
@@ -583,19 +583,19 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-      ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, limitPostionObj).returns(1)
+      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, limitPostionObj).returns(1)
 
-      const result = await Service.addInitialPositionAndLimits(participant.name, payload)
+      const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
       assert.end()
     } catch (err) {
-      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      Logger.error(`addLimitAndInitialPosition failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await participantTest.test('addInitialPositionAndLimits should fail if participant and currency not found', async (assert) => {
+  await participantTest.test('addLimitAndInitialPosition should fail if participant and currency not found', async (assert) => {
     const payload = {
       currency: 'USD',
       limit: {
@@ -615,7 +615,7 @@ Test('Participant service', async (participantTest) => {
     ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).throws(new Error())
 
     try {
-      await Service.addInitialPositionAndLimits(participant.name, payload)
+      await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -623,7 +623,7 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('addInitialPositionAndLimits should fail if cant add initial position and limit', async (assert) => {
+  await participantTest.test('addLimitAndInitialPosition should fail if cant add initial position and limit', async (assert) => {
     const payload = {
       currency: 'USD',
       limit: {
@@ -643,10 +643,10 @@ Test('Participant service', async (participantTest) => {
     ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
     ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
     ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-    ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).throws(new Error())
+    ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).throws(new Error())
 
     try {
-      await Service.addInitialPositionAndLimits(participant.name, payload)
+      await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -654,7 +654,7 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('addInitialPositionAndLimits should fail if initial position already exists', async (assert) => {
+  await participantTest.test('addLimitAndInitialPosition should fail if initial position already exists', async (assert) => {
     const payload = {
       currency: 'USD',
       limit: {
@@ -681,10 +681,10 @@ Test('Participant service', async (participantTest) => {
     ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
     ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
     ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(participantPosition)
-    ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).returns(1)
+    ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
 
     try {
-      await Service.addInitialPositionAndLimits(participant.name, payload)
+      await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -692,7 +692,7 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('addInitialPositionAndLimits should fail if participant limit already exists', async (assert) => {
+  await participantTest.test('addLimitAndInitialPosition should fail if participant limit already exists', async (assert) => {
     const payload = {
       currency: 'USD',
       limit: {
@@ -723,10 +723,10 @@ Test('Participant service', async (participantTest) => {
     ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
     ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(participantLimit)
     ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-    ParticipantFacade.addInitialPositionAndLimits.withArgs(participant.participantCurrencyId, payload).returns(1)
+    ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
 
     try {
-      await Service.addInitialPositionAndLimits(participant.name, payload)
+      await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)

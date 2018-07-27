@@ -225,16 +225,16 @@ const destroyPariticpantEndpointByName = async (name) => {
 }
 
 /**
- * @function AddInitialPositionAndLimits
+ * @function addLimitAndInitialPosition
  *
  * @async
  * @description This creates the initial position and limits for a participant
  *
  * ParticipantModel.getByName called to get the participant details from the participant name
- * ParticipantFacade.addInitialPositionAndLimits called to add the participant initial postion and limits
+ * ParticipantFacade.addLimitAndInitialPosition called to add the participant initial postion and limits
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {object} payload - the payload containing the currency, limit and initial postion values
+ * @param {object} limitAndInitialPositionObj - the payload containing the currency, limit and initial postion values
  * Example: {
  *  "currency": "USD",
  *  "limit": {
@@ -247,20 +247,20 @@ const destroyPariticpantEndpointByName = async (name) => {
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-const addInitialPositionAndLimits = async (name, payload) => {
+const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency)
+    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency)
     participantExists(participant)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     if (existingLimit || existingPosition) {
       throw new Error('Participant Limit or Initial Position already set')
     }
-    const limitPostionObj = payload
-    if (limitPostionObj.initialPosition == null) {
-      limitPostionObj.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
+    let limitAndInitialPosition = limitAndInitialPositionObj
+    if (limitAndInitialPosition.initialPosition == null) {
+      limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
-    return ParticipantFacade.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, limitAndInitialPosition)
   } catch (err) {
     throw err
   }
@@ -324,7 +324,7 @@ module.exports = {
   getEndpoint,
   getAllEndpoints,
   destroyPariticpantEndpointByName,
-  addInitialPositionAndLimits,
+  addLimitAndInitialPosition,
   destroyPariticpantPositionByNameAndCurrency,
   destroyPariticpantLimitByNameAndCurrency
 }

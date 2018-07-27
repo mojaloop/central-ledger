@@ -99,7 +99,7 @@ module.exports = [
   {
     method: 'POST',
     path: '/register/transfer/fulfil',
-    handler: TransferHandler.registerFulfillHandler,
+    handler: TransferHandler.registerFulfilHandler,
     options: {
       id: 'fulfil',
       description: 'Register fulfil transfer Kafka consumer handler'

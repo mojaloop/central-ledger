@@ -28,7 +28,8 @@
 'use strict'
 
 const Model = require('../../../src/domain/participant')
-const CurrencyModel = require('../../../src/models/participant/participantCurrency')
+const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrency')
+const time = require('../../../src/lib/time')
 
 const testParticipant = {
   name: 'fsp',
@@ -39,18 +40,18 @@ const testParticipant = {
 
 exports.prepareData = async (name, currencyId = 'USD') => {
   try {
-    let participantId = await Model.create(Object.assign(
+    const participantId = await Model.create(Object.assign(
       {},
       testParticipant,
       {
-        name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
+        name: (name || testParticipant.name) + time.msToday()
       }
     ))
-    let currency = await CurrencyModel.create(participantId, currencyId)
-    let participant = await Model.getById(participantId)
+    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId)
+    const participant = await Model.getById(participantId)
     return {
       participant,
-      currency
+      participantCurrencyId
     }
   } catch (err) {
     throw new Error(err.message)

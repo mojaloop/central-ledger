@@ -442,12 +442,12 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('throw error registerFulfillHandler', async (test) => {
+    registerHandlersTest.test('throw error registerFulfilHandler', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
-        await allTransferHandlers.registerFulfillHandler()
+        await allTransferHandlers.registerFulfilHandler()
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

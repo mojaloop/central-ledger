@@ -128,10 +128,10 @@ const getEndpoint = async function (request, h) {
   }
 }
 
-const addInitialPositionAndLimits = async function (request, h) {
+const addLimitAndInitialPosition = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    await Participant.addInitialPositionAndLimits(request.params.name, request.payload)
+    await Participant.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
     throw Boom.badRequest()
@@ -145,5 +145,5 @@ module.exports = {
   update,
   addEndpoint,
   getEndpoint,
-  addInitialPositionAndLimits
+  addLimitAndInitialPosition
 }

@@ -131,7 +131,7 @@ module.exports = [
   {
     method: 'POST',
     path: '/participants/{name}/initialPositionAndLimits',
-    handler: Handler.addInitialPositionAndLimits,
+    handler: Handler.addLimitAndInitialPosition,
     options: {
       id: 'participants_limits_pos_add',
       tags: tags,
