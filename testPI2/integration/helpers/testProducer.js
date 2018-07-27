@@ -33,7 +33,7 @@ const Utility = require('../../../src/handlers/lib/utility')
 const Enum = require('../../../src/lib/enum')
 const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
-// const TransferEventAction = Enum.transferEventAction
+const TransferEventAction = Enum.transferEventAction
 const amount = parseFloat(Number(Math.floor(Math.random() * 100 * 100) / 100 + 100).toFixed(2)) // decimal amount between 100.01 and 200.00
 const expiration = new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 
@@ -183,7 +183,7 @@ const topicConfTransferFulfil = {
 exports.transferFulfil = async (transferId) => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger
-  const fulfilObj = Object.assign({}, requestBodys().messageProtocolFulfil(), { id: transferId })
+  const fulfilObj = requestBodys(transferId).messageProtocolFulfil()
   console.log('******************************fulfill object.....******************************************')
   console.log(fulfilObj)
   console.log(topicConfTransferFulfil)
@@ -192,10 +192,26 @@ exports.transferFulfil = async (transferId) => {
   return fulfilObj.transferId
 }
 
-exports.transferFulfilReject = async () => {
+exports.transferFulfilReject = async (transferId) => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'REJECT')
   config.logger = Logger
-  await Producer.produceMessage(requestBodys().messageProtocolFulfilReject(), topicConfTransferFulfil, config)
+  const fulfilRejectObj = requestBodys(transferId).messageProtocolFulfilReject()
+  console.log('******************************fulfillReject object.....******************************************')
+  console.log(fulfilRejectObj)
+  console.log(topicConfTransferFulfil)
+  console.log('**********************************************************************')
+  await Producer.produceMessage(fulfilRejectObj, topicConfTransferFulfil, config)
+  return true
+}
+exports.transferReject = async (transferId) => {
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
+  config.logger = Logger
+  const rejectObj = requestBodys(transferId).messageProtocolReject()
+  console.log('******************************Reject object.....******************************************')
+  console.log(rejectObj)
+  console.log(topicConfTransferFulfil)
+  console.log('**********************************************************************')
+  await Producer.produceMessage(rejectObj, topicConfTransferFulfil, config)
   return true
 }
 
@@ -254,9 +270,11 @@ exports.transferFulfilReject = async () => {
 //   }
 // }
 
-const requestBodys = () => {
-  const localTransfer = Object.assign({}, transfer, { transferId: Uuid() })
+const requestBodys = (transferId = null) => {
+  const localTransfer = Object.assign({}, transfer, { transferId: transferId || Uuid() })
   const localFulfil = Object.assign({}, fulfil, { completedTimestamp: new Date() })
+  const localReject = Object.assign({}, fulfil, {transferState: TransferState.ABORTED})
+
   return {
     messageProtocol: function () {
       return {
@@ -325,6 +343,32 @@ const requestBodys = () => {
             id: Uuid(),
             type: 'fulfil',
             action: 'reject',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    },
+
+    messageProtocolReject: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localReject
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'fulfil',
+            action: TransferEventAction.REJECT,
             createdAt: new Date(),
             state: {
               status: 'success',

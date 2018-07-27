@@ -50,8 +50,51 @@ const getLimitByCurrencyId = async (participantCurrencyId) => {
   }
 }
 
+
+/**
+ * @function GetByParticipantCurrencyId
+ *
+ * @async
+ * @description This returns the participant Limits corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ *
+ * @returns {object} - Returns the rows from participantLimit table if successful, or throws an error if failed
+ */
+
+const getByParticipantCurrencyId = async (participantCurrencyId) => {
+  try {
+    return Db.participantLimit.findOne({ participantCurrencyId, isActive: 1 })
+  } catch (e) {
+    throw e
+  }
+}
+
+/**
+ * @function DestroyByParticipantCurrencyId
+ *
+ * @async
+ * @description This deletes the participant Limits corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
+  try {
+    return Db.participantLimit.destroy({ participantCurrencyId })
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   insert,
   update,
-  getLimitByCurrencyId
+  getLimitByCurrencyId,
+  getByParticipantCurrencyId,
+  destroyByParticipantCurrencyId
 }

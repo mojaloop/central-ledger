@@ -182,6 +182,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      PositionService.calculatePreparePositionsBatch.returns([])
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
       test.equal(result, true)
@@ -217,6 +218,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      TransferService.getTransferInfoToChangePosition.returns(P.resolve({transferStateId: 'EXPIRED'}))
       messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
@@ -228,6 +230,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      TransferService.getTransferInfoToChangePosition.returns(P.resolve({transferStateId: 'EXPIRED'}))
       messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)

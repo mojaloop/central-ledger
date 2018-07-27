@@ -28,7 +28,7 @@ const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/models/position/participantLimit')
+const Model = require('../../../../src/models/participant/participantLimit')
 const Enum = require('../../../../src/lib/enum')
 
 Test('Participant Limit model', async (participantLimitTest) => {

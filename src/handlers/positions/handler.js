@@ -73,6 +73,7 @@ const positions = async (error, messages) => {
       prepareBatch = messages
       message = messages[0]
     } else {
+      prepareBatch = [messages]
       message = messages
     }
     Logger.info('PositionHandler::positions')
@@ -129,7 +130,23 @@ const positions = async (error, messages) => {
       }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
       Logger.info('PositionHandler::positions::timeoutPrepared')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      if (transferInfo.transferStateId !== TransferState.EXPIRED) {
+        Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
+        // TODO: throw Error 2001
+      } else { // transfer state check success
+        const isIncrease = false
+        const transferStateChange = {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferState.ABORTED,
+          reason: 'Client requested to use a transfer that has already expired.'
+        }
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+        message.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Client requested to use a transfer that has already expired.', message.value.content.payload.extensionList)
+        consumer = Kafka.Consumer.getConsumer(
+          await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
+        )
+      }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
