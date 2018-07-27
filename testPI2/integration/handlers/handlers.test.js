@@ -69,11 +69,11 @@ const prepareTestData = async (dataObj) => {
   let payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
   const kafkacat = `kafkacat bash command to trace topics:\nPAYER=${payer.participant.name}; PAYEE=${payee.participant.name}; GROUP=grp; T=topic; kafkacat -b localhost -G $GROUP $T-$PAYER-transfer-prepare $T-$PAYER-position-prepare $T-$PAYER-position-fulfil $T-transfer-fulfil $T-$PAYEE-position-fulfil $T-transfer-transfer $T-notification-event $T-$PAYEE-transfer-prepare $T-$PAYEE-position-abort $T-$PAYER-position-abort $T-$PAYEE-position-prepare`
   console.log(kafkacat)
-  let payerLimit = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
+  let payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
     currency: dataObj.amount.currency,
     limit: {value: dataObj.payer.limit}
   })
-  let payeeLimit = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+  let payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
     currency: dataObj.amount.currency,
     limit: {value: dataObj.payee.limit}
   })
@@ -197,9 +197,9 @@ const prepareTestData = async (dataObj) => {
     topicConfTransferFulfil,
     participants,
     payer,
-    payerLimit,
+    payerLimitAndInitialPosition,
     payee,
-    payeeLimit
+    payeeLimitAndInitialPosition
   }
 }
 
