@@ -269,3 +269,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.end()
 })
+
+Test.onFinish(async () => {
+  process.exit(0)
+})

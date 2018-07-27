@@ -164,6 +164,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tp2.amount AS payeeAmount',
         'ca.participantId AS payeeParticipantId',
         'ca.name AS payeeFsp',
+        'tsc.transferStateChangeId',
         'tsc.transferStateId AS transferState',
         'tsc.reason AS reason',
         'tsc.createdDate AS completedTimestamp',

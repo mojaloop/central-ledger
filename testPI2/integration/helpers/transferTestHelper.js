@@ -79,7 +79,7 @@ exports.prepareData = async () => {
     await TransferParticipantModel.saveTransferParticipant({
       transferParticipantId: transferResult.participantPayeeResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
-      participantCurrencyId: transferResult.participantPayeeResult.currency,
+      participantCurrencyId: transferResult.participantPayeeResult.participantCurrencyId,
       transferParticipantRoleTypeId: 2,
       ledgerEntryTypeId: 1,
       amount: transferResult.transfer.amount
@@ -89,7 +89,7 @@ exports.prepareData = async () => {
     await TransferParticipantModel.saveTransferParticipant({
       transferParticipantId: transferResult.participantPayerResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
-      participantCurrencyId: transferResult.participantPayerResult.currency,
+      participantCurrencyId: transferResult.participantPayerResult.participantCurrencyId,
       transferParticipantRoleTypeId: 1,
       ledgerEntryTypeId: 1,
       amount: transferResult.transfer.amount

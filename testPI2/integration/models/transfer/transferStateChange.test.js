@@ -72,9 +72,9 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
 
       createdId = await Model.saveTransferStateChange(transferStateChange)
       result = await Model.getByTransferId(stateChangePrepareResult.transfer.transferId)
-      assert.equal(createdId, result.transferStateChangeId, ' transferId match')
-      assert.equal(transferStateChange.transferStateId, result.transferStateId, ' key match')
-      assert.equal(transferStateChange.reason, result.reason, ' value match')
+      assert.equal(createdId, result.transferStateChangeId, 'transferId match')
+      assert.equal(transferStateChange.transferStateId, result.transferStateId, 'key match')
+      assert.equal(transferStateChange.reason, result.reason, 'value match')
       assert.end()
     } catch (err) {
       Logger.error(`create all extension objects failed with error - ${err}`)
@@ -115,5 +115,10 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.end()
     }
   })
-  stateChangeTest.end()
+
+  await stateChangeTest.end()
+})
+
+Test.onFinish(async () => {
+  process.exit(0)
 })

@@ -31,6 +31,7 @@
 const ParticipantModel = require('../../models/participant/participant')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
+const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const ParticipantFacade = require('../../models/participant/facade')
 const Config = require('../../lib/config')
@@ -267,6 +268,46 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
 }
 
 /**
+ * @function getPositionByParticipantCurrencyId
+ *
+ * @async
+ * @description This returns the participant position corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ *
+ * @returns {object} - Returns the row from participantPosition table if successful, or throws an error if failed
+ */
+
+const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
+  try {
+    return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * @function getPositionChangeByParticipantPositionId
+ *
+ * @async
+ * @description This returns the last participant position change for given participantPositionId
+ *
+ *
+ * @param {integer} participantPositionId - the participant position id. Example: 1
+ *
+ * @returns {object} - Returns the row from participantPositionChange table if successful, or throws an error if failed
+ */
+
+const getPositionChangeByParticipantPositionId = async (participantPositionId) => {
+  try {
+    return ParticipantPositionChangeModel.getByParticipantPositionId(participantPositionId)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
  * @function DestroyPariticpantPositionByNameAndCurrency
  *
  * @async
@@ -325,6 +366,8 @@ module.exports = {
   getAllEndpoints,
   destroyPariticpantEndpointByName,
   addLimitAndInitialPosition,
+  getPositionByParticipantCurrencyId,
+  getPositionChangeByParticipantPositionId,
   destroyPariticpantPositionByNameAndCurrency,
   destroyPariticpantLimitByNameAndCurrency
 }

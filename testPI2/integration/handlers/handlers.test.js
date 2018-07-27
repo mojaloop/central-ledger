@@ -34,7 +34,8 @@ const Producer = require('../../../src/handlers/lib/kafka/producer')
 const Utility = require('../../../src/handlers/lib/utility')
 const ParticipantHelper = require('../helpers/participant')
 const ParticipantLimitHelper = require('../helpers/participantLimit')
-const TransferFacade = require('../../../src/models/transfer/facade')
+const TransferService = require('../../../src/domain/transfer')
+const ParticipantService = require('../../../src/domain/participant')
 const Handlers = {
   index: require('../../../src/handlers/handlers'),
   positions: require('../../../src/handlers/positions/handler'),
@@ -45,8 +46,8 @@ const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
-const debug = true
-const delay = 10000 // milliseconds
+const debug = false
+const delay = 20000 // milliseconds
 let testData = {
   amount: {
     currency: 'USD',
@@ -67,8 +68,8 @@ let testData = {
 const prepareTestData = async (dataObj) => {
   let payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
   let payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
-  const kafkacat = `kafkacat bash command to trace topics:\nPAYER=${payer.participant.name}; PAYEE=${payee.participant.name}; GROUP=grp; T=topic; kafkacat -b localhost -G $GROUP $T-$PAYER-transfer-prepare $T-$PAYER-position-prepare $T-$PAYER-position-fulfil $T-transfer-fulfil $T-$PAYEE-position-fulfil $T-transfer-transfer $T-notification-event $T-$PAYEE-transfer-prepare $T-$PAYEE-position-abort $T-$PAYER-position-abort $T-$PAYEE-position-prepare`
-  console.log(kafkacat)
+  const kafkacat = `kafkacat bash command to trace kafka topics:\nPAYER=${payer.participant.name}; PAYEE=${payee.participant.name}; GROUP=grp; T=topic; kafkacat -b localhost -G $GROUP $T-$PAYER-transfer-prepare $T-$PAYER-position-prepare $T-$PAYER-position-fulfil $T-transfer-fulfil $T-$PAYEE-position-fulfil $T-transfer-transfer $T-notification-event $T-$PAYEE-transfer-prepare $T-$PAYEE-position-abort $T-$PAYER-position-abort $T-$PAYEE-position-prepare`
+  if (debug) console.log(kafkacat)
   let payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
     currency: dataObj.amount.currency,
     limit: {value: dataObj.payer.limit}
@@ -232,9 +233,10 @@ Test('Handlers test', async handlersTest => {
         console.log(`(transferFulfilCommit) awaiting TransferPrepare consumer processing: timeout ${delay / 1000}s..`)
       }
       setTimeout(async() => {
-        const transfer = await TransferFacade.getById(td.messageProtocol.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        // TODO: here test payer position increase after functionality is implemented (see position check for the COMMIT below)
         test.end()
       }, delay)
     })
@@ -251,10 +253,17 @@ Test('Handlers test', async handlersTest => {
         console.log(`(transferFulfilCommit) awaiting TransferFulfil consumer processing: timeout ${delay / 1000}s..`)
       }
       setTimeout(async() => {
-        const transfer = await TransferFacade.getById(td.messageProtocol.id)
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId) || {}
+        const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
+        const payeeExpectedPosition = payeeInitialPosition - td.transfer.amount.amount
+        const payeePositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payeeCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer.transferState, TransferState.COMMITTED, `Transfer state changed to ${TransferState.COMMITTED}`)
         test.equal(transfer.fulfilment, td.fulfil.fulfilment, 'Commit ilpFulfilment saved')
+        test.equal(payeeCurrentPosition.value, payeeExpectedPosition, 'Payee position decremented by transfer amount and updated in participantPosition')
+        test.equal(payeePositionChange.value, payeeCurrentPosition.value, 'Payee position change value inserted and matches the updated participantPosition value')
+        test.equal(payeePositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payee position change record is bound to the corresponding transfer state change')
         test.end()
       }, delay)
     })
@@ -278,7 +287,7 @@ Test('Handlers test', async handlersTest => {
         console.log(`(transferFulfilReject) awaiting TransferPrepare consumer processing: timeout ${delay / 1000}s..`)
       }
       setTimeout(async() => {
-        const transfer = await TransferFacade.getById(td.messageProtocol.id)
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
         test.end()
@@ -297,10 +306,17 @@ Test('Handlers test', async handlersTest => {
         console.log(`(transferFulfilReject) awaiting TransferFulfil consumer processing: timeout ${delay / 1000}s..`)
       }
       setTimeout(async() => {
-        const transfer = await TransferFacade.getById(td.messageProtocol.id)
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+        const payerExpectedPosition = payerInitialPosition - td.transfer.amount.amount
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
         test.equal(transfer.fulfilment, td.fulfil.fulfilment, 'Reject ilpFulfilment saved')
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
         test.end()
       }, delay)
     })
@@ -309,6 +325,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   // TODO: handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
+  // here implement transfer prepare with amount that exceeds payer's NET_DEBIT_CAP and test if transfer prepare fails
 
   handlersTest.end()
 })
