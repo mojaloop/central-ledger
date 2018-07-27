@@ -37,7 +37,7 @@ const testParticipant = {
   createdDate: new Date()
 }
 
-exports.prepareData = async (name) => {
+exports.prepareData = async (name, currencyId = 'USD') => {
   try {
     let participantId = await Model.create(Object.assign(
       {},
@@ -46,7 +46,7 @@ exports.prepareData = async (name) => {
         name: (name || testParticipant.name) + new Date().getTime() + Math.ceil((Math.random() * 10000))
       }
     ))
-    let currency = await CurrencyModel.create(participantId, 'USD')
+    let currency = await CurrencyModel.create(participantId, currencyId)
     let participant = await Model.getById(participantId)
     return {
       participant,

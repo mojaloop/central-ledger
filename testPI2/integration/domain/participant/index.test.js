@@ -85,7 +85,6 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-
   await participantTest.test('getByName', async (assert) => {
     try {
       participantFixtures.forEach(async participant => {

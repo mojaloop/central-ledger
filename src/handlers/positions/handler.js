@@ -210,16 +210,21 @@ const createPositionHandlers = async (participantName) => {
  * @async
  * @description Registers the position handlers for all participants. Retrieves the list of all participants from the database and loops through each
  * createPositionHandler called to create the handler for each participant
+ * @param {string[]} participantNames - Array of Participants to register
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerPositionHandlers = async () => {
+const registerPositionHandlers = async (participantNames = []) => {
   try {
-    const participantList = await DAO.retrieveAllParticipants()
-    if (participantList.length !== 0) {
-      for (let name of participantList) {
+    let participantNamesList
+    if (Array.isArray(participantNames) && participantNames.length > 0) {
+      participantNamesList = participantNames
+    } else {
+      participantNamesList = await DAO.retrieveAllParticipants()
+    }
+    if (participantNamesList.length !== 0) {
+      for (let name of participantNamesList) {
         await createPositionHandlers(name)
       }
-      return true
     } else {
       Logger.info('No participants for position handler creation')
       return false
@@ -228,6 +233,7 @@ const registerPositionHandlers = async () => {
     Logger.error(error)
     throw error
   }
+  return true
 }
 
 /**
