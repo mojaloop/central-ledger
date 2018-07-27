@@ -28,7 +28,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/models/position/facade')
+const Model = require('../../../../src/models/participant/facade')
 
 Test('Position facade', async (positionFacadeTest) => {
   let sandbox
