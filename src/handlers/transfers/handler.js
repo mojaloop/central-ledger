@@ -89,7 +89,7 @@ const prepare = async (error, messages) => {
     Logger.info('TransferService::prepare')
     const consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.TRANSFER, TransferEventAction.PREPARE))
     const payload = message.value.content.payload
-    let {validationPassed, reasons} = await Validator.validateByName(payload)
+    let { validationPassed, reasons } = await Validator.validateByName(payload)
     if (validationPassed) {
       Logger.info('TransferService::prepare::validationPassed')
       const existingTransfer = await TransferService.getTransferById(payload.transferId)
@@ -153,8 +153,8 @@ const fulfil = async (error, messages) => {
     const transferId = message.value.id
     const payload = message.value.content.payload
     if (metadata.event.type === TransferEventType.FULFIL &&
-          (metadata.event.action === TransferEventAction.COMMIT ||
-          metadata.event.action === TransferEventAction.REJECT)) {
+      (metadata.event.action === TransferEventAction.COMMIT ||
+        metadata.event.action === TransferEventAction.REJECT)) {
       const existingTransfer = await TransferService.getById(transferId)
 
       if (!existingTransfer) {
@@ -230,8 +230,8 @@ const transfer = async (error, messages) => {
     }
 
     // const {metadata, from, to, content, id} = message.value
-    const {metadata} = message.value
-    const {action, state} = metadata.event
+    const { metadata } = message.value
+    const { action, state } = metadata.event
     const status = state.status
     Logger.info('TransferService::transfer action: ' + action)
     Logger.info('TransferService::transfer status: ' + status)
@@ -272,7 +272,7 @@ const transfer = async (error, messages) => {
 
       return true
     } else {
-      Logger.warning('TransferService::transfer - Unknown event...nothing to do here')
+      Logger.warn('TransferService::transfer - Unknown event...nothing to do here')
       return true
     }
     // const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER))
