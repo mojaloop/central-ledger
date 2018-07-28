@@ -64,7 +64,7 @@ Test('Time', async (timeTest) => {
 
   await timeTest.test('sleep should', async (test) => {
     try {
-      let testSleepTime = 1000
+      let testSleepTime = 100
       let debug = true
       clock.restore()
       const start = new Date()
@@ -81,7 +81,7 @@ Test('Time', async (timeTest) => {
 
   await timeTest.test('sleep should', async (test) => {
     try {
-      let testSleepTime = 1000
+      let testSleepTime = 100
       let debug = true
       let caller = 'time.test.js'
       let reason = 'testing'
