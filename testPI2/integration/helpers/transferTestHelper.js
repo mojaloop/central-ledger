@@ -84,7 +84,7 @@ exports.prepareData = async () => {
       ledgerEntryTypeId: 1,
       amount: transferResult.transfer.amount
     }
-  )
+    )
 
     await TransferParticipantModel.saveTransferParticipant({
       transferParticipantId: transferResult.participantPayerResult.participant.participantId,
@@ -94,7 +94,7 @@ exports.prepareData = async () => {
       ledgerEntryTypeId: 1,
       amount: transferResult.transfer.amount
     }
-  )
+    )
 
     return {
       ilp,

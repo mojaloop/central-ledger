@@ -299,7 +299,6 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-
     // positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => { // TODO: extend and enable unit test
     //   await Kafka.Consumer.createHandler(topicName, config, command)
     //   Utility.transformGeneralTopicName.returns(topicName)

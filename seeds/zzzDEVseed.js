@@ -105,14 +105,18 @@ const participantPositions = [
     changedDate: createdDate
   }
 ]
-exports.seed = async function (knex, Promise) {
+exports.seed = async function (knex) {
   try {
     await knex('participant').insert(participants)
     await knex('participantCurrency').insert(participantCurrencies)
     await knex('participantLimit').insert(participantLimits)
     await knex('participantPosition').insert(participantPositions)
+    return true
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return
-    else console.log(`Uploading development seeds has failed with the following error: ${err}`)
+    if (err.code === 'ER_DUP_ENTRY') return -1001
+    else {
+      console.log(`Uploading development seeds has failed with the following error: ${err}`)
+      return -1000
+    }
   }
 }

@@ -168,6 +168,6 @@ module.exports = {
   validateByName,
   validateById,
   validateFulfilCondition,
-//  validateTransferPrepareSchema,
+  //  validateTransferPrepareSchema,
   reasons
 }

@@ -40,7 +40,7 @@ Test('Participant Position model', async (participantPositionChangeTest) => {
       findOne: sandbox.stub(),
       find: sandbox.stub(),
       destroy: sandbox.stub(),
-      query: sandbox.stub()      
+      query: sandbox.stub()
     }
     t.end()
   })
@@ -52,7 +52,6 @@ Test('Participant Position model', async (participantPositionChangeTest) => {
 
   await participantPositionChangeTest.test('getByParticipantPositionId', async (assert) => {
     try {
-
       let builderStub = sandbox.stub()
       let selectStub = sandbox.stub()
       let orderByStub = sandbox.stub()
@@ -67,7 +66,7 @@ Test('Participant Position model', async (participantPositionChangeTest) => {
         reservedValue: 0.0,
         changedDate: new Date()
       }
-  
+
       Db.participantPositionChange.query.callsArgWith(0, builderStub)
       Db.participantPositionChange.query.returns(participantPositionChange)
       builderStub.where.returns({
@@ -101,7 +100,6 @@ Test('Participant Position model', async (participantPositionChangeTest) => {
       assert.end()
     }
   })
-
 
   // await participantPositionChangeTest.test('destroyByParticipantCurrencyId', async (assert) => {
   //   try {

@@ -44,7 +44,7 @@ Test('transfers read model', modelTest => {
             .then(savedTransfer => {
               test.ok(savedTransfer)
               test.equal(savedTransfer.transferId, transfer.transferId)
-           //   test.equal(savedTransfer.state, transfer.state)
+              //   test.equal(savedTransfer.state, transfer.state)
               test.end()
             })
         })

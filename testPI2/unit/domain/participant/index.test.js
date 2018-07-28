@@ -55,6 +55,7 @@ Test('Participant service', async (participantTest) => {
       isActive: 1,
       createdDate: new Date()
     }
+
   ]
   const participantResult = [
     {
@@ -139,7 +140,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
     sandbox.stub(ParticipantPositionModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantPositionModel, 'destroyByParticipantCurrencyId')
-    
+
     sandbox.stub(ParticipantPositionChangeModel, 'getByParticipantPositionId')
 
     Db.participant = {
@@ -183,6 +184,32 @@ Test('Participant service', async (participantTest) => {
   participantTest.afterEach(t => {
     sandbox.restore()
     t.end()
+  })
+
+  await participantTest.test('getById with non-exisiting id should', async (assert) => {
+    try {
+      ParticipantModel.getById.withArgs(10).returns(Promise.resolve(null))
+      let result = await Service.getById(10)
+      assert.equal(result, null, 'return null')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get participant by Id failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getByName with non-exisiting name should', async (assert) => {
+    try {
+      ParticipantModel.getByName.withArgs('name').returns(Promise.resolve(null))
+      let result = await Service.getByName('name')
+      assert.equal(result, null, 'return null')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get participant by Id failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
   })
 
   await participantTest.test('create false participant', async (assert) => {

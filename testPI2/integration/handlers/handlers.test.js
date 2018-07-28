@@ -232,7 +232,7 @@ Test('Handlers test', async handlersTest => {
       if (debug) {
         console.log(`(transferFulfilCommit) awaiting TransferPrepare consumer processing: timeout ${delay / 1000}s..`)
       }
-      setTimeout(async() => {
+      setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
@@ -252,7 +252,7 @@ Test('Handlers test', async handlersTest => {
       if (debug) {
         console.log(`(transferFulfilCommit) awaiting TransferFulfil consumer processing: timeout ${delay / 1000}s..`)
       }
-      setTimeout(async() => {
+      setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId) || {}
         const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
@@ -286,7 +286,7 @@ Test('Handlers test', async handlersTest => {
       if (debug) {
         console.log(`(transferFulfilReject) awaiting TransferPrepare consumer processing: timeout ${delay / 1000}s..`)
       }
-      setTimeout(async() => {
+      setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
@@ -305,7 +305,7 @@ Test('Handlers test', async handlersTest => {
       if (debug) {
         console.log(`(transferFulfilReject) awaiting TransferFulfil consumer processing: timeout ${delay / 1000}s..`)
       }
-      setTimeout(async() => {
+      setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
         const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
