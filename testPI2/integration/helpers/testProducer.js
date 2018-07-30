@@ -30,6 +30,12 @@ const Producer = require('../../../src/handlers/lib/kafka/producer')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Utility = require('../../../src/handlers/lib/utility')
+const Enum = require('../../../src/lib/enum')
+const TransferState = Enum.TransferState
+const TransferEventType = Enum.transferEventType
+const TransferEventAction = Enum.transferEventAction
+const amount = parseFloat(Number(Math.floor(Math.random() * 100 * 100) / 100 + 100).toFixed(2)) // decimal amount between 100.01 and 200.00
+const expiration = new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 
 const transfer = {
   transferId: Uuid(),
@@ -37,11 +43,11 @@ const transfer = {
   payeeFsp: 'dfsp2',
   amount: {
     currency: 'USD',
-    amount: '466.88'
+    amount
   },
   ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
   condition: '47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU',
-  expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)), // tomorrow
+  expiration,
   extensionList: {
     extension: [
       {
@@ -59,7 +65,7 @@ const transfer = {
 const fulfil = {
   fulfilment: 'oAKAAA',
   completedTimestamp: new Date(),
-  transferState: 'COMMITTED',
+  transferState: TransferState.COMMITTED,
   extensionList: {
     extension: [
       {
@@ -74,6 +80,8 @@ const fulfil = {
   }
 }
 
+const reject = Object.assign({}, fulfil, {transferState: TransferState.ABORTED})
+
 let messageProtocol = {
   id: transfer.transferId,
   from: transfer.payerFsp,
@@ -86,8 +94,8 @@ let messageProtocol = {
   metadata: {
     event: {
       id: Uuid(),
-      type: 'prepare',
-      action: 'prepare',
+      type: TransferEventAction.PREPARE,
+      action: TransferEventType.PREPARE,
       createdAt: new Date(),
       state: {
         status: 'success',
@@ -98,52 +106,44 @@ let messageProtocol = {
   pp: ''
 }
 
-const messageProtocolFulfil = {
-  id: transfer.transferId,
-  from: transfer.payerFsp,
-  to: transfer.payeeFsp,
-  type: 'application/json',
-  content: {
-    header: '',
-    payload: fulfil
-  },
-  metadata: {
-    event: {
-      id: Uuid(),
-      type: 'fulfil',
-      action: 'commit',
-      createdAt: new Date(),
-      state: {
-        status: 'success',
-        code: 0
-      }
-    }
-  },
-  pp: ''
-}
+const messageProtocolFulfil = JSON.parse(JSON.stringify(messageProtocol))
+messageProtocolFulfil.content.payload = fulfil
+messageProtocolFulfil.metadata.event.id = Uuid()
+messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
+messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
+
+const messageProtocolReject = JSON.parse(JSON.stringify(messageProtocolFulfil))
+messageProtocolReject.content.payload = reject
+messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 
 const topicConfTransferPrepare = {
-  topicName: Utility.transformAccountToTopicName(transfer.payerFsp, 'transfer', 'prepare'),
+  topicName: Utility.transformAccountToTopicName(transfer.payerFsp, TransferEventType.TRANSFER, TransferEventType.PREPARE),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
 }
 exports.transferPrepare = async () => {
-  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'PREPARE')
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.PREPARE.toUpperCase())
   config.logger = Logger
   await Producer.produceMessage(messageProtocol, topicConfTransferPrepare, config)
   return true
 }
 
 const topicConfTransferFulfil = {
-  topicName: Utility.transformGeneralTopicName('transfer', 'fulfil'),
+  topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
 }
 exports.transferFulfil = async () => {
-  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'FULFIL')
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger
   await Producer.produceMessage(messageProtocolFulfil, topicConfTransferFulfil, config)
+  return true
+}
+exports.transferReject = async () => {
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
+  config.logger = Logger
+  await Producer.produceMessage(messageProtocolReject, topicConfTransferFulfil, config)
   return true
 }

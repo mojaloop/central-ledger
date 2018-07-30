@@ -12,6 +12,9 @@ module.exports = {
     INTERCHANGE_FEE: 2,
     HUB_FEE: 3
   },
+  ParticipantLimitType: {
+    NET_DEBIT_CAP: 1
+  },
   TransferParticipantRoleType: {
     PAYER_DFSP: 1,
     PAYEE_DFSP: 2,
@@ -25,6 +28,7 @@ module.exports = {
     FAILED: 'FAILED',
     EXPIRED: 'EXPIRED',
     REJECTED: 'REJECTED',
+    ABORTED: 'ABORTED',
     PENDING_SETTLEMENT: 'PENDING_SETTLEMENT',
     SETTLED: 'SETTLED'
   },
@@ -49,5 +53,9 @@ module.exports = {
   rejectionType: {
     EXPIRED: 'expired',
     CANCELLED: 'cancelled'
+  },
+  transferEventStatus: {
+    SUCCESS: 'success',
+    FAILED: 'failed'
   }
 }

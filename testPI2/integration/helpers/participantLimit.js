@@ -19,81 +19,59 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
-// TODO: determine if this script is needed (note: it is used for seeds during integration tests)
-
 'use strict'
 
-// const Moment = require('moment')
-const Db = require('../../db')
-// const TransferState = require('../state')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Model = require('../../../src/domain/participant')
 
-const saveTransferState = async (transferState) => {
-  Logger.debug('save transferState' + transferState.toString())
+const limitAndInitialPositionSampleData = {
+  currency: 'USD',
+  limit: {
+    type: 'NET_DEBIT_CAP',
+    value: 10000000
+  },
+  initialPosition: 0
+}
 
+exports.prepareLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj = {}) => {
   try {
-    return await Db.transferState.insert(transferState)
+    const limitAndInitialPosition = {
+      currency: limitAndInitialPositionObj.currency || limitAndInitialPositionSampleData.currency,
+      limit: {
+        type: limitAndInitialPositionObj.limit.type || limitAndInitialPositionSampleData.limit.type,
+        value: limitAndInitialPositionObj.limit.value || limitAndInitialPositionSampleData.limit.value
+      },
+      initialPosition: limitAndInitialPositionObj.initialPosition || limitAndInitialPositionSampleData.initialPosition
+    }
+    return await Model.addLimitAndInitialPosition(participantName, limitAndInitialPosition)
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-// const getByTransferStateId = (id) => {
-//   return Db.transferState.query(builder => {
-//     return builder
-//       .where({ transferStateId: id })
-//       .select('transferState.*')
-//       .first()
-//   })
-// }
+exports.deleteInitialPositionData = async (participantName) => {
+  if (!participantName) {
+    throw new Error('Please provide a valid participant name!')
+  }
 
-const getByTransferStateId = (id) => {
   try {
-    return Db.transferState.findOne({ transferStateId: id })
+    return await Model.destroyPariticpantPositionByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-const getAll = () => {
+exports.deleteInitialLimitData = async (participantName) => {
+  if (!participantName) {
+    throw new Error('Please provide a valid participant name!')
+  }
+
   try {
-    return Db.transferState.find({})
+    return await Model.destroyPariticpantLimitByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
     throw new Error(err.message)
   }
-}
-
-// const truncatetransferState = () => {
-//   return Db.transferState.truncate()
-// }
-
-const destroyTransferState = () => {
-  try {
-    return Db.transferState.destroy()
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-const destroyTransferStateById = (id) => {
-  try {
-    return Db.transferState.destroy({ transferStateId: id })
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-module.exports = {
-  saveTransferState,
-  getByTransferStateId,
-  getAll,
-  // truncatetransferState,
-  destroyTransferState,
-  destroyTransferStateById
 }

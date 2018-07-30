@@ -1,15 +1,52 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ --------------
+ ******/
+
 'use strict'
 
 const P = require('bluebird')
-const TransferModel = require('../../models/transfer/transfer')
 const TransferFacade = require('../../models/transfer/facade')
+const TransferModel = require('../../models/transfer/transfer')
+const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
+const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const SettlementFacade = require('../../models/settlement/facade')
 const SettlementModel = require('../../models/settlement/settlement')
 const Projection = require('./projection')
 const TransferObjectTransform = require('./transform')
-const Enum = require('../../lib/enum')
+// const Enum = require('../../lib/enum')
 const Events = require('../../lib/events')
 const Errors = require('../../errors')
+
+const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
+  try {
+    const result = await Projection.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    const t = TransferObjectTransform.toTransfer(result)
+    Events.emitTransferPrepared(t)
+    return {transfer: t}
+  } catch (e) {
+    throw e
+  }
+}
 
 const getTransferById = (id) => {
   return TransferModel.getById(id)
@@ -23,64 +60,55 @@ const getAll = () => {
   return TransferFacade.getAll()
 }
 
-const getFulfillment = (id) => {
-  return getById(id)
-    .then(transfer => {
-      if (!transfer) {
-        throw new Errors.TransferNotFoundError()
-      }
-      if (!transfer.executionCondition) {
-        throw new Errors.TransferNotConditionalError()
-      }
-      if (transfer.state === Enum.TransferState.REJECTED) {
-        throw new Errors.AlreadyRolledBackError()
-      }
-      if (!transfer.fulfilment) {
-        throw new Errors.MissingFulfillmentError()
-      }
-      return transfer.fulfilment
-    })
+const getTransferState = (id) => {
+  return TransferStateChangeModel.getByTransferId(id)
 }
 
-const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
-  try {
-    const result = await Projection.saveTransferPrepared(payload, stateReason, hasPassedValidation)
-    const t = TransferObjectTransform.toTransfer(result)
-    Events.emitTransferPrepared(t)
-    return {transfer: t}
-  } catch (e) {
-    throw e
-  }
+const getTransferInfoToChangePosition = (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  return TransferFacade.getTransferInfoToChangePosition(id, transferParticipantRoleTypeId, ledgerEntryTypeId)
 }
 
-const reject = async (stateReason, transferId) => {
-  const {alreadyRejected, transferStateChange} = await Projection.saveTransferRejected(stateReason, transferId)
-  // const t = TransferObjectTransform.toTransfer(result)
-  if (!alreadyRejected) {
-    Events.emitTransferRejected(transferStateChange)
+const getFulfilment = async (id) => {
+  const transfer = await getById(id)
+  if (!transfer) {
+    throw new Errors.TransferNotFoundError()
   }
-  return {alreadyRejected, transferStateChange}
+  if (!transfer.ilpCondition) {
+    throw new Errors.TransferNotConditionalError()
+  }
+  const transferFulfilment = await TransferFulfilmentModel.getByTransferId(id)
+  if (!transferFulfilment) {
+    throw new Errors.TransferNotFoundError()
+  }
+  if (!transferFulfilment.ilpFulfilment) {
+    throw new Errors.MissingFulfilmentError()
+  }
+  return transferFulfilment.ilpFulfilment
 }
 
 const expire = (id) => {
-  return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
+  // return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
 }
 
-const fulfil = (transferId, fulfilment) => {
-  return Projection.saveTransferExecuted(transferId, fulfilment)
-    .then(transfer => {
-      const t = TransferObjectTransform.toTransfer(transfer)
-      Events.emitTransferExecuted(t, {execution_condition_fulfillment: fulfilment.fulfilment})
-      return t
-    })
-    .catch(err => {
-      if (typeof err === Errors.ExpiredTransferError) {
-        return expire(fulfilment.id)
-          .then(() => { throw new Errors.UnpreparedTransferError() })
-      } else {
-        throw err
-      }
-    })
+const fulfil = async (transferId, payload) => {
+  try {
+    const isCommit = true
+    const transfer = await TransferFacade.saveTransferFulfiled(transferId, payload, isCommit)
+    return TransferObjectTransform.toTransfer(transfer)
+  } catch (err) {
+    throw err
+  }
+}
+
+const reject = async (transferId, payload) => {
+  try {
+    const isCommit = false
+    const stateReason = 'Transaction failed due to user rejection' // TODO: move to generic reason
+    const transfer = await TransferFacade.saveTransferFulfiled(transferId, payload, isCommit, stateReason)
+    return TransferObjectTransform.toTransfer(transfer)
+  } catch (err) {
+    throw err
+  }
 }
 
 const rejectExpired = () => {
@@ -111,15 +139,22 @@ const settle = async () => {
   })
 }
 
+const saveTransferStateChange = async (stateRecord) => {
+  TransferStateChangeModel.saveTransferStateChange(stateRecord)
+}
+
 module.exports = {
-  fulfil,
   getTransferById,
   getById,
   getAll,
-  getFulfillment,
+  getTransferState,
+  getTransferInfoToChangePosition,
+  getFulfilment,
   prepare,
+  fulfil,
   reject,
   rejectExpired,
-  settle
+  settle,
+  saveTransferStateChange,
+  expire
 }
-

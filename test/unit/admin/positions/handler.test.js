@@ -41,12 +41,13 @@ Test('positions handler', (handlerTest) => {
     })
 
     performTest.test('return expected positions if settleable transfers exist', async function (test) {
-      let positions = [{
-        participant: `${hostname}/participants/participant1`,
-        payments: '5',
-        receipts: '0',
-        net: '-5'
-      },
+      let positions = [
+        {
+          participant: `${hostname}/participants/participant1`,
+          payments: '5',
+          receipts: '0',
+          net: '-5'
+        },
         {
           participant: `${hostname}/participants/participant2`,
           payments: '0',

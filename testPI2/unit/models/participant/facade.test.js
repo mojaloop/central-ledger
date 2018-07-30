@@ -281,7 +281,7 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
-  await facadeTest.test('addInitialPositionAndLimits', async (assert) => {
+  await facadeTest.test('addLimitAndInitialPosition', async (assert) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const obj = {
@@ -299,17 +299,17 @@ Test('Participant facade', async (facadeTest) => {
         },
         initialPosition: 0
       }
-      var result = await Model.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+      var result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPostionObj)
       assert.equal(result, 1)
       assert.end()
     } catch (err) {
-      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      Logger.error(`addLimitAndInitialPosition failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await facadeTest.test('addInitialPositionAndLimits should throw error', async (assert) => {
+  await facadeTest.test('addLimitAndInitialPosition should throw error', async (assert) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const obj = {
@@ -328,11 +328,11 @@ Test('Participant facade', async (facadeTest) => {
         initialPosition: 0
       }
 
-      await Model.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+      await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPostionObj)
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
-      Logger.error(`addInitialPositionAndLimits failed with error - ${err}`)
+      Logger.error(`addLimitAndInitialPosition failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }

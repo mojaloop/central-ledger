@@ -183,4 +183,3 @@ Test('Charge service', serviceTest => {
 
   serviceTest.end()
 })
-

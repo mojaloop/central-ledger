@@ -14,6 +14,9 @@ const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
 const transferEventAction = require('../../../../src/lib/enum').transferEventAction
+const Enum = require('../../../../src/lib/enum')
+const TransferState = Enum.TransferState
+const PositionService = require('../../../../src/domain/position')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -38,6 +41,18 @@ const transfer = {
       }
     ]
   }
+}
+
+const transferInfo = {
+  transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+  transferStateId: TransferState.RECEIVED_FULFIL,
+  // transferStateId: TransferState.RECEIVED_FULFIL,
+  amount: {
+    currency: 'USD',
+    amount: '433.88'
+  },
+  participantCurrencyId: 1,
+  reason: 'reason description'
 }
 
 const messageProtocol = {
@@ -92,7 +107,7 @@ const config = {
   }
 }
 
-const command = () => {}
+const command = () => { }
 
 const participants = ['testName1', 'testName2']
 
@@ -108,6 +123,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(KafkaConsumer.prototype, 'commitMessageSync').returns(P.resolve())
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
+    sandbox.stub(PositionService)
     sandbox.stub(Utility)
     sandbox.stub(TransferStateChange)
     Utility.transformAccountToTopicName.returns(topicName)
@@ -171,6 +187,20 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
+    registerHandlersTest.test('registerPrepareHandlers topic list is passed', async (test) => {
+      try {
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.throws(new Error())
+        await allTransferHandlers.registerPositionHandlers(participants)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
     registerHandlersTest.end()
   })
 
@@ -186,29 +216,100 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for COMMIT when messages is an array', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for PREPARE when messages is an array', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      messages[0].value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
       test.equal(result, true)
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for RECEIVED_FULFIL when single', async (test) => {
+      const isIncrease = false
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId: TransferState.COMMITTED
+      }
+
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
+
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      messages[0].value.metadata.event.action = transferEventAction.REJECT
-      const result = await allTransferHandlers.positions(null, messages)
+      messages[0].value.metadata.event.action = transferEventAction.COMMIT
+      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).returns(P.resolve(true))
+      const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
       test.equal(result, true)
       test.end()
     })
+
+    positionsTest.test('Update transferStateChange in the database for FAKE when single', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.COMMIT
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is FAKE when single message', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.REJECT
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is REJECTED when single message', async (test) => {
+      const isIncrease = false
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId: TransferState.ABORTED,
+        reason: transferInfo.reason
+      }
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).returns(P.resolve(true))
+
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.REJECT
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    // positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => { // TODO: extend and enable unit test
+    //   await Kafka.Consumer.createHandler(topicName, config, command)
+    //   Utility.transformGeneralTopicName.returns(topicName)
+    //   Utility.getKafkaConfig.returns(config)
+    //   TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+    //   messages[0].value.metadata.event.action = transferEventAction.REJECT
+    //   const result = await allTransferHandlers.positions(null, messages)
+    //   Logger.info(result)
+    //   test.equal(result, true)
+    //   test.end()
+    // })
 
     positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)

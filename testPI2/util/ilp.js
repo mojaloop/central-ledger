@@ -2,21 +2,21 @@
 
 const cc = require('five-bells-condition')
 
-const myFulfillment = new cc.PreimageSha256()
+const myFulfilment = new cc.PreimageSha256()
 const stringInputToEncode = 'hello world'
 
-myFulfillment.setPreimage(new Buffer(stringInputToEncode))
+myFulfilment.setPreimage(new Buffer(stringInputToEncode))
 
 // Calculate the condition
-const condition = myFulfillment.getConditionUri()
+const condition = myFulfilment.getConditionUri()
 console.log(`Condition: ${condition}`)
 
 // Calculate the fulfilment
-const fulfilment = myFulfillment.serializeUri()
+const fulfilment = myFulfilment.serializeUri()
 console.log(`fulfilment: ${fulfilment}`)
 
 // Calculate the condition from the fulfilment
-const conditionResult = cc.fulfillmentToCondition(fulfilment)
+const conditionResult = cc.fulfilmentToCondition(fulfilment)
 
 // Print results and if the conditions match
 console.log(`Validate condition result = ${conditionResult} | match result = ${condition === conditionResult}`)

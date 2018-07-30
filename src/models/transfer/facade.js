@@ -28,6 +28,8 @@
 'use strict'
 
 const Db = require('../../db')
+const Uuid = require('uuid4')
+const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 
@@ -67,6 +69,7 @@ const getById = async (id) => {
           'tp2.amount AS payeeAmount',
           'ca.participantId AS payeeParticipantId',
           'ca.name AS payeeFsp',
+          'tsc.transferStateChangeId',
           'tsc.transferStateId AS transferState',
           'tsc.reason AS reason',
           'tsc.createdDate AS completedTimestamp',
@@ -128,8 +131,8 @@ const getAll = async () => {
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
           'tf.ilpFulfilment AS fulfilment'
-          )
-       .orderBy('tsc.transferStateChangeId', 'desc')
+        )
+        .orderBy('tsc.transferStateChangeId', 'desc')
       for (let transferResult of transferResultList) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(transferResult.transferId)
         transferResult.isTransferReadModel = true
@@ -141,7 +144,90 @@ const getAll = async () => {
   }
 }
 
+const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
+  try {
+    return await Db.transferParticipant.query(async (builder) => {
+      let result = await builder
+        .where({
+          'transferParticipant.transferId': id,
+          'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
+          'transferParticipant.ledgerEntryTypeId': ledgerEntryTypeId
+        })
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferId', 'transferParticipant.transferId')
+        .select(
+          'transferParticipant.*',
+          'tsc.transferStateId',
+          'tsc.reason'
+        )
+        .orderBy('tsc.transferStateChangeId', 'desc')
+        .first()
+      return result
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
+  const transferFulfilmentId = Uuid() // TODO: should be generated before TransferFulfilmentDuplicateCheck and passed here as parameter
+  const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.REJECTED) : Enum.TransferState.ABORTED)
+  const transferFulfilmentRecord = {
+    transferFulfilmentId,
+    transferId,
+    ilpFulfilment: payload.fulfilment,
+    completedDate: new Date(payload.completedTimestamp),
+    isValid: true,
+    createdDate: new Date()
+  }
+  let transferExtensions = []
+  if (payload.extensionList && payload.extensionList.extension) {
+    transferExtensions = payload.extensionList.extension.map(ext => {
+      return {
+        transferId,
+        transferFulfilmentId,
+        key: ext.key,
+        value: ext.value
+      }
+    })
+  }
+  const transferStateChangeRecord = {
+    transferId,
+    transferStateId: state,
+    reason: stateReason,
+    createdDate: new Date()
+  }
+
+  try {
+    const knex = await Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
+        for (let transferExtension of transferExtensions) {
+          await knex('transferExtension').transacting(trx).insert(transferExtension)
+        }
+        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    }).catch((err) => {
+      throw err
+    })
+    return {
+      saveTransferFulfiledExecuted: true,
+      transferFulfilmentRecord,
+      transferStateChangeRecord,
+      transferExtensions
+    }
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   getById,
-  getAll
+  getAll,
+  getTransferInfoToChangePosition,
+  saveTransferFulfiled
 }

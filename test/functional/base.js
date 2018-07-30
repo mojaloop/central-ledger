@@ -78,7 +78,7 @@ const updateParticipant = (participantName, isDisabled) => putAdmin(`/participan
 
 const getTransfer = (transferId) => getApi(`/transfers/${transferId}`)
 
-const getFulfillment = (transferId) => getApi(`/transfers/${transferId}/fulfilment`)
+const getFulfilment = (transferId) => getApi(`/transfers/${transferId}/fulfilment`)
 
 const prepareTransfer = (transferId, transfer) => P.resolve(putApi(`/transfers/${transferId}`, transfer))
 
@@ -104,7 +104,7 @@ module.exports = {
   createCharge,
   fulfillTransfer,
   getTransfer,
-  getFulfillment,
+  getFulfilment,
   getApi,
   getAdmin,
   getParticipant,

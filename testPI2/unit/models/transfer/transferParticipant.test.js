@@ -52,7 +52,7 @@ Test('TransferParticipant model', async (transferParticipant) => {
     assert.end()
   })
 
-  await transferParticipant.test('save transfer participant test', async (assert) => {
+  await transferParticipant.test('saveTransferParticipant test', async (assert) => {
     try {
       let saved = {transferParticipantId: transferParticipantRecord.transferParticipantId}
       Db.transferParticipant.insert.returns(Promise.resolve(saved))
@@ -63,6 +63,19 @@ Test('TransferParticipant model', async (transferParticipant) => {
     } catch (err) {
       Logger.error(`create transfer participant failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferParticipant.test('saveTransferParticipant should', async (assert) => {
+    try {
+      Db.transferParticipant.insert.throws(new Error())
+      await Model.saveTransferParticipant(transferParticipantRecord)
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create transfer participant failed with error - ${err}`)
+      assert.pass('throw error')
       assert.end()
     }
   })
