@@ -50,7 +50,6 @@ const getLimitByCurrencyId = async (participantCurrencyId) => {
   }
 }
 
-
 /**
  * @function GetByParticipantCurrencyId
  *
