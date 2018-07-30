@@ -31,6 +31,7 @@
 const ParticipantModel = require('../../models/participant/participant')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
+const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const ParticipantFacade = require('../../models/participant/facade')
 const Config = require('../../lib/config')
@@ -225,16 +226,16 @@ const destroyPariticpantEndpointByName = async (name) => {
 }
 
 /**
- * @function AddInitialPositionAndLimits
+ * @function addLimitAndInitialPosition
  *
  * @async
  * @description This creates the initial position and limits for a participant
  *
  * ParticipantModel.getByName called to get the participant details from the participant name
- * ParticipantFacade.addInitialPositionAndLimits called to add the participant initial postion and limits
+ * ParticipantFacade.addLimitAndInitialPosition called to add the participant initial postion and limits
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {object} payload - the payload containing the currency, limit and initial postion values
+ * @param {object} limitAndInitialPositionObj - the payload containing the currency, limit and initial postion values
  * Example: {
  *  "currency": "USD",
  *  "limit": {
@@ -247,20 +248,60 @@ const destroyPariticpantEndpointByName = async (name) => {
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-const addInitialPositionAndLimits = async (name, payload) => {
+const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency)
+    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency)
     participantExists(participant)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     if (existingLimit || existingPosition) {
       throw new Error('Participant Limit or Initial Position already set')
     }
-    const limitPostionObj = payload
-    if (limitPostionObj.initialPosition == null) {
-      limitPostionObj.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
+    let limitAndInitialPosition = limitAndInitialPositionObj
+    if (limitAndInitialPosition.initialPosition == null) {
+      limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
-    return ParticipantFacade.addInitialPositionAndLimits(participant.participantCurrencyId, limitPostionObj)
+    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, limitAndInitialPosition)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * @function getPositionByParticipantCurrencyId
+ *
+ * @async
+ * @description This returns the participant position corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantCurrencyId - the participant currency id. Example: 1
+ *
+ * @returns {object} - Returns the row from participantPosition table if successful, or throws an error if failed
+ */
+
+const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
+  try {
+    return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * @function getPositionChangeByParticipantPositionId
+ *
+ * @async
+ * @description This returns the last participant position change for given participantPositionId
+ *
+ *
+ * @param {integer} participantPositionId - the participant position id. Example: 1
+ *
+ * @returns {object} - Returns the row from participantPositionChange table if successful, or throws an error if failed
+ */
+
+const getPositionChangeByParticipantPositionId = async (participantPositionId) => {
+  try {
+    return ParticipantPositionChangeModel.getByParticipantPositionId(participantPositionId)
   } catch (err) {
     throw err
   }
@@ -324,7 +365,9 @@ module.exports = {
   getEndpoint,
   getAllEndpoints,
   destroyPariticpantEndpointByName,
-  addInitialPositionAndLimits,
+  addLimitAndInitialPosition,
+  getPositionByParticipantCurrencyId,
+  getPositionChangeByParticipantPositionId,
   destroyPariticpantPositionByNameAndCurrency,
   destroyPariticpantLimitByNameAndCurrency
 }

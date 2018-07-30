@@ -7,4 +7,3 @@ module.exports = {
   scheme: 'bearer',
   validate: TokenAuth.validate
 }
-

@@ -19,53 +19,56 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
-const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrency')
-const time = require('../../../src/lib/time')
+const Test = require('tapes')(require('tape'))
+const Sinon = require('sinon')
+const Logger = require('@mojaloop/central-services-shared').Logger
+const Model = require('../../../../src/domain/position/positionCalculator')
 
-const testParticipant = {
-  name: 'fsp',
-  currency: 'USD',
-  isDisabled: 0,
-  createdDate: new Date()
-}
+Test('Position calculator', async (positionCalculatorTest) => {
+  let sandbox
 
-exports.prepareData = async (name, currencyId = 'USD') => {
-  try {
-    const participantId = await Model.create(Object.assign(
-      {},
-      testParticipant,
-      {
-        name: (name || testParticipant.name) + time.msToday()
-      }
-    ))
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId)
-    const participant = await Model.getById(participantId)
-    return {
-      participant,
-      participantCurrencyId
+  positionCalculatorTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    t.end()
+  })
+
+  positionCalculatorTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
+
+  await positionCalculatorTest.test('sum should', async (test) => {
+    let position1 = {
+      payments: 10,
+      receipts: 10,
+      net: 10
     }
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+    let position2 = {
+      payments: 5,
+      receipts: 5,
+      net: 5
+    }
+    let sumResult = {
+      payments: 15,
+      receipts: 15,
+      net: 15
+    }
 
-exports.deletePreparedData = async (participantName) => {
-  if (!participantName) {
-    throw new Error('Please provide a valid participant name!')
-  }
+    try {
+      const result = await Model.sum(position1, position2)
+      test.deepEqual(result, sumResult, 'correctly sum up positions')
+      test.end()
+    } catch (err) {
+      Logger.error(`currency seed failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
 
-  try {
-    return await Model.destroyByName(participantName)
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+  await positionCalculatorTest.end()
+})

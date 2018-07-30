@@ -17,10 +17,11 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  * Deon Botha <deon.botha@modusbox.com>
  --------------
@@ -81,4 +82,8 @@ Test('Transfer read model test', async (transferReadModelTest) => {
     }
   })
   transferReadModelTest.end()
+})
+
+Test.onFinish(async () => {
+  process.exit(0)
 })

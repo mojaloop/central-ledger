@@ -22,6 +22,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -193,7 +194,6 @@ const createPositionHandlers = async (participantName) => {
   try {
     const positionHandler = {
       command: positions,
-      // auto.offset.reset: beginning
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.POSITION.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
     const topicNameList = [

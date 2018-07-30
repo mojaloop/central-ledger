@@ -19,53 +19,43 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
-const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrency')
-const time = require('../../../src/lib/time')
+/**
+ * @module src/models/participant/
+ */
 
-const testParticipant = {
-  name: 'fsp',
-  currency: 'USD',
-  isDisabled: 0,
-  createdDate: new Date()
-}
+const Db = require('../../db')
 
-exports.prepareData = async (name, currencyId = 'USD') => {
+/**
+ * @function getByParticipantPositionId
+ *
+ * @async
+ * @description This returns the last participant position change for given participantPositionId
+ *
+ *
+ * @param {integer} participantPositionId - the participant position id. Example: 1
+ *
+ * @returns {object} - Returns the row from participantPositionChange table if successful, or throws an error if failed
+ */
+
+const getByParticipantPositionId = async (participantPositionId) => {
   try {
-    const participantId = await Model.create(Object.assign(
-      {},
-      testParticipant,
-      {
-        name: (name || testParticipant.name) + time.msToday()
-      }
-    ))
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId)
-    const participant = await Model.getById(participantId)
-    return {
-      participant,
-      participantCurrencyId
-    }
-  } catch (err) {
-    throw new Error(err.message)
+    return await Db.participantPositionChange.query(async (builder) => {
+      let result = builder
+        .where({'participantPositionChange.participantPositionId': participantPositionId})
+        .select('participantPositionChange.*')
+        .orderBy('participantPositionChangeId', 'desc')
+        .first()
+      return result
+    })
+  } catch (e) {
+    throw e
   }
 }
-
-exports.deletePreparedData = async (participantName) => {
-  if (!participantName) {
-    throw new Error('Please provide a valid participant name!')
-  }
-
-  try {
-    return await Model.destroyByName(participantName)
-  } catch (err) {
-    throw new Error(err.message)
-  }
+module.exports = {
+  getByParticipantPositionId
 }

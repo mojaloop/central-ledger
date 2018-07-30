@@ -191,3 +191,7 @@ Test('Extension model test', async (extensionTest) => {
   })
   extensionTest.end()
 })
+
+Test.onFinish(async () => {
+  process.exit(0)
+})

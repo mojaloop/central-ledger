@@ -200,8 +200,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('add participant limit and initial position', async (assert) => {
     try {
-      let result = await ParticipantLimitHelper.prepareInitialPositionAndLimits(participantFixtures[0].name, 30)
-      assert.ok(result, `addInitialPositionAndLimits successful for Participant: ${participantFixtures[0].name}`)
+      let result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[0].name, {limit: {value: 30}})
+      assert.ok(result, `addLimitAndInitialPosition successful for Participant: ${participantFixtures[0].name}`)
       assert.end()
     } catch (err) {
       console.log(err)
@@ -268,4 +268,8 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.end()
+})
+
+Test.onFinish(async () => {
+  process.exit(0)
 })

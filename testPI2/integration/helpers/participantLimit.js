@@ -18,6 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
@@ -26,7 +27,7 @@
 
 const Model = require('../../../src/domain/participant')
 
-const initialPositionAndLimit = {
+const limitAndInitialPositionSampleData = {
   currency: 'USD',
   limit: {
     type: 'NET_DEBIT_CAP',
@@ -35,19 +36,17 @@ const initialPositionAndLimit = {
   initialPosition: 0
 }
 
-exports.prepareInitialPositionAndLimits = async (name, limitValue = null, limitType = null) => {
+exports.prepareLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj = {}) => {
   try {
-    await Model.addInitialPositionAndLimits(name, Object.assign(
-      {},
-      initialPositionAndLimit,
-      {
-        limit: {
-          value: (limitValue || initialPositionAndLimit.limit.value),
-          type: (limitType || initialPositionAndLimit.limit.type)
-        }
-      }
-    ))
-    return initialPositionAndLimit
+    const limitAndInitialPosition = {
+      currency: limitAndInitialPositionObj.currency || limitAndInitialPositionSampleData.currency,
+      limit: {
+        type: limitAndInitialPositionObj.limit.type || limitAndInitialPositionSampleData.limit.type,
+        value: limitAndInitialPositionObj.limit.value || limitAndInitialPositionSampleData.limit.value
+      },
+      initialPosition: limitAndInitialPositionObj.initialPosition || limitAndInitialPositionSampleData.initialPosition
+    }
+    return await Model.addLimitAndInitialPosition(participantName, limitAndInitialPosition)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -59,7 +58,7 @@ exports.deleteInitialPositionData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyPariticpantPositionByNameAndCurrency(participantName, initialPositionAndLimit.currency)
+    return await Model.destroyPariticpantPositionByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -71,7 +70,7 @@ exports.deleteInitialLimitData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyPariticpantLimitByNameAndCurrency(participantName, initialPositionAndLimit.currency)
+    return await Model.destroyPariticpantLimitByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
     throw new Error(err.message)
   }

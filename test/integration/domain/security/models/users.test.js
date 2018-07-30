@@ -56,12 +56,12 @@ Test('party model', partyTest => {
       const user2 = createParty()
 
       Model.save(user1)
-      .then(() => Model.save(user2))
-      .then(() => Model.getAll())
-      .then(results => {
-        test.ok(results.length >= 2)
-        test.end()
-      })
+        .then(() => Model.save(user2))
+        .then(() => Model.getAll())
+        .then(results => {
+          test.ok(results.length >= 2)
+          test.end()
+        })
     })
 
     getAllTest.end()
