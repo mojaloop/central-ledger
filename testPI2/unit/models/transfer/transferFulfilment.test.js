@@ -1,3 +1,4 @@
+
 /*****
  License
  --------------
@@ -46,13 +47,41 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
   await transferFulfilment.test('setup', async (assert) => {
     sandbox = Sinon.createSandbox()
     Db.transferFulfilment = {
-      insert: sandbox.stub()
+      insert: sandbox.stub(),
+      find: sandbox.stub()
     }
     assert.pass('setup OK')
     assert.end()
   })
 
-  await transferFulfilment.test('save transfer fulfilment test', async (assert) => {
+  await transferFulfilment.test('getByTransferId test', async (assert) => {
+    try {
+      Db.transferFulfilment.find.returns(Promise.resolve(transferFulfilmentRecord))
+      let response = await Model.getByTransferId(transferFulfilmentRecord.transferId)
+      assert.equal(response, transferFulfilmentRecord, 'transfer fulfilment is returned')
+      assert.ok(Db.transferFulfilment.find.calledOnce, 'find is called once')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByTransferId failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferFulfilment.test('getByTransferId should', async (assert) => {
+    try {
+      Db.transferFulfilment.find.throws(new Error())
+      await Model.getByTransferId(transferFulfilmentRecord)
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByTransferId failed with error - ${err}`)
+      assert.pass('throw error')
+      assert.end()
+    }
+  })
+
+  await transferFulfilment.test('saveTransferFulfilment test', async (assert) => {
     try {
       let saved = {transferFulfilmentId: transferFulfilmentRecord.transferFulfilmentId}
       Db.transferFulfilment.insert.returns(Promise.resolve(saved))
@@ -63,6 +92,19 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
     } catch (err) {
       Logger.error(`create transfer fulfilment failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await transferFulfilment.test('saveTransferFulfilment should', async (assert) => {
+    try {
+      Db.transferFulfilment.insert.throws(new Error())
+      await Model.saveTransferFulfilment(transferFulfilmentRecord)
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      Logger.error(`create transfer fulfilment failed with error - ${err}`)
+      assert.pass('throw error')
       assert.end()
     }
   })

@@ -77,15 +77,37 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
 /**
  * @function Disconnect
  *
- * @description Disconnects the current producer from Kafka
+ * @param {string} topicName - Producer of the specified topic to be disconnected. If this is null, then ALL producers will be disconnected. Defaults: null.
+ *
+ * @description Disconnects a specific producer, or ALL producers from Kafka
  *
  * @returns {object} Promise
  */
-const disconnect = async (topicName) => {
-  try {
-    await getProducer(topicName).disconnect()
-  } catch (e) {
-    throw e
+const disconnect = async (topicName = null) => {
+  if (topicName && typeof topicName === 'string') {
+    try {
+      await getProducer(topicName).disconnect()
+    } catch (e) {
+      throw e
+    }
+  } else if (topicName === null) {
+    let isError = false
+    let errorTopicList = []
+
+    let tpName
+    for (tpName in listOfProducers) {
+      try {
+        await getProducer(tpName).disconnect()
+      } catch (e) {
+        isError = true
+        errorTopicList.push({ topic: tpName, error: e.toString() })
+      }
+    }
+    if (isError) {
+      throw Error(`The following Producers could not be disconnected: ${JSON.stringify(errorTopicList)}`)
+    }
+  } else {
+    throw Error(`Unable to disconnect Producer: ${topicName}`)
   }
 }
 
@@ -103,11 +125,12 @@ const getProducer = (topicName) => {
   if (listOfProducers[topicName]) {
     return listOfProducers[topicName]
   } else {
-    throw Error(`no producer found for topic ${topicName}`)
+    throw Error(`No producer found for topic ${topicName}`)
   }
 }
 
 module.exports = {
+  getProducer,
   produceMessage,
   disconnect
 }

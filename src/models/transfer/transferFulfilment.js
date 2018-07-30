@@ -27,8 +27,17 @@
 const Db = require('../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
+const getByTransferId = async (transferId) => {
+  Logger.debug('getByTransferId ' + transferId.toString())
+  try {
+    return await Db.transferFulfilment.find({transferId: transferId})
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 const saveTransferFulfilment = async (record) => {
-  Logger.debug('save transferFulfilment' + record.toString())
+  Logger.debug('save transferFulfilment ' + record.toString())
   try {
     return await Db.transferFulfilment.insert(record)
   } catch (err) {
@@ -37,5 +46,6 @@ const saveTransferFulfilment = async (record) => {
 }
 
 module.exports = {
+  getByTransferId,
   saveTransferFulfilment
 }

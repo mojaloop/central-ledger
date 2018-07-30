@@ -22,6 +22,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -35,7 +36,8 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Projection = require('../../domain/transfer/projection')
+const TransferService = require('../../domain/transfer')
+const PositionService = require('../../domain/position')
 const Utility = require('../lib/utility')
 const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
@@ -54,8 +56,6 @@ const TransferEventAction = Enum.transferEventAction
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
  * ABORT status
  *
- * Projection.updateTransferState called and updates transfer state
- *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
  *
@@ -73,33 +73,59 @@ const positions = async (error, messages) => {
     } else {
       message = messages
     }
-    Logger.info('TransferHandler::position')
+    Logger.info('PositionHandler::positions')
     let consumer = {}
     const payload = message.value.content.payload
+    payload.transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
-      // Consumed Prepare message for Payer
+      Logger.info('PositionHandler::positions::prepare')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
-      await Projection.updateTransferState(payload, TransferState.RESERVED)
+      await TransferService.saveTransferStateChange({transferId: payload.transferId, transferStateId: TransferState.RESERVED})
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
-      // Consumed Commit message for Payee
+      Logger.info('PositionHandler::positions::commit')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL))
-      payload.transferId = message.value.id
-      // TODO: Check RECEIVED_FULFIL state
-      await Projection.updateTransferState(payload, TransferState.COMMITTED)
+      // Check current transfer state
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
+        Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
+        // TODO: throw Error 2001
+      } else { // transfer state check success
+        Logger.info('PositionHandler::positions::commit::validationPassed')
+        const isIncrease = false
+        const transferStateChange = {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferState.COMMITTED
+        }
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+      }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
-      // Consumed Reject message for Payee
+      Logger.info('PositionHandler::positions::reject')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      if (transferInfo.transferStateId !== TransferState.REJECTED) {
+        Logger.info('PositionHandler::positions::reject::validationFailed::notRejectedState')
+        // TODO: throw Error 2001
+      } else { // transfer state check success
+        Logger.info('PositionHandler::positions::reject::validationPassed')
+        const isIncrease = false
+        const transferStateChange = {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferState.ABORTED,
+          reason: transferInfo.reason
+        }
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+      }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
-      // Consumed timeout for transfer in RECEIVED_PREPARE transferState
-      // TODO: Remove from PositionHandler after mojaloop/docs/CentralServices/arch_diagrams/Arch-Flows.svg is updated to queue directly to NotificationHandler
+      Logger.info('PositionHandler::positions::timeoutPrepared')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
-      // Consumed timeout for transfer in RESERVED transferState
+      Logger.info('PositionHandler::positions::timeout')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
-      // Consumed Fail action
+      Logger.info('PositionHandler::positions::fail')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
     } else {
+      Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action))
       await consumer.commitMessageSync(message)
       throw new Error('Event type or action is invalid')
@@ -107,7 +133,6 @@ const positions = async (error, messages) => {
     await consumer.commitMessageSync(message)
     // Will follow framework flow in future
     await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
-
     return true
   } catch (error) {
     Logger.error(error)
@@ -119,7 +144,6 @@ const createPositionHandlers = async (participantName) => {
   try {
     const positionHandler = {
       command: positions,
-      // auto.offset.reset: beginning
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.POSITION.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
     const topicNameList = [
@@ -140,16 +164,21 @@ const createPositionHandlers = async (participantName) => {
  * @async
  * @description Registers the position handlers for all participants. Retrieves the list of all participants from the database and loops through each
  * createPositionHandler called to create the handler for each participant
+ * @param {string[]} participantNames - Array of Participants to register
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerPositionHandlers = async () => {
+const registerPositionHandlers = async (participantNames = []) => {
   try {
-    const participantList = await DAO.retrieveAllParticipants()
-    if (participantList.length !== 0) {
-      for (let name of participantList) {
+    let participantNamesList
+    if (Array.isArray(participantNames) && participantNames.length > 0) {
+      participantNamesList = participantNames
+    } else {
+      participantNamesList = await DAO.retrieveAllParticipants()
+    }
+    if (participantNamesList.length !== 0) {
+      for (let name of participantNamesList) {
         await createPositionHandlers(name)
       }
-      return true
     } else {
       Logger.info('No participants for position handler creation')
       return false
@@ -158,6 +187,7 @@ const registerPositionHandlers = async () => {
     Logger.error(error)
     throw error
   }
+  return true
 }
 
 /**

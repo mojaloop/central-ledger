@@ -102,7 +102,7 @@ Test('ilpPacket model', async (ilpTest) => {
       var result = await Model.getByTransferId('1')
       assert.equal(result.transferId, ilpPacket.transferId, 'transferIds are equal')
       assert.equal(result.condition, ilpPacket.condition, 'conditions match')
-      assert.equal(result.fulfilment, ilpPacket.fulfilment, 'fulfillments match')
+      assert.equal(result.fulfilment, ilpPacket.fulfilment, 'fulfilments match')
       assert.end()
     } catch (err) {
       Logger.error(`create ilpPacket failed with error - ${err}`)

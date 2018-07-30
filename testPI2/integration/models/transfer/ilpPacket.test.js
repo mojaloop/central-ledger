@@ -173,3 +173,7 @@ Test('Ilp service tests', async (ilpTest) => {
   })
   ilpTest.end()
 })
+
+Test.onFinish(async () => {
+  process.exit(0)
+})

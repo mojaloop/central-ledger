@@ -28,6 +28,8 @@
 
 const ParticipantPreparationModule = require('./participant')
 const Model = require('../../../src/models/transfer/transfer')
+const time = require('../../../src/lib/time')
+
 // const transferFacade = require('../../../src/models/transfer/facade')
 
 exports.prepareData = async () => {
@@ -35,7 +37,7 @@ exports.prepareData = async () => {
     let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
     let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
 
-    let transferId = 'tr' + new Date().getTime() + Math.ceil((Math.random() * 10000))
+    let transferId = 'tr' + time.msToday()
     await Model.saveTransfer({
       transferId: transferId,
       amount: 100,

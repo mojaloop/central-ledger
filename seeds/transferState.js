@@ -53,11 +53,14 @@ const transferStates = [
   }
 ]
 
-exports.seed = async function (knex, Promise) {
+exports.seed = async function (knex) {
   try {
     return await knex('transferState').insert(transferStates)
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return
-    else console.log(`Uploading seeds for transferState has failed with the following error: ${err}`)
+    if (err.code === 'ER_DUP_ENTRY') return -1001
+    else {
+      console.log(`Uploading seeds for transferState has failed with the following error: ${err}`)
+      return -1000
+    }
   }
 }

@@ -29,13 +29,15 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
-const TransferIndex = require('../../../../src/domain/transfer')
-// const CommandsIndex = require('../../../../src/domain/transfer/commands')
+const TransferService = require('../../../../src/domain/transfer')
 const Projection = require('../../../../src/domain/transfer/projection')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
-const Events = require('../../../../src/lib/events')
+const TransferModel = require('../../../../src/models/transfer/transfer')
+const TransferFacade = require('../../../../src/models/transfer/facade')
+const TransferStateChangeModel = require('../../../../src/models/transfer/transferStateChange')
+const TransferFulfilmentModel = require('../../../../src/models/transfer/transferFulfilment')
 const TransferState = require('../../../../src/lib/enum').TransferState
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -58,24 +60,6 @@ const payload = {
   }
 }
 
-const participant1 = {
-  participantId: 1,
-  currencyId: 'USD',
-  name: 'dfsp1',
-  createdDate: '2018-05-17 10:10:01',
-  isDisabled: false
-}
-
-const participant2 = {
-  participantId: 2,
-  currencyId: 'USD',
-  name: 'dfsp2',
-  createdDate: '2018-05-17 10:10:01',
-  isDisabled: false
-}
-
-const stateReason = 'reasonOne'
-
 const ilpRecord = {
   transferId: payload.transferId,
   packet: payload.ilpPacket,
@@ -83,11 +67,11 @@ const ilpRecord = {
   fulfilment: null
 }
 
-const transferStateRecord = {
+const transferStateChangeRecord = {
   transferId: payload.transferId,
-  transferStateId: TransferState.RECEIVED,
+  transferStateId: TransferState.RECEIVED_PREPARE,
   reason: null,
-  changedDate: new Date()
+  createdDate: new Date()
 }
 
 const extensionsRecordList = [
@@ -95,57 +79,48 @@ const extensionsRecordList = [
     transferId: payload.transferId,
     key: payload.extensionList.extension[0].key,
     value: payload.extensionList.extension[0].value,
-    changedDate: new Date(),
-    changedBy: 'user' // this needs to be changed and cannot be null
+    createdDate: new Date(),
+    createdBy: 'unknown' // this needs to be changed and cannot be null
   }
 ]
 
 const transferRecord = {
   transferId: payload.transferId,
-  payerParticipantId: participant1.participantId,
-  payeeParticipantId: participant2.participantId,
   amount: payload.amount.amount,
   currencyId: payload.amount.currency,
-  expirationDate: new Date(payload.expiration)
+  ilpCondition: payload.condition,
+  expirationDate: new Date(payload.expiration),
+  createdDate: new Date()
+}
+
+const transferFulfilmentRecord = {
+  transferId: payload.transferId,
+  ilpFulfilment: 'oAKAAA',
+  completedDate: new Date() - 60000,
+  isValid: true,
+  settlementWindowId: null,
+  createdDate: new Date()
 }
 
 const prepareResponse = {
   isSaveTransferPrepared: true,
   transferRecord,
   ilpRecord,
-  transferStateRecord,
+  transferStateChangeRecord,
   extensionsRecordList
 }
 
-const newTransferStateChange = {
-  transferStateChangeId: null,
-  transferId: payload.transferId,
-  transferStateId: TransferState.ABORTED,
-  reason: stateReason,
-  changedDate: new Date()
-}
-
-const rejectResponse = {
-  alreadyRejected: false,
-  newTransferStateChange
-}
-
-// const newTransferStateRecord = {
-//   transferStateChangeId: null,
-//   transferId: payload.transferId,
-//   transferStateId: TransferState.ABORTED,
-//   reason: stateReason,
-//   changedDate: new Date()
-// }
-
-Test('Transfer-Index', transferIndexTest => {
+Test('Transfer Service', transferIndexTest => {
   let sandbox
 
   transferIndexTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Projection)
     sandbox.stub(TransferObjectTransform)
-    sandbox.stub(Events)
+    sandbox.stub(TransferModel)
+    sandbox.stub(TransferFacade)
+    sandbox.stub(TransferStateChangeModel)
+    sandbox.stub(TransferFulfilmentModel)
     t.end()
   })
 
@@ -157,9 +132,9 @@ Test('Transfer-Index', transferIndexTest => {
   transferIndexTest.test('prepare should', preparedTest => {
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
-        Projection.saveTransferPrepared.returns(P.resolve(prepareResponse))
+        Projection.saveTransferPrepared.returns(Promise.resolve(prepareResponse))
         TransferObjectTransform.toTransfer.returns(payload)
-        const response = await TransferIndex.prepare(payload)
+        const response = await TransferService.prepare(payload)
         test.deepEqual(response.transfer, payload)
         test.end()
       } catch (e) {
@@ -172,7 +147,7 @@ Test('Transfer-Index', transferIndexTest => {
       Projection.saveTransferPrepared.throws(new Error())
       TransferObjectTransform.toTransfer.returns(payload)
       try {
-        await TransferIndex.prepare(payload)
+        await TransferService.prepare(payload)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -182,10 +157,10 @@ Test('Transfer-Index', transferIndexTest => {
     })
 
     preparedTest.test('prepare transfer throws error', async (test) => {
-      Projection.saveTransferPrepared.returns(P.resolve(prepareResponse))
+      Projection.saveTransferPrepared.returns(Promise.resolve(prepareResponse))
       TransferObjectTransform.toTransfer.throws(new Error())
       try {
-        await TransferIndex.prepare(payload)
+        await TransferService.prepare(payload)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -196,32 +171,271 @@ Test('Transfer-Index', transferIndexTest => {
     preparedTest.end()
   })
 
-  transferIndexTest.test('prepare should', rejectTest => {
-    rejectTest.test('reject transfer payload that passed validation', async (test) => {
-      Projection.saveTransferRejected.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
-      const rejectResponse = await TransferIndex.reject(stateReason, payload.transferId)
-      rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate
-      test.equal(rejectResponse.alreadyRejected, false)
-      test.deepEqual(rejectResponse.transferStateChange, newTransferStateChange)
-      test.end()
+  transferIndexTest.test('getTransferById should', getTransferByIdTest => {
+    getTransferByIdTest.test('get transfer by id', async (test) => {
+      try {
+        TransferModel.getById.returns(Promise.resolve(transferRecord))
+        const response = await TransferService.getTransferById(payload.transferId)
+        test.deepEqual(response, transferRecord)
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferById failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
     })
-    rejectTest.end()
+    getTransferByIdTest.end()
   })
 
-  transferIndexTest.test('prepare should', rejectTest => {
-    rejectTest.test('reject transfer throws an error', async (test) => {
-      Projection.saveTransferRejected.returns(P.resolve({alreadyRejected: false, transferStateChange: newTransferStateChange}))
+  transferIndexTest.test('getById should', getByIdTest => {
+    getByIdTest.test('get all transfer details by id', async (test) => {
       try {
-        await TransferIndex.reject(stateReason, payload.transferId)
-        rejectResponse.transferStateChange.changedDate = newTransferStateChange.changedDate
+        TransferFacade.getById.returns(Promise.resolve(transferRecord))
+        const response = await TransferService.getById(payload.transferId)
+        test.deepEqual(response, transferRecord)
+        test.end()
+      } catch (err) {
+        Logger.error(`getById failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    getByIdTest.end()
+  })
+
+  transferIndexTest.test('getAll should', getAllTest => {
+    getAllTest.test('get all transfer details by id', async (test) => {
+      try {
+        TransferFacade.getAll.returns(Promise.resolve([transferRecord]))
+        const response = await TransferService.getAll()
+        test.deepEqual(response, [transferRecord])
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferById failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    getAllTest.end()
+  })
+
+  transferIndexTest.test('getTransferState should', getTransferStateTest => {
+    getTransferStateTest.test('get transfer state by id', async (test) => {
+      try {
+        TransferStateChangeModel.getByTransferId.returns(Promise.resolve(transferStateChangeRecord))
+        const response = await TransferService.getTransferState(payload.transferId)
+        test.deepEqual(response, transferStateChangeRecord)
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferState failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    getTransferStateTest.end()
+  })
+
+  transferIndexTest.test('getTransferInfoToChangePosition should', getTransferInfoToChangePositionTest => {
+    getTransferInfoToChangePositionTest.test('get transfer info for changing the position by id', async (test) => {
+      try {
+        TransferFacade.getTransferInfoToChangePosition.returns(Promise.resolve(transferRecord))
+        const response = await TransferService.getTransferInfoToChangePosition(payload.transferId)
+        test.deepEqual(response, transferRecord)
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferInfoToChangePosition failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    getTransferInfoToChangePositionTest.end()
+  })
+
+  transferIndexTest.test('getFulfilment should', getFulfilmentTest => {
+    getFulfilmentTest.test('return ilpFulfilment', async (test) => {
+      try {
+        TransferFacade.getById.returns(Promise.resolve(transferRecord))
+        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
+        const response = await TransferService.getFulfilment(payload.transferId)
+        test.equal(response, transferFulfilmentRecord.ilpFulfilment)
+        test.end()
+      } catch (err) {
+        Logger.error(`getFulfilment failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    getFulfilmentTest.test('throw TransferNotFoundError', async (test) => {
+      try {
+        TransferFacade.getById.returns(Promise.resolve(null))
+        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
+        await TransferService.getFulfilment(payload.transferId)
+        test.fail('Error not thrown!')
+        test.end()
+      } catch (err) {
+        Logger.error(`getFulfilment failed with error - ${err}`)
+        test.equal(err.name, 'TransferNotFoundError')
+        test.end()
+      }
+    })
+
+    getFulfilmentTest.test('throw TransferNotConditionalError', async (test) => {
+      try {
+        const transfer = Object.assign({}, transferRecord, {ilpCondition: null})
+        TransferFacade.getById.returns(Promise.resolve(transfer))
+        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
+        await TransferService.getFulfilment(payload.transferId)
+        test.fail('Error not thrown!')
+        test.end()
+      } catch (err) {
+        Logger.error(`getFulfilment failed with error - ${err}`)
+        test.equal(err.name, 'TransferNotConditionalError')
+        test.end()
+      }
+    })
+
+    getFulfilmentTest.test('throw TransferNotFoundError when looking up transfer fulfilment', async (test) => {
+      try {
+        // const transfer = Object.assign({}, transferRecord, {ilpCondition: null})
+        TransferFacade.getById.returns(Promise.resolve(transferRecord))
+        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(null))
+        await TransferService.getFulfilment(payload.transferId)
+        test.fail('Error not thrown!')
+        test.end()
+      } catch (err) {
+        Logger.error(`getFulfilment failed with error - ${err}`)
+        test.equal(err.name, 'TransferNotFoundError')
+        test.end()
+      }
+    })
+
+    getFulfilmentTest.test('throw MissingFulfilmentError when looking up transfer fulfilment', async (test) => {
+      try {
+        const transferFuflilment = Object.assign({}, transferFulfilmentRecord, {ilpFulfilment: null})
+        TransferFacade.getById.returns(Promise.resolve(transferRecord))
+        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFuflilment))
+        await TransferService.getFulfilment(payload.transferId)
+        test.fail('Error not thrown!')
+        test.end()
+      } catch (err) {
+        Logger.error(`getFulfilment failed with error - ${err}`)
+        test.equal(err.name, 'MissingFulfilmentError')
+        test.end()
+      }
+    })
+
+    getFulfilmentTest.end()
+  })
+
+  transferIndexTest.test('expire should', expireTest => {
+    expireTest.test('be called', async (test) => {
+      try {
+        await TransferService.expire()
+        test.ok(true)
+        test.end()
+      } catch (err) {
+        Logger.error(`expire failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    expireTest.end()
+  })
+
+  transferIndexTest.test('fulfil should', fulfilTest => {
+    fulfilTest.test('commit transfer', async (test) => {
+      try {
+        TransferFacade.saveTransferFulfiled.returns(Promise.resolve(transferRecord))
+        TransferObjectTransform.toTransfer.returns(payload)
+        const response = await TransferService.fulfil(payload.transferId, payload)
+        test.equal(response, payload)
+        test.end()
+      } catch (err) {
+        Logger.error(`fulfil failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    fulfilTest.test('throw error', async (test) => {
+      try {
+        TransferFacade.saveTransferFulfiled.throws(new Error())
+        TransferObjectTransform.toTransfer.returns(payload)
+        await TransferService.fulfil(payload.transferId, payload)
         test.fail('Error not thrown')
         test.end()
-      } catch (e) {
+      } catch (err) {
+        Logger.error(`fulfil failed with error - ${err}`)
         test.pass('Error thrown')
         test.end()
       }
     })
+
+    fulfilTest.end()
+  })
+
+  transferIndexTest.test('reject should', rejectTest => {
+    rejectTest.test('commit transfer', async (test) => {
+      try {
+        TransferFacade.saveTransferFulfiled.returns(Promise.resolve(transferRecord))
+        TransferObjectTransform.toTransfer.returns(payload)
+        const response = await TransferService.reject(payload.transferId, payload)
+        test.equal(response, payload)
+        test.end()
+      } catch (err) {
+        Logger.error(`reject failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    rejectTest.test('throw error', async (test) => {
+      try {
+        TransferFacade.saveTransferFulfiled.throws(new Error())
+        TransferObjectTransform.toTransfer.returns(payload)
+        await TransferService.reject(payload.transferId, payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (err) {
+        Logger.error(`reject failed with error - ${err}`)
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
     rejectTest.end()
+  })
+
+  transferIndexTest.test('rejectExpired should', rejectExpiredTest => {
+    rejectExpiredTest.test('be called', async (test) => {
+      try {
+        await TransferService.rejectExpired()
+        test.ok(true)
+        test.end()
+      } catch (err) {
+        Logger.error(`rejectExpired failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    rejectExpiredTest.end()
+  })
+
+  transferIndexTest.test('saveTransferStateChange should', saveTransferStateChangeTest => {
+    saveTransferStateChangeTest.test('save new transfer state', async (test) => {
+      try {
+        TransferStateChangeModel.saveTransferStateChange.returns(Promise.resolve(true))
+        await TransferService.saveTransferStateChange(transferStateChangeRecord)
+        test.pass('transfer state saved!')
+        test.end()
+      } catch (err) {
+        Logger.error(`saveTransferStateChange failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    saveTransferStateChangeTest.end()
   })
 
   transferIndexTest.end()

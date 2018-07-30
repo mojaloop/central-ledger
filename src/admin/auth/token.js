@@ -38,4 +38,3 @@ module.exports = {
   scheme: 'jwt-strategy',
   validate: validate
 }
-

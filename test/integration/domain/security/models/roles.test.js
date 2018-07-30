@@ -109,16 +109,16 @@ Test('role model', roleTest => {
   roleTest.test('addPartyRole should', addPartyRoleTest => {
     addPartyRoleTest.test('add party role', test => {
       PartyModel.save(createParty())
-      .then(userResult => Model.save(createRole())
+        .then(userResult => Model.save(createRole())
           .then(role => ({ partyId: userResult.partyId, roleId: role.roleId }))
-      )
-      .then(userRole => {
-        Model.addPartyRole(userRole)
-        .then(result => {
-          test.deepEqual(result, userRole)
-          test.end()
+        )
+        .then(userRole => {
+          Model.addPartyRole(userRole)
+            .then(result => {
+              test.deepEqual(result, userRole)
+              test.end()
+            })
         })
-      })
     })
 
     addPartyRoleTest.end()
@@ -132,15 +132,15 @@ Test('role model', roleTest => {
         role2: Model.save(createRole()),
         role3: Model.save(createRole())
       })
-      .then(result => {
-        const party = result.party
-        Model.addPartyRole({ partyId: party.partyId, roleId: result.role2.roleId })
-          .then(userRole => Model.getPartyRole(party.partyId))
-          .then(results => {
-            test.deepEqual(results, [ result.role2 ])
-            test.end()
-          })
-      })
+        .then(result => {
+          const party = result.party
+          Model.addPartyRole({ partyId: party.partyId, roleId: result.role2.roleId })
+            .then(userRole => Model.getPartyRole(party.partyId))
+            .then(results => {
+              test.deepEqual(results, [ result.role2 ])
+              test.end()
+            })
+        })
     })
 
     getPartyRoleTest.end()

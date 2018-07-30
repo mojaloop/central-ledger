@@ -62,7 +62,7 @@ Test('events', eventTest => {
       Events.onTransferExecuted(spy)
       let transfer = {id: 12}
       TransferObjectTransform.toTransfer.returns(transfer)
-      let relatedResources = {execution_condition_fulfillment: 'oAKAAA'}
+      let relatedResources = {execution_condition_fulfilment: 'oAKAAA'}
       Events.emitTransferExecuted(transfer, relatedResources)
       t.ok(spy.calledWith({resource: transfer, related_resources: relatedResources}))
       t.end()
@@ -98,7 +98,7 @@ Test('events', eventTest => {
       let transfer = {id: 12}
       TransferObjectTransform.toTransfer.returns(transfer)
       let resource = {id: 12}
-      let relatedResources = {execution_condition_fulfillment: 'oAKAAA'}
+      let relatedResources = {execution_condition_fulfilment: 'oAKAAA'}
       Events.emitTransferRejected(resource, relatedResources)
       t.ok(spy.calledWith({resource: transfer, related_resources: relatedResources}))
       t.end()

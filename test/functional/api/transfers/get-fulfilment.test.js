@@ -12,7 +12,7 @@ Test('GET /transfers/:id/fulfilment', getTest => {
 
     await Base.prepareTransfer(transferId, transfer)
     await Base.fulfillTransfer(transferId, fulfilment)
-    const res = await Base.getFulfillment(transferId)
+    const res = await Base.getFulfilment(transferId)
     test.equal(res.text, fulfilment)
     test.end()
   })
@@ -20,13 +20,13 @@ Test('GET /transfers/:id/fulfilment', getTest => {
   getTest.test('should return error is transfer does not exist', test => {
     const transferId = Fixtures.generateTransferId()
 
-    Base.getFulfillment(transferId)
-          .expect(404)
-          .then(res => {
-            test.equal(res.body.id, 'TransferNotFoundError')
-            test.equal(res.body.message, 'This transfer does not exist')
-            test.end()
-          })
+    Base.getFulfilment(transferId)
+      .expect(404)
+      .then(res => {
+        test.equal(res.body.id, 'TransferNotFoundError')
+        test.equal(res.body.message, 'This transfer does not exist')
+        test.end()
+      })
   })
 
   getTest.test('should return error when retrieving fulfilment if transfer not executed', test => {
@@ -35,10 +35,10 @@ Test('GET /transfers/:id/fulfilment', getTest => {
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
-        Base.getFulfillment(transferId)
+        Base.getFulfilment(transferId)
           .expect(404)
           .then(res => {
-            test.equal(res.body.id, 'MissingFulfillmentError')
+            test.equal(res.body.id, 'MissingFulfilmentError')
             test.equal(res.body.message, 'This transfer has not yet been fulfilled')
             test.end()
           })
@@ -52,7 +52,7 @@ Test('GET /transfers/:id/fulfilment', getTest => {
     Base.prepareTransfer(transferId, transfer)
       .then(() => Base.rejectTransfer(transferId, Fixtures.rejectionMessage(), { name: Base.participant2Name, password: Base.participant2Password }))
       .then(() => {
-        Base.getFulfillment(transferId)
+        Base.getFulfilment(transferId)
           .expect(422)
           .then(res => {
             test.equal(res.body.id, 'AlreadyRolledBackError')
@@ -69,7 +69,7 @@ Test('GET /transfers/:id/fulfilment', getTest => {
 
     Base.prepareTransfer(transferId, transfer)
       .then(() => {
-        Base.getFulfillment(transferId)
+        Base.getFulfilment(transferId)
           .expect(422)
           .then(res => {
             test.equal(res.body.id, 'TransferNotConditionalError')

@@ -22,6 +22,7 @@
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -33,51 +34,14 @@ const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const Service = require('../../../../src/domain/participant')
+const ParticipantHelper = require('../../helpers/participant')
+const ParticipantEndpointHelper = require('../../helpers/participantEndpoint')
+const ParticipantLimitHelper = require('../../helpers/participantLimit')
 
 Test('Participant service', async (participantTest) => {
   let sandbox
-
-  const participantFixtures = [
-    {
-      name: 'fsp1',
-      currency: 'USD',
-      isActive: 1,
-      createdDate: new Date()
-    },
-    {
-      name: 'fsp2',
-      currency: 'EUR',
-      isActive: 1,
-      createdDate: new Date()
-    }
-  ]
-
-  const endpointsFixtures = [
-    {
-      name: 'fsp1',
-      payload: {
-        type: 'FSIOP_CALLBACK_URL',
-        value: 'http://localhost:3001/participants/dfsp1/notification1'
-      }
-    },
-    {
-      name: 'fsp1',
-      payload: {
-        type: 'ALARM_NOTIFICATION_URL',
-        value: 'http://localhost:3001/participants/dfsp1/notification2'
-      }
-    }
-  ]
-
-  const initialPositionAndLimit = {
-    currency: 'USD',
-    limit: {
-      type: 'NET_DEBIT_CAP',
-      value: 10000000
-    },
-    initialPosition: 0
-  }
-
+  let participantFixtures = []
+  let endpointsFixtures = []
   let participantMap = new Map()
 
   await participantTest.test('setup', async (assert) => {
@@ -100,18 +64,20 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('create participant', async (assert) => {
     try {
-      assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
+      let result = await ParticipantHelper.prepareData('fsp1')
+      participantFixtures.push(result.participant)
+      result = await ParticipantHelper.prepareData('fsp2')
+      participantFixtures.push(result.participant)
       participantFixtures.forEach(async participant => {
-        let result = await Service.create({ name: participant.name })
-        await Service.createParticipantCurrency(result, participant.currency)
-        let read = await Service.getById(result)
-        participantMap.set(result, read)
+        let read = await Service.getById(participant.participantId)
+        participantMap.set(participant.participantId, read)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.equal(read.name, participant.name, 'names are equal')
-        assert.equal(read.currencyList[0].currencyId, participant.currency, 'currency match')
+        assert.deepEqual(read.currencyList, participant.currencyList, 'currency match')
         assert.equal(read.isActive, participant.isActive, 'isActive flag matches')
         assert.ok(Sinon.match(read.createdDate, participant.createdDate), 'created date matches')
       })
+      assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
       assert.fail()
@@ -121,20 +87,14 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getByName', async (assert) => {
     try {
-      assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        try {
-          var result = await Service.getByName(participant.name)
-          assert.equal(result.name, participant.name, 'names are equal')
-          assert.equal(result.currencyList[0].currencyId, participant.currency, 'currencies match')
-          assert.equal(result.isDisabled, participant.isDisabled, 'isActive flag matches')
-          assert.ok(Sinon.match(result.createdDate, participant.createdDate), 'created date matches')
-        } catch (err) {
-          Logger.error(`get participant by name failed with error - ${err}`)
-          assert.fail()
-          assert.end()
-        }
+        var result = await Service.getByName(participant.name)
+        assert.equal(result.name, participant.name, 'names are equal')
+        assert.deepEqual(result.currencyList, participant.currencyList, 'currencies match')
+        assert.equal(result.isActive, participant.isActive, 'isActive flag matches')
+        assert.ok(Sinon.match(result.createdDate, participant.createdDate), 'created date matches')
       })
+      assert.end()
     } catch (err) {
       Logger.error(`get participant by name failed with error - ${err}`)
       assert.fail()
@@ -170,12 +130,19 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('add participant endpoint', async (assert) => {
     try {
-      for (const fixture of endpointsFixtures) {
-        let result = await Service.addEndpoint(fixture.name, fixture.payload)
-        assert.ok(result, `addEndpoint successful for Participant: ${fixture.name}`)
-      }
+      const participant = participantFixtures[0]
+      let result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSIOP_CALLBACK_URL')
+      endpointsFixtures.push(result)
+      result = await ParticipantEndpointHelper.prepareData(participant.name, 'ALARM_NOTIFICATION_URL')
+      endpointsFixtures.push(result)
+      endpointsFixtures.forEach(async endpoint => {
+        let read = await Service.getEndpoint(participant.name, endpoint.type)
+        assert.equal(read[0].name, endpoint.type, 'endpoint types are equal')
+        assert.equal(read[0].value, endpoint.value, 'endpoint values match')
+      })
       assert.end()
     } catch (err) {
+      console.log(err)
       Logger.error(`add participant endpoint failed with error - ${err}`)
       assert.fail()
       assert.end()
@@ -184,22 +151,12 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getEndpoint', async (assert) => {
     try {
-      const participant = {
-        participantId: 1,
-        name: 'fsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date()
-      }
-      const endpoint = {
-        value: 'http://localhost:3001/participants/dfsp1/notification1',
-        isActive: 1,
-        name: 'FSIOP_CALLBACK_URL'
-      }
-      var result = await Service.getEndpoint(participant.name, endpoint.name)
-      assert.equal(result[0].name, endpoint.name, 'endpoint types are equal')
-      assert.equal(result[0].value, endpoint.value, 'endpoint values match')
-      assert.equal(result[0].isActive, endpoint.isActive, 'isActive flag match')
+      endpointsFixtures.forEach(async endpoint => {
+        var result = await Service.getEndpoint(participantFixtures[0].name, endpoint.type)
+        assert.equal(result[0].name, endpoint.type, 'endpoint types are equal')
+        assert.equal(result[0].value, endpoint.value, 'endpoint values match')
+        assert.equal(result[0].isActive, 1, 'isActive flag match')
+      })
       assert.end()
     } catch (err) {
       Logger.error(`get endpoint failed with error - ${err}`)
@@ -210,36 +167,16 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAllEndpoints', async (assert) => {
     try {
-      const participant = {
-        participantId: 1,
-        name: 'fsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: new Date()
-      }
-      const endpoint = [
-        {
-          value: 'http://localhost:3001/participants/dfsp1/notification1',
-          isActive: 1,
-          name: 'FSIOP_CALLBACK_URL'
-        },
-        {
-          value: 'http://localhost:3001/participants/dfsp1/notification2',
-          isActive: 1,
-          name: 'ALARM_NOTIFICATION_URL'
-        }
-      ]
-
-      var result = await Service.getAllEndpoints(participant.name)
+      var result = await Service.getAllEndpoints(participantFixtures[0].name)
       assert.comment('First endpoint')
-      assert.equal(result[0].name, endpoint[0].name, 'endpoint types are equal')
-      assert.equal(result[0].value, endpoint[0].value, 'endpoint values match')
-      assert.equal(result[0].isActive, endpoint[0].isActive, 'isActive flag match')
+      assert.equal(result[0].name, endpointsFixtures[0].type, 'endpoint types are equal')
+      assert.equal(result[0].value, endpointsFixtures[0].value, 'endpoint values match')
+      assert.equal(result[0].isActive, 1, 'isActive flag match')
 
       assert.comment('Second endpoint')
-      assert.equal(result[1].name, endpoint[1].name, 'endpoint types are equal')
-      assert.equal(result[1].value, endpoint[1].value, 'endpoint values match')
-      assert.equal(result[1].isActive, endpoint[1].isActive, 'isActive flag match')
+      assert.equal(result[1].name, endpointsFixtures[1].type, 'endpoint types are equal')
+      assert.equal(result[1].value, endpointsFixtures[1].value, 'endpoint values match')
+      assert.equal(result[1].isActive, 1, 'isActive flag match')
 
       assert.end()
     } catch (err) {
@@ -251,7 +188,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroyPariticpantEndpointByName', async (assert) => {
     try {
-      const result = await Service.destroyPariticpantEndpointByName(participantFixtures[0].name)
+      const result = await ParticipantEndpointHelper.deletePreparedData(participantFixtures[0].name)
       assert.ok(result, `destroy endpoint for ${participantFixtures[0].name} success`)
       assert.end()
     } catch (err) {
@@ -263,10 +200,11 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('add participant limit and initial position', async (assert) => {
     try {
-      let result = await Service.addInitialPositionAndLimits(participantFixtures[0].name, initialPositionAndLimit)
-      assert.ok(result, `addInitialPositionAndLimits successful for Participant: ${participantFixtures[0].name}`)
+      let result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[0].name, {limit: {value: 30}})
+      assert.ok(result, `addLimitAndInitialPosition successful for Participant: ${participantFixtures[0].name}`)
       assert.end()
     } catch (err) {
+      console.log(err)
       Logger.error(`add participant endpoint failed with error - ${err}`)
       assert.fail()
       assert.end()
@@ -275,7 +213,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroy participant position', async (assert) => {
     try {
-      const result = await Service.destroyPariticpantPositionByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
+      const result = await ParticipantLimitHelper.deleteInitialPositionData(participantFixtures[0].name)
       assert.ok(result, `destroy participant position for ${participantFixtures[0].name} success`)
       assert.end()
     } catch (err) {
@@ -287,7 +225,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroy participant limits', async (assert) => {
     try {
-      const result = await Service.destroyPariticpantLimitByNameAndCurrency(participantFixtures[0].name, initialPositionAndLimit.currency)
+      const result = await ParticipantLimitHelper.deleteInitialLimitData(participantFixtures[0].name)
       assert.ok(result, `destroy participant limits for ${participantFixtures[0].name} success`)
       assert.end()
     } catch (err) {
@@ -316,7 +254,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('teardown', async (assert) => {
     try {
       for (let participant of participantFixtures) {
-        const result = await Service.destroyByName(participant.name)
+        const result = await ParticipantHelper.deletePreparedData(participant.name)
         assert.ok(result, `destroy ${participant.name} success`)
       }
       await Db.disconnect()
@@ -330,4 +268,8 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.end()
+})
+
+Test.onFinish(async () => {
+  process.exit(0)
 })

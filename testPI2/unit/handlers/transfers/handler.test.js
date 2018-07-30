@@ -89,6 +89,63 @@ const messages = [
   }
 ]
 
+const commitMessages = [
+  {
+    value: Object.assign({}, messageProtocol, {
+      metadata: {
+        event: {
+          id: Uuid(),
+          type: 'prepare',
+          action: 'commit',
+          createdAt: new Date(),
+          state: {
+            status: 'success',
+            code: 0
+          }
+        }
+      }
+    })
+  }
+]
+
+const rejectMessages = [
+  {
+    value: Object.assign({}, messageProtocol, {
+      metadata: {
+        event: {
+          id: Uuid(),
+          type: 'prepare',
+          action: 'reject',
+          createdAt: new Date(),
+          state: {
+            status: 'success',
+            code: 0
+          }
+        }
+      }
+    })
+  }
+]
+
+const failedMessages = [
+  {
+    value: Object.assign({}, messageProtocol, {
+      metadata: {
+        event: {
+          id: Uuid(),
+          type: 'prepare',
+          action: 'fake',
+          createdAt: new Date(),
+          state: {
+            status: 'success',
+            code: 0
+          }
+        }
+      }
+    })
+  }
+]
+
 const fulfilMessages = [
   {
     value: Object.assign({}, messageProtocol, {
@@ -127,7 +184,7 @@ const config = {
   }
 }
 
-const command = () => {}
+const command = () => { }
 
 const error = () => { throw new Error() }
 
@@ -161,7 +218,7 @@ Test('Transfer handler', transferHandlerTest => {
     prepareTest.test('persist transfer to database when messages is an array', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
-      Validator.validateByName.returns({validationPassed: true, reasons: []})
+      Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
       const result = await allTransferHandlers.prepare(null, messages)
@@ -172,7 +229,7 @@ Test('Transfer handler', transferHandlerTest => {
     prepareTest.test('persist transfer to database when single message sent', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
-      Validator.validateByName.returns({validationPassed: true, reasons: []})
+      Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
       const result = await allTransferHandlers.prepare(null, messages[0])
@@ -185,7 +242,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       Utility.createState.returns(messageProtocol.metadata.event.state)
-      Validator.validateByName.returns({validationPassed: true, reasons: []})
+      Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve({}))
       TransferService.prepare.returns(P.resolve(true))
       const result = await allTransferHandlers.prepare(null, messages)
@@ -198,7 +255,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       Utility.createState.returns(messageProtocol.metadata.event.state)
-      Validator.validateByName.returns({validationPassed: false, reasons: []})
+      Validator.validateByName.returns({ validationPassed: false, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
       const result = await allTransferHandlers.prepare(null, messages)
@@ -211,7 +268,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       Utility.createState.returns(messageProtocol.metadata.event.state)
-      Validator.validateByName.returns({validationPassed: false, reasons: []})
+      Validator.validateByName.returns({ validationPassed: false, reasons: [] })
       TransferService.getById.returns(P.resolve({}))
       TransferService.reject.returns(P.resolve(true))
       const result = await allTransferHandlers.prepare(null, messages)
@@ -225,7 +282,7 @@ Test('Transfer handler', transferHandlerTest => {
         Utility.transformAccountToTopicName.returns(topicName)
         Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
         Utility.createState.returns(messageProtocol.metadata.event.state)
-        Validator.validateByName.returns({validationPassed: true, reasons: []})
+        Validator.validateByName.returns({ validationPassed: true, reasons: [] })
         TransferService.getById.returns(P.resolve(null))
         TransferService.prepare.throws(new Error())
         await allTransferHandlers.prepare(null, messages)
@@ -261,6 +318,18 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
+    prepareTest.test('non existing transfer', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
+      Validator.validateByName.returns({ validationPassed: true, reasons: [] })
+      TransferService.getById.returns(P.resolve(null))
+      TransferService.getTransferById.returns(transfer)
+      TransferService.prepare.returns(P.resolve(true))
+      const result = await allTransferHandlers.prepare(null, messages[0])
+      test.equal(result, true)
+      test.end()
+    })
+
     prepareTest.end()
   })
 
@@ -277,7 +346,7 @@ Test('Transfer handler', transferHandlerTest => {
     fulfilTest.test('fail validation when condition from fulfilment does not match original condition', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({condition: 'condition'}))
+      TransferService.getById.returns(P.resolve({ condition: 'condition' }))
       FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
@@ -287,7 +356,7 @@ Test('Transfer handler', transferHandlerTest => {
     fulfilTest.test('fail validation when transfer already committed ', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({condition: 'condition', transferState: TransferState.COMMITTED}))
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.COMMITTED }))
       FiveBellsCondition.fulfillmentToCondition.returns('condition')
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
@@ -297,7 +366,7 @@ Test('Transfer handler', transferHandlerTest => {
     fulfilTest.test('produce message to position topic when validations pass', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({condition: 'condition', transferState: TransferState.RESERVED}))
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       FiveBellsCondition.fulfillmentToCondition.returns('condition')
       ilp.update.returns(P.resolve())
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
@@ -305,19 +374,56 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.test('enter reject branch when action REJECT', async (test) => {
+    fulfilTest.test('produce message to position topic when validations pass', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Validator.validateFulfilCondition.returns(true)
+      Utility.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      ilp.update.returns(P.resolve())
+      const result = await allTransferHandlers.fulfil(null, fulfilMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('expired transfer', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(P.resolve({ expirationDate: new Date('1900-01-01'), transferState: TransferState.RESERVED }))
+      FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      ilp.update.returns(P.resolve())
+      const result = await allTransferHandlers.fulfil(null, fulfilMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('throw an error when something goes wrong', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
-        const invalidEventMessage = Object.assign({}, fulfilMessages[0])
-        invalidEventMessage.value.metadata.event.action = 'reject'
-        await allTransferHandlers.fulfil(null, invalidEventMessage)
-        test.fail('Error not thrown')
+        TransferService.getById.throws(new Error())
+        FiveBellsCondition.fulfillmentToCondition.returns('condition')
+        ilp.update.returns(P.resolve())
+
+        await allTransferHandlers.fulfil(null, fulfilMessages)
+        test.fail('No Error Thrown')
         test.end()
       } catch (e) {
-        test.pass('Error thrown')
+        test.pass('Error Thrown')
         test.end()
       }
+    })
+
+    fulfilTest.test('enter reject branch when action REJECT', async (test) => { // TODO: extend and enable unit test
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(false)
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      invalidEventMessage.value.metadata.event.action = 'reject'
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
     })
 
     fulfilTest.test('fail validation when invalid event action is provided', async (test) => {
@@ -364,6 +470,30 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       const result = await allTransferHandlers.transfer(null, messages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    transferTest.test('produce a message to the notifications topic on commit', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      const result = await allTransferHandlers.transfer(null, commitMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    transferTest.test('produce a message to the notifications topic on commit', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      const result = await allTransferHandlers.transfer(null, rejectMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    transferTest.test('produce a message to the notifications topic on commit', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      const result = await allTransferHandlers.transfer(null, failedMessages)
       test.equal(result, true)
       test.end()
     })
@@ -442,12 +572,14 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('throw error registerFulfillHandler', async (test) => {
+    registerHandlersTest.test('return empty array retrieveAllParticipants', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
+        await DAO.retrieveAllParticipants.returns(P.resolve([]))
+        Utility.transformAccountToTopicName.returns(topicName)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
-        await allTransferHandlers.registerFulfillHandler()
+        await allTransferHandlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -456,12 +588,12 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('throw error registerRejectHandler', async (test) => {
+    registerHandlersTest.test('throw error registerFulfilHandler', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
-        await allTransferHandlers.registerRejectHandler()
+        await allTransferHandlers.registerFulfilHandler()
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -476,6 +608,20 @@ Test('Transfer handler', transferHandlerTest => {
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
         await allTransferHandlers.registerTransferHandler()
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    registerHandlersTest.test('registerPrepareHandlers topic list is passed', async (test) => {
+      try {
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.throws(new Error())
+        await allTransferHandlers.registerPrepareHandlers(participants)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

@@ -313,7 +313,7 @@ Test('Participant Handler', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('addInitialPositionAndLimits should add the limits and initial position', async function (test) {
+    handlerTest.test('addLimitAndInitialPosition should add the limits and initial position', async function (test) {
       const params = {
         name: 'fsp1'
       }
@@ -326,7 +326,7 @@ Test('Participant Handler', participantHandlerTest => {
         initialPosition: 0
       }
 
-      Participant.addInitialPositionAndLimits.withArgs(params.name, payload).returns(P.resolve(1))
+      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(P.resolve(1))
       const reply = {
         response: (response) => {
           return {
@@ -337,10 +337,10 @@ Test('Participant Handler', participantHandlerTest => {
           }
         }
       }
-      await Handler.addInitialPositionAndLimits(createRequest({ params, payload }), reply)
+      await Handler.addLimitAndInitialPosition(createRequest({ params, payload }), reply)
     })
 
-    handlerTest.test('addInitialPositionAndLimits should add the limits and initial position as default 0 if not passed', async function (test) {
+    handlerTest.test('addLimitAndInitialPosition should add the limits and initial position as default 0 if not passed', async function (test) {
       const params = {
         name: 'fsp1'
       }
@@ -352,7 +352,7 @@ Test('Participant Handler', participantHandlerTest => {
         }
       }
 
-      Participant.addInitialPositionAndLimits.withArgs(params.name, payload).returns(P.resolve(1))
+      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(P.resolve(1))
       const reply = {
         response: (response) => {
           return {
@@ -363,10 +363,10 @@ Test('Participant Handler', participantHandlerTest => {
           }
         }
       }
-      await Handler.addInitialPositionAndLimits(createRequest({ params, payload }), reply)
+      await Handler.addLimitAndInitialPosition(createRequest({ params, payload }), reply)
     })
 
-    handlerTest.test('addInitialPositionAndLimits should throw error', async function (test) {
+    handlerTest.test('addLimitAndInitialPosition should throw error', async function (test) {
       const params = {
         name: 'fsp1'
       }
@@ -379,10 +379,10 @@ Test('Participant Handler', participantHandlerTest => {
         initialPosition: 0
       }
 
-      Participant.addInitialPositionAndLimits.withArgs(params.name, payload).throws(new Error())
+      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).throws(new Error())
 
       try {
-        await Handler.addInitialPositionAndLimits(createRequest({ params, payload }))
+        await Handler.addLimitAndInitialPosition(createRequest({ params, payload }))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')

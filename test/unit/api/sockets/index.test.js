@@ -181,7 +181,7 @@ Test('Socket Module', moduleTest => {
           { participant: debitParticipant }
         ]
       }
-      const relatedResources = { execution_condition_fulfillment: 'aaaa' }
+      const relatedResources = { execution_condition_fulfilment: 'aaaa' }
       const message = { resource: transfer, related_resources: relatedResources }
       Events.onTransferExecuted.yields(message)
       Index.plugin.register(mockServer(), {}, {})
