@@ -46,6 +46,7 @@ const TransferState = require('../../lib/enum').TransferState
 const Enum = require('../../lib/enum')
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
+const TransferEventStatus = Enum.transferEventStatus
 // const CryptoConditions = require('../../cryptoConditions')
 // const FiveBellsCondition = require('five-bells-condition')
 // const Crypto = require('crypto')
@@ -237,7 +238,7 @@ const transfer = async (error, messages) => {
     Logger.info('TransferService::transfer status: ' + status)
 
     // Validate event - Rule: type == 'transfer' && action == 'commit'
-    if (action.toLowerCase() === 'prepare' && status.toLowerCase() === 'success') {
+    if (action.toLowerCase() === TransferEventAction.PREPARE && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER))
 
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
@@ -245,7 +246,7 @@ const transfer = async (error, messages) => {
       await consumer.commitMessageSync(message)
 
       return true
-    } else if (action.toLowerCase() === 'commit' && status.toLowerCase() === 'success') {
+    } else if (action.toLowerCase() === TransferEventAction.COMMIT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER))
 
       // send notification message to Payee
@@ -258,7 +259,7 @@ const transfer = async (error, messages) => {
       await consumer.commitMessageSync(message)
 
       return true
-    } else if (action.toLowerCase() === 'reject' && status.toLowerCase() === 'success') {
+    } else if (action.toLowerCase() === TransferEventAction.REJECT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER))
 
       // send notification message to Payee

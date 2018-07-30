@@ -53,5 +53,9 @@ module.exports = {
   rejectionType: {
     EXPIRED: 'expired',
     CANCELLED: 'cancelled'
+  },
+  transferEventStatus: {
+    SUCCESS: 'success',
+    FAILED: 'failed'
   }
 }
