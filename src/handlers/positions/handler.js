@@ -79,11 +79,11 @@ const positions = async (error, messages) => {
     Logger.info('PositionHandler::positions')
     let consumer = {}
     const payload = message.value.content.payload
-    payload.transferId = message.value.id
+    payload.transferId = message.value.id    
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
       consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
-      const preparedMessagesList = await PositionService.calculatePreparePositionsBatch(prepareBatch)
+      const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(prepareBatch)
       for (let prepareMessage of preparedMessagesList) {
         const { transferState, rawMessage } = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
@@ -92,6 +92,9 @@ const positions = async (error, messages) => {
           await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
         }
         await consumer.commitMessageSync(rawMessage)
+      }
+      for (let limit of limitAlarms) {
+        // Publish alarm message to KafkaTopic for the Hub to consume.The Hub rather than the switch will manage this (the topic is an participantEndpoint)   
       }
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
