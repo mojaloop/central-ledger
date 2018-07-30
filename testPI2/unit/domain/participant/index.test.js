@@ -953,16 +953,18 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getLimits should return all the limits for the type when the currency is not passed', async (assert) => {
     try {
-      const limit = [{
-        currencyId: 'USD',
-        name: 'NET_DEBIT_CAP',
-        value: 1000000
-      },
-      {
-        currencyId: 'EUR',
-        name: 'NET_DEBIT_CAP',
-        value: 3000000
-      }]
+      const limit = [
+        {
+          currencyId: 'USD',
+          name: 'NET_DEBIT_CAP',
+          value: 1000000
+        },
+        {
+          currencyId: 'EUR',
+          name: 'NET_DEBIT_CAP',
+          value: 3000000
+        }
+      ]
       const participant = {
         participantId: 0,
         name: 'fsp1',
@@ -986,16 +988,18 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getLimits should return all the limits when the currency or type is not passed', async (assert) => {
     try {
-      const limit = [{
-        currencyId: 'USD',
-        name: 'NET_DEBIT_CAP',
-        value: 1000000
-      },
-      {
-        currencyId: 'EUR',
-        name: 'NET_DEBIT_CAP',
-        value: 3000000
-      }]
+      const limit = [
+        {
+          currencyId: 'USD',
+          name: 'NET_DEBIT_CAP',
+          value: 1000000
+        },
+        {
+          currencyId: 'EUR',
+          name: 'NET_DEBIT_CAP',
+          value: 3000000
+        }
+      ]
       const participant = {
         participantId: 0,
         name: 'fsp1',

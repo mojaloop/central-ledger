@@ -22,7 +22,7 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 const Participant = require('../../domain/participant')
 const Errors = require('../../errors')
