@@ -17,7 +17,6 @@ const TransferStateChange = require('../../../../src/models/transfer/transferSta
 const transferEventAction = require('../../../../src/lib/enum').transferEventAction
 const Enum = require('../../../../src/lib/enum')
 const TransferState = Enum.TransferState
-const PositionService = require('../../../../src/domain/position')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
