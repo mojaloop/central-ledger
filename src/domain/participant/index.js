@@ -359,8 +359,8 @@ const destroyPariticpantLimitByNameAndCurrency = async (name, currencyId) => {
  *
  * ParticipantFacade.getByNameAndCurrency called to get the participant and currency details from the participant name
  * ParticipantModel.getByName called to get the participant details from the participant name
- * ParticipantFacade.getParicipantLimitsByCurrencyId called to get the participant limit details from participant currency id
- * ParticipantFacade.getParicipantLimitsByParicipantId called to get the participant limit details from participant id
+ * ParticipantFacade.getParticipantLimitsByCurrencyId called to get the participant limit details from participant currency id
+ * ParticipantFacade.getParticipantLimitsByParticipantId called to get the participant limit details from participant id
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
  * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
@@ -374,11 +374,11 @@ const getLimits = async (name, { currency = null, type = null }) => {
     if (currency != null) {
       participant = await ParticipantFacade.getByNameAndCurrency(name, currency)
       participantExists(participant)
-      return ParticipantFacade.getParicipantLimitsByCurrencyId(participant.participantCurrancyId, type)
+      return ParticipantFacade.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, type)
     } else {
       participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      return ParticipantFacade.getParicipantLimitsByParicipantId(participant.participantId, type)
+      return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type)
     }
   } catch (err) {
     throw err

@@ -137,8 +137,8 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'addEndpoint')
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
     sandbox.stub(ParticipantFacade, 'adjustLimits')
-    sandbox.stub(ParticipantFacade, 'getParicipantLimitsByCurrencyId')
-    sandbox.stub(ParticipantFacade, 'getParicipantLimitsByParicipantId')
+    sandbox.stub(ParticipantFacade, 'getParticipantLimitsByCurrencyId')
+    sandbox.stub(ParticipantFacade, 'getParticipantLimitsByParticipantId')
     sandbox.stub(ParticipantFacade, 'addLimitAndInitialPosition')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
@@ -1020,11 +1020,11 @@ Test('Participant service', async (participantTest) => {
         currency: 'USD',
         isActive: 1,
         createdDate: new Date(),
-        participantCurrancyId: 1
+        participantCurrencyId: 1
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
 
-      ParticipantFacade.getParicipantLimitsByCurrencyId.withArgs(participant.participantCurrancyId, limit[0].name).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId, limit[0].name).returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, { currency: participant.currency, type: limit[0].name })
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1048,11 +1048,11 @@ Test('Participant service', async (participantTest) => {
         currency: 'USD',
         isActive: 1,
         createdDate: new Date(),
-        participantCurrancyId: 1
+        participantCurrencyId: 1
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
 
-      ParticipantFacade.getParicipantLimitsByCurrencyId.withArgs(participant.participantCurrancyId).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId).returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, { currency: participant.currency })
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1087,7 +1087,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
-      ParticipantFacade.getParicipantLimitsByParicipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP').returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP').returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, { type: 'NET_DEBIT_CAP' })
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1122,7 +1122,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
-      ParticipantFacade.getParicipantLimitsByParicipantId.withArgs(participant.participantId).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId).returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, {})
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1143,7 +1143,7 @@ Test('Participant service', async (participantTest) => {
       participantCurrancyId: 1
     }
     ParticipantModel.getByName.withArgs(participant.name).returns(participant)
-    ParticipantFacade.getParicipantLimitsByParicipantId.withArgs(participant.participantId).throws(new Error())
+    ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId).throws(new Error())
     try {
       await await Service.getLimits(participant.name, {})
       assert.fail(' should throw')

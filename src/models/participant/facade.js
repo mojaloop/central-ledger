@@ -289,7 +289,7 @@ const adjustLimits = async (participantCurrencyId, limit) => {
 }
 
 /**
- * @function GetParicipantLimitsByCurrencyId
+ * @function GetParticipantLimitsByCurrencyId
  *
  * @async
  * @description This retuns the active participant limits for a give participantCurrencyId and limit type
@@ -301,7 +301,7 @@ const adjustLimits = async (participantCurrencyId, limit) => {
  * @returns {array} - Returns an array containing the list of all active limits for the participant/currency and type if successful, or throws an error if failed
  */
 
-const getParicipantLimitsByCurrencyId = async (participantCurrencyId, type) => {
+const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => {
   try {
     return Db.participantLimit.query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
@@ -325,7 +325,7 @@ const getParicipantLimitsByCurrencyId = async (participantCurrencyId, type) => {
 }
 
 /**
- * @function GetParicipantLimitsByParicipantId
+ * @function GetParticipantLimitsByParticipantId
  *
  * @async
  * @description This retuns all the active endpoints for a give participantId  and limit type
@@ -337,7 +337,7 @@ const getParicipantLimitsByCurrencyId = async (participantCurrencyId, type) => {
  * @returns {array} - Returns an array containing the list of all active limits for the participant and type if successful, or throws an error if failed
  */
 
-const getParicipantLimitsByParicipantId = async (participantId, type) => {
+const getParticipantLimitsByParticipantId = async (participantId, type) => {
   try {
     return Db.participantLimit.query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
@@ -370,6 +370,6 @@ module.exports = {
   addEndpoint,
   addLimitAndInitialPosition,
   adjustLimits,
-  getParicipantLimitsByCurrencyId,
-  getParicipantLimitsByParicipantId
+  getParticipantLimitsByCurrencyId,
+  getParticipantLimitsByParticipantId
 }

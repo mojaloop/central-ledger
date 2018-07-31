@@ -676,7 +676,7 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
-  await facadeTest.test('getParicipantLimitsByCurrencyId', async (assert) => {
+  await facadeTest.test('getParticipantLimitsByCurrencyId', async (assert) => {
     try {
       let participantLimit = {
         participantCurrencyId: 1,
@@ -704,17 +704,17 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getParicipantLimitsByCurrencyId(participant.participantCurrencyId, 'NET_DEBIT_CAP')
+      var result = await Model.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, 'NET_DEBIT_CAP')
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
-      Logger.error(`getParicipantLimitsByCurrencyId failed with error - ${err}`)
+      Logger.error(`getParticipantLimitsByCurrencyId failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await facadeTest.test('getParicipantLimitsByCurrencyId called without type', async (assert) => {
+  await facadeTest.test('getParticipantLimitsByCurrencyId called without type', async (assert) => {
     try {
       let participantLimit = {
         participantCurrencyId: 1,
@@ -740,35 +740,35 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParicipantLimitsByCurrencyId(participant.participantCurrencyId)
+      var result = await Model.getParticipantLimitsByCurrencyId(participant.participantCurrencyId)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
-      Logger.error(`getParicipantLimitsByCurrencyId failed with error - ${err}`)
+      Logger.error(`getParticipantLimitsByCurrencyId failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await facadeTest.test('getParicipantLimitsByCurrencyId should throw error', async (assert) => {
+  await facadeTest.test('getParticipantLimitsByCurrencyId should throw error', async (assert) => {
     try {
       let builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
 
       builderStub.innerJoin.throws(new Error())
-      await Model.getParicipantLimitsByCurrencyId(participant.participantCurrencyId)
+      await Model.getParticipantLimitsByCurrencyId(participant.participantCurrencyId)
       assert.fail(' should throw')
       assert.end()
       assert.end()
     } catch (err) {
-      Logger.error(`getParicipantLimitsByCurrencyId failed with error - ${err}`)
+      Logger.error(`getParticipantLimitsByCurrencyId failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
   })
 
-  await facadeTest.test('getParicipantLimitsByParicipantId', async (assert) => {
+  await facadeTest.test('getParticipantLimitsByParticipantId', async (assert) => {
     try {
       let participantLimit = {
         participantCurrencyId: 1,
@@ -796,17 +796,17 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParicipantLimitsByParicipantId(participant.participantId, 'NET_DEBIT_CAP')
+      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 'NET_DEBIT_CAP')
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
-      Logger.error(`getParicipantLimitsByParicipantId failed with error - ${err}`)
+      Logger.error(`getParticipantLimitsByParticipantId failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await facadeTest.test('getParicipantLimitsByParicipantId called without type', async (assert) => {
+  await facadeTest.test('getParticipantLimitsByParticipantId called without type', async (assert) => {
     try {
       let participantLimit = {
         participantCurrencyId: 1,
@@ -834,29 +834,29 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParicipantLimitsByParicipantId(participant.participantId)
+      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
-      Logger.error(`getParicipantLimitsByParicipantId failed with error - ${err}`)
+      Logger.error(`getParticipantLimitsByParticipantId failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await facadeTest.test('getParicipantLimitsByParicipantId should throw error', async (assert) => {
+  await facadeTest.test('getParticipantLimitsByParticipantId should throw error', async (assert) => {
     try {
       let builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
 
       builderStub.innerJoin.throws(new Error())
-      await Model.getParicipantLimitsByParicipantId(participant.participantId)
+      await Model.getParticipantLimitsByParticipantId(participant.participantId)
       assert.fail(' should throw')
       assert.end()
       assert.end()
     } catch (err) {
-      Logger.error(`getParicipantLimitsByParicipantId failed with error - ${err}`)
+      Logger.error(`getParticipantLimitsByParticipantId failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
