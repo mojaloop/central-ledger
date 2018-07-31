@@ -91,7 +91,7 @@ Test('Position facade', async (positionFacadeTest) => {
       test.end()
     }
   })
-  
+
   await positionFacadeTest.test('getParticipantPositionByParticipantIdAndCurrencyId should', async (test) => {
     try {
       const participantId = 1
