@@ -398,16 +398,22 @@ Test('Participant Handler', participantHandlerTest => {
         currency: 'USD',
         type: 'NET_DEBIT_CAP'
       }
-      const expected = [{
-        currency: 'USD',
-        type: 'NET_DEBIT_CAP',
-        value: 1000000
-      }]
-      const limitReturn = [{
-        currencyId: 'USD',
-        name: 'NET_DEBIT_CAP',
-        value: 1000000
-      }]
+      const expected = [
+        {
+          currency: 'USD',
+          limit: {
+            type: 'NET_DEBIT_CAP',
+            value: 1000000
+          }
+        }
+      ]
+      const limitReturn = [
+        {
+          currencyId: 'USD',
+          name: 'NET_DEBIT_CAP',
+          value: 1000000
+        }
+      ]
       Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
       test.deepEqual(result, expected, 'The results match')
@@ -423,12 +429,16 @@ Test('Participant Handler', participantHandlerTest => {
       }
       const expected = [{
         currency: 'USD',
-        type: 'NET_DEBIT_CAP',
-        value: 1000000
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 1000000
+        }
       }, {
         currency: 'EUR',
-        type: 'NET_DEBIT_CAP',
-        value: 5000000
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 5000000
+        }
       }]
       const limitReturn = [{
         currencyId: 'USD',
@@ -452,11 +462,15 @@ Test('Participant Handler', participantHandlerTest => {
       const query = {
         currency: 'USD'
       }
-      const expected = [{
-        currency: 'USD',
-        type: 'NET_DEBIT_CAP',
-        value: 1000000
-      }]
+      const expected = [
+        {
+          currency: 'USD',
+          limit: {
+            type: 'NET_DEBIT_CAP',
+            value: 1000000
+          }
+        }
+      ]
       const limitReturn = [{
         currencyId: 'USD',
         name: 'NET_DEBIT_CAP',

@@ -171,8 +171,10 @@ const getLimits = async function (request, h) {
       result.forEach(item => {
         limits.push({
           currency: (item.currencyId || request.query.currency),
-          type: item.name,
-          value: item.value
+          limit: {
+            type: item.name,
+            value: item.value
+          }
         })
       })
     }
