@@ -52,15 +52,27 @@ const createHandler = async (topicName, config, command) => {
   } else {
     consumer = new Consumer([topicName], config)
   }
+
+  let autoCommitEnabled = true
+  if (config.rdkafkaConf !== undefined && config.rdkafkaConf['enable.auto.commit'] !== undefined) {
+    autoCommitEnabled = config.rdkafkaConf['enable.auto.commit']
+  }
+
   await consumer.connect().then(async () => {
     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
     await consumer.consume(command)
     if (Array.isArray(topicName)) {
-      for (let topic of topicName) {
-        listOfConsumers[topic] = consumer // NOT OK
+      for (let topic of topicName) {  // NOT OK
+        listOfConsumers[topic] = {
+          consumer: consumer,
+          autoCommitEnabled: autoCommitEnabled
+        }
       }
     } else {
-      listOfConsumers[topicName] = consumer
+      listOfConsumers[topicName] = {
+        consumer: consumer,
+        autoCommitEnabled: autoCommitEnabled
+      }
     }
   }).catch((e) => {
     Logger.error(e)
@@ -81,7 +93,25 @@ const createHandler = async (topicName, config, command) => {
  */
 const getConsumer = (topicName) => {
   if (listOfConsumers[topicName]) {
-    return listOfConsumers[topicName]
+    return listOfConsumers[topicName].consumer
+  } else {
+    throw Error(`no consumer found for topic ${topicName}`)
+  }
+}
+
+/**
+ * @function isConsumerAutoCommitEnabled
+ *
+ * @param {string} topicName - the topic name to locate a specific consumer
+ *
+ * @description This is used to get a consumer with the topic name to commit the messages that have been received
+ *
+ * @returns {Consumer} - Returns consumer
+ * @throws {Error} - if consumer not found for topic name
+ */
+const isConsumerAutoCommitEnabled = (topicName) => {
+  if (listOfConsumers[topicName]) {
+    return listOfConsumers[topicName].autoCommitEnabled
   } else {
     throw Error(`no consumer found for topic ${topicName}`)
   }
@@ -89,5 +119,6 @@ const getConsumer = (topicName) => {
 
 module.exports = {
   createHandler,
-  getConsumer
+  getConsumer,
+  isConsumerAutoCommitEnabled
 }

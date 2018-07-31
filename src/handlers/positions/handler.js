@@ -75,15 +75,18 @@ const positions = async (error, messages) => {
     }
     Logger.info('PositionHandler::positions')
     let consumer = {}
+    let kafkaTopic
     const payload = message.value.content.payload
     payload.transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE))
+      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE)
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       await TransferService.saveTransferStateChange({transferId: payload.transferId, transferStateId: TransferState.RESERVED})
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL))
+      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL)
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       // Check current transfer state
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
@@ -100,7 +103,8 @@ const positions = async (error, messages) => {
       }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.REJECTED) {
         Logger.info('PositionHandler::positions::reject::validationFailed::notRejectedState')
@@ -117,20 +121,28 @@ const positions = async (error, messages) => {
       }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
       Logger.info('PositionHandler::positions::timeoutPrepared')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
       Logger.info('PositionHandler::positions::fail')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT))
+      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     } else {
       Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
-      consumer = Kafka.Consumer.getConsumer(Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action))
-      await consumer.commitMessageSync(message)
+      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action)
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      if (Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
       throw new Error('Event type or action is invalid')
     }
-    await consumer.commitMessageSync(message)
+    if (Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+      await consumer.commitMessageSync(message)
+    }
     // Will follow framework flow in future
     await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
     return true
