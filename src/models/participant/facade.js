@@ -264,6 +264,8 @@ const adjustLimits = async (participantCurrencyId, limit) => {
           })
         if (Array.isArray(existingLimit) && existingLimit.length > 0) {
           await knex('participantLimit').transacting(trx).update({ isActive: 0 }).where('participantLimitId', existingLimit[0].participantLimitId)
+        } else {
+          throw new Error('Participant Limit does not exist')
         }
         let newLimit = {
           participantCurrencyId: participantCurrencyId,

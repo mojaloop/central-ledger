@@ -570,7 +570,7 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
-  await facadeTest.test('adjustLimits inserts limit when it does not exist', async (assert) => {
+  await facadeTest.test('adjustLimits throws error when limit does not exist', async (assert) => {
     try {
       const limit = {
         type: 'NET_DEBIT_CAP',
@@ -601,25 +601,12 @@ Test('Participant facade', async (facadeTest) => {
           insert: sandbox.stub().returns([1])
         })
       })
-      let participantLimit = {
-        participantCurrencyId: 1,
-        participantLimitTypeId: 1,
-        value: limit.value,
-        isActive: 1,
-        createdBy: 'unknown',
-        participantLimitId: 1
-      }
-
-      const result = await Model.adjustLimits(participant.participantCurrencyId, limit)
-      assert.pass('completed successfully')
-      assert.ok(knexStub.withArgs('participantLimit').calledTwice, 'knex called with participantLimit twice')
-      assert.ok(knexStub.withArgs('participantLimitType').calledOnce, 'knex called with participantLimitType once')
-      assert.deepEqual(result, { participantLimit })
-
+      await Model.adjustLimits(participant.participantCurrencyId, limit)
+      assert.fail(' should throw')
       assert.end()
     } catch (err) {
       Logger.error(`adjustLimits failed with error - ${err}`)
-      assert.fail()
+      assert.pass('Error thrown')
       assert.end()
     }
   })
