@@ -33,7 +33,7 @@ const Db = require('../../db')
 const getByNameAndCurrency = async (name, currencyId) => {
   try {
     return await Db.participant.query(async (builder) => {
-      var result = builder
+      return builder
         .where({ 'participant.name': name })
         .andWhere({ 'participant.isActive': true })
         .andWhere({ 'pc.currencyId': currencyId })
@@ -44,7 +44,6 @@ const getByNameAndCurrency = async (name, currencyId) => {
           'pc.participantCurrencyId'
         )
         .first()
-      return result
     })
   } catch (e) {
     throw e
@@ -125,35 +124,41 @@ const getAllEndpoints = async (participantId) => {
  *      "value": "http://localhost:3001/participants/dfsp1/notification12"
  *    }
  * }
- * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
+ * @returns {object} participantEndpoint - Returns participantEndpoint added/updated if successful, or throws an error if failed
  */
 
 const addEndpoint = async (participantId, endpoint) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      let endpointType = await trx.first('endpointTypeId').from('endpointType').where({ 'name': endpoint.type, 'isActive': 1 })
-      return knex('participantEndpoint').transacting(trx).forUpdate().select('*')
-        .where({
-          'participantId': participantId,
-          'endpointTypeId': endpointType.endpointTypeId,
-          'isActive': 1
-        })
-        .then(existingEndpoint => {
-          if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
-            return knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
-          }
-        }).then(() => {
-          let newEndpoint = {
-            participantId: participantId,
-            endpointTypeId: endpointType.endpointTypeId,
-            value: endpoint.value,
-            isActive: 1,
-            createdBy: 'unknown'
-          }
-          return knex('participantEndpoint').transacting(trx).insert(newEndpoint)
-        }).then(trx.commit)
-        .catch(trx.rollback)
+      try {
+        let endpointType = await knex('endpointType').where({ 'name': endpoint.type, 'isActive': 1 }).select('endpointTypeId').first()
+        // let endpointType = await trx.first('endpointTypeId').from('endpointType').where({ 'name': endpoint.type, 'isActive': 1 })
+
+        const existingEndpoint = await knex('participantEndpoint').transacting(trx).forUpdate().select('*')
+          .where({
+            'participantId': participantId,
+            'endpointTypeId': endpointType.endpointTypeId,
+            'isActive': 1
+          })
+        if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
+          await knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
+        }
+        let newEndpoint = {
+          participantId: participantId,
+          endpointTypeId: endpointType.endpointTypeId,
+          value: endpoint.value,
+          isActive: 1,
+          createdBy: 'unknown'
+        }
+        let result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
+        newEndpoint.participantEndpointId = result[0]
+        await trx.commit
+        return newEndpoint
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
     })
   } catch (err) {
     throw new Error(err.message)
@@ -189,7 +194,8 @@ const addLimitAndInitialPosition = async (participantCurrencyId, limitPostionObj
     return knex.transaction(async trx => {
       try {
         let result
-        let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 })
+        let limitType = await knex('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
+        //  let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 })
         let participantLimit = {
           participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
@@ -240,35 +246,42 @@ const addLimitAndInitialPosition = async (participantCurrencyId, limitPostionObj
  *     "value": 10000000
  *   }
  * }
-* @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
+* @returns {object} participantLimit - Returns participantLimit updated/inserted object if successful, or throws an error if failed
  */
 
 const adjustLimits = async (participantCurrencyId, limit) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
-      let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
-      return knex('participantLimit').transacting(trx).forUpdate().select('*')
-        .where({
-          'participantCurrencyId': participantCurrencyId,
-          'participantLimitTypeId': limitType.participantLimitTypeId,
-          'isActive': 1
-        })
-        .then(existingLimit => {
-          if (Array.isArray(existingLimit) && existingLimit.length > 0) {
-            return knex('participantLimit').transacting(trx).update({ isActive: 0 }).where('participantLimitId', existingLimit[0].participantLimitId)
-          }
-        }).then(() => {
-          let newLimit = {
-            participantCurrencyId: participantCurrencyId,
-            participantLimitTypeId: limitType.participantLimitTypeId,
-            value: limit.value,
-            isActive: 1,
-            createdBy: 'unknown'
-          }
-          return knex('participantLimit').transacting(trx).insert(newLimit)
-        }).then(trx.commit)
-        .catch(trx.rollback)
+      try {
+        const limitType = await knex('participantLimitType').where({ 'name': limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
+        // const limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
+        const existingLimit = await knex('participantLimit').transacting(trx).forUpdate().select('*')
+          .where({
+            'participantCurrencyId': participantCurrencyId,
+            'participantLimitTypeId': limitType.participantLimitTypeId,
+            'isActive': 1
+          })
+        if (Array.isArray(existingLimit) && existingLimit.length > 0) {
+          await knex('participantLimit').transacting(trx).update({ isActive: 0 }).where('participantLimitId', existingLimit[0].participantLimitId)
+        }
+        let newLimit = {
+          participantCurrencyId: participantCurrencyId,
+          participantLimitTypeId: limitType.participantLimitTypeId,
+          value: limit.value,
+          isActive: 1,
+          createdBy: 'unknown'
+        }
+        const result = await knex('participantLimit').transacting(trx).insert(newLimit)
+        newLimit.participantLimitId = result[0]
+        await trx.commit
+        return {
+          participantLimit: newLimit
+        }
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
     })
   } catch (err) {
     throw new Error(err.message)
