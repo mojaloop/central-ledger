@@ -135,12 +135,12 @@ const positions = async (error, messages) => {
       Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
       kafkaTopic = Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action)
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
       }
       throw new Error('Event type or action is invalid')
     }
-    if (Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+    if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
       await consumer.commitMessageSync(message)
     }
     // Will follow framework flow in future

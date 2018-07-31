@@ -47,7 +47,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-transfer-prepare",
+              "client.id": "cl-con-transfer-prepare",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -59,6 +59,9 @@
               "api.version.request": false,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
             }
           }
         },
@@ -75,7 +78,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-transfer-transfer",
+              "client.id": "cl-con-transfer-transfer",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -87,6 +90,9 @@
               "api.version.request": false,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
             }
           }
         },
@@ -103,7 +109,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-transfer-fulfil",
+              "client.id": "cl-con-transfer-fulfil",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -115,6 +121,9 @@
               "api.version.request": false,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
             }
           }
         },
@@ -131,7 +140,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-transfer-reject",
+              "client.id": "cl-con-transfer-reject",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -143,6 +152,9 @@
               "api.version.request": false,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
             }
           }
         }
@@ -152,7 +164,7 @@
           "config": {
             "options": {
               "mode": 2,
-              "batchSize": 5,
+              "batchSize": 1,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
@@ -161,7 +173,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-position-prepare",
+              "client.id": "cl-con-position-prepare",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -175,7 +187,7 @@
               "auto.commit.interval.ms": 200
             },
             "topicConf": {
-              "auto.offset.reset": "beginning"
+              "auto.offset.reset": "earliest"
             }
           }
         },
@@ -183,7 +195,7 @@
           "config": {
             "options": {
               "mode": 2,
-              "batchSize": 5,
+              "batchSize": 1,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
@@ -192,7 +204,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-position-fulfil",
+              "client.id": "cl-con-position-fulfil",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -206,7 +218,7 @@
               "auto.commit.interval.ms": 200
             },
             "topicConf": {
-              "auto.offset.reset": "beginning"
+              "auto.offset.reset": "earliest"
             }
           }
         },
@@ -214,7 +226,7 @@
           "config": {
             "options": {
               "mode": 2,
-              "batchSize": 5,
+              "batchSize": 1,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
@@ -223,7 +235,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-position-abort",
+              "client.id": "cl-con-position-abort",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -237,7 +249,7 @@
               "auto.commit.interval.ms": 200
             },
             "topicConf": {
-              "auto.offset.reset": "beginning"
+              "auto.offset.reset": "earliest"
             }
           }
         }
@@ -256,7 +268,7 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-notification-event",
+              "client.id": "cl-con-notification-event",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",
@@ -268,6 +280,9 @@
               "api.version.request": false,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
             }
           }
         }
@@ -283,7 +298,7 @@
             "rdkafkaConf": {
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-transfer-prepare",
+              "client.id": "cl-prod-transfer-prepare",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,
@@ -307,7 +322,7 @@
             "rdkafkaConf": {
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-transfer-fulfil",
+              "client.id": "cl-prod-transfer-fulfil",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,
@@ -355,7 +370,7 @@
             "rdkafkaConf": {
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-transfer-transfer",
+              "client.id": "cl-prod-transfer-transfer",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,
@@ -381,7 +396,7 @@
             "rdkafkaConf": {
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-position-prepare",
+              "client.id": "cl-prod-position-prepare",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,
@@ -405,7 +420,7 @@
             "rdkafkaConf": {
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-position-fulfil",
+              "client.id": "cl-prod-position-fulfil",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,
@@ -429,7 +444,7 @@
             "rdkafkaConf": {
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-position-abort",
+              "client.id": "cl-prod-position-abort",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,
@@ -455,7 +470,7 @@
             "rdkafkaConf": {
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-notification-event",
+              "client.id": "cl-prod-notification-event",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,
