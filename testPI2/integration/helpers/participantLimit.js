@@ -52,6 +52,21 @@ exports.prepareLimitAndInitialPosition = async (participantName, limitAndInitial
   }
 }
 
+exports.adjustLimits = async (participantName, limitObj = {}) => {
+  try {
+    const limit = {
+      currency: limitObj.currency || limitAndInitialPositionSampleData.currency,
+      limit: {
+        type: limitObj.limit.type || limitAndInitialPositionSampleData.limit.type,
+        value: limitObj.limit.value || limitAndInitialPositionSampleData.limit.value
+      }
+    }
+    return Model.adjustLimits(participantName, limit)
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 exports.deleteInitialPositionData = async (participantName) => {
   if (!participantName) {
     throw new Error('Please provide a valid participant name!')

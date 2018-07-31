@@ -244,7 +244,6 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addEndpoint', async (assert) => {
     try {
-
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
       const trxStub = sandbox.stub()
@@ -267,7 +266,6 @@ Test('Participant facade', async (facadeTest) => {
           update: sandbox.stub().returns({
             where: sandbox.stub().returns([1])
           }),
-          insert: sandbox.stub().returns([1]),
           insert: sandbox.stub().returns([1])
         })
       })
@@ -351,7 +349,6 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addLimitAndInitialPosition', async (assert) => {
     try {
-
       const limitPostionObj = {
         currency: 'USD',
         limit: {
@@ -374,7 +371,6 @@ Test('Participant facade', async (facadeTest) => {
           })
         }),
         transacting: sandbox.stub().returns({
-          insert: sandbox.stub().returns([1]),
           insert: sandbox.stub().returns([1])
         })
       })
@@ -469,7 +465,6 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('adjustLimits', async (assert) => {
     try {
-
       const limit = {
         type: 'NET_DEBIT_CAP',
         value: 10000000
@@ -496,7 +491,6 @@ Test('Participant facade', async (facadeTest) => {
           update: sandbox.stub().returns({
             where: sandbox.stub().returns([1])
           }),
-          insert: sandbox.stub().returns([1]),
           insert: sandbox.stub().returns([1])
         })
       })
@@ -655,16 +649,6 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParicipantLimitsByCurrencyId should throw error', async (assert) => {
     try {
-      let participantLimit = {
-        participantCurrencyId: 1,
-        participantLimitTypeId: 1,
-        value: 1000000,
-        isActive: 1,
-        createdBy: 'unknown',
-        participantLimitId: 1,
-        name: 'NET_DEBIT_CAP'
-      }
-
       let builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
@@ -722,16 +706,6 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParicipantLimitsByParicipantId should throw error', async (assert) => {
     try {
-      let participantLimit = {
-        participantCurrencyId: 1,
-        participantLimitTypeId: 1,
-        value: 1000000,
-        isActive: 1,
-        createdBy: 'unknown',
-        participantLimitId: 1,
-        name: 'NET_DEBIT_CAP'
-      }
-
       let builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
