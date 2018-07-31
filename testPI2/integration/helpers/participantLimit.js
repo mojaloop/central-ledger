@@ -73,7 +73,7 @@ exports.deleteInitialPositionData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyPariticpantPositionByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
+    return await Model.destroyParticipantPositionByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -85,7 +85,7 @@ exports.deleteInitialLimitData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyPariticpantLimitByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
+    return await Model.destroyParticipantLimitByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
     throw new Error(err.message)
   }

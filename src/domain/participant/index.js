@@ -308,7 +308,7 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
 }
 
 /**
- * @function DestroyPariticpantPositionByNameAndCurrency
+ * @function DestroyParticipantPositionByNameAndCurrency
  *
  * @async
  * @description This functions deletes the existing position for a given participant name
@@ -319,7 +319,7 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
  * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
  */
 
-const destroyPariticpantPositionByNameAndCurrency = async (name, currencyId) => {
+const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => {
   try {
     const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
     participantExists(participant)
@@ -330,18 +330,19 @@ const destroyPariticpantPositionByNameAndCurrency = async (name, currencyId) => 
 }
 
 /**
- * @function DestroyPariticpantLimitByName
+ * @function DestroyParticipantLimitByNameAndCurrency
  *
  * @async
  * @description This functions deletes the existing limits for a given participant name
  * else, it will throw and error
  *
  * @param {string} name - participant name
+ * @param {string} currencyId - participant currency
  *
  * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
  */
 
-const destroyPariticpantLimitByNameAndCurrency = async (name, currencyId) => {
+const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
   try {
     const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
     participantExists(participant)
@@ -434,8 +435,8 @@ module.exports = {
   addLimitAndInitialPosition,
   getPositionByParticipantCurrencyId,
   getPositionChangeByParticipantPositionId,
-  destroyPariticpantPositionByNameAndCurrency,
-  destroyPariticpantLimitByNameAndCurrency,
+  destroyParticipantPositionByNameAndCurrency,
+  destroyParticipantLimitByNameAndCurrency,
   getLimits,
   adjustLimits
 }
