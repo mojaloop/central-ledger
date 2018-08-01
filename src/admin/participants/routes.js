@@ -3,7 +3,7 @@
 const Handler = require('./handler')
 const Joi = require('joi')
 const Permissions = require('../../domain/security/permissions')
-const RouteConfig = require('../routeConfig')
+const RouteConfig = require('../../shared/routeConfig')
 
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')

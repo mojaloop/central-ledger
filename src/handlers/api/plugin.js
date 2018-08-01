@@ -1,5 +1,4 @@
 /*****
- * @file This registers all handlers for the central-ledger API
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
@@ -28,6 +27,7 @@
  * Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
+
  ******/
 'use strict'
 
@@ -36,34 +36,17 @@
  */
 
 /**
- * @function RegisterAllHandlers
+ * @function Register Handler Routes HAPI
  *
  * @async
- * @description Registers all handlers by using the require-glob to retrieve all handler exports in sub directories and access the registerAllHandlers()
- * in each of them. Every handler in the sub-folders must have a registerAllHandlers() function
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ * @description Registers registers plugins on HAPI server. This retrieves all routes to be exposed from the routes.js file
+ * @returns {Promise} - Returns a promise: resolve if successful, or rejection if failed
  */
 
-const Logger = require('@mojaloop/central-services-shared').Logger
-const requireGlob = require('require-glob')
-
-const registerAllHandlers = async (request, h) => {
-  try {
-    const modules = await requireGlob(['./**/handler.js'])
-    Logger.info(JSON.stringify(modules))
-    for (let key in modules) {
-      Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
-      const handlerObject = modules[key]
-      Logger.info(JSON.stringify(handlerObject.handler))
-      await handlerObject.handler.registerAllHandlers()
-    }
-    return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+exports.plugin = {
+  name: 'handler routes',
+  register: function (server, options) {
+    server.route(require('./routes'))
+    server.route(require('./admin/routes'))
   }
-}
-
-module.exports = {
-  registerAllHandlers
 }

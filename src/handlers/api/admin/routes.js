@@ -35,10 +35,10 @@
  * @module src/handlers
  */
 
-const RegisterAllHandler = require('./handlers')
-const TransferHandler = require('./transfers/handler')
-const PositionHandler = require('./positions/handler')
-const testProducer = require('../../testPI2/integration/helpers/testProducer')
+const RegisterAllHandler = require('../../register')
+const TransferHandler = require('../../transfers/handler')
+const PositionHandler = require('../../positions/handler')
+const testProducer = require('../../../../testPI2/integration/helpers/testProducer')
 
 module.exports = [
   /**
@@ -50,7 +50,7 @@ module.exports = [
    */
   {
     method: 'POST',
-    path: '/register/all',
+    path: '/register',
     handler: RegisterAllHandler.registerAllHandlers,
     options: {
       id: 'handlers',
@@ -66,7 +66,7 @@ module.exports = [
    */
   {
     method: 'POST',
-    path: '/register/transfer/all',
+    path: '/register/transfer',
     handler: TransferHandler.registerAllHandlers,
     options: {
       id: 'transfer',
@@ -114,7 +114,7 @@ module.exports = [
    */
   {
     method: 'POST',
-    path: '/register/position/all',
+    path: '/register/position',
     handler: PositionHandler.registerAllHandlers,
     options: {
       id: 'position',

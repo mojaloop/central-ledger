@@ -11,5 +11,6 @@ module.exports = Setup.initialize({
   service: 'api',
   port: Config.PORT,
   modules: [Auth, Routes, Sockets, Worker],
-  runMigrations: true
+  runMigrations: true,
+  runHandlers: !Config.HANDLERS_DISABLED
 })

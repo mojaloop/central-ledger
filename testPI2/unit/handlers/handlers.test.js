@@ -3,7 +3,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
-const Handlers = require('../../../src/handlers/handlers')
+const Handlers = require('../../../src/handlers/register')
 const TransferHandler = require('../../../src/handlers/transfers/handler')
 const PositionHandler = require('../../../src/handlers/positions/handler')
 
