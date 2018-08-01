@@ -119,7 +119,25 @@ const createHandlers = async (handlers) => {
   return registerdHandlers
 }
 
-// Migrator.migrate is called before connecting to the database to ensure all new tables are loaded properly.
+/**
+ * @function initialize
+ *
+ * @description Setup method for API, Admin and Handlers. Note that the Migration scripts are called before connecting to the database to ensure all new tables are loaded properly.
+ *
+ * @typedef handler
+ * @type {Object}
+ * @property {string} type The type of Handler to be registered
+ * @property {boolean} enabled True|False to indicate if the Handler should be registered
+ * @property {string[]} [fspList] List of FSPs to be registered
+ *
+ * @param {string} service Name of service to start. Available choices are 'api', 'admin', 'handler'
+ * @param {number} port Port to start the HTTP Server on
+ * @param {object[]} modules List of modules to be loaded by the HTTP Server
+ * @param {boolean} runMigrations True to run Migration script, false to ignore them
+ * @param {boolean} runHandlers True to start Handlers, false to ignore them
+ * @param {handler[]} handlers List of Handlers to be registered
+ * @returns {object} Returns HTTP Server object
+ */
 const initialize = async function ({service, port, modules = [], runMigrations = false, runHandlers = false, handlers = []}) {
   await migrate(runMigrations)
   await connectDatabase()

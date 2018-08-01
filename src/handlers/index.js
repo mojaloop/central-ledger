@@ -149,7 +149,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
 if (Array.isArray(process.argv) && process.argv.length > 2) {
   // parse command line vars
   Program.parse(process.argv)
-} else if (Array.isArray(process.argv) && process.argv.length > 0) {
+} else {
   // display default help
   Program.help()
 }
