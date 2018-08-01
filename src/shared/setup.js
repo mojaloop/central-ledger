@@ -109,7 +109,6 @@ const createHandlers = async (handlers) => {
         //   await RegisterHandlers.transfers.registerRejectHandler()
         //   break
         default:
-          // Logger.warn(`Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`)
           var error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)

@@ -35,9 +35,11 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../lib/config')
 const Setup = require('../shared/setup')
-const Program = require('commander')
 const PJson = require('../../package.json')
 const Plugin = require('./api/plugin')
+const { Command } = require('commander')
+
+const Program = new Command()
 
 Program
   .version(PJson.version)
@@ -53,77 +55,101 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
-  .action(function (args) {
-    if (Array.isArray(args.options) && args.options.length > 0) {
-      let handlerList = []
-      if (args.prepare && typeof args.prepare === 'string') {
-        Logger.debug(`CLI: Executing --prepare ${args.prepare}`)
-        let handlerList = args.prepare.replace(/\s/g, '').split(',')
-        if (Array.isArray(handlerList) && handlerList.length >= 1) {
-          var handler = {
-            type: 'prepare',
-            enabled: true,
-            fspList: handlerList
-          }
-          handlerList.push(handler)
-        } else {
-          throw new Error('Invalid [fspNameList] provided for --prepare. Please ensure that it is a "," delimated string. e.g. "fsp1, fsp2".')
-        }
+  .action(async (args) => {
+    let handlerList = []
+    if (args.prepare && typeof args.prepare === 'string') {
+      Logger.debug(`CLI: Executing --prepare ${args.prepare}`)
+      let parsedHandlerList = args.prepare.replace(/\s/g, '').split(',')
+      // removing holes, and, falsy (null, undefined, 0, -0, NaN, "", false, document.all) etc:
+      parsedHandlerList = parsedHandlerList.filter(x => x)
+      // if (Array.isArray(parsedHandlerList) && parsedHandlerList.length >= 1) {
+      let handler = {
+        type: 'prepare',
+        enabled: true,
+        fspList: parsedHandlerList
       }
-      if (args.position) {
-        Logger.debug(`CLI: Executing --position ${args.position}`)
-        let parsedHandlerList = args.position.replace(/\s/g, '').split(',')
-        if (Array.isArray(parsedHandlerList) && parsedHandlerList.length >= 1) {
-          let handler = {
-            type: 'position',
-            enabled: true,
-            fspList: parsedHandlerList
-          }
-          handlerList.push(handler)
-        } else {
-          throw new Error('Invalid [fspNameList] provided for --position. Please ensure that it is a "," delimated string. e.g. "fsp1, fsp2".')
-        }
-      }
-      if (args.transfer) {
-        Logger.debug(`CLI: Executing --transfer`)
-        let handler = {
-          type: 'transfer',
-          enabled: true
-        }
-        handlerList.push(handler)
-      }
-      if (args.fulfil) {
-        Logger.debug(`CLI: Executing --fulfil`)
-        let handler = {
-          type: 'fulfil',
-          enabled: true
-        }
-        handlerList.push(handler)
-      }
-      // if (args.reject) {
-      //   Logger.debug(`CLI: Executing --reject`)
-      //   let handler = {
-      //     type: 'reject',
-      //     enabled: true
-      //   }
-      //   handlerList.push(handler)
+      handlerList.push(handler)
+      // } else {
+      //   throw new Error('Invalid [fspNameList] provided for --prepare. Please ensure that it is a "," delimated string. e.g. "fsp1, fsp2".')
       // }
-
-      module.exports = Setup.initialize({
-        service: 'handler',
-        port: Config.PORT,
-        modules: [Plugin],
-        runMigrations: false,
-        handlers: handlerList,
-        runHandlers: true
-      })
     }
+    if (args.prepare && typeof args.prepare === 'boolean') {
+      Logger.debug(`CLI: Executing --prepare`)
+      let handler = {
+        type: 'prepare',
+        enabled: true,
+        fspList: []
+      }
+      handlerList.push(handler)
+    }
+    if (args.position && typeof args.position === 'string') {
+      Logger.debug(`CLI: Executing --position ${args.position}`)
+      let parsedHandlerList = args.position.replace(/\s/g, '').split(',')
+      // removing holes, and, falsy (null, undefined, 0, -0, NaN, "", false, document.all) etc:
+      parsedHandlerList = parsedHandlerList.filter(x => x)
+      // if (Array.isArray(parsedHandlerList) && parsedHandlerList.length >= 1) {
+      let handler = {
+        type: 'position',
+        enabled: true,
+        fspList: parsedHandlerList
+      }
+      handlerList.push(handler)
+      // } else {
+      //   throw new Error('Invalid [fspNameList] provided for --position. Please ensure that it is a "," delimated string. e.g. "fsp1, fsp2".')
+      // }
+    }
+    if (args.position && typeof args.position === 'boolean') {
+      Logger.debug(`CLI: Executing --position`)
+      let handler = {
+        type: 'position',
+        enabled: true,
+        fspList: []
+      }
+      handlerList.push(handler)
+    }
+    if (args.transfer) {
+      Logger.debug(`CLI: Executing --transfer`)
+      let handler = {
+        type: 'transfer',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.fulfil) {
+      Logger.debug(`CLI: Executing --fulfil`)
+      let handler = {
+        type: 'fulfil',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    // if (args.reject) {
+    //   Logger.debug(`CLI: Executing --reject`)
+    //   let handler = {
+    //     type: 'reject',
+    //     enabled: true
+    //   }
+    //   handlerList.push(handler)
+    // }
+
+    // if (Array.isArray(handlerList) && handlerList.length > 0) {
+    module.exports = Setup.initialize({
+      service: 'handler',
+      port: Config.PORT,
+      modules: [Plugin],
+      runMigrations: false,
+      handlers: handlerList,
+      runHandlers: true
+    })
+    // } else {
+    //   Program.help()
+    // }
   })
 
-// parse command line vars
-Program.parse(process.argv)
-
-// display default help
-if (!Program.args.length) {
+if (Array.isArray(process.argv) && process.argv.length > 2) {
+  // parse command line vars
+  Program.parse(process.argv)
+} else if (Array.isArray(process.argv) && process.argv.length > 0) {
+  // display default help
   Program.help()
 }

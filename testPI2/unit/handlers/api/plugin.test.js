@@ -1,7 +1,7 @@
 'use strict'
 
 const Test = require('tape')
-const Plugins = require('../../../src/handlers/api/plugin')
+const Plugins = require('../../../../src/handlers/api/plugin')
 
 class Server {
   constructor () {
