@@ -184,6 +184,29 @@ Test('Participant Handler', participantHandlerTest => {
       }
     })
 
+    handlerTest.test('create should fail if the participant exists with different currency', async function (test) {
+      const payload = {
+        name: 'fsp1',
+        currency: 'USD'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        currency: 'EUR',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        currencyList: [{ currencyId: 'EUR', isActive: 1 }]
+      }
+
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      try {
+        await Handler.create(createRequest({ payload }))
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.end()
+      }
+    })
+
     handlerTest.test('create should fail if any error', async function (test) {
       const payload = {
         name: 'fsp1',
@@ -264,6 +287,21 @@ Test('Participant Handler', participantHandlerTest => {
       test.end()
     })
 
+    handlerTest.test('getEndpoint should return empty object if no endpoints found if type is passed', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        type: 'FSIOP_CALLBACK_URL'
+      }
+      const endpoint = {}
+      const endpointReturn = []
+      Participant.getEndpoint.withArgs(params.name, query.type).returns(P.resolve(endpointReturn))
+      const result = await Handler.getEndpoint(createRequest({ params, query }))
+      test.deepEqual(result, endpoint, 'The results match')
+      test.end()
+    })
+
     handlerTest.test('getEndpoint should return all the participant endpoints if type is not passed', async function (test) {
       const params = {
         name: 'fsp1'
@@ -288,6 +326,19 @@ Test('Participant Handler', participantHandlerTest => {
           value: 'http://localhost:3001/participants/dfsp1/notification2'
         }
       ]
+
+      Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpoints))
+      const result = await Handler.getEndpoint(createRequest({ params }))
+      test.deepEqual(result, endpointsResult, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getEndpoint should return empty array if no endpoints found if type is not passed', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const endpoints = []
+      const endpointsResult = []
 
       Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpoints))
       const result = await Handler.getEndpoint(createRequest({ params }))
@@ -420,6 +471,21 @@ Test('Participant Handler', participantHandlerTest => {
       test.end()
     })
 
+    handlerTest.test('getLimits should return empty array when no limits found', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      const expected = []
+      Participant.getLimits.withArgs(params.name, query).returns(P.resolve([]))
+      const result = await Handler.getLimits(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
     handlerTest.test('getLimits should return the participant limits for given limit type', async function (test) {
       const params = {
         name: 'fsp1'
@@ -448,6 +514,31 @@ Test('Participant Handler', participantHandlerTest => {
         currencyId: 'EUR',
         name: 'NET_DEBIT_CAP',
         value: 5000000
+      }]
+      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      const result = await Handler.getLimits(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getLimits should return the participant limits for given currency if currency not returned in result', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      const expected = [{
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 1000000
+        }
+      }]
+      const limitReturn = [{
+        name: 'NET_DEBIT_CAP',
+        value: 1000000
       }]
       Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
