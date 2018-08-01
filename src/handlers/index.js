@@ -50,7 +50,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--position [fspNameList]', 'Start the Position Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
   .option('--transfer', 'Start the Transfer Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
-  .option('--reject', 'Start the Reject Handler')
+  // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
   .action(function (args) {
@@ -100,14 +100,14 @@ Program.command('handler') // sub-command name, coffeeType = type, required
         }
         handlerList.push(handler)
       }
-      if (args.reject) {
-        Logger.debug(`CLI: Executing --reject`)
-        let handler = {
-          type: 'reject',
-          enabled: true
-        }
-        handlerList.push(handler)
-      }
+      // if (args.reject) {
+      //   Logger.debug(`CLI: Executing --reject`)
+      //   let handler = {
+      //     type: 'reject',
+      //     enabled: true
+      //   }
+      //   handlerList.push(handler)
+      // }
 
       module.exports = Setup.initialize({
         service: 'handler',
