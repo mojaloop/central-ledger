@@ -501,7 +501,7 @@ Test('Participant Handler', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('adjustLimits should add the limits if it doesnt exist', async function (test) {
+    handlerTest.test('adjustLimits should adjust existing limits', async function (test) {
       const params = {
         name: 'fsp1'
       }
@@ -512,13 +512,34 @@ Test('Participant Handler', participantHandlerTest => {
           value: 10000000
         }
       }
+      let participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: payload.limit.value,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1
+      }
 
-      Participant.adjustLimits.withArgs(params.name, payload).returns(P.resolve(1))
+      const expected = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000,
+          participantLimitId: 1,
+          participantLimitTypeId: 1,
+          isActive: 1
+
+        }
+      }
+
+      Participant.adjustLimits.withArgs(params.name, payload).returns(P.resolve({ participantLimit }))
       const reply = {
         response: (response) => {
           return {
             code: statusCode => {
-              test.equal(statusCode, 201, 'Participant limit and initial position added successfully')
+              test.equal(statusCode, 200, 'Participant limit adjusted successfully')
+              test.deepEqual(response, expected, 'Results match')
               test.end()
             }
           }

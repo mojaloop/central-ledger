@@ -187,8 +187,20 @@ const getLimits = async function (request, h) {
 const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    await Participant.adjustLimits(request.params.name, request.payload)
-    return h.response().code(201)
+    const result = await Participant.adjustLimits(request.params.name, request.payload)
+    const { participantLimit } = result
+    const updatedLimit = {
+      currency: request.payload.currency,
+      limit: {
+        participantLimitId: participantLimit.participantLimitId,
+        participantLimitTypeId: participantLimit.participantLimitTypeId,
+        type: request.payload.limit.type,
+        value: participantLimit.value,
+        isActive: participantLimit.isActive
+      }
+
+    }
+    return h.response(updatedLimit).code(200)
   } catch (err) {
     throw Boom.badRequest()
   }
