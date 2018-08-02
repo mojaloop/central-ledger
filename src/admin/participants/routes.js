@@ -154,5 +154,50 @@ module.exports = [
         }
       }
     }
+  },
+  {
+    method: 'GET',
+    path: '/participants/{name}/limits',
+    handler: Handler.getLimits,
+    options: {
+      id: 'participants_limits_get',
+      tags: tags,
+      description: 'View participant limits',
+      validate: {
+        params: {
+          name: nameValidator
+        },
+        query: {
+          currency: currencyValidator,
+          type: Joi.string().optional().description('Limit Type')
+        }
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/limits',
+    handler: Handler.adjustLimits,
+    options: {
+      id: 'participants_limits_adjust',
+      tags: tags,
+      description: 'Adjust participant limits',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          currency: currencyValidator,
+          limit: Joi.object().keys({
+            type: Joi.string().required().description('Limit Type'),
+            value: Joi.number().required().description('Limit Value')
+          }).required().description('Participant Limit')
+        },
+        params: {
+          name: nameValidator
+        }
+      }
+    }
   }
 ]

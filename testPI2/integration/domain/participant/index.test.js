@@ -205,7 +205,21 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     } catch (err) {
       console.log(err)
-      Logger.error(`add participant endpoint failed with error - ${err}`)
+      Logger.error(`add participant limit and initial position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('update limits', async (assert) => {
+    try {
+      let result = await ParticipantLimitHelper.adjustLimits(participantFixtures[0].name, {limit: {value: 50}})
+      assert.ok(result, `adjustLimits successful for Participant: ${participantFixtures[0].name}`)
+      assert.equal(result.participantLimit.value, 50, 'The limits updated successfully')
+      assert.end()
+    } catch (err) {
+      console.log(err)
+      Logger.error(`update participant limit failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
