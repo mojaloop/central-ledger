@@ -37,6 +37,7 @@ defaults_Environtment: &defaults_environment
     then
         echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
     fi
+    source $BASH_ENV
 
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
