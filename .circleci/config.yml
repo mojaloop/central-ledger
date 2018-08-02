@@ -34,13 +34,13 @@ defaults_Environment: &defaults_environment
   name: Set default environment
   command: |
     echo "Current CACHE_VERSION: ${CACHE_VERSION}"
-    if [ -z "$CACHE_VERSION" ];
+    if [ -z "${CACHE_VERSION}" ];
     then
         echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
         source $BASH_ENV
     fi
     echo "Using CACHE_VERSION: ${CACHE_VERSION}"
-    echo "$CACHE_VERSION" > CACHE_VERSION.txt
+    echo "${CACHE_VERSION}" > CACHE_VERSION.txt
 
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
