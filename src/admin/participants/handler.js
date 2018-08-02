@@ -192,11 +192,8 @@ const adjustLimits = async function (request, h) {
     const updatedLimit = {
       currency: request.payload.currency,
       limit: {
-        participantLimitId: participantLimit.participantLimitId,
-        participantLimitTypeId: participantLimit.participantLimitTypeId,
         type: request.payload.limit.type,
-        value: participantLimit.value,
-        isActive: participantLimit.isActive
+        value: participantLimit.value
       }
 
     }

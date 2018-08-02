@@ -616,11 +616,7 @@ Test('Participant Handler', participantHandlerTest => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000,
-          participantLimitId: 1,
-          participantLimitTypeId: 1,
-          isActive: 1
-
+          value: 10000000
         }
       }
 
