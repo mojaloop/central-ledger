@@ -30,7 +30,7 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
     pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
     apk -v --purge del py-pip
 
-defaults_Environtment: &defaults_environment
+defaults_Environment: &defaults_environment
   name: Set default environment
   command: |
     if [ -z "$CACHE_VERSION" ];
@@ -38,8 +38,8 @@ defaults_Environtment: &defaults_environment
         echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
         source $BASH_ENV
     fi
-    echo "$CACHE_VERSION" > CACHE_VERSION.txt
     echo "Using CACHE_VERSION: ${CACHE_VERSION}"
+    echo "$CACHE_VERSION" > CACHE_VERSION.txt
 
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
@@ -132,10 +132,10 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *defaults_environment
-      - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - run:
+          <<: *defaults_environment
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
@@ -159,10 +159,10 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *defaults_environment
-      - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - run:
+          <<: *defaults_environment
       - restore_cache:
           key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
       - run:
@@ -186,10 +186,10 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *defaults_environment
-      - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - run:
+          <<: *defaults_environment
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
@@ -219,6 +219,9 @@ jobs:
     <<: *defaults_working_directory
     steps:
       - checkout
+      - run:
+          name: Install general dependencies
+          command: *defaults_Dependencies
       - run:
           <<: *defaults_environment
       - restore_cache:
