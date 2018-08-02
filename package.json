@@ -112,6 +112,7 @@
     "faucet": "0.0.1",
     "five-bells-ledger-api-tests": "github:interledgerjs/five-bells-ledger-api-tests",
     "istanbul": "1.1.0-alpha.1",
+    "jsonpath": "^1.0.0",
     "mag": "0.9.1",
     "mag-hub": "0.1.1",
     "npm-run-all": "4.0.1",
