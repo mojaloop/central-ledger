@@ -38,7 +38,7 @@ defaults_Environtment: &defaults_environment
         echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
         source $BASH_ENV
     fi
-    echo "$CACHE_VERSION" > TMP_CACHE_VERSION.txt
+    echo "$CACHE_VERSION" > CACHE_VERSION.txt
     echo "Using CACHE_VERSION: ${CACHE_VERSION}"
 
 defaults_build_docker_login: &defaults_build_docker_login
