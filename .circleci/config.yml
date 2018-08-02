@@ -33,6 +33,7 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
 defaults_Environment: &defaults_environment
   name: Set default environment
   command: |
+    echo "Current CACHE_VERSION: ${CACHE_VERSION}"
     if [ -z "$CACHE_VERSION" ];
     then
         echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
