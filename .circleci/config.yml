@@ -38,6 +38,7 @@ defaults_Environtment: &defaults_environment
         echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
         source $BASH_ENV
     fi
+    echo "$CACHE_VERSION" > TMP_CACHE_VERSION.txt
     echo "Using CACHE_VERSION: ${CACHE_VERSION}"
 
 defaults_build_docker_login: &defaults_build_docker_login
@@ -148,7 +149,7 @@ jobs:
           name: Delete build dependencies
           command: apk del build-dependencies
       - save_cache:
-          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
           paths:
             - node_modules
 
@@ -163,7 +164,7 @@ jobs:
           command: *defaults_Dependencies
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
       - run:
           name: Install tape, tapes and tap-xunit
           command: npm install -g tape tapes tap-xunit
@@ -193,7 +194,7 @@ jobs:
           command: *defaults_awsCliDependencies
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
       - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
@@ -221,7 +222,7 @@ jobs:
       - run:
           <<: *defaults_environment
       - restore_cache:
-          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
