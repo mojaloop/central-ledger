@@ -313,6 +313,69 @@ Test('Position handler', transferHandlerTest => {
     //   test.end()
     // })
 
+    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.COMMIT
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is FAKE when single message', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.REJECT
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is REJECTED when single message', async (test) => {
+      const isIncrease = false
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId: TransferState.ABORTED,
+        reason: transferInfo.reason
+      }
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).returns(P.resolve(true))
+
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      messages[0].value.metadata.event.action = transferEventAction.REJECT
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    // positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => { // TODO: extend and enable unit test
+    //   await Kafka.Consumer.createHandler(topicName, config, command)
+    //   Utility.transformGeneralTopicName.returns(topicName)
+    //   Utility.getKafkaConfig.returns(config)
+    //   TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+    //   messages[0].value.metadata.event.action = transferEventAction.REJECT
+    //   const result = await allTransferHandlers.positions(null, messages)
+    //   Logger.info(result)
+    //   test.equal(result, true)
+    //   test.end()
+    // })
+
     // positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
     //   await Kafka.Consumer.createHandler(topicName, config, command)
     //   Utility.transformGeneralTopicName.returns(topicName)

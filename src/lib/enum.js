@@ -56,5 +56,9 @@ module.exports = {
   },
   limitType: {
     NET_DEBIT_CAP: 1
+  },
+  transferEventStatus: {
+    SUCCESS: 'success',
+    FAILED: 'failed'
   }
 }
