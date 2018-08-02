@@ -35,7 +35,7 @@ defaults_Environtment: &defaults_environment |
   command: |
     if [ -z "$CACHE_VERSION" ];
     then
-        echo 'export CACHE_VERSION="default' >> $BASH_ENV
+        echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
     fi
 
 defaults_build_docker_login: &defaults_build_docker_login
