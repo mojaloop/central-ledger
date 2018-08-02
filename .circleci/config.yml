@@ -221,9 +221,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install general dependencies
-          command: *defaults_Dependencies
-      - run:
           <<: *defaults_environment
       - restore_cache:
           key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
