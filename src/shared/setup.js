@@ -134,7 +134,7 @@ const createHandlers = async (handlers) => {
  * @param {number} port Port to start the HTTP Server on
  * @param {object[]} modules List of modules to be loaded by the HTTP Server
  * @param {boolean} runMigrations True to run Migration script, false to ignore them
- * @param {boolean} runHandlers True to start Handlers, false to ignore them
+ * @param {boolean} runHandlers True to start Handlers, false to ignore them, only applicable for service types that are NOT 'handler'
  * @param {handler[]} handlers List of Handlers to be registered
  * @returns {object} Returns HTTP Server object
  */
