@@ -365,7 +365,6 @@
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true
             }
-            }
           }
         },
         "TRANSFER": {
