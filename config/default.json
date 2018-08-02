@@ -62,7 +62,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -93,7 +93,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -124,7 +124,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -155,7 +155,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -188,7 +188,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -219,7 +219,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -250,7 +250,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -283,7 +283,7 @@
               "fetch.error.backoff.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false,
+              "api.version.request": true,
               "enable.auto.commit": false,
               "auto.commit.interval.ms": 200
             },
@@ -316,7 +316,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         },
@@ -340,7 +340,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         },
@@ -364,7 +364,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         },
@@ -388,7 +388,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         }
@@ -414,7 +414,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         },
@@ -438,7 +438,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         },
@@ -462,7 +462,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         }
@@ -488,7 +488,7 @@
               "socket.blocking.max.ms": 1,
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
-              "api.version.request": false
+              "api.version.request": true
             }
           }
         }
