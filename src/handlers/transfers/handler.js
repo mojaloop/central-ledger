@@ -159,7 +159,7 @@ const fulfil = async (error, messages) => {
     }
     Logger.info(`FulfilHandler::${message.value.metadata.event.action}`)
     const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL)
-    const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL))
+    const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     const metadata = message.value.metadata
     const transferId = message.value.id
     const payload = message.value.content.payload
@@ -273,7 +273,7 @@ const transfer = async (error, messages) => {
       return true
     } else if (action.toLowerCase() === TransferEventAction.COMMIT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
-      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(kafkaTopic))
+      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
 
       // send notification message to Payee
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
@@ -289,7 +289,7 @@ const transfer = async (error, messages) => {
       return true
     } else if (action.toLowerCase() === TransferEventAction.REJECT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
-      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(kafkaTopic))
+      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
 
       // send notification message to Payee
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)

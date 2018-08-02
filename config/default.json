@@ -11,7 +11,7 @@
     "SCALE": 2
   },
   "SIDECAR": {
-    "DISABLED": true,
+    "DISABLED": false,
     "HOST": "localhost",
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,
@@ -242,39 +242,6 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-position-abort",
-              "debug": "all",
-              "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
-            },
-            "topicConf": {
-              "auto.offset.reset": "earliest"
-            }
-          }
-        }
-      },
-      "NOTIFICATION": {
-        "EVENT": {
-          "config": {
-            "options": {
-              "mode": 2,
-              "batchSize": 1,
-              "pollFrequency": 10,
-              "recursiveTimeout": 100,
-              "messageCharset": "utf8",
-              "messageAsJSON": true,
-              "sync": true,
-              "consumeTimeout": 1000
-            },
-            "rdkafkaConf": {
-              "client.id": "cl-con-notification-event",
               "debug": "all",
               "group.id": "central-ledger-kafka",
               "metadata.broker.list": "localhost:9092",

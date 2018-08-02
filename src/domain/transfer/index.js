@@ -33,15 +33,12 @@ const SettlementFacade = require('../../models/settlement/facade')
 const SettlementModel = require('../../models/settlement/settlement')
 const Projection = require('./projection')
 const TransferObjectTransform = require('./transform')
-// const Enum = require('../../lib/enum')
-// const Events = require('../../lib/events') // This is pre-PI2 code-base, not required in PI2, PI3, and future.
 const Errors = require('../../errors')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
     const result = await Projection.saveTransferPrepared(payload, stateReason, hasPassedValidation)
     const t = TransferObjectTransform.toTransfer(result)
-    // Events.emitTransferPrepared(t) // This is pre-PI2 code-base, not required in PI2, PI3, and future.
     return {transfer: t}
   } catch (e) {
     throw e

@@ -77,19 +77,16 @@ const createServer = (port, modules) => {
  * @returns {Promise<boolean>} Returns true if Handlers were registered
  */
 const createHandlers = async (handlers) => {
-  let handlerIndex
   let registerdHandlers = {
     connection: {},
     register: {},
     ext: {},
     start: new Date(),
-    info: {
-    },
+    info: {},
     handlers: handlers
   }
 
-  for (handlerIndex in handlers) {
-    var handler = handlers[handlerIndex]
+  for (let handler of handlers) {
     if (handler.enabled) {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
