@@ -204,7 +204,7 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('connect to db and return hapi server for "undefined"', async (test) => {
+    initializeTest.test('return throw an exception for server "undefined"', async (test) => {
       const service = 'undefined'
 
       Setup.initialize({ service }).then(s => {
