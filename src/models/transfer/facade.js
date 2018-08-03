@@ -31,7 +31,8 @@ const Db = require('../../db')
 const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
-// const Logger = require('@mojaloop/central-services-shared').Logger
+const ParticipantFacade = require('../participant/facade')
+const _ = require('lodash')
 
 const getById = async (id) => {
   try {
@@ -225,9 +226,92 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
   }
 }
 
+const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+  try {
+    const participants = []
+    const names = [payload.payeeFsp, payload.payerFsp]
+
+    for (let name of names) {
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency)
+      participants.push(participant)
+    }
+
+    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
+      _.set(m, acct.name, acct.participantCurrencyId), {})
+
+    const transferRecord = {
+      transferId: payload.transferId,
+      amount: payload.amount.amount,
+      currencyId: payload.amount.currency,
+      ilpCondition: payload.condition,
+      expirationDate: new Date(payload.expiration)
+    }
+
+    const ilpPacketRecord = {
+      transferId: payload.transferId,
+      value: payload.ilpPacket
+    }
+
+    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.REJECTED)
+
+    const transferStateChangeRecord = {
+      transferId: payload.transferId,
+      transferStateId: state,
+      reason: stateReason,
+      createdDate: new Date()
+    }
+
+    const payerTransferParticipantRecord = {
+      transferId: payload.transferId,
+      participantCurrencyId: participantCurrencyIds[payload.payerFsp],
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      amount: payload.amount.amount
+    }
+
+    const payeeTransferParticipantRecord = {
+      transferId: payload.transferId,
+      participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      amount: payload.amount.amount
+    }
+    const knex = await Db.getKnex()
+    return await knex.transaction(async (trx) => {
+      try {
+        await knex('transfer').transacting(trx).insert(transferRecord)
+        await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+        await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+        payerTransferParticipantRecord.name = payload.payerFsp
+        payeeTransferParticipantRecord.name = payload.payeeFsp
+        let transferExtensionsRecordList = []
+        if (payload.extensionList && payload.extensionList.extension) {
+          transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+            return {
+              transferId: payload.transferId,
+              key: ext.key,
+              value: ext.value
+            }
+          })
+          await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+        }
+        await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
+        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   getById,
   getAll,
   getTransferInfoToChangePosition,
-  saveTransferFulfiled
+  saveTransferFulfiled,
+  saveTransferPrepared
 }
