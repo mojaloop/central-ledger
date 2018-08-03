@@ -37,7 +37,7 @@ const ParticipantLimitHelper = require('../helpers/participantLimit')
 const TransferService = require('../../../src/domain/transfer')
 const ParticipantService = require('../../../src/domain/participant')
 const Handlers = {
-  index: require('../../../src/handlers/handlers'),
+  index: require('../../../src/handlers/register'),
   positions: require('../../../src/handlers/positions/handler'),
   transfers: require('../../../src/handlers/transfers/handler')
 }

@@ -46,6 +46,8 @@
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const requireGlob = require('require-glob')
+const TransferHandlers = require('./transfers/handler')
+const PositionHandlers = require('./positions/handler')
 
 const registerAllHandlers = async (request, h) => {
   try {
@@ -65,5 +67,15 @@ const registerAllHandlers = async (request, h) => {
 }
 
 module.exports = {
-  registerAllHandlers
+  registerAllHandlers,
+  transfers: {
+    registerAllHandlers: TransferHandlers.registerAllHandlers,
+    registerPrepareHandlers: TransferHandlers.registerPrepareHandlers,
+    registerTransferHandler: TransferHandlers.registerTransferHandler,
+    registerFulfilHandler: TransferHandlers.registerFulfilHandler
+  },
+  positions: {
+    registerAllHandlers: PositionHandlers.registerAllHandlers,
+    registerPositionHandlers: PositionHandlers.registerPositionHandlers
+  }
 }

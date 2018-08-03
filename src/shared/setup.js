@@ -14,7 +14,7 @@ const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
 const Boom = require('boom')
-const RegisterHandlers = require('../handlers/handlers')
+const RegisterHandlers = require('../handlers/register')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -22,6 +22,15 @@ const migrate = (runMigrations) => {
 
 const connectDatabase = async () => await Db.connect(Config.DATABASE_URI)
 
+/**
+ * @function createServer
+ *
+ * @description Create HTTP Server
+ *
+ * @param {number} port Port to register the Server against
+ * @param modules list of Modules to be registered
+ * @returns {Promise<Server>} Returns the Server object
+ */
 const createServer = (port, modules) => {
   return (async () => {
     const server = await new Hapi.Server({
@@ -53,20 +62,115 @@ const createServer = (port, modules) => {
   })()
 }
 
-// Migrator.migrate is called before connecting to the database to ensure all new tables are loaded properly.
-const initialize = async function ({service, port, modules = [], runMigrations = false}) {
+/**
+ * @function createHandlers
+ *
+ * @description Create method to register specific Handlers specified by the Module list as part of the Setup process
+ *
+ * @typedef handler
+ * @type {Object}
+ * @property {string} type The type of Handler to be registered
+ * @property {boolean} enabled True|False to indicate if the Handler should be registered
+ * @property {string[]} [fspList] List of FSPs to be registered
+ *
+ * @param {handler[]} handlers List of Handlers to be registered
+ * @returns {Promise<boolean>} Returns true if Handlers were registered
+ */
+const createHandlers = async (handlers) => {
+  let registerdHandlers = {
+    connection: {},
+    register: {},
+    ext: {},
+    start: new Date(),
+    info: {},
+    handlers: handlers
+  }
+
+  for (let handler of handlers) {
+    if (handler.enabled) {
+      Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
+      switch (handler.type) {
+        case 'prepare':
+          await RegisterHandlers.transfers.registerPrepareHandlers(handler.fspList)
+          break
+        case 'position':
+          await RegisterHandlers.positions.registerPositionHandlers(handler.fspList)
+          break
+        case 'transfer':
+          await RegisterHandlers.transfers.registerTransferHandler()
+          break
+        case 'fulfil':
+          await RegisterHandlers.transfers.registerFulfilHandler()
+          break
+        // case 'reject':
+        //   await RegisterHandlers.transfers.registerRejectHandler()
+        //   break
+        default:
+          var error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
+          Logger.error(error)
+          throw new Error(error)
+      }
+    }
+  }
+
+  return registerdHandlers
+}
+
+/**
+ * @function initialize
+ *
+ * @description Setup method for API, Admin and Handlers. Note that the Migration scripts are called before connecting to the database to ensure all new tables are loaded properly.
+ *
+ * @typedef handler
+ * @type {Object}
+ * @property {string} type The type of Handler to be registered
+ * @property {boolean} enabled True|False to indicate if the Handler should be registered
+ * @property {string[]} [fspList] List of FSPs to be registered
+ *
+ * @param {string} service Name of service to start. Available choices are 'api', 'admin', 'handler'
+ * @param {number} port Port to start the HTTP Server on
+ * @param {object[]} modules List of modules to be loaded by the HTTP Server
+ * @param {boolean} runMigrations True to run Migration script, false to ignore them
+ * @param {boolean} runHandlers True to start Handlers, false to ignore them, only applicable for service types that are NOT 'handler'
+ * @param {handler[]} handlers List of Handlers to be registered
+ * @returns {object} Returns HTTP Server object
+ */
+const initialize = async function ({service, port, modules = [], runMigrations = false, runHandlers = false, handlers = []}) {
   await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)
-  const server = await createServer(port, modules)
-  if (service === 'api') {
-    await RegisterHandlers.registerAllHandlers()
-    // await Participant.createLedgerParticipant(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
+
+  let server
+  switch (service) {
+    case 'api':
+      server = await createServer(port, modules)
+      break
+    case 'admin':
+      server = await createServer(port, modules)
+      break
+    case 'handler':
+      if (!Config.HANDLERS_API_DISABLED) {
+        server = await createServer(port, modules)
+      }
+      break
+    default:
+      Logger.error(`No valid service type ${service} found!`)
+      throw new Error(`No valid service type ${service} found!`)
   }
+
+  if (runHandlers) {
+    if (Array.isArray(handlers) && handlers.length > 0) {
+      await createHandlers(handlers)
+    } else {
+      await RegisterHandlers.registerAllHandlers()
+    }
+  }
+  // await Participant.createLedgerParticipant(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
   return server
 }
 
 module.exports = {
   initialize,
-  createServer
+  createServer,
+  createHandlers
 }

@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "2.4.0-snapshot",
+  "version": "3.3.0-snapshot",
   "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "private": true,
@@ -68,6 +68,7 @@
     "blipp": "3.0.0",
     "bluebird": "3.5.0",
     "boom": "^7.2.0",
+    "commander": "^2.16.0",
     "continuation-local-storage": "3.2.0",
     "deasync-promise": "1.0.1",
     "decimal.js": "9.0.1",
@@ -112,6 +113,7 @@
     "faucet": "0.0.1",
     "five-bells-ledger-api-tests": "github:interledgerjs/five-bells-ledger-api-tests",
     "istanbul": "1.1.0-alpha.1",
+    "jsonpath": "^1.0.0",
     "mag": "0.9.1",
     "mag-hub": "0.1.1",
     "npm-run-all": "4.0.1",

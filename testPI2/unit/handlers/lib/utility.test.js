@@ -5,7 +5,7 @@ const Test = require('tapes')(require('tape'))
 const Mustache = require('mustache')
 const P = require('bluebird')
 const Uuid = require('uuid4')
-const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-shared').Logger
 const KafkaProducer = require('@mojaloop/central-services-shared').Kafka.Producer
 
 const Utility = require('../../../../src/handlers/lib/utility')
@@ -68,27 +68,6 @@ const messageProtocol = {
     }
   },
   pp: ''
-}
-
-const defaultConfig = {
-  options: {
-    'mode': 2,
-    'batchSize': 1,
-    'pollFrequency': 10,
-    'recursiveTimeout': 100,
-    'messageCharset': 'utf8',
-    'messageAsJSON': true,
-    'sync': true,
-    'consumeTimeout': 1000
-  },
-  rdkafkaConf: {
-    'client.id': 'transfer-prepare',
-    'debug': 'all',
-    'group.id': 'central-ledger-kafka',
-    'metadata.broker.list': 'localhost:9092',
-    'enable.auto.commit': false
-  },
-  logger: Logger
 }
 
 Test('Utility Test', utilityTest => {
@@ -177,7 +156,8 @@ Test('Utility Test', utilityTest => {
   utilityTest.test('getKafkaConfig should', getKafkaConfigTest => {
     getKafkaConfigTest.test('return the Kafka config from the default.json', test => {
       const config = Utility.getKafkaConfig(CONSUMER, TRANSFER.toUpperCase(), PREPARE.toUpperCase())
-      test.deepEqual(config, defaultConfig)
+      test.ok(config.rdkafkaConf !== undefined)
+      test.ok(config.options !== undefined)
       test.end()
     })
 

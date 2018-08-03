@@ -30,6 +30,18 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
     pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
     apk -v --purge del py-pip
 
+defaults_Environment: &defaults_environment
+  name: Set default environment
+  command: |
+    echo "Current CACHE_VERSION: ${CACHE_VERSION}"
+    if [ -z "${CACHE_VERSION}" ];
+    then
+        echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
+        source $BASH_ENV
+    fi
+    echo "Using CACHE_VERSION: ${CACHE_VERSION}"
+    echo "${CACHE_VERSION}" > CACHE_VERSION.txt
+
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
   command: |
@@ -119,10 +131,12 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - checkout
+      - run:
+          <<: *defaults_environment
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
@@ -136,7 +150,7 @@ jobs:
           name: Delete build dependencies
           command: apk del build-dependencies
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
           paths:
             - node_modules
 
@@ -144,12 +158,14 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - checkout
+      - run:
+          <<: *defaults_environment
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
       - run:
           name: Install tape, tapes and tap-xunit
           command: npm install -g tape tapes tap-xunit
@@ -169,15 +185,17 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
       - run:
+          <<: *defaults_environment
+      - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
-      - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
       - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
@@ -202,8 +220,10 @@ jobs:
     <<: *defaults_working_directory
     steps:
       - checkout
+      - run:
+          <<: *defaults_environment
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
@@ -297,6 +317,8 @@ jobs:
     steps:
       - checkout
       - run:
+          <<: *defaults_environment
+      - run:
           name: setup environment vars for SNAPSHOT release
           command: |
             echo 'export RELEASE_TAG=$RELEASE_TAG_SNAPSHOT' >> $BASH_ENV
@@ -313,6 +335,8 @@ jobs:
     steps:
       - checkout
       - run:
+          <<: *defaults_environment
+      - run:
           name: setup environment vars for LATEST release
           command: |
             echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
@@ -327,6 +351,8 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
     steps:
+      - run:
+          <<: *defaults_environment
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
@@ -361,6 +387,8 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_helm_kube
     steps:
+      - run:
+          <<: *defaults_environment
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
@@ -448,17 +476,17 @@ workflows:
 #              ignore:
 #                - /feature*/
 #                - /bugfix*/
-    #   - test-spec:
-    #       context: org-global
-    #       requires:
-    #         - setup
-    #       filters:
-    #           tags:
-    #             only: /.*/
-    #         branches:
-    #           ignore:
-    #             - /feature*/
-    #             - /bugfix*/
+#       - test-spec:
+#           context: org-global
+#           requires:
+#             - setup
+#           filters:
+#               tags:
+#                 only: /.*/
+#             branches:
+#               ignore:
+#                 - /feature*/
+#                 - /bugfix*/
       - build-snapshot:
           context: org-global
           requires:
@@ -467,7 +495,7 @@ workflows:
             - test-coverage
             - test-integration
 #            - test-functional
-            # - test-spec
+#            - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*\-snapshot/
@@ -492,7 +520,7 @@ workflows:
             - test-coverage
             - test-integration
 #            - test-functional
-            # - test-spec
+#            - test-spec
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/

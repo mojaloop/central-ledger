@@ -2,19 +2,9 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Hapi = require('hapi')
 const P = require('bluebird')
-const Migrator = require('../../../src/lib/migrator')
-const Db = require('../../../src/db')
 const Config = require('../../../src/lib/config')
-// const Participant = require('../../../src/domain/participant')
-const Plugins = require('../../../src/shared/plugins')
-const HandlerPlugins = require('../../../src/handlers/plugin')
-const RequestLogger = require('../../../src/lib/requestLogger')
-const UrlParser = require('../../../src/lib/urlParser')
-const Sidecar = require('../../../src/lib/sidecar')
 const Proxyquire = require('proxyquire')
-const RegisterHandlers = require('../../../src/handlers/handlers')
 
 Test('setup', setupTest => {
   let sandbox
@@ -24,25 +14,86 @@ Test('setup', setupTest => {
   let hostName = 'http://test.com'
   let databaseUri = 'some-database-uri'
   let Setup
+  let DbStub
+  let SidecarStub
+  let MigratorStub
+  let RegisterHandlersStub
+  let requestLoggerStub
+  let PluginsStub
+  let HapiStub
+  let UrlParserStub
+  let serverStub
 
   setupTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Hapi, 'Server')
-    sandbox.stub(Plugins, 'registerPlugins')
-    sandbox.stub(HandlerPlugins, 'plugin')
-    sandbox.stub(Migrator)
-    sandbox.stub(RegisterHandlers, 'registerAllHandlers')
-    // sandbox.stub(Participant)
-    sandbox.stub(UrlParser, 'idFromTransferUri')
-    sandbox.stub(RequestLogger, 'logRequest')
-    sandbox.stub(RequestLogger, 'logResponse')
 
-    sandbox.stub(Sidecar, 'connect')
-    Db.connect = sandbox.stub()
-    Db.disconnect = sandbox.stub()
+    PluginsStub = {
+      registerPlugins: sandbox.stub().returns(P.resolve())
+    }
+
+    serverStub = {
+      connection: sandbox.stub(),
+      register: sandbox.stub(),
+      ext: sandbox.stub(),
+      start: sandbox.stub(),
+      info: {
+        uri: sandbox.stub()
+      }
+    }
+
+    HapiStub = {
+      Server: sandbox.stub().returns(serverStub)
+    }
+
+    UrlParserStub = {
+      idFromTransferUri: sandbox.stub()
+    }
+
+    requestLoggerStub = {
+      logRequest: sandbox.stub().returns(P.resolve()),
+      logResponse: sandbox.stub().returns(P.resolve())
+    }
+
+    SidecarStub = {
+      connect: sandbox.stub().returns(P.resolve())
+    }
+
+    DbStub = {
+      connect: sandbox.stub().returns(P.resolve()),
+      disconnect: sandbox.stub().returns(P.resolve())
+    }
+
     uuidStub = sandbox.stub()
 
-    Setup = Proxyquire('../../../src/shared/setup', { 'uuid4': uuidStub })
+    MigratorStub = {
+      migrate: sandbox.stub().returns(P.resolve())
+    }
+
+    RegisterHandlersStub = {
+      registerAllHandlers: sandbox.stub().returns(P.resolve()),
+      transfers: {
+        registerPrepareHandlers: sandbox.stub().returns(P.resolve()),
+        registerTransferHandler: sandbox.stub().returns(P.resolve()),
+        registerFulfilHandler: sandbox.stub().returns(P.resolve())
+        // registerRejectHandler: sandbox.stub().returns(P.resolve())
+      },
+      positions: {
+        registerPositionHandlers: sandbox.stub().returns(P.resolve())
+      }
+    }
+
+    Setup = Proxyquire('../../../src/shared/setup', {
+      'uuid4': uuidStub,
+      '../handlers/register': RegisterHandlersStub,
+      '../db': DbStub,
+      '../lib/migrator': MigratorStub,
+      '../lib/sidecar': SidecarStub,
+      '../lib/requestLogger': requestLoggerStub,
+      './plugins': PluginsStub,
+      '../lib/urlParser': UrlParserStub,
+      'hapi': HapiStub,
+      '../lib/config': Config
+    })
 
     oldHostName = Config.HOSTNAME
     oldDatabaseUri = Config.DATABASE_URI
@@ -54,69 +105,335 @@ Test('setup', setupTest => {
 
   setupTest.afterEach(test => {
     sandbox.restore()
+
     Config.HOSTNAME = oldHostName
     Config.DATABASE_URI = oldDatabaseUri
+
     test.end()
   })
 
-  const createServer = () => {
-    const server = {
-      connection: sandbox.stub(),
-      register: sandbox.stub(),
-      ext: sandbox.stub(),
-      start: sandbox.stub(),
-      info: {
-        uri: sandbox.stub()
+  setupTest.test('createServer should', async (createServerTest) => {
+    createServerTest.test('throw Boom error on fail', async (test) => {
+      var errorToThrow = new Error('Throw Boom error')
+
+      var HapiStubThrowError = {
+        Server: sandbox.stub().callsFake((opt) => {
+          opt.routes.validate.failAction(sandbox.stub(), sandbox.stub(), errorToThrow)
+        })
       }
-    }
-    Hapi.Server.returns(server)
-    return server
-  }
+
+      Setup = Proxyquire('../../../src/shared/setup', {
+        'uuid4': uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../db': DbStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        'hapi': HapiStubThrowError,
+        '../lib/config': Config
+      })
+
+      Setup.createServer(200, []).then(() => {
+        test.fail('Should not have successfully created server')
+        test.end()
+      }).catch(err => {
+        test.ok(err instanceof Error)
+        test.end()
+      })
+    })
+    createServerTest.end()
+  })
 
   setupTest.test('initialize should', async (initializeTest) => {
-    const setupPromises = async ({service}) => {
-      Migrator.migrate.returns(P.resolve())
-      Db.connect.returns(P.resolve())
-      Sidecar.connect.returns(P.resolve())
-      const server = createServer()
-      if (service === 'api') {
-        await RegisterHandlers.registerAllHandlers.returns(P.resolve())
-        // Participant.createLedgerParticipant().returns(P.resolve())
-      }
-      return server
-    }
-
     initializeTest.test('connect to sidecar', async (test) => {
-      const server = await setupPromises({})
+      const service = 'api'
 
-      const service = 'test'
       Setup.initialize({ service }).then(s => {
-        test.ok(Db.connect.calledWith(databaseUri))
-        test.ok(Sidecar.connect.calledWith(service))
-        test.notOk(Migrator.migrate.called)
-        test.equal(s, server)
-        Sidecar.connect.restore()
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(SidecarStub.connect.calledWith(service))
+        test.notOk(MigratorStub.migrate.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
         test.end()
       })
     })
 
-    initializeTest.test('connect to db and return hapi server', async (test) => {
-      const server = await setupPromises({})
+    initializeTest.test('connect to db and return hapi server for "api"', async (test) => {
+      const service = 'api'
 
-      Setup.initialize({}).then(s => {
-        test.ok(Db.connect.calledWith(databaseUri))
-        test.notOk(Migrator.migrate.called)
-        test.equal(s, server)
+      Setup.initialize({ service }).then(s => {
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.notOk(MigratorStub.migrate.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('connect to db and return hapi server for "admin"', async (test) => {
+      const service = 'admin'
+
+      Setup.initialize({ service }).then(s => {
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.notOk(MigratorStub.migrate.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('connect to db and return hapi server for "handler"', async (test) => {
+      const service = 'handler'
+
+      Setup.initialize({ service }).then(s => {
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.notOk(MigratorStub.migrate.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('return throw an exception for server "undefined"', async (test) => {
+      const service = 'undefined'
+
+      Setup.initialize({ service }).then(s => {
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.notOk(MigratorStub.migrate.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.ok(err.message === `No valid service type ${service} found!`)
         test.end()
       })
     })
 
     initializeTest.test('run migrations if runMigrations flag enabled', async (test) => {
-      await setupPromises({})
+      const service = 'api'
 
-      Setup.initialize({ runMigrations: true }).then(() => {
-        test.ok(Db.connect.called)
-        test.ok(Migrator.migrate.called)
+      Setup.initialize({ service, runMigrations: true }).then(() => {
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(MigratorStub.migrate.called)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('run Handlers if runHandlers flag enabled and start API', async (test) => {
+      const service = 'handler'
+
+      Setup.initialize({ service, runHandlers: true }).then((s) => {
+        test.ok(RegisterHandlersStub.registerAllHandlers.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('run Handlers if runHandlers flag enabled and DONT start API', async (test) => {
+      var ConfigStub = Config
+      ConfigStub.HANDLERS_API_DISABLED = true
+
+      Setup = Proxyquire('../../../src/shared/setup', {
+        'uuid4': uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../db': DbStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        'hapi': HapiStub,
+        '../lib/config': ConfigStub
+      })
+
+      const service = 'handler'
+
+      sandbox.stub(Config, 'HANDLERS_API_DISABLED').returns(true)
+      Setup.initialize({ service, runHandlers: true }).then((s) => {
+        test.ok(RegisterHandlersStub.registerAllHandlers.called)
+        test.equal(s, undefined)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('run invalid Handler if runHandlers flag enabled with handlers[] populated', async (test) => {
+      const service = 'api'
+
+      var fspList = ['dfsp1', 'dfsp2']
+
+      var prepareHandler = {
+        type: 'prepare',
+        enabled: true,
+        fspList
+      }
+
+      var positionHandler = {
+        type: 'position',
+        enabled: true,
+        fspList
+      }
+
+      var transferHandler = {
+        type: 'transfer',
+        enabled: true
+      }
+
+      var fulfilHandler = {
+        type: 'fulfil',
+        enabled: true
+      }
+
+      // var rejectHandler = {
+      //   type: 'reject',
+      //   enabled: true
+      // }
+
+      var unknownHandler = {
+        type: 'undefined',
+        enabled: true
+      }
+
+      var modulesList = [
+        prepareHandler,
+        positionHandler,
+        transferHandler,
+        fulfilHandler,
+        unknownHandler
+        // rejectHandler
+      ]
+
+      Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
+        test.fail('Expected exception to be thrown')
+        test.end()
+      }).catch(err => {
+        console.log(err)
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
+        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
+        test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.ok(err.message === `Handler Setup - ${JSON.stringify(unknownHandler)} is not a valid handler to register!`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('run disabled Handler if runHandlers flag enabled with handlers[] populated', async (test) => {
+      const service = 'api'
+
+      var fspList = ['dfsp1', 'dfsp2']
+
+      var prepareHandler = {
+        type: 'prepare',
+        enabled: true,
+        fspList
+      }
+
+      var positionHandler = {
+        type: 'position',
+        enabled: false,
+        fspList
+      }
+
+      var transferHandler = {
+        type: 'transfer',
+        enabled: true
+      }
+
+      var fulfilHandler = {
+        type: 'fulfil',
+        enabled: true
+      }
+
+      // var rejectHandler = {
+      //   type: 'reject',
+      //   enabled: true
+      // }
+
+      var modulesList = [
+        prepareHandler,
+        positionHandler,
+        transferHandler,
+        fulfilHandler
+        // rejectHandler
+      ]
+
+      Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
+        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
+        test.notOk(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('run specific Handlers if runHandlers flag enabled with handlers[] populated', async (test) => {
+      const service = 'api'
+
+      var fspList = ['dfsp1', 'dfsp2']
+
+      var prepareHandler = {
+        type: 'prepare',
+        enabled: true,
+        fspList
+      }
+
+      var positionHandler = {
+        type: 'position',
+        enabled: true,
+        fspList
+      }
+
+      var transferHandler = {
+        type: 'transfer',
+        enabled: true
+      }
+
+      var fulfilHandler = {
+        type: 'fulfil',
+        enabled: true
+      }
+
+      // var rejectHandler = {
+      //   type: 'reject',
+      //   enabled: true
+      // }
+
+      var modulesList = [
+        prepareHandler,
+        positionHandler,
+        transferHandler,
+        fulfilHandler
+        // rejectHandler
+      ]
+
+      Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
+        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
+        test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
         test.end()
       })
     })

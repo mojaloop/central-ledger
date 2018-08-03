@@ -1,6 +1,6 @@
 'use strict'
 
-const Auth = require('./auth')
+const Auth = require('../admin/auth/index')
 
 const config = (tags, permission, validate) => {
   const conf = {}
