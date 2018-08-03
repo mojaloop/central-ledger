@@ -30,7 +30,6 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const TransferService = require('../../../../src/domain/transfer')
-const Projection = require('../../../../src/domain/transfer/projection')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const TransferModel = require('../../../../src/models/transfer/transfer')
 const TransferFacade = require('../../../../src/models/transfer/facade')
@@ -60,29 +59,12 @@ const payload = {
   }
 }
 
-const ilpRecord = {
-  transferId: payload.transferId,
-  packet: payload.ilpPacket,
-  condition: payload.condition,
-  fulfilment: null
-}
-
 const transferStateChangeRecord = {
   transferId: payload.transferId,
   transferStateId: TransferState.RECEIVED_PREPARE,
   reason: null,
   createdDate: new Date()
 }
-
-const extensionsRecordList = [
-  {
-    transferId: payload.transferId,
-    key: payload.extensionList.extension[0].key,
-    value: payload.extensionList.extension[0].value,
-    createdDate: new Date(),
-    createdBy: 'unknown' // this needs to be changed and cannot be null
-  }
-]
 
 const transferRecord = {
   transferId: payload.transferId,
@@ -102,20 +84,11 @@ const transferFulfilmentRecord = {
   createdDate: new Date()
 }
 
-const prepareResponse = {
-  isSaveTransferPrepared: true,
-  transferRecord,
-  ilpRecord,
-  transferStateChangeRecord,
-  extensionsRecordList
-}
-
 Test('Transfer Service', transferIndexTest => {
   let sandbox
 
   transferIndexTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Projection)
     sandbox.stub(TransferObjectTransform)
     sandbox.stub(TransferModel)
     sandbox.stub(TransferFacade)
@@ -132,10 +105,9 @@ Test('Transfer Service', transferIndexTest => {
   transferIndexTest.test('prepare should', preparedTest => {
     preparedTest.test('prepare transfer payload that passed validation', async (test) => {
       try {
-        Projection.saveTransferPrepared.returns(Promise.resolve(prepareResponse))
-        TransferObjectTransform.toTransfer.returns(payload)
-        const response = await TransferService.prepare(payload)
-        test.deepEqual(response.transfer, payload)
+        TransferFacade.saveTransferPrepared.returns(Promise.resolve())
+        await TransferService.prepare(payload)
+        test.pass('Error not thrown')
         test.end()
       } catch (e) {
         test.fail('Error Thrown')
@@ -144,21 +116,7 @@ Test('Transfer Service', transferIndexTest => {
     })
 
     preparedTest.test('prepare transfer throws error', async (test) => {
-      Projection.saveTransferPrepared.throws(new Error())
-      TransferObjectTransform.toTransfer.returns(payload)
-      try {
-        await TransferService.prepare(payload)
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-
-    preparedTest.test('prepare transfer throws error', async (test) => {
-      Projection.saveTransferPrepared.returns(Promise.resolve(prepareResponse))
-      TransferObjectTransform.toTransfer.throws(new Error())
+      TransferFacade.saveTransferPrepared.throws(new Error())
       try {
         await TransferService.prepare(payload)
         test.fail('Error not thrown')

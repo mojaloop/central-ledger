@@ -272,6 +272,19 @@ const transfer = async (error, messages) => {
       await consumer.commitMessageSync(message)
 
       return true
+    } else if (action.toLowerCase() === 'reject' && status.toLowerCase() === 'success') {
+      const consumer = Kafka.Consumer.getConsumer(Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER))
+
+      // send notification message to Payee
+      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      // send notification message to Payer
+      // message.value.to = from
+      // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      await consumer.commitMessageSync(message)
+
+      return true
     } else {
       Logger.warn('TransferService::transfer - Unknown event...nothing to do here')
       return true

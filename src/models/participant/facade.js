@@ -41,9 +41,31 @@ const getByNameAndCurrency = async (name, currencyId) => {
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
-          'pc.participantCurrencyId'
+          'pc.participantCurrencyId',
+          'pc.currencyId'
         )
         .first()
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pl.*'
+        )
     })
   } catch (e) {
     throw e
@@ -165,6 +187,52 @@ const addEndpoint = async (participantId, endpoint) => {
   }
 }
 
+const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, participantLimitTypeId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId,
+          'pl.participantLimitTypeId': participantLimitTypeId,
+          'participant.isActive': 1,
+          'pc.IsActive': 1,
+          'pl.isActive': 1
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'participant.participantID AS participantId',
+          'pc.currencyId AS currencyId',
+          'pl.participantLimitTypeId as participantLimitTypeId',
+          'pl.value AS value'
+        ).first()
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+  try {
+    return await Db.participant.query(async (builder) => {
+      return await builder
+        .where({
+          'participant.participantId': participantId,
+          'pc.currencyId': currencyId
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pp.*'
+        )
+    })
+  } catch (e) {
+    throw e
+  }
+}
 /**
  * @function addLimitAndInitialPosition
  *
@@ -367,9 +435,12 @@ const getParticipantLimitsByParticipantId = async (participantId, type) => {
 
 module.exports = {
   getByNameAndCurrency,
+  getParticipantLimitByParticipantIdAndCurrencyId,
   getEndpoint,
   getAllEndpoints,
   addEndpoint,
+  getParticipantPositionByParticipantIdAndCurrencyId,
+  getParticipantLimitByParticipantCurrencyLimit,
   addLimitAndInitialPosition,
   adjustLimits,
   getParticipantLimitsByCurrencyId,

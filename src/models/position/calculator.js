@@ -24,34 +24,16 @@
 
 'use strict'
 
-const Db = require('../../db')
-
-const insert = async (participantLimit) => {
-  try {
-    return await Db.participantLimit.insert(participantLimit)
-  } catch (e) {
-    throw e
+const getListOfTransferIds = (transferList) => {
+  let transferIdList = []
+  const participantName = transferList[0].value.content.payload.payeeFsp
+  let currencyId = transferList[0].value.content.payload.amount.currency
+  for (let transferMessage of transferList) {
+    transferIdList.push(transferMessage.value.content.payload.transferId)
   }
-}
-
-const update = async (participantLimit) => {
-  try {
-    return await Db.participantLimit.update({participantCurrencyId: participantLimit.participantCurrencyId}, {value: participantLimit.value, isActive: participantLimit.isActive})
-  } catch (e) {
-    throw e
-  }
-}
-
-const getLimitByCurrencyId = async (participantCurrencyId) => {
-  try {
-    return await Db.participantLimit.findOne({participantCurrencyId})
-  } catch (e) {
-    throw e
-  }
+  return {transferIdList, participantName, currencyId}
 }
 
 module.exports = {
-  insert,
-  update,
-  getLimitByCurrencyId
+  getListOfTransferIds
 }
