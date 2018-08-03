@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
 
 echo "---------------------------------------------------------------------"
-echo "Restarting all services..."
+echo "Killing all services..."
 echo "---------------------------------------------------------------------"
 echo
 
 CWD="${0%/*}"
 
-echo "Loading env vars..."
-source $CWD/env.sh
+sh $CWD/stopDb.sh ;
 
-sh $CWD/restartDb.sh ;
+sh $CWD/stopKafka-johnnypark.sh;
 
-sh $CWD/restartKafka-johnnypark.sh;
-
-sh $CWD/restartMockServer.sh
-
-echo
+sh $CWD/stopMockServer.sh

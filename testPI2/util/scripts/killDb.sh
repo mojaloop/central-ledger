@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 echo "---------------------------------------------------------------------"
-echo "Starting MockServer Stop Script..."
+echo "Starting Database Kill Script..."
 echo "---------------------------------------------------------------------"
 echo
 
-CWD=$(dirname $(cd "$(dirname "$BASH_SOURCE")"; pwd))
+CWD="${0%/*}"
 
 echo "Loading env vars..."
-source $CWD/$SCRIPT_DIR/env.sh
+source $CWD/env.sh
 
 echo
 echo "---------------------------------------------------------------------"
-echo " Creating MockServer Instance"
+echo " Stopping ${DB_ID} Instance"
 echo "---------------------------------------------------------------------"
-echo "Destroying MockServer ${MOCKSERVER_ID}"
+echo "Destroying ${DB_ID}"
 
-docker stop $MOCKSERVER_ID
-docker rm $MOCKSERVER_ID
+docker stop $DB_ID
+docker rm $DB_ID

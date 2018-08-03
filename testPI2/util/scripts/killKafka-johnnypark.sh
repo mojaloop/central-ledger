@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 echo "---------------------------------------------------------------------"
-echo "Starting Kafka Stop Script..."
+echo "Starting Kafka Kill Script..."
 echo "---------------------------------------------------------------------"
 echo
 
-CWD=$(dirname $(cd "$(dirname "$BASH_SOURCE")"; pwd))
+CWD="${0%/*}"
 
 echo "Loading env vars..."
-source $CWD/$SCRIPT_DIR/env.sh
+source $CWD/env.sh
 
 echo
 echo "---------------------------------------------------------------------"

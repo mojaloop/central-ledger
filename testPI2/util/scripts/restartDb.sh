@@ -4,10 +4,10 @@ echo "Starting Database Restart Script..."
 echo "---------------------------------------------------------------------"
 echo
 
-CWD=$(dirname $(cd "$(dirname "$BASH_SOURCE")"; pwd))
+CWD="${0%/*}"
 
 echo "Loading env vars..."
-source $CWD/$SCRIPT_DIR/env.sh
+source $CWD/env.sh
 
 echo
 echo "---------------------------------------------------------------------"
