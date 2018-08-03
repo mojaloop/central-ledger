@@ -13,6 +13,20 @@ echo
 echo "---------------------------------------------------------------------"
 echo " Creating MockServer Instance"
 echo "---------------------------------------------------------------------"
+echo "Ensure your ML-API-Adapter config points to the following end-points for callbacks:"
+echo "Add the following entries to: \"DFSP_URLS\:"
+echo "    ------------------------------------------------------"
+for FSP in "${FSPList[@]}"
+do
+  echo "    \"$FSP\": {"
+  echo "      \"transfers\": \"http://localhost:1080/transfers\","
+  echo "      \"error\": \"http://localhost:1080/transfers/error\""
+  echo "    }"
+  echo "    ------------------------------------------------------"
+done
+echo
+
+echo
 echo "Destroying MockServer ${MOCKSERVER_ID}"
 
 docker stop $MOCKSERVER_ID
