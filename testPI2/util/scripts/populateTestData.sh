@@ -15,7 +15,7 @@ echo " Creating TestData for $FSPList"
 echo "---------------------------------------------------------------------"
 echo " Prerequisites for Central-Ledger:"
 echo "    1. Ensure you run 'npm run migrate'"
-echo "    2. The below requests only work for the 'ADMIN' API'"
+echo "    2. The below requests only work for the 'ADMIN' API"
 
 for FSP in "${FSPList[@]}"
 do
