@@ -31,15 +31,12 @@ const TransferStateChangeModel = require('../../models/transfer/transferStateCha
 const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const SettlementFacade = require('../../models/settlement/facade')
 const SettlementModel = require('../../models/settlement/settlement')
-const Projection = require('./projection')
 const TransferObjectTransform = require('./transform')
 const Errors = require('../../errors')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
-    const result = await Projection.saveTransferPrepared(payload, stateReason, hasPassedValidation)
-    const t = TransferObjectTransform.toTransfer(result)
-    return {transfer: t}
+    return await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
   } catch (e) {
     throw e
   }
@@ -121,7 +118,7 @@ const settle = async () => {
   const settledTransfers = SettlementModel.create(settlementId, 'transfer').then(() => {
     return SettlementFacade.getSettleableTransfers().then(transfers => {
       transfers.forEach(transfer => {
-        Projection.saveSettledTransfers({id: transfer.transferId, settlement_id: settlementId})
+        TransferFacade.saveSettledTransfers({id: transfer.transferId, settlement_id: settlementId})
       })
       return transfers
     })

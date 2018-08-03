@@ -28,7 +28,8 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/models/position/facade')
+const ModelParticipant = require('../../../../src/models/participant/facade')
+const ModelPosition = require('../../../../src/models/position/facade')
 
 Test('Position facade', async (positionFacadeTest) => {
   let sandbox
@@ -70,7 +71,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await Model.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId)
+      let found = await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId)
       test.equal(found, 1, 'retrive the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
@@ -97,7 +98,7 @@ Test('Position facade', async (positionFacadeTest) => {
       const currencyId = 'USD'
       Db.participant.query.throws(new Error())
 
-      await Model.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId)
+      await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
@@ -127,7 +128,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await Model.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId)
+      let found = await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId)
       test.equal(found, 1, 'retrive the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
@@ -154,7 +155,7 @@ Test('Position facade', async (positionFacadeTest) => {
       const currencyId = 'USD'
       Db.participant.query.throws(new Error())
 
-      await Model.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId)
+      await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
@@ -212,7 +213,7 @@ Test('Position facade', async (positionFacadeTest) => {
             })
           })
 
-          await Model.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
           test.pass('completed successfully')
           test.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition twice')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
@@ -253,7 +254,7 @@ Test('Position facade', async (positionFacadeTest) => {
             })
           })
 
-          await Model.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
           test.pass('completed successfully')
           test.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition twice')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
@@ -277,7 +278,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           knexStub.throws(new Error())
 
-          await Model.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
+          await ModelPosition.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {

@@ -80,8 +80,7 @@ const fulfil = {
   }
 }
 
-const reject = Object.assign({}, fulfil, {transferState: TransferState.ABORTED})
-
+/*
 let messageProtocol = {
   id: transfer.transferId,
   from: transfer.payerFsp,
@@ -105,16 +104,53 @@ let messageProtocol = {
   },
   pp: ''
 }
-
-const messageProtocolFulfil = JSON.parse(JSON.stringify(messageProtocol))
-messageProtocolFulfil.content.payload = fulfil
-messageProtocolFulfil.metadata.event.id = Uuid()
-messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
-messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
-
-const messageProtocolReject = JSON.parse(JSON.stringify(messageProtocolFulfil))
-messageProtocolReject.content.payload = reject
-messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
+const messageProtocolFulfil = {
+  id: transfer.transferId,
+  from: transfer.payerFsp,
+  to: transfer.payeeFsp,
+  type: 'application/json',
+  content: {
+    header: '',
+    payload: fulfil
+  },
+  metadata: {
+    event: {
+      id: Uuid(),
+      type: 'fulfil',
+      action: 'commit',
+      createdAt: new Date(),
+      state: {
+        status: 'success',
+        code: 0
+      }
+    }
+  },
+  pp: ''
+}
+const messageProtocolFulfilReject = {
+  id: transfer.transferId,
+  from: transfer.payerFsp,
+  to: transfer.payeeFsp,
+  type: 'application/json',
+  content: {
+    header: '',
+    payload: fulfil
+  },
+  metadata: {
+    event: {
+      id: Uuid(),
+      type: 'fulfil',
+      action: 'reject',
+      createdAt: new Date(),
+      state: {
+        status: 'success',
+        code: 0
+      }
+    }
+  },
+  pp: ''
+}
+*/
 
 const topicConfTransferPrepare = {
   topicName: Utility.transformAccountToTopicName(transfer.payerFsp, TransferEventType.TRANSFER, TransferEventType.PREPARE),
@@ -122,11 +158,20 @@ const topicConfTransferPrepare = {
   partition: 0,
   opaqueKey: 0
 }
+
 exports.transferPrepare = async () => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.PREPARE.toUpperCase())
   config.logger = Logger
-  await Producer.produceMessage(messageProtocol, topicConfTransferPrepare, config)
-  return true
+  // extend the message with topic information
+  const transferObj = requestBodys().messageProtocol()
+  console.log('******************************transfer object.....******************************************')
+  console.log(transferObj)
+  console.log(topicConfTransferPrepare)
+
+  console.log('**********************************************************************')
+  await Producer.produceMessage(transferObj, topicConfTransferPrepare, config)
+  return transferObj.id
+  // return true
 }
 
 const topicConfTransferFulfil = {
@@ -135,15 +180,206 @@ const topicConfTransferFulfil = {
   partition: 0,
   opaqueKey: 0
 }
-exports.transferFulfil = async () => {
+exports.transferFulfil = async (transferId) => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger
-  await Producer.produceMessage(messageProtocolFulfil, topicConfTransferFulfil, config)
+  const fulfilObj = requestBodys(transferId).messageProtocolFulfil()
+  console.log('******************************fulfill object.....******************************************')
+  console.log(fulfilObj)
+  console.log(topicConfTransferFulfil)
+  console.log('**********************************************************************')
+  await Producer.produceMessage(fulfilObj, topicConfTransferFulfil, config)
+  return fulfilObj.transferId
+}
+
+exports.transferFulfilReject = async (transferId) => {
+  const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, 'TRANSFER', 'REJECT')
+  config.logger = Logger
+  const fulfilRejectObj = requestBodys(transferId).messageProtocolFulfilReject()
+  console.log('******************************fulfillReject object.....******************************************')
+  console.log(fulfilRejectObj)
+  console.log(topicConfTransferFulfil)
+  console.log('**********************************************************************')
+  await Producer.produceMessage(fulfilRejectObj, topicConfTransferFulfil, config)
   return true
 }
-exports.transferReject = async () => {
+exports.transferReject = async (transferId) => {
   const config = Utility.getKafkaConfig(Utility.ENUMS.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger
-  await Producer.produceMessage(messageProtocolReject, topicConfTransferFulfil, config)
+  const rejectObj = requestBodys(transferId).messageProtocolReject()
+  console.log('******************************Reject object.....******************************************')
+  console.log(rejectObj)
+  console.log(topicConfTransferFulfil)
+  console.log('**********************************************************************')
+  await Producer.produceMessage(rejectObj, topicConfTransferFulfil, config)
   return true
 }
+
+// var prepareCounter = 0
+// var fulfilCounter = 0
+// var abortCounter = 0
+
+// // var conter = 0
+
+// exports.producePrepareForPositions = async () => {
+//   const message = requestBodys().messageProtocol()
+//   await Utility.produceParticipantMessage(message.from, Utility.ENUMS.POSITION, '0.prepare', message, Utility.ENUMS.STATE.SUCCESS)
+// //  await Utility.produceParticipantMessage(, Utility.ENUMS.POSITION, PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+// }
+
+// exports.produceFulfilForPositions = async () => {
+//   const message = requestBodys().messageProtocolFulfil()
+//   await Utility.produceParticipantMessage(message.from, Utility.ENUMS.POSITION, '2.fulfil', message, Utility.ENUMS.STATE.SUCCESS)
+// }
+
+// exports.produceAbortForPositions = async () => {
+//   const message = requestBodys().messageProtocolFulfilReject()
+//   await Utility.produceParticipantMessage(message.from, Utility.ENUMS.POSITION, '1.abort', message, Utility.ENUMS.STATE.SUCCESS)
+// }
+
+// const prepareTestMessage = () => {
+//   return {
+//     metadata: {
+//       event: {
+//         id: Uuid(),
+//         type: 'prepare',
+//         state: ''
+//       }
+//     },
+//     value: {
+//       counter: ++prepareCounter,
+//       dfsp: 'dfsp1',
+//       type: 'prepare'
+//     }
+//   }
+// }
+
+// const fulfilTestMessage = () => {
+//   return {
+//     counter: ++fulfilCounter,
+//     dfsp: 'dfsp1',
+//     type: 'fulfil'
+//   }
+// }
+
+// const abortTestMessage = () => {
+//   return {
+//     counter: ++abortCounter,
+//     dfsp: 'dfsp1',
+//     type: 'abort'
+//   }
+// }
+
+const requestBodys = (transferId = null) => {
+  const localTransfer = Object.assign({}, transfer, { transferId: transferId || Uuid() })
+  const localFulfil = Object.assign({}, fulfil, { completedTimestamp: new Date() })
+  const localReject = Object.assign({}, fulfil, {transferState: TransferState.ABORTED})
+
+  return {
+    messageProtocol: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localTransfer
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'transfer',
+            action: 'prepare',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    },
+
+    messageProtocolFulfil: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localFulfil
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'fulfil',
+            action: 'commit',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    },
+
+    messageProtocolFulfilReject: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localFulfil
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'fulfil',
+            action: 'reject',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    },
+
+    messageProtocolReject: function () {
+      return {
+        id: localTransfer.transferId,
+        from: localTransfer.payerFsp,
+        to: localTransfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: localReject
+        },
+        metadata: {
+          event: {
+            id: Uuid(),
+            type: 'fulfil',
+            action: TransferEventAction.REJECT,
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+    }
+  }
+}
+
+exports.requestBodys = requestBodys

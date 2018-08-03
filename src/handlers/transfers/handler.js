@@ -303,6 +303,22 @@ const transfer = async (error, messages) => {
       }
 
       return true
+    } else if (action.toLowerCase() === 'reject' && status.toLowerCase() === 'success') {
+      const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
+      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+
+      // send notification message to Payee
+      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      // send notification message to Payer
+      // message.value.to = from
+      // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
+
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+
+      return true
     } else {
       Logger.warn('TransferService::transfer - Unknown event...nothing to do here')
       return true

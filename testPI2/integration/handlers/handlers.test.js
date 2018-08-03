@@ -308,8 +308,7 @@ Test('Handlers test', async handlersTest => {
       setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-        const payerExpectedPosition = payerInitialPosition - td.transfer.amount.amount
+        const payerExpectedPosition = testData.amount.amount - td.transfer.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
@@ -326,6 +325,31 @@ Test('Handlers test', async handlersTest => {
 
   // TODO: handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
   // here implement transfer prepare with amount that exceeds payer's NET_DEBIT_CAP and test if transfer prepare fails
+  await handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
+    testData.amount.amount = 1000
+    const td = await prepareTestData(testData)
+
+    await transferPrepareExceedLimit.test(`fail the transfer if the amount is higher than the remaining participant limit`, async (test) => {
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocol, td.topicConfTransferPrepare, config)
+      if (debug) {
+        console.log(`(transferFulfilReject) awaiting TransferPrepare consumer processing: timeout ${delay / 1000}s..`)
+      }
+      setTimeout(async () => {
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        test.equal(producerResponse, true, 'Producer for prepare published message')
+        test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
+        test.end()
+      }, delay)
+    })
+
+    transferPrepareExceedLimit.end()
+  })
 
   handlersTest.end()
 })

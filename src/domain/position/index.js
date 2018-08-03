@@ -124,3 +124,7 @@ exports.changeParticipantPosition = (participantCurrencyId, isIncrease, amount, 
 exports.generatePositionPlaceHolder = () => {
   return true
 }
+
+exports.calculatePreparePositionsBatch = async (transferList) => {
+  return await PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+}
