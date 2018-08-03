@@ -88,7 +88,7 @@
     "jsdoc": "^3.5.5",
     "json2csv": "3.11.5",
     "jsonwebtoken": "8.1.1",
-    "knex": "^0.15.0",
+    "knex": "^0.15.2",
     "lodash": "4.17.4",
     "moment": "2.21.0",
     "mustache": "^2.3.0",
