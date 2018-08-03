@@ -7,8 +7,8 @@ echo
 
 CWD="${0%/*}"
 
-sh $CWD/stopDb.sh ;
+sh $CWD/killDb.sh ;
 
-sh $CWD/stopKafka-johnnypark.sh;
+sh $CWD/killKafka-johnnypark.sh;
 
-sh $CWD/stopMockServer.sh
+sh $CWD/killMockServer.sh
