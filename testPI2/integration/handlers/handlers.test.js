@@ -21,7 +21,7 @@
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
- ********/
+ *********/
 
 'use strict'
 
