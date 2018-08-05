@@ -63,7 +63,7 @@ clean_docker() {
 }
 
 ftest() {
-  docker run --memory="512m" -i --rm \
+  docker run -i --rm \
     --link $KAFKA_HOST \
     --link $DB_HOST \
     --network $DOCKER_NETWORK \
@@ -83,7 +83,7 @@ ftest() {
 
 run_test_command() {
   >&2 echo "Running $APP_HOST Test command: $TEST_CMD"
-  docker run --memory="512m" -it \
+  docker run -it \
     --link $KAFKA_HOST \
     --link $DB_HOST \
     --network $DOCKER_NETWORK \
@@ -103,7 +103,7 @@ run_test_command() {
 }
 
 fcurl() {
-	docker run --memory="256m" --rm -i \
+	docker run --rm -i \
 		--link $ENDPOINT_HOST \
 		--network $DOCKER_NETWORK \
 		--entrypoint curl \
@@ -115,7 +115,7 @@ fcurl() {
 # Kafka functions
 
 start_kafka() {
-  echo "docker run --memory="1.5gb" -td -i -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT --name=$KAFKA_HOST --env ADVERTISED_HOST=$KAFKA_HOST --env ADVERTISED_PORT=$KAFKA_BROKER_PORT --env CONSUMER_THREADS=1 --env TOPICS=my-topic,some-other-topic --env ZK_CONNECT=kafka7zookeeper:2181/root/path --env GROUP_ID=mymirror $KAFKA_IMAGE"
+  echo "docker run -td -i -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT --name=$KAFKA_HOST --env ADVERTISED_HOST=$KAFKA_HOST --env ADVERTISED_PORT=$KAFKA_BROKER_PORT --env CONSUMER_THREADS=1 --env TOPICS=my-topic,some-other-topic --env ZK_CONNECT=kafka7zookeeper:2181/root/path --env GROUP_ID=mymirror $KAFKA_IMAGE"
   docker run -td -i \
     -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT \
     -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT \
@@ -132,7 +132,7 @@ start_kafka() {
 
 fkafka() {
   >&2 echo "fkafka()"
-	docker run --memory="256m" --rm -i \
+	docker run --rm -i \
 	  --link $KAFKA_HOST \
 	  --network $DOCKER_NETWORK \
 	  --env KAFKA_HOST="$KAFKA_HOST" \
@@ -150,7 +150,7 @@ is_kafka_up() {
 # DB functions
 
 start_db() {
-  docker run --memory="512m" -td \
+  docker run -td \
     -p $DB_PORT:$DB_PORT \
     --name $DB_HOST \
     --network $DOCKER_NETWORK \
@@ -162,7 +162,7 @@ start_db() {
 }
 
 fdb() {
-  docker run --memory="256m" -it --rm \
+  docker run -it --rm \
     --link $DB_HOST:mysql \
     --network $DOCKER_NETWORK \
     -e DB_HOST=$DB_HOST \
