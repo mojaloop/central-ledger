@@ -230,6 +230,7 @@ jobs:
       - run:
           name: Execute integration tests
           command: npm -s run test:integration
+          no_output_timeout: 25m
       - store_artifacts:
           path: ./test/results
           prefix: test
