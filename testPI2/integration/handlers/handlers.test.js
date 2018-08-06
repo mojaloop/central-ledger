@@ -18,9 +18,10 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
- ******/
+ **********/
 
 'use strict'
 
@@ -234,9 +235,15 @@ Test('Handlers test', async handlersTest => {
       }
       setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+        const payerExpectedPosition = payerInitialPosition + td.transfer.amount.amount
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
-        // TODO: here test payer position increase after functionality is implemented (see position check for the COMMIT below)
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
         test.end()
       }, delay)
     })
@@ -272,7 +279,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferFulfilReject should', async transferFulfilReject => {
-    testData.amount.amount = 5 // example of changing the transfer amount
+    testData.amount.amount = 5
     const td = await prepareTestData(testData)
 
     await transferFulfilReject.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
@@ -323,8 +330,6 @@ Test('Handlers test', async handlersTest => {
     transferFulfilReject.end()
   })
 
-  // TODO: handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
-  // here implement transfer prepare with amount that exceeds payer's NET_DEBIT_CAP and test if transfer prepare fails
   await handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
     testData.amount.amount = 1000
     const td = await prepareTestData(testData)
