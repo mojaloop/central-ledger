@@ -55,6 +55,18 @@ const transferInfo = {
   reason: 'reason description'
 }
 
+const participantLimit = {
+  participantLimitId: 1,
+  participantCurrencyId: 1,
+  participantLimitTypeId: 1,
+  value: 1000000.00,
+  thresholdAlarmPercentage: 10.0,
+  startAfterParticipantPositionChangeId: null,
+  isActive: 1,
+  createdDate: '2018-07-19',
+  createdBy: 'unknown'
+}
+
 const messageProtocol = {
   id: transfer.transferId,
   from: transfer.payerFsp,
@@ -107,7 +119,8 @@ const config = {
   }
 }
 
-const command = () => { }
+const command = () => {
+}
 
 const participants = ['testName1', 'testName2']
 
@@ -210,7 +223,29 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      PositionService.calculatePreparePositionsBatch.returns({preparedMessagesList: [{transferState: {transferStateId: 'RESERVED'}, rawMessage: {}}], limitAlarms: []})
+      PositionService.calculatePreparePositionsBatch.returns({
+        preparedMessagesList: [{
+          transferState: {transferStateId: 'RESERVED'},
+          rawMessage: {}
+        }], limitAlarms: []
+      })
+      const result = await allTransferHandlers.positions(null, messages[0])
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Update transferStateChange in the database for PREPARE when single message and participant limit fail', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
+      PositionService.calculatePreparePositionsBatch.returns({
+        preparedMessagesList: [{
+          transferState: {transferStateId: 'RESERVED'},
+          rawMessage: {}
+        }], limitAlarms: [participantLimit]
+      })
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
       test.equal(result, true)
@@ -222,7 +257,12 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      PositionService.calculatePreparePositionsBatch.returns({preparedMessagesList: [{transferState: 'RESERVED', rawMessage: {}}], limitAlarms: []})
+      PositionService.calculatePreparePositionsBatch.returns({
+        preparedMessagesList: [{
+          transferState: 'RESERVED',
+          rawMessage: {}
+        }], limitAlarms: []
+      })
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
       test.equal(result, true)
@@ -234,7 +274,12 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      PositionService.calculatePreparePositionsBatch.returns({preparedMessagesList: [{transferState: {transferStateId: 'RESERVED'}, rawMessage: {}}], limitAlarms: []})
+      PositionService.calculatePreparePositionsBatch.returns({
+        preparedMessagesList: [{
+          transferState: {transferStateId: 'RESERVED'},
+          rawMessage: {}
+        }], limitAlarms: []
+      })
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
       test.equal(result, true)
@@ -246,7 +291,12 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
-      PositionService.calculatePreparePositionsBatch.returns({preparedMessagesList: [{transferState: 'RESERVED', rawMessage: {}}], limitAlarms: []})
+      PositionService.calculatePreparePositionsBatch.returns({
+        preparedMessagesList: [{
+          transferState: 'RESERVED',
+          rawMessage: {}
+        }], limitAlarms: []
+      })
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
       test.equal(result, true)
@@ -280,7 +330,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.getKafkaConfig.returns(config)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+        .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       messages[0].value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, messages[0])
@@ -294,7 +344,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+        .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       messages[0].value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, messages[0])
@@ -316,7 +366,7 @@ Test('Position handler', transferHandlerTest => {
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).returns(P.resolve(true))
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
+        .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       messages[0].value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, messages[0])
@@ -343,7 +393,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.getKafkaConfig.returns(config)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+        .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       messages[0].value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, messages[0])
@@ -357,7 +407,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
+        .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       messages[0].value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, messages[0])
@@ -379,7 +429,7 @@ Test('Position handler', transferHandlerTest => {
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).returns(P.resolve(true))
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
+        .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
       TransferStateChange.saveTransferStateChange.returns(P.resolve(true))
       messages[0].value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, messages[0])
