@@ -16,5 +16,5 @@ exports.up = async (knex, Promise) => {
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('settlement')
+  return knex.schema.dropTableIfExists('settlementSettlementWindow')
 }

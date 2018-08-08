@@ -10,7 +10,7 @@ exports.up = async (knex, Promise) => {
         t.integer('participantCurrencyId').unsigned().notNullable()
         t.foreign('participantCurrencyId').references('participantCurrencyId').inTable('participantCurrency')
         t.integer('transferParticipantRoleTypeId').unsigned().notNullable()
-        t.foreign('transferParticipantRoleTypeId').references('transferParticipantRoleTypeId').inTable('transferParticipantRoleType')
+        t.foreign('transferParticipantRoleTypeId', 'stp_transferparticipantroletypeid_foreign').references('transferParticipantRoleTypeId').inTable('transferParticipantRoleType')
         t.integer('ledgerEntryTypeId').unsigned().notNullable()
         t.foreign('ledgerEntryTypeId').references('ledgerEntryTypeId').inTable('ledgerEntryType')
         t.decimal('amount', 18, 2).notNullable()
