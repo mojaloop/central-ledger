@@ -31,7 +31,7 @@ do
   echo "Creating participants '$FSP'"
   echo "---------------------------------------------------------------------"
   sh -c "curl -i -X POST \
-    http://localhost:3001/participants \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants \
     -H 'Cache-Control: no-cache' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -43,14 +43,14 @@ do
   echo "Setting limits and initial position for '$FSP'"
   echo "---------------------------------------------------------------------"
   sh -c "curl -i -X POST \
-    http://localhost:3001/participants/$FSP/initialPositionAndLimits \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/initialPositionAndLimits \
     -H 'Cache-Control: no-cache' \
     -H 'Content-Type: application/json' \
     -d '{
     \"currency\": \"USD\",
     \"limit\": {
       \"type\": \"NET_DEBIT_CAP\",
-      \"value\": $DEFAULT_NET_DEBIT_CAP
+      \"value\": ${DEFAULT_NET_DEBIT_CAP}
     },
     \"initialPosition\": 0
   }'"
@@ -59,7 +59,7 @@ do
   echo "Retrieving limits for '$FSP'"
   echo "---------------------------------------------------------------------"
   curl -X GET \
-    http://localhost:3001/participants/$FSP/limits \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/limits \
     -H 'Cache-Control: no-cache'
 
 done

@@ -23,6 +23,7 @@ Test('setup', setupTest => {
   let HapiStub
   let UrlParserStub
   let serverStub
+  let KafkaCronStub
 
   setupTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
@@ -82,6 +83,14 @@ Test('setup', setupTest => {
       }
     }
 
+    KafkaCronStub = {
+      Cron: {
+        start: sandbox.stub().returns(P.resolve()),
+        stop: sandbox.stub().returns(P.resolve()),
+        isRunning: sandbox.stub().returns(P.resolve())
+      }
+    }
+
     Setup = Proxyquire('../../../src/shared/setup', {
       'uuid4': uuidStub,
       '../handlers/register': RegisterHandlersStub,
@@ -92,7 +101,8 @@ Test('setup', setupTest => {
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
       'hapi': HapiStub,
-      '../lib/config': Config
+      '../lib/config': Config,
+      '../handlers/lib/kafka': KafkaCronStub
     })
 
     oldHostName = Config.HOSTNAME
@@ -132,7 +142,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         'hapi': HapiStubThrowError,
-        '../lib/config': Config
+        '../lib/config': Config,
+        '../handlers/lib/kafka': KafkaCronStub
       })
 
       Setup.createServer(200, []).then(() => {
@@ -258,7 +269,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         'hapi': HapiStub,
-        '../lib/config': ConfigStub
+        '../lib/config': ConfigStub,
+        '../handlers/lib/kafka': KafkaCronStub
       })
 
       const service = 'handler'
