@@ -227,7 +227,8 @@ Test('Position handler', transferHandlerTest => {
         preparedMessagesList: [{
           transferState: {transferStateId: 'RESERVED'},
           rawMessage: {}
-        }], limitAlarms: []
+        }],
+        limitAlarms: []
       })
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
@@ -244,7 +245,8 @@ Test('Position handler', transferHandlerTest => {
         preparedMessagesList: [{
           transferState: {transferStateId: 'RESERVED'},
           rawMessage: {}
-        }], limitAlarms: [participantLimit]
+        }],
+        limitAlarms: [participantLimit]
       })
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
@@ -261,7 +263,8 @@ Test('Position handler', transferHandlerTest => {
         preparedMessagesList: [{
           transferState: 'RESERVED',
           rawMessage: {}
-        }], limitAlarms: []
+        }],
+        limitAlarms: []
       })
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
@@ -278,7 +281,8 @@ Test('Position handler', transferHandlerTest => {
         preparedMessagesList: [{
           transferState: {transferStateId: 'RESERVED'},
           rawMessage: {}
-        }], limitAlarms: []
+        }],
+        limitAlarms: []
       })
       const result = await allTransferHandlers.positions(null, messages)
       Logger.info(result)
@@ -295,7 +299,8 @@ Test('Position handler', transferHandlerTest => {
         preparedMessagesList: [{
           transferState: 'RESERVED',
           rawMessage: {}
-        }], limitAlarms: []
+        }],
+        limitAlarms: []
       })
       const result = await allTransferHandlers.positions(null, messages[0])
       Logger.info(result)
