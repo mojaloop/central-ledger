@@ -37,16 +37,6 @@ const transferStates = [
     'description': 'Next ledger has aborted the transfer due a rejection or failure to perform the transfer.'
   },
   {
-    'transferStateId': 'PENDING_SETTLEMENT',
-    'enumeration': 'COMMITTED',
-    'description': 'Ledger has scheduled transfer for settlement'
-  },
-  {
-    'transferStateId': 'SETTLED',
-    'enumeration': 'SETTLED',
-    'description': 'Ledger has settled the transfer'
-  },
-  {
     'transferStateId': 'ABORTED',
     'enumeration': 'ABORTED',
     'description': 'Next ledger has aborted the transfer due to being FAILED, EXPIRED or REJECTED'

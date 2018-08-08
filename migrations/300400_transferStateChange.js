@@ -9,7 +9,7 @@ exports.up = async (knex, Promise) => {
         t.foreign('transferId').references('transferId').inTable('transfer')
         t.string('transferStateId', 50).notNullable()
         t.foreign('transferStateId').references('transferStateId').inTable('transferState')
-        t.text('reason', 'text').defaultTo(null).nullable()
+        t.string('reason', 512).defaultTo(null).nullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }
