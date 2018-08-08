@@ -9,5 +9,5 @@ export DBNAME=central_ledger
 export DB_SLEEPTIME=15
 export MESSAGES_BATCH_SIZE=1000
 export SCRIPT_DIR=scripts
-export FSPList=("dfsp1", "dfsp2")
+export FSPList=("dfsp1" "dfsp2")
 export DEFAULT_NET_DEBIT_CAP=1000
