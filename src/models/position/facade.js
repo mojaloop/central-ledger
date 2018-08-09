@@ -30,9 +30,6 @@ const Db = require('../../db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
 const Logger = require('@mojaloop/central-services-shared').Logger
-
-
-
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()

@@ -261,8 +261,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           trxStub.commit = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-
-          const batchInsert = knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert = sandbox.stub()
           knexStub.batchInsert.returns({
             transacting: sandbox.stub().resolves([1])
           })
@@ -321,7 +320,7 @@ Test('Position facade', async (positionFacadeTest) => {
           trxStub.commit = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
 
-          const batchInsert = knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert = sandbox.stub()
           knexStub.batchInsert.returns({
             transacting: sandbox.stub().resolves([1])
           })
@@ -380,7 +379,7 @@ Test('Position facade', async (positionFacadeTest) => {
           trxStub.commit = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
 
-          const batchInsert = knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert = sandbox.stub()
           knexStub.batchInsert.returns({
             transacting: sandbox.stub().resolves([1])
           })
