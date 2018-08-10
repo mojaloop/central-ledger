@@ -29,6 +29,7 @@
 const Db = require('../../db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
+const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
@@ -113,13 +114,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             sumReserved += transferAmount /* actually used */
           } else {
             transferState.transferStateId = Enum.TransferState.ABORTED
-            transferState.reason = 'Payer FSP has insufficient liquidity to perform the transfer'
+            transferState.reason = Errors.getErrorDescription(4001)
             rawMessage.value.content.payload = {
-              errorInformation: {
-                errorCode: 4001,
-                errorDescription: 'Payer FSP has insufficient liquidity to perform the transfer',
-                extensionList: rawMessage.value.content.payload.extensionList
-              }
+              errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
             }
           }
           let runningPosition = currentPosition + sumReserved /* effective position */
