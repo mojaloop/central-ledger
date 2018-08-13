@@ -30,7 +30,6 @@ const Db = require('../../db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
 const Logger = require('@mojaloop/central-services-shared').Logger
-
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
@@ -138,8 +137,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           The transferStateChanges need to be persisted first (by INSERTing) to have the PK reference
         */
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
-        let processedTransferStateChangeList = Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
-        let processedTransferStateChangeIdList = Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
+        let processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
+        let processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
         let processedTransfersKeysList = Object.keys(processedTransfers)
         let batchParticipantPositionChange = []
         for (let keyIndex in processedTransfersKeysList) {
