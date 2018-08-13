@@ -21,6 +21,11 @@
     "DISABLED": false,
     "API": {
       "DISABLED": false
+    },
+    "CRON": {
+      "DISABLED": false,
+      "TIMEXP": "*/10 * * * * *",
+      "TIMEZONE": "UTC"
     }
   },
   "EMAIL_USER": "modusboxemailtest@gmail.com",

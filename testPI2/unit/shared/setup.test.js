@@ -23,6 +23,7 @@ Test('setup', setupTest => {
   let HapiStub
   let UrlParserStub
   let serverStub
+  let KafkaCronStub
 
   setupTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
@@ -82,6 +83,18 @@ Test('setup', setupTest => {
       }
     }
 
+    KafkaCronStub = {
+      Cron: {
+        start: sandbox.stub().returns(P.resolve()),
+        stop: sandbox.stub().returns(P.resolve()),
+        isRunning: sandbox.stub().returns(P.resolve())
+      }
+    }
+
+    var ConfigStub = Config
+    ConfigStub.HANDLERS_API_DISABLED = false
+    ConfigStub.HANDLERS_CRON_DISABLED = false
+
     Setup = Proxyquire('../../../src/shared/setup', {
       'uuid4': uuidStub,
       '../handlers/register': RegisterHandlersStub,
@@ -92,7 +105,8 @@ Test('setup', setupTest => {
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
       'hapi': HapiStub,
-      '../lib/config': Config
+      '../lib/config': ConfigStub,
+      '../handlers/lib/kafka': KafkaCronStub
     })
 
     oldHostName = Config.HOSTNAME
@@ -132,7 +146,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         'hapi': HapiStubThrowError,
-        '../lib/config': Config
+        '../lib/config': Config,
+        '../handlers/lib/kafka': KafkaCronStub
       })
 
       Setup.createServer(200, []).then(() => {
@@ -244,8 +259,68 @@ Test('setup', setupTest => {
       })
     })
 
+    initializeTest.test('run Handlers if runHandlers flag enabled and cronjobs are enabled and start API and do register cronJobs', async (test) => {
+      Setup = Proxyquire('../../../src/shared/setup', {
+        'uuid4': uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../db': DbStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        'hapi': HapiStub,
+        '../lib/config': Config,
+        '../handlers/lib/kafka': KafkaCronStub
+      })
+
+      const service = 'handler'
+
+      Setup.initialize({ service, runHandlers: true }).then((s) => {
+        test.ok(RegisterHandlersStub.registerAllHandlers.called)
+        test.ok(KafkaCronStub.Cron.start.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('run Handlers if runHandlers flag enabled and cronjobs are disabled and start API but dont register cronJobs', async (test) => {
+      var ConfigStub = Config
+      ConfigStub.HANDLERS_CRON_DISABLED = true
+
+      Setup = Proxyquire('../../../src/shared/setup', {
+        'uuid4': uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../db': DbStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        'hapi': HapiStub,
+        '../lib/config': ConfigStub,
+        '../handlers/lib/kafka': KafkaCronStub
+      })
+
+      const service = 'handler'
+
+      Setup.initialize({ service, runHandlers: true }).then((s) => {
+        test.ok(RegisterHandlersStub.registerAllHandlers.called)
+        test.ok(!KafkaCronStub.Cron.start.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
     initializeTest.test('run Handlers if runHandlers flag enabled and DONT start API', async (test) => {
       var ConfigStub = Config
+      ConfigStub.HANDLERS_CRON_DISABLED = false
       ConfigStub.HANDLERS_API_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
@@ -258,7 +333,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         'hapi': HapiStub,
-        '../lib/config': ConfigStub
+        '../lib/config': Config,
+        '../handlers/lib/kafka': KafkaCronStub
       })
 
       const service = 'handler'
@@ -431,6 +507,78 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.ok(KafkaCronStub.Cron.start.calledTwice)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('run specific Handlers if runHandlers flag enabled with handlers[] populated with CronJob disabled', async (test) => {
+      var ConfigStub = Config
+      ConfigStub.HANDLERS_CRON_DISABLED = true
+      ConfigStub.HANDLERS_API_DISABLED = false
+
+      Setup = Proxyquire('../../../src/shared/setup', {
+        'uuid4': uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../db': DbStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        'hapi': HapiStub,
+        '../lib/config': Config,
+        '../handlers/lib/kafka': KafkaCronStub
+      })
+
+      const service = 'api'
+
+      var fspList = ['dfsp1', 'dfsp2']
+
+      var prepareHandler = {
+        type: 'prepare',
+        enabled: true,
+        fspList
+      }
+
+      var positionHandler = {
+        type: 'position',
+        enabled: true,
+        fspList
+      }
+
+      var transferHandler = {
+        type: 'transfer',
+        enabled: true
+      }
+
+      var fulfilHandler = {
+        type: 'fulfil',
+        enabled: true
+      }
+
+      // var rejectHandler = {
+      //   type: 'reject',
+      //   enabled: true
+      // }
+
+      var modulesList = [
+        prepareHandler,
+        positionHandler,
+        transferHandler,
+        fulfilHandler
+        // rejectHandler
+      ]
+
+      Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
+        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
+        test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.ok(!KafkaCronStub.Cron.start.called)
         test.end()
       }).catch(err => {
         test.fail(`Should have not received an error: ${err}`)
