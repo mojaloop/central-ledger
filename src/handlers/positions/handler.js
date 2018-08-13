@@ -71,11 +71,11 @@ const positions = async (error, messages) => {
   let prepareBatch = []
   try {
     if (Array.isArray(messages)) {
-      prepareBatch = messages
-      message = messages[0]
+      prepareBatch = Array.from(messages)
+      message = Object.assign(message, JSON.parse(JSON.stringify(prepareBatch[0])))
     } else {
-      prepareBatch = [messages]
-      message = messages
+      prepareBatch = [Object.assign({}, JSON.parse(JSON.stringify(messages)))]
+      message = Object.assign({}, messages)
     }
     Logger.info('PositionHandler::positions')
     let consumer = {}
@@ -156,14 +156,15 @@ const positions = async (error, messages) => {
           reason: 'Client requested to use a transfer that has already expired.'
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
-        message.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Client requested to use a transfer that has already expired.', message.value.content.payload.extensionList)
-        kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
+        let newMessage = Object.assign({}, message)
+        newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Client requested to use a transfer that has already expired.', newMessage.value.content.payload.extensionList)
+        kafkaTopic = Utility.transformAccountToTopicName(newMessage.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
         // @mdebarros: I am not sure how this code ever worked in the develop branch?
         // consumer = Kafka.Consumer.getConsumer(
         //   await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
         // )
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
       }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
@@ -179,14 +180,15 @@ const positions = async (error, messages) => {
           reason: 'Client requested to use a transfer that has already expired.'
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
-        message.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Client requested to use a transfer that has already expired.', message.value.content.payload.extensionList)
-        kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
+        let newMessage = Object.assign({}, message)
+        newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Client requested to use a transfer that has already expired.', newMessage.value.content.payload.extensionList)
+        kafkaTopic = Utility.transformAccountToTopicName(newMessage.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
         // @mdebarros: I am not sure how this code ever worked in the develop branch?
         // consumer = Kafka.Consumer.getConsumer(
         //   await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
         // )
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
       }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
       Logger.info('PositionHandler::positions::fail')
