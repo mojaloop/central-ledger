@@ -29,6 +29,7 @@
 const Db = require('../../db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
+const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
@@ -37,8 +38,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const currencyId = transferList[0].value.content.payload.amount.currency
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId)
     let processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
-    let reservedTransfers = {}
-    let abortedTransfers = {}
+    let reservedTransfers = []
+    let abortedTransfers = []
     let initialTransferStateChangePromises = []
     let transferIdList = []
     let limitAlarms = []
@@ -101,7 +102,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
            since further rules are expected we do not do this at this point
            As we enter this next step the order in which the transfer is processed against the Position is critical.
            Both positive and failure cases need to recorded in processing order
-           This means that theyshould not be removed from the list, and the participantPosition
+           This means that they should not be removed from the list, and the participantPosition
         */
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
         for (let transferId in reservedTransfers) {
@@ -112,7 +113,10 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             sumReserved += transferAmount /* actually used */
           } else {
             transferState.transferStateId = Enum.TransferState.ABORTED
-            transferState.reason = 'Net Debit Cap exceeded by this request at this time, please try again later'
+            transferState.reason = Errors.getErrorDescription(4001)
+            rawMessage.value.content.payload = {
+              errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
+            }
           }
           let runningPosition = currentPosition + sumReserved /* effective position */
           let runningReservedValue = sumTransfersInBatch - sumReserved

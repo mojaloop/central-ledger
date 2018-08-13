@@ -15,6 +15,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
 const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
+const KafkaCron = require('../handlers/lib/kafka').Cron
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -92,9 +93,17 @@ const createHandlers = async (handlers) => {
       switch (handler.type) {
         case 'prepare':
           await RegisterHandlers.transfers.registerPrepareHandlers(handler.fspList)
+          if (!Config.HANDLERS_CRON_DISABLED) {
+            Logger.info('Starting Kafka Cron Jobs...')
+            await KafkaCron.start('prepare')
+          }
           break
         case 'position':
           await RegisterHandlers.positions.registerPositionHandlers(handler.fspList)
+          if (!Config.HANDLERS_CRON_DISABLED) {
+            Logger.info('Starting Kafka Cron Jobs...')
+            await KafkaCron.start('position')
+          }
           break
         case 'transfer':
           await RegisterHandlers.transfers.registerTransferHandler()
@@ -163,9 +172,14 @@ const initialize = async function ({service, port, modules = [], runMigrations =
       await createHandlers(handlers)
     } else {
       await RegisterHandlers.registerAllHandlers()
+      if (!Config.HANDLERS_CRON_DISABLED) {
+        Logger.info('Starting Kafka Cron Jobs...')
+        await KafkaCron.start('prepare')
+        await KafkaCron.start('position')
+      }
     }
   }
-  // await Participant.createLedgerParticipant(Config.LEDGER_ACCOUNT_NAME, Config.LEDGER_ACCOUNT_PASSWORD, Config.LEDGER_ACCOUNT_EMAIL)
+
   return server
 }
 
