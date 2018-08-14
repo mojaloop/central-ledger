@@ -25,7 +25,6 @@
 'use strict'
 
 const Participant = require('../../domain/participant')
-const Position = require('../../domain/position')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
@@ -213,7 +212,8 @@ const getPositions = async function (request, h) {
       if (Array.isArray(result) && result.length > 0) {
         position = {
           currency: result[0].currencyId,
-          value: result[0].value
+          value: result[0].value,
+          changedDate: result[0].changedDate
         }
       }
       return position
@@ -224,7 +224,8 @@ const getPositions = async function (request, h) {
         result.forEach(item => {
           positions.push({
             currency: item.currencyId,
-            value: item.value
+            value: item.value,
+            changedDate: item.changedDate
           })
         })
       }
