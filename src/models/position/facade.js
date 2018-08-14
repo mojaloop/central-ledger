@@ -26,6 +26,10 @@
 
 'use strict'
 
+/**
+ * @module src/models/position/
+ */
+
 const Db = require('../../db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
@@ -217,6 +221,19 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isInc
     throw e
   }
 }
+
+/**
+ * @function GetByNameAndCurrency
+ *
+ * @async
+ * @description This retuns the active position of a participant and currency combination, if currency is not passed then all the active currencies are considered
+ *
+ *
+ * @param {string} name - the name of the participant. Example 'dfsp1'
+ * @param {string} [currencyId = null] - the optional currency parameter
+ *
+ * @returns {array} - Returns an array containing the details of active position(s) for the participant if successful, or throws an error if failed
+ */
 
 const getByNameAndCurrency = async (name, currencyId = null) => {
   try {

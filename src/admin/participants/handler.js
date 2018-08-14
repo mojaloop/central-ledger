@@ -206,31 +206,7 @@ const adjustLimits = async function (request, h) {
 const getPositions = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    if (request.query.currency) {
-      const result = await Participant.getPositions(request.params.name, request.query.currency)
-      let position = {}
-      if (Array.isArray(result) && result.length > 0) {
-        position = {
-          currency: result[0].currencyId,
-          value: result[0].value,
-          updatedTime: result[0].changedDate
-        }
-      }
-      return position
-    } else {
-      const result = await Participant.getPositions(request.params.name)
-      let positions = []
-      if (Array.isArray(result) && result.length > 0) {
-        result.forEach(item => {
-          positions.push({
-            currency: item.currencyId,
-            value: item.value,
-            updatedTime: item.changedDate
-          })
-        })
-      }
-      return positions
-    }
+    return Participant.getPositions(request.params.name, request.query)
   } catch (err) {
     throw Boom.badRequest()
   }
