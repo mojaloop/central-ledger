@@ -6,6 +6,11 @@ echo
 
 CWD="${0%/*}"
 
+if [[ "$CWD" =~ ^(.*)\.sh$ ]];
+then
+    CWD="."
+fi
+
 echo "Loading env vars..."
 source $CWD/env.sh
 
@@ -14,7 +19,7 @@ echo "---------------------------------------------------------------------"
 echo " Creating MockServer Instance"
 echo "---------------------------------------------------------------------"
 echo "Ensure your ML-API-Adapter config points to the following end-points for callbacks:"
-echo "Add the following entries to: \"DFSP_URLS\:"
+echo "Add the following entries to: \"DFSP_URLS\":"
 echo "    ------------------------------------------------------"
 for FSP in "${FSPList[@]}"
 do
