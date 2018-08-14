@@ -39,7 +39,7 @@ const transferStates = [
   {
     'transferStateId': 'ABORTED',
     'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to being FAILED, EXPIRED or REJECTED'
+    'description': 'The switch has aborted the transfer due to being FAILED or REJECTED'
   },
   {
     'transferStateId': 'EXPIRED_PREPARED',
