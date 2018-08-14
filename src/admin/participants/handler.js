@@ -213,7 +213,7 @@ const getPositions = async function (request, h) {
         position = {
           currency: result[0].currencyId,
           value: result[0].value,
-          changedDate: result[0].changedDate
+          updatedTime: result[0].changedDate
         }
       }
       return position
@@ -225,7 +225,7 @@ const getPositions = async function (request, h) {
           positions.push({
             currency: item.currencyId,
             value: item.value,
-            changedDate: item.changedDate
+            updatedTime: item.changedDate
           })
         })
       }
