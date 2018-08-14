@@ -14,7 +14,7 @@ const transferStates = [
   {
     'transferStateId': 'RECEIVED_FULFIL',
     'enumeration': 'RESERVED',
-    'description': 'The switch has reserved the transfer, and has been assigned to a settlement window'
+    'description': 'The switch has reserved the transfer, and has been assigned to a settlement window.'
   },
   {
     'transferStateId': 'COMMITTED',
@@ -27,29 +27,34 @@ const transferStates = [
     'description': 'Aborted the transfer due to failure to perform the transfer.'
   },
   {
-    'transferStateId': 'EXPIRED',
+    'transferStateId': 'RESERVED_TIMEOUT',
     'enumeration': 'RESERVED',
     'description': 'Expiring the transfer and returning funds to payer fsp.'
   },
   {
     'transferStateId': 'REJECTED',
-    'enumeration': 'ABORTED',
+    'enumeration': 'RESERVED',
     'description': 'The switch has aborted the transfer due a rejection from payee fsp.'
   },
   {
     'transferStateId': 'ABORTED',
     'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to being FAILED or REJECTED'
+    'description': 'The switch has aborted the transfer due to being FAILED or REJECTED.'
   },
   {
     'transferStateId': 'EXPIRED_PREPARED',
     'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to being EXPIRED transfer from RECEIVED_PREPARE'
+    'description': 'The switch has aborted the transfer due to being EXPIRED transfer from RECEIVED_PREPARE.'
   },
   {
     'transferStateId': 'EXPIRED_RESERVED',
     'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to being EXPIRED transfer from RESERVED'
+    'description': 'The switch has aborted the transfer due to being EXPIRED transfer from RESERVED.'
+  },
+  {
+    'transferStateId': 'INVALID',
+    'enumeration': 'ABORTED',
+    'description': 'The switch has aborted the transfer due to validation failure.'
   }
 ]
 
