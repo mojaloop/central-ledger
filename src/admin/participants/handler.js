@@ -25,6 +25,7 @@
 'use strict'
 
 const Participant = require('../../domain/participant')
+const Position = require('../../domain/position')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
@@ -202,6 +203,38 @@ const adjustLimits = async function (request, h) {
     throw Boom.badRequest()
   }
 }
+
+const getPositions = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    if (request.query.currency) {
+      const result = await Participant.getPositions(request.params.name, request.query.currency)
+      let position = {}
+      if (Array.isArray(result) && result.length > 0) {
+        position = {
+          currency: result[0].currencyId,
+          value: result[0].value
+        }
+      }
+      return position
+    } else {
+      const result = await Participant.getPositions(request.params.name)
+      let positions = []
+      if (Array.isArray(result) && result.length > 0) {
+        result.forEach(item => {
+          positions.push({
+            currency: item.currencyId,
+            value: item.value
+          })
+        })
+      }
+      return positions
+    }
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -211,5 +244,6 @@ module.exports = {
   getEndpoint,
   addLimitAndInitialPosition,
   getLimits,
-  adjustLimits
+  adjustLimits,
+  getPositions
 }

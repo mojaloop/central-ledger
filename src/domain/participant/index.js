@@ -34,6 +34,7 @@ const ParticipantPositionModel = require('../../models/participant/participantPo
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const ParticipantFacade = require('../../models/participant/facade')
+const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
 
 const create = async (payload) => {
@@ -418,6 +419,14 @@ const adjustLimits = async (name, payload) => {
   }
 }
 
+const getPositions = async (name, currencyId = null) => {
+  try {
+    return PositionFacade.getByNameAndCurrency(name, currencyId)
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -438,5 +447,6 @@ module.exports = {
   destroyParticipantPositionByNameAndCurrency,
   destroyParticipantLimitByNameAndCurrency,
   getLimits,
-  adjustLimits
+  adjustLimits,
+  getPositions
 }
