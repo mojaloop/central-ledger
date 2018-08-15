@@ -2,12 +2,12 @@
 
 exports.up = function (knex, Promise) {
   return knex.schema.table('transferTimeout', (t) => {
-    t.index('transferId')
+    t.unique('transferId')
   })
 }
 
 exports.down = function (knex, Promise) {
   return knex.schema.table('transferTimeout', (t) => {
-    t.dropIndex('transferId')
+    t.dropUnique('transferId')
   })
 }
