@@ -445,7 +445,7 @@ const adjustLimits = async (name, payload) => {
   ```
  * 2. if the currency object is not passed, then it return an array containig the above mentioned objects for all the currencies defined for that participant.
  *  If no position is found then an empty array is returned.
- * e.g. 
+ * e.g.
  * ```
   [
     {
@@ -464,7 +464,6 @@ const adjustLimits = async (name, payload) => {
 
 const getPositions = async (name, query) => {
   try {
-
     if (query.currency) {
       const result = await PositionFacade.getByNameAndCurrency(name, query.currency)
       let position = {}
