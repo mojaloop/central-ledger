@@ -199,5 +199,23 @@ module.exports = [
         }
       }
     }
+  },
+  {
+    method: 'GET',
+    path: '/participants/{name}/positions',
+    handler: Handler.getPositions,
+    options: {
+      id: 'participants_positions_get',
+      tags: tags,
+      description: 'View participant positions',
+      validate: {
+        params: {
+          name: nameValidator
+        },
+        query: {
+          currency: currencyValidator
+        }
+      }
+    }
   }
 ]

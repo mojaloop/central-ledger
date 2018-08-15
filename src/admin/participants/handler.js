@@ -202,6 +202,16 @@ const adjustLimits = async function (request, h) {
     throw Boom.badRequest()
   }
 }
+
+const getPositions = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    return Participant.getPositions(request.params.name, request.query)
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -211,5 +221,6 @@ module.exports = {
   getEndpoint,
   addLimitAndInitialPosition,
   getLimits,
-  adjustLimits
+  adjustLimits,
+  getPositions
 }
