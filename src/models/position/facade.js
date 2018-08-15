@@ -26,11 +26,15 @@
 
 'use strict'
 
+/**
+ * @module src/models/position/
+ */
+
 const Db = require('../../db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
+const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
-
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
@@ -38,8 +42,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const currencyId = transferList[0].value.content.payload.amount.currency
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId)
     let processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
-    let reservedTransfers = {}
-    let abortedTransfers = {}
+    let reservedTransfers = []
+    let abortedTransfers = []
     let initialTransferStateChangePromises = []
     let transferIdList = []
     let limitAlarms = []
@@ -47,20 +51,20 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     await knex.transaction(async (trx) => {
       try {
         for (let transfer of transferList) {
-        // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
-        // ^^^^^ this is how we want to get this later to reduce the DB queries into one.
+          // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
+          // ^^^^^ this is how we want to get this later to reduce the DB queries into one.
 
-         /*
-         TODO Possibly the commented block of validations in this comment block will be validated with message validations for each topic
-         (are they valid or not LIME messages and are they valid for the given topic)
-          ====
-          Since iterating over the list of transfers, validate here that each transfer is for the PayerFSP and Currency
-          if (participantName !== transfer.value.content.payload.payerFSP)
-            {} // log error for particular transfer because it should not be in this topic (and might be injected)
-          if (currencyId != transfer.value.content.payload.payerFSP)
-            {} // log error for particular transfer because it should not be in this topic (and might be injected)
-          ====
-          */
+          /*
+          TODO Possibly the commented block of validations in this comment block will be validated with message validations for each topic
+          (are they valid or not LIME messages and are they valid for the given topic)
+           ====
+           Since iterating over the list of transfers, validate here that each transfer is for the PayerFSP and Currency
+           if (participantName !== transfer.value.content.payload.payerFSP)
+             {} // log error for particular transfer because it should not be in this topic (and might be injected)
+           if (currencyId != transfer.value.content.payload.payerFSP)
+             {} // log error for particular transfer because it should not be in this topic (and might be injected)
+           ====
+           */
 
           const id = transfer.value.content.payload.transferId
           transferIdList.push(id)
@@ -88,12 +92,12 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
         // Get the effective position for this participantCurrency at the start of processing the Batch
         // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
-        const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId: participantCurrency.participantCurrencyId}).forUpdate().select('*').first()
+        const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId: participantCurrency.participantCurrencyId }).forUpdate().select('*').first()
         let currentPosition = parseFloat(initialParticipantPosition.value)
         let reservedPosition = parseFloat(initialParticipantPosition.reservedValue)
         let effectivePosition = currentPosition + reservedPosition
         initialParticipantPosition.reservedValue += sumTransfersInBatch
-        await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update(initialParticipantPosition)
+        await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
         // Get the actual position limit and calculate the available position for the transfers to use in this batch
         // Note: see optimisation decision notes to understand the justification for the algorithm
         const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.limitType.NET_DEBIT_CAP)
@@ -102,7 +106,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
            since further rules are expected we do not do this at this point
            As we enter this next step the order in which the transfer is processed against the Position is critical.
            Both positive and failure cases need to recorded in processing order
-           This means that theyshould not be removed from the list, and the participantPosition
+           This means that they should not be removed from the list, and the participantPosition
         */
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
         for (let transferId in reservedTransfers) {
@@ -113,19 +117,22 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             sumReserved += transferAmount /* actually used */
           } else {
             transferState.transferStateId = Enum.TransferState.ABORTED
-            transferState.reason = 'Net Debit Cap exceeded by this request at this time, please try again later'
+            transferState.reason = Errors.getErrorDescription(4001)
+            rawMessage.value.content.payload = {
+              errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
+            }
           }
           let runningPosition = currentPosition + sumReserved /* effective position */
           let runningReservedValue = sumTransfersInBatch - sumReserved
           processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
         }
-      /*
-        Update the participanyPosition with the eventual impact of the Batch
-        So the position moves forward by the sum of the transfers actually reserved (sumReserved)
-        and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
-      */
+        /*
+          Update the participanyPosition with the eventual impact of the Batch
+          So the position moves forward by the sum of the transfers actually reserved (sumReserved)
+          and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
+        */
         let processedPositionValue = initialParticipantPosition.value + sumReserved
-        await knex('participantPosition').transacting(trx).where({participantPositionId: initialParticipantPosition.participantPositionId}).update({
+        await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
           value: processedPositionValue,
           reservedValue: initialParticipantPosition.reservedValue - sumTransfersInBatch
         })
@@ -138,8 +145,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           The transferStateChanges need to be persisted first (by INSERTing) to have the PK reference
         */
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
-        let processedTransferStateChangeList = Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
-        let processedTransferStateChangeIdList = Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
+        let processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
+        let processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
         let processedTransfersKeysList = Object.keys(processedTransfers)
         let batchParticipantPositionChange = []
         for (let keyIndex in processedTransfersKeysList) {
@@ -180,7 +187,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isInc
       try {
         const transactionTimestamp = new Date()
         transferStateChange.createdDate = transactionTimestamp
-        const participantPosition = await knex('participantPosition').transacting(trx).where({participantCurrencyId}).forUpdate().select('*').first()
+        const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
         let latestPosition
         if (isIncrease) {
           latestPosition = participantPosition.value + amount
@@ -188,12 +195,12 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isInc
           latestPosition = participantPosition.value - amount
         }
         latestPosition = parseFloat(latestPosition.toFixed(2))
-        await knex('participantPosition').transacting(trx).where({participantCurrencyId}).update({
+        await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({
           value: latestPosition,
           changedDate: transactionTimestamp
         })
         await knex('transferStateChange').transacting(trx).insert(transferStateChange)
-        const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({transferId: transferStateChange.transferId}).forUpdate().first().orderBy('transferStateChangeId', 'desc')
+        const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChange.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
         const participantPositionChange = {
           participantPositionId: participantPosition.participantPositionId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
@@ -215,7 +222,44 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isInc
   }
 }
 
+/**
+ * @function GetByNameAndCurrency
+ *
+ * @async
+ * @description This retuns the active position of a participant and currency combination, if currency is not passed then all the active currencies are considered
+ *
+ *
+ * @param {string} name - the name of the participant. Example 'dfsp1'
+ * @param {string} [currencyId = null] - the optional currency parameter
+ *
+ * @returns {array} - Returns an array containing the details of active position(s) for the participant if successful, or throws an error if failed
+ */
+
+const getByNameAndCurrency = async (name, currencyId = null) => {
+  try {
+    return Db.participantPosition.query(builder => {
+      return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
+        .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')
+        .where({
+          'p.name': name,
+          'p.isActive': 1,
+          'pc.isActive': 1
+        })
+        .where(q => {
+          if (currencyId != null) {
+            return q.where('pc.currencyId', '=', currencyId)
+          }
+        })
+        .select('participantPosition.*',
+          'pc.currencyId')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
   changeParticipantPositionTransaction,
-  prepareChangeParticipantPositionTransaction
+  prepareChangeParticipantPositionTransaction,
+  getByNameAndCurrency
 }

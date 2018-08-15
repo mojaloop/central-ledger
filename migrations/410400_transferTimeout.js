@@ -7,6 +7,7 @@ exports.up = async (knex, Promise) => {
         t.bigIncrements('transferTimeoutId').primary().notNullable()
         t.string('transferId', 36).notNullable()
         t.foreign('transferId').references('transferId').inTable('transfer')
+        t.dateTime('expirationDate').notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }

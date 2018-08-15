@@ -30,6 +30,7 @@ const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const ModelParticipant = require('../../../../src/models/participant/facade')
 const ModelPosition = require('../../../../src/models/position/facade')
+const Enum = require('../../../../src/lib/enum')
 
 Test('Position facade', async (positionFacadeTest) => {
   let sandbox
@@ -162,6 +163,298 @@ Test('Position facade', async (positionFacadeTest) => {
       Logger.error(`getParticipantLimitByParticipantIdAndCurrencyId failed with error - ${err}`)
       test.pass('Error thrown')
       test.end()
+    }
+  })
+
+  await positionFacadeTest.test('prepareChangeParticipantPositionTransaction should', async prepareChangeParticipantPositionTransaction => {
+    try {
+      const transfer = {
+        transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+        payerFsp: 'dfsp1',
+        payeeFsp: 'dfsp2',
+        amount: {
+          currency: 'USD',
+          amount: '433.88'
+        },
+        ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+        condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+        expiration: '2016-05-24T08:38:08.699-04:00',
+        extensionList: {
+          extension: [
+            {
+              key: 'key1',
+              value: 'value1'
+            },
+            {
+              key: 'key2',
+              value: 'value2'
+            }
+          ]
+        }
+      }
+
+      const messageProtocol = {
+        id: transfer.transferId,
+        from: transfer.payerFsp,
+        to: transfer.payeeFsp,
+        type: 'application/json',
+        content: {
+          header: '',
+          payload: transfer
+        },
+        metadata: {
+          event: {
+            id: 't1',
+            type: 'prepare',
+            action: 'prepare',
+            createdAt: new Date(),
+            state: {
+              status: 'success',
+              code: 0
+            }
+          }
+        },
+        pp: ''
+      }
+      const transferStateChange = {
+        transferId: 't1',
+        transferStateId: Enum.TransferState.RECEIVED_PREPARE,
+        reason: null,
+        createdDate: now
+      }
+
+      const incorrectTransferStateChange = {
+        transferId: 't1',
+        transferStateId: Enum.TransferState.EXPIRED,
+        reason: null,
+        createdDate: now
+      }
+
+      let participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: 10000,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 0.5
+      }
+
+      const initialParticipantPosition = {
+        participantPositionId: 1,
+        value: 1000,
+        reservedValue: 0
+      }
+
+      const exceededParticipantPosition = {
+        participantPositionId: 1,
+        value: 10000,
+        reservedValue: 0
+      }
+
+      await prepareChangeParticipantPositionTransaction.test('adjust position of payer when transfer is RESERVED', async test => {
+        // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
+        try {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          const trxStub = sandbox.stub()
+
+          trxStub.commit = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert.returns({
+            transacting: sandbox.stub().resolves([1])
+          })
+
+          Db.getKnex.returns(knexStub)
+          knexStub.returns({
+            transacting: sandbox.stub().returns({
+              forUpdate: sandbox.stub().returns({
+                whereIn: sandbox.stub().returns({
+                  select: sandbox.stub().returns(Promise.resolve())
+                })
+              }),
+              where: sandbox.stub().returns({
+                update: sandbox.stub().returns(Promise.resolve()),
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns({
+                    first: sandbox.stub().returns(initialParticipantPosition)
+                  })
+                }),
+                orderBy: sandbox.stub().returns({
+                  first: sandbox.stub().resolves(Object.assign({}, transferStateChange))
+                })
+              })
+            })
+          })
+
+          sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
+          sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
+            participantCurrancyId: 1,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          let {preparedMessagesList, limitAlarms} = await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
+          test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
+          test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange twice')
+          test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferStateChange twice')
+          test.pass('completed successfully')
+          test.end()
+        } catch (err) {
+          Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await prepareChangeParticipantPositionTransaction.test('abort transfer if state is not correct ', async test => {
+        // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
+        try {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          const trxStub = sandbox.stub()
+
+          trxStub.commit = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+
+          knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert.returns({
+            transacting: sandbox.stub().resolves([1])
+          })
+
+          Db.getKnex.returns(knexStub)
+          knexStub.returns({
+            transacting: sandbox.stub().returns({
+              forUpdate: sandbox.stub().returns({
+                whereIn: sandbox.stub().returns({
+                  select: sandbox.stub().returns(Promise.resolve())
+                })
+              }),
+              where: sandbox.stub().returns({
+                update: sandbox.stub().returns(Promise.resolve()),
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns({
+                    first: sandbox.stub().returns(initialParticipantPosition)
+                  })
+                }),
+                orderBy: sandbox.stub().returns({
+                  first: sandbox.stub().resolves(incorrectTransferStateChange)
+                })
+              })
+            })
+          })
+
+          sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
+          sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
+            participantCurrancyId: 1,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          let {preparedMessagesList, limitAlarms} = await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
+          test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
+          test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange twice')
+          test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferStateChange twice')
+          test.pass('completed successfully')
+          test.end()
+        } catch (err) {
+          Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await prepareChangeParticipantPositionTransaction.test('abort transfer if net-debit-cap is exceeded ', async test => {
+        // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
+        try {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          const trxStub = sandbox.stub()
+
+          trxStub.commit = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+
+          knexStub.batchInsert = sandbox.stub()
+          knexStub.batchInsert.returns({
+            transacting: sandbox.stub().resolves([1])
+          })
+
+          Db.getKnex.returns(knexStub)
+          knexStub.returns({
+            transacting: sandbox.stub().returns({
+              forUpdate: sandbox.stub().returns({
+                whereIn: sandbox.stub().returns({
+                  select: sandbox.stub().returns(Promise.resolve())
+                })
+              }),
+              where: sandbox.stub().returns({
+                update: sandbox.stub().returns(Promise.resolve()),
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns({
+                    first: sandbox.stub().returns(exceededParticipantPosition)
+                  })
+                }),
+                orderBy: sandbox.stub().returns({
+                  first: sandbox.stub().resolves(transferStateChange)
+                })
+              })
+            })
+          })
+
+          sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
+          sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
+            participantCurrancyId: 1,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          let {preparedMessagesList, limitAlarms} = await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
+          test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
+          test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange twice')
+          test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transferStateChange twice')
+          test.pass('completed successfully')
+          test.end()
+        } catch (err) {
+          Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await prepareChangeParticipantPositionTransaction.test('throw and rollback', async test => {
+        // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
+        try {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          const trxStub = sandbox.stub()
+          trxStub.rollback = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          Db.getKnex.returns(knexStub)
+
+          knexStub.throws(new Error())
+
+          await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          test.fail('error not thrown')
+          test.end()
+        } catch (err) {
+          Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+          test.ok('error thrown')
+          test.end()
+        }
+      })
+
+      await prepareChangeParticipantPositionTransaction.end()
+    } catch (err) {
+      Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+      prepareChangeParticipantPositionTransaction.fail()
+      prepareChangeParticipantPositionTransaction.end()
     }
   })
 

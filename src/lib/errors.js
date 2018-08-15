@@ -18,22 +18,29 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const getListOfTransferIds = (transferList) => {
-  let transferIdList = []
-  const participantName = transferList[0].value.content.payload.payeeFsp
-  let currencyId = transferList[0].value.content.payload.amount.currency
-  for (let transferMessage of transferList) {
-    transferIdList.push(transferMessage.value.content.payload.transferId)
+const error = {
+  4001: 'Payer FSP has insufficient liquidity to perform the transfer'
+}
+
+const createErrorInformation = (errorCode, extensionList) => {
+  return {
+    errorCode,
+    errorDescription: error[errorCode],
+    extensionList
   }
-  return {transferIdList, participantName, currencyId}
+}
+
+const getErrorDescription = (errorCode) => {
+  return error[errorCode]
 }
 
 module.exports = {
-  getListOfTransferIds
+  createErrorInformation,
+  getErrorDescription
 }

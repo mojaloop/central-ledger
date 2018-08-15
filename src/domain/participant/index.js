@@ -34,6 +34,7 @@ const ParticipantPositionModel = require('../../models/participant/participantPo
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const ParticipantFacade = require('../../models/participant/facade')
+const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
 
 const create = async (payload) => {
@@ -418,6 +419,82 @@ const adjustLimits = async (name, payload) => {
   }
 }
 
+/**
+ * @function GetPositions
+ *
+ * @async
+ * @description This return the current position value for a participant/currency
+ *
+ * PositionFacade.getByNameAndCurrency called to get the participant position value from the participant name and currency if passed
+ *
+ * @param {string} name - the name of the participant. Example 'dfsp1'
+ * @param {object} query -Optional query object containing the currency value
+ * Example: {
+ *  "currency": "USD"
+ * }
+ *
+ * @returns {object/array}  - This returns and object or array depending on the following conditions
+ * 1. If the currency is passed as a param, Returns and object containing the current, value and updatedTime of the position, if found, if not found it returns an empty object {}
+ * e.g
+ * ```
+ * {
+        "currency": "USD",
+        "value": 0,
+        "updatedTime": "2018-08-14T04:01:55.000Z"
+    }
+  ```
+ * 2. if the currency object is not passed, then it return an array containig the above mentioned objects for all the currencies defined for that participant.
+ *  If no position is found then an empty array is returned.
+ * e.g. 
+ * ```
+  [
+    {
+        "currency": "USD",
+        "value": 0,
+        "updatedTime": "2018-08-14T04:01:55.000Z"
+    },
+    {
+        "currency": "EUR",
+        "value": 200,
+        "updatedTime": "2018-08-14T15:15:44.000Z"
+    },
+  ]
+  ```
+ */
+
+const getPositions = async (name, query) => {
+  try {
+
+    if (query.currency) {
+      const result = await PositionFacade.getByNameAndCurrency(name, query.currency)
+      let position = {}
+      if (Array.isArray(result) && result.length > 0) {
+        position = {
+          currency: result[0].currencyId,
+          value: result[0].value,
+          updatedTime: result[0].changedDate
+        }
+      }
+      return position
+    } else {
+      const result = await await PositionFacade.getByNameAndCurrency(name)
+      let positions = []
+      if (Array.isArray(result) && result.length > 0) {
+        result.forEach(item => {
+          positions.push({
+            currency: item.currencyId,
+            value: item.value,
+            updatedTime: item.changedDate
+          })
+        })
+      }
+      return positions
+    }
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -438,5 +515,6 @@ module.exports = {
   destroyParticipantPositionByNameAndCurrency,
   destroyParticipantLimitByNameAndCurrency,
   getLimits,
-  adjustLimits
+  adjustLimits,
+  getPositions
 }
