@@ -252,7 +252,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.REJECTED)
+    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.INVALID)
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
@@ -276,6 +276,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
       amount: payload.amount.amount
     }
+
     const knex = await Db.getKnex()
     return await knex.transaction(async (trx) => {
       try {
@@ -308,10 +309,30 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
   }
 }
 
+const getTransferStateByTransferId = async (id) => {
+  try {
+    return await Db.transferStateChange.query(async (builder) => {
+      let result = builder
+        .innerJoin('transferState AS ts', 'ts.transferStateId', 'transferStateChange.transferStateId')
+        .where({
+          'transferStateChange.transferId': id,
+          'ts.isActive': 1
+        })
+        .select('transferStateChange.*', 'ts.enumeration')
+        .orderBy('transferStateChangeId', 'desc')
+        .first()
+      return result
+    })
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   getById,
   getAll,
   getTransferInfoToChangePosition,
   saveTransferFulfiled,
-  saveTransferPrepared
+  saveTransferPrepared,
+  getTransferStateByTransferId
 }

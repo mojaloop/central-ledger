@@ -50,6 +50,11 @@ const transferStates = [
     'transferStateId': 'ABORTED',
     'enumeration': 'ABORTED',
     'description': 'Next ledger has aborted the transfer due to being FAILED, EXPIRED or REJECTED'
+  },
+  {
+    'transferStateId': 'INVALID',
+    'enumeration': 'ABORTED',
+    'description': 'Aborted the transfer due to validation failure of the request'
   }
 ]
 

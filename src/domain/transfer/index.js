@@ -31,8 +31,11 @@ const TransferStateChangeModel = require('../../models/transfer/transferStateCha
 const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const SettlementFacade = require('../../models/settlement/facade')
 const SettlementModel = require('../../models/settlement/settlement')
+const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferObjectTransform = require('./transform')
 const Errors = require('../../errors')
+const Crypto = require('crypto')
+const TransferError = require('../../models/transfer/transferError')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -118,7 +121,7 @@ const settle = async () => {
   const settledTransfers = SettlementModel.create(settlementId, 'transfer').then(() => {
     return SettlementFacade.getSettleableTransfers().then(transfers => {
       transfers.forEach(transfer => {
-        TransferFacade.saveSettledTransfers({id: transfer.transferId, settlement_id: settlementId})
+        TransferFacade.saveSettledTransfers({ id: transfer.transferId, settlement_id: settlementId })
       })
       return transfers
     })
@@ -137,6 +140,45 @@ const saveTransferStateChange = async (stateRecord) => {
   TransferStateChangeModel.saveTransferStateChange(stateRecord)
 }
 
+const validateDuplicateHash = async (payload) => {
+  try {
+    if (!payload) {
+      throw new Error('Invalid payload')
+    }
+    const hashSha256 = Crypto.createHash('sha256')
+    let hash = JSON.stringify(payload)
+    hash = hashSha256.update(hash)
+    hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
+
+    let existsMatching = false
+    let existsNotMatching = false
+    const existingHash = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(payload.transferId, hash)
+    if (existingHash && existingHash.hash) {
+      if (hash === existingHash.hash) {
+        existsMatching = true
+      } else {
+        existsNotMatching = true
+      }
+    }
+    return { existsMatching, existsNotMatching }
+  } catch (err) {
+    throw err
+  }
+}
+
+const logTransferError = async (transferId, errorCode, errorDescription) => {
+  try {
+    const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
+    return TransferError.insert(transferStateChange.transferStateChangeId, errorCode, errorDescription)
+  } catch (e) {
+    throw e
+  }
+}
+
+const getTransferStateChange = (id) => {
+  return TransferFacade.getTransferStateByTransferId(id)
+}
+
 module.exports = {
   getTransferById,
   getById,
@@ -150,5 +192,8 @@ module.exports = {
   rejectExpired,
   settle,
   saveTransferStateChange,
-  expire
+  expire,
+  validateDuplicateHash,
+  logTransferError,
+  getTransferStateChange
 }

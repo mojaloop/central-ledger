@@ -140,7 +140,7 @@ const validateByName = async (payload) => {
   if (!payload) {
     reasons.push('Transfer must be provided')
     validationPassed = false
-    return {validationPassed, reasons}
+    return { validationPassed, reasons }
   }
   validationPassed = (await validateParticipantByName(payload.payerFsp) && await validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload))
   return {
@@ -155,7 +155,7 @@ const validateById = async (payload) => {
   if (!payload) {
     reasons.push('Transfer must be provided')
     validationPassed = false
-    return {validationPassed, reasons}
+    return { validationPassed, reasons }
   }
   validationPassed = (await validateParticipantById(payload.payerFsp) && await validateParticipantById(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload))
   return {

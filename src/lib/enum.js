@@ -30,7 +30,8 @@ module.exports = {
     REJECTED: 'REJECTED',
     ABORTED: 'ABORTED',
     PENDING_SETTLEMENT: 'PENDING_SETTLEMENT',
-    SETTLED: 'SETTLED'
+    SETTLED: 'SETTLED',
+    INVALID: 'INVALID'
   },
 
   // Code specific (non-DB) enumerations sorted alphabetically
