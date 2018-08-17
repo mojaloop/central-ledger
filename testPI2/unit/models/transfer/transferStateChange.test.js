@@ -123,7 +123,6 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
   })
 
   await transferStateChangeModel.test('get by transferId', async (assert) => {
-
     Db.transferStateChange.query.throws(new Error())
     try {
       await Model.getByTransferId(null)
@@ -199,23 +198,6 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
 
   await transferStateChangeModel.test('getByTransferIdList should fail', async (test) => {
     try {
-      const transferStateChangeList = [
-        {
-          transferStateChangeId: 1,
-          transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
-          transferStateId: 'RECEIVED_PREPARE',
-          reason: null,
-          createdDate: '2018-08-15 13:44:38'
-        },
-        {
-          transferStateChangeId: 1,
-          transferId: '9136780b-37e2-427c-8c05-f15dbb033b10',
-          transferStateId: 'RESERVED',
-          reason: null,
-          createdDate: '2018-08-15 13:44:39'
-        }
-      ]
-
       Db.transferStateChange.query.throws(new Error('message'))
 
       await Model.getByTransferIdList('9136780b-37e2-457c-8c05-f15dbb033b10')

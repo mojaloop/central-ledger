@@ -39,12 +39,46 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
   }
   TransferDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    Db.transferDuplicateCheck = {
+      insert: sandbox.stub()
+    }
+
     test.end()
   })
 
   TransferDuplicateCheckTest.afterEach(test => {
     sandbox.restore()
     test.end()
+  })
+
+  await TransferDuplicateCheckTest.test('saveTransferDuplicateCheck should', async (saveTransferDuplicateCheckTest) => {
+    await saveTransferDuplicateCheckTest.test('save the transfer duplicate check hash', async test => {
+      try {
+        Db.transferDuplicateCheck.insert.returns(1)       
+        var result = await Model.saveTransferDuplicateCheck(existingHash)
+        test.equal(result, 1)
+        test.end()
+      } catch (err) {
+        Logger.error(`saveTransferDuplicateCheck failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await saveTransferDuplicateCheckTest.test('throw error', async test => {
+      try {
+        Db.transferDuplicateCheck.insert.throws(new Error('message'))       
+        await Model.saveTransferDuplicateCheck(existingHash)
+        test.fail(' should throw')
+        test.end()
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await saveTransferDuplicateCheckTest.end()
   })
 
   await TransferDuplicateCheckTest.test('checkAndInsertDuplicateHash should', async (checkAndInsertDuplicateHashTest) => {

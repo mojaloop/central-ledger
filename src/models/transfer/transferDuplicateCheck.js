@@ -26,22 +26,14 @@
 const Db = require('../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-// const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
-//   Logger.debug('save transferDuplicateCheck' + transferDuplicateCheck.toString())
-//   try {
-//     return Db.transferDuplicateCheck.insert(transferDuplicateCheck)
-//   } catch (err) {
-//     throw new Error(err.message)
-//   }
-// }
-
-// const getByTransferId = async (transferId) => {
-//   try {
-//     return Db.transferDuplicateCheck.findOne({ transferId: transferId })
-//   } catch (err) {
-//     throw new Error(err.message)
-//   }
-// }
+const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
+  Logger.debug('save transferDuplicateCheck' + transferDuplicateCheck.toString())
+  try {
+    return Db.transferDuplicateCheck.insert(transferDuplicateCheck)
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
 
 const checkAndInsertDuplicateHash = async (transferId, hash) => {
   Logger.debug('check and insert hash into  transferDuplicateCheck' + transferId.toString())
@@ -75,7 +67,7 @@ const checkAndInsertDuplicateHash = async (transferId, hash) => {
 // }
 
 module.exports = {
-  // saveTransferDuplicateCheck,
+  saveTransferDuplicateCheck,
   // getByTransferId,
   checkAndInsertDuplicateHash
 }

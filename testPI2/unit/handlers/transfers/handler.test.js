@@ -42,11 +42,11 @@ const transfer = {
   }
 }
 
-const transferReturn = {  
+const transferReturn = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-  amount: {  
-     currency: 'USD',
-     amount: '433.88'
+  amount: {
+    currency: 'USD',
+    amount: '433.88'
   },
   transferState: 'COMMITTED',
   completedTimestamp: '2016-05-15T18:44:38.000Z',
@@ -54,10 +54,10 @@ const transferReturn = {
   condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
   expiration: '2016-05-24T08:38:08.699-04:00',
   fulfilment: 'uz0FAeutW6o8Mz7OmJh8ALX6mmsZCcIDOqtE01eo4uI',
-  extensionList: {  
-     extension:[  
+  extensionList: {
+    extension: [
 
-     ]
+    ]
   }
 }
 const fulfil = {
@@ -335,7 +335,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({ existsMatching: true, existsNotMatching: false }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({enumeration: 'RECEIVED'}))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-     
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -349,7 +349,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({ existsMatching: true, existsNotMatching: false }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({enumeration: 'RESERVED'}))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-     
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -382,7 +382,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(result, true)
       test.end()
     })
-    
+
     prepareTest.test('persist transfer to database when single message sent', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)

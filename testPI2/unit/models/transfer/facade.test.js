@@ -36,7 +36,6 @@ const transferExtensionModel = require('../../../../src/models/transfer/transfer
 const Enum = require('../../../../src/lib/enum')
 const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
-const _ = require('lodash')
 
 Test('Transfer facade', async (transferFacadeTest) => {
   let sandbox
@@ -657,7 +656,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer', async (test) => {
     try {
-
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
 
@@ -691,7 +689,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer default', async (test) => {
     try {
-
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
 
@@ -725,7 +722,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer -without extensionList', async (test) => {
     try {
-
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
 
@@ -761,7 +757,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save invalid prepared transfer', async (test) => {
     try {
-
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
 
@@ -795,7 +790,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared throw error', async (test) => {
     try {
-
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
 

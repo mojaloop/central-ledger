@@ -35,6 +35,15 @@ const insert = async (transferStateChangeId, errorCode, errorDescription) => {
   }
 }
 
+const getByTransferStateChangeId = async (transferStateChangeId) => {
+  try {
+    return Db.transferError.find({ transferStateChangeId: transferStateChangeId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
-  insert
+  insert,
+  getByTransferStateChangeId
 }

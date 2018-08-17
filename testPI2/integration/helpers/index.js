@@ -21,6 +21,7 @@
  * Georgi Georgiev <valentin.genev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -42,6 +43,8 @@ exports.prepareNeededData = async (tableName, data) => {
       return require('./transferStateChange').prepareData()
     case 'transferModel':
       return require('./transferTestHelper').prepareData()
+    case 'transferError':
+      return require('./transferError').prepareData()
     default:
       throw new Error('Please provide a table name that has methods to insert its prepared data!')
   }

@@ -40,7 +40,8 @@ Test('TransferError model', async (TransferErrorTest) => {
   TransferErrorTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     Db.transferError = {
-      insert: sandbox.stub()
+      insert: sandbox.stub(),
+      find: sandbox.stub()
     }
 
     test.end()
@@ -79,6 +80,36 @@ Test('TransferError model', async (TransferErrorTest) => {
     })
 
     await insertTest.end()
+  })
+
+  await TransferErrorTest.test('getByTransferStateChangeId should', async (getByTransferStateChangeIdTest) => {
+    await getByTransferStateChangeIdTest.test('getByTransferStateChangeId the record into database', async test => {
+      try {
+        Db.transferError.find.returns(transferErrorFixture)
+        var result = await Model.getByTransferStateChangeId(transferErrorFixture.transferStateChangeId)
+        test.deepEqual(result, transferErrorFixture, 'Results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`getByTransferStateChangeIdTest failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await getByTransferStateChangeIdTest.test('should throw error', async (test) => {
+      try {
+        Db.transferError.find.throws(new Error('message'))
+
+        await Model.getByTransferStateChangeId(transferErrorFixture.transferStateChangeId)
+        test.fail(' should throw')
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await getByTransferStateChangeIdTest.end()
   })
 
   await TransferErrorTest.end()
