@@ -68,12 +68,14 @@ const errorDescriptionInternal = 'Internal Server Error'
  * we will only ever use the first message in non batch processing. We then break down the message into its payload and
  * begin validating the payload. Once the payload is validated successfully it will be written to the database to
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
- * ABORT status
+ * INVALID status. For any duplicate requests we will send appropriate callback based on the transfer state and the hash validation
  *
+ * TransferService.validateDuplicateHash called to validate/insert the hash of the payload of the message
  * Validator.validateByName called to validate the payload of the message
- * TransferService.getById called and checks if the transfer currently exists
+ * TransferService.getById called to get the details of the existing transfer
+ * TransferObjectTransform.toTransfer called to tranform the trnasfer object
  * TransferService.prepare called and creates new entries in transfer tables for successful prepare transfer
- * TransferService.reject called and rejects an existing transfer that has been retried and fails validation
+ * TransferService.logTransferError called to log the invalid request
  *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
