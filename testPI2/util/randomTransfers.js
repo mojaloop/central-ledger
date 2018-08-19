@@ -77,7 +77,7 @@ const randTransferStateChanges = (transferId, transferCreatedDate, isExpired) =>
     })
   }
   if (randStateNum > 1) {
-    if ([TS.RECEIVED_FULFIL, TS.COMMITTED, TS.PENDING_SETTLEMENT, TS.SETTLED].indexOf(state) !== -1) {
+    if ([TS.RECEIVED_FULFIL, TS.COMMITTED].indexOf(state) !== -1) {
       states.push({
         transferId,
         transferStateId: TS.RECEIVED_FULFIL,
@@ -89,20 +89,6 @@ const randTransferStateChanges = (transferId, transferCreatedDate, isExpired) =>
           transferStateId: TS.COMMITTED,
           createdDate: new Date(transferCreatedDate + 80 * 1000)
         })
-        if (state !== TS.COMMITTED) {
-          states.push({
-            transferId,
-            transferStateId: TS.PENDING_SETTLEMENT,
-            createdDate: new Date(transferCreatedDate + 140 * 1000)
-          })
-          if (state !== TS.PENDING_SETTLEMENT) {
-            states.push({
-              transferId,
-              transferStateId: TS.SETTLED,
-              createdDate: new Date(transferCreatedDate + 150 * 1000)
-            })
-          }
-        }
       }
     } else {
       states.push({

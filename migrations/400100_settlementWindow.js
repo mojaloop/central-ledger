@@ -5,7 +5,7 @@ exports.up = async (knex, Promise) => {
     if (!exists) {
       return knex.schema.createTable('settlementWindow', (t) => {
         t.bigIncrements('settlementWindowId').primary().notNullable()
-        t.string('state', 50).defaultTo(null).nullable()
+        t.string('reason', 512).defaultTo(null).nullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }

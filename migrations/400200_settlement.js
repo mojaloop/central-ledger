@@ -5,10 +5,8 @@ exports.up = async (knex, Promise) => {
     if (!exists) {
       return knex.schema.createTable('settlement', (t) => {
         t.bigIncrements('settlementId').primary().notNullable()
-        t.bigInteger('settlementWindowId').unsigned().notNullable()
-        t.foreign('settlementWindowId').references('settlementWindowId').inTable('settlementWindow')
-        t.string('settlementType', 16).notNullable()
-        t.dateTime('settledDate').defaultTo(knex.fn.now()).notNullable()
+        t.string('reason', 512).defaultTo(null).nullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }
   })
