@@ -54,7 +54,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       transferErrorPrepareResult = await HelperModule.prepareNeededData('transferError')
       assert.comment('the prepared data are: ', JSON.stringify(transferErrorPrepareResult, null, 4))
-      
+
       const read = transferErrorPrepareResult.transferError
       const result = await Model.getByTransferStateChangeId(transferErrorPrepareResult.transferStateChange.transferStateChangeId)
       assert.equal(read.transferStateChangeId, result.transferStateChangeId, 'transferStateChangeId match')

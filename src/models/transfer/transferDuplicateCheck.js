@@ -17,14 +17,37 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+ 
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
+/**
+ * @module src/models/transfer/transferDuplicateCheck/
+ */
+
 const Db = require('../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+
+/**
+ * @function SaveTransferDuplicateCheck
+ *
+ * @async
+ * @description This inserts a record into transferDuplicateCheck table
+ *
+ * @param {object} transferDuplicateCheck - the object to be inserted with values of transferId and hash
+ * Example:
+ * ```
+ * { 
+ *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10', 
+ *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8'
+ * }
+ * ```
+ *
+ * @returns {integer} - Returns the database id of the inserted row, or throws an error if failed
+ */
 
 const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
   Logger.debug('save transferDuplicateCheck' + transferDuplicateCheck.toString())
@@ -34,6 +57,26 @@ const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
     throw new Error(err.message)
   }
 }
+
+/**
+ * @function CheckAndInsertDuplicateHash
+ *
+ * @async
+ * @description This checks if there is a matching hash for a transfer request in transferDuplicateCheck table, if it does not exist, it will be inserted
+ *
+ * @param {string} transferId - the transfer id
+ * @param {string} hash - the hash of the transfer request payload
+ *
+ * @returns {object} - Returns the hash if exists, otherwise null, or throws an error if failed
+ * Example:
+ * ```
+ * { 
+ *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10', 
+ *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8',
+ *    createdDate: '2018-08-17 09:46:21'
+ * }
+ * ```
+ */
 
 const checkAndInsertDuplicateHash = async (transferId, hash) => {
   Logger.debug('check and insert hash into  transferDuplicateCheck' + transferId.toString())

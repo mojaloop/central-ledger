@@ -24,6 +24,10 @@
 
 'use strict'
 
+/**
+ * @module src/models/participant/participantLimit/
+ */
+
 const Db = require('../../db/index')
 
 const insert = async (participantLimit) => {

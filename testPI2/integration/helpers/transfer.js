@@ -27,7 +27,7 @@
 
 'use strict'
 
-const ParticipantPreparationModule = require('./participant')
+// const ParticipantPreparationModule = require('./participant')
 const Model = require('../../../src/models/transfer/transfer')
 // const time = require('../../../src/lib/time')
 
@@ -40,7 +40,6 @@ exports.prepareData = async (transfer) => {
 
     // let transferId = 'tr' + time.msToday()
     await Model.saveTransfer(transfer)
-
 
     return {
       transfer: {

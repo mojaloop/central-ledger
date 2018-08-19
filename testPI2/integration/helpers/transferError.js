@@ -25,8 +25,6 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/models/transfer/transfer')
-const Model = require('../../../src/models/transfer/transferError')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
 const TransferErrorModel = require('../../../src/models/transfer/transferError')
 const TransferStateChangeModel = require('../../../src/models/transfer/transferStateChange')
@@ -43,9 +41,9 @@ exports.prepareData = async () => {
     })
     let transferStateChange = await TransferStateChangeModel.getByTransferId(transferResult.transfer.transferId)
     await TransferErrorModel.insert(transferStateChange.transferStateChangeId, 3100, 'Invalid Request')
-    
+
     let transferError = await TransferErrorModel.getByTransferStateChangeId(transferStateChange.transferStateChangeId)
-    
+
     return {
       transferError,
       transferStateChange,
@@ -61,7 +59,7 @@ exports.prepareData = async () => {
 
 exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
-      return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
+    return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
   } catch (err) {
     throw new Error(err.message)
   }

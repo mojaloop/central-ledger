@@ -22,10 +22,15 @@
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
+
+/**
+ * @module src/models/transfer/facade/
+ */
 
 const Db = require('../../db')
 const Uuid = require('uuid4')
@@ -308,6 +313,28 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     throw e
   }
 }
+
+/**
+ * @function GetTransferStateByTransferId
+ *
+ * @async
+ * @description This will get the latest transfer state change name for a given transfer id
+ *
+ * @param {string} id - the transfer id
+ *
+ * @returns {Object} - Returns the details of transfer state change if successful, or throws an error if failed
+ * Example:
+ * ```
+ * {
+ *    transferStateChangeId: 1,
+ *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b11',
+ *    transferStateId: 'COMMITTED',
+ *    reason: null,
+ *    createdDate: '2018-08-17 09:46:21',
+ *    enumeration: 'COMMITTED'
+ * }
+ * ```
+ */
 
 const getTransferStateByTransferId = async (id) => {
   try {

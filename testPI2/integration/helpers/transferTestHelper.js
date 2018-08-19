@@ -46,7 +46,7 @@ exports.prepareData = async () => {
     let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
 
     let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
-   
+
     let transferStateResults = TransferStatePreparationHelper.prepareData() // transfer seed
 
     await TransferExtensionModel.saveTransferExtension({

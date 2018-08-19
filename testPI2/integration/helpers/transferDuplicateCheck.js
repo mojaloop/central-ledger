@@ -77,15 +77,15 @@ exports.prepareData = async () => {
   }
 }
 
-exports.deletePreparedData = async (transferId, payerName, payeeName) => {
-  try {
-    return await Model.truncate({
-      transferId: transferId
-    }).then(async () => {
-      await TransferDuplicateCheckPreparationHelper.deletePreparedData()
-      await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
-    })
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+// exports.deletePreparedData = async (transferId, payerName, payeeName) => {
+//   try {
+//     return await Model.truncate({
+//       transferId: transferId
+//     }).then(async () => {
+//       await TransferDuplicateCheckPreparationHelper.deletePreparedData()
+//       await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
+//     })
+//   } catch (err) {
+//     throw new Error(err.message)
+//   }
+// }

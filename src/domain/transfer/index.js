@@ -19,10 +19,15 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
+
+/**
+ * @module src/domain/transfer/
+ */
 
 const P = require('bluebird')
 const TransferFacade = require('../../models/transfer/facade')
@@ -140,6 +145,26 @@ const saveTransferStateChange = async (stateRecord) => {
   TransferStateChangeModel.saveTransferStateChange(stateRecord)
 }
 
+/**
+ * @function ValidateDuplicateHash
+ *
+ * @async
+ * @description This checks if there is a matching hash for a transfer request in transferDuplicateCheck table, if it does not exist, it will be inserted
+ *
+ * TransferDuplicateCheckModel.checkAndInsertDuplicateHash called to check the existing hash or insert the hash if not exists in the database
+ *
+ * @param {string} payload - the transfer object
+ *
+ * @returns {object} - Returns the result of the comparision of the hash if exists, otherwise false values, or throws an error if failed
+ * Example:
+ * ```
+ * { 
+ *    existsMatching: true, 
+ *    existsNotMatching: false
+ * }
+ * ```
+ */
+
 const validateDuplicateHash = async (payload) => {
   try {
     if (!payload) {
@@ -166,6 +191,22 @@ const validateDuplicateHash = async (payload) => {
   }
 }
 
+/**
+ * @function LogTransferError
+ *
+ * @async
+ * @description This will insert a record into the transferError table for the latest transfer stage change id.
+ *
+ * TransferStateChangeModel.getByTransferId called to get the latest transfer state change id
+ * TransferError.insert called to insert the record into the transferError table
+ *
+ * @param {string} transferId - the transfer id
+ * @param {integer} errorCode - the error code
+ * @param {string} errorDescription - the description error
+ *
+ * @returns {integer} - Returns the id of the transferError record if successful, or throws an error if failed
+ */
+
 const logTransferError = async (transferId, errorCode, errorDescription) => {
   try {
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
@@ -174,6 +215,30 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
     throw e
   }
 }
+
+/**
+ * @function GetTransferStateChange
+ *
+ * @async
+ * @description This will get the latest transfer state change name for a given transfer id
+ *
+ * TransferFacade.getTransferStateByTransferId called to get the latest transfer state change id and name
+ *
+ * @param {string} id - the transfer id
+ *
+ * @returns {Object} - Returns the details of transfer state change if successful, or throws an error if failed
+ * Example:
+ * ```
+ * {
+ *    transferStateChangeId: 1,
+ *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b11',
+ *    transferStateId: 'COMMITTED',
+ *    reason: null,
+ *    createdDate: '2018-08-17 09:46:21',
+ *    enumeration: 'COMMITTED'
+ * }
+ * ```
+ */
 
 const getTransferStateChange = (id) => {
   return TransferFacade.getTransferStateByTransferId(id)
