@@ -158,8 +158,8 @@ const saveTransferStateChange = async (stateRecord) => {
  * @returns {object} - Returns the result of the comparision of the hash if exists, otherwise false values, or throws an error if failed
  * Example:
  * ```
- * { 
- *    existsMatching: true, 
+ * {
+ *    existsMatching: true,
  *    existsNotMatching: false
  * }
  * ```

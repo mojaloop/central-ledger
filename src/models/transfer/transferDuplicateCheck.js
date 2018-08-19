@@ -17,7 +17,7 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
- 
+
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
@@ -40,8 +40,8 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * @param {object} transferDuplicateCheck - the object to be inserted with values of transferId and hash
  * Example:
  * ```
- * { 
- *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10', 
+ * {
+ *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
  *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8'
  * }
  * ```
@@ -70,8 +70,8 @@ const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
  * @returns {object} - Returns the hash if exists, otherwise null, or throws an error if failed
  * Example:
  * ```
- * { 
- *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10', 
+ * {
+ *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
  *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8',
  *    createdDate: '2018-08-17 09:46:21'
  * }
