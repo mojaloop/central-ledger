@@ -41,12 +41,13 @@ const fromTransferAggregate = (t) => {
   const cleanProperties = Util.omitNil({
     transferId: t.transferId,
     amount: t.amount ? formatAmount(t.amount) : null,
-    transferState: Util.omitNil(t.transferState),
-    completedTimestamp: Util.omitNil(t.completedTimestamp),
+    // transferState: Util.omitNil(t.transferState),
+    transferState: t.transferState,
+    completedTimestamp: t.completedTimestamp,
     ilpPacket: t.ilpPacket,
     condition: t.condition,
     fulfilment: t.fulfilment,
-    expiration: Util.omitNil(t.expirationDate),
+    expiration: t.expirationDate,
     extensionList: formatExtensionList(t.extensionList)
   })
   return Util.mergeAndOmitNil(Util.pick(t, transferProperties), cleanProperties)

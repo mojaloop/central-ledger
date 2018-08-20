@@ -25,7 +25,7 @@
 'use strict'
 
 /**
- * @module src/models/participant/
+ * @module src/models/participant/facade/
  */
 
 const Db = require('../../db')
