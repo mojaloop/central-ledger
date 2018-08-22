@@ -7,6 +7,8 @@ exports.up = async (knex, Promise) => {
         t.bigIncrements('settlementTransferParticipantId').primary().notNullable()
         t.bigInteger('settlementId').unsigned().notNullable()
         t.foreign('settlementId').references('settlementId').inTable('settlement')
+        t.bigInteger('settlementWindowId').unsigned().notNullable()
+        t.foreign('settlementWindowId').references('settlementWindowId').inTable('settlementWindow')
         t.integer('participantCurrencyId').unsigned().notNullable()
         t.foreign('participantCurrencyId').references('participantCurrencyId').inTable('participantCurrency')
         t.integer('transferParticipantRoleTypeId').unsigned().notNullable()
