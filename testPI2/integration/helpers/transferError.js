@@ -18,9 +18,6 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
 --------------
  ******/
@@ -28,28 +25,28 @@
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
-const TransferModel = require('../../../src/models/transfer/transfer')
-const Model = require('../../../src/models/transfer/transferExtension')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
-
+const TransferErrorModel = require('../../../src/models/transfer/transferError')
+const TransferStateChangeModel = require('../../../src/models/transfer/transferStateChange')
+const TransferStatePreparationHelper = require('./transferState')
 exports.prepareData = async () => {
   try {
     let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
-
     let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
+    TransferStatePreparationHelper.prepareData() // transfer seed
 
-    await Model.saveTransferExtension({
+    await TransferStateChangeModel.saveTransferStateChange({
       transferId: transferResult.transfer.transferId,
-      key: 'extension.key',
-      value: 'extension.value',
-      createdDate: new Date()
+      transferStateId: 'INVALID'
     })
-    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
-    let extension = await Model.getByTransferId(transferResult.transfer.transferId)
+    let transferStateChange = await TransferStateChangeModel.getByTransferId(transferResult.transfer.transferId)
+    await TransferErrorModel.insert(transferStateChange.transferStateChangeId, 3100, 'Invalid Request')
+
+    let transferError = await TransferErrorModel.getByTransferStateChangeId(transferStateChange.transferStateChangeId)
 
     return {
-      extension,
-      transfer,
+      transferError,
+      transferStateChange,
       participants: {
         participantPayer: transferDuplicateCheckResult.participantPayerResult,
         participantPayee: transferDuplicateCheckResult.participantPayeeResult
@@ -60,11 +57,9 @@ exports.prepareData = async () => {
   }
 }
 
-exports.deletePreparedData = async (extensionId, transferId, payerName, payeeName) => {
+exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
-    return await Model.destroyByTransferId(transferId).then(async () => {
-      return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
-    })
+    return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
   } catch (err) {
     throw new Error(err.message)
   }

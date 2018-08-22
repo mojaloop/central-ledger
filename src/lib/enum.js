@@ -28,7 +28,8 @@ module.exports = {
     FAILED: 'FAILED',
     EXPIRED: 'EXPIRED',
     REJECTED: 'REJECTED',
-    ABORTED: 'ABORTED'
+    ABORTED: 'ABORTED',
+    INVALID: 'INVALID'
   },
 
   // Code specific (non-DB) enumerations sorted alphabetically

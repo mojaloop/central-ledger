@@ -22,10 +22,15 @@
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
+
+/**
+ * @module src/models/transfer/facade/
+ */
 
 const Db = require('../../db')
 const Uuid = require('uuid4')
@@ -252,7 +257,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.REJECTED)
+    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.INVALID)
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
@@ -276,6 +281,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
       amount: payload.amount.amount
     }
+
     const knex = await Db.getKnex()
     return await knex.transaction(async (trx) => {
       try {
@@ -308,10 +314,52 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
   }
 }
 
+/**
+ * @function GetTransferStateByTransferId
+ *
+ * @async
+ * @description This will get the latest transfer state change name for a given transfer id
+ *
+ * @param {string} id - the transfer id
+ *
+ * @returns {Object} - Returns the details of transfer state change if successful, or throws an error if failed
+ * Example:
+ * ```
+ * {
+ *    transferStateChangeId: 1,
+ *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b11',
+ *    transferStateId: 'COMMITTED',
+ *    reason: null,
+ *    createdDate: '2018-08-17 09:46:21',
+ *    enumeration: 'COMMITTED'
+ * }
+ * ```
+ */
+
+const getTransferStateByTransferId = async (id) => {
+  try {
+    return await Db.transferStateChange.query(async (builder) => {
+      let result = builder
+        .innerJoin('transferState AS ts', 'ts.transferStateId', 'transferStateChange.transferStateId')
+        .where({
+          'transferStateChange.transferId': id,
+          'ts.isActive': 1
+        })
+        .select('transferStateChange.*', 'ts.enumeration')
+        .orderBy('transferStateChangeId', 'desc')
+        .first()
+      return result
+    })
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   getById,
   getAll,
   getTransferInfoToChangePosition,
   saveTransferFulfiled,
-  saveTransferPrepared
+  saveTransferPrepared,
+  getTransferStateByTransferId
 }

@@ -33,10 +33,13 @@ const TransferService = require('../../../../src/domain/transfer')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const TransferModel = require('../../../../src/models/transfer/transfer')
 const TransferFacade = require('../../../../src/models/transfer/facade')
+const TransferError = require('../../../../src/models/transfer/transferError')
 const TransferStateChangeModel = require('../../../../src/models/transfer/transferStateChange')
 const TransferFulfilmentModel = require('../../../../src/models/transfer/transferFulfilment')
+const TransferDuplicateCheckModel = require('../../../../src/models/transfer/transferDuplicateCheck')
 const TransferState = require('../../../../src/lib/enum').TransferState
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Crypto = require('crypto')
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -58,6 +61,11 @@ const payload = {
     ]
   }
 }
+
+const hashSha256 = Crypto.createHash('sha256')
+let hashFixture = JSON.stringify(payload)
+hashFixture = hashSha256.update(hashFixture)
+hashFixture = hashSha256.digest(hashFixture).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
 
 const transferStateChangeRecord = {
   transferId: payload.transferId,
@@ -94,6 +102,8 @@ Test('Transfer Service', transferIndexTest => {
     sandbox.stub(TransferFacade)
     sandbox.stub(TransferStateChangeModel)
     sandbox.stub(TransferFulfilmentModel)
+    sandbox.stub(TransferError)
+    sandbox.stub(TransferDuplicateCheckModel)
     t.end()
   })
 
@@ -240,7 +250,7 @@ Test('Transfer Service', transferIndexTest => {
 
     getFulfilmentTest.test('throw TransferNotConditionalError', async (test) => {
       try {
-        const transfer = Object.assign({}, transferRecord, {ilpCondition: null})
+        const transfer = Object.assign({}, transferRecord, { ilpCondition: null })
         TransferFacade.getById.returns(Promise.resolve(transfer))
         TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
         await TransferService.getFulfilment(payload.transferId)
@@ -270,7 +280,7 @@ Test('Transfer Service', transferIndexTest => {
 
     getFulfilmentTest.test('throw MissingFulfilmentError when looking up transfer fulfilment', async (test) => {
       try {
-        const transferFuflilment = Object.assign({}, transferFulfilmentRecord, {ilpFulfilment: null})
+        const transferFuflilment = Object.assign({}, transferFulfilmentRecord, { ilpFulfilment: null })
         TransferFacade.getById.returns(Promise.resolve(transferRecord))
         TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFuflilment))
         await TransferService.getFulfilment(payload.transferId)
@@ -394,6 +404,120 @@ Test('Transfer Service', transferIndexTest => {
       }
     })
     saveTransferStateChangeTest.end()
+  })
+
+  transferIndexTest.test('getTransferStateChange should', getTransferStateChangeTest => {
+    getTransferStateChangeTest.test('get the transfer state', async (test) => {
+      try {
+        TransferFacade.getTransferStateByTransferId.returns(Promise.resolve(true))
+        await TransferService.getTransferStateChange('id')
+        test.pass('got the transferStateChange!')
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferStateChange failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+    getTransferStateChangeTest.end()
+  })
+
+  transferIndexTest.test('logTransferError should', logTransferErrorTest => {
+    logTransferErrorTest.test('log the transfer error', async (test) => {
+      try {
+        TransferError.insert.returns(Promise.resolve(true))
+        TransferStateChangeModel.getByTransferId.returns(Promise.resolve(transferStateChangeRecord))
+
+        await TransferService.logTransferError(transferStateChangeRecord.transferStateChangeId, '3100', 'Error')
+        test.pass('log the transfer error success!')
+        test.end()
+      } catch (err) {
+        Logger.error(`logTransferError failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    logTransferErrorTest.test('throw error', async (test) => {
+      try {
+        TransferError.insert.returns(Promise.resolve(true))
+        TransferStateChangeModel.getByTransferId.throws(new Error('message'))
+
+        await TransferService.logTransferError(transferStateChangeRecord.transferStateChangeId, '3100', 'Error')
+        test.fail('should throw')
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    logTransferErrorTest.end()
+  })
+
+  transferIndexTest.test('validateDuplicateHash should', validateDuplicateHashTest => {
+    validateDuplicateHashTest.test('hash exists and matches', async (test) => {
+      try {
+        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({ hash: hashFixture }))
+        const expected = {
+          existsMatching: true,
+          existsNotMatching: false
+        }
+
+        const result = await TransferService.validateDuplicateHash(payload)
+        test.deepEqual(result, expected, 'results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`validateDuplicateHash failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    validateDuplicateHashTest.test('hash exists and not matches', async (test) => {
+      try {
+        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({ hash: 'fake hash' }))
+        const expected = {
+          existsMatching: false,
+          existsNotMatching: true
+        }
+
+        const result = await TransferService.validateDuplicateHash(payload)
+        test.deepEqual(result, expected, 'results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`validateDuplicateHash failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    validateDuplicateHashTest.test('hash not exists then insert the hash', async (test) => {
+      try {
+        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve(null))
+        await TransferService.validateDuplicateHash(payload)
+        test.pass('hash inserted successfully')
+        test.end()
+      } catch (err) {
+        Logger.error(`validateDuplicateHash failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    validateDuplicateHashTest.test('throw error on invalid payload', async (test) => {
+      try {
+        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve(null))
+        await TransferService.validateDuplicateHash(null)
+        test.fail('should throw')
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    validateDuplicateHashTest.end()
   })
 
   transferIndexTest.end()

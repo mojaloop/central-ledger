@@ -21,17 +21,19 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 const TransferPreparationModule = require('./transfer')
+const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
 const TransferStatePreparationHelper = require('./transferState')
 const StateChangeModel = require('../../../src/models/transfer/transferStateChange')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const IlpModel = require('../../../src/models/transfer/ilpPacket')
-const TransferModel = require('../../../src/models/transfer/facade')
+const TransferFacade = require('../../../src/models/transfer/facade')
 const TransferFulfilmentModel = require('../../../src/models/transfer/transferFulfilment')
 const TransferParticipantModel = require('../../../src/models/transfer/transferParticipant')
 
@@ -41,7 +43,10 @@ const Uuid = require('uuid4')
 
 exports.prepareData = async () => {
   try {
-    let transferResult = await TransferPreparationModule.prepareData() // participants + transfer
+    let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
+
+    let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
+
     let transferStateResults = TransferStatePreparationHelper.prepareData() // transfer seed
 
     await TransferExtensionModel.saveTransferExtension({
@@ -66,7 +71,7 @@ exports.prepareData = async () => {
     let transferStateChangeResult = await StateChangeModel.getByTransferId(transferResult.transfer.transferId)
     let ilp = await IlpModel.getByTransferId(transferResult.transfer.transferId)
     let extension = await TransferExtensionModel.getByTransferId(transferResult.transfer.transferId)
-    // let transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    // let transfer = await TransferFacade.getById(transferResult.transfer.transferId)
     await TransferFulfilmentModel.saveTransferFulfilment({
       transferFulfilmentId: Uuid(),
       transferId: transferResult.transfer.transferId,
@@ -77,9 +82,9 @@ exports.prepareData = async () => {
     })
 
     await TransferParticipantModel.saveTransferParticipant({
-      transferParticipantId: transferResult.participantPayeeResult.participant.participantId,
+      transferParticipantId: transferDuplicateCheckResult.participantPayeeResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
-      participantCurrencyId: transferResult.participantPayeeResult.participantCurrencyId,
+      participantCurrencyId: transferDuplicateCheckResult.participantPayeeResult.participantCurrencyId,
       transferParticipantRoleTypeId: 2,
       ledgerEntryTypeId: 1,
       amount: transferResult.transfer.amount
@@ -87,9 +92,9 @@ exports.prepareData = async () => {
     )
 
     await TransferParticipantModel.saveTransferParticipant({
-      transferParticipantId: transferResult.participantPayerResult.participant.participantId,
+      transferParticipantId: transferDuplicateCheckResult.participantPayerResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
-      participantCurrencyId: transferResult.participantPayerResult.participantCurrencyId,
+      participantCurrencyId: transferDuplicateCheckResult.participantPayerResult.participantCurrencyId,
       transferParticipantRoleTypeId: 1,
       ledgerEntryTypeId: 1,
       amount: transferResult.transfer.amount
@@ -124,7 +129,7 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
           transferId: transferId
         }).then(async () => {
           // await TransferStatePreparationHelper.deletePreparedData()
-          await TransferModel.destroyByTransferId({transferId: 'test_tr_id'}).then(async () => {
+          await TransferFacade.destroyByTransferId({transferId: 'test_tr_id'}).then(async () => {
             await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
           })
         })

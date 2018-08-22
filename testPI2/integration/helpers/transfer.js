@@ -21,55 +21,53 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const ParticipantPreparationModule = require('./participant')
+// const ParticipantPreparationModule = require('./participant')
 const Model = require('../../../src/models/transfer/transfer')
-const time = require('../../../src/lib/time')
+// const time = require('../../../src/lib/time')
 
 // const transferFacade = require('../../../src/models/transfer/facade')
 
-exports.prepareData = async () => {
+exports.prepareData = async (transfer) => {
   try {
-    let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
-    let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
+    // let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
+    // let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
 
-    let transferId = 'tr' + time.msToday()
-    await Model.saveTransfer({
-      transferId: transferId,
-      amount: 100,
-      currencyId: 'USD',
-      ilpCondition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-      expirationDate: new Date()
-    })
+    // let transferId = 'tr' + time.msToday()
+    await Model.saveTransfer(transfer)
 
     return {
       transfer: {
-        transferId,
-        amount: 100,
-        currencyId: 'USD'
-      },
-      participantPayerResult,
-      participantPayeeResult
+        transferId: transfer.transferId,
+        amount: transfer.amount,
+        currencyId: transfer.currencyId
+      }
+      // ,
+      // participantPayerResult,
+      // participantPayeeResult
     }
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
-exports.deletePreparedData = async (transferId, payerName, payeeName) => {
+// exports.deletePreparedData = async (transferId, payerName, payeeName) => {
+exports.deletePreparedData = async (transferId) => {
   try {
-    return Model.destroyById(transferId).then(async () => {
-      let participantPayerResult = await ParticipantPreparationModule.deletePreparedData(payerName)
-      let participantPayeeResult = await ParticipantPreparationModule.deletePreparedData(payeeName)
-      return {
-        participantPayerResult,
-        participantPayeeResult
-      }
-    })
+    return Model.destroyById(transferId)
+    // .then(async () => {
+    //   let participantPayerResult = await ParticipantPreparationModule.deletePreparedData(payerName)
+    //   let participantPayeeResult = await ParticipantPreparationModule.deletePreparedData(payeeName)
+    //   return {
+    //     participantPayerResult,
+    //     participantPayeeResult
+    //   }
+    // })
   } catch (err) {
     throw new Error(err.message)
   }

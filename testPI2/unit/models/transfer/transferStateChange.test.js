@@ -27,7 +27,7 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
@@ -47,27 +47,19 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
     }
   ]
 
-  sandbox = Sinon.createSandbox()
-  Db.transferStateChange = {
-    insert: sandbox.stub(),
-    truncate: sandbox.stub(),
-    query: sandbox.stub()
-  }
+  transferStateChangeModel.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    Db.transferStateChange = {
+      insert: sandbox.stub(),
+      truncate: sandbox.stub(),
+      query: sandbox.stub()
+    }
+    t.end()
+  })
 
-  let builderStub = sandbox.stub()
-  let selectStub = sandbox.stub()
-  let orderStub = sandbox.stub()
-  let firstStub = sandbox.stub()
-  builderStub.where = sandbox.stub()
-
-  Db.transferStateChange.query.callsArgWith(0, builderStub)
-  Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
-  builderStub.where.returns({
-    select: selectStub.returns({
-      orderBy: orderStub.returns({
-        first: firstStub.returns(transferStateChangeModelFixtures[0])
-      })
-    })
+  transferStateChangeModel.afterEach(t => {
+    sandbox.restore()
+    t.end()
   })
 
   await transferStateChangeModel.test('create false transfer state change', async (assert) => {
@@ -102,6 +94,22 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
 
   await transferStateChangeModel.test('get by transferId', async (assert) => {
     try {
+      let builderStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+      let orderStub = sandbox.stub()
+      let firstStub = sandbox.stub()
+      builderStub.where = sandbox.stub()
+
+      Db.transferStateChange.query.callsArgWith(0, builderStub)
+      Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
+      builderStub.where.returns({
+        select: selectStub.returns({
+          orderBy: orderStub.returns({
+            first: firstStub.returns(transferStateChangeModelFixtures[0])
+          })
+        })
+      })
+
       let result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferStateChangeModelFixtures[0])
       assert.end()
@@ -153,6 +161,52 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
       assert.end()
     }
     sandbox.restore()
+  })
+
+  await transferStateChangeModel.test('getByTransferIdList', async (test) => {
+    try {
+      const transferStateChangeList = [
+        {
+          transferStateChangeId: 1,
+          transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
+          transferStateId: 'RECEIVED_PREPARE',
+          reason: null,
+          createdDate: '2018-08-15 13:44:38'
+        },
+        {
+          transferStateChangeId: 1,
+          transferId: '9136780b-37e2-427c-8c05-f15dbb033b10',
+          transferStateId: 'RESERVED',
+          reason: null,
+          createdDate: '2018-08-15 13:44:39'
+        }
+      ]
+
+      let builderStub = sandbox.stub()
+      Db.transferStateChange.query.callsArgWith(0, builderStub)
+      builderStub.whereIn = sandbox.stub().returns(transferStateChangeList)
+
+      var result = await Model.getByTransferIdList('9136780b-37e2-457c-8c05-f15dbb033b10')
+      test.deepEqual(result, transferStateChangeList)
+      test.end()
+    } catch (err) {
+      Logger.error(`getByTransferIdList failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await transferStateChangeModel.test('getByTransferIdList should fail', async (test) => {
+    try {
+      Db.transferStateChange.query.throws(new Error('message'))
+
+      await Model.getByTransferIdList('9136780b-37e2-457c-8c05-f15dbb033b10')
+      test.fail(' should throw')
+      test.end()
+    } catch (err) {
+      test.pass('Error thrown')
+      test.end()
+    }
   })
 
   await transferStateChangeModel.end()

@@ -5,6 +5,7 @@ exports.up = async (knex, Promise) => {
     if (!exists) {
       return knex.schema.createTable('transfer', (t) => {
         t.string('transferId', 36).primary().notNullable()
+        t.foreign('transferId').references('transferId').inTable('transferDuplicateCheck')
         t.decimal('amount', 18, 2).notNullable()
         t.string('currencyId', 3).notNullable()
         t.foreign('currencyId').references('currencyId').inTable('currency')
