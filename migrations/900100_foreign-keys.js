@@ -25,15 +25,28 @@
 'use strict'
 
 exports.up = function (knex, Promise) {
-  return knex.schema.table('settlementParticipantCurrency', (t) => {
-    t.index('settlementId')
-    t.index('participantCurrencyId')
+  // foreign keys sorted alphabetically by table name
+  return knex.schema
+  .table('settlement', (t) => {
+    t.foreign('currentStateChangeId').references('settlementStateChange.settlementStateChangeId')
+  })
+  .table('settlementParticipantCurrency', (t) => {
+    t.foreign('currentStateChangeId', 'spc_currentstatechangeid_foreign').references('settlementParticipantCurrencyStateChange.settlementParticipantCurrencyStateChangeId')
+  })
+  .table('settlementWindow', (t) => {
+    t.foreign('currentStateChangeId').references('settlementWindowStateChange.settlementWindowStateChangeId')
   })
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.table('settlementParticipantCurrency', (t) => {
-    t.dropIndex('settlementId')
-    t.dropIndex('participantCurrencyId')
+  return knex.schema
+  .table('settlement', (t) => {
+    t.dropForeign('currentStateChangeId')
+  })
+  .table('settlementParticipantCurrency', (t) => {
+    t.dropForeign('currentStateChangeId', 'spc_settlementparticipantcurrencystatechangeid_foreign')
+  })
+  .table('settlementWindow', (t) => {
+    t.dropForeign('currentStateChangeId')
   })
 }
