@@ -31,7 +31,7 @@ exports.up = async (knex, Promise) => {
         t.bigIncrements('settlementId').primary().notNullable()
         t.string('reason', 512).defaultTo(null).nullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-        t.bigInteger('settlementStateChangeId').unsigned().nullable()
+        t.bigInteger('currentStateChangeId').unsigned().nullable()
       })
     }
   })
