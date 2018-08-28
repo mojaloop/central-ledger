@@ -53,6 +53,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--position [fspNameList]', 'Start the Position Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
   .option('--transfer', 'Start the Transfer Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
+  .option('--timeout', 'Start the Timeout Handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
@@ -120,6 +121,14 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       Logger.debug(`CLI: Executing --fulfil`)
       let handler = {
         type: 'fulfil',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.timeout) {
+      Logger.debug(`CLI: Executing --timeout`)
+      let handler = {
+        type: 'timeout',
         enabled: true
       }
       handlerList.push(handler)

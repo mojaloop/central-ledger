@@ -57,7 +57,8 @@ Test('cli', async (cliTest) => {
         '--position',
         'dfsp1, dfsp2',
         '--transfer',
-        '--fulfil'
+        '--fulfil',
+        '--timeout'
       ]
 
       process.argv = argv
@@ -90,6 +91,11 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
+      var timeoutHandler = {
+        type: 'timeout',
+        enabled: true
+      }
+
       // var rejectHandler = {
       //   type: 'reject',
       //   enabled: true
@@ -99,7 +105,8 @@ Test('cli', async (cliTest) => {
         prepareHandler,
         positionHandler,
         transferHandler,
-        fulfilHandler
+        fulfilHandler,
+        timeoutHandler
         // rejectHandler
       ]
 
