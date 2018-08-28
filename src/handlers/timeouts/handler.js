@@ -146,5 +146,6 @@ const registerAllHandlers = async () => {
 
 module.exports = {
   registerAllHandlers,
+  registerTimeoutHandler,
   isRunning
 }

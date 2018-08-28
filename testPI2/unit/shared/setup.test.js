@@ -80,6 +80,10 @@ Test('setup', setupTest => {
       },
       positions: {
         registerPositionHandlers: sandbox.stub().returns(P.resolve())
+      },
+      timeouts: {
+        registerAllHandlers: sandbox.stub().returns(P.resolve()),
+        registerTimeoutHandler: sandbox.stub().returns(P.resolve())
       }
     }
 
@@ -382,6 +386,11 @@ Test('setup', setupTest => {
       //   enabled: true
       // }
 
+      var timeoutHandler = {
+        type: 'timeout',
+        enabled: true
+      }
+
       var unknownHandler = {
         type: 'undefined',
         enabled: true
@@ -392,6 +401,7 @@ Test('setup', setupTest => {
         positionHandler,
         transferHandler,
         fulfilHandler,
+        timeoutHandler,
         unknownHandler
         // rejectHandler
       ]
@@ -405,6 +415,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(err.message === `Handler Setup - ${JSON.stringify(unknownHandler)} is not a valid handler to register!`)
         test.end()
       })
@@ -437,6 +448,11 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      var timeoutHandler = {
+        type: 'timeout',
+        enabled: true
+      }
+
       // var rejectHandler = {
       //   type: 'reject',
       //   enabled: true
@@ -446,7 +462,8 @@ Test('setup', setupTest => {
         prepareHandler,
         positionHandler,
         transferHandler,
-        fulfilHandler
+        fulfilHandler,
+        timeoutHandler
         // rejectHandler
       ]
 
@@ -455,6 +472,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.notOk(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.end()
       }).catch(err => {
         test.fail(`Should have not received an error: ${err}`)
@@ -494,11 +512,17 @@ Test('setup', setupTest => {
       //   enabled: true
       // }
 
+      var timeoutHandler = {
+        type: 'timeout',
+        enabled: true
+      }
+
       var modulesList = [
         prepareHandler,
         positionHandler,
         transferHandler,
-        fulfilHandler
+        fulfilHandler,
+        timeoutHandler
         // rejectHandler
       ]
 
@@ -507,6 +531,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(KafkaCronStub.Cron.start.calledTwice)
         test.end()
       }).catch(err => {
