@@ -24,36 +24,42 @@
 
 'use strict'
 
-/**
- * @module src/domain/timeout/
- */
+const Db = require('../../db')
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
-const SegmentModel = require('../../models/misc/segment')
-const TransferTimeoutModel = require('../../models/transfer/transferTimeout')
-const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
-// const P = require('bluebird')
-// const TransferFacade = require('../../models/transfer/facade')
-// const TransferModel = require('../../models/transfer/transfer')
-
-const getTimeoutSegment = async () => {
-  const params = {
-    segmentType: 'timeout',
-    enumeration: 0,
-    tableName: 'transferStateChange'
+const getByParams = async (params) => {
+  try {
+    return await Db.segment.findOne(params)
+  } catch (err) {
+    throw new Error(err.message)
   }
-  return await SegmentModel.getByParams(params)
 }
 
-const cleanupTransferTimeout = async () => {
-  return await TransferTimeoutModel.cleanup()
-}
+// const saveTransfer = async (record) => {
+//   Logger.debug('save segment' + record.toString())
+//   try {
+//     return await Db.segment.insert(record)
+//   } catch (err) {
+//     throw err
+//   }
+// }
 
-const getLatestTransferStateChange = async () => {
-  return await TransferStateChangeModel.getLatest()
-}
+// const destroyById = async (id) => {
+//   try {
+//     await Db.segment.destroy({segmentId: id})
+//   } catch (err) {
+//     throw new Error(err.message)
+//   }
+// }
+
+// const truncateTransfer = async () => {
+//   try {
+//     return await Db.segment.truncate()
+//   } catch (err) {
+//     throw err
+//   }
+// }
 
 module.exports = {
-  getTimeoutSegment,
-  cleanupTransferTimeout,
-  getLatestTransferStateChange
+  getByParams
 }

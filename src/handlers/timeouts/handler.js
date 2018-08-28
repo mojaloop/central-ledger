@@ -35,7 +35,7 @@
 const CronJob = require('cron').CronJob
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../lib/config')
-// const TimeoutService = require('../../domain/timeout')
+const TimeoutService = require('../../domain/timeout')
 // const Utility = require('../lib/utility')
 
 let timeoutJob
@@ -55,8 +55,16 @@ let isRegistered
  */
 const timeout = async () => {
   try {
-    console.log('Transfer timeout task running...')
-    return true
+    const timeoutSegment = await TimeoutService.getTimeoutSegment()
+    let intervalMin = timeoutSegment ? timeoutSegment.value : 0
+    const cleanup = await TimeoutService.cleanupTransferTimeout()
+    const latestTransferStateChange = TimeoutService.getLatestTransferStateChange()
+    let intervalMax = parseInt(latestTransferStateChange)
+    return {
+      intervalMin,
+      cleanup,
+      intervalMax
+    }
   } catch (error) {
     Logger.error(error)
     throw error
