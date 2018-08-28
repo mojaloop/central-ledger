@@ -375,20 +375,20 @@ Test('Transfer Service', transferIndexTest => {
     rejectTest.end()
   })
 
-  transferIndexTest.test('rejectExpired should', rejectExpiredTest => {
-    rejectExpiredTest.test('be called', async (test) => {
-      try {
-        await TransferService.rejectExpired()
-        test.ok(true)
-        test.end()
-      } catch (err) {
-        Logger.error(`rejectExpired failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-    rejectExpiredTest.end()
-  })
+  // transferIndexTest.test('rejectExpired should', rejectExpiredTest => {
+  //   rejectExpiredTest.test('be called', async (test) => {
+  //     try {
+  //       await TransferService.rejectExpired()
+  //       test.ok(true)
+  //       test.end()
+  //     } catch (err) {
+  //       Logger.error(`rejectExpired failed with error - ${err}`)
+  //       test.fail()
+  //       test.end()
+  //     }
+  //   })
+  //   rejectExpiredTest.end()
+  // })
 
   transferIndexTest.test('saveTransferStateChange should', saveTransferStateChangeTest => {
     saveTransferStateChangeTest.test('save new transfer state', async (test) => {
