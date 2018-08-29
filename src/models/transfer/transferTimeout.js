@@ -26,6 +26,8 @@
 
 const Db = require('../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Enum = require('../../lib/enum')
+const TS = Enum.TransferState
 
 const cleanup = async () => {
   Logger.debug('cleanup transferTimeout')
@@ -33,22 +35,23 @@ const cleanup = async () => {
     const knex = await Db.getKnex()
     const ttIdList = await Db.transferTimeout.query(async (builder) => {
       let b = await builder
-        .whereIn('tsc.transferStateId', ['RECEIVED_FULFIL', 'COMMITTED', 'FAILED', 'EXPIRED', 'REJECTED', 'EXPIRED_PREPARED', 'EXPIRED_RESERVED', 'ABORTED'])
+        .whereIn('tsc.transferStateId', [`${TS.RECEIVED_FULFIL}`, `${TS.COMMITTED}`, `${TS.FAILED}`, `${TS.RESERVED_TIMEOUT}`,
+        `${TS.REJECTED}`, `${TS.EXPIRED_PREPARED}`, `${TS.EXPIRED_RESERVED}`, `${TS.ABORTED}`])
         .innerJoin(knex('transferTimeout AS tt1')
           .innerJoin('transferStateChange AS tsc1', 'tsc1.transferId', 'tt1.transferId')
           .select('tsc1.transferId')
-          .sum('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
           .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'transferTimeout.transferId'
         )
         .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
         .select('transferTimeout.transferTimeoutId')
       return b
     })
-    console.log(ttIdList)
     await Db.transferTimeout.query(async (builder) => {
-      return await builder
-        .whereIn('transferTimeout.transferTimeoutId', ttIdList)
+      let b = await builder
+        .whereIn('transferTimeout.transferTimeoutId', ttIdList.map(elem => elem.transferTimeoutId))
         .del()
+      return b
     })
     return ttIdList
   } catch (err) {

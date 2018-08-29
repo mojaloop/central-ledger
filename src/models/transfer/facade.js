@@ -372,7 +372,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
             )
             .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-            .whereIn('tsc.transferStateId', ['RECEIVED_PREPARE', 'RESERVED'])
+            .whereIn('tsc.transferStateId', [`${Enum.TransferState.RECEIVED_PREPARE}`, `${Enum.TransferState.RESERVED}`])
             .select('t.transferId', 't.expirationDate')
           })// .toSQL().sql
         // console.log('SQL: ' + q)
@@ -388,8 +388,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
             )
             .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
             .where('tt.expirationDate', '<', transactionTimestamp)
-            .andWhere('tsc.transferStateId', 'RECEIVED_PREPARE')
-            .select('tt.transferId', knex.raw('?', 'EXPIRED_PREPARED'), knex.raw('?', 'Aborted by Timeout Handler'))
+            .andWhere('tsc.transferStateId', `${Enum.TransferState.RECEIVED_PREPARE}`)
+            .select('tt.transferId', knex.raw('?', Enum.TransferState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
@@ -404,8 +404,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
             )
             .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
             .where('tt.expirationDate', '<', transactionTimestamp)
-            .andWhere('tsc.transferStateId', 'RESERVED')
-            .select('tt.transferId', knex.raw('?', 'RESERVED_TIMEOUT'), knex.raw('?', 'Expired by Timeout Handler'))
+            .andWhere('tsc.transferStateId', `${Enum.TransferState.RESERVED}`)
+            .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Expired by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 

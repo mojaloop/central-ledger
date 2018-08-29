@@ -82,11 +82,16 @@ const timeout = async () => {
           'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
           'FSPIOP-Destination': result[i].payerFsp
         },
-        payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal)
+        payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal),
+        metadata: {
+          event: {}
+        }
       }
       if (result[i].transferStateId === Enum.TransferState.EXPIRED_PREPARED) {
+        message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RECEIVED
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
       } else if (result[i].transferStateId === Enum.TransferState.RESERVED_TIMEOUT) {
+        message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RESERVED
         await Utility.produceParticipantMessage(result[i].payerFsp, Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
       }
     }

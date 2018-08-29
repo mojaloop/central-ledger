@@ -80,7 +80,7 @@ const positions = async (error, messages) => {
     Logger.info('PositionHandler::positions')
     let consumer = {}
     let kafkaTopic
-    const payload = message.value.content.payload
+    const payload = message.value.content && message.value.content.payload || {}
     payload.transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
