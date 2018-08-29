@@ -362,7 +362,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: 'REJECT'}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-// messages[0].value.metadata.event.action = transferEventAction.REJECT
+      // messages[0].value.metadata.event.action = transferEventAction.REJECT
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)

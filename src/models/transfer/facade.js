@@ -364,48 +364,48 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
           .insert(function () {
             this.from('transfer AS t')
-            .innerJoin(knex('transferStateChange')
-              .select('transferId')
-              .max('transferStateChangeId AS maxTransferStateChangeId')
-              .where('transferStateChangeId', '>', intervalMin)
-              .andWhere('transferStateChangeId', '<=', intervalMax)
-              .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
-            )
-            .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-            .whereIn('tsc.transferStateId', [`${Enum.TransferState.RECEIVED_PREPARE}`, `${Enum.TransferState.RESERVED}`])
-            .select('t.transferId', 't.expirationDate')
+              .innerJoin(knex('transferStateChange')
+                .select('transferId')
+                .max('transferStateChangeId AS maxTransferStateChangeId')
+                .where('transferStateChangeId', '>', intervalMin)
+                .andWhere('transferStateChangeId', '<=', intervalMax)
+                .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .whereIn('tsc.transferStateId', [`${Enum.TransferState.RECEIVED_PREPARE}`, `${Enum.TransferState.RESERVED}`])
+              .select('t.transferId', 't.expirationDate')
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
         await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
           .insert(function () {
             this.from('transferTimeout AS tt')
-            .innerJoin(knex('transferStateChange AS tsc1')
-              .select('tsc1.transferId')
-              .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-              .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-              .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
-            )
-            .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-            .where('tt.expirationDate', '<', transactionTimestamp)
-            .andWhere('tsc.transferStateId', `${Enum.TransferState.RECEIVED_PREPARE}`)
-            .select('tt.transferId', knex.raw('?', Enum.TransferState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
+              .innerJoin(knex('transferStateChange AS tsc1')
+                .select('tsc1.transferId')
+                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .where('tt.expirationDate', '<', transactionTimestamp)
+              .andWhere('tsc.transferStateId', `${Enum.TransferState.RECEIVED_PREPARE}`)
+              .select('tt.transferId', knex.raw('?', Enum.TransferState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
         await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
           .insert(function () {
             this.from('transferTimeout AS tt')
-            .innerJoin(knex('transferStateChange AS tsc1')
-              .select('tsc1.transferId')
-              .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-              .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-              .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
-            )
-            .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-            .where('tt.expirationDate', '<', transactionTimestamp)
-            .andWhere('tsc.transferStateId', `${Enum.TransferState.RESERVED}`)
-            .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Expired by Timeout Handler'))
+              .innerJoin(knex('transferStateChange AS tsc1')
+                .select('tsc1.transferId')
+                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .where('tt.expirationDate', '<', transactionTimestamp)
+              .andWhere('tsc.transferStateId', `${Enum.TransferState.RESERVED}`)
+              .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Expired by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
@@ -439,13 +439,13 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
       .innerJoin('transferParticipant AS tp1', function () {
         this.on('tp1.transferId', 'tt.transferId')
-        .andOn('tp1.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYER_DFSP)
-        .andOn('tp1.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+          .andOn('tp1.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYER_DFSP)
+          .andOn('tp1.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
       })
       .innerJoin('transferParticipant AS tp2', function () {
         this.on('tp2.transferId', 'tt.transferId')
-        .andOn('tp2.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYEE_DFSP)
-        .andOn('tp2.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+          .andOn('tp2.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYEE_DFSP)
+          .andOn('tp2.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
       })
       .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
       .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
