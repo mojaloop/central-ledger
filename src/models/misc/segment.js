@@ -35,31 +35,6 @@ const getByParams = async (params) => {
   }
 }
 
-// const saveTransfer = async (record) => {
-//   Logger.debug('save segment' + record.toString())
-//   try {
-//     return await Db.segment.insert(record)
-//   } catch (err) {
-//     throw err
-//   }
-// }
-
-// const destroyById = async (id) => {
-//   try {
-//     await Db.segment.destroy({segmentId: id})
-//   } catch (err) {
-//     throw new Error(err.message)
-//   }
-// }
-
-// const truncateTransfer = async () => {
-//   try {
-//     return await Db.segment.truncate()
-//   } catch (err) {
-//     throw err
-//   }
-// }
-
 module.exports = {
   getByParams
 }

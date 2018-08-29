@@ -1,63 +1,99 @@
 'use strict'
 
-module.exports = {
-  // Database enumerations sorted alphabetically // TODO: to be replaced by select statements
-  EnpointType: {
-    FSIOP_CALLBACK_URL: 1,
-    ALARM_NOTIFICATION_URL: 2,
-    ALARM_NOTIFICATION_TOPIC: 3
-  },
-  LedgerEntryType: {
-    PRINCIPLE_VALUE: 1,
-    INTERCHANGE_FEE: 2,
-    HUB_FEE: 3
-  },
-  ParticipantLimitType: {
-    NET_DEBIT_CAP: 1
-  },
-  TransferParticipantRoleType: {
-    PAYER_DFSP: 1,
-    PAYEE_DFSP: 2,
-    HUB: 3
-  },
-  TransferState: {
-    RECEIVED_PREPARE: 'RECEIVED_PREPARE',
-    RESERVED: 'RESERVED',
-    RECEIVED_FULFIL: 'RECEIVED_FULFIL',
-    COMMITTED: 'COMMITTED',
-    FAILED: 'FAILED',
-    EXPIRED: 'EXPIRED',
-    REJECTED: 'REJECTED',
-    ABORTED: 'ABORTED',
-    INVALID: 'INVALID'
-  },
+const EnpointType = {
+  FSIOP_CALLBACK_URL: 1,
+  ALARM_NOTIFICATION_URL: 2,
+  ALARM_NOTIFICATION_TOPIC: 3
+}
+const LedgerEntryType = {
+  PRINCIPLE_VALUE: 1,
+  INTERCHANGE_FEE: 2,
+  HUB_FEE: 3
+}
+const ParticipantLimitType = {
+  NET_DEBIT_CAP: 1
+}
+const TransferParticipantRoleType = {
+  PAYER_DFSP: 1,
+  PAYEE_DFSP: 2,
+  HUB: 3
+}
+const TransferState = {
+  RECEIVED_PREPARE: 'RECEIVED_PREPARE',
+  RESERVED: 'RESERVED',
+  RECEIVED_FULFIL: 'RECEIVED_FULFIL',
+  COMMITTED: 'COMMITTED',
+  FAILED: 'FAILED',
+  RESERVED_TIMEOUT: 'RESERVED_TIMEOUT',
+  REJECTED: 'REJECTED',
+  ABORTED: 'ABORTED',
+  INVALID: 'INVALID',
+  EXPIRED_PREPARED: 'EXPIRED_PREPARED',
+  EXPIRED_RESERVED: 'EXPIRED_RESERVED'
+}
 
-  // Code specific (non-DB) enumerations sorted alphabetically
-  transferEventType: {
-    PREPARE: 'prepare',
-    POSITION: 'position',
-    TRANSFER: 'transfer',
-    FULFIL: 'fulfil'
-  },
-  transferEventAction: {
-    PREPARE: 'prepare',
-    TRANSFER: 'transfer',
-    COMMIT: 'commit',
-    ABORT: 'abort',
-    TIMEOUT_RECEIVED: 'timeout-received',
-    TIMEOUT_RESERVED: 'timeout-reserved',
-    REJECT: 'reject',
-    FAIL: 'fail'
-  },
-  rejectionType: {
-    EXPIRED: 'expired',
-    CANCELLED: 'cancelled'
-  },
-  limitType: {
-    NET_DEBIT_CAP: 1
-  },
-  transferEventStatus: {
-    SUCCESS: 'success',
-    FAILED: 'failed'
+// Code specific (non-DB) enumerations sorted alphabetically
+const transferEventType = {
+  PREPARE: 'prepare',
+  POSITION: 'position',
+  TRANSFER: 'transfer',
+  FULFIL: 'fulfil',
+  NOTIFICATION: 'notification'
+}
+const transferEventAction = {
+  PREPARE: 'prepare',
+  TRANSFER: 'transfer',
+  COMMIT: 'commit',
+  ABORT: 'abort',
+  TIMEOUT_RECEIVED: 'timeout-received',
+  TIMEOUT_RESERVED: 'timeout-reserved',
+  REJECT: 'reject',
+  FAIL: 'fail',
+  EVENT: 'event'
+}
+const rejectionType = {
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled'
+}
+const limitType = {
+  NET_DEBIT_CAP: 1
+}
+const transferEventStatus = {
+  SUCCESS: 'success',
+  FAILED: 'failed'
+}
+const headers = {
+  FSPIOP: {
+    SWITCH: 'central-switch'
   }
+}
+const topicMap = {
+  position: {
+    'timeout-reserved': {
+      functionality: transferEventType.POSITION,
+      action: transferEventAction.ABORT
+    }
+  },
+  notification: {
+    'timeout-received': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    }
+  }
+}
+
+module.exports = {
+  EnpointType,
+  LedgerEntryType,
+  ParticipantLimitType,
+  TransferParticipantRoleType,
+  TransferState,
+
+  transferEventType,
+  transferEventAction,
+  rejectionType,
+  limitType,
+  transferEventStatus,
+  headers,
+  topicMap
 }

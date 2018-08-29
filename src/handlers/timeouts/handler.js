@@ -36,10 +36,13 @@ const CronJob = require('cron').CronJob
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
-// const Utility = require('../lib/utility')
+const Enum = require('../../lib/enum')
+const Utility = require('../lib/utility')
 
 let timeoutJob
 let isRegistered
+const errorCodeInternal = 3303
+const errorDescriptionInternal = 'Transfer expired'
 
 /**
  * @function TransferTimeoutHandler
@@ -57,13 +60,41 @@ const timeout = async () => {
   try {
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
     let intervalMin = timeoutSegment ? timeoutSegment.value : 0
+    let segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
     const cleanup = await TimeoutService.cleanupTransferTimeout()
-    const latestTransferStateChange = TimeoutService.getLatestTransferStateChange()
-    let intervalMax = parseInt(latestTransferStateChange)
+    const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
+    let intervalMax = parseInt(latestTransferStateChange.transferStateChangeId) || 0
+    let result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+
+    if (!Array.isArray(result)) {
+      result[0] = result
+    }
+    let message
+    for (let i = 0; i < result.length; i++) {
+      message = {
+        id: result[i].transferId,
+        from: result[i].payerParticipantId,
+        to: result[i].payeeParticipantId,
+        type: 'application/json',
+        headers: {
+          'Content-Type': 'application/json',
+          'Date': new Date().toISOString(),
+          'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
+          'FSPIOP-Destination': result[i].payerFsp
+        },
+        payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal)
+      }
+      if (result[i].transferStateId === Enum.TransferState.EXPIRED_PREPARED) {
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
+      } else if (result[i].transferStateId === Enum.TransferState.RESERVED_TIMEOUT) {
+        await Utility.produceParticipantMessage(result[i].payerFsp, Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
+      }
+    }
     return {
       intervalMin,
       cleanup,
-      intervalMax
+      intervalMax,
+      result
     }
   } catch (error) {
     Logger.error(error)

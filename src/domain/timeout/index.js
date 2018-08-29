@@ -31,9 +31,7 @@
 const SegmentModel = require('../../models/misc/segment')
 const TransferTimeoutModel = require('../../models/transfer/transferTimeout')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
-// const P = require('bluebird')
-// const TransferFacade = require('../../models/transfer/facade')
-// const TransferModel = require('../../models/transfer/transfer')
+const TransferFacade = require('../../models/transfer/facade')
 
 const getTimeoutSegment = async () => {
   const params = {
@@ -52,8 +50,13 @@ const getLatestTransferStateChange = async () => {
   return await TransferStateChangeModel.getLatest()
 }
 
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
+  return await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+}
+
 module.exports = {
   getTimeoutSegment,
   cleanupTransferTimeout,
-  getLatestTransferStateChange
+  getLatestTransferStateChange,
+  timeoutExpireReserved
 }

@@ -29,7 +29,7 @@
     },
     "TIMEOUT": {
       "DISABLED": false,
-      "TIMEXP": "*/2 * * * * *",
+      "TIMEXP": "*/5 * * * * *",
       "TIMEZONE": "UTC"
     }
   },

@@ -146,6 +146,14 @@ const insert = async (cfg) => {
   try {
     await Db.connect(Config.DATABASE_URI)
 
+    let str = Uuid()
+    let name = 'dfsp1-' + str.substr(0, 5)
+    let participantId = await Db.participant.insert({name, createdBy: 'randomTransfers'})
+    let payerAccountId = await Db.participantCurrency.insert({participantId, currencyId: 'USD', createdBy: 'randomTransfers'})
+    name = 'dfsp2-' + str.substr(0, 5)
+    participantId = await Db.participant.insert({name, createdBy: 'randomTransfers'})
+    let payeeAccountId = await Db.participantCurrency.insert({participantId, currencyId: 'USD', createdBy: 'randomTransfers'})
+
     for (let i = 1; i <= cfg.totalCount; i++) {
       if (countExpired === cfg.expiredCount) {
         isExpired = false
@@ -157,7 +165,24 @@ const insert = async (cfg) => {
       }
 
       let t = generateTransfer(cfg, isExpired)
+      await Db.transferDuplicateCheck.insert({transferId: t.transfer.transferId, hash: t.transfer.transferId})
       await Db.transfer.insert(t.transfer)
+      await Db.transferParticipant.insert({
+        transferId: t.transfer.transferId,
+        participantCurrencyId: payerAccountId,
+        transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
+        ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+        amount: t.transfer.amount,
+        createdDate: t.transfer.createdDate
+      })
+      await Db.transferParticipant.insert({
+        transferId: t.transfer.transferId,
+        participantCurrencyId: payeeAccountId,
+        transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
+        ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+        amount: t.transfer.amount,
+        createdDate: t.transfer.createdDate
+      })
       await Db.transferStateChange.insert(t.transferStateChangeList)
 
       if (i % cfg.debug === 0) {
