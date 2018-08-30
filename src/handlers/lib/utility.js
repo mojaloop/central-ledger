@@ -41,6 +41,7 @@ const KafkaConfig = Config.KAFKA_CONFIG
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Kafka = require('./kafka')
+const Enum = require('../../lib/enum')
 
 /**
  * The Producer config required
@@ -187,6 +188,9 @@ const generalTopicTemplate = (functionality, action) => {
  */
 const transformGeneralTopicName = (functionality, action) => {
   try {
+    if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
+      return generalTopicTemplate(Enum.topicMap[functionality][action].functionality, Enum.topicMap[functionality][action].action)
+    }
     return generalTopicTemplate(functionality, action)
   } catch (e) {
     throw e
@@ -251,10 +255,20 @@ const getKafkaConfig = (flow, functionality, action) => {
  * @returns {object} - Returns updated messageProtocol
  */
 const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => {
-  messageProtocol.metadata.event.responseTo = messageProtocol.metadata.event.id
-  messageProtocol.metadata.event.id = Uuid()
-  messageProtocol.metadata.event.type = metadataType
-  messageProtocol.metadata.event.state = state
+  if (!messageProtocol.metadata) {
+    messageProtocol.metadata = {
+      event: {
+        id: Uuid(),
+        type: metadataType,
+        state: state
+      }
+    }
+  } else {
+    messageProtocol.metadata.event.responseTo = messageProtocol.metadata.event.id
+    messageProtocol.metadata.event.id = Uuid()
+    messageProtocol.metadata.event.type = metadataType
+    messageProtocol.metadata.event.state = state
+  }
   return messageProtocol
 }
 
@@ -410,9 +424,15 @@ const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey 
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const produceGeneralMessage = async (functionality, action, message, state) => {
+  let functionalityMapped = functionality
+  let actionMapped = action
+  if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
+    functionalityMapped = Enum.topicMap[functionality][action].functionality
+    actionMapped = Enum.topicMap[functionality][action].action
+  }
   return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, state),
-    createGeneralTopicConf(functionality, action),
-    getKafkaConfig(ENUMS.PRODUCER, functionality.toUpperCase(), action.toUpperCase()))
+    createGeneralTopicConf(functionalityMapped, actionMapped),
+    getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
 }
 
 /**
@@ -436,9 +456,15 @@ const produceGeneralMessage = async (functionality, action, message, state) => {
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const produceParticipantMessage = async (participantName, functionality, action, message, state) => {
+  let functionalityMapped = functionality
+  let actionMapped = action
+  if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
+    functionalityMapped = Enum.topicMap[functionality][action].functionality
+    actionMapped = Enum.topicMap[functionality][action].action
+  }
   return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, state),
-    createParticipantTopicConf(participantName, functionality, action),
-    getKafkaConfig(ENUMS.PRODUCER, functionality.toUpperCase(), action.toUpperCase()))
+    createParticipantTopicConf(participantName, functionalityMapped, actionMapped),
+    getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
 }
 
 exports.transformAccountToTopicName = transformAccountToTopicName
