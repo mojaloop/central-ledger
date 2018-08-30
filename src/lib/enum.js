@@ -42,6 +42,7 @@ const transferEventType = {
 }
 const transferEventAction = {
   PREPARE: 'prepare',
+  PREPARE_DUPLICATE: 'prepare-duplicate',
   TRANSFER: 'transfer',
   COMMIT: 'commit',
   ABORT: 'abort',
@@ -76,6 +77,10 @@ const topicMap = {
   },
   notification: {
     'timeout-received': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'prepare-duplicate': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     }
