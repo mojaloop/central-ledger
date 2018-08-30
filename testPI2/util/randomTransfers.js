@@ -146,13 +146,18 @@ const insert = async (cfg) => {
   try {
     await Db.connect(Config.DATABASE_URI)
 
+    // prepare participants and participant limits
     let str = Uuid()
     let name = 'dfsp1-' + str.substr(0, 5)
     let participantId = await Db.participant.insert({name, createdBy: 'randomTransfers'})
     let payerAccountId = await Db.participantCurrency.insert({participantId, currencyId: 'USD', createdBy: 'randomTransfers'})
+    await Db.participantLimit.insert({participantCurrencyId: payerAccountId, participantLimitTypeId: Enum.ParticipantLimitType.NET_DEBIT_CAP, value: 1000, createdBy: 'randomTransfers'})
+    await Db.participantPosition.insert({participantCurrencyId: payerAccountId, value: 0, reservedValue: 0})
     name = 'dfsp2-' + str.substr(0, 5)
     participantId = await Db.participant.insert({name, createdBy: 'randomTransfers'})
     let payeeAccountId = await Db.participantCurrency.insert({participantId, currencyId: 'USD', createdBy: 'randomTransfers'})
+    await Db.participantLimit.insert({participantCurrencyId: payeeAccountId, participantLimitTypeId: Enum.ParticipantLimitType.NET_DEBIT_CAP, value: 500, createdBy: 'randomTransfers'})
+    await Db.participantPosition.insert({participantCurrencyId: payeeAccountId, value: 0, reservedValue: 0})
 
     for (let i = 1; i <= cfg.totalCount; i++) {
       if (countExpired === cfg.expiredCount) {
