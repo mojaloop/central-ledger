@@ -63,7 +63,7 @@ const timeout = async () => {
     let segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
     const cleanup = await TimeoutService.cleanupTransferTimeout()
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
-    let intervalMax = parseInt(latestTransferStateChange.transferStateChangeId) || 0
+    let intervalMax = latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId) || 0
     let result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
 
     if (!Array.isArray(result)) {
@@ -73,16 +73,18 @@ const timeout = async () => {
     for (let i = 0; i < result.length; i++) {
       message = {
         id: result[i].transferId,
-        from: result[i].payerParticipantId,
-        to: result[i].payeeParticipantId,
+        from: result[i].payerFsp,
+        to: result[i].payeeFsp,
         type: 'application/json',
-        headers: {
-          'Content-Type': 'application/json',
-          'Date': new Date().toISOString(),
-          'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
-          'FSPIOP-Destination': result[i].payerFsp
+        content: {
+          headers: {
+            'Content-Type': 'application/json',
+            'Date': new Date().toISOString(),
+            'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
+            'FSPIOP-Destination': result[i].payerFsp
+          },
+          payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal)
         },
-        payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal),
         metadata: {
           event: {}
         }
