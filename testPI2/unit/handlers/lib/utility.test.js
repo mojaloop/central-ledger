@@ -14,7 +14,7 @@ let participantName
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFIL = 'fulfil'
-const COMMIT = 'commit'
+// const COMMIT = 'commit'
 const CONSUMER = 'CONSUMER'
 
 const participantTopic = 'topic-testParticipant-transfer-prepare'
