@@ -405,7 +405,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .where('tt.expirationDate', '<', transactionTimestamp)
               .andWhere('tsc.transferStateId', `${Enum.TransferState.RESERVED}`)
-              .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Expired by Timeout Handler'))
+              .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
