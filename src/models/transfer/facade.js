@@ -449,9 +449,13 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       })
       .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
       .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
+
+      .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
+      .innerJoin('participant AS p2', 'p2.participantId', 'pc2.participantId')
+
       .where('tt.expirationDate', '<', transactionTimestamp)
       .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
-        'p1.name AS payerFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
+        'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
     return result
   } catch (e) {
     throw e
