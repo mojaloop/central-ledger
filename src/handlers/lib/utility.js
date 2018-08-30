@@ -243,7 +243,8 @@ const getKafkaConfig = (flow, functionality, action) => {
  * @function updateMessageProtocolMetadata
  *
  * @param {object} messageProtocol - The current messageProtocol from kafka
- * @param {string} metadataType - the action flow. Example: 'prepare'
+ * @param {string} metadataType - the type of flow. Example: 'notification'
+ * @param {string} metadataAction - the action flow. Example: 'prepare'
  * @param {object} state - the state of the message being passed.
  * Example:
  * SUCCESS: {
