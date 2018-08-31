@@ -90,9 +90,9 @@ const positions = async (error, messages) => {
       for (let prepareMessage of preparedMessagesList) {
         const { transferState, rawMessage } = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
-          await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, rawMessage.value, Utility.ENUMS.STATE.SUCCESS)
+          await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.PREPARE, rawMessage.value, Utility.ENUMS.STATE.SUCCESS)
         } else {
-          await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
+          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
         }
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
@@ -107,9 +107,7 @@ const positions = async (error, messages) => {
       Logger.info('PositionHandler::positions::commit')
       kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL)
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+
       // Check current transfer state
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
@@ -124,6 +122,12 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
       }
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      // Will follow framework flow in future
+      await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
+      return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
       kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
@@ -142,6 +146,12 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
       }
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      // Will follow framework flow in future
+      await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
+      return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
@@ -165,13 +175,18 @@ const positions = async (error, messages) => {
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
         return true
       }
-    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
-      Logger.info('PositionHandler::positions::fail')
-      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      // TODO: Need to understand the purpose of this branch.
+    // } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
+    //   Logger.info('PositionHandler::positions::fail')
+    //   kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
+    //   consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+    //   if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+    //     await consumer.commitMessageSync(message)
+    //   }
+    //   throw new Error('Position Fail messaged received - What do we do here??')
     } else {
       Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
       kafkaTopic = Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action)
@@ -181,12 +196,6 @@ const positions = async (error, messages) => {
       }
       throw new Error('Event type or action is invalid')
     }
-    if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-      await consumer.commitMessageSync(message)
-    }
-    // Will follow framework flow in future
-    await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.TRANSFER, message.value, Utility.ENUMS.STATE.SUCCESS)
-    return true
   } catch (error) {
     Logger.error(error)
     throw error
