@@ -21,6 +21,7 @@ const TransferParticipantRoleType = {
 const TransferState = {
   RECEIVED_PREPARE: 'RECEIVED_PREPARE',
   RESERVED: 'RESERVED',
+  RECEIVED: 'RECEIVED',
   RECEIVED_FULFIL: 'RECEIVED_FULFIL',
   COMMITTED: 'COMMITTED',
   FAILED: 'FAILED',
@@ -50,7 +51,8 @@ const transferEventAction = {
   TIMEOUT_RESERVED: 'timeout-reserved',
   REJECT: 'reject',
   FAIL: 'fail',
-  EVENT: 'event'
+  EVENT: 'event',
+  FULFIL: 'fulfil'
 }
 const rejectionType = {
   EXPIRED: 'expired',
@@ -70,17 +72,83 @@ const headers = {
 }
 const topicMap = {
   position: {
+    'commit': {
+      functionality: transferEventType.POSITION,
+      action: transferEventAction.FULFIL
+    },
     'timeout-reserved': {
+      functionality: transferEventType.POSITION,
+      action: transferEventAction.ABORT
+    },
+    'reject': {
       functionality: transferEventType.POSITION,
       action: transferEventAction.ABORT
     }
   },
-  notification: {
+  transfer: {
+    'prepare': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    },
+    'prepare-duplicate': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    },
+    'transfer': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    },
+    'commit': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    },
+    'abort': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    },
     'timeout-received': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    },
+    'timeout-reserved': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    },
+    'reject': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.TRANSFER
+    }
+  },
+  notification: {
+    'prepare': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
     'prepare-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'transfer': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'commit': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'abort': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'timeout-received': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'timeout-reserved': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'reject': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     }
