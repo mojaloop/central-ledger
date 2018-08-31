@@ -243,7 +243,8 @@ const getKafkaConfig = (flow, functionality, action) => {
  * @function updateMessageProtocolMetadata
  *
  * @param {object} messageProtocol - The current messageProtocol from kafka
- * @param {string} metadataType - the action flow. Example: 'prepare'
+ * @param {string} metadataType - the type of flow. Example: 'notification'
+ * @param {string} metadataAction - the action flow. Example: 'prepare'
  * @param {object} state - the state of the message being passed.
  * Example:
  * SUCCESS: {
@@ -254,12 +255,13 @@ const getKafkaConfig = (flow, functionality, action) => {
  *
  * @returns {object} - Returns updated messageProtocol
  */
-const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => {
+const updateMessageProtocolMetadata = (messageProtocol, metadataType, metadataAction, state) => {
   if (!messageProtocol.metadata) {
     messageProtocol.metadata = {
       event: {
         id: Uuid(),
         type: metadataType,
+        action: metadataAction,
         state: state
       }
     }
@@ -267,6 +269,7 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, state) => 
     messageProtocol.metadata.event.responseTo = messageProtocol.metadata.event.id
     messageProtocol.metadata.event.id = Uuid()
     messageProtocol.metadata.event.type = metadataType
+    messageProtocol.metadata.event.action = metadataAction
     messageProtocol.metadata.event.state = state
   }
   return messageProtocol
@@ -430,7 +433,7 @@ const produceGeneralMessage = async (functionality, action, message, state) => {
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, state),
+  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
     createGeneralTopicConf(functionalityMapped, actionMapped),
     getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
 }
