@@ -27,6 +27,7 @@
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
  * Deon Botha <deon.botha@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
 
  --------------
  ******/
@@ -238,15 +239,15 @@ const fulfil = async (error, messages) => {
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        // TODO: message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal, message.value.content.payload.extensionList)
+        message.value.content.payload = Utility.createPrepareErrorStatus(2003, 'Service currently unavailable', message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
-      } else if (Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
+      } else if (!Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::invalidFulfilment`)
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        // TODO: message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal, message.value.content.payload.extensionList)
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeModifiedReq, 'Modified request', message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
@@ -254,7 +255,7 @@ const fulfil = async (error, messages) => {
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        // TODO: message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal, message.value.content.payload.extensionList)
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else if (existingTransfer.expirationDate <= new Date()) {
@@ -262,7 +263,7 @@ const fulfil = async (error, messages) => {
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        // TODO: message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal, message.value.content.payload.extensionList)
+        message.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Transfer expired', message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else { // validations success
@@ -288,7 +289,7 @@ const fulfil = async (error, messages) => {
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
       }
-      // TODO: message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal, message.value.content.payload.extensionList)
+      message.value.content.payload = Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal, message.value.content.payload.extensionList)
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
       return true
     }
