@@ -14,7 +14,7 @@ let participantName
 const TRANSFER = 'transfer'
 const PREPARE = 'prepare'
 const FULFIL = 'fulfil'
-const COMMIT = 'commit'
+// const COMMIT = 'commit'
 const CONSUMER = 'CONSUMER'
 
 const participantTopic = 'topic-testParticipant-transfer-prepare'
@@ -143,9 +143,10 @@ Test('Utility Test', utilityTest => {
   utilityTest.test('updateMessageProtocolMetadata should', updateMessageProtocolMetadataTest => {
     updateMessageProtocolMetadataTest.test('return an updated metadata object in the message protocol', test => {
       const previousEventId = messageProtocol.metadata.event.id
-      const newMessageProtocol = Utility.updateMessageProtocolMetadata(messageProtocol, TRANSFER, Utility.ENUMS.STATE.SUCCESS)
+      const newMessageProtocol = Utility.updateMessageProtocolMetadata(messageProtocol, TRANSFER, PREPARE, Utility.ENUMS.STATE.SUCCESS)
       test.equal(newMessageProtocol.metadata.event.state, Utility.ENUMS.STATE.SUCCESS)
       test.equal(newMessageProtocol.metadata.event.type, TRANSFER)
+      test.equal(newMessageProtocol.metadata.event.action, PREPARE)
       test.equal(newMessageProtocol.metadata.event.responseTo, previousEventId)
       test.end()
     })
@@ -177,7 +178,7 @@ Test('Utility Test', utilityTest => {
 
   utilityTest.test('createTransferMessageProtocol should', createTransferMessageProtocolTest => {
     createTransferMessageProtocolTest.test('return a new messageProtocol', test => {
-      const createdMessageProtocol = Utility.createTransferMessageProtocol(transfer, PREPARE, COMMIT, Utility.ENUMS.STATE.SUCCESS)
+      const createdMessageProtocol = Utility.createTransferMessageProtocol(transfer, PREPARE, PREPARE, Utility.ENUMS.STATE.SUCCESS)
       messageProtocol.metadata.event.type = createdMessageProtocol.metadata.event.type
       createdMessageProtocol.metadata.event.id = messageProtocol.metadata.event.id
       createdMessageProtocol.metadata.event.responseTo = messageProtocol.metadata.event.responseTo

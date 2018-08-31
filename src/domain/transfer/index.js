@@ -113,14 +113,6 @@ const reject = async (transferId, payload) => {
   }
 }
 
-const rejectExpired = () => {
-  // TODO: create/recover findExpired method
-  // const rejections = TransferFacade.findExpired().then(expired => expired.map(x => expire(x.transferId)))
-  // return P.all(rejections).then(rejections => {
-  //   return rejections.map(r => r.transfer.id)
-  // })
-}
-
 const settle = async () => {
   const settlementId = SettlementModel.generateId()
   const settledTransfers = SettlementModel.create(settlementId, 'transfer').then(() => {
@@ -254,7 +246,6 @@ module.exports = {
   prepare,
   fulfil,
   reject,
-  rejectExpired,
   settle,
   saveTransferStateChange,
   expire,

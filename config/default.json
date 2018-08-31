@@ -26,6 +26,11 @@
       "DISABLED": false,
       "TIMEXP": "*/10 * * * * *",
       "TIMEZONE": "UTC"
+    },
+    "TIMEOUT": {
+      "DISABLED": false,
+      "TIMEXP": "*/15 * * * * *",
+      "TIMEZONE": "UTC"
     }
   },
   "EMAIL_USER": "modusboxemailtest@gmail.com",

@@ -355,11 +355,119 @@ const getTransferStateByTransferId = async (id) => {
   }
 }
 
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
+  try {
+    let transactionTimestamp = new Date()
+    const knex = await Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
+          .insert(function () {
+            this.from('transfer AS t')
+              .innerJoin(knex('transferStateChange')
+                .select('transferId')
+                .max('transferStateChangeId AS maxTransferStateChangeId')
+                .where('transferStateChangeId', '>', intervalMin)
+                .andWhere('transferStateChangeId', '<=', intervalMax)
+                .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .whereIn('tsc.transferStateId', [`${Enum.TransferState.RECEIVED_PREPARE}`, `${Enum.TransferState.RESERVED}`])
+              .select('t.transferId', 't.expirationDate')
+          })// .toSQL().sql
+        // console.log('SQL: ' + q)
+
+        await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
+          .insert(function () {
+            this.from('transferTimeout AS tt')
+              .innerJoin(knex('transferStateChange AS tsc1')
+                .select('tsc1.transferId')
+                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .where('tt.expirationDate', '<', transactionTimestamp)
+              .andWhere('tsc.transferStateId', `${Enum.TransferState.RECEIVED_PREPARE}`)
+              .select('tt.transferId', knex.raw('?', Enum.TransferState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
+          })// .toSQL().sql
+        // console.log('SQL: ' + q)
+
+        await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
+          .insert(function () {
+            this.from('transferTimeout AS tt')
+              .innerJoin(knex('transferStateChange AS tsc1')
+                .select('tsc1.transferId')
+                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+              )
+              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .where('tt.expirationDate', '<', transactionTimestamp)
+              .andWhere('tsc.transferStateId', `${Enum.TransferState.RESERVED}`)
+              .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
+          })// .toSQL().sql
+        // console.log('SQL: ' + q)
+
+        if (segmentId === 0) {
+          const segment = {
+            segmentType: 'timeout',
+            enumeration: 0,
+            tableName: 'transferStateChange',
+            value: intervalMax
+          }
+          await knex('segment').transacting(trx).insert(segment)
+        } else {
+          await knex('segment').transacting(trx).where({segmentId}).update({value: intervalMax})
+        }
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    }).catch((err) => {
+      throw err
+    })
+
+    let result = knex('transferTimeout AS tt')
+      .innerJoin(knex('transferStateChange AS tsc1')
+        .select('tsc1.transferId')
+        .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+        .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+        .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+      )
+      .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+      .innerJoin('transferParticipant AS tp1', function () {
+        this.on('tp1.transferId', 'tt.transferId')
+          .andOn('tp1.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYER_DFSP)
+          .andOn('tp1.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      })
+      .innerJoin('transferParticipant AS tp2', function () {
+        this.on('tp2.transferId', 'tt.transferId')
+          .andOn('tp2.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYEE_DFSP)
+          .andOn('tp2.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      })
+      .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
+      .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
+
+      .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
+      .innerJoin('participant AS p2', 'p2.participantId', 'pc2.participantId')
+
+      .where('tt.expirationDate', '<', transactionTimestamp)
+      .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
+        'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
+    return result
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   getById,
   getAll,
   getTransferInfoToChangePosition,
   saveTransferFulfiled,
   saveTransferPrepared,
-  getTransferStateByTransferId
+  getTransferStateByTransferId,
+  timeoutExpireReserved
 }

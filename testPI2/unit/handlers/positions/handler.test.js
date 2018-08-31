@@ -362,7 +362,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: 'REJECT'}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-// messages[0].value.metadata.event.action = transferEventAction.REJECT
+      // messages[0].value.metadata.event.action = transferEventAction.REJECT
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
@@ -479,28 +479,28 @@ Test('Position handler', transferHandlerTest => {
     //   test.end()
     // })
 
-    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
-      try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.createPrepareErrorStatus.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
-        TransferStateChange.saveTransferStateChange.resolves(true)
-        TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'EXPIRED'})
-        // messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
-        // const result = await allTransferHandlers.positions(null, messages)
-        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
-        m.value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
-        const result = await allTransferHandlers.positions(null, [m])
-        Logger.info(result)
-        test.equal(result, true)
-        test.end()
-      } catch (e) {
-        console.log('error thrown' + e)
-        test.fail('Error thrown' + e)
-        test.end()
-      }
-    })
+    // positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
+    //   try {
+    //     await Kafka.Consumer.createHandler(topicName, config, command)
+    //     Utility.transformGeneralTopicName.returns(topicName)
+    //     Utility.createPrepareErrorStatus.returns(topicName)
+    //     Utility.getKafkaConfig.returns(config)
+    //     TransferStateChange.saveTransferStateChange.resolves(true)
+    //     TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'EXPIRED'})
+    //     // messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
+    //     // const result = await allTransferHandlers.positions(null, messages)
+    //     let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+    //     m.value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
+    //     const result = await allTransferHandlers.positions(null, [m])
+    //     Logger.info(result)
+    //     test.equal(result, true)
+    //     test.end()
+    //   } catch (e) {
+    //     console.log('error thrown' + e)
+    //     test.fail('Error thrown' + e)
+    //     test.end()
+    //   }
+    // })
 
     positionsTest.test('Update transferStateChange in the database for TIMEOUT_RESERVED when messages is an array', async (test) => {
       try {
@@ -509,7 +509,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.createPrepareErrorStatus.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
-        TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'EXPIRED'})
+        TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'RESERVED_TIMEOUT'})
         /* messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, messages) */
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
@@ -521,6 +521,28 @@ Test('Position handler', transferHandlerTest => {
       } catch (e) {
         console.log('error thrown' + e)
         test.fail('Error thrown' + e)
+        test.end()
+      }
+    })
+
+    positionsTest.test('TIMEOUT_RESERVED should throw error if the transfer state is not RESERVED_TIMEOUT', async (test) => {
+      try {
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.createPrepareErrorStatus.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
+        TransferStateChange.saveTransferStateChange.resolves(true)
+        TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'INVALID_STATE'})
+        /* messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
+        const result = await allTransferHandlers.positions(null, messages) */
+        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+        m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
+        await allTransferHandlers.positions(null, [m])
+        test.fail('should throw')
+        test.end()
+      } catch (e) {
+        console.log('error thrown' + e)
+        test.pass('Error thrown' + e)
         test.end()
       }
     })

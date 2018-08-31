@@ -80,7 +80,7 @@ const positions = async (error, messages) => {
     Logger.info('PositionHandler::positions')
     let consumer = {}
     let kafkaTopic
-    const payload = message.value.content.payload
+    const payload = message.value.content && message.value.content.payload || {}
     payload.transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
@@ -142,53 +142,31 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
       }
-    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RECEIVED) {
-      Logger.info('PositionHandler::positions::timeoutPrepared')
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-      if (transferInfo.transferStateId !== TransferState.EXPIRED) {
-        Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
-        // TODO: throw Error 2001
-      } else { // transfer state check success
-        const isIncrease = false
-        const transferStateChange = {
-          transferId: transferInfo.transferId,
-          transferStateId: TransferState.ABORTED,
-          reason: 'Client requested to use a transfer that has already expired.'
-        }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
-        let newMessage = Object.assign({}, message)
-        newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Client requested to use a transfer that has already expired.', newMessage.value.content.payload.extensionList)
-        kafkaTopic = Utility.transformAccountToTopicName(newMessage.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
-        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-        // @mdebarros: I am not sure how this code ever worked in the develop branch?
-        // consumer = Kafka.Consumer.getConsumer(
-        //   await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
-        // )
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
-      }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-      if (transferInfo.transferStateId !== TransferState.EXPIRED) {
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
-        // TODO: throw Error 2001
+        // throw Error 2001
+        throw new Error('Internal server error')
       } else { // transfer state check success
         const isIncrease = false
+        const reason = 'Aborted by Position Handler due to expiration'
         const transferStateChange = {
           transferId: transferInfo.transferId,
-          transferStateId: TransferState.ABORTED,
-          reason: 'Client requested to use a transfer that has already expired.'
+          transferStateId: TransferState.EXPIRED_RESERVED,
+          reason
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
         let newMessage = Object.assign({}, message)
-        newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, 'Client requested to use a transfer that has already expired.', newMessage.value.content.payload.extensionList)
+        newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, reason, newMessage.value.content.payload.extensionList)
         kafkaTopic = Utility.transformAccountToTopicName(newMessage.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-        // @mdebarros: I am not sure how this code ever worked in the develop branch?
-        // consumer = Kafka.Consumer.getConsumer(
-        //   await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
-        // )
+        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+          await consumer.commitMessageSync(message)
+        }
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
+        return true
       }
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
       Logger.info('PositionHandler::positions::fail')
