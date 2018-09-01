@@ -8,7 +8,7 @@ const Kafka = require('../../../../src/handlers/lib/kafka')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
-// const FiveBellsCondition = require('five-bells-condition')
+const FiveBellsCondition = require('five-bells-condition')
 const Utility = require('../../../../src/handlers/lib/utility')
 const TransferState = require('../../../../src/lib/enum').TransferState
 const ilp = require('../../../../src/models/transfer/ilpPacket')
@@ -623,10 +623,10 @@ Test('Transfer handler', transferHandlerTest => {
         await Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         TransferService.getById.throws(new Error())
-        // FiveBellsCondition.fulfillmentToCondition.returns('condition')
+        FiveBellsCondition.fulfillmentToCondition.returns('condition')
         ilp.update.returns(P.resolve())
         Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-    
+
         await allTransferHandlers.fulfil(null, fulfilMessages)
         test.fail('No Error Thrown')
         test.end()

@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "3.4.0-snapshot",
+  "version": "3.5.0-snapshot",
   "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "private": true,
@@ -64,6 +64,7 @@
     "@mojaloop/forensic-logging-client": "0.5.1",
     "@now-ims/hapi-now-auth": "1.0.1",
     "argon2": "0.17.1",
+    "base64-url": "^2.2.0",
     "bcrypt": "1.0.3",
     "blipp": "3.0.0",
     "bluebird": "3.5.0",
