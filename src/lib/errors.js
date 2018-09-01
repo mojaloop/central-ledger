@@ -25,9 +25,9 @@
 'use strict'
 
 const error = {
+  2001: 'Internal server error',
   2003: 'Service currently unavailable',
   3100: 'Generic validation error',
-  2001: 'Internal Server Error',
   3303: 'Transfer expired',
   3106: 'Modified request',
   4001: 'Payer FSP has insufficient liquidity to perform the transfer'

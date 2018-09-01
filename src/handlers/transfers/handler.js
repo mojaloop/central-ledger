@@ -53,13 +53,13 @@ const Errors = require('../../lib/errors')
 
 // TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorGenericCode = 3100
-const errorGenericDescription = Errors[errorGenericCode]
+const errorGenericDescription = Errors.getErrorDescription(errorGenericCode)
 const errorModifiedReqCode = 3106
-const errorModifiedReqDescription = Errors[errorModifiedReqCode]
+const errorModifiedReqDescription = Errors.getErrorDescription(errorModifiedReqCode)
 const errorInternalCode = 2001
-const errorInternalDescription = Errors[errorInternalCode]
+const errorInternalDescription = Errors.getErrorDescription(errorInternalCode)
 const errorTransferExpCode = 3303
-const errorTransferExpDescription = Errors[errorTransferExpCode]
+const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
 
 /**
  * @function TransferPrepareHandler
