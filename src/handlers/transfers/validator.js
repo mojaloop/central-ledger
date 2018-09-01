@@ -40,6 +40,7 @@ const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
 const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
+const base64url = require('base64-url')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 
 // const Joi = require('joi')
@@ -99,14 +100,23 @@ const validateAmount = (amount) => {
   return true
 }
 
+// TODO: The following function should be moved into a re-usable common-shared-service at a later point
+// NOTE: This logic is based on v1.0 of the Mojaloop Specification as described in section 6.5.1.2
+const fulfilmentToCondition = (fulfilment) => {
+  var hashSha256 = Crypto.createHash('sha256')
+  // var calculatedCondition = fulfilment // based on 6.5.1.2, the hash should be done on the decoded value as per the next line
+  var calculatedCondition = base64url.decode(fulfilment)
+  calculatedCondition = hashSha256.update(calculatedCondition)
+  calculatedCondition = hashSha256.digest(calculatedCondition).toString('base64')
+  calculatedCondition = base64url.escape(calculatedCondition) // Based on the ML API v1.0 Swagger Regex ^[A-Za-z0-9-_]{43}$ <-- this indicates that the output must be Base64 URL Encoded
+  Logger.debug(`calculatedCondition=${calculatedCondition}`)
+  return calculatedCondition
+}
+
+// TODO: The following function should be moved into a re-usable common-shared-service at a later point
 // NOTE: This logic is based on v1.0 of the Mojaloop Specification as described in section 6.5.1.2
 const validateFulfilCondition = (fulfilment, condition) => {
-  // TODO: The following hashing code should be moved into a re-usable common-shared-service at a later point
-  var hashSha256 = Crypto.createHash('sha256')
-  var calculatedCondition = fulfilment
-  calculatedCondition = hashSha256.update(calculatedCondition)
-  calculatedCondition = hashSha256.digest(calculatedCondition).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
-  Logger.debug(`calculatedCondition=${calculatedCondition}`)
+  var calculatedCondition = fulfilmentToCondition(fulfilment)
   return calculatedCondition === condition
 }
 

@@ -207,6 +207,22 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
+        let fromDateTime = new Date('01-01-1970').toISOString()
+        let toDateTime = new Date().toLocaleString()
+        let result = await Db.settlementWindow.query(builder => {
+          return builder
+            .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
+            .select(
+              'settlementWindow.settlementWindowId',
+              'swsc.settlementWindowStateId as state',
+              'swsc.reason as reason',
+              'settlementWindow.createdDate as createdDate',
+              'swsc.createdDate as changedDate'
+            )
+            .whereRaw(`swsc.settlementWindowStateId = "OPEN" AND settlementWindow.createdDate >= '${fromDateTime}' AND settlementWindow.createdDate <= '${toDateTime}'`)
+            .orderBy('changedDate', 'desc')
+        })
+        transferFulfilmentRecord.settlementWindowId = result[0].settlementWindowId
         await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
         for (let transferExtension of transferExtensions) {
           await knex('transferExtension').transacting(trx).insert(transferExtension)
