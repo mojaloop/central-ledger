@@ -18,26 +18,49 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 
-'use strict'
+/**
+ * @module generateInitialSettlementWindow
+ * @description Seed to create the initial SettlementWindow.
+ ***/
 
-exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('settlementWindowState').then(function (exists) {
-    if (!exists) {
-      return knex.schema.createTable('settlementWindowState', (t) => {
-        t.string('settlementWindowStateId', 50).primary().notNullable()
-        t.string('enumeration', 50).notNullable()
-        t.string('description', 512).defaultTo(null).nullable()
-        t.boolean('isActive').defaultTo(true).notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
-    }
-  })
+const settlementWindowState = 'OPEN'
+
+const initialSettlementWindowReason = 'initial window'
+
+let initialSettlementWindow = {
+  reason: initialSettlementWindowReason
 }
 
-exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('settlementWindowState')
+let initialSettlementWindowStateChange = {
+  settlementWindowId: 1,
+  settlementWindowStateId: settlementWindowState,
+  reason: initialSettlementWindowReason
+
+}
+
+exports.seed = async function (knex) {
+  try {
+    const settlementWindowId = await knex('settlementWindow').insert(initialSettlementWindow)
+    initialSettlementWindowStateChange.settlementWindowId = settlementWindowId
+
+    const settlementWindowStateChangeId = await knex('settlementWindowStateChange').insert(initialSettlementWindowStateChange)
+
+    await knex('settlementWindow')
+      .where('settlementWindowId', '=', settlementWindowId)
+      .update({
+        currentStateChangeId: settlementWindowStateChangeId
+      })
+
+    return true
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return -1001
+    else {
+      console.log(`Uploading seeds for initial settlementWindow has failed with the following error: ${err}`)
+      return -1000
+    }
+  }
 }
