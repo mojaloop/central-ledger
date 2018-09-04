@@ -104,8 +104,8 @@ const validateAmount = (amount) => {
 // NOTE: This logic is based on v1.0 of the Mojaloop Specification as described in section 6.5.1.2
 const fulfilmentToCondition = (fulfilment) => {
   var hashSha256 = Crypto.createHash('sha256')
-  // var calculatedCondition = fulfilment // based on 6.5.1.2, the hash should be done on the decoded value as per the next line
-  var calculatedCondition = base64url.decode(fulfilment)
+  var calculatedCondition = fulfilment // based on 6.5.1.2, the hash should be done on the decoded value as per the next line
+  // var calculatedCondition = base64url.decode(fulfilment) // reverting this change - to be discussed as part of PI3-packaging sprint
   calculatedCondition = hashSha256.update(calculatedCondition)
   calculatedCondition = hashSha256.digest(calculatedCondition).toString('base64')
   calculatedCondition = base64url.escape(calculatedCondition) // Based on the ML API v1.0 Swagger Regex ^[A-Za-z0-9-_]{43}$ <-- this indicates that the output must be Base64 URL Encoded
