@@ -89,7 +89,7 @@ const prepareTestData = async (dataObj) => {
       amount: dataObj.amount.amount
     },
     ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-    condition: 'otTwY9oJKLBrWmLI4h0FEw4ksdZtoAkX3qOVAygUlTI',
+    condition: 'LjdeWbAvm9Qo_3x3kuUkodMo-ENmh-SPnSMDrXuZhsM',
     expiration: dataObj.expiration,
     extensionList: {
       extension: [
@@ -106,7 +106,7 @@ const prepareTestData = async (dataObj) => {
   }
 
   const fulfil = {
-    fulfilment: 'uU0nuZNNPgilLlLX2n2r-sSE7-N6U4DukIj3rOLvzek',
+    fulfilment: '9cvK2DW9xNxF1GbiBBdXbjX-LrJzC7EkiZkyycDnoNM',
     completedTimestamp: dataObj.now,
     transferState: 'COMMITTED',
     extensionList: {
