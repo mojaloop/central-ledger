@@ -44,6 +44,12 @@ let initialSettlementWindowStateChange = {
 
 exports.seed = async function (knex) {
   try {
+/*    const settlementWindowStateChangeList = await knex ('settlementWindow')
+      .join('settlementWindowStateChange', 'settlementWindowStateChange.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
+      .where('settlementWindowStateChange.settlementWindowStateId', '=', 'settlementWindow.settlementWindowState')
+    console.log(`initial settlementWindow excuted: ${settlementWindowStateChangeList}`)
+    if(settlementWindowStateChangeList === 0)
+*/
     const settlementWindowId = await knex('settlementWindow').insert(initialSettlementWindow)
     initialSettlementWindowStateChange.settlementWindowId = settlementWindowId
 
