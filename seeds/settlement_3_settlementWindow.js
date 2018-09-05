@@ -47,19 +47,16 @@ exports.seed = async function (knex) {
     const settlementWindowStateChangeList = await knex('settlementWindow').select('*')
       .leftJoin('settlementWindowStateChange', 'settlementWindowStateChange.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
       .where('settlementWindowStateChange.settlementWindowStateId', '=', settlementWindowState)
-      if (settlementWindowStateChangeList.length < 1) {
+    if (settlementWindowStateChangeList.length < 1) {
       const settlementWindowId = await knex('settlementWindow').insert(initialSettlementWindow)
       initialSettlementWindowStateChange.settlementWindowId = settlementWindowId
-
       const settlementWindowStateChangeId = await knex('settlementWindowStateChange').insert(initialSettlementWindowStateChange)
-
       await knex('settlementWindow')
-      .where('settlementWindowId', '=', settlementWindowId)
-      .update({
-        currentStateChangeId: settlementWindowStateChangeId
-      })
+        .where('settlementWindowId', '=', settlementWindowId)
+        .update({
+          currentStateChangeId: settlementWindowStateChangeId
+        })
     }
-
     return true
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return -1001
