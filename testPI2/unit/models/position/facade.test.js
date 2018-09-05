@@ -683,7 +683,6 @@ Test('Position facade', async (positionFacadeTest) => {
     }
   })
 
-
   await positionFacadeTest.test('getByNameAndCurrency should throw error', async (test) => {
     try {
       const participantName = 'fsp1'
