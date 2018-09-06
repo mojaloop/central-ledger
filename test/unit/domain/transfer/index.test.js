@@ -163,25 +163,25 @@ Test('Transfer Service tests', serviceTest => {
     getFulfilmentTest.end()
   })
 
-  serviceTest.test('rejectExpired should', rejectTest => {
-    rejectTest.test('find expired transfers and reject them', test => {
-      const transfers = [{ transferId: 1 }, { transferId: 2 }]
-      TransferService.findExpired.returns(P.resolve(transfers))
-      transfers.forEach((x, i) => {
-        // Commands.reject.onCall(i).returns(P.resolve({ alreadyRejected: false, transfer: x }))
-        TransferObjectTransform.toTransfer.onCall(i).returns({ id: x.transferId })
-      })
-      Service.rejectExpired()
-        .then(x => {
-          transfers.forEach(t => {
-            // test.ok(Commands.reject.calledWith({ id: t.transferId, rejection_reason: RejectionType.EXPIRED }))
-          })
-          test.deepEqual(x, transfers.map(t => t.transferId))
-          test.end()
-        })
-    })
-    rejectTest.end()
-  })
+  // serviceTest.test('rejectExpired should', rejectTest => {
+  //   rejectTest.test('find expired transfers and reject them', test => {
+  //     const transfers = [{ transferId: 1 }, { transferId: 2 }]
+  //     TransferService.findExpired.returns(P.resolve(transfers))
+  //     transfers.forEach((x, i) => {
+  //       // Commands.reject.onCall(i).returns(P.resolve({ alreadyRejected: false, transfer: x }))
+  //       TransferObjectTransform.toTransfer.onCall(i).returns({ id: x.transferId })
+  //     })
+  //     Service.rejectExpired()
+  //       .then(x => {
+  //         transfers.forEach(t => {
+  //           // test.ok(Commands.reject.calledWith({ id: t.transferId, rejection_reason: RejectionType.EXPIRED }))
+  //         })
+  //         test.deepEqual(x, transfers.map(t => t.transferId))
+  //         test.end()
+  //       })
+  //   })
+  //   rejectTest.end()
+  // })
 
   serviceTest.test('settle should', settleTest => {
     settleTest.test('find settalble transfers and settle them', test => {

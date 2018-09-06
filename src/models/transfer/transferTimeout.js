@@ -17,10 +17,8 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
+
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 
@@ -28,68 +26,39 @@
 
 const Db = require('../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Enum = require('../../lib/enum')
+const TS = Enum.TransferState
 
-const saveTransferStateChange = async (stateChange) => {
-  Logger.debug('save transferStateChange' + stateChange.toString())
+const cleanup = async () => {
+  Logger.debug('cleanup transferTimeout')
   try {
-    return await Db.transferStateChange.insert(stateChange)
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferId = async (id) => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
-        .where({'transferStateChange.transferId': id})
-        .select('transferStateChange.*')
-        .orderBy('transferStateChangeId', 'desc')
-        .first()
-      return result
+    const knex = await Db.getKnex()
+    const ttIdList = await Db.transferTimeout.query(async (builder) => {
+      let b = await builder
+        .whereIn('tsc.transferStateId', [`${TS.RECEIVED_FULFIL}`, `${TS.COMMITTED}`, `${TS.FAILED}`, `${TS.RESERVED_TIMEOUT}`,
+          `${TS.REJECTED}`, `${TS.EXPIRED_PREPARED}`, `${TS.EXPIRED_RESERVED}`, `${TS.ABORTED}`])
+        .innerJoin(knex('transferTimeout AS tt1')
+          .innerJoin('transferStateChange AS tsc1', 'tsc1.transferId', 'tt1.transferId')
+          .select('tsc1.transferId')
+          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+          .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'transferTimeout.transferId'
+        )
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+        .select('transferTimeout.transferTimeoutId')
+      return b
     })
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferIdList = async (transfersIdList) => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
-        .whereIn('transferStateChange.transferId', transfersIdList)
-      return result
+    await Db.transferTimeout.query(async (builder) => {
+      let b = await builder
+        .whereIn('transferTimeout.transferTimeoutId', ttIdList.map(elem => elem.transferTimeoutId))
+        .del()
+      return b
     })
-  } catch (err) {
-    throw (err)
-  }
-}
-
-const getLatest = async () => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
-      return builder
-        .select('transferStateChangeId')
-        .orderBy('transferStateChangeId', 'desc')
-        .first()
-    })
-  } catch (err) {
-    throw err
-  }
-}
-
-const truncate = async (id) => {
-  try {
-    return await Db.transferStateChange.truncate()
+    return ttIdList
   } catch (err) {
     throw err
   }
 }
 
 module.exports = {
-  saveTransferStateChange,
-  getByTransferId,
-  getByTransferIdList,
-  getLatest,
-  truncate
+  cleanup
 }

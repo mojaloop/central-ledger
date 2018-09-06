@@ -78,7 +78,7 @@ const createServer = (port, modules) => {
  * @returns {Promise<boolean>} Returns true if Handlers were registered
  */
 const createHandlers = async (handlers) => {
-  let registerdHandlers = {
+  let registeredHandlers = {
     connection: {},
     register: {},
     ext: {},
@@ -111,9 +111,9 @@ const createHandlers = async (handlers) => {
         case 'fulfil':
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
-        // case 'reject':
-        //   await RegisterHandlers.transfers.registerRejectHandler()
-        //   break
+        case 'timeout':
+          await RegisterHandlers.timeouts.registerTimeoutHandler()
+          break
         default:
           var error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
@@ -122,7 +122,7 @@ const createHandlers = async (handlers) => {
     }
   }
 
-  return registerdHandlers
+  return registeredHandlers
 }
 
 /**

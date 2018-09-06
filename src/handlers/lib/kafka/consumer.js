@@ -62,7 +62,7 @@ const createHandler = async (topicName, config, command) => {
     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
     await consumer.consume(command)
     if (Array.isArray(topicName)) {
-      for (let topic of topicName) {  // NOT OK
+      for (let topic of topicName) { // NOT OK
         listOfConsumers[topic] = {
           consumer: consumer,
           autoCommitEnabled: autoCommitEnabled

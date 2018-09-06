@@ -65,7 +65,6 @@ Test('setup', setupTest => {
     CronJobStubClassDestroySpy = sandbox.stub().returns(P.resolve())
 
     class CronJobStubClass {
-
       constructor (opts) {
         this.opts = opts
         // opts.onTick()

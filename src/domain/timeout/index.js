@@ -24,20 +24,39 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('settlementWindowState').then(function (exists) {
-    if (!exists) {
-      return knex.schema.createTable('settlementWindowState', (t) => {
-        t.string('settlementWindowStateId', 50).primary().notNullable()
-        t.string('enumeration', 50).notNullable()
-        t.string('description', 512).defaultTo(null).nullable()
-        t.boolean('isActive').defaultTo(true).notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
-    }
-  })
+/**
+ * @module src/domain/timeout/
+ */
+
+const SegmentModel = require('../../models/misc/segment')
+const TransferTimeoutModel = require('../../models/transfer/transferTimeout')
+const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
+const TransferFacade = require('../../models/transfer/facade')
+
+const getTimeoutSegment = async () => {
+  const params = {
+    segmentType: 'timeout',
+    enumeration: 0,
+    tableName: 'transferStateChange'
+  }
+  return await SegmentModel.getByParams(params)
 }
 
-exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('settlementWindowState')
+const cleanupTransferTimeout = async () => {
+  return await TransferTimeoutModel.cleanup()
+}
+
+const getLatestTransferStateChange = async () => {
+  return await TransferStateChangeModel.getLatest()
+}
+
+const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
+  return await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+}
+
+module.exports = {
+  getTimeoutSegment,
+  cleanupTransferTimeout,
+  getLatestTransferStateChange,
+  timeoutExpireReserved
 }

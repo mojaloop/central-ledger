@@ -49,7 +49,7 @@ let jobList = {}
  */
 const registerNewPrepareHandlersTask = async () => {
   let handlerType = 'prepare'
-  Logger.info(`lib.Kafka.Cron.registerNewHandlers running task for handlerType: ${handlerType}...`)
+  Logger.debug(`lib.Kafka.Cron.registerNewHandlers running task for handlerType: ${handlerType}...`)
   let participantNamesList = null
 
   try {
@@ -89,7 +89,7 @@ const registerNewPrepareHandlersTask = async () => {
  */
 const registerNewPositionHandlersTask = async () => {
   let handlerType = 'position'
-  Logger.info(`lib.Kafka.Cron.registerNewHandlers running task for handlerType: ${handlerType}...`)
+  Logger.debug(`lib.Kafka.Cron.registerNewHandlers running task for handlerType: ${handlerType}...`)
   let participantNamesList = null
 
   try {

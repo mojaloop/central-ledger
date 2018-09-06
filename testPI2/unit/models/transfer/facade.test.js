@@ -74,6 +74,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
     Db.transferStateChange = {
       query: sandbox.stub()
     }
+    Db.settlementWindow = {
+      query: sandbox.stub()
+    }
     clock = Sinon.useFakeTimers(now.getTime())
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
     t.end()
@@ -466,7 +469,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const stateReason = null
       let hasPassedValidation = null
       const saveTransferFulfiledExecuted = true
-      const transferFulfilmentRecord = { transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: now, isValid: true, createdDate: now }
+      const transferFulfilmentRecord = { transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: now, isValid: true, createdDate: now, settlementWindowId: 1 }
       const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: now }
       let transferExtensionRecords = transferExtensions.map(ext => {
         return {
@@ -486,6 +489,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           isCommit = true
           hasPassedValidation = true
+          let record = [{settlementWindowId: 1}]
           transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_FULFIL
 
           sandbox.stub(Db, 'getKnex')
@@ -494,6 +498,26 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           Db.getKnex.returns(knexStub)
+
+          let builderStub = sandbox.stub()
+          let selectStub = sandbox.stub()
+          let whereRawStub = sandbox.stub()
+          let orderByStub = sandbox.stub()
+          let firstStub = sandbox.stub()
+
+          builderStub.leftJoin = sandbox.stub()
+          Db.settlementWindow.query.callsArgWith(0, builderStub)
+          Db.settlementWindow.query.returns(record)
+
+          builderStub.leftJoin.returns({
+            select: selectStub.returns({
+              whereRaw: whereRawStub.returns({
+                orderBy: orderByStub.returns({
+                  first: firstStub.returns(record)
+                })
+              })
+            })
+          })
 
           const transactingStub = sandbox.stub()
           const insertStub = sandbox.stub()
@@ -526,6 +550,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           isCommit = false
           hasPassedValidation = true
+          let record = [{settlementWindowId: 1}]
           transferStateChangeRecord.transferStateId = Enum.TransferState.REJECTED
 
           sandbox.stub(Db, 'getKnex')
@@ -534,6 +559,26 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           Db.getKnex.returns(knexStub)
+
+          let builderStub = sandbox.stub()
+          let selectStub = sandbox.stub()
+          let whereRawStub = sandbox.stub()
+          let orderByStub = sandbox.stub()
+          let firstStub = sandbox.stub()
+
+          builderStub.leftJoin = sandbox.stub()
+          Db.settlementWindow.query.callsArgWith(0, builderStub)
+          Db.settlementWindow.query.returns(record)
+
+          builderStub.leftJoin.returns({
+            select: selectStub.returns({
+              whereRaw: whereRawStub.returns({
+                orderBy: orderByStub.returns({
+                  first: firstStub.returns(record)
+                })
+              })
+            })
+          })
 
           const transactingStub = sandbox.stub()
           const insertStub = sandbox.stub()
@@ -565,6 +610,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await saveTransferFulfiled.test('return transfer in ABORTED state', async (test) => {
         try {
           hasPassedValidation = false
+          let record = [{settlementWindowId: 1}]
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
 
           sandbox.stub(Db, 'getKnex')
@@ -573,6 +619,26 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const knexStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
           Db.getKnex.returns(knexStub)
+
+          let builderStub = sandbox.stub()
+          let selectStub = sandbox.stub()
+          let whereRawStub = sandbox.stub()
+          let orderByStub = sandbox.stub()
+          let firstStub = sandbox.stub()
+
+          builderStub.leftJoin = sandbox.stub()
+          Db.settlementWindow.query.callsArgWith(0, builderStub)
+          Db.settlementWindow.query.returns(record)
+
+          builderStub.leftJoin.returns({
+            select: selectStub.returns({
+              whereRaw: whereRawStub.returns({
+                orderBy: orderByStub.returns({
+                  first: firstStub.returns(record)
+                })
+              })
+            })
+          })
 
           const transactingStub = sandbox.stub()
           const insertStub = sandbox.stub()
