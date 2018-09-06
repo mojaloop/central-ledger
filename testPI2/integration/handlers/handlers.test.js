@@ -48,7 +48,7 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
 const debug = false
-const delay = 6000 // milliseconds
+const delay = 8000 // milliseconds
 let testData = {
   amount: {
     currency: 'USD',
@@ -352,8 +352,10 @@ Test('Handlers test', async handlersTest => {
         test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
         test.end()
 
-        let elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
-        console.log(`handlers.test.js finished in (${elapsedTime}s)`)
+        if (debug) {
+          let elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
+          console.log(`handlers.test.js finished in (${elapsedTime}s)`)
+        }
       }, delay * 2)
     })
 
