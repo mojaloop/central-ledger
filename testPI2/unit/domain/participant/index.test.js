@@ -1173,7 +1173,15 @@ Test('Participant service', async (participantTest) => {
       }
       const participantName = 'fsp1'
       const query = { currency: 'USD' }
-
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(participant)
       PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
@@ -1193,7 +1201,15 @@ Test('Participant service', async (participantTest) => {
       const expected = {}
       const participantName = 'fsp1'
       const query = { currency: 'USD' }
-
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(participant)
       PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
@@ -1234,7 +1250,15 @@ Test('Participant service', async (participantTest) => {
         }
       ]
       const participantName = 'fsp1'
-
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantModel.getByName.withArgs(participantName).returns(participant)
       PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, {})
@@ -1253,7 +1277,15 @@ Test('Participant service', async (participantTest) => {
 
       const expected = []
       const participantName = 'fsp1'
-
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantModel.getByName.withArgs(participantName).returns(participant)
       PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, {})
