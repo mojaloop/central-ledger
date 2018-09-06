@@ -479,7 +479,7 @@ const getPositions = async (name, query) => {
       return position
     } else {
       const participant = await ParticipantModel.getByName(name)
-      participantExists(participant) 
+      participantExists(participant)
       const result = await await PositionFacade.getByNameAndCurrency(name)
       let positions = []
       if (Array.isArray(result) && result.length > 0) {
