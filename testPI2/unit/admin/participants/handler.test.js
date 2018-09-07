@@ -658,6 +658,104 @@ Test('Participant Handler', participantHandlerTest => {
       }
     })
 
+    handlerTest.test('getPositions should return the participant position for given participant name and currency', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD'
+      }
+      const expected = {
+        currency: 'USD',
+        value: 1000,
+        updatedTime: '2018-08-14T04:01:55.000Z'
+      }
+      const positionReturn = {
+        currency: 'USD',
+        value: 1000,
+        updatedTime: '2018-08-14T04:01:55.000Z'
+      }
+      Participant.getPositions.withArgs(params.name, query).returns(P.resolve(positionReturn))
+      const result = await Handler.getPositions(createRequest({ params, query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getPositions should return the participant positions for given participant name and all currencies if currency is not provided', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+
+      const expected = [
+        {
+          currency: 'USD',
+          value: 0,
+          updatedTime: '2018-08-14T04:01:55.000Z'
+        },
+        {
+          currency: 'EUR',
+          value: 200,
+          updatedTime: '2018-08-14T15:15:44.000Z'
+        },
+        {
+          currency: 'ZAR',
+          value: 200,
+          updatedTime: '2018-08-14T15:33:27.000Z'
+        },
+        {
+          currency: 'INR',
+          value: 200.75,
+          updatedTime: '2018-08-14T15:34:16.000Z'
+        }
+      ]
+      const positionReturn = [
+        {
+          currency: 'USD',
+          value: 0,
+          updatedTime: '2018-08-14T04:01:55.000Z'
+        },
+        {
+          currency: 'EUR',
+          value: 200,
+          updatedTime: '2018-08-14T15:15:44.000Z'
+        },
+        {
+          currency: 'ZAR',
+          value: 200,
+          updatedTime: '2018-08-14T15:33:27.000Z'
+        },
+        {
+          currency: 'INR',
+          value: 200.75,
+          updatedTime: '2018-08-14T15:34:16.000Z'
+        }
+      ]
+
+      Participant.getPositions.withArgs(params.name, {}).returns(P.resolve(positionReturn))
+      const result = await Handler.getPositions(createRequest({ params }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getPositions should throw error', async function (test) {
+      const params = {
+        name: 'invalid'
+      }
+      const query = {
+        currency: 'USD'
+      }
+
+      Participant.getPositions.withArgs(params.name, query).throws(new Error())
+
+      try {
+        await Handler.getPositions(createRequest({ params, query }))
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
     handlerTest.end()
   })
 
