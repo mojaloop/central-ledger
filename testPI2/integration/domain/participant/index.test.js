@@ -88,7 +88,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getByName', async (assert) => {
     try {
       participantFixtures.forEach(async participant => {
-        var result = await Service.getByName(participant.name)
+        let result = await Service.getByName(participant.name)
         assert.equal(result.name, participant.name, 'names are equal')
         assert.deepEqual(result.currencyList, participant.currencyList, 'currencies match')
         assert.equal(result.isActive, participant.isActive, 'isActive flag matches')
@@ -152,7 +152,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getEndpoint', async (assert) => {
     try {
       endpointsFixtures.forEach(async endpoint => {
-        var result = await Service.getEndpoint(participantFixtures[0].name, endpoint.type)
+        let result = await Service.getEndpoint(participantFixtures[0].name, endpoint.type)
         assert.equal(result[0].name, endpoint.type, 'endpoint types are equal')
         assert.equal(result[0].value, endpoint.value, 'endpoint values match')
         assert.equal(result[0].isActive, 1, 'isActive flag match')
@@ -167,7 +167,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAllEndpoints', async (assert) => {
     try {
-      var result = await Service.getAllEndpoints(participantFixtures[0].name)
+      const result = await Service.getAllEndpoints(participantFixtures[0].name)
       assert.comment('First endpoint')
       assert.equal(result[0].name, endpointsFixtures[0].type, 'endpoint types are equal')
       assert.equal(result[0].value, endpointsFixtures[0].value, 'endpoint values match')
@@ -200,7 +200,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('add participant limit and initial position', async (assert) => {
     try {
-      let result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[0].name, {limit: {value: 30}})
+      let result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[0].name, { limit: { value: 30 } })
       assert.ok(result, `addLimitAndInitialPosition successful for Participant: ${participantFixtures[0].name}`)
       assert.end()
     } catch (err) {
@@ -213,13 +213,26 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('update limits', async (assert) => {
     try {
-      let result = await ParticipantLimitHelper.adjustLimits(participantFixtures[0].name, {limit: {value: 50}})
+      let result = await ParticipantLimitHelper.adjustLimits(participantFixtures[0].name, { limit: { value: 50 } })
       assert.ok(result, `adjustLimits successful for Participant: ${participantFixtures[0].name}`)
       assert.equal(result.participantLimit.value, 50, 'The limits updated successfully')
       assert.end()
     } catch (err) {
       console.log(err)
       Logger.error(`update participant limit failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('get participant position', async (assert) => {
+    try {
+      const result = await Service.getPositions(participantFixtures[0].name, participantFixtures[0].currencyList[0].currencyId)
+      assert.equal(result[0].currency, participantFixtures[0].currencyList[0].currencyId, 'currencies are equal')
+      assert.equal(result[0].value, 0, 'position value match')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get positions failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
