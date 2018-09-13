@@ -26,7 +26,7 @@ module.exports = [{
         ledger: Joi.string().uri().required().description('Ledger of transfer'),
         debits: Joi.array().items(Joi.object().keys({
           participant: Joi.string().uri().required().description('Debit participant of the transfer'),
-          amount: Joi.number().required().description('Debit amount of the transfer'),
+          amount: Joi.number().positive().required().description('Debit amount of the transfer'),
           memo: Joi.object().optional().unknown().description('Additional information related to the debit'),
           authorized: Joi.boolean().optional().description('Indicates whether debit has been authorized by participant holder')
         })).required().description('Debits of the transfer'),
