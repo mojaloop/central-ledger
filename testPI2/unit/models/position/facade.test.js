@@ -43,6 +43,10 @@ Test('Position facade', async (positionFacadeTest) => {
       query: sandbox.stub()
     }
     clock = Sinon.useFakeTimers(now.getTime())
+
+    Db.participantPosition = {
+      query: sandbox.stub()
+    }
     t.end()
   })
 
@@ -295,7 +299,7 @@ Test('Position facade', async (positionFacadeTest) => {
             currencyId: 'USD',
             isActive: 1
           })
-          let {preparedMessagesList, limitAlarms} = await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          let { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
@@ -354,7 +358,7 @@ Test('Position facade', async (positionFacadeTest) => {
             currencyId: 'USD',
             isActive: 1
           })
-          let {preparedMessagesList, limitAlarms} = await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          let { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
@@ -413,7 +417,7 @@ Test('Position facade', async (positionFacadeTest) => {
             currencyId: 'USD',
             isActive: 1
           })
-          let {preparedMessagesList, limitAlarms} = await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          let { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
@@ -440,7 +444,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           knexStub.throws(new Error())
 
-          await ModelPosition.prepareChangeParticipantPositionTransaction([{value: messageProtocol}])
+          await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.fail('error not thrown')
           test.end()
         } catch (err) {
@@ -586,6 +590,114 @@ Test('Position facade', async (positionFacadeTest) => {
       Logger.error(`changeParticipantPositionTransaction failed with error - ${err}`)
       changeParticipantPositionTransaction.fail()
       await changeParticipantPositionTransaction.end()
+    }
+  })
+
+  await positionFacadeTest.test('getByNameAndCurrency should return the participant position for given currency', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      const currencyId = 'USD'
+      let builderStub = sandbox.stub()
+
+      const participantPosition = [
+        {
+          participantPostionId: 1,
+          participantCurrancyId: 1,
+          value: 1000,
+          reservedValue: 0.0,
+          changedDate: new Date()
+        }
+      ]
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantPosition.query.callsArgWith(0, builderStub)
+
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            where: sandbox.stub().callsArgWith(0, whereStub).returns({
+              select: sandbox.stub().returns(participantPosition)
+            })
+          })
+        })
+      })
+
+      let found = await ModelPosition.getByNameAndCurrency(participantName, currencyId)
+      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
+
+      test.end()
+    } catch (err) {
+      Logger.error(`getByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionFacadeTest.test('getByNameAndCurrency should return the participant positions for all currencies', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      let builderStub = sandbox.stub()
+
+      const participantPosition = [
+        {
+          participantPostionId: 1,
+          participantCurrancyId: 1,
+          value: 1000,
+          reservedValue: 0.0,
+          changedDate: new Date()
+        },
+        {
+          participantPostionId: 2,
+          participantCurrancyId: 3,
+          value: 2000,
+          reservedValue: 0.0,
+          changedDate: new Date()
+        }
+      ]
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantPosition.query.callsArgWith(0, builderStub)
+
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            where: sandbox.stub().callsArgWith(0, whereStub).returns({
+              select: sandbox.stub().returns(participantPosition)
+            })
+          })
+        })
+      })
+
+      let found = await ModelPosition.getByNameAndCurrency(participantName)
+      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
+
+      test.end()
+    } catch (err) {
+      Logger.error(`getByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionFacadeTest.test('getByNameAndCurrency should throw error', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      const currencyId = 'USD'
+
+      Db.participantPosition.query.throws(new Error())
+
+      await ModelPosition.getByNameAndCurrency(participantName, currencyId)
+      test.fail(' should throw')
+      test.end()
+      test.end()
+    } catch (err) {
+      Logger.error(`getByNameAndCurrency failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
     }
   })
 

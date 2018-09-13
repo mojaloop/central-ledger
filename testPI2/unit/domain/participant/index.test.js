@@ -35,6 +35,7 @@ const ParticipantCurrencyModel = require('../../../../src/models/participant/par
 const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
+const PositionFacade = require('../../../../src/models/position/facade')
 const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
 
@@ -147,6 +148,8 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantPositionModel, 'destroyByParticipantCurrencyId')
 
     sandbox.stub(ParticipantPositionChangeModel, 'getByParticipantPositionId')
+
+    sandbox.stub(PositionFacade, 'getByNameAndCurrency')
 
     Db.participant = {
       insert: sandbox.stub(),
@@ -1145,12 +1148,168 @@ Test('Participant service', async (participantTest) => {
     ParticipantModel.getByName.withArgs(participant.name).returns(participant)
     ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId).throws(new Error())
     try {
-      await await Service.getLimits(participant.name, {})
+      await Service.getLimits(participant.name, {})
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
     }
     assert.end()
   })
+
+  await participantTest.test('getPositions should return the position for given participant name and currency', async (assert) => {
+    try {
+      const positionReturn = [
+        {
+          currencyId: 'USD',
+          value: 1000,
+          changedDate: '2018-08-14T04:01:55.000Z'
+        }
+      ]
+
+      const expected = {
+        currency: 'USD',
+        value: 1000,
+        updatedTime: '2018-08-14T04:01:55.000Z'
+      }
+      const participantName = 'fsp1'
+      const query = { currency: 'USD' }
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(participant)
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(positionReturn))
+
+      const result = await Service.getPositions(participantName, query)
+      assert.deepEqual(result, expected, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getPositions should return the empty object is no position defined for the currency', async (assert) => {
+    try {
+      const positionReturn = []
+
+      const expected = {}
+      const participantName = 'fsp1'
+      const query = { currency: 'USD' }
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(participant)
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(positionReturn))
+
+      const result = await Service.getPositions(participantName, query)
+      assert.deepEqual(result, expected, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getPositions should return the position for given participant name and for all currencies', async (assert) => {
+    try {
+      const positionReturn = [
+        {
+          currencyId: 'USD',
+          value: 1000,
+          changedDate: '2018-08-14T04:01:55.000Z'
+        },
+        {
+          currencyId: 'EUR',
+          value: 2000,
+          changedDate: '2018-08-14T04:01:55.000Z'
+        }
+      ]
+
+      const expected = [
+        {
+          currency: 'USD',
+          value: 1000,
+          updatedTime: '2018-08-14T04:01:55.000Z'
+        },
+        {
+          currency: 'EUR',
+          value: 2000,
+          updatedTime: '2018-08-14T04:01:55.000Z'
+        }
+      ]
+      const participantName = 'fsp1'
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
+
+      const result = await Service.getPositions(participantName, {})
+      assert.deepEqual(result, expected, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getPositions should return [] if no positions exists and currency is not passed', async (assert) => {
+    try {
+      const positionReturn = []
+
+      const expected = []
+      const participantName = 'fsp1'
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
+
+      const result = await Service.getPositions(participantName, {})
+      assert.deepEqual(result, expected, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+  await participantTest.test('getPositions should throw error', async (assert) => {
+    const participantName = 'fsp1'
+    const query = { currency: 'USD' }
+
+    PositionFacade.getByNameAndCurrency.withArgs(participantName).throws(new Error())
+    try {
+      await Service.getPositions(participantName, query)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
   await participantTest.end()
 })

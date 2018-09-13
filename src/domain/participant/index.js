@@ -465,6 +465,8 @@ const adjustLimits = async (name, payload) => {
 const getPositions = async (name, query) => {
   try {
     if (query.currency) {
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency)
+      participantExists(participant)
       const result = await PositionFacade.getByNameAndCurrency(name, query.currency)
       let position = {}
       if (Array.isArray(result) && result.length > 0) {
@@ -476,6 +478,8 @@ const getPositions = async (name, query) => {
       }
       return position
     } else {
+      const participant = await ParticipantModel.getByName(name)
+      participantExists(participant)
       const result = await await PositionFacade.getByNameAndCurrency(name)
       let positions = []
       if (Array.isArray(result) && result.length > 0) {
