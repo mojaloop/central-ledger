@@ -24,7 +24,7 @@
 
 /**
  * @module generateInitialSettlementWindow
- * @description Seed to create the initial SettlementWindow.
+ * @description Seed to create the initial SettlementWindow
  ***/
 
 const settlementWindowState = 'OPEN'
@@ -44,9 +44,9 @@ let initialSettlementWindowStateChange = {
 
 exports.seed = async function (knex) {
   try {
-    const settlementWindowStateChangeList = await knex('settlementWindow').select('*')
-      .leftJoin('settlementWindowStateChange', 'settlementWindowStateChange.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
-      .where('settlementWindowStateChange.settlementWindowStateId', '=', settlementWindowState)
+    const settlementWindowStateChangeList = await knex('settlementWindow AS sw').select('*')
+      .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'sw.currentStateChangeId')
+      .where('swsc.settlementWindowStateId', '=', settlementWindowState)
     if (settlementWindowStateChangeList.length < 1) {
       const settlementWindowId = await knex('settlementWindow').insert(initialSettlementWindow)
       initialSettlementWindowStateChange.settlementWindowId = settlementWindowId

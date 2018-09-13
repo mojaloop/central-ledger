@@ -48,7 +48,7 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
 const debug = false
-const delay = 20000 // milliseconds
+const delay = 8000 // milliseconds
 let testData = {
   amount: {
     currency: 'USD',
@@ -186,7 +186,7 @@ const prepareTestData = async (dataObj) => {
   const participantNames = participants.map(p => p.name)
   await Handlers.transfers.registerPrepareHandlers(participantNames)
   await Handlers.positions.registerPositionHandlers(participantNames)
-  sleep(delay, debug, 'prepareTestData', 'awaiting registration of participant handlers')
+  sleep(delay / 2, debug, 'prepareTestData', 'awaiting registration of participant handlers')
 
   return {
     transfer,
@@ -206,12 +206,13 @@ const prepareTestData = async (dataObj) => {
 }
 
 Test('Handlers test', async handlersTest => {
+  let startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test(`setup handlers`, async (test) => {
       await Db.connect(Config.DATABASE_URI)
       await Handlers.transfers.registerFulfilHandler()
       await Handlers.transfers.registerTransferHandler()
-      sleep(delay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
+      sleep(delay * 2, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
       test.pass('done')
       test.end()
     })
@@ -343,14 +344,19 @@ Test('Handlers test', async handlersTest => {
 
       const producerResponse = await Producer.produceMessage(td.messageProtocol, td.topicConfTransferPrepare, config)
       if (debug) {
-        console.log(`(transferFulfilReject) awaiting TransferPrepare consumer processing: timeout ${delay / 1000}s..`)
+        console.log(`(transferFulfilReject) awaiting TransferPrepare consumer processing: timeout ${delay * 2 / 1000}s..`)
       }
       setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
         test.end()
-      }, delay)
+
+        if (debug) {
+          let elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
+          console.log(`handlers.test.js finished in (${elapsedTime}s)`)
+        }
+      }, delay * 2)
     })
 
     transferPrepareExceedLimit.end()
@@ -360,6 +366,5 @@ Test('Handlers test', async handlersTest => {
 })
 
 Test.onFinish(async () => {
-  // await Producer.disconnect(topicConfTransferPrepare.topicName)
   process.exit(0)
 })
