@@ -107,7 +107,7 @@ const fulfilmentToCondition = (fulfilment) => {
   var preimage = base64url.toBuffer(fulfilment)
 
   if (preimage.length !== 32) {
-    throw new Error('Interledger preimages must be exactly 32 bytes.')
+    throw new Error('Interledger preimages must be exactly 32 bytes')
   }
 
   var calculatedConditionDigest = hashSha256.update(preimage).digest('base64')
@@ -126,7 +126,7 @@ const validateFulfilCondition = (fulfilment, condition) => {
 
 const validateConditionAndExpiration = async (payload) => {
   if (!payload.condition) {
-    reasons.push('condition is required for a conditional transfer')
+    reasons.push('Condition is required for a conditional transfer')
     return false
   }
   try {
@@ -138,11 +138,11 @@ const validateConditionAndExpiration = async (payload) => {
   }
   if (payload.expiration) {
     if (Date.parse(payload.expiration) < Date.parse(new Date().toDateString())) {
-      reasons.push(`expiration date: ${new Date(payload.expiration.toString()).toISOString()} has already expired.`)
+      reasons.push(`Expiration date ${new Date(payload.expiration.toString()).toISOString()} is already in the past`)
       return false
     }
   } else {
-    reasons.push('expiration: required for conditional transfer')
+    reasons.push('Expiration is required for conditional transfer')
     return false
   }
   return true
