@@ -22,3 +22,4 @@ echo "Destroying ${DB_ID}"
 
 docker stop $DB_ID
 docker rm $DB_ID
+docker volume rm ${DB_ID}data
