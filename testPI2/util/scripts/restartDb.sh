@@ -30,7 +30,7 @@ docker run -p 3306:3306 -d --name ${DB_ID} -v ${DB_ID}data:/var/lib/mysql -e MYS
 sleep $DB_SLEEPTIME;
 
 is_db_up() {
-  docker exec -it mysql ${DB_ID} -uroot -e "select 1"
+  docker exec -it ${DB_ID} mysql -uroot -e "select 1"
 }
 
 echo "Waiting for DB to start"
@@ -39,6 +39,6 @@ until is_db_up; do
   sleep $SLEEP_FACTOR_IN_SECONDS
 done
 
-docker exec -it $DB_ID ${DB_ID} -uroot -e "ALTER USER '$DBUSER'@'%' IDENTIFIED WITH mysql_native_password BY '$DBPASS';"
+docker exec -it ${DB_ID} mysql -uroot -e "ALTER USER '$DBUSER'@'%' IDENTIFIED WITH mysql_native_password BY '$DBPASS';"
 
 echo "${DB_ID} ready to accept requests..."
