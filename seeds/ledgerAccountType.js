@@ -24,40 +24,24 @@
 
 'use strict'
 
-const ledgerEntryTypes = [
+const ledgerAccountTypes = [
   {
-    'name': 'PRINCIPLE_VALUE',
-    'description': 'The principle amount to be settled between parties, derived on quotes between DFSPs'
+    'name': 'POSITION',
+    'description': 'Position account are used during regular transfers between DFSPs'
   },
   {
-    'name': 'INTERCHANGE_FEE',
-    'description': 'Fees to be paid between DFSP'
-  },
-  {
-    'name': 'HUB_FEE',
-    'description': 'Fees to be paid from the DFSPs to the Hub Operator'
-  },
-  {
-    'name': 'SETTLEMENT_ACCOUNT',
-    'description': 'Used to correspond with SETTLEMENT_DEPOSIT or SETTLEMENT_WITHDRAWAL'
-  },
-  {
-    'name': 'SETTLEMENT_DEPOSIT',
-    'description': 'The amount deposited by a DFSP during the settlement process'
-  },
-  {
-    'name': 'SETTLEMENT_WITHDRAWAL',
-    'description': 'The amount being with withdrawn by a DFSP duriing the settlement process'
+    'name': 'SETTLEMENT',
+    'description': 'Settlement account are used during the settlement process'
   }
 ]
 
 exports.seed = async function (knex) {
   try {
-    return await knex('ledgerEntryType').insert(ledgerEntryTypes)
+    return await knex('ledgerAccountType').insert(ledgerAccountTypes)
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return -1001
     else {
-      console.log(`Uploading seeds for ledgerEntryType has failed with the following error: ${err}`)
+      console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
       return -1000
     }
   }

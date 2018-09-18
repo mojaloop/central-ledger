@@ -36,6 +36,10 @@ const transferParticipantRoleTypes = [
   {
     'name': 'HUB',
     'description': 'The participant is representing the Hub Operator'
+  },
+  {
+    'name': 'SETTLEMENT_TRANSFER',
+    'description': 'Service participant used for settlement transfers'
   }
 ]
 
