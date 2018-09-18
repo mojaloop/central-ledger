@@ -161,7 +161,7 @@ const positions = async (error, messages) => {
         throw new Error('Internal server error')
       } else { // transfer state check success
         const isIncrease = false
-        const reason = 'Aborted by Position Handler due to expiration'
+        const reason = 'Transfer aborted due to expiration'
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.EXPIRED_RESERVED,

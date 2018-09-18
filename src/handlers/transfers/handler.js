@@ -115,7 +115,6 @@ const prepare = async (error, messages) => {
       if (!transferState || !transferState.enumeration) {
         // Transfer state not found send callback notification
         Logger.info('TransferService::prepare::dupcheck::existsMatching::transfer state not found send callback notification')
-
         message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
         return true
@@ -202,8 +201,9 @@ const prepare = async (error, messages) => {
 
       // send the callback notification for validation error
       Logger.info('TransferService::prepare::validationFailed::send the callback notification for validation error')
-      message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      let errorDescription = `${errorGenericDescription}: ${reasons.toString()}`
+      message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorDescription))
       return true
     }
   } catch (error) {

@@ -28,34 +28,35 @@ docker rm $MOCKSERVER_ID
 echo "Starting Docker ${MOCKSERVER_ID}"
 docker run --name ${MOCKSERVER_ID} -d -p 1080:1080 jamesdbloom/mockserver;
 
-echo
-echo "Sleeping for ${SLEEP_FACTOR_IN_SECONDS}s for ${MOCKSERVER_ID} startup..."
-sleep $SLEEP_FACTOR_IN_SECONDS
-echo
+is_service_up() {
+  docker run --rm --network host byrnedo/alpine-curl -s -X PUT 'http://localhost:1080/status' -d '{"method": "*", "path": "*"}'
+}
+
+echo "Waiting for mockserver to start"
+until is_service_up; do
+  printf "."
+  sleep $SLEEP_FACTOR_IN_SECONDS
+done
 
 echo
-echo "Configuring expectation for POST /transfers"
-docker run --rm --network host byrnedo/alpine-curl -X PUT "http://localhost:1080/expectation" -d '{ "httpRequest": { "method": "POST", "path": "/transfers(.*)" }, "times" : { "remainingTimes" : 0,	"unlimited" : true }, "timeToLive" : { "unlimited" : true }, "httpResponse": { "statusCode": 200, "body": "{}" } }';
-
-echo
-echo "Configuring expectation for PUT /transfers"
-docker run --rm --network host byrnedo/alpine-curl -X PUT "http://localhost:1080/expectation" -d '{ "httpRequest": { "method": "PUT", "path": "/transfers(.*)" }, "times" : { "remainingTimes" : 0,	"unlimited" : true }, "timeToLive" : { "unlimited" : true }, "httpResponse": { "statusCode": 200, "body": "{}" } }';
+echo "Configuring expectation for mockserver"
+docker run --rm --network host byrnedo/alpine-curl -X PUT "http://localhost:1080/expectation" -d '{ "httpRequest": { "method": ".*", "path": "/.*transfers.*" }, "times" : { "remainingTimes" : 0,	"unlimited" : true }, "timeToLive" : { "unlimited" : true }, "httpResponse": { "statusCode": 200, "body": "{}" } }';
 
 echo "---------------------------------------------------------------------"
 echo "Ensure your ML-API-Adapter config points to the following end-points for callbacks:"
 echo "Add the following entries to: \"DFSP_URLS\":"
-  echo "    ------------------------------------------------------"
+echo "---------------------------------------------------------------------"
 for FSP in "${FSPList[@]}"
 do
   echo "    \"$FSP\": {"
   echo "      \"transfers\": {"
-  echo "        \"post\": \"http://localhost:1080/transfers\","
-  echo "        \"put\": \"http://localhost:1080/transfers/{{transferId}}\","
-  echo "        \"error\": \"http://localhost:1080/transfers/{{transferId}}/error\""
+  echo "        \"post\": \"http://localhost:1080/$FSP/transfers\","
+  echo "        \"put\": \"http://localhost:1080/$FSP/transfers/{{transferId}}\","
+  echo "        \"error\": \"http://localhost:1080/$FSP/transfers/{{transferId}}/error\""
   echo "      }"
-  echo "    }"
-  echo "    ------------------------------------------------------"
+  echo "    },"
 done
+echo "---------------------------------------------------------------------"
 echo
 
 echo "${MOCKSERVER_ID} ready to accept requests..."
