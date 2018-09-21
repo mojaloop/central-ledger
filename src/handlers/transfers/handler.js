@@ -98,6 +98,10 @@ const prepare = async (error, messages) => {
     Logger.info('TransferService::prepare')
     const kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.TRANSFER, TransferEventAction.PREPARE)
     const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+    if (!consumer) {
+      Logger.info(`no consumer found for topic ${kafkaTopic}`)
+      return true
+    }
     const payload = message.value.content.payload
 
     Logger.info('TransferService::prepare:: checking for duplicates')
@@ -180,13 +184,12 @@ const prepare = async (error, messages) => {
         // Save the invalid request in the database
         await TransferService.prepare(payload, reasons.toString(), false)
       } catch (err) {
-        // Failure due to duplicate transferId
-        Logger.info('TransferService::prepare::validationFailed::duplicate found while inserting into transfer table')
+        Logger.info(`TransferService::prepare::validationFailed::${reasons.toString()}`)
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
         // notification of duplicate to go here
-        Logger.info('TransferService::prepare::validationFailed::send the callback notification for duplicate request')
+        Logger.info(`TransferService::prepare::validationFailed::${err.message}`)
         // send generic internal error
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription))
@@ -227,6 +230,10 @@ const fulfil = async (error, messages) => {
     Logger.info(`FulfilHandler::${message.value.metadata.event.action}`)
     const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL)
     const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+    if (!consumer) {
+      Logger.info(`no consumer found for topic ${kafkaTopic}`)
+      return true
+    }
     const metadata = message.value.metadata
     const transferId = message.value.id
     const payload = message.value.content.payload
@@ -274,7 +281,7 @@ const fulfil = async (error, messages) => {
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
-          await Utility.produceParticipantMessage(existingTransfer.payerFsp, TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
+          await Utility.produceParticipantMessage(existingTransfer.payeeFsp, TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
           return true
         } else {
           await TransferService.reject(transferId, payload)
@@ -340,7 +347,10 @@ const transfer = async (error, messages) => {
     if (action.toLowerCase() === TransferEventAction.PREPARE && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
       const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-
+      if (!consumer) {
+        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        return true
+      }
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
 
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -351,7 +361,10 @@ const transfer = async (error, messages) => {
     } else if (action.toLowerCase() === TransferEventAction.COMMIT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
       const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-
+      if (!consumer) {
+        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        return true
+      }
       // send notification message to Payee
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
 
@@ -367,7 +380,10 @@ const transfer = async (error, messages) => {
     } else if (action.toLowerCase() === TransferEventAction.REJECT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
       const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-
+      if (!consumer) {
+        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        return true
+      }
       // send notification message to Payee
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
 
@@ -383,7 +399,10 @@ const transfer = async (error, messages) => {
     } else if (action.toLowerCase() === TransferEventAction.ABORT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
       const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-
+      if (!consumer) {
+        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        return true
+      }
       // send notification message to Payee
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, message.value, Utility.ENUMS.STATE.SUCCESS)
 
@@ -399,7 +418,10 @@ const transfer = async (error, messages) => {
     } else if (action.toLowerCase() === TransferEventAction.TIMEOUT_RESERVED && status.toLowerCase() === TransferEventStatus.SUCCESS) {
       const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
       const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-
+      if (!consumer) {
+        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        return true
+      }
       // send notification message to Payee
       await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
 

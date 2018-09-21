@@ -507,15 +507,15 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    prepareTest.test('throw an error when consumer not found', async (test) => {
+    prepareTest.test('return true when a consumer not found', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Utility.transformAccountToTopicName.returns('invalid-topic')
-        await allTransferHandlers.prepare(null, messages)
-        test.fail('No Error Thrown')
+        const result = await allTransferHandlers.prepare(null, messages)
+        test.equal(result, true)
         test.end()
       } catch (e) {
-        test.pass('Error Thrown')
+        test.fail('Error Thrown')
         test.end()
       }
     })
