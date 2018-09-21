@@ -26,10 +26,6 @@
 
 const endpointTypes = [
   {
-    'name': 'FSPIOP_CALLBACK_URL',
-    'description': 'Mojaloop compliant callback URL'
-  },
-  {
     'name': 'ALARM_NOTIFICATION_URL',
     'description': 'Participant callback URL to which alarm notifications can be sent'
   },
