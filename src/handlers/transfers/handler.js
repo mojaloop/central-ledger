@@ -248,7 +248,7 @@ const fulfil = async (error, messages) => {
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        message.value.content.payload = Utility.createPrepareErrorStatus(errorModifiedReqCode, errorModifiedReqDescription, message.value.content.payload.extensionList)
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
         return true
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
