@@ -95,7 +95,7 @@ const getConsumer = (topicName) => {
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName].consumer
   } else {
-    return undefined
+    throw Error(`no consumer found for topic ${topicName}`)
   }
 }
 

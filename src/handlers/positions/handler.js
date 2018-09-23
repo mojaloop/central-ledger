@@ -84,10 +84,12 @@ const positions = async (error, messages) => {
     payload.transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
-      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.PREPARE)
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
+      kafkaTopic = message.topic
+      try {
+        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      } catch (e) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(e)
         return true
       }
       const {preparedMessagesList, limitAlarms} = await PositionService.calculatePreparePositionsBatch(prepareBatch)
@@ -109,7 +111,7 @@ const positions = async (error, messages) => {
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
-      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventType.FULFIL)
+      kafkaTopic = message.topic
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
@@ -137,10 +139,12 @@ const positions = async (error, messages) => {
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
-      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
+      kafkaTopic = message.topic
+      try {
+        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      } catch (e) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(e)
         return true
       }
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
@@ -181,10 +185,12 @@ const positions = async (error, messages) => {
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
         let newMessage = Object.assign({}, message)
         newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, reason, newMessage.value.content.payload.extensionList)
-        kafkaTopic = Utility.transformAccountToTopicName(newMessage.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
-        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-        if (!consumer) {
+        kafkaTopic = message.topic
+        try {
+          consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+        } catch (e) {
           Logger.info(`no consumer found for topic ${kafkaTopic}`)
+          Logger.info(e)
           return true
         }
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -204,10 +210,12 @@ const positions = async (error, messages) => {
       //   throw new Error('Position Fail messaged received - What do we do here??')
     } else {
       Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
-      kafkaTopic = Utility.transformAccountToTopicName(message.value.from, message.value.metadata.event.type, message.value.metadata.event.action)
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
+      kafkaTopic = message.topic
+      try {
+        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      } catch (e) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(e)
         return true
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {

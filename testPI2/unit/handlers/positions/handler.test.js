@@ -90,13 +90,14 @@ const messageProtocol = {
   pp: ''
 }
 
+const topicName = 'topic-test'
+
 const messages = [
   {
+    topic: topicName,
     value: messageProtocol
   }
 ]
-
-const topicName = 'topic-test'
 
 const config = {
   options: {

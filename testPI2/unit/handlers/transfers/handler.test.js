@@ -102,8 +102,11 @@ const messageProtocol = {
   pp: ''
 }
 
+const topicName = 'topic-test'
+
 const messages = [
   {
+    topic: topicName,
     value: messageProtocol
   }
 ]
@@ -129,6 +132,7 @@ const commitMessages = [
 
 const rejectMessages = [
   {
+    topic: topicName,
     value: Object.assign({}, messageProtocol, {
       metadata: {
         event: {
@@ -148,6 +152,7 @@ const rejectMessages = [
 
 const failedMessages = [
   {
+    topic: topicName,
     value: Object.assign({}, messageProtocol, {
       metadata: {
         event: {
@@ -167,6 +172,7 @@ const failedMessages = [
 
 const fulfilMessages = [
   {
+    topic: topicName,
     value: Object.assign({}, messageProtocol, {
       content: {
         payload: fulfil
@@ -180,8 +186,6 @@ const fulfilMessages = [
     })
   }
 ]
-
-const topicName = 'topic-test'
 
 const config = {
   options: {
@@ -507,15 +511,15 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    prepareTest.test('return true when a consumer not found', async (test) => {
+    prepareTest.test('throw an error when consumer not found', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Utility.transformAccountToTopicName.returns('invalid-topic')
-        const result = await allTransferHandlers.prepare(null, messages)
-        test.equal(result, true)
+        await allTransferHandlers.prepare(null, messages)
+        test.fail('No Error Thrown')
         test.end()
       } catch (e) {
-        test.fail('Error Thrown')
+        test.pass('Error Thrown')
         test.end()
       }
     })
@@ -705,7 +709,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    transferTest.test('produce a message to the notifications topic on commit', async (test) => {
+    transferTest.test('produce a message to the notifications topic on reject', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       const result = await allTransferHandlers.transfer(null, rejectMessages)
@@ -713,7 +717,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    transferTest.test('produce a message to the notifications topic on commit', async (test) => {
+    transferTest.test('produce a message to the notifications topic on failure', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       const result = await allTransferHandlers.transfer(null, failedMessages)
@@ -732,7 +736,7 @@ Test('Transfer handler', transferHandlerTest => {
     transferTest.test('throw an error when an error is by transfer', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.throws(new Error())
+        Utility.produceGeneralMessage.throws(new Error())
         await allTransferHandlers.transfer(null, messages)
         test.fail('No Error Thrown')
         test.end()

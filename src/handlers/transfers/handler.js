@@ -95,11 +95,14 @@ const prepare = async (error, messages) => {
     } else {
       message = messages
     }
+    let consumer
     Logger.info('TransferService::prepare')
-    const kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.TRANSFER, TransferEventAction.PREPARE)
-    const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-    if (!consumer) {
+    const kafkaTopic = message.topic
+    try {
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+    } catch (e) {
       Logger.info(`no consumer found for topic ${kafkaTopic}`)
+      Logger.info(e)
       return true
     }
     const payload = message.value.content.payload
@@ -228,10 +231,13 @@ const fulfil = async (error, messages) => {
       message = messages
     }
     Logger.info(`FulfilHandler::${message.value.metadata.event.action}`)
-    const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL)
-    const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-    if (!consumer) {
+    const kafkaTopic = message.topic
+    let consumer
+    try {
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+    } catch (e) {
       Logger.info(`no consumer found for topic ${kafkaTopic}`)
+      Logger.info(e)
       return true
     }
     const metadata = message.value.metadata
@@ -342,13 +348,15 @@ const transfer = async (error, messages) => {
     const status = state.status
     Logger.info('TransferService::transfer action: ' + action)
     Logger.info('TransferService::transfer status: ' + status)
-
+    let consumer
     // Validate event - Rule: type == 'transfer' && action == 'commit'
     if (action.toLowerCase() === TransferEventAction.PREPARE && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
-      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
+      const kafkaTopic = message.topic
+      try {
+        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      } catch (e) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(e)
         return true
       }
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
@@ -359,8 +367,14 @@ const transfer = async (error, messages) => {
 
       return true
     } else if (action.toLowerCase() === TransferEventAction.COMMIT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
-      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      const kafkaTopic = message.topic
+      try {
+        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      } catch (e) {
+        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info()
+        return true
+      }
       if (!consumer) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
         return true
@@ -378,8 +392,8 @@ const transfer = async (error, messages) => {
 
       return true
     } else if (action.toLowerCase() === TransferEventAction.REJECT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
-      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      const kafkaTopic = message.topic
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
         return true
@@ -397,8 +411,8 @@ const transfer = async (error, messages) => {
 
       return true
     } else if (action.toLowerCase() === TransferEventAction.ABORT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
-      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      const kafkaTopic = message.topic
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
         return true
@@ -416,8 +430,8 @@ const transfer = async (error, messages) => {
 
       return true
     } else if (action.toLowerCase() === TransferEventAction.TIMEOUT_RESERVED && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER)
-      const consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      const kafkaTopic = message.topic
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
         Logger.info(`no consumer found for topic ${kafkaTopic}`)
         return true

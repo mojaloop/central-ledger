@@ -277,7 +277,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.ABORTED)
+    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.INVALID)
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
