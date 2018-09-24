@@ -36,6 +36,7 @@ exports.up = async (knex, Promise) => {
         t.decimal('netAmount', 18, 2).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
         t.bigInteger('currentStateChangeId').unsigned().nullable()
+        t.string('settlementTransferId', 36).nullable()
       })
     }
   })

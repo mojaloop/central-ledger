@@ -38,8 +38,12 @@ const transferParticipantRoleTypes = [
     'description': 'The participant is representing the Hub Operator'
   },
   {
-    'name': 'SETTLEMENT_TRANSFER',
-    'description': 'Service participant used for settlement transfers'
+    'name': 'DFSP_SETTLEMENT_ACCOUNT',
+    'description': 'Indicates the settlement account'
+  },
+  {
+    'name': 'DFSP_POSITION_ACCOUNT',
+    'description': 'Indicates the position account'
   }
 ]
 

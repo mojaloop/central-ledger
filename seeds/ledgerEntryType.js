@@ -27,27 +27,31 @@
 const ledgerEntryTypes = [
   {
     'name': 'PRINCIPLE_VALUE',
-    'description': 'The principle amount to be settled between parties, derived on quotes between DFSPs'
+    'description': 'The principle amount to be settled between parties, derived on quotes between DFSPs (+/-///)'
   },
   {
     'name': 'INTERCHANGE_FEE',
-    'description': 'Fees to be paid between DFSP'
+    'description': 'Fees to be paid between DFSP (±/±///)'
   },
   {
     'name': 'HUB_FEE',
-    'description': 'Fees to be paid from the DFSPs to the Hub Operator'
+    'description': 'Fees to be paid from the DFSPs to the Hub Operator (-/-/+//)'
   },
   {
-    'name': 'SETTLEMENT_ACCOUNT',
-    'description': 'Used to correspond with SETTLEMENT_DEPOSIT or SETTLEMENT_WITHDRAWAL'
+    'name': 'POSITION_DEPOSIT',
+    'description': 'Used when increasing Net Debit Cap (///+/- more funds available)'
   },
   {
-    'name': 'SETTLEMENT_DEPOSIT',
-    'description': 'The amount deposited by a DFSP during the settlement process'
+    'name': 'POSITION_WITHDRAWAL',
+    'description': 'Used when decreasing Net Debit Cap (///-/+ less funds available - not to exceed NDC)'
   },
   {
-    'name': 'SETTLEMENT_WITHDRAWAL',
-    'description': 'The amount being with withdrawn by a DFSP duriing the settlement process'
+    'name': 'SETTLEMENT_NET_RECIPIENT',
+    'description': 'Participant is settlement net recipient (///-/+ negative position will be increased to show I have less position to operate with as it returns to zero)'
+  },
+  {
+    'name': 'SETTLEMENT_NET_SENDER',
+    'description': 'Participant is settlement net sender (///+/- reducing position, therefore increasing available position against NDC)'
   }
 ]
 

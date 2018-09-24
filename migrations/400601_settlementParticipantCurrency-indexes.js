@@ -28,6 +28,7 @@ exports.up = function (knex, Promise) {
   return knex.schema.table('settlementParticipantCurrency', (t) => {
     t.index('settlementId')
     t.index('participantCurrencyId')
+    t.index('settlementTransferId')
   })
 }
 
@@ -35,5 +36,6 @@ exports.down = function (knex, Promise) {
   return knex.schema.table('settlementParticipantCurrency', (t) => {
     t.dropIndex('settlementId')
     t.dropIndex('participantCurrencyId')
+    t.dropIndex('settlementTransferId')
   })
 }
