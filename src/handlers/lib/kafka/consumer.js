@@ -95,7 +95,7 @@ const getConsumer = (topicName) => {
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName].consumer
   } else {
-    throw Error(`no consumer found for topic ${topicName}`)
+    throw Error(`No consumer found for topic ${topicName}`)
   }
 }
 
@@ -113,7 +113,7 @@ const isConsumerAutoCommitEnabled = (topicName) => {
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName].autoCommitEnabled
   } else {
-    throw Error(`no consumer found for topic ${topicName}`)
+    throw Error(`No consumer found for topic ${topicName}`)
   }
 }
 

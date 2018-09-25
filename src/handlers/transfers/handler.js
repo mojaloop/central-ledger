@@ -101,8 +101,8 @@ const prepare = async (error, messages) => {
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     } catch (e) {
-      Logger.info(`no consumer found for topic ${kafkaTopic}`)
-      Logger.info(e)
+      Logger.info(`No consumer found for topic ${kafkaTopic}`)
+      Logger.error(e)
       return true
     }
     const payload = message.value.content.payload
@@ -236,8 +236,8 @@ const fulfil = async (error, messages) => {
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     } catch (e) {
-      Logger.info(`no consumer found for topic ${kafkaTopic}`)
-      Logger.info(e)
+      Logger.info(`No consumer found for topic ${kafkaTopic}`)
+      Logger.error(e)
       return true
     }
     const metadata = message.value.metadata
@@ -355,8 +355,8 @@ const transfer = async (error, messages) => {
       try {
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       } catch (e) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
-        Logger.info(e)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
+        Logger.error(e)
         return true
       }
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
@@ -371,12 +371,12 @@ const transfer = async (error, messages) => {
       try {
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       } catch (e) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
         Logger.info()
         return true
       }
       if (!consumer) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
         return true
       }
       // send notification message to Payee
@@ -395,7 +395,7 @@ const transfer = async (error, messages) => {
       const kafkaTopic = message.topic
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
         return true
       }
       // send notification message to Payee
@@ -414,7 +414,7 @@ const transfer = async (error, messages) => {
       const kafkaTopic = message.topic
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
         return true
       }
       // send notification message to Payee
@@ -433,7 +433,7 @@ const transfer = async (error, messages) => {
       const kafkaTopic = message.topic
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
         return true
       }
       // send notification message to Payee

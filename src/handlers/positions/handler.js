@@ -88,8 +88,8 @@ const positions = async (error, messages) => {
       try {
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       } catch (e) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
-        Logger.info(e)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
+        Logger.error(e)
         return true
       }
       const {preparedMessagesList, limitAlarms} = await PositionService.calculatePreparePositionsBatch(prepareBatch)
@@ -114,7 +114,7 @@ const positions = async (error, messages) => {
       kafkaTopic = message.topic
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
         return true
       }
       // Check current transfer state
@@ -143,8 +143,8 @@ const positions = async (error, messages) => {
       try {
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       } catch (e) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
-        Logger.info(e)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
+        Logger.error(e)
         return true
       }
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
@@ -189,8 +189,8 @@ const positions = async (error, messages) => {
         try {
           consumer = Kafka.Consumer.getConsumer(kafkaTopic)
         } catch (e) {
-          Logger.info(`no consumer found for topic ${kafkaTopic}`)
-          Logger.info(e)
+          Logger.info(`No consumer found for topic ${kafkaTopic}`)
+          Logger.error(e)
           return true
         }
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -214,8 +214,8 @@ const positions = async (error, messages) => {
       try {
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       } catch (e) {
-        Logger.info(`no consumer found for topic ${kafkaTopic}`)
-        Logger.info(e)
+        Logger.info(`No consumer found for topic ${kafkaTopic}`)
+        Logger.error(e)
         return true
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
