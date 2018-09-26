@@ -56,6 +56,14 @@ const ledgerEntryTypes = [
   {
     'name': 'SETTLEMENT_NET_ZERO',
     'description': 'Participant is settlement net sender (///+/- reducing position, therefore increasing available position against NDC)'
+  },
+  {
+    'name': 'SETTLEMENT_ACCOUNT_DEPOSIT',
+    'description': ''
+  },
+  {
+    'name': 'SETTLEMENT_ACCOUNT_WITHDRAWAL',
+    'description': ''
   }
 ]
 

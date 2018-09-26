@@ -44,6 +44,10 @@ const transferParticipantRoleTypes = [
   {
     'name': 'DFSP_POSITION_ACCOUNT',
     'description': 'Indicates the position account'
+  },
+  {
+    'name': 'DFSP_POSITION_ACCOUNT',
+    'description': 'Indicates the position account'
   }
 ]
 

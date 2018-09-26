@@ -27,11 +27,15 @@
 const ledgerAccountTypes = [
   {
     'name': 'POSITION',
-    'description': 'Position account are used during regular transfers between DFSPs'
+    'description': 'Typical accounts from which a DFSP provisions  transfers '
   },
   {
     'name': 'SETTLEMENT',
-    'description': 'Settlement account are used during the settlement process'
+    'description': 'Reflects the individual DFSP Settlement Accounts as held at the Settlement Bank'
+  },
+  {
+    'name': 'HUB_SETTLEMENT',
+    'description': 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
   }
 ]
 
