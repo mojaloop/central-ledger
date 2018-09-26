@@ -52,6 +52,10 @@ const ledgerEntryTypes = [
   {
     'name': 'SETTLEMENT_NET_SENDER',
     'description': 'Participant is settlement net sender (///+/- reducing position, therefore increasing available position against NDC)'
+  },
+  {
+    'name': 'SETTLEMENT_NET_ZERO',
+    'description': 'Participant is settlement net sender (///+/- reducing position, therefore increasing available position against NDC)'
   }
 ]
 
