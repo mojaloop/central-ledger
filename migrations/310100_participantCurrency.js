@@ -33,6 +33,8 @@ exports.up = async (knex, Promise) => {
         t.foreign('participantId').references('participantId').inTable('participant')
         t.string('currencyId', 3).notNullable()
         t.foreign('currencyId').references('currencyId').inTable('currency')
+        t.integer('ledgerAccountTypeId').unsigned().notNullable()
+        t.foreign('ledgerAccountTypeId').references('ledgerAccountTypeId').inTable('ledgerAccountType')
         t.boolean('isActive').defaultTo(true).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
         t.string('createdBy', 128).notNullable()
