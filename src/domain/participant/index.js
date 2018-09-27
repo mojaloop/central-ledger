@@ -98,9 +98,9 @@ const update = async (name, payload) => {
   }
 }
 
-const createParticipantCurrency = async (participantId, currencyId) => {
+const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId)
+    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
     throw err
