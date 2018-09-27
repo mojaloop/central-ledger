@@ -254,7 +254,11 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     for (let name of names) {
       const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency)
-      participants.push(participant)
+      if (participant) {
+        participants.push(participant)
+      } else {
+        throw new Error('Invalid FSP name')
+      }
     }
 
     const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
