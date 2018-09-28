@@ -61,7 +61,7 @@ const createServer = (port, modules) => {
       options: {
         cache: {
           cache: 'memCache',
-          expiresIn: 5 * 1000,
+          expiresIn: 5 * 60 * 1000,
           generateTimeout: 30 * 1000
         }
       }
