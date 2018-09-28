@@ -78,17 +78,17 @@ Test('transfer validator', validatorTest => {
       payload.condition = null
       const {validationPassed, reasons} = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['condition is required for a conditional transfer'])
+      test.deepEqual(reasons, ['Condition is required for a conditional transfer'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for invalid expiration date', async (test) => {
+    validateByNameTest.test('Fail validation for invalid expiration date', async (test) => {
       Participant.getByName.returns(P.resolve({}))
       CryptoConditions.validateCondition.returns(true)
       payload.expiration = '1971-11-24T08:38:08.699-04:00'
       const {validationPassed, reasons} = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['expiration date: 1971-11-24T12:38:08.699Z has already expired.'])
+      test.deepEqual(reasons, ['Expiration date 1971-11-24T12:38:08.699Z is already in the past'])
       test.end()
     })
 
@@ -98,7 +98,7 @@ Test('transfer validator', validatorTest => {
       payload.expiration = null
       const {validationPassed, reasons} = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['expiration: required for conditional transfer'])
+      test.deepEqual(reasons, ['Expiration is required for conditional transfer'])
       test.end()
     })
 

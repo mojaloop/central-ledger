@@ -163,7 +163,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
         await trx.commit
       } catch (e) {
-        Logger.info(e)
+        Logger.error(e)
         await trx.rollback
         throw e
       }
@@ -175,7 +175,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     ))
     return { preparedMessagesList, limitAlarms }
   } catch (e) {
-    Logger.info(e)
+    Logger.error(e)
     throw e
   }
 }
