@@ -19,5 +19,14 @@ module.exports = [
       return h.response({ status: 'OK' }).code(200)
     },
     options: RouteConfig.config(tags, 'Status of ledger admin api')
+  },
+  {
+    method: 'GET',
+    path: '/enums',
+    handler: async function (request, h) {
+      let enums = await request.server.methods.enums('all')
+      return h.response(enums).code(200)
+    },
+    options: RouteConfig.config(tags, 'List available enumerations')
   }
 ]

@@ -10,15 +10,21 @@ const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
 
 const createRequest = ({ payload, params, query }) => {
+  let sandbox = Sinon.createSandbox()
   const requestPayload = payload || {}
   const requestParams = params || {}
   const requestQuery = query || {}
+  let enums = sandbox.stub()
+  enums.withArgs('ledgerAccountType').returns({POSITION: 1, SETTLEMENT: 2})
   return {
     payload: requestPayload,
     params: requestParams,
     query: requestQuery,
     server: {
-      log: () => { }
+      log: () => { },
+      methods: {
+        enums
+      }
     }
   }
 }
@@ -33,7 +39,10 @@ Test('Participant Handler', participantHandlerTest => {
       currency: 'USD',
       isActive: 1,
       createdDate: '2018-07-17T16:04:24.185Z',
-      currencyList: [{ currencyId: 'USD', isActive: 1 }]
+      currencyList: [
+        { currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1 },
+        { currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1 }
+      ]
     },
     {
       participantId: 2,
@@ -41,7 +50,10 @@ Test('Participant Handler', participantHandlerTest => {
       currency: 'EUR',
       isActive: 1,
       createdDate: '2018-07-17T16:04:24.185Z',
-      currencyList: [{ currencyId: 'EUR', isActive: 1 }]
+      currencyList: [
+        { currencyId: 'EUR', ledgerAccountTypeId: 1, isActive: 1 },
+        { currencyId: 'EUR', ledgerAccountTypeId: 2, isActive: 1 }
+      ]
     }
   ]
 
@@ -54,7 +66,10 @@ Test('Participant Handler', participantHandlerTest => {
       links: {
         self: 'http://central-ledger/participants/fsp1'
       },
-      currencies: [{ currency: 'USD', isActive: 1 }]
+      currencies: [
+        { currency: 'USD', ledgerAccountTypeId: 1, isActive: 1 },
+        { currency: 'USD', ledgerAccountTypeId: 2, isActive: 1 }
+      ]
     },
     {
       name: 'fsp2',
@@ -64,7 +79,10 @@ Test('Participant Handler', participantHandlerTest => {
       links: {
         self: 'http://central-ledger/participants/fsp2'
       },
-      currencies: [{ currency: 'EUR', isActive: 1 }]
+      currencies: [
+        { currency: 'EUR', ledgerAccountTypeId: 1, isActive: 1 },
+        { currency: 'EUR', ledgerAccountTypeId: 2, isActive: 1 }
+      ]
     }
   ]
 
@@ -138,14 +156,18 @@ Test('Participant Handler', participantHandlerTest => {
         createdDate: '2018-07-17T16:04:24.185Z'
       }
 
-      const participantCurrencyId = 1
-      const currencyList = { currencyId: 'USD', isActive: 1 }
+      const participantCurrencyId1 = 1
+      const participantCurrencyId2 = 2
+      const currencyList1 = { currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1 }
+      const currencyList2 = { currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1 }
 
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
       Participant.create.withArgs(payload).returns(P.resolve(participant.participantId))
       Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency).returns(P.resolve(participantCurrencyId))
-      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId).returns(P.resolve(currencyList))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participantCurrencyId1))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(P.resolve(participantCurrencyId2))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(P.resolve(currencyList1))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(P.resolve(currencyList2))
       const reply = {
         response: (response) => {
           return {

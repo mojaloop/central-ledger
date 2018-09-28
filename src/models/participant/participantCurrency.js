@@ -26,11 +26,12 @@
 
 const Db = require('../../db')
 
-exports.create = async (participantId, currencyId) => {
+exports.create = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     let result = await Db.participantCurrency.insert({
       participantId,
       currencyId,
+      ledgerAccountTypeId,
       createdBy: 'unknown'
     })
     return result
@@ -47,9 +48,9 @@ exports.getById = async (id) => {
   }
 }
 
-exports.getByParticipantId = async (id) => {
+exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
   try {
-    return await Db.participantCurrency.find({participantId: id}, { order: 'currencyId asc' })
+    return await Db.participantCurrency.find({participantId: id, ledgerAccountTypeId}, { order: 'currencyId asc' })
   } catch (err) {
     throw new Error(err.message)
   }

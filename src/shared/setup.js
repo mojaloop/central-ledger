@@ -16,11 +16,14 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
 const KafkaCron = require('../handlers/lib/kafka').Cron
+const Enums = require('../lib/enum')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
 }
-
+const getEnums = (id) => {
+  return Enums[id]()
+}
 const connectDatabase = async () => await Db.connect(Config.DATABASE_URI)
 
 /**
@@ -36,12 +39,30 @@ const createServer = (port, modules) => {
   return (async () => {
     const server = await new Hapi.Server({
       port,
+      cache: [
+        {
+          name: 'memCache',
+          engine: require('catbox-memory'),
+          partition: 'cache'
+        }
+      ],
       routes: {
         validate: {
           options: ErrorHandling.validateRoutes(),
           failAction: async (request, h, err) => {
             throw Boom.boomify(err)
           }
+        }
+      }
+    })
+    server.method({
+      name: 'enums',
+      method: getEnums,
+      options: {
+        cache: {
+          cache: 'memCache',
+          expiresIn: 5 * 60 * 1000,
+          generateTimeout: 30 * 1000
         }
       }
     })

@@ -122,7 +122,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('getByParticipantId', async (assert) => {
     try {
-      Db.participantCurrency.find.withArgs({participantId: 1}).returns([{
+      Db.participantCurrency.find.withArgs({participantId: 1, ledgerAccountTypeId: 1}).returns([{
         participantCurrancyId: 1,
         participantId: 1,
         currencyId: 'USD',
@@ -149,7 +149,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
           isActive: 1
         }
       ]
-      let result = await Model.getByParticipantId(1)
+      let result = await Model.getByParticipantId(1, 1)
       assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()
     } catch (err) {
@@ -161,8 +161,8 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('getByParticipantId should fail', async (test) => {
     try {
-      Db.participantCurrency.find.withArgs({participantId: 1}).throws(new Error())
-      await Model.getByParticipantId(1)
+      Db.participantCurrency.find.withArgs({participantId: 1, ledgerAccountTypeId: 1}).throws(new Error())
+      await Model.getByParticipantId(1, 1)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {

@@ -98,9 +98,11 @@ Test('Participant facade', async (facadeTest) => {
         andWhere: sandbox.stub().returns({
           andWhere: sandbox.stub().returns({
             andWhere: sandbox.stub().returns({
-              innerJoin: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  first: sandbox.stub().returns(participant)
+              andWhere: sandbox.stub().returns({
+                innerJoin: sandbox.stub().returns({
+                  select: sandbox.stub().returns({
+                    first: sandbox.stub().returns(participant)
+                  })
                 })
               })
             })
@@ -108,7 +110,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getByNameAndCurrency({ name: 'fsp1', currencyId: 'USD' })
+      var result = await Model.getByNameAndCurrency({ name: 'fsp1', currencyId: 'USD', ledgerAccountTypeId: 1 })
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
@@ -121,7 +123,7 @@ Test('Participant facade', async (facadeTest) => {
   await facadeTest.test('getByNameAndCurrency should throw error', async (assert) => {
     try {
       Db.participant.query.throws(new Error('message'))
-      await Model.getByNameAndCurrency({ name: 'fsp1', currencyId: 'USD' })
+      await Model.getByNameAndCurrency({ name: 'fsp1', currencyId: 'USD', ledgerAccountTypeId: 1 })
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
@@ -134,7 +136,7 @@ Test('Participant facade', async (facadeTest) => {
   await facadeTest.test('getByNameAndCurrency should throw error when participant not found', async (assert) => {
     try {
       Db.participant.query.throws(new Error('message'))
-      await Model.getByNameAndCurrency({ name: 'fsp3', currencyId: 'USD' })
+      await Model.getByNameAndCurrency({ name: 'fsp3', currencyId: 'USD', ledgerAccountTypeId: 1 })
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
@@ -783,7 +785,7 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 'NET_DEBIT_CAP')
+      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 1, 'NET_DEBIT_CAP')
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -821,7 +823,7 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId)
+      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 1)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -838,7 +840,7 @@ Test('Participant facade', async (facadeTest) => {
       builderStub.innerJoin = sandbox.stub()
 
       builderStub.innerJoin.throws(new Error())
-      await Model.getParticipantLimitsByParticipantId(participant.participantId)
+      await Model.getParticipantLimitsByParticipantId(participant.participantId, 1)
       assert.fail(' should throw')
       assert.end()
       assert.end()

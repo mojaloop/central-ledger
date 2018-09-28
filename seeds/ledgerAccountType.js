@@ -24,24 +24,29 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('settlementParticipantCurrency').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('settlementParticipantCurrency', (t) => {
-        t.bigIncrements('settlementParticipantCurrencyId').primary().notNullable()
-        t.bigInteger('settlementId').unsigned().notNullable()
-        t.foreign('settlementId').references('settlementId').inTable('settlement')
-        t.integer('participantCurrencyId').unsigned().notNullable()
-        t.foreign('participantCurrencyId').references('participantCurrencyId').inTable('participantCurrency')
-        t.decimal('netAmount', 18, 2).notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-        t.bigInteger('currentStateChangeId').unsigned().nullable()
-        t.string('settlementTransferId', 36).nullable()
-      })
-    }
-  })
-}
+const ledgerAccountTypes = [
+  {
+    'name': 'POSITION',
+    'description': 'Typical accounts from which a DFSP provisions  transfers '
+  },
+  {
+    'name': 'SETTLEMENT',
+    'description': 'Reflects the individual DFSP Settlement Accounts as held at the Settlement Bank'
+  },
+  {
+    'name': 'HUB_SETTLEMENT',
+    'description': 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
+  }
+]
 
-exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('settlementParticipantCurrency')
+exports.seed = async function (knex) {
+  try {
+    return await knex('ledgerAccountType').insert(ledgerAccountTypes)
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return -1001
+    else {
+      console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
+      return -1000
+    }
+  }
 }

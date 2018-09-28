@@ -35,6 +35,7 @@ Test('setup', setupTest => {
     serverStub = {
       connection: sandbox.stub(),
       register: sandbox.stub(),
+      method: sandbox.stub(),
       ext: sandbox.stub(),
       start: sandbox.stub(),
       info: {

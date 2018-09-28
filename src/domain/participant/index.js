@@ -36,6 +36,7 @@ const ParticipantLimitModel = require('../../models/participant/participantLimit
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
+const Enum = require('../../lib/enum')
 
 const create = async (payload) => {
   try {
@@ -52,7 +53,7 @@ const getAll = async () => {
     // TODO: refactor the query to use the facade layer and join query for both tables
     let all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
-      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
     }))
     return all
   } catch (err) {
@@ -64,7 +65,7 @@ const getById = async (id) => {
   // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getById(id)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
   }
   return participant
 }
@@ -73,7 +74,7 @@ const getByName = async (name) => {
   // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getByName(name)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
   }
   return participant
 }
@@ -98,9 +99,9 @@ const update = async (name, payload) => {
   }
 }
 
-const createParticipantCurrency = async (participantId, currencyId) => {
+const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId)
+    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
     throw err
@@ -251,7 +252,7 @@ const destroyPariticpantEndpointByName = async (name) => {
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency)
+    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
@@ -322,7 +323,7 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
 
 const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
     return ParticipantPositionModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
@@ -345,7 +346,7 @@ const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => 
 
 const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
     return ParticipantLimitModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
@@ -374,13 +375,13 @@ const getLimits = async (name, { currency = null, type = null }) => {
   try {
     let participant
     if (currency != null) {
-      participant = await ParticipantFacade.getByNameAndCurrency(name, currency)
+      participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
       participantExists(participant)
       return ParticipantFacade.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, type)
     } else {
       participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type)
+      return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.LedgerAccountType.POSITION)
     }
   } catch (err) {
     throw err
@@ -411,7 +412,7 @@ const getLimits = async (name, { currency = null, type = null }) => {
 
 const adjustLimits = async (name, payload) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
     return ParticipantFacade.adjustLimits(participant.participantCurrencyId, payload.limit)
   } catch (err) {
@@ -465,9 +466,9 @@ const adjustLimits = async (name, payload) => {
 const getPositions = async (name, query) => {
   try {
     if (query.currency) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
       participantExists(participant)
-      const result = await PositionFacade.getByNameAndCurrency(name, query.currency)
+      const result = await PositionFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
       let position = {}
       if (Array.isArray(result) && result.length > 0) {
         position = {
@@ -480,7 +481,7 @@ const getPositions = async (name, query) => {
     } else {
       const participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      const result = await await PositionFacade.getByNameAndCurrency(name)
+      const result = await await PositionFacade.getByNameAndCurrency(name, null, Enum.LedgerAccountType.POSITION)
       let positions = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {

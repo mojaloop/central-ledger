@@ -253,7 +253,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const names = [payload.payeeFsp, payload.payerFsp]
 
     for (let name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.LedgerAccountType.POSITION)
       if (participant) {
         participants.push(participant)
       } else {
