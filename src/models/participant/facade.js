@@ -30,7 +30,7 @@
 
 const Db = require('../../db')
 
-const getByNameAndCurrency = async (name, currencyId) => {
+const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return builder
@@ -38,6 +38,7 @@ const getByNameAndCurrency = async (name, currencyId) => {
         .andWhere({ 'participant.isActive': true })
         .andWhere({ 'pc.currencyId': currencyId })
         .andWhere({ 'pc.isActive': true })
+        .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
@@ -51,13 +52,14 @@ const getByNameAndCurrency = async (name, currencyId) => {
   }
 }
 
-const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return await builder
         .where({
           'participant.participantId': participantId,
-          'pc.currencyId': currencyId
+          'pc.currencyId': currencyId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId
         })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
@@ -187,13 +189,14 @@ const addEndpoint = async (participantId, endpoint) => {
   }
 }
 
-const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, participantLimitTypeId) => {
+const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return await builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
           'pl.participantLimitTypeId': participantLimitTypeId,
           'participant.isActive': 1,
           'pc.IsActive': 1,
@@ -213,13 +216,14 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
   }
 }
 
-const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return await builder
         .where({
           'participant.participantId': participantId,
-          'pc.currencyId': currencyId
+          'pc.currencyId': currencyId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId
         })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
@@ -407,13 +411,14 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
  * @returns {array} - Returns an array containing the list of all active limits for the participant and type if successful, or throws an error if failed
  */
 
-const getParticipantLimitsByParticipantId = async (participantId, type) => {
+const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAccountTypeId) => {
   try {
     return Db.participantLimit.query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
         .innerJoin('participantCurrency AS pc', 'participantLimit.participantCurrencyId', 'pc.participantCurrencyId')
         .where({
           'pc.participantId': participantId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
           'pc.isActive': 1,
           'lt.isActive': 1,
           'participantLimit.isActive': 1

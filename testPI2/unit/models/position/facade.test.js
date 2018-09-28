@@ -60,6 +60,7 @@ Test('Position facade', async (positionFacadeTest) => {
     try {
       const participantId = 1
       const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
       let builderStub = sandbox.stub()
       let participantCurrencyStub = sandbox.stub()
       let participantPositionStub = sandbox.stub()
@@ -76,11 +77,12 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId)
+      let found = await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
       test.equal(found, 1, 'retrive the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
-        'pc.currencyId': currencyId
+        'pc.currencyId': currencyId,
+        'pc.ledgerAccountTypeId': ledgerAccountTypeId
       }).calledOnce, 'query builder called once')
       test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
       test.ok(participantPositionStub.withArgs('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'participantPosition inner joined')
@@ -101,9 +103,10 @@ Test('Position facade', async (positionFacadeTest) => {
     try {
       const participantId = 1
       const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
       Db.participant.query.throws(new Error())
 
-      await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId)
+      await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
@@ -117,6 +120,7 @@ Test('Position facade', async (positionFacadeTest) => {
     try {
       const participantId = 1
       const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
       let builderStub = sandbox.stub()
       let participantCurrencyStub = sandbox.stub()
       let participantLimitStub = sandbox.stub()
@@ -133,11 +137,12 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId)
+      let found = await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
       test.equal(found, 1, 'retrive the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
-        'pc.currencyId': currencyId
+        'pc.currencyId': currencyId,
+        'pc.ledgerAccountTypeId': ledgerAccountTypeId
       }).calledOnce, 'query builder called once')
       test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
       test.ok(participantLimitStub.withArgs('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId').calledOnce, 'participantLimit inner joined')
@@ -158,9 +163,10 @@ Test('Position facade', async (positionFacadeTest) => {
     try {
       const participantId = 1
       const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
       Db.participant.query.throws(new Error())
 
-      await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId)
+      await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
@@ -597,6 +603,7 @@ Test('Position facade', async (positionFacadeTest) => {
     try {
       const participantName = 'fsp1'
       const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
       let builderStub = sandbox.stub()
 
       const participantPosition = [
@@ -623,7 +630,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getByNameAndCurrency(participantName, currencyId)
+      let found = await ModelPosition.getByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
       test.deepEqual(found, participantPosition, 'retrive the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
@@ -638,6 +645,7 @@ Test('Position facade', async (positionFacadeTest) => {
   await positionFacadeTest.test('getByNameAndCurrency should return the participant positions for all currencies', async (test) => {
     try {
       const participantName = 'fsp1'
+      const ledgerAccountTypeId = 1
       let builderStub = sandbox.stub()
 
       const participantPosition = [
@@ -671,7 +679,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getByNameAndCurrency(participantName)
+      let found = await ModelPosition.getByNameAndCurrency(participantName, null, ledgerAccountTypeId)
       test.deepEqual(found, participantPosition, 'retrive the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
@@ -687,10 +695,11 @@ Test('Position facade', async (positionFacadeTest) => {
     try {
       const participantName = 'fsp1'
       const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
 
       Db.participantPosition.query.throws(new Error())
 
-      await ModelPosition.getByNameAndCurrency(participantName, currencyId)
+      await ModelPosition.getByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
       test.fail(' should throw')
       test.end()
       test.end()

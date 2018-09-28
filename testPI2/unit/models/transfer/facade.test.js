@@ -722,8 +722,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer', async (test) => {
     try {
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
 
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -755,8 +755,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer default', async (test) => {
     try {
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
 
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -788,8 +788,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer -without extensionList', async (test) => {
     try {
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
 
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -823,8 +823,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared save invalid prepared transfer', async (test) => {
     try {
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
 
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -856,8 +856,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
   await transferFacadeTest.test('saveTransferPrepared throw error', async (test) => {
     try {
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD').returns('dfsp1', 1)
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD').returns('dfsp2', 2)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
 
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()

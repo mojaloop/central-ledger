@@ -48,9 +48,9 @@ exports.getById = async (id) => {
   }
 }
 
-exports.getByParticipantId = async (id) => {
+exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
   try {
-    return await Db.participantCurrency.find({participantId: id}, { order: 'currencyId asc' })
+    return await Db.participantCurrency.find({participantId: id, ledgerAccountTypeId}, { order: 'currencyId asc' })
   } catch (err) {
     throw new Error(err.message)
   }

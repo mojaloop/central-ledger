@@ -180,7 +180,7 @@ Test('Participant service', async (participantTest) => {
         currencyId: participant.currency,
         isActive: 1
       })
-      ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId).returns(participant.currency)
+      ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId, 1).returns(participant.currency)
       ParticipantModel.destroyByName.withArgs(participant.name).returns(Promise.resolve(true))
       ParticipantCurrencyModel.destroyByParticipantId.withArgs(participant.participantId).returns(Promise.resolve(true))
       Db.participant.destroy.withArgs({ name: participant.name }).returns(Promise.resolve(true))
@@ -589,7 +589,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
@@ -630,7 +630,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, limitPostionObj).returns(1)
@@ -662,7 +662,7 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date(),
       participantCurrencyId: 1
     }
-    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).throws(new Error())
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).throws(new Error())
 
     try {
       await Service.addLimitAndInitialPosition(participant.name, payload)
@@ -690,7 +690,7 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date(),
       participantCurrencyId: 1
     }
-    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
     ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
     ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
     ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).throws(new Error())
@@ -728,7 +728,7 @@ Test('Participant service', async (participantTest) => {
       reservedValue: 0.0,
       changedDate: new Date()
     }
-    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
     ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
     ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(participantPosition)
     ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
@@ -770,7 +770,7 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date(),
       createdBy: 'unknown'
     }
-    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
     ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(participantLimit)
     ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
     ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
@@ -794,10 +794,10 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
       ParticipantPositionModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(1)
 
-      const result = await Service.destroyParticipantPositionByNameAndCurrency(participant.name, participant.currency)
+      const result = await Service.destroyParticipantPositionByNameAndCurrency(participant.name, participant.currency, 1)
       assert.equal(result, 1, 'Results matched')
       assert.end()
     } catch (err) {
@@ -816,10 +816,10 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date(),
       participantCurrencyId: 1
     }
-    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
     ParticipantPositionModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).throws(new Error())
     try {
-      await Service.destroyParticipantPositionByNameAndCurrency(participant.name, participant.currency)
+      await Service.destroyParticipantPositionByNameAndCurrency(participant.name, participant.currency, 1)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -837,10 +837,10 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
       ParticipantLimitModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(1)
 
-      const result = await Service.destroyParticipantLimitByNameAndCurrency(participant.name, participant.currency)
+      const result = await Service.destroyParticipantLimitByNameAndCurrency(participant.name, participant.currency, 1)
       assert.equal(result, 1, 'Results matched')
       assert.end()
     } catch (err) {
@@ -859,10 +859,10 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date(),
       participantCurrencyId: 1
     }
-    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
     ParticipantLimitModel.destroyByParticipantCurrencyId.withArgs(participant.participantCurrencyId).throws(new Error())
     try {
-      await Service.destroyParticipantLimitByNameAndCurrency(participant.name, participant.currency)
+      await Service.destroyParticipantLimitByNameAndCurrency(participant.name, participant.currency, 1)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -969,7 +969,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
       ParticipantFacade.adjustLimits.withArgs(participant.participantCurrencyId, payload.limit).returns(1)
 
       const result = await Service.adjustLimits(participant.name, payload)
@@ -998,7 +998,7 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date(),
       participantCurrencyId: 1
     }
-    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency).returns(participant)
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
     ParticipantFacade.adjustLimits.withArgs(participant.participantCurrencyId, payload.limit).throws(new Error())
 
     try {
@@ -1025,7 +1025,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
 
       ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId, limit[0].name).returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, { currency: participant.currency, type: limit[0].name })
@@ -1053,7 +1053,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
 
       ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId).returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, { currency: participant.currency })
@@ -1090,7 +1090,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
-      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP').returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP', 1).returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, { type: 'NET_DEBIT_CAP' })
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1125,7 +1125,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
-      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).returns(P.resolve(limit))
       const result = await Service.getLimits(participant.name, {})
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1146,12 +1146,12 @@ Test('Participant service', async (participantTest) => {
       participantCurrancyId: 1
     }
     ParticipantModel.getByName.withArgs(participant.name).returns(participant)
-    ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId).throws(new Error())
+    ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).throws(new Error())
     try {
       await Service.getLimits(participant.name, {})
-      assert.fail(' should throw')
+      assert.fail('should throw')
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.assert(err instanceof Error, `throws ${err} `)
     }
     assert.end()
   })
@@ -1181,8 +1181,8 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(positionReturn))
+      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(participant)
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
       assert.deepEqual(result, expected, 'Results matched')
@@ -1209,8 +1209,8 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(positionReturn))
+      ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(participant)
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
       assert.deepEqual(result, expected, 'Results matched')
