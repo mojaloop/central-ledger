@@ -42,21 +42,4 @@ echo
 echo "Configuring expectation for mockserver"
 docker run --rm --network host byrnedo/alpine-curl -X PUT "http://localhost:1080/expectation" -d '{ "httpRequest": { "method": ".*", "path": "/.*transfers.*" }, "times" : { "remainingTimes" : 0,	"unlimited" : true }, "timeToLive" : { "unlimited" : true }, "httpResponse": { "statusCode": 200, "body": "{}" } }';
 
-echo "---------------------------------------------------------------------"
-echo "Ensure your ML-API-Adapter config points to the following end-points for callbacks:"
-echo "Add the following entries to: \"DFSP_URLS\":"
-echo "---------------------------------------------------------------------"
-for FSP in "${FSPList[@]}"
-do
-  echo "    \"$FSP\": {"
-  echo "      \"transfers\": {"
-  echo "        \"post\": \"http://localhost:1080/$FSP/transfers\","
-  echo "        \"put\": \"http://localhost:1080/$FSP/transfers/{{transferId}}\","
-  echo "        \"error\": \"http://localhost:1080/$FSP/transfers/{{transferId}}/error\""
-  echo "      }"
-  echo "    },"
-done
-echo "---------------------------------------------------------------------"
-echo
-
 echo "${MOCKSERVER_ID} ready to accept requests..."
