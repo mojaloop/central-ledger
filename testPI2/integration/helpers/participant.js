@@ -30,6 +30,7 @@
 const Model = require('../../../src/domain/participant')
 const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrency')
 const time = require('../../../src/lib/time')
+const Enum = require('../../../src/lib/enum')
 
 const testParticipant = {
   name: 'fsp',
@@ -47,11 +48,13 @@ exports.prepareData = async (name, currencyId = 'USD') => {
         name: (name || testParticipant.name) + time.msToday()
       }
     ))
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId)
+    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.POSITION)
+    const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.SETTLEMENT)
     const participant = await Model.getById(participantId)
     return {
       participant,
-      participantCurrencyId
+      participantCurrencyId,
+      participantCurrencyId2
     }
   } catch (err) {
     throw new Error(err.message)
