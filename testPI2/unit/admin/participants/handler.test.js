@@ -250,7 +250,7 @@ Test('Participant Handler', participantHandlerTest => {
         name: 'fsp1'
       }
       const payload = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
@@ -273,7 +273,7 @@ Test('Participant Handler', participantHandlerTest => {
         name: 'fsp1'
       }
       const payload = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
@@ -293,14 +293,14 @@ Test('Participant Handler', participantHandlerTest => {
         name: 'fsp1'
       }
       const query = {
-        type: 'FSIOP_CALLBACK_URL'
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
       }
       const endpoint = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
       const endpointReturn = [{
-        name: 'FSIOP_CALLBACK_URL',
+        name: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }]
       Participant.getEndpoint.withArgs(params.name, query.type).returns(P.resolve(endpointReturn))
@@ -314,7 +314,7 @@ Test('Participant Handler', participantHandlerTest => {
         name: 'fsp1'
       }
       const query = {
-        type: 'FSIOP_CALLBACK_URL'
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
       }
       const endpoint = {}
       const endpointReturn = []
@@ -330,7 +330,7 @@ Test('Participant Handler', participantHandlerTest => {
       }
       const endpoints = [
         {
-          name: 'FSIOP_CALLBACK_URL',
+          name: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
           value: 'http://localhost:3001/participants/dfsp1/notification1'
         },
         {
@@ -340,7 +340,7 @@ Test('Participant Handler', participantHandlerTest => {
       ]
       const endpointsResult = [
         {
-          type: 'FSIOP_CALLBACK_URL',
+          type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
           value: 'http://localhost:3001/participants/dfsp1/notification1'
         },
         {
@@ -373,7 +373,7 @@ Test('Participant Handler', participantHandlerTest => {
         name: 'fsp1'
       }
       const query = {
-        type: 'FSIOP_CALLBACK_URL'
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
       }
       Participant.getEndpoint.withArgs(params.name, query.type).throws(new Error())
 
