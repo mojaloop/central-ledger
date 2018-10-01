@@ -96,7 +96,7 @@ const positions = async (error, messages) => {
       for (let prepareMessage of preparedMessagesList) {
         const {transferState, rawMessage} = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
-          await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.PREPARE, rawMessage.value, Utility.ENUMS.STATE.SUCCESS)
+          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.ENUMS.STATE.SUCCESS)
         } else {
           await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
         }
@@ -135,7 +135,7 @@ const positions = async (error, messages) => {
         await consumer.commitMessageSync(message)
       }
       // Will follow framework flow in future
-      await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
@@ -165,7 +165,7 @@ const positions = async (error, messages) => {
         await consumer.commitMessageSync(message)
       }
       // Will follow framework flow in future
-      await Utility.produceGeneralMessage(TransferEventType.TRANSFER, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
