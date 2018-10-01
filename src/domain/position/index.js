@@ -117,8 +117,8 @@ exports.calculateForAllParticipants = () => {
     })
 }
 
-exports.changeParticipantPosition = (participantCurrencyId, isIncrease, amount, transferStateChange) => {
-  return PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isIncrease, amount, transferStateChange)
+exports.changeParticipantPosition = (participantCurrencyId, isReversal, amount, transferStateChange) => {
+  return PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
 }
 
 exports.generatePositionPlaceHolder = () => {

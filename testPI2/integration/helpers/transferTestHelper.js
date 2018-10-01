@@ -36,6 +36,7 @@ const IlpModel = require('../../../src/models/transfer/ilpPacket')
 const TransferFacade = require('../../../src/models/transfer/facade')
 const TransferFulfilmentModel = require('../../../src/models/transfer/transferFulfilment')
 const TransferParticipantModel = require('../../../src/models/transfer/transferParticipant')
+const Enum = require('../../../src/lib/enum')
 
 const Uuid = require('uuid4')
 
@@ -82,24 +83,22 @@ exports.prepareData = async () => {
     })
 
     await TransferParticipantModel.saveTransferParticipant({
-      transferParticipantId: transferDuplicateCheckResult.participantPayeeResult.participant.participantId,
-      transferId: transferResult.transfer.transferId,
-      participantCurrencyId: transferDuplicateCheckResult.participantPayeeResult.participantCurrencyId,
-      transferParticipantRoleTypeId: 2,
-      ledgerEntryTypeId: 1,
-      amount: transferResult.transfer.amount
-    }
-    )
-
-    await TransferParticipantModel.saveTransferParticipant({
       transferParticipantId: transferDuplicateCheckResult.participantPayerResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayerResult.participantCurrencyId,
-      transferParticipantRoleTypeId: 1,
-      ledgerEntryTypeId: 1,
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.LedgerAccountType.POSITION,
       amount: transferResult.transfer.amount
-    }
-    )
+    })
+
+    await TransferParticipantModel.saveTransferParticipant({
+      transferParticipantId: transferDuplicateCheckResult.participantPayeeResult.participant.participantId,
+      transferId: transferResult.transfer.transferId,
+      participantCurrencyId: transferDuplicateCheckResult.participantPayeeResult.participantCurrencyId,
+      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.LedgerAccountType.POSITION,
+      amount: -transferResult.transfer.amount
+    })
 
     return {
       ilp,
