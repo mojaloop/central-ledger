@@ -26,20 +26,21 @@
 
 const Model = require('../../../src/models/transfer/transferDuplicateCheck')
 const ParticipantPreparationModule = require('./participant')
-const time = require('../../../src/lib/time')
+// const time = require('../../../src/lib/time')
 const Crypto = require('crypto')
+const Uuid = require('uuid4')
 
 exports.prepareData = async () => {
   try {
     let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
     let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
 
-    let transferId = 'tr' + time.msToday()
+    let transferId = Uuid()
     let payload = {
       payerFsp: participantPayerResult.name,
       payeeFsp: participantPayeeResult.name,
       amount: {
-        amount: 100,
+        amount: 125,
         currency: 'USD'
       },
       condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',

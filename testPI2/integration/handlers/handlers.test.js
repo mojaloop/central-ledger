@@ -52,7 +52,7 @@ const delay = 8000 // milliseconds
 let testData = {
   amount: {
     currency: 'USD',
-    amount: 100
+    amount: 110
   },
   payer: {
     name: 'payer',
@@ -280,7 +280,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferFulfilReject should', async transferFulfilReject => {
-    testData.amount.amount = 5
+    testData.amount.amount = 15
     const td = await prepareTestData(testData)
 
     await transferFulfilReject.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
@@ -332,7 +332,7 @@ Test('Handlers test', async handlersTest => {
   })
 
   await handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
-    testData.amount.amount = 1000
+    testData.amount.amount = 1100
     const td = await prepareTestData(testData)
 
     await transferPrepareExceedLimit.test(`fail the transfer if the amount is higher than the remaining participant limit`, async (test) => {

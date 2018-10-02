@@ -27,8 +27,8 @@
 const Model = require('../../../src/domain/participant')
 
 const endpointsFixtures = {
-  FSIOP_CALLBACK_URL: {
-    type: 'FSIOP_CALLBACK_URL',
+  FSPIOP_CALLBACK_URL_TRANSFER_POST: {
+    type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
     value: 'http://localhost:3001/participants/dfsp1/notification1'
   },
   ALARM_NOTIFICATION_URL: {

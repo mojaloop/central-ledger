@@ -299,7 +299,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
       transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
       ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
-      amount: payload.amount.amount
+      amount: -payload.amount.amount
     }
 
     const knex = await Db.getKnex()
