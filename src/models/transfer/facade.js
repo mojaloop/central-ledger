@@ -37,6 +37,7 @@ const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
+const Time = require('../../lib/time')
 const _ = require('lodash')
 
 const getById = async (id) => {
@@ -181,9 +182,9 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
     transferFulfilmentId,
     transferId,
     ilpFulfilment: payload.fulfilment,
-    completedDate: new Date(payload.completedTimestamp),
+    completedDate: Time.getUTCString(new Date(payload.completedTimestamp)),
     isValid: true,
-    createdDate: new Date()
+    createdDate: Time.getUTCString(new Date())
   }
   let transferExtensions = []
   if (payload.extensionList && payload.extensionList.extension) {
@@ -200,15 +201,13 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
     transferId,
     transferStateId: state,
     reason: stateReason,
-    createdDate: new Date()
+    createdDate: Time.getUTCString(new Date())
   }
 
   try {
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
-        let fromDateTime = new Date('01-01-1970').toISOString()
-        let toDateTime = new Date().toLocaleString()
         let result = await Db.settlementWindow.query(builder => {
           return builder
             .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
@@ -219,7 +218,7 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
               'settlementWindow.createdDate as createdDate',
               'swsc.createdDate as changedDate'
             )
-            .whereRaw(`swsc.settlementWindowStateId = "OPEN" AND settlementWindow.createdDate >= '${fromDateTime}' AND settlementWindow.createdDate <= '${toDateTime}'`)
+            .where('swsc.settlementWindowStateId', 'OPEN')
             .orderBy('changedDate', 'desc')
         })
         transferFulfilmentRecord.settlementWindowId = result[0].settlementWindowId
@@ -269,7 +268,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
-      expirationDate: new Date(payload.expiration)
+      expirationDate: Time.getUTCString(new Date(payload.expiration))
     }
 
     const ilpPacketRecord = {
@@ -283,7 +282,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       transferId: payload.transferId,
       transferStateId: state,
       reason: stateReason,
-      createdDate: new Date()
+      createdDate: Time.getUTCString(new Date())
     }
 
     const payerTransferParticipantRecord = {
