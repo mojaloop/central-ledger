@@ -124,12 +124,12 @@ const positions = async (error, messages) => {
         // TODO: throw Error 2001
       } else { // transfer state check success
         Logger.info('PositionHandler::positions::commit::validationPassed')
-        const isIncrease = false
+        const isReversal = false
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.COMMITTED
         }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
@@ -153,13 +153,13 @@ const positions = async (error, messages) => {
         // TODO: throw Error 2001
       } else { // transfer state check success
         Logger.info('PositionHandler::positions::reject::validationPassed')
-        const isIncrease = false
+        const isReversal = true
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.ABORTED,
           reason: transferInfo.reason
         }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
@@ -175,14 +175,14 @@ const positions = async (error, messages) => {
         // throw Error 2001
         throw new Error('Internal server error')
       } else { // transfer state check success
-        const isIncrease = false
+        const isReversal = true
         const reason = 'Transfer aborted due to expiration'
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.EXPIRED_RESERVED,
           reason
         }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange)
+        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         let newMessage = Object.assign({}, message)
         newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, reason, newMessage.value.content.payload.extensionList)
         kafkaTopic = message.topic

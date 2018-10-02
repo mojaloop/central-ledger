@@ -131,7 +131,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('add participant endpoint', async (assert) => {
     try {
       const participant = participantFixtures[0]
-      let result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSIOP_CALLBACK_URL')
+      let result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST')
       endpointsFixtures.push(result)
       result = await ParticipantEndpointHelper.prepareData(participant.name, 'ALARM_NOTIFICATION_URL')
       endpointsFixtures.push(result)

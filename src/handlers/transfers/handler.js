@@ -107,7 +107,7 @@ const prepare = async (error, messages) => {
     }
     const payload = message.value.content.payload
 
-    Logger.info('TransferService::prepare:: checking for duplicates')
+    Logger.info('TransferService::prepare::checking for duplicates')
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
 
     if (existsMatching) {
