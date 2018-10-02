@@ -74,7 +74,7 @@ Test('Participant facade', async (facadeTest) => {
       isActive: 1,
       createdDate: '2018-07-11',
       createdBy: 'unknown',
-      name: 'FSIOP_CALLBACK_URL'
+      name: 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
     },
     {
       participantEndpointId: 2,
@@ -273,7 +273,7 @@ Test('Participant facade', async (facadeTest) => {
       })
 
       const endpoint = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
@@ -326,7 +326,7 @@ Test('Participant facade', async (facadeTest) => {
       })
 
       const endpoint = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
@@ -361,7 +361,7 @@ Test('Participant facade', async (facadeTest) => {
       sandbox.stub(knex, 'transaction')
       knex.transaction.throws(new Error('message'))
       const endpoint = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
@@ -378,7 +378,7 @@ Test('Participant facade', async (facadeTest) => {
   await facadeTest.test('addEndpoint should fail and rollback', async (assert) => {
     try {
       const endpoint = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
       sandbox.stub(Db, 'getKnex')
