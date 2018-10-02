@@ -35,12 +35,13 @@ const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
 const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
+
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
-    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId)
+    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.LedgerAccountType.POSITION)
     let processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     let reservedTransfers = []
     let abortedTransfers = []
@@ -100,7 +101,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
         // Get the actual position limit and calculate the available position for the transfers to use in this batch
         // Note: see optimisation decision notes to understand the justification for the algorithm
-        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.limitType.NET_DEBIT_CAP)
+        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.LedgerAccountType.POSITION, Enum.ParticipantLimitType.NET_DEBIT_CAP)
         let availablePosition = participantLimit.value - effectivePosition
         /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
            since further rules are expected we do not do this at this point
@@ -235,7 +236,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isInc
  * @returns {array} - Returns an array containing the details of active position(s) for the participant if successful, or throws an error if failed
  */
 
-const getByNameAndCurrency = async (name, currencyId = null) => {
+const getByNameAndCurrency = async (name, currencyId = null, ledgerAccountTypeId) => {
   try {
     return Db.participantPosition.query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
@@ -243,7 +244,8 @@ const getByNameAndCurrency = async (name, currencyId = null) => {
         .where({
           'p.name': name,
           'p.isActive': 1,
-          'pc.isActive': 1
+          'pc.isActive': 1,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId
         })
         .where(q => {
           if (currencyId != null) {

@@ -35,6 +35,7 @@ Test('setup', setupTest => {
     serverStub = {
       connection: sandbox.stub(),
       register: sandbox.stub(),
+      method: sandbox.stub(),
       ext: sandbox.stub(),
       start: sandbox.stub(),
       info: {
@@ -371,11 +372,6 @@ Test('setup', setupTest => {
         fspList
       }
 
-      var transferHandler = {
-        type: 'transfer',
-        enabled: true
-      }
-
       var fulfilHandler = {
         type: 'fulfil',
         enabled: true
@@ -399,7 +395,6 @@ Test('setup', setupTest => {
       var modulesList = [
         prepareHandler,
         positionHandler,
-        transferHandler,
         fulfilHandler,
         timeoutHandler,
         unknownHandler
@@ -413,7 +408,6 @@ Test('setup', setupTest => {
         console.log(err)
         test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
-        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(err.message === `Handler Setup - ${JSON.stringify(unknownHandler)} is not a valid handler to register!`)
@@ -438,11 +432,6 @@ Test('setup', setupTest => {
         fspList
       }
 
-      var transferHandler = {
-        type: 'transfer',
-        enabled: true
-      }
-
       var fulfilHandler = {
         type: 'fulfil',
         enabled: true
@@ -461,7 +450,6 @@ Test('setup', setupTest => {
       var modulesList = [
         prepareHandler,
         positionHandler,
-        transferHandler,
         fulfilHandler,
         timeoutHandler
         // rejectHandler
@@ -470,7 +458,6 @@ Test('setup', setupTest => {
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
         test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
-        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.notOk(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.end()
@@ -497,11 +484,6 @@ Test('setup', setupTest => {
         fspList
       }
 
-      var transferHandler = {
-        type: 'transfer',
-        enabled: true
-      }
-
       var fulfilHandler = {
         type: 'fulfil',
         enabled: true
@@ -520,7 +502,6 @@ Test('setup', setupTest => {
       var modulesList = [
         prepareHandler,
         positionHandler,
-        transferHandler,
         fulfilHandler,
         timeoutHandler
         // rejectHandler
@@ -529,7 +510,6 @@ Test('setup', setupTest => {
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
         test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
-        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(KafkaCronStub.Cron.start.calledTwice)
@@ -575,11 +555,6 @@ Test('setup', setupTest => {
         fspList
       }
 
-      var transferHandler = {
-        type: 'transfer',
-        enabled: true
-      }
-
       var fulfilHandler = {
         type: 'fulfil',
         enabled: true
@@ -593,7 +568,6 @@ Test('setup', setupTest => {
       var modulesList = [
         prepareHandler,
         positionHandler,
-        transferHandler,
         fulfilHandler
         // rejectHandler
       ]
@@ -601,7 +575,6 @@ Test('setup', setupTest => {
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
         test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
-        test.ok(RegisterHandlersStub.transfers.registerTransferHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(!KafkaCronStub.Cron.start.called)
         test.end()
