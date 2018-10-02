@@ -86,6 +86,14 @@ const validateParticipantByName = async function (participantName) {
   }
   return !!participant
 }
+const validateDifferentDfsp = (payload) => {
+  const isPayerAndPayeeDifferent = (payload.payerFsp !== payload.payeeFsp)
+  if (!isPayerAndPayeeDifferent) {
+    reasons.push(`Payer and Payee should be different.`)
+    return false
+  }
+  return true
+}
 
 const validateAmount = (amount) => {
   const decimalAmount = new Decimal(amount.amount)
@@ -156,7 +164,7 @@ const validateByName = async (payload) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (await validateParticipantByName(payload.payerFsp) && await validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload))
+  validationPassed = (await validateParticipantByName(payload.payerFsp) && await validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload) && validateDifferentDfsp(payload))
   return {
     validationPassed,
     reasons

@@ -122,6 +122,16 @@ Test('transfer validator', validatorTest => {
       test.end()
     })
 
+    validateByNameTest.test('fail validation for same payer and payee', async (test) => {
+      Participant.getByName.returns(P.resolve({}))
+      CryptoConditions.validateCondition.returns(true)
+      payload.payeeFsp = payload.payerFsp
+      const {validationPassed, reasons} = await Validator.validateByName(payload)
+      test.equal(validationPassed, false)
+      test.deepEqual(reasons, ['Payer and Payee should be different.'])
+      test.end()
+    })
+
     validateByNameTest.test('pass validation for valid payload', async (test) => {
       Participant.getByName.returns(P.resolve({}))
       CryptoConditions.validateCondition.returns(true)

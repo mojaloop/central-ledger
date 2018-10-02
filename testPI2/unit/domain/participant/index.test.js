@@ -102,7 +102,7 @@ Test('Participant service', async (participantTest) => {
       isActive: 1,
       createdDate: '2018-07-11',
       createdBy: 'unknown',
-      name: 'FSIOP_CALLBACK_URL'
+      name: 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
     },
     {
       participantEndpointId: 2,
@@ -442,7 +442,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getEndpoint', async (assert) => {
     try {
       const endpoint = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
       ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
@@ -460,7 +460,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getEndpoint should fail if no endpoints found', async (assert) => {
     const endpoint = {
-      type: 'FSIOP_CALLBACK_URL',
+      type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
       value: 'http://localhost:3001/participants/dfsp1/notification1'
     }
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
@@ -508,7 +508,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('addEndpoint', async (assert) => {
     try {
       const payload = {
-        type: 'FSIOP_CALLBACK_URL',
+        type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
       ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
@@ -526,7 +526,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('addEndpoint should fail if cant add endpoint', async (assert) => {
     const payload = {
-      type: 'FSIOP_CALLBACK_URL',
+      type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
       value: 'http://localhost:3001/participants/dfsp1/notification1'
     }
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
