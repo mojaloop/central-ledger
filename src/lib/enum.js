@@ -204,6 +204,10 @@ const topicMap = {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
+    'abort': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
     'timeout-received': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
