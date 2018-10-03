@@ -36,6 +36,7 @@ const transferExtensionModel = require('../../../../src/models/transfer/transfer
 const Enum = require('../../../../src/lib/enum')
 const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
+const Time = require('../../../../src/lib/time')
 
 Test('Transfer facade', async (transferFacadeTest) => {
   let sandbox
@@ -469,8 +470,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const stateReason = null
       let hasPassedValidation = null
       const saveTransferFulfiledExecuted = true
-      const transferFulfilmentRecord = { transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: now, isValid: true, createdDate: now, settlementWindowId: 1 }
-      const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: now }
+      const transferFulfilmentRecord = { transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: Time.getUTCString(now), isValid: true, createdDate: Time.getUTCString(now), settlementWindowId: 1 }
+      const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: Time.getUTCString(now) }
       let transferExtensionRecords = transferExtensions.map(ext => {
         return {
           transferId: transferFulfilmentRecord.transferId,
@@ -501,7 +502,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           let builderStub = sandbox.stub()
           let selectStub = sandbox.stub()
-          let whereRawStub = sandbox.stub()
+          let whereStub = sandbox.stub()
           let orderByStub = sandbox.stub()
           let firstStub = sandbox.stub()
 
@@ -511,7 +512,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           builderStub.leftJoin.returns({
             select: selectStub.returns({
-              whereRaw: whereRawStub.returns({
+              where: whereStub.returns({
                 orderBy: orderByStub.returns({
                   first: firstStub.returns(record)
                 })
@@ -562,7 +563,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           let builderStub = sandbox.stub()
           let selectStub = sandbox.stub()
-          let whereRawStub = sandbox.stub()
+          let whereStub = sandbox.stub()
           let orderByStub = sandbox.stub()
           let firstStub = sandbox.stub()
 
@@ -572,7 +573,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           builderStub.leftJoin.returns({
             select: selectStub.returns({
-              whereRaw: whereRawStub.returns({
+              where: whereStub.returns({
                 orderBy: orderByStub.returns({
                   first: firstStub.returns(record)
                 })
@@ -622,7 +623,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           let builderStub = sandbox.stub()
           let selectStub = sandbox.stub()
-          let whereRawStub = sandbox.stub()
+          let whereStub = sandbox.stub()
           let orderByStub = sandbox.stub()
           let firstStub = sandbox.stub()
 
@@ -632,7 +633,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           builderStub.leftJoin.returns({
             select: selectStub.returns({
-              whereRaw: whereRawStub.returns({
+              where: whereStub.returns({
                 orderBy: orderByStub.returns({
                   first: firstStub.returns(record)
                 })
