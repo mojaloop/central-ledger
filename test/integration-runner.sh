@@ -10,18 +10,26 @@ if [ $# -ne 1 ]; then
     echo " - DOCKER_TAG: Tag/Version of Image"
     echo " - DOCKER_FILE: Recipe to be used for Docker build"
     echo " - DOCKER_WORKING_DIR: Docker working directory"
-    echo " - POSTGRES_PARTY: Posgres party"
-    echo " - POSTGRES_PASSWORD: Posgres password"
-    echo " - POSTGRES_HOST: Posgres host name"
-    echo " - POSTGRES_PORT: Posgres container port"
-    echo " - POSTGRES_DB: Posgres database"
-    echo " - POSTGRES_IMAGE: Docker Image for Posgres"
-    echo " - POSTGRES_TAG: Docker tag/version for Posgres"
+    echo " - DB_USER: Database user"
+    echo " - DB_PASSWORD: Database password"
+    echo " - DB_HOST: Database host name"
+    echo " - DB_PORT: Database container port"
+    echo " - DB_NAME: Database database"
+    echo " - DB_IMAGE: Docker Image for Database"
+    echo " - DB_TAG: Docker tag/version for Database"
+    echo " - KAFKA_IMAGE: Kafka image:tag"
+    echo " - KAFKA_HOST: Kafka host"
+    echo " - KAFKA_ZOO_PORT: Kafka host name"
+    echo " - KAFKA_BROKER_PORT: Kafka container port"
     echo " - APP_HOST: Application host name"
+    echo " - APP_PORT: Application port"
+    echo " - APP_DIR_TEST_INTEGRATION: Location of the integration tests relative to the working directory"
     echo " - APP_DIR_TEST_RESULTS: Location of test results relative to the working directory"
-    echo " - TEST_CMD: Interation test command to be executed"
+    echo " - TEST_DIR: Base directory for tests"
+    echo " - TEST_RESULTS_FILE: Name of integration test results xml file"
+    echo " - TEST_CMD: Integration test command to be executed"
     echo ""
-    echo " * IMPORTANT: Ensure you have the required env in the test/integration-runner.env to execute the application"
+    echo " * IMPORTANT: Ensure you have the required env in the test/.env to execute the application"
     echo ""
     exit 1
 fi
@@ -35,77 +43,149 @@ cat $1
 >&2 echo "Executing Integration Tests for $APP_HOST ..."
 
 >&2 echo "Creating local directory to store test results"
-mkdir -p test/results
+mkdir -p $TEST_DIR/results
 
-fpsql() {
-	docker run --rm -i \
-		--entrypoint psql \
-    --link $POSTGRES_HOST \
-    -e PGPARTY=$POSTGRES_PARTY \
-		-e PGPASSWORD=$POSTGRES_PASSWORD \
-    -e PGDATABASE=$POSTGRES_DB \
-    -e POSTGRES_DB=$POSTGRES_DBNAME \
-		"$POSTGRES_IMAGE:$POSTGRES_TAG" \
-    --host $POSTGRES_HOST \
-		--username $POSTGRES_PARTY \
-    --dbname $POSTGRES_DB \
-		--quiet --no-align --tuples-only \
-		"$@"
-}
-
-ftest() {
-	docker run --rm -i \
-    --link $POSTGRES_HOST \
-    --env POSTGRES_PARTY="$POSTGRES_PARTY" \
-    --env POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-    --env POSTGRES_HOST="$POSTGRES_HOST" \
-    --env POSTGRES_PORT="$POSTGRES_PORT" \
-    --env POSTGRES_DB="$POSTGRES_DB" \
-    --env CLEDG_DATABASE_URI="postgres://${POSTGRES_PARTY}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}" \
-		"$DOCKER_IMAGE:$DOCKER_TAG" \
-    /bin/sh \
-    -c \
-    "$@"
-}
-
-is_psql_up() {
-    fpsql -c '\l' > /dev/null 2>&1
-}
+# Generic functions
 
 stop_docker() {
-  >&2 echo "Posgres-int is shutting down $POSTGRES_HOST"
-  (docker stop $POSTGRES_HOST && docker rm $POSTGRES_HOST) > /dev/null 2>&1
-  >&2 echo "$APP_HOST environment is shutting down"
+  >&1 echo "Kafka is shutting down $KAFKA_HOST"
+  (docker stop $KAFKA_HOST && docker rm $KAFKA_HOST) > /dev/null 2>&1
+  >&1 echo "$DB_HOST environment is shutting down"
+  (docker stop $DB_HOST && docker rm $DB_HOST) > /dev/null 2>&1
+  >&1 echo "$APP_HOST environment is shutting down"
   (docker stop $APP_HOST && docker rm $APP_HOST) > /dev/null 2>&1
+  >&1 echo "Deleting test network: $DOCKER_NETWORK"
+  docker network rm integration-test-net
 }
 
 clean_docker() {
   stop_docker
-  >&2 echo "Removing docker test image $DOCKER_IMAGE:$DOCKER_TAG"
-  (docker rmi $DOCKER_IMAGE:$DOCKER_TAG) > /dev/null 2>&1
 }
 
-run_test_command()
-{
-  >&2 echo "Running $APP_HOST Test command: $TEST_CMD"
-  docker run -i \
-    --link $POSTGRES_HOST \
-    --name $APP_HOST \
-    --env POSTGRES_PARTY="$POSTGRES_PARTY" \
-    --env POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-    --env POSTGRES_HOST="$POSTGRES_HOST" \
-    --env POSTGRES_PORT="$POSTGRES_PORT" \
-    --env POSTGRES_DB="$POSTGRES_DB" \
-		$DOCKER_IMAGE:$DOCKER_TAG \
+ftest() {
+  docker run -i --rm \
+    --link $KAFKA_HOST \
+    --link $DB_HOST \
+    --network $DOCKER_NETWORK \
+    --env HOST_IP="$APP_HOST" \
+    --env KAFKA_HOST="$KAFKA_HOST" \
+    --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
+    --env DB_HOST=$DB_HOST \
+    --env DB_PORT=$DB_PORT \
+    --env DB_USER=$DB_USER \
+    --env DB_PASSWORD=$DB_PASSWORD \
+    --env DB_NAME=$DB_NAME \
+    --env TEST_DIR=$TEST_DIR \
+    $DOCKER_IMAGE:$DOCKER_TAG \
     /bin/sh \
-    -c "source test/.env; $TEST_CMD"
+    -c "source $TEST_DIR/.env; $@"
 }
 
->&2 echo "Building Docker Image $DOCKER_IMAGE:$DOCKER_TAG with $DOCKER_FILE"
+run_test_command() {
+  >&2 echo "Running $APP_HOST Test command: $TEST_CMD"
+  docker run -it \
+    --link $KAFKA_HOST \
+    --link $DB_HOST \
+    --network $DOCKER_NETWORK \
+    --name $APP_HOST \
+    --env HOST_IP="$APP_HOST" \
+    --env KAFKA_HOST="$KAFKA_HOST" \
+    --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
+    --env DB_HOST=$DB_HOST \
+    --env DB_PORT=$DB_PORT \
+    --env DB_USER=$DB_USER \
+    --env DB_PASSWORD=$DB_PASSWORD \
+    --env DB_NAME=$DB_NAME \
+    --env TEST_DIR=$TEST_DIR \
+    $DOCKER_IMAGE:$DOCKER_TAG \
+    /bin/sh \
+    -c "source $TEST_DIR/.env; $TEST_CMD"
+}
+
+fcurl() {
+	docker run --rm -i \
+		--link $ENDPOINT_HOST \
+		--network $DOCKER_NETWORK \
+		--entrypoint curl \
+		"jlekie/curl:latest" \
+        --silent --head --fail \
+		"$@"
+}
+
+# Kafka functions
+
+start_kafka() {
+  echo "docker run -td -i -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT --name=$KAFKA_HOST --env ADVERTISED_HOST=$KAFKA_HOST --env ADVERTISED_PORT=$KAFKA_BROKER_PORT --env CONSUMER_THREADS=1 --env TOPICS=my-topic,some-other-topic --env ZK_CONNECT=kafka7zookeeper:2181/root/path --env GROUP_ID=mymirror $KAFKA_IMAGE"
+  docker run -td -i \
+    -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT \
+    -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT \
+    --network $DOCKER_NETWORK \
+    --name=$KAFKA_HOST \
+    --env ADVERTISED_HOST=$KAFKA_HOST \
+    --env ADVERTISED_PORT=$KAFKA_BROKER_PORT \
+    --env CONSUMER_THREADS=1 \
+    --env TOPICS=my-topic,some-other-topic \
+    --env ZK_CONNECT=kafka7zookeeper:2181/root/path \
+    --env GROUP_ID=mymirror \
+    $KAFKA_IMAGE
+}
+
+fkafka() {
+  >&2 echo "fkafka()"
+	docker run --rm -i \
+	  --link $KAFKA_HOST \
+	  --network $DOCKER_NETWORK \
+	  --env KAFKA_HOST="$KAFKA_HOST" \
+    --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
+	  taion809/kafka-cli \
+	  /bin/sh \
+	  -c \
+		"$@"
+}
+
+is_kafka_up() {
+  fkafka 'kafka-topics.sh --list --zookeeper $KAFKA_HOST:$KAFKA_ZOO_PORT' > /dev/null 2>&1
+}
+
+# DB functions
+
+start_db() {
+  docker run -td \
+    -p $DB_PORT:$DB_PORT \
+    --name $DB_HOST \
+    --network $DOCKER_NETWORK \
+    -e MYSQL_USER=$DB_USER \
+    -e MYSQL_PASSWORD=$DB_PASSWORD \
+    -e MYSQL_DATABASE=$DB_NAME \
+    -e MYSQL_ALLOW_EMPTY_PASSWORD=true \
+    $DB_IMAGE:$DB_TAG
+}
+
+fdb() {
+  docker run -it --rm \
+    --link $DB_HOST:mysql \
+    --network $DOCKER_NETWORK \
+    -e DB_HOST=$DB_HOST \
+    -e DB_PORT=$DB_PORT \
+    -e DB_PASSWORD=$DB_PASSWORD \
+    -e DB_USER=$DB_USER \
+    -e DB_NAME=$DB_NAME \
+    mysql \
+    sh -c \
+    "$@"
+}
+
+is_db_up() {
+  fdb 'mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "select 1"' > /dev/null 2>&1
+}
+
+# Script execution
+
+stop_docker
+
+>&1 echo "Building Docker Image $DOCKER_IMAGE:$DOCKER_TAG with $DOCKER_FILE"
 docker build --no-cache -t $DOCKER_IMAGE:$DOCKER_TAG -f $DOCKER_FILE .
-#Docker build for local testing below
-# docker build -t $DOCKER_IMAGE:$DOCKER_TAG -f $DOCKER_FILE .
-echo "result "$?""
+
 if [ "$?" != 0 ]
 then
   >&2 echo "Build failed...exiting"
@@ -113,24 +193,43 @@ then
   exit 1
 fi
 
->&2 echo "Postgres is starting"
-stop_docker
-docker run --name $POSTGRES_HOST -d -p $POSTGRES_PORT:$POSTGRES_PORT -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD -e POSTGRES_PARTY=$POSTGRES_PARTY -e POSTGRES_DB=$POSTGRES_DB "$POSTGRES_IMAGE:$POSTGRES_TAG" > /dev/null 2>&1
+>&1 echo "Creating test network: $DOCKER_NETWORK"
+docker network create $DOCKER_NETWORK
+
+>&1 echo "Kafka is starting"
+start_kafka
 
 if [ "$?" != 0 ]
 then
-  >&2 echo "Starting Postgres failed...exiting"
+  >&2 echo "Starting Kafka failed...exiting"
   clean_docker
   exit 1
 fi
 
-until is_psql_up; do
-  >&2 echo "Postgres is unavailable...sleeping"
-  sleep 1
+>&1 echo "Waiting for Kafka to start"
+until is_kafka_up; do
+  >&1 printf "."
+  sleep 5
 done
 
->&2 echo "Running migrations"
-ftest "source test/.env; npm run migrate"
+>&1 echo "DB is starting"
+start_db
+
+if [ "$?" != 0 ]
+then
+  >&2 echo "Starting DB failed...exiting"
+  clean_docker
+  exit 1
+fi
+
+>&2 echo "Waiting for DB to start"
+until is_db_up; do
+  >&2 printf "."
+  sleep 5
+done
+
+>&1 echo "Running migrations"
+ftest "npm run migrate"
 
 if [ "$?" != 0 ]
 then
@@ -139,21 +238,27 @@ then
   exit 1
 fi
 
->&2 echo "Integration tests are starting"
+>&1 echo "Integration tests are starting"
 run_test_command
 test_exit_code=$?
+>&2 echo "Test exited with result code.... $test_exit_code ..."
 
->&2 echo "Displaying test logs"
-docker logs $APP_TEST_HOST
+>&1 echo "Displaying test logs"
+docker logs $APP_HOST
 
->&2 echo "Copy results to local directory"
-docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS test
+>&1 echo "Copy results to local directory"
+docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
 
-if [ "$test_exit_code" != 0 ]
+if [ "$test_exit_code" == 0 ]
 then
+  >&1 echo "Showing results..."
+  cat $APP_DIR_TEST_RESULTS/$TEST_RESULTS_FILE
+else
   >&2 echo "Integration tests failed...exiting"
+  >&2 echo "Test environment logs..."
+  docker logs $APP_HOST
 fi
 
 clean_docker
-
+>&1 echo "Integration tests exited with code: $test_exit_code"
 exit "$test_exit_code"
