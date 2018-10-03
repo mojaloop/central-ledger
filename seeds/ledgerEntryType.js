@@ -27,7 +27,7 @@
 const ledgerEntryTypes = [
   {
     'name': 'PRINCIPLE_VALUE',
-    'description': 'The principle amount to be settled between parties, derived on quotes between DFSPs (+/-///)'
+    'description': 'The principle amount to be settled between parties, derived on quotes between DFSPs'
   },
   {
     'name': 'INTERCHANGE_FEE',
