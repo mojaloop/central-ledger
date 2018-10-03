@@ -35,6 +35,8 @@ const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
 const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Time = require('../../lib/time')
+
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
     const knex = await Db.getKnex()
@@ -185,7 +187,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
-        const transactionTimestamp = new Date()
+        const transactionTimestamp = Time.getUTCString(new Date())
         transferStateChange.createdDate = transactionTimestamp
         const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
         let latestPosition

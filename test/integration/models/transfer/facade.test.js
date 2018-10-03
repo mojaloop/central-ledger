@@ -30,11 +30,11 @@
 'use strict'
 
 const Test = require('tape')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const TransferFacade = require('../../../../src/models/transfer/facade')
-const HelperModule = require('../../helpers/index')
+const HelperModule = require('../../helpers')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
   var transferPrepareResult = {}

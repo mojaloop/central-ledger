@@ -34,6 +34,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferStateChange')
 const HelperModule = require('../../helpers')
+const Time = require('../../../../src/lib/time')
 
 Test('Transfer State Change model test', async (stateChangeTest) => {
   var stateChangePrepareResult = {}
@@ -58,7 +59,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
     try {
       // Prepare helper tests actually the Model.saveTransferExtension and Model.getByTransferId
       stateChangePrepareResult = await HelperModule.prepareNeededData('transferStateChange')
-      assert.comment('the prepared data are: ', JSON.stringify(stateChangePrepareResult, null, 4))
+      assert.comment('the prepared data is: ', JSON.stringify(stateChangePrepareResult, null, 4))
 
       let state = stateChangePrepareResult.transferStateResults[1]
       let createdId = 0
@@ -67,7 +68,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
         transferId: stateChangePrepareResult.transfer.transferId,
         transferStateId: state.transferStateId,
         reason: null,
-        createdDate: new Date()
+        createdDate: Time.getUTCString(new Date())
       }
 
       createdId = await Model.saveTransferStateChange(transferStateChange)

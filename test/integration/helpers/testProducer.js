@@ -37,6 +37,7 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const amount = parseFloat(Number(Math.floor(Math.random() * 100 * 100) / 100 + 100).toFixed(2)) // decimal amount between 100.01 and 200.00
 const expiration = new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
+const Time = require('../../../src/lib/time')
 
 const transfer = {
   transferId: Uuid(),
@@ -48,7 +49,7 @@ const transfer = {
   },
   ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
   condition: '47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU',
-  expiration,
+  expiration: Time.getUTCString(expiration),
   extensionList: {
     extension: [
       {
@@ -65,7 +66,7 @@ const transfer = {
 
 const fulfil = {
   fulfilment: 'oAKAAA',
-  completedTimestamp: new Date(),
+  completedTimestamp: Time.getUTCString(new Date()),
   transferState: TransferState.COMMITTED,
   extensionList: {
     extension: [

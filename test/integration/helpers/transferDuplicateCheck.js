@@ -26,7 +26,7 @@
 
 const Model = require('../../../src/models/transfer/transferDuplicateCheck')
 const ParticipantPreparationModule = require('./participant')
-// const time = require('../../../src/lib/time')
+const Time = require('../../../src/lib/time')
 const Crypto = require('crypto')
 const Uuid = require('uuid4')
 
@@ -45,7 +45,7 @@ exports.prepareData = async () => {
       },
       condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
       ilpPacket: 'AQAAAAAAAABkEGcuZXdwMjEuaWQuODAwMjCCAhd7InRyYW5zYWN0aW9uSWQiOiJmODU0NzdkYi0xMzVkLTRlMDgtYThiNy0xMmIyMmQ4MmMwZDYiLCJxdW90ZUlkIjoiOWU2NGYzMjEtYzMyNC00ZDI0LTg5MmYtYzQ3ZWY0ZThkZTkxIiwicGF5ZWUiOnsicGFydHlJZEluZm8iOnsicGFydHlJZFR5cGUiOiJNU0lTRE4iLCJwYXJ0eUlkZW50aWZpZXIiOiIyNTYxMjM0NTYiLCJmc3BJZCI6IjIxIn19LCJwYXllciI6eyJwYXJ0eUlkSW5mbyI6eyJwYXJ0eUlkVHlwZSI6Ik1TSVNETiIsInBhcnR5SWRlbnRpZmllciI6IjI1NjIwMTAwMDAxIiwiZnNwSWQiOiIyMCJ9LCJwZXJzb25hbEluZm8iOnsiY29tcGxleE5hbWUiOnsiZmlyc3ROYW1lIjoiTWF0cyIsImxhc3ROYW1lIjoiSGFnbWFuIn0sImRhdGVPZkJpcnRoIjoiMTk4My0xMC0yNSJ9fSwiYW1vdW50Ijp7ImFtb3VudCI6IjEwMCIsImN1cnJlbmN5IjoiVVNEIn0sInRyYW5zYWN0aW9uVHlwZSI6eyJzY2VuYXJpbyI6IlRSQU5TRkVSIiwiaW5pdGlhdG9yIjoiUEFZRVIiLCJpbml0aWF0b3JUeXBlIjoiQ09OU1VNRVIifSwibm90ZSI6ImhlaiJ9',
-      expiration: new Date()
+      expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 
     }
     let transfer = {
@@ -53,7 +53,7 @@ exports.prepareData = async () => {
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
-      expirationDate: payload.expiration
+      expirationDate: Time.getUTCString(payload.expiration)
     }
 
     const hashSha256 = Crypto.createHash('sha256')
