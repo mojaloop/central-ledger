@@ -180,7 +180,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
   }
 }
 
-const changeParticipantPositionTransaction = async (participantCurrencyId, isIncrease, amount, transferStateChange) => {
+const changeParticipantPositionTransaction = async (participantCurrencyId, isReversal, amount, transferStateChange) => {
   try {
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
@@ -189,10 +189,10 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isInc
         transferStateChange.createdDate = transactionTimestamp
         const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
         let latestPosition
-        if (isIncrease) {
-          latestPosition = participantPosition.value + amount
-        } else {
+        if (isReversal) {
           latestPosition = participantPosition.value - amount
+        } else {
+          latestPosition = participantPosition.value + amount
         }
         latestPosition = parseFloat(latestPosition.toFixed(2))
         await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({

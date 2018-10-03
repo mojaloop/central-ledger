@@ -82,7 +82,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
  *
  *
  * @param {integer} participantId - the id of the participant in the database. Example 1
- * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
+ * @param {string} type - the type of the endpoint. Example 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
  *
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
@@ -144,7 +144,7 @@ const getAllEndpoints = async (participantId) => {
  * @param {object} endpoint - the payload containing object with 'type' and 'value' of the endpoint.
  * Example: {
  *      "endpoint": {
- *      "type": "FSIOP_CALLBACK_URL",
+ *      "type": "FSPIOP_CALLBACK_URL_TRANSFER_POST",
  *      "value": "http://localhost:3001/participants/dfsp1/notification12"
  *    }
  * }
