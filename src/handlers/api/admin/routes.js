@@ -38,7 +38,7 @@
 const RegisterAllHandler = require('../../register')
 const TransferHandler = require('../../transfers/handler')
 const PositionHandler = require('../../positions/handler')
-const testProducer = require('../../../../testPI2/integration/helpers/testProducer')
+const testProducer = require('../../../../test/integration/helpers/testProducer')
 
 module.exports = [
   /**
