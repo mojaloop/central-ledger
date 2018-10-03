@@ -4,7 +4,6 @@ USER root
 WORKDIR /opt/central-ledger
 COPY src /opt/central-ledger/src
 
-# This to be updated to 'COPY test /opt/central-ledger/test' once the integration tests are fully resolved
 COPY test /opt/central-ledger/test
 COPY migrations /opt/central-ledger/migrations
 COPY seeds /opt/central-ledger/seeds
