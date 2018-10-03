@@ -97,9 +97,11 @@ const all = async function () {
 
 // TODO: To be replaced throughout code with the above
 const EnpointType = {
-  FSIOP_CALLBACK_URL: 1,
-  ALARM_NOTIFICATION_URL: 2,
-  ALARM_NOTIFICATION_TOPIC: 3
+  ALARM_NOTIFICATION_URL: 1,
+  ALARM_NOTIFICATION_TOPIC: 2,
+  FSPIOP_CALLBACK_URL_TRANSFER_POST: 3,
+  FSPIOP_CALLBACK_URL_TRANSFER_PUT: 4,
+  FSPIOP_CALLBACK_URL_TRANSFER_ERROR: 5
 }
 const LedgerAccountType = {
   POSITION: 1,

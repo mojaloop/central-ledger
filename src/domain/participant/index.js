@@ -138,7 +138,7 @@ const destroyByName = async (name) => {
  * @param {string} name - the name of the participant. Example 'dfsp1'
  * @param {object} payload - the payload containing 'type' and 'value' of the endpoint.
  * Example: {
- *      "type": "FSIOP_CALLBACK_URL",
+ *      "type": "FSPIOP_CALLBACK_URL_TRANSFER_POST",
  *      "value": "http://localhost:3001/participants/dfsp1/notification12"
  * }
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
@@ -164,7 +164,7 @@ const addEndpoint = async (name, payload) => {
  * ParticipantFacade.getEndpoint called to get the participant endpoint details
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
+ * @param {string} type - the type of the endpoint. Example 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
  *
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
@@ -366,7 +366,7 @@ const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
  * ParticipantFacade.getParticipantLimitsByParticipantId called to get the participant limit details from participant id
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
+ * @param {string} type - the type of the endpoint. Example 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
  *
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
