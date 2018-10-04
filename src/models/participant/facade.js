@@ -323,7 +323,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, limitPostionObj
 
 const adjustLimits = async (participantCurrencyId, limit, trx) => {
   try {
-    const trxFunction = async (trx) => {
+    const trxFunction = async (trx, doCommit = true) => {
       try {
         const limitType = await knex('participantLimitType').where({ 'name': limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
         // const limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
@@ -347,19 +347,23 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         }
         const result = await knex('participantLimit').transacting(trx).insert(newLimit)
         newLimit.participantLimitId = result[0]
-        await trx.commit
+        if (doCommit) {
+          await trx.commit
+        }
         return {
           participantLimit: newLimit
         }
       } catch (err) {
-        await trx.rollback
+        if (doCommit) {
+          await trx.rollback
+        }
         throw err
       }
     }
 
     const knex = Db.getKnex()
     if (trx) {
-      return trxFunction(trx)
+      return trxFunction(trx, false)
     } else {
       return knex.transaction(trxFunction)
     }
