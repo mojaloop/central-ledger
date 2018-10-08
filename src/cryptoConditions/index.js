@@ -11,19 +11,6 @@ const validateCondition = (conditionUri) => {
   }
 }
 
-const validateFulfilment = (fulfilment, condition) => {
-  try {
-    const fulfilmentCondition = FiveBellsCondition.fulfillmentToCondition(fulfilment)
-    if (fulfilmentCondition === condition) {
-      return FiveBellsCondition.validateFulfillment(fulfilment, condition)
-    }
-  } catch (error) {
-    throw new Errors.InvalidBodyError(`Invalid fulfilment: ${error.message}`)
-  }
-  throw new Errors.UnmetConditionError()
-}
-
 module.exports = {
-  validateCondition,
-  validateFulfilment
+  validateCondition
 }
