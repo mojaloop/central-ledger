@@ -145,7 +145,7 @@ module.exports = [
           currency: currencyValidator,
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
-            value: Joi.number().required().description('Limit Value')
+            value: Joi.number().positive().allow(0).required().description('Limit Value')
           }).required().description('Participant Limit'),
           initialPosition: Joi.number().optional().description('Initial Position Value')
         },

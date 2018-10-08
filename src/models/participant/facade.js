@@ -30,7 +30,7 @@
 
 const Db = require('../../db')
 
-const getByNameAndCurrency = async (name, currencyId) => {
+const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return builder
@@ -38,6 +38,7 @@ const getByNameAndCurrency = async (name, currencyId) => {
         .andWhere({ 'participant.isActive': true })
         .andWhere({ 'pc.currencyId': currencyId })
         .andWhere({ 'pc.isActive': true })
+        .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
@@ -51,13 +52,14 @@ const getByNameAndCurrency = async (name, currencyId) => {
   }
 }
 
-const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return await builder
         .where({
           'participant.participantId': participantId,
-          'pc.currencyId': currencyId
+          'pc.currencyId': currencyId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId
         })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
@@ -80,7 +82,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
  *
  *
  * @param {integer} participantId - the id of the participant in the database. Example 1
- * @param {string} type - the type of the endpoint. Example 'FSIOP_CALLBACK_URL'
+ * @param {string} type - the type of the endpoint. Example 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
  *
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
@@ -142,7 +144,7 @@ const getAllEndpoints = async (participantId) => {
  * @param {object} endpoint - the payload containing object with 'type' and 'value' of the endpoint.
  * Example: {
  *      "endpoint": {
- *      "type": "FSIOP_CALLBACK_URL",
+ *      "type": "FSPIOP_CALLBACK_URL_TRANSFER_POST",
  *      "value": "http://localhost:3001/participants/dfsp1/notification12"
  *    }
  * }
@@ -187,13 +189,14 @@ const addEndpoint = async (participantId, endpoint) => {
   }
 }
 
-const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, participantLimitTypeId) => {
+const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return await builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
           'pl.participantLimitTypeId': participantLimitTypeId,
           'participant.isActive': 1,
           'pc.IsActive': 1,
@@ -213,13 +216,14 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
   }
 }
 
-const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId) => {
+const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
       return await builder
         .where({
           'participant.participantId': participantId,
-          'pc.currencyId': currencyId
+          'pc.currencyId': currencyId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId
         })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .innerJoin('participantPosition AS pp', 'pp.participantCurrencyId', 'pc.participantCurrencyId')
@@ -317,10 +321,9 @@ const addLimitAndInitialPosition = async (participantCurrencyId, limitPostionObj
 * @returns {object} participantLimit - Returns participantLimit updated/inserted object if successful, or throws an error if failed
  */
 
-const adjustLimits = async (participantCurrencyId, limit) => {
+const adjustLimits = async (participantCurrencyId, limit, trx) => {
   try {
-    const knex = Db.getKnex()
-    return knex.transaction(async trx => {
+    const trxFunction = async (trx, doCommit = true) => {
       try {
         const limitType = await knex('participantLimitType').where({ 'name': limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
         // const limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
@@ -344,15 +347,26 @@ const adjustLimits = async (participantCurrencyId, limit) => {
         }
         const result = await knex('participantLimit').transacting(trx).insert(newLimit)
         newLimit.participantLimitId = result[0]
-        await trx.commit
+        if (doCommit) {
+          await trx.commit
+        }
         return {
           participantLimit: newLimit
         }
       } catch (err) {
-        await trx.rollback
+        if (doCommit) {
+          await trx.rollback
+        }
         throw err
       }
-    })
+    }
+
+    const knex = Db.getKnex()
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw new Error(err.message)
   }
@@ -407,13 +421,14 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
  * @returns {array} - Returns an array containing the list of all active limits for the participant and type if successful, or throws an error if failed
  */
 
-const getParticipantLimitsByParticipantId = async (participantId, type) => {
+const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAccountTypeId) => {
   try {
     return Db.participantLimit.query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
         .innerJoin('participantCurrency AS pc', 'participantLimit.participantCurrencyId', 'pc.participantCurrencyId')
         .where({
           'pc.participantId': participantId,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
           'pc.isActive': 1,
           'lt.isActive': 1,
           'participantLimit.isActive': 1

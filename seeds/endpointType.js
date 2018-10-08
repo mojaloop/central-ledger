@@ -26,16 +26,24 @@
 
 const endpointTypes = [
   {
-    'name': 'FSIOP_CALLBACK_URL',
-    'description': 'Mojaloop compliant callback URL'
-  },
-  {
     'name': 'ALARM_NOTIFICATION_URL',
     'description': 'Participant callback URL to which alarm notifications can be sent'
   },
   {
     'name': 'ALARM_NOTIFICATION_TOPIC',
     'description': 'Kafka topic used to publish alarm notifications'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
+    'description': 'Participant callback URL to which transfer post can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_TRANSFER_PUT',
+    'description': 'Participant callback URL to which transfer put can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR',
+    'description': 'Participant callback URL to which transfer error notifications can be sent'
   }
 ]
 

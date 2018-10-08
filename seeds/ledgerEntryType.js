@@ -36,6 +36,34 @@ const ledgerEntryTypes = [
   {
     'name': 'HUB_FEE',
     'description': 'Fees to be paid from the DFSPs to the Hub Operator'
+  },
+  {
+    'name': 'POSITION_DEPOSIT',
+    'description': 'Used when increasing Net Debit Cap'
+  },
+  {
+    'name': 'POSITION_WITHDRAWAL',
+    'description': 'Used when decreasing Net Debit Cap'
+  },
+  {
+    'name': 'SETTLEMENT_NET_RECIPIENT',
+    'description': 'Participant is settlement net recipient'
+  },
+  {
+    'name': 'SETTLEMENT_NET_SENDER',
+    'description': 'Participant is settlement net sender'
+  },
+  {
+    'name': 'SETTLEMENT_NET_ZERO',
+    'description': 'Participant is settlement net sender'
+  },
+  {
+    'name': 'SETTLEMENT_ACCOUNT_DEPOSIT',
+    'description': 'Settlement account deposit'
+  },
+  {
+    'name': 'SETTLEMENT_ACCOUNT_WITHDRAWAL',
+    'description': 'Settlement account withdrawal'
   }
 ]
 

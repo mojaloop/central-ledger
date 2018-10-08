@@ -196,9 +196,13 @@ export CLEDG_DATABASE_URI=mysql://central_ledger:password@localhost:3306/central
 * run `npm start` *(to run it locally)* or `npm run dev` *(to run it on your Docker host)*
 
 ##### Run Postman
-* click on **Central Ledger** and then **Prepare transfer**
+* Use the postman collection from the [postman repo](https://github.com/mojaloop/postman)
+* To use this collection, the ml-api-adapter service needs to be running along with the central-ledger service (preferably central-timeout , cental-settlement as well, but they are optional)
+* click on **mojaloop v1.0** and then **6.a. Transfer Prepare Request**
 * click **Send**
-* if you get a valid response, you should be ready to go
+* if you get a valid response, it is a good first step.
+* You can also then select the **7.a. Transfer Fulfil Request** and perform a corresponding fulfilment request
+* You can check the database to see the transfer state, status changes, positions and other such information. After this if everything looks good, you should be ready to go.
 
 ### Errors On Setup
 * `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
