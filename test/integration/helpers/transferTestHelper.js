@@ -37,7 +37,7 @@ const TransferFacade = require('../../../src/models/transfer/facade')
 const TransferFulfilmentModel = require('../../../src/models/transfer/transferFulfilment')
 const TransferParticipantModel = require('../../../src/models/transfer/transferParticipant')
 const Enum = require('../../../src/lib/enum')
-
+const Time = require('../../../src/lib/time')
 const Uuid = require('uuid4')
 
 // TODO: add data to transferParticipant, transferParticipantRoleType, transferFulfilment
@@ -52,9 +52,9 @@ exports.prepareData = async () => {
 
     await TransferExtensionModel.saveTransferExtension({
       transferId: transferResult.transfer.transferId,
-      key: 'extension.key',
-      value: 'extension.value',
-      createdDate: new Date()
+      key: 'helper.extension.key',
+      value: 'helper.extension.value',
+      createdDate: Time.getUTCString(new Date())
     })
 
     await IlpModel.saveIlpPacket({
@@ -76,10 +76,10 @@ exports.prepareData = async () => {
     await TransferFulfilmentModel.saveTransferFulfilment({
       transferFulfilmentId: Uuid(),
       transferId: transferResult.transfer.transferId,
-      ilpFulfilment: 'oAKAAA',
-      completedDate: new Date(),
+      ilpFulfilment: 'helper.oAKAAA',
+      completedDate: Time.getUTCString(new Date()),
       isValid: true,
-      createdDate: new Date()
+      createdDate: Time.getUTCString(new Date())
     })
 
     await TransferParticipantModel.saveTransferParticipant({

@@ -15,6 +15,7 @@ RUN cp -f /opt/central-ledger/test/integration-config.json /opt/central-ledger/c
 
 RUN apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake \
     && cd $(npm root -g)/npm \
+    && npm config set unsafe-perm true \
     && npm install -g node-gyp \
     && apk --no-cache add git
 
