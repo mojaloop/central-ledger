@@ -105,6 +105,7 @@
     "five-bells-ledger-api-tests": "github:interledgerjs/five-bells-ledger-api-tests",
     "istanbul": "1.1.0-alpha.1",
     "jsonpath": "^1.0.0",
+    "npm-run-all": "4.0.1",
     "proxyquire": "1.7.10",
     "rewire": "^4.0.1",
     "sinon": "^5.0.10",
