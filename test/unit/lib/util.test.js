@@ -122,5 +122,216 @@ Test('util', utilTest => {
     filterUndefinedTest.end()
   })
 
+  utilTest.test('omitNil should', omitNilTest => {
+    omitNilTest.test('return object with undefined values stripped out', test => {
+      const obj1 = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop3: null,
+        prop4: null
+      }
+
+      const expected = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        }
+      }
+
+      const result = Util.omitNil(obj1)
+      test.deepEqual(result, expected)
+      test.end()
+    })
+    omitNilTest.end()
+  })
+
+  utilTest.test('pick should', pickTest => {
+    pickTest.test('return object with only expected properties', test => {
+      const obj1 = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop3: null,
+        prop4: null
+      }
+
+      const properties = ['prop1', 'prop2']
+
+      const expected = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        }
+      }
+
+      const result = Util.pick(obj1, properties)
+      test.deepEqual(result, expected)
+      test.end()
+    })
+    pickTest.end()
+  })
+
+  utilTest.test('assign should', assignTest => {
+    assignTest.test('return target object with properties assigned from the source', test => {
+      const obj1 = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop5: 99
+      }
+
+      const obj2 = {
+        prop3: 'test2',
+        prop4: {
+          'number': 2000
+        },
+        prop5: 100
+      }
+
+      const expected = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop3: 'test2',
+        prop4: {
+          'number': 2000
+        },
+        prop5: 100
+      }
+
+      const result = Util.assign(obj1, obj2)
+      test.deepEqual(result, expected)
+      test.end()
+    })
+    assignTest.end()
+  })
+
+  utilTest.test('merge should', mergeTest => {
+    mergeTest.test('return target object with properties merged from the source', test => {
+      const obj1 = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop5: 99
+      }
+
+      const obj2 = {
+        prop3: 'test2',
+        prop4: {
+          'number': 2000
+        },
+        prop5: 100
+      }
+
+      const expected = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop3: 'test2',
+        prop4: {
+          'number': 2000
+        },
+        prop5: 100
+      }
+
+      const result = Util.merge(obj1, obj2)
+      test.deepEqual(result, expected)
+      test.end()
+    })
+    mergeTest.end()
+  })
+
+  utilTest.test('mergeAndOmitNil should', mergeAndOmitNilTest => {
+    mergeAndOmitNilTest.test('return target object with properties merged from the source omitting undefined properties', test => {
+      const obj1 = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop5: 99,
+        prop6: null
+      }
+
+      const obj2 = {
+        prop3: 'test2',
+        prop4: {
+          'number': 2000
+        },
+        prop5: 100,
+        prop7: null
+      }
+
+      const expected = {
+        prop1: 'test',
+        prop2: {
+          'date_time': new Date().toDateString(),
+          'number': 1000
+        },
+        prop3: 'test2',
+        prop4: {
+          'number': 2000
+        },
+        prop5: 100
+      }
+
+      const result = Util.mergeAndOmitNil(obj1, obj2)
+      test.deepEqual(result, expected)
+      test.end()
+    })
+    mergeAndOmitNilTest.end()
+  })
+
+  utilTest.test('squish should', squishTest => {
+    squishTest.test('return a string by joining elements of an array', test => {
+      const array1 = [1, 2, 3, 4, 5]
+
+      const expected = '1|2|3|4|5'
+
+      const result = Util.squish(array1)
+      test.equal(result, expected)
+      test.end()
+    })
+    squishTest.end()
+  })
+
+  utilTest.test('expand should', expandTest => {
+    expandTest.test('return an array by splitting astring', test => {
+      const expected = ['1', '2', '3', '4', '5']
+
+      const string = '1|2|3|4|5'
+
+      const result = Util.expand(string)
+      test.deepEqual(result, expected)
+      test.end()
+    })
+
+    expandTest.test('return null if null is passed', test => {
+      const expected = null
+
+      const string = null
+
+      const result = Util.expand(string)
+      test.deepEqual(result, expected)
+      test.end()
+    })
+    expandTest.end()
+  })
+
   utilTest.end()
 })
