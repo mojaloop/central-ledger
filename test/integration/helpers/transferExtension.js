@@ -31,6 +31,7 @@ const TransferPreparationModule = require('./transfer')
 const TransferModel = require('../../../src/models/transfer/transfer')
 const Model = require('../../../src/models/transfer/transferExtension')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
+const Time = require('../../../src/lib/time')
 
 exports.prepareData = async () => {
   try {
@@ -42,7 +43,7 @@ exports.prepareData = async () => {
       transferId: transferResult.transfer.transferId,
       key: 'extension.key',
       value: 'extension.value',
-      createdDate: new Date()
+      createdDate: Time.getUTCString(new Date())
     })
     let transfer = await TransferModel.getById(transferResult.transfer.transferId)
     let extension = await Model.getByTransferId(transferResult.transfer.transferId)

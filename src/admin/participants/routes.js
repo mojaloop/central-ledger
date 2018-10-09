@@ -2,8 +2,6 @@
 
 const Handler = require('./handler')
 const Joi = require('joi')
-const Permissions = require('../../domain/security/permissions')
-const RouteConfig = require('../../shared/routeConfig')
 
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
@@ -40,23 +38,29 @@ module.exports = [
     method: 'GET',
     path: '/participants',
     handler: Handler.getAll,
-    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_LIST)
+    options: {
+      tags
+    }
   },
   {
     method: 'GET',
     path: '/participants/{name}',
     handler: Handler.getByName,
-    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_VIEW, {
-      params: {
-        name: Joi.string().required().description('Participant name')
+    options: {
+      tags,
+      validate: {
+        params: {
+          name: Joi.string().required().description('Participant name')
+        }
       }
-    })
+    }
   },
   {
     method: 'POST',
     path: '/participants',
     handler: Handler.create,
-    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_CREATE, {
+    options: {
+      tags,
       payload: {
         allow: ['application/json'],
         failAction: 'error'
@@ -69,13 +73,14 @@ module.exports = [
           // emailAddress: Joi.string().email().required()
         }
       }
-    })
+    }
   },
   {
     method: 'PUT',
     path: '/participants/{name}',
     handler: Handler.update,
-    options: RouteConfig.config(tags, Permissions.PARTICIPANTS_UPDATE, {
+    options: {
+      tags,
       payload: {
         allow: ['application/json'],
         failAction: 'error'
@@ -88,7 +93,7 @@ module.exports = [
           name: Joi.string().required().description('Participant name')
         }
       }
-    })
+    }
   },
   {
     method: 'POST',

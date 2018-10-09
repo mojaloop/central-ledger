@@ -2,10 +2,6 @@
   "PORT": 4000,
   "ADMIN_PORT": 3001,
   "HOSTNAME": "http://central-ledger",
-  "ENABLE_TOKEN_AUTH": false,
-  "ENABLE_BASIC_AUTH": false,
-  "LEDGER_ACCOUNT_NAME": "LedgerName",
-  "LEDGER_ACCOUNT_PASSWORD": "LedgerPassword",
   "AMOUNT": {
     "PRECISION": 10,
     "SCALE": 2
@@ -33,9 +29,6 @@
       "TIMEZONE": "UTC"
     }
   },
-  "EMAIL_USER": "modusboxemailtest@gmail.com",
-  "EMAIL_PASSWORD": "April2o0%",
-  "EMAIL_SMTP": "smtp.gmail.com",
   "PARTICIPANT_INITIAL_POSTITION": 0,
   "KAFKA": {
     "TOPIC_TEMPLATES": {

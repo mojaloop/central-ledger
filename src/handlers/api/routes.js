@@ -29,7 +29,6 @@
 
 'use strict'
 
-const RouteConfig = require('../../shared/routeConfig')
 const tags = ['api', 'root']
 
 module.exports = [
@@ -39,6 +38,8 @@ module.exports = [
     handler: function (request, h) {
       return h.response({ status: 'OK' }).code(200)
     },
-    options: RouteConfig.config(tags, 'Status of handler')
+    options: {
+      tags
+    }
   }
 ]
