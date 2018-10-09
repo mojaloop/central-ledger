@@ -1,6 +1,5 @@
 'use strict'
 
-const RouteConfig = require('../../shared/routeConfig')
 const tags = ['api', 'root']
 
 module.exports = [
@@ -10,7 +9,9 @@ module.exports = [
     handler: function (request, h) {
       return h.response({ status: 'OK' }).code(200)
     },
-    options: RouteConfig.config(tags, 'Status of ledger admin api')
+    options: {
+      tags
+    }
   },
   {
     method: 'GET',
@@ -18,7 +19,9 @@ module.exports = [
     handler: function (request, h) {
       return h.response({ status: 'OK' }).code(200)
     },
-    options: RouteConfig.config(tags, 'Status of ledger admin api')
+    options: {
+      tags
+    }
   },
   {
     method: 'GET',
@@ -27,6 +30,8 @@ module.exports = [
       let enums = await request.server.methods.enums('all')
       return h.response(enums).code(200)
     },
-    options: RouteConfig.config(tags, 'List available enumerations')
+    options: {
+      tags
+    }
   }
 ]
