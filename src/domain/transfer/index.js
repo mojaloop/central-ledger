@@ -29,13 +29,10 @@
  * @module src/domain/transfer/
  */
 
-const P = require('bluebird')
 const TransferFacade = require('../../models/transfer/facade')
 const TransferModel = require('../../models/transfer/transfer')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
 const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
-const SettlementFacade = require('../../models/settlement/facade')
-const SettlementModel = require('../../models/settlement/settlement')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferObjectTransform = require('./transform')
 const Errors = require('../../errors')
@@ -111,26 +108,6 @@ const reject = async (transferId, payload) => {
   } catch (err) {
     throw err
   }
-}
-
-const settle = async () => {
-  const settlementId = SettlementModel.generateId()
-  const settledTransfers = SettlementModel.create(settlementId, 'transfer').then(() => {
-    return SettlementFacade.getSettleableTransfers().then(transfers => {
-      transfers.forEach(transfer => {
-        TransferFacade.saveSettledTransfers({ id: transfer.transferId, settlement_id: settlementId })
-      })
-      return transfers
-    })
-  })
-
-  return P.all(settledTransfers).then(settledTransfers => {
-    if (settledTransfers.length > 0) {
-      return settledTransfers
-    } else {
-      return P.resolve([])
-    }
-  })
 }
 
 const saveTransferStateChange = async (stateRecord) => {
@@ -246,7 +223,6 @@ module.exports = {
   prepare,
   fulfil,
   reject,
-  settle,
   saveTransferStateChange,
   expire,
   validateDuplicateHash,
