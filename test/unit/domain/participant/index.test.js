@@ -589,10 +589,15 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
+      const settlementAccount = {
+        participantCurrencyId: 2
+      }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
+      ParticipantPositionModel.getByParticipantCurrencyId.withArgs(settlementAccount.participantCurrencyId).returns(null)
+      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, settlementAccount.participantCurrencyId, payload).returns(1)
 
       const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
@@ -630,10 +635,15 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
+      const settlementAccount = {
+        participantCurrencyId: 2
+      }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, limitPostionObj).returns(1)
+      ParticipantPositionModel.getByParticipantCurrencyId.withArgs(settlementAccount.participantCurrencyId).returns(null)
+      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitPostionObj).returns(1)
 
       const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
@@ -1169,7 +1179,7 @@ Test('Participant service', async (participantTest) => {
       const expected = {
         currency: 'USD',
         value: 1000,
-        updatedTime: '2018-08-14T04:01:55.000Z'
+        changedDate: '2018-08-14T04:01:55.000Z'
       }
       const participantName = 'fsp1'
       const query = { currency: 'USD' }
@@ -1241,12 +1251,12 @@ Test('Participant service', async (participantTest) => {
         {
           currency: 'USD',
           value: 1000,
-          updatedTime: '2018-08-14T04:01:55.000Z'
+          changedDate: '2018-08-14T04:01:55.000Z'
         },
         {
           currency: 'EUR',
           value: 2000,
-          updatedTime: '2018-08-14T04:01:55.000Z'
+          changedDate: '2018-08-14T04:01:55.000Z'
         }
       ]
       const participantName = 'fsp1'
