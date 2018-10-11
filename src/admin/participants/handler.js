@@ -53,13 +53,6 @@ const currencyEntityItem = ({ currencyId, isActive, ledgerAccountTypeId }) => {
   }
 }
 
-// const handleExistingRecord = (entity) => {
-//   if (entity) {
-//     throw new Errors.RecordExistsError()
-//   }
-//   return entity
-// }
-
 const handleMissingRecord = (entity) => {
   if (!entity) {
     throw new Errors.NotFoundError('The requested resource could not be found.')
