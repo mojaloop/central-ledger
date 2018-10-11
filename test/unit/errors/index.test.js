@@ -105,5 +105,14 @@ Test('Test Errors', async (errorsTest) => {
     }
   })
 
+  await errorsTest.test('should throw UnexecutedTransferError', async (test) => {
+    try {
+      throw new Error.UnexecutedTransferError()
+    } catch (err) {
+      test.ok(err instanceof Error.UnexecutedTransferError)
+      test.end()
+    }
+  })
+
   await errorsTest.end()
 })

@@ -133,16 +133,6 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       }
       handlerList.push(handler)
     }
-    // if (args.reject) {
-    //   Logger.debug(`CLI: Executing --reject`)
-    //   let handler = {
-    //     type: 'reject',
-    //     enabled: true
-    //   }
-    //   handlerList.push(handler)
-    // }
-
-    // if (Array.isArray(handlerList) && handlerList.length > 0) {
     module.exports = Setup.initialize({
       service: 'handler',
       port: Config.PORT,

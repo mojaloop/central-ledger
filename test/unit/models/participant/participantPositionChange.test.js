@@ -101,31 +101,5 @@ Test('Participant Position model', async (participantPositionChangeTest) => {
     }
   })
 
-  // await participantPositionChangeTest.test('destroyByParticipantCurrencyId', async (assert) => {
-  //   try {
-  //     Db.participantPosition.destroy.withArgs({ participantCurrencyId: 1 }).returns(1)
-  //     let result = await Model.destroyByParticipantCurrencyId(1)
-  //     assert.equal(result, 1, 'Results match')
-  //     assert.end()
-  //   } catch (err) {
-  //     Logger.error(`destroyByParticipantCurrencyId failed with error - ${err}`)
-  //     assert.fail()
-  //     assert.end()
-  //   }
-  // })
-
-  // await participantPositionChangeTest.test('destroyByParticipantCurrencyId should fail', async (test) => {
-  //   try {
-  //     Db.participantPosition.destroy.withArgs({ participantCurrencyId: 1 }).throws(new Error())
-  //     await Model.destroyByParticipantCurrencyId(1)
-  //     test.fail('Error not thrown')
-  //     test.end()
-  //   } catch (err) {
-  //     Logger.error(`destroyByParticipantCurrencyId failed with error - ${err}`)
-  //     test.pass('Error thrown')
-  //     test.end()
-  //   }
-  // })
-
   participantPositionChangeTest.end()
 })

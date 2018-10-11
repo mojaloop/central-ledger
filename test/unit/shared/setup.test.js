@@ -377,11 +377,6 @@ Test('setup', setupTest => {
         enabled: true
       }
 
-      // var rejectHandler = {
-      //   type: 'reject',
-      //   enabled: true
-      // }
-
       var timeoutHandler = {
         type: 'timeout',
         enabled: true
@@ -442,11 +437,6 @@ Test('setup', setupTest => {
         enabled: true
       }
 
-      // var rejectHandler = {
-      //   type: 'reject',
-      //   enabled: true
-      // }
-
       var modulesList = [
         prepareHandler,
         positionHandler,
@@ -488,11 +478,6 @@ Test('setup', setupTest => {
         type: 'fulfil',
         enabled: true
       }
-
-      // var rejectHandler = {
-      //   type: 'reject',
-      //   enabled: true
-      // }
 
       var timeoutHandler = {
         type: 'timeout',
@@ -559,11 +544,6 @@ Test('setup', setupTest => {
         type: 'fulfil',
         enabled: true
       }
-
-      // var rejectHandler = {
-      //   type: 'reject',
-      //   enabled: true
-      // }
 
       var modulesList = [
         prepareHandler,

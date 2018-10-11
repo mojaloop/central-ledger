@@ -572,6 +572,60 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
+  await facadeTest.test('adjustLimits with trx', async (assert) => {
+    try {
+      const limit = {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000
+      }
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        where: sandbox.stub().returns({
+          select: sandbox.stub().returns({
+            first: sandbox.stub().returns({ participantLimitTypeId: 1 })
+          })
+        }),
+        transacting: sandbox.stub().returns({
+          forUpdate: sandbox.stub().returns({
+            select: sandbox.stub().returns({
+              where: sandbox.stub().returns([{ participantLimitId: 1 }])
+            })
+          }),
+          update: sandbox.stub().returns({
+            where: sandbox.stub().returns([1])
+          }),
+          insert: sandbox.stub().returns([1])
+        })
+      })
+      let participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: limit.value,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1
+      }
+
+      const result = await Model.adjustLimits(participant.participantCurrencyId, limit, true)
+      assert.pass('completed successfully')
+      assert.ok(knexStub.withArgs('participantLimit').calledThrice, 'knex called with participantLimit thrice')
+      assert.ok(knexStub.withArgs('participantLimitType').calledOnce, 'knex called with participantLimitType once')
+      assert.deepEqual(result, { participantLimit })
+
+      assert.end()
+    } catch (err) {
+      Logger.error(`adjustLimits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await facadeTest.test('adjustLimits throws error when limit does not exist', async (assert) => {
     try {
       const limit = {
@@ -823,7 +877,7 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 1)
+      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -846,6 +900,63 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     } catch (err) {
       Logger.error(`getParticipantLimitsByParticipantId failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit', async (assert) => {
+    try {
+      let participantLimit = {
+        participantId: 1,
+        currencyId: 1,
+        participantLimitTypeId: 1,
+        value: 1000000
+      }
+      let ledgerAccountTypeId = 1
+      let participantLimitTypeId = 1
+
+      let builderStub = sandbox.stub()
+      // let whereStub = { where: sandbox.stub().returns() }
+
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        innerJoin: sandbox.stub().returns({
+          innerJoin: sandbox.stub().returns({
+            select: sandbox.stub().returns({
+              first: sandbox.stub().returns(participantLimit)
+            })
+          })
+        })
+      })
+
+      var result = await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
+      assert.deepEqual(result, participantLimit)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit should throw error', async (assert) => {
+    try {
+      let builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.innerJoin = sandbox.stub()
+      let ledgerAccountTypeId = 1
+      let participantLimitTypeId = 1
+
+      builderStub.innerJoin.throws(new Error())
+      await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
+      assert.fail(' should throw')
+      assert.end()
+      assert.end()
+    } catch (err) {
+      Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
     }
