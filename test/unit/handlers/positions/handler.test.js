@@ -345,8 +345,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.COMMIT
-      // const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, m)
@@ -363,7 +361,6 @@ Test('Position handler', transferHandlerTest => {
       }
 
       await Kafka.Consumer.createHandler(topicName, config, command)
-      // Kafka.Consumer.getConsumer.throws(new Error())
       Kafka.Consumer.getConsumer.returns(null)
 
       Utility.transformGeneralTopicName.returns(topicName)
@@ -372,8 +369,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.COMMIT
-      // const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, m)
@@ -391,7 +386,6 @@ Test('Position handler', transferHandlerTest => {
         TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
           .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
         TransferStateChange.saveTransferStateChange.resolves(true)
-        // messages[0].value.metadata.event.action = transferEventAction.REJECT
 
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
         m.value.metadata.event.action = transferEventAction.REJECT
@@ -413,7 +407,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: 'REJECT'}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.REJECT
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
@@ -437,7 +430,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.REJECT
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
@@ -462,7 +454,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.REJECT
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
@@ -479,8 +470,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.COMMIT
-      // const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, [m])
@@ -489,25 +478,6 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    // positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array -- consumer throws error', async (test) => {
-    //   await Kafka.Consumer.createHandler(topicName, config, command)
-    //   Kafka.Consumer.getConsumer.throws(new Error())
-    //   Utility.transformGeneralTopicName.returns(topicName)
-    //   Utility.getKafkaConfig.returns(config)
-
-    //   TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-    //     .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
-    //   TransferStateChange.saveTransferStateChange.resolves(true)
-    //   // messages[0].value.metadata.event.action = transferEventAction.COMMIT
-    //   // const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
-    //   let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
-    //   m.value.metadata.event.action = transferEventAction.COMMIT
-    //   const result = await allTransferHandlers.positions(null, [m])
-    //   Logger.info(result)
-    //   test.equal(result, true)
-    //   test.end()
-    // })
-
     positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is FAKE when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
@@ -515,8 +485,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.REJECT
-      // const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
@@ -540,8 +508,6 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      // messages[0].value.metadata.event.action = transferEventAction.REJECT
-      // const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
@@ -549,41 +515,6 @@ Test('Position handler', transferHandlerTest => {
       test.equal(result, true)
       test.end()
     })
-
-    // positionsTest.test('Update transferStateChange in the database for REJECT when messages is an array', async (test) => { // TODO: extend and enable unit test
-    //   await Kafka.Consumer.createHandler(topicName, config, command)
-    //   Utility.transformGeneralTopicName.returns(topicName)
-    //   Utility.getKafkaConfig.returns(config)
-    //   TransferStateChange.saveTransferStateChange.resolves(true)
-    //   messages[0].value.metadata.event.action = transferEventAction.REJECT
-    //   const result = await allTransferHandlers.positions(null, messages)
-    //   Logger.info(result)
-    //   test.equal(result, true)
-    //   test.end()
-    // })
-
-    // positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
-    //   try {
-    //     await Kafka.Consumer.createHandler(topicName, config, command)
-    //     Utility.transformGeneralTopicName.returns(topicName)
-    //     Utility.createPrepareErrorStatus.returns(topicName)
-    //     Utility.getKafkaConfig.returns(config)
-    //     TransferStateChange.saveTransferStateChange.resolves(true)
-    //     TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'EXPIRED'})
-    //     // messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
-    //     // const result = await allTransferHandlers.positions(null, messages)
-    //     let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
-    //     m.value.metadata.event.action = transferEventAction.TIMEOUT_RECEIVED
-    //     const result = await allTransferHandlers.positions(null, [m])
-    //     Logger.info(result)
-    //     test.equal(result, true)
-    //     test.end()
-    //   } catch (e) {
-    //     console.log('error thrown' + e)
-    //     test.fail('Error thrown' + e)
-    //     test.end()
-    //   }
-    // })
 
     positionsTest.test('Update transferStateChange in the database for TIMEOUT_RESERVED when messages is an array', async (test) => {
       try {
@@ -593,8 +524,6 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'RESERVED_TIMEOUT'})
-        /* messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
-        const result = await allTransferHandlers.positions(null, messages) */
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, [m])
@@ -617,8 +546,6 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'RESERVED_TIMEOUT'})
-        /* messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
-        const result = await allTransferHandlers.positions(null, messages) */
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, [m])
@@ -640,8 +567,6 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'INVALID_STATE'})
-        /* messages[0].value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
-        const result = await allTransferHandlers.positions(null, messages) */
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         await allTransferHandlers.positions(null, [m])
@@ -653,26 +578,6 @@ Test('Position handler', transferHandlerTest => {
         test.end()
       }
     })
-
-    // TODO: Need to understand the purpose of this test as the implementation does not reflect the implementation.
-    // positionsTest.test('Update transferStateChange in the database for FAIL when messages is an array', async (test) => {
-    //   try {
-    //     await Kafka.Consumer.createHandler(topicName, config, command)
-    //     Utility.transformGeneralTopicName.returns(topicName)
-    //     Utility.getKafkaConfig.returns(config)
-    //     TransferStateChange.saveTransferStateChange.resolves(true)
-    //     let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
-    //     m.value.metadata.event.action = transferEventAction.FAIL
-    //     const result = await allTransferHandlers.positions(null, [m])
-    //     Logger.info(result)
-    //     test.equal(result, true)
-    //     test.end()
-    //   } catch (e) {
-    //     console.log('error thrown' + e)
-    //     test.fail('Error thrown' + e)
-    //     test.end()
-    //   }
-    // })
 
     positionsTest.test('Throw error when invalid action is recieved', async (test) => {
       try {
