@@ -101,14 +101,6 @@ const checkAndInsertDuplicateHash = async (transferId, hash) => {
   }
 }
 
-// const truncate = async (id) => {
-//   try {
-//     return await Db.transferStateChange.truncate()
-//   } catch (err) {
-//     throw err
-//   }
-// }
-
 module.exports = {
   saveTransferDuplicateCheck,
   // getByTransferId,

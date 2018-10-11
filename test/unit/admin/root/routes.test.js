@@ -18,57 +18,46 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Test = require('tapes')(require('tape'))
+const Test = require('tape')
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/admin/routes')
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/domain/position/positionCalculator')
+const Enum = require('../../../../src/lib/enum')
+const P = require('bluebird')
 
-Test('Position calculator', async (positionCalculatorTest) => {
-  let sandbox
+Test('test root routes - health', async function (assert) {
+  let req = Base.buildRequest({ url: '/health', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  await server.stop()
+  assert.end()
+})
 
-  positionCalculatorTest.beforeEach(t => {
-    sandbox = Sinon.createSandbox()
-    t.end()
-  })
+Test('test root routes - enums', async function (assert) {
+  let sandbox = Sinon.createSandbox()
 
-  positionCalculatorTest.afterEach(t => {
-    sandbox.restore()
-    t.end()
-  })
+  sandbox.stub(Enum, 'all').returns(P.resolve({}))
+  let req = Base.buildRequest({ url: '/enums', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  sandbox.restore()
+  await server.stop()
+  assert.end()
+})
 
-  await positionCalculatorTest.test('sum should', async (test) => {
-    let position1 = {
-      payments: 10,
-      receipts: 10,
-      net: 10
-    }
-    let position2 = {
-      payments: 5,
-      receipts: 5,
-      net: 5
-    }
-    let sumResult = {
-      payments: 15,
-      receipts: 15,
-      net: 15
-    }
-
-    try {
-      const result = await Model.sum(position1, position2)
-      test.deepEqual(result, sumResult, 'correctly sum up positions')
-      test.end()
-    } catch (err) {
-      Logger.error(`currency seed failed with error - ${err}`)
-      test.fail()
-      test.end()
-    }
-  })
-
-  await positionCalculatorTest.end()
+Test('test root routes - /', async function (assert) {
+  let req = Base.buildRequest({ url: '/', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  await server.stop()
+  assert.end()
 })
