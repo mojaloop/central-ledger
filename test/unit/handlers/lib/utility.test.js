@@ -151,6 +151,14 @@ Test('Utility Test', utilityTest => {
       test.end()
     })
 
+    updateMessageProtocolMetadataTest.test('return an updated metadata object in the message protocol if metadata is not present', test => {
+      const newMessageProtocol = Utility.updateMessageProtocolMetadata({}, TRANSFER, PREPARE, Utility.ENUMS.STATE.SUCCESS)
+      test.equal(newMessageProtocol.metadata.event.state, Utility.ENUMS.STATE.SUCCESS)
+      test.equal(newMessageProtocol.metadata.event.type, TRANSFER)
+      test.equal(newMessageProtocol.metadata.event.action, PREPARE)
+      test.end()
+    })
+
     updateMessageProtocolMetadataTest.end()
   })
 
@@ -197,6 +205,15 @@ Test('Utility Test', utilityTest => {
       test.end()
     })
 
+    produceGeneralMessageTest.test('produce a general message', async (test) => {
+      try {
+        await Utility.produceGeneralMessage(TRANSFER, 'invalid', messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+      } catch (e) {
+        test.ok(e instanceof Error)
+      }
+      test.end()
+    })
+
     produceGeneralMessageTest.end()
   })
 
@@ -204,6 +221,15 @@ Test('Utility Test', utilityTest => {
     produceParticipantMessageTest.test('produce a participant message', async (test) => {
       const result = await Utility.produceParticipantMessage(participantName, TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
       test.equal(result, true)
+      test.end()
+    })
+
+    produceParticipantMessageTest.test('produce a participant message', async (test) => {
+      try {
+        await Utility.produceParticipantMessage(participantName, TRANSFER, 'invalid', messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+      } catch (e) {
+        test.ok(e instanceof Error)
+      }
       test.end()
     })
 
