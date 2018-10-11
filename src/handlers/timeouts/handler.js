@@ -129,7 +129,7 @@ const isRunning = async () => {
  */
 const stop = async () => {
   if (isRegistered) {
-    await timeoutJob.destroy()
+    await timeoutJob.stop()
     isRegistered = undefined
   }
 }
@@ -185,5 +185,6 @@ const registerAllHandlers = async () => {
 module.exports = {
   registerAllHandlers,
   registerTimeoutHandler,
-  isRunning
+  isRunning,
+  stop
 }
