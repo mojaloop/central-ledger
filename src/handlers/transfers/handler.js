@@ -359,7 +359,7 @@ const getTransfer = async (error, messages) => {
         await consumer.commitMessageSync(message)
       }
       Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
       return true
     } else {
       message.value.content.payload = transformTransfer(transfer)
@@ -368,7 +368,7 @@ const getTransfer = async (error, messages) => {
       await consumer.commitMessageSync(message)
     }
     // Will follow framework flow in future
-    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.ENUMS.STATE.SUCCESS)
     return true
   } catch (err) {
     Logger.error(err)

@@ -218,6 +218,10 @@ const topicMap = {
     'reject': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
+    },
+    'get': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
     }
   }
 }
