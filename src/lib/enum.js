@@ -150,7 +150,8 @@ const transferEventType = {
   POSITION: 'position',
   TRANSFER: 'transfer',
   FULFIL: 'fulfil',
-  NOTIFICATION: 'notification'
+  NOTIFICATION: 'notification',
+  GET: 'get'
 }
 const transferEventAction = {
   PREPARE: 'prepare',
