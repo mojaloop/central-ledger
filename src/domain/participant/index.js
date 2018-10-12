@@ -470,7 +470,7 @@ const getPositions = async (name, query) => {
     if (query.currency) {
       const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
       participantExists(participant)
-      const result = await PositionFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
+      const result = await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION, query.currency, Enum.LedgerAccountType.POSITION)
       let position = {}
       if (Array.isArray(result) && result.length > 0) {
         position = {
@@ -483,7 +483,7 @@ const getPositions = async (name, query) => {
     } else {
       const participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      const result = await await PositionFacade.getByNameAndCurrency(name, null, Enum.LedgerAccountType.POSITION)
+      const result = await await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION)
       let positions = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
@@ -505,7 +505,7 @@ const getAccounts = async (name, query) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    const result = await await PositionFacade.getAllByNameAndCurrency(name, query.currency)
+    const result = await PositionFacade.getAllByNameAndCurrency(name, query.currency)
     let positions = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {

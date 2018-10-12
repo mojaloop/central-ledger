@@ -237,7 +237,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
  * @returns {array} - Returns an array containing the details of active position(s) for the participant if successful, or throws an error if failed
  */
 
-const getByNameAndCurrency = async (name, currencyId = null, ledgerAccountTypeId) => {
+const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null) => {
   try {
     return Db.participantPosition.query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
