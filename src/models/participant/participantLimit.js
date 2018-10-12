@@ -29,6 +29,7 @@
  */
 
 const Db = require('../../db/index')
+const ParticipantCurrencyModel = require('./participantCurrency')
 
 const insert = async (participantLimit) => {
   try {
@@ -94,10 +95,35 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   }
 }
 
+/**
+ * @function DestroyByParticipantId
+ *
+ * @async
+ * @description This deletes the participant Limits corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantId - the participant id. Example: 1
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyByParticipantId = async (participantId) => {
+  try {
+    const knex = Db.getKnex()
+    const participantCurrencyIdList = (await ParticipantCurrencyModel.getByParticipantId(participantId)).map(record => record.participantCurrencyId)
+    return knex('participantLimit')
+      .whereIn('participantCurrencyId', participantCurrencyIdList)
+      .del()
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   insert,
   update,
   getLimitByCurrencyId,
   getByParticipantCurrencyId,
-  destroyByParticipantCurrencyId
+  destroyByParticipantCurrencyId,
+  destroyByParticipantId
 }
