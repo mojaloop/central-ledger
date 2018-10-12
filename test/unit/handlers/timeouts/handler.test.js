@@ -22,6 +22,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
 
  --------------
@@ -35,6 +36,9 @@ const TimeoutHandler = require('../../../../src/handlers/timeouts/handler')
 const CronJob = require('cron').CronJob
 const TimeoutService = require('../../../../src/domain/timeout')
 const Config = require('../../../../src/lib/config')
+const Uuid = require('uuid4')
+const Enum = require('../../../../src/lib/enum')
+const Utility = require('../../../../src/handlers/lib/utility')
 
 Test('Timeout handler', TimeoutHandlerTest => {
   let sandbox
@@ -42,6 +46,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
   TimeoutHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(TimeoutService)
+    sandbox.stub(Utility)
     sandbox.stub(CronJob.prototype, 'constructor').returns(P.resolve())
     sandbox.stub(CronJob.prototype, 'start').returns(P.resolve(true))
     sandbox.stub(CronJob.prototype, 'stop').returns(P.resolve(true))
@@ -52,6 +57,87 @@ Test('Timeout handler', TimeoutHandlerTest => {
   TimeoutHandlerTest.afterEach(test => {
     sandbox.restore()
     test.end()
+  })
+
+  TimeoutHandlerTest.test('timeout should', timeoutTest => {
+    let timeoutSegmentMock = {
+      segmentId: 1,
+      value: 10
+    }
+    let latestTransferStateChangeMock = {
+      transferStateChangeId: 20
+    }
+    let resultMock = [
+      {
+        transferId: Uuid(),
+        payerFsp: 'dfsp1',
+        payeeFsp: 'dfsp2',
+        transferStateId: Enum.TransferState.EXPIRED_PREPARED
+      },
+      {
+        transferId: Uuid(),
+        payerFsp: 'dfsp1',
+        payeeFsp: 'dfsp2',
+        transferStateId: Enum.TransferState.RESERVED_TIMEOUT
+      },
+      {
+        transferId: Uuid(),
+        payerFsp: 'dfsp2',
+        payeeFsp: 'dfsp1',
+        transferStateId: Enum.TransferState.COMMITTED
+      }
+    ]
+    let expected = {
+      cleanup: 1,
+      intervalMin: 10,
+      intervalMax: 20,
+      result: resultMock
+    }
+
+    timeoutTest.test('perform timeout', async (test) => {
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(timeoutSegmentMock)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      Utility.produceGeneralMessage = sandbox.stub()
+      Utility.produceParticipantMessage = sandbox.stub()
+
+      const result = await TimeoutHandler.timeout()
+      test.deepEqual(result, expected, 'Expected result is returned')
+      test.end()
+    })
+
+    timeoutTest.test('perform timeout when no data is present in segment table', async (test) => {
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(null)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock[0])
+      Utility.produceGeneralMessage = sandbox.stub()
+      Utility.produceParticipantMessage = sandbox.stub()
+      expected = {
+        cleanup: 1,
+        intervalMin: 0,
+        intervalMax: 0,
+        result: resultMock[0]
+      }
+
+      const result = await TimeoutHandler.timeout()
+      test.deepEqual(result, expected, 'Expected result is returned')
+      test.end()
+    })
+
+    timeoutTest.test('throw error', async (test) => {
+      TimeoutService.getTimeoutSegment = sandbox.stub().throws(new Error('Database unavailable'))
+      try {
+        await TimeoutHandler.timeout()
+        test.fail('Error not thrown')
+      } catch (err) {
+        test.ok(err instanceof Error)
+      }
+      test.end()
+    })
+
+    timeoutTest.end()
   })
 
   TimeoutHandlerTest.test('registerAllHandlers should', registerHandlersTest => {
