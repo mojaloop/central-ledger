@@ -119,6 +119,8 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
 const destroyByName = async (name) => {
   try {
     let participant = await ParticipantModel.getByName(name)
+    await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
+    await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
