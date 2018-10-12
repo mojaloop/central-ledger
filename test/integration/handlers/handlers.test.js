@@ -211,7 +211,6 @@ Test('Handlers test', async handlersTest => {
     await registerAllHandlers.test(`setup handlers`, async (test) => {
       await Db.connect(Config.DATABASE_URI)
       await Handlers.transfers.registerFulfilHandler()
-      await Handlers.transfers.registerTransferHandler()
       sleep(delay * 2, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
       test.pass('done')
       test.end()
