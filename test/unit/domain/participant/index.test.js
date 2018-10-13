@@ -150,6 +150,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantPositionChangeModel, 'getByParticipantPositionId')
 
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
+    sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
     Db.participant = {
       insert: sandbox.stub(),
@@ -589,10 +590,15 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
+      const settlementAccount = {
+        participantCurrencyId: 2
+      }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
+      ParticipantPositionModel.getByParticipantCurrencyId.withArgs(settlementAccount.participantCurrencyId).returns(null)
+      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, settlementAccount.participantCurrencyId, payload).returns(1)
 
       const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
@@ -630,10 +636,15 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
+      const settlementAccount = {
+        participantCurrencyId: 2
+      }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
+      ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
-      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, limitPostionObj).returns(1)
+      ParticipantPositionModel.getByParticipantCurrencyId.withArgs(settlementAccount.participantCurrencyId).returns(null)
+      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitPostionObj).returns(1)
 
       const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
@@ -771,6 +782,7 @@ Test('Participant service', async (participantTest) => {
       createdBy: 'unknown'
     }
     ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
+    ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(participant)
     ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(participantLimit)
     ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
     ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, payload).returns(1)
@@ -1169,7 +1181,7 @@ Test('Participant service', async (participantTest) => {
       const expected = {
         currency: 'USD',
         value: 1000,
-        updatedTime: '2018-08-14T04:01:55.000Z'
+        changedDate: '2018-08-14T04:01:55.000Z'
       }
       const participantName = 'fsp1'
       const query = { currency: 'USD' }
@@ -1182,7 +1194,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(P.resolve(positionReturn))
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, 1, query.currency).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
       assert.deepEqual(result, expected, 'Results matched')
@@ -1210,7 +1222,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(P.resolve(positionReturn))
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, 1, query.currency).returns(P.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
       assert.deepEqual(result, expected, 'Results matched')
@@ -1241,12 +1253,12 @@ Test('Participant service', async (participantTest) => {
         {
           currency: 'USD',
           value: 1000,
-          updatedTime: '2018-08-14T04:01:55.000Z'
+          changedDate: '2018-08-14T04:01:55.000Z'
         },
         {
           currency: 'EUR',
           value: 2000,
-          updatedTime: '2018-08-14T04:01:55.000Z'
+          changedDate: '2018-08-14T04:01:55.000Z'
         }
       ]
       const participantName = 'fsp1'
@@ -1297,6 +1309,7 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
   await participantTest.test('getPositions should throw error', async (assert) => {
     const participantName = 'fsp1'
     const query = { currency: 'USD' }
@@ -1304,6 +1317,108 @@ Test('Participant service', async (participantTest) => {
     PositionFacade.getByNameAndCurrency.withArgs(participantName).throws(new Error())
     try {
       await Service.getPositions(participantName, query)
+      assert.fail(' should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getAccounts should return the account balances for given participant name and currency', async (assert) => {
+    try {
+      const accountsMock = [
+        {
+          participantCurrencyId: 1,
+          ledgerAccountType: 'POSITION',
+          currencyId: 'USD',
+          value: 0,
+          reservedValue: 0,
+          changedDate: '2018-10-11T11:45:00.000Z'
+        },
+        {
+          participantCurrencyId: 2,
+          ledgerAccountType: 'SETTLEMENT',
+          currencyId: 'USD',
+          value: 800,
+          reservedValue: 0,
+          changedDate: '2018-10-11T11:45:00.000Z'
+        }
+      ]
+      const expected = [
+        {
+          id: 1,
+          ledgerAccountType: 'POSITION',
+          currency: 'USD',
+          value: 0,
+          reservedValue: 0,
+          changedDate: '2018-10-11T11:45:00.000Z'
+        },
+        {
+          id: 2,
+          ledgerAccountType: 'SETTLEMENT',
+          currency: 'USD',
+          value: 800,
+          reservedValue: 0,
+          changedDate: '2018-10-11T11:45:00.000Z'
+        }
+      ]
+      const participantName = 'fsp1'
+      const query = { currency: 'USD' }
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+
+      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      PositionFacade.getAllByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(accountsMock))
+
+      const result = await Service.getAccounts(participantName, query)
+      assert.deepEqual(result, expected, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getAccounts should return [] if no positions exists and currency is not passed', async (assert) => {
+    try {
+      const positionReturn = []
+
+      const expected = []
+      const participantName = 'fsp1'
+      const participant = {
+        participantId: 0,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      PositionFacade.getAllByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
+
+      const result = await Service.getAccounts(participantName, {})
+      assert.deepEqual(result, expected, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+  await participantTest.test('getAccounts should throw error', async (assert) => {
+    const participantName = 'fsp1'
+    const query = { currency: 'USD' }
+
+    PositionFacade.getAllByNameAndCurrency.withArgs(participantName).throws(new Error())
+    try {
+      await Service.getAccounts(participantName, query)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)

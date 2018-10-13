@@ -58,12 +58,12 @@ const ledgerEntryTypes = [
     'description': 'Participant is settlement net sender'
   },
   {
-    'name': 'SETTLEMENT_ACCOUNT_DEPOSIT',
-    'description': 'Settlement account deposit'
+    'name': 'RECORD_FUNDS_IN',
+    'description': 'Settlement account funds in'
   },
   {
-    'name': 'SETTLEMENT_ACCOUNT_WITHDRAWAL',
-    'description': 'Settlement account withdrawal'
+    'name': 'RECORD_FUNDS_OUT',
+    'description': 'Settlement account funds out'
   }
 ]
 

@@ -196,27 +196,6 @@ const stop = async (handlerType) => {
   }
 }
 
-// /**
-//  * Class JobError - custom error class for Job related errors.
-//  * @extends Error
-//  */
-// class JobError extends Error {
-//   constructor (...params) {
-//     // Calling parent constructor of base Error class.
-//     super(...params)
-//
-//     // Saving class name in the property of our custom error as a shortcut.
-//     this.name = this.constructor.name
-//
-//     // Maintains proper stack trace for where our error was thrown (only available on V8)
-//     if (Error.captureStackTrace) {
-//       Error.captureStackTrace(this, JobError)
-//     }
-//
-//     this.message(`lib.Kafka.Cron.registerNewHandlers - ${params.message}`)
-//   }
-// }
-
 module.exports = {
   isRunning,
   start,

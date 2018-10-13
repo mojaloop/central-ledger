@@ -126,9 +126,6 @@ const createHandlers = async (handlers) => {
             await KafkaCron.start('position')
           }
           break
-        case 'transfer':
-          await RegisterHandlers.transfers.registerTransferHandler()
-          break
         case 'fulfil':
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
