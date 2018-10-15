@@ -312,8 +312,15 @@ const fulfil = async (error, messages) => {
   }
 }
 
-// jsdoc to do
-
+/**
+ * @function getTransfer
+ *
+ * @async
+ * @description Gets a transfer by transfer id. Gets Kafka config from default.json
+ *
+ * Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
 const getTransfer = async (error, messages) => {
   if (error) {
     // Logger.error(error)
@@ -477,10 +484,10 @@ const registerPrepareHandlers = async (participantNames = []) => {
 }
 
 /**
- * @function registerFulfilHandler
+ * @function registerGetTransferHandler
  *
  * @async
- * @description Registers the one handler for fulfil transfer. Gets Kafka config from default.json
+ * @description Registers the one handler for get a transfer by Id. Gets Kafka config from default.json
  * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */

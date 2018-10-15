@@ -205,6 +205,7 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.test('prepare should', prepareTest => {
     prepareTest.test('persist transfer to database when messages is an array', async (test) => {
+      // here copy
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -528,6 +529,34 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.end()
   })
+
+  // ================MAW====registerGetTransferHandler
+  transferHandlerTest.test('register getTransferHandler should', registerTransferhandler => {
+    registerTransferhandler.test('return a true', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      const result = await allTransferHandlers.registerGetTransferHandler(null, messages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    registerTransferhandler.test('return an error.', async (test) => {
+      try {
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.throws(new Error())
+        await allTransferHandlers.registerGetTransferHandler()
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+    registerTransferhandler.end()
+  })
+  // =====================
 
   transferHandlerTest.test('fulfil should', fulfilTest => {
     fulfilTest.test('fail validation when invalid event action is provided', async (test) => {
