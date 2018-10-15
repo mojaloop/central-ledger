@@ -222,5 +222,23 @@ module.exports = [
         }
       }
     }
+  },
+  {
+    method: 'GET',
+    path: '/participants/{name}/accounts',
+    handler: Handler.getAccounts,
+    options: {
+      id: 'participants_accounts_get',
+      tags: tags,
+      description: 'View participant accounts balances',
+      validate: {
+        params: {
+          name: nameValidator
+        },
+        query: {
+          currency: currencyValidator
+        }
+      }
+    }
   }
 ]

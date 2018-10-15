@@ -18,6 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
@@ -27,7 +28,6 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
-// const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/transferTimeout')
 
 Test('Transfer Timeout', async (transferTimeoutTest) => {
@@ -46,62 +46,57 @@ Test('Transfer Timeout', async (transferTimeoutTest) => {
     t.end()
   })
 
-  // await transferTimeoutTest.test('cleanup', async (test) => {
-  //   try {
-  //     sandbox.stub(Db, 'getKnex')
-  //     const knexStub = sandbox.stub()
-  //     Db.getKnex.returns(knexStub)
+  await transferTimeoutTest.test('cleanup', async (test) => {
+    try {
+      let ttIdListMock = [{transferTimeoutId: 1}]
+      sandbox.stub(Db, 'getKnex')
 
-  //     let builderStub = sandbox.stub()
-  //     Db.transferTimeout.query.callsArgWith(0, builderStub)
-  //     builderStub.whereIn = sandbox.stub()
+      let knexStub = sandbox.stub()
+      Db.getKnex.returns(knexStub)
 
-  //     knexStub.knex = sandbox.stub().returns({
-  //       innerJoin: sandbox.stub().returns({
-  //         select: sandbox.stub().returns({
-  //           max: sandbox.stub().returns({
-  //             groupBy: sandbox.stub().returns({
-  //               as: sandbox.stub().returns(1)
-  //             })
-  //           })
-  //         })
-  //       })
-  //     })
+      knexStub.returns({
+        select: sandbox.stub().returns({
+          max: sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              groupBy: sandbox.stub().returns({
+                as: sandbox.stub()
+              })
+            })
+          })
+        })
+      })
 
-  //     builderStub.whereIn.returns({
-  //       innerJoin: sandbox.stub().callsArgWith(0, knexStub).returns({
-  //         innerJoin: sandbox.stub().returns({
-  //           select: sandbox.stub().returns(1)
-  //         })
-  //       })
-  //     })
+      let builderStub = sandbox.stub()
+      builderStub.whereIn = sandbox.stub().returns({
+        innerJoin: sandbox.stub().returns({
+          innerJoin: sandbox.stub().returns({
+            select: sandbox.stub().returns(ttIdListMock)
+          })
+        }),
+        del: sandbox.stub().returns(true)
+      })
 
-  //     let deleteBuilderStub = sandbox.stub()
-  //     Db.transferTimeout.query.callsArgWith(0, deleteBuilderStub)
-  //     deleteBuilderStub.whereIn = sandbox.stub()
-  //     deleteBuilderStub.whereIn.returns({
-  //       del: sandbox.stub().returns(true)
-  //     })
-  //     const result = await Model.cleanup()
-  //     test.equal(result, true)
-  //     test.end()
-  //   } catch (err) {
-  //     console.log(err)
-  //     Logger.error(`cleanup failed with error - ${err}`)
-  //     test.fail()
-  //     test.end()
-  //   }
-  // })
+      Db.transferTimeout.query.callsArgWith(0, builderStub)
 
-  await transferTimeoutTest.test('cleanup should throw error', async (assert) => {
+      const result = await Model.cleanup()
+      test.deepEqual(result, ttIdListMock)
+      test.end()
+    } catch (err) {
+      console.log(err)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await transferTimeoutTest.test('cleanup should throw error', async (test) => {
     try {
       Db.transferTimeout.query.throws(new Error('message'))
       await Model.cleanup()
-      assert.fail(' should throw')
-      assert.end()
+      test.fail(' should throw')
+      test.end()
     } catch (err) {
-      assert.pass('Error thrown')
-      assert.end()
+      test.pass('Error thrown')
+      test.end()
     }
   })
 
