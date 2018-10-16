@@ -59,7 +59,7 @@
     "@mojaloop/central-services-auth": "0.2.0",
     "@mojaloop/central-services-database": "3.1.0-snapshot",
     "@mojaloop/central-services-error-handling": "0.5.1",
-    "@mojaloop/central-services-shared": "3.1.0-snapshot",
+    "@mojaloop/central-services-shared": "3.7.1-snapshot",
     "@mojaloop/forensic-logging-client": "0.5.1",
     "@now-ims/hapi-now-auth": "1.0.1",
     "base64url": "3.0.0",
