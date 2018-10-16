@@ -683,13 +683,15 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    transformTransfer.test('return an error when general message cannot be produced', async (test) => {
+    transformTransfer.test('returns an error when general message cannot be produced', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      Utility.produceGeneralMessage.throws(new Error())
+      Validator.validateParticipantByName.returns(true)
+      TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       try {
-        await Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
-        Utility.produceGeneralMessage.returns(P.resolve(false))
-        await allTransferHandlers.getTransfer(true, messages)
+        await allTransferHandlers.getTransfer(null, messages)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -698,7 +700,7 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    transformTransfer.end()  // Utility.produceGeneralMessage
+    transformTransfer.end()
   })
   // =================MAW=============================================
   transferHandlerTest.test('fulfil should', fulfilTest => {

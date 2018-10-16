@@ -383,8 +383,6 @@ const getTransfer = async (error, messages) => {
   }
 }
 
-// to do Js docs
-
 const transformTransfer = (transfer) => {
   if (transfer.transferState === Enum.TransferState.COMMITTED) {
     return {
