@@ -29,7 +29,7 @@ const createRequest = ({ payload, params, query }) => {
   }
 }
 
-Test('Participant Handler', participantHandlerTest => {
+Test('Participant', participantHandlerTest => {
   let sandbox
 
   const participantFixtures = [
@@ -771,6 +771,43 @@ Test('Participant Handler', participantHandlerTest => {
 
       try {
         await Handler.getPositions(createRequest({ params, query }))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
+    handlerTest.test('getAccounts should be called with the provided params and query', async function (test) {
+      const params = {
+        name: 'fsp1'
+      }
+      const query = {
+        currency: 'USD'
+      }
+      Participant.getAccounts.withArgs(params.name, query).returns(P.resolve(true))
+      const result = await Handler.getAccounts(createRequest({ params, query }))
+      test.ok(result, 'Result returned')
+      test.ok(Participant.getAccounts.calledOnce, 'Participant.getAccounts called once')
+      test.end()
+    })
+
+    handlerTest.test('getAccounts should throw error', async function (test) {
+      const params = {
+        name: 'invalid'
+      }
+      const query = {
+        currency: 'USD'
+      }
+
+      Participant.getAccounts.withArgs(params.name, query).throws(new Error())
+
+      try {
+        await Handler.getAccounts(createRequest({ params, query }))
+        test.fail('Error not thrown')
+        test.end()
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
