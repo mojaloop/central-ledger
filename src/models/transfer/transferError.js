@@ -38,7 +38,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * @description This will insert a record into the transferError table for the latest transfer state change id.
  *
  * @param {string} transferStateChangeId - the transferStateChange id
- * @param {string} errorCode - the error code
+ * @param {integer} errorCode - the error code
  * @param {string} errorDescription - the description error
  *
  * @returns {integer} - Returns the id of the transferError record if successful, or throws an error if failed

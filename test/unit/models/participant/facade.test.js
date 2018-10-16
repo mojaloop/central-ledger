@@ -62,7 +62,8 @@ Test('Participant facade', async (facadeTest) => {
     isActive: 1,
     createdDate: new Date(),
     createdBy: 'unknown',
-    participantCurrencyId: 1
+    participantCurrencyId: 1,
+    settlementAccountId: 2
   }
 
   const endpoints = [
@@ -419,6 +420,9 @@ Test('Participant facade', async (facadeTest) => {
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
 
+      let insertStub = sandbox.stub()
+      insertStub.returns([1])
+
       knexStub.returns({
         where: sandbox.stub().returns({
           select: sandbox.stub().returns({
@@ -426,12 +430,18 @@ Test('Participant facade', async (facadeTest) => {
           })
         }),
         transacting: sandbox.stub().returns({
-          insert: sandbox.stub().returns([1])
+          insert: insertStub
         })
       })
       let participantPosition = {
         participantCurrencyId: 1,
         value: limitPostionObj.initialPosition,
+        reservedValue: 0,
+        participantPositionId: 1
+      }
+      let settlementPosition = {
+        participantCurrencyId: 2,
+        value: 0,
         reservedValue: 0,
         participantPositionId: 1
       }
@@ -444,11 +454,11 @@ Test('Participant facade', async (facadeTest) => {
         participantLimitId: 1
       }
 
-      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPostionObj)
+      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, participant.settlementAccountId, limitPostionObj)
       assert.pass('completed successfully')
       assert.ok(knexStub.withArgs('participantLimit').calledOnce, 'knex called with participantLimit once')
-      assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
-      assert.deepEqual(result, { participantLimit, participantPosition })
+      assert.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition once')
+      assert.deepEqual(result, { participantLimit, participantPosition, settlementPosition })
 
       assert.end()
     } catch (err) {

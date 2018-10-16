@@ -78,20 +78,20 @@ const positions = async (error, messages) => {
       message = Object.assign({}, messages)
     }
     Logger.info('PositionHandler::positions')
-    let consumer = {}
+    let consumer
     let kafkaTopic
     const payload = message.value.content && message.value.content.payload || {}
     payload.transferId = message.value.id
+    kafkaTopic = message.topic
+    try {
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+    } catch (e) {
+      Logger.info(`No consumer found for topic ${kafkaTopic}`)
+      Logger.error(e)
+      return true
+    }
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
-      kafkaTopic = message.topic
-      try {
-        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      } catch (e) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        Logger.error(e)
-        return true
-      }
       const {preparedMessagesList, limitAlarms} = await PositionService.calculatePreparePositionsBatch(prepareBatch)
       for (let prepareMessage of preparedMessagesList) {
         const {transferState, rawMessage} = prepareMessage
@@ -111,12 +111,6 @@ const positions = async (error, messages) => {
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
-      kafkaTopic = message.topic
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        return true
-      }
       // Check current transfer state
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
@@ -131,22 +125,10 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
       }
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
       // Will follow framework flow in future
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
-      return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
-      kafkaTopic = message.topic
-      try {
-        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      } catch (e) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        Logger.error(e)
-        return true
-      }
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.REJECTED) {
         Logger.info('PositionHandler::positions::reject::validationFailed::notRejectedState')
@@ -161,18 +143,13 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
       }
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
       // Will follow framework flow in future
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
-      return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
-        // throw Error 2001
         throw new Error('Internal server error')
       } else { // transfer state check success
         const isReversal = true
@@ -185,44 +162,15 @@ const positions = async (error, messages) => {
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         let newMessage = Object.assign({}, message)
         newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, reason, newMessage.value.content.payload.extensionList)
-        kafkaTopic = message.topic
-        try {
-          consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-        } catch (e) {
-          Logger.info(`No consumer found for topic ${kafkaTopic}`)
-          Logger.error(e)
-          return true
-        }
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
-        return true
       }
-      // TODO: Need to understand the purpose of this branch.
-      // } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.FAIL) {
-      //   Logger.info('PositionHandler::positions::fail')
-      //   kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
-      //   consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      //   if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-      //     await consumer.commitMessageSync(message)
-      //   }
-      //   throw new Error('Position Fail messaged received - What do we do here??')
     } else {
       Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
-      kafkaTopic = message.topic
-      try {
-        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      } catch (e) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        Logger.error(e)
-        return true
-      }
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-      throw new Error('Event type or action is invalid')
     }
+    if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+      await consumer.commitMessageSync(message)
+    }
+    return true
   } catch (error) {
     Logger.error(error)
     throw error

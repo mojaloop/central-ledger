@@ -34,7 +34,7 @@ const ledgerAccountTypes = [
     'description': 'Reflects the individual DFSP Settlement Accounts as held at the Settlement Bank'
   },
   {
-    'name': 'HUB_SETTLEMENT',
+    'name': 'HUB_LIABILITY',
     'description': 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
   }
 ]

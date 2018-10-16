@@ -119,6 +119,8 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
 const destroyByName = async (name) => {
   try {
     let participant = await ParticipantModel.getByName(name)
+    await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
+    await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
@@ -254,16 +256,18 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
   try {
     const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
+    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
-    if (existingLimit || existingPosition) {
+    const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
+    if (existingLimit || existingPosition || existingSettlementPosition) {
       throw new Error('Participant Limit or Initial Position already set')
     }
     let limitAndInitialPosition = limitAndInitialPositionObj
     if (limitAndInitialPosition.initialPosition == null) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
-    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, limitAndInitialPosition)
+    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition)
   } catch (err) {
     throw err
   }
@@ -468,32 +472,56 @@ const getPositions = async (name, query) => {
     if (query.currency) {
       const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
       participantExists(participant)
-      const result = await PositionFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
+      const result = await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION, query.currency, Enum.LedgerAccountType.POSITION)
       let position = {}
       if (Array.isArray(result) && result.length > 0) {
         position = {
           currency: result[0].currencyId,
           value: result[0].value,
-          updatedTime: result[0].changedDate
+          changedDate: result[0].changedDate
         }
       }
       return position
     } else {
       const participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      const result = await await PositionFacade.getByNameAndCurrency(name, null, Enum.LedgerAccountType.POSITION)
+      const result = await await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION)
       let positions = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
           positions.push({
             currency: item.currencyId,
             value: item.value,
-            updatedTime: item.changedDate
+            changedDate: item.changedDate
           })
         })
       }
       return positions
     }
+  } catch (err) {
+    throw err
+  }
+}
+
+const getAccounts = async (name, query) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const result = await PositionFacade.getAllByNameAndCurrency(name, query.currency)
+    let positions = []
+    if (Array.isArray(result) && result.length > 0) {
+      result.forEach(item => {
+        positions.push({
+          id: item.participantCurrencyId,
+          ledgerAccountType: item.ledgerAccountType,
+          currency: item.currencyId,
+          value: item.value,
+          reservedValue: item.reservedValue,
+          changedDate: item.changedDate
+        })
+      })
+    }
+    return positions
   } catch (err) {
     throw err
   }
@@ -520,5 +548,6 @@ module.exports = {
   destroyParticipantLimitByNameAndCurrency,
   getLimits,
   adjustLimits,
-  getPositions
+  getPositions,
+  getAccounts
 }

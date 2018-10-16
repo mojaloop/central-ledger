@@ -33,6 +33,7 @@
  */
 
 const Db = require('../../db')
+const ParticipantCurrencyModel = require('./participantCurrency')
 
 /**
  * @function GetByParticipantCurrencyId
@@ -74,7 +75,32 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   }
 }
 
+/**
+ * @function DestroyByParticipantId
+ *
+ * @async
+ * @description This deletes the participant position corresponding to the participantCurrencyId
+ *
+ *
+ * @param {integer} participantId - the participant currency id. Example: 1
+ *
+ * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
+ */
+
+const destroyByParticipantId = async (participantId) => {
+  try {
+    const knex = Db.getKnex()
+    const participantCurrencyIdList = (await ParticipantCurrencyModel.getByParticipantId(participantId)).map(record => record.participantCurrencyId)
+    return knex('participantPosition')
+      .whereIn('participantCurrencyId', participantCurrencyIdList)
+      .del()
+  } catch (e) {
+    throw e
+  }
+}
+
 module.exports = {
   getByParticipantCurrencyId,
-  destroyByParticipantCurrencyId
+  destroyByParticipantCurrencyId,
+  destroyByParticipantId
 }

@@ -331,44 +331,10 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for RECEIVED_FULFIL when single', async (test) => {
-      const isIncrease = false
-      const transferStateChange = {
-        transferId: transferInfo.transferId,
-        transferStateId: TransferState.COMMITTED
-      }
-
+    positionsTest.test('return true and log error when consumer is not found', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
-      Utility.transformGeneralTopicName.returns(topicName)
-      Utility.getKafkaConfig.returns(config)
+      Kafka.Consumer.getConsumer.throws(new Error())
 
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
-      TransferStateChange.saveTransferStateChange.resolves(true)
-      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
-      m.value.metadata.event.action = transferEventAction.COMMIT
-      const result = await allTransferHandlers.positions(null, m)
-      Logger.info(result)
-      test.equal(result, true)
-      test.end()
-    })
-
-    positionsTest.test('Update transferStateChange in the database for RECEIVED_FULFIL when single -- consumer is null', async (test) => {
-      const isIncrease = false
-      const transferStateChange = {
-        transferId: transferInfo.transferId,
-        transferStateId: TransferState.COMMITTED
-      }
-
-      await Kafka.Consumer.createHandler(topicName, config, command)
-      Kafka.Consumer.getConsumer.returns(null)
-
-      Utility.transformGeneralTopicName.returns(topicName)
-      Utility.getKafkaConfig.returns(config)
-
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
-      TransferStateChange.saveTransferStateChange.resolves(true)
-      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, m)
@@ -587,10 +553,10 @@ Test('Position handler', transferHandlerTest => {
         TransferStateChange.saveTransferStateChange.resolves(true)
         messages[0].value.metadata.event.action = 'invalid'
         await allTransferHandlers.positions(null, messages)
-        test.fail('Error not thrown')
+        test.pass()
         test.end()
       } catch (e) {
-        test.pass('Error thrown')
+        test.fail('Error thrown')
         test.end()
       }
     })
