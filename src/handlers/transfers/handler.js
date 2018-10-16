@@ -531,6 +531,7 @@ module.exports = {
   registerFulfilHandler,
   registerAllHandlers,
   registerGetTransferHandler,
+  getTransfer,
   prepare,
   fulfil
 }
