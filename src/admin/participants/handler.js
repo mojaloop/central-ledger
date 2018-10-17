@@ -272,6 +272,10 @@ const recordFunds = async function (request, h) {
       }
     }
     let messageProtocol = createRecordFundsMessageProtocol(payload, payload.action, '')
+    messageProtocol.metadata.request = {
+      params: request.params,
+      enums: await request.server.methods.enums('all')
+    }
     await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
     return h.response().code(202)
   } catch (err) {

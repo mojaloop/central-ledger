@@ -196,6 +196,12 @@ const transferEventAction = {
   EVENT: 'event',
   FULFIL: 'fulfil'
 }
+const adminTransferAction = {
+  RECORD_FUNDS_IN: 'recordFundsIn',
+  RECORD_FUNDS_OUT_PREPARE: 'recordFundsOutPrepare',
+  RECORD_FUNDS_OUT_COMMIT: 'recordFundsOutCommit',
+  RECORD_FUNDS_OUT_ABORT: 'recordFundsOutAbort'
+}
 const rejectionType = {
   EXPIRED: 'expired',
   CANCELLED: 'cancelled'
@@ -271,6 +277,7 @@ module.exports = {
 
   transferEventType,
   transferEventAction,
+  adminTransferAction,
   rejectionType,
   transferEventStatus,
   headers,

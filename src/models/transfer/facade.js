@@ -482,6 +482,9 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
   }
 }
 
+/**
+ * Method copied from central-settlement. TODO: needs refactoring and then publish through TransferService
+ */
 const settlementTransfersPrepare = async function (settlementId, transactionTimestamp, enums, trx = null) {
   try {
     const Config = {
@@ -605,6 +608,9 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
   }
 }
 
+/**
+ * Method copied from central-settlement. TODO: needs refactoring and then publish through TransferService
+ */
 const settlementTransfersCommit = async function (settlementId, transactionTimestamp, enums, trx = null) {
   try {
     const knex = await Db.getKnex()
@@ -718,7 +724,124 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
   }
 }
 
-const reconciliationTransferPrepare = async function (transactionReferenceId, transactionTimestamp, enums, trx = null) {
+const reconciliationTransferPrepare = async function (payload, transactionTimestamp, enums, trx = null) {
+  try {
+    const Config = {
+      TRANSFER_VALIDITY_SECONDS: 43200
+    }
+
+    const knex = await Db.getKnex()
+
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        // Insert transfer
+        await knex('transfer')
+          .insert({
+            transferId: payload.transferId,
+            amount: payload.amount.amount,
+            currencyId: payload.amount.currency,
+            ilpCondition: 0,
+            expirationDate: Time.getUTCString(new Date(+new Date() + 1000 * Number(Config.TRANSFER_VALIDITY_SECONDS))),
+            createdDate: transactionTimestamp
+          })
+          .transacting(trx)
+
+        // Retrieve hub reconciliation account for the specified currency
+        let {reconciliationAccountId} = await knex('participantCurrency')
+        .select('participantCurrencyId AS reconciliationAccountId')
+        .where('participantId', 1)
+        .andWhere('currencyId', payload.amount.currency)
+        .first()
+        .transacting(trx)
+
+        let ledgerEntryTypeId, amount
+        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN) {
+          ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_IN
+          amount = payload.amount.amount
+        } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
+          ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_OUT
+          amount = -payload.amount.amount
+        }
+
+        // Insert transferParticipant records
+        await knex('transferParticipant')
+          .insert({
+            transferId: payload.transferId,
+            participantCurrencyId: reconciliationAccountId,
+            transferParticipantRoleTypeId: enums.transferParticipantRoleType.HUB,
+            ledgerEntryTypeId: ledgerEntryTypeId,
+            amount: amount,
+            createdDate: transactionTimestamp
+          })
+          .transacting(trx)
+        await knex('transferParticipant')
+          .insert({
+            transferId: payload.transferId,
+            participantCurrencyId: payload.participantCurrencyId,
+            transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT_ACCOUNT,
+            ledgerEntryTypeId: ledgerEntryTypeId,
+            amount: -amount,
+            createdDate: transactionTimestamp
+          })
+          .transacting(trx)
+
+        // Insert transferStateChange
+        await knex('transferStateChange')
+          .insert({
+            transferId: payload.transferId,
+            transferStateId: enums.transferState.RESERVED,
+            reason: payload.reason,
+            createdDate: transactionTimestamp
+          })
+          .transacting(trx)
+
+        // Save transaction reference and transfer extensions
+        let transferExtensions = []
+        transferExtensions.push({
+          transferId: payload.transferId,
+          key: 'externalReference',
+          value: payload.externalReference,
+          createdDate: transactionTimestamp
+        })
+        if (payload.extensionList && payload.extensionList.extension) {
+          transferExtensions = transferExtensions.concat(
+            payload.extensionList.extension.map(ext => {
+              return {
+                transferId: payload.transferId,
+                key: ext.key,
+                value: ext.value,
+                createdDate: transactionTimestamp
+              }
+            })
+          )
+        }
+        for (let transferExtension of transferExtensions) {
+          await knex('transferExtension').insert(transferExtension).transacting(trx)
+        }
+
+        if (doCommit) {
+          await trx.commit
+        }
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw err
+      }
+    }
+
+    if (trx) {
+      await trxFunction(trx, false)
+    } else {
+      await knex.transaction(trxFunction)
+    }
+    return 0
+  } catch (err) {
+    throw err
+  }
+}
+
+const reconciliationTransferCommit = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
 
   } catch (err) {
@@ -726,15 +849,7 @@ const reconciliationTransferPrepare = async function (transactionReferenceId, tr
   }
 }
 
-const reconciliationTransferCommit = async function (transactionReferenceId, transactionTimestamp, enums, trx = null) {
-  try {
-
-  } catch (err) {
-    throw err
-  }
-}
-
-const reconciliationTransferAbort = async function (transactionReferenceId, transactionTimestamp, enums, trx = null) {
+const reconciliationTransferAbort = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
 
   } catch (err) {

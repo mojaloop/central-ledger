@@ -33,19 +33,36 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const TransferService = require('../../domain/transfer')
 const Utility = require('../lib/utility')
 const Kafka = require('../lib/kafka')
-// const Validator = require('./validator')
-// const TransferState = require('../../lib/enum').TransferState
 const Enum = require('../../lib/enum')
+const Time = require('../../lib/time')
+const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
-// const Errors = require('../../lib/errors')
+const AdminTransferAction = Enum.adminTransferAction
+const Validator = require('./validator')
+const TransferService = require('../../domain/transfer')
 
-// TODO: This errorCode and errorDescription are dummy values until a rules engine is established
-// const errorInternalCode = 2001
-// const errorInternalDescription = Errors.getErrorDescription(errorInternalCode)
+const debug = true
+if (debug) {
+  Logger.info = (message) => {
+    console.log('\x1b[33m', message)
+  }
+  Logger.error = (message) => {
+    console.error(message)
+  }
+}
+
+const commitMessageSync = async (kafkaTopic, consumer, message) => {
+  if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+    await consumer.commitMessageSync(message)
+  }
+  if (debug) {
+    console.log('\x1b[32m', `AdminTransferHandler::commitMessageSync`)
+  }
+  return true
+}
 
 const transfer = async (error, messages) => {
   if (error) {
@@ -59,7 +76,14 @@ const transfer = async (error, messages) => {
     } else {
       message = messages
     }
-    Logger.info(`AdminTransferHandler::${message.value.metadata.event.action}`)
+    const payload = message.value.content.payload
+    const metadata = message.value.metadata
+    const transferId = message.value.id
+    payload.participantCurrencyId = metadata.request.params.id
+    const enums = metadata.request.enums
+    const transactionTimestamp = Time.getUTCString(new Date())
+
+    Logger.info(`AdminTransferHandler::${metadata.event.action}::${transferId}`)
     const kafkaTopic = message.topic
     let consumer
     try {
@@ -69,19 +93,93 @@ const transfer = async (error, messages) => {
       Logger.error(e)
       return true
     }
-    const metadata = message.value.metadata
-    // const transferId = message.value.id
-    // const payload = message.value.content.payload
-    if (metadata.event.type === TransferEventType.FULFIL && metadata.event.action === TransferEventAction.COMMIT) {
-      // const existingTransfer = await TransferService.getById(transferId)
-      Logger.info(`AdminTransferHandler::${metadata.event.action}::invalidEventAction`)
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
+
+    if (metadata.event.type === TransferEventType.ADMIN && metadata.event.action === TransferEventAction.TRANSFER) {
+      if (payload.action === AdminTransferAction.RECORD_FUNDS_IN || payload.action === AdminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
+        Logger.info(`AdminTransferHandler::${payload.action}::checking for duplicates`)
+
+        const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
+
+        if (existsMatching) {
+          Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching`)
+          const currentTransferState = await TransferService.getTransferStateChange(transferId)
+
+          if (!currentTransferState || !currentTransferState.enumeration) {
+            Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::transfer state not found`)
+          } else {
+            const transferStateEnum = currentTransferState.enumeration
+
+            if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
+              Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::request already finalized`)
+            } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
+              Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::previous request still in progress do nothing`)
+            }
+          }
+        } else if (existsNotMatching) {
+          Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsNotMatching::request exists with different parameters`)
+        } else {
+          Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
+
+          let { validationPassed, reasons } = await Validator.validateByName(payload)
+
+          if (validationPassed) {
+            Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
+            try {
+              Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
+              // Save the valid transfer into the database
+              if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
+                // TODO: RECORD_FUNDS_IN
+                Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
+                await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
+                // await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
+              } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
+                // TODO: RECORD_FUNDS_OUT_PREPARE
+                Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE`)
+                await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
+              }
+            } catch (err) {
+              Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::duplicate found while inserting into transfer table`)
+            }
+          } else {
+            Logger.info(`AdminTransferHandler::${payload.action}::validationFailed`)
+            try {
+              Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::newEntry`)
+              // Save the invalid request in the database
+              await TransferService.prepare(payload, reasons.toString(), false)
+            } catch (err) {
+              Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::${reasons.toString()}`)
+            }
+            // log the invalid transfer into the the transferError table
+            Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::log the invalid transfer into the the transferError table`)
+            // await TransferService.logTransferError(payload.transferId, errorGenericCode, reasons.toString())
+          }
+        }
+      } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT || payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
+        const existingTransfer = await TransferService.getById(transferId)
+        if (!existingTransfer) {
+          Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::notFound`)
+        } else if (existingTransfer.transferState !== TransferState.RESERVED) {
+          Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
+        } else if (existingTransfer.expirationDate <= new Date()) {
+          Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
+        } else { // validations success
+          Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
+          if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
+            // TODO: RECORD_FUNDS_OUT_COMMIT
+            Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
+          } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
+            // TODO: RECORD_FUNDS_OUT_ABORT
+            Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
+          }
+        }
+      } else {
+        Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
       }
-      // message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
-      // await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
-      return true
+    } else {
+      Logger.info(`AdminTransferHandler::${payload.action}::invalidEventAction`)
     }
+
+    return await commitMessageSync(kafkaTopic, consumer, message)
   } catch (error) {
     Logger.error(error)
     throw error

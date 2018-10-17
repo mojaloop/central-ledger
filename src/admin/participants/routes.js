@@ -256,7 +256,7 @@ module.exports = [
           action: Joi.string().allow([ 'recordFundsOutPrepare', 'recordFundsOutCommit', 'recordFundsOutAbort', 'recordFundsIn' ]),
           reason: Joi.any(),
           amount: Joi.object({
-            value: Joi.number().positive().precision(4),
+            amount: Joi.number().positive().precision(4),
             currency: currencyValidator
           }),
           extensionList: Joi.object()
