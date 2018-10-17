@@ -107,7 +107,7 @@ const prepare = async (error, messages) => {
     const payload = message.value.content.payload
 
     Logger.info('TransferService::prepare::checking for duplicates')
-    const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
+    const {existsMatching, existsNotMatching} = await TransferService.validateDuplicateHash(payload)
 
     if (existsMatching) {
       // There is a matching hash
@@ -153,7 +153,7 @@ const prepare = async (error, messages) => {
       return true
     }
 
-    let { validationPassed, reasons } = await Validator.validateByName(payload)
+    let {validationPassed, reasons} = await Validator.validateByName(payload)
     if (validationPassed) {
       Logger.info('TransferService::prepare::validationPassed')
       try {
@@ -313,6 +313,93 @@ const fulfil = async (error, messages) => {
 }
 
 /**
+ * @function getTransfer
+ *
+ * @async
+ * @description Gets a transfer by transfer id. Gets Kafka config from default.json
+ *
+ * Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const getTransfer = async (error, messages) => {
+  if (error) {
+    // Logger.error(error)
+    throw new Error()
+  }
+  let message = {}
+  try {
+    if (Array.isArray(messages)) {
+      message = messages[0]
+    } else {
+      message = messages
+    }
+    Logger.info(`getTransferHandler::${message.value.metadata.event.action}`)
+    const kafkaTopic = message.topic
+    let consumer
+    try {
+      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+    } catch (e) {
+      Logger.info(`No consumer found for topic ${kafkaTopic}`)
+      Logger.error(e)
+      return true
+    }
+    if (!await Validator.validateParticipantByName(message.value.from)) {
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: FSP Id does not exist')
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      return true
+    }
+    // const metadata = message.value.metadata
+    const transferId = message.value.id
+    const transfer = await TransferService.getById(transferId)
+
+    if (!transfer) {
+      message.value.content.payload = {
+        errorInformation: {
+          errorCode: 3208,
+          errorDescription: 'Provided Transfer ID was not found on the server.'
+        }
+      }
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: Provided Transfer ID was not found on the server.')
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      return true
+    } else {
+      message.value.content.payload = transformTransfer(transfer)
+    }
+    if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+      await consumer.commitMessageSync(message)
+    }
+    // Will follow framework flow in future
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.ENUMS.STATE.SUCCESS)
+    return true
+  } catch (err) {
+    Logger.error(err)
+    throw err
+  }
+}
+
+const transformTransfer = (transfer) => {
+  if (transfer.transferState === Enum.TransferState.COMMITTED) {
+    return {
+      fulfilment: transfer.fulfilment,
+      completedTimestamp: transfer.completedTimestamp,
+      transferState: transfer.transferState,
+      extensionList: transfer.extensionList
+    }
+  } else {
+    return {
+      transferState: transfer.transferState,
+      extensionList: transfer.extensionList
+    }
+  }
+}
+
+/**
  * @function CreatePrepareHandler
  *
  * @async
@@ -395,6 +482,30 @@ const registerPrepareHandlers = async (participantNames = []) => {
 }
 
 /**
+ * @function registerGetTransferHandler
+ *
+ * @async
+ * @description Registers the one handler for get a transfer by Id. Gets Kafka config from default.json
+ * Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const registerGetTransferHandler = async () => {
+  try {
+    const getHandler = {
+      command: getTransfer,
+      topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.GET),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.GET.toUpperCase())
+    }
+    getHandler.config.rdkafkaConf['client.id'] = getHandler.topicName
+    await Kafka.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
+    return true
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
+}
+
+/**
  * @function RegisterAllHandlers
  *
  * @async
@@ -406,6 +517,7 @@ const registerAllHandlers = async () => {
   try {
     await registerPrepareHandlers()
     await registerFulfilHandler()
+    await registerGetTransferHandler()
     return true
   } catch (e) {
     throw e
@@ -416,6 +528,8 @@ module.exports = {
   registerPrepareHandlers,
   registerFulfilHandler,
   registerAllHandlers,
+  registerGetTransferHandler,
+  getTransfer,
   prepare,
   fulfil
 }
