@@ -17,5 +17,6 @@ module.exports = {
   seeds: {
     directory: seedsDirectory,
     loadExtensions: ['.js']
-  }
+  },
+  pool: { min: 0, max: 200 }
 }
