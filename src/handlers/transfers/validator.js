@@ -190,6 +190,7 @@ module.exports = {
   validateByName,
   validateById,
   validateFulfilCondition,
+  validateParticipantByName,
   //  validateTransferPrepareSchema,
   reasons
 }
