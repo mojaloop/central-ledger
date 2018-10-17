@@ -152,7 +152,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let processedTransfersKeysList = Object.keys(processedTransfers)
         let batchParticipantPositionChange = []
         for (let keyIndex in processedTransfersKeysList) {
-          let { runningPosition, runningReservedValue, transferState } = processedTransfers[processedTransfersKeysList[keyIndex]]
+          let { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
           const participantPositionChange = {
             participantPositionId: initialParticipantPosition.participantPositionId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
@@ -160,9 +160,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch canbe clearly grouped
             reservedValue: runningReservedValue
           }
-          if (transferState.transferStateId === Enum.TransferState.RESERVED) {
-            batchParticipantPositionChange.push(participantPositionChange)
-          }
+          batchParticipantPositionChange.push(participantPositionChange)
         }
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
         await trx.commit
