@@ -252,7 +252,7 @@ module.exports = [
       validate: {
         payload: {
           transferId: Joi.string().guid().required(),
-          externalReference: Joi.string(),
+          externalReference: Joi.string().required(),
           action: Joi.string().allow([ 'recordFundsOutPrepare', 'recordFundsOutCommit', 'recordFundsOutAbort', 'recordFundsIn' ]),
           reason: Joi.any(),
           amount: Joi.object({
