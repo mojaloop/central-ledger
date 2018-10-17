@@ -240,5 +240,28 @@ module.exports = [
         }
       }
     }
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/accounts/{id}',
+    handler: Handler.recordFunds,
+    options: {
+      id: 'participants_accounts_funds',
+      tags: tags,
+      description: 'Record Funds In or Out of participant account',
+      validate: {
+        payload: {
+          transferId: Joi.string().guid().required(),
+          externalReference: Joi.string(),
+          action: Joi.string().allow([ 'recordFundsOutPrepare', 'recordFundsOutCommit', 'recordFundsOutAbort', 'recordFundsIn' ]),
+          reason: Joi.any(),
+          amount: Joi.object({
+            value: Joi.number().positive().precision(4),
+            currency: currencyValidator
+          }),
+          extensionList: Joi.object()
+        }
+      }
+    }
   }
 ]

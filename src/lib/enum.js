@@ -194,11 +194,7 @@ const transferEventAction = {
   REJECT: 'reject',
   FAIL: 'fail',
   EVENT: 'event',
-  FULFIL: 'fulfil',
-  RECORD_FUNDS_IN: 'record-funds-in',
-  RECORD_FUNDS_OUT_PREPARE: 'record-funds-out-prepare',
-  RECORD_FUNDS_OUT_COMMIT: 'record-funds-out-commit',
-  RECORD_FUNDS_OUT_ABORT: 'record-funds-out-abort'
+  FULFIL: 'fulfil'
 }
 const rejectionType = {
   EXPIRED: 'expired',

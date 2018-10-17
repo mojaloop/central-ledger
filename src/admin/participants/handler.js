@@ -29,6 +29,11 @@ const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
+const Utility = require('../../handlers/lib/utility')
+const Enum = require('../../lib/enum')
+const TransferEventType = Enum.transferEventType
+const TransferEventAction = Enum.transferEventAction
+const Uuid = require('uuid4')
 
 const entityItem = ({ name, createdDate, isActive, currencyList }) => {
   const link = UrlParser.toParticipantUri(name)
@@ -217,6 +222,63 @@ const getAccounts = async function (request, h) {
   }
 }
 
+const createRecordFundsMessageProtocol = (payload, action, state, pp = '') => {
+  return {
+    id: payload.transferId,
+    from: payload.payerFsp,
+    to: payload.payeeFsp,
+    type: 'application/json',
+    content: {
+      header: {},
+      payload
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: '',
+        type: 'transfer',
+        action,
+        createdAt: new Date(),
+        state
+      }
+    },
+    pp
+  }
+}
+
+const recordFunds = async function (request, h) {
+  Sidecar.logRequest(request)
+  let payload = request.payload
+  try {
+    switch (request.payload.action) {
+      case 'recordFundsOutPrepare': {
+        payload.payerFsp = 'HUB'
+        payload.payeeFsp = request.params.name
+      }
+        break
+      case 'recordFundsOutCommit': {
+        payload.payerFsp = 'HUB'
+        payload.payeeFsp = request.params.name
+      }
+        break
+      case 'recordFundsOutAbort': {
+        payload.payerFsp = 'HUB'
+        payload.payeeFsp = request.params.name
+      }
+        break
+      case 'recordFundsIn': {
+        payload.payerFsp = request.params.name
+        payload.payeeFsp = 'HUB'
+      }
+    }
+    let messageProtocol = createRecordFundsMessageProtocol(payload, payload.action, '')
+    await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+    return h.response().code(202)
+  } catch (err) {
+
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -228,5 +290,6 @@ module.exports = {
   getLimits,
   adjustLimits,
   getPositions,
-  getAccounts
+  getAccounts,
+  recordFunds
 }
