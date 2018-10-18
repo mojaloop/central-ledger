@@ -630,7 +630,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
+      let found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId, currencyId)
       test.deepEqual(found, participantPosition, 'retrive the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
@@ -679,7 +679,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getByNameAndCurrency(participantName, null, ledgerAccountTypeId)
+      let found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId)
       test.deepEqual(found, participantPosition, 'retrive the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
@@ -705,6 +705,120 @@ Test('Position facade', async (positionFacadeTest) => {
       test.end()
     } catch (err) {
       Logger.error(`getByNameAndCurrency failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await positionFacadeTest.test('getAllByNameAndCurrency should return the participant position for given currency', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
+      let builderStub = sandbox.stub()
+
+      const participantPosition = [
+        {
+          participantPostionId: 1,
+          participantCurrancyId: 1,
+          value: 1000,
+          reservedValue: 0.0,
+          changedDate: new Date()
+        }
+      ]
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantPosition.query.callsArgWith(0, builderStub)
+
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          innerJoin: sandbox.stub().returns({
+            where: sandbox.stub().returns({
+              where: sandbox.stub().callsArgWith(0, whereStub).returns({
+                select: sandbox.stub().returns(participantPosition)
+              })
+            })
+          })
+        })
+      })
+
+      let found = await ModelPosition.getAllByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
+      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
+
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionFacadeTest.test('getAllByNameAndCurrency should return the participant positions for all currencies', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      let builderStub = sandbox.stub()
+
+      const participantPosition = [
+        {
+          participantPostionId: 1,
+          participantCurrancyId: 1,
+          value: 1000,
+          reservedValue: 0.0,
+          changedDate: new Date()
+        },
+        {
+          participantPostionId: 2,
+          participantCurrancyId: 3,
+          value: 2000,
+          reservedValue: 0.0,
+          changedDate: new Date()
+        }
+      ]
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantPosition.query.callsArgWith(0, builderStub)
+
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          innerJoin: sandbox.stub().returns({
+            where: sandbox.stub().returns({
+              where: sandbox.stub().callsArgWith(0, whereStub).returns({
+                select: sandbox.stub().returns(participantPosition)
+              })
+            })
+          })
+        })
+      })
+
+      let found = await ModelPosition.getAllByNameAndCurrency(participantName)
+      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
+
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await positionFacadeTest.test('getAllByNameAndCurrency should throw error', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
+
+      Db.participantPosition.query.throws(new Error())
+
+      await ModelPosition.getAllByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
+      test.fail(' should throw')
+      test.end()
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllByNameAndCurrency failed with error - ${err}`)
       test.pass('Error thrown')
       test.end()
     }

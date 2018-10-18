@@ -260,7 +260,7 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-const addLimitAndInitialPosition = async (participantCurrencyId, limitPostionObj) => {
+const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccountId, limitPostionObj) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
@@ -284,10 +284,18 @@ const addLimitAndInitialPosition = async (participantCurrencyId, limitPostionObj
         }
         result = await knex('participantPosition').transacting(trx).insert(participantPosition)
         participantPosition.participantPositionId = result[0]
+        let settlementPosition = {
+          participantCurrencyId: settlementAccountId,
+          value: 0,
+          reservedValue: 0
+        }
+        result = await knex('participantPosition').transacting(trx).insert(settlementPosition)
+        settlementPosition.participantPositionId = result[0]
         await trx.commit
         return {
           participantLimit,
-          participantPosition
+          participantPosition,
+          settlementPosition
         }
       } catch (err) {
         await trx.rollback

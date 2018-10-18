@@ -150,7 +150,8 @@ const transferEventType = {
   POSITION: 'position',
   TRANSFER: 'transfer',
   FULFIL: 'fulfil',
-  NOTIFICATION: 'notification'
+  NOTIFICATION: 'notification',
+  GET: 'get'
 }
 const transferEventAction = {
   PREPARE: 'prepare',
@@ -193,40 +194,6 @@ const topicMap = {
       action: transferEventAction.ABORT
     }
   },
-  transfer: {
-    'prepare': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    },
-    'prepare-duplicate': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    },
-    'transfer': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    },
-    'commit': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    },
-    'abort': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    },
-    'timeout-received': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    },
-    'timeout-reserved': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    },
-    'reject': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.TRANSFER
-    }
-  },
   notification: {
     'prepare': {
       functionality: transferEventType.NOTIFICATION,
@@ -236,10 +203,6 @@ const topicMap = {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'transfer': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
     'commit': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
@@ -252,11 +215,11 @@ const topicMap = {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'timeout-reserved': {
+    'reject': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'reject': {
+    'get': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     }

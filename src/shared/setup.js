@@ -126,14 +126,14 @@ const createHandlers = async (handlers) => {
             await KafkaCron.start('position')
           }
           break
-        case 'transfer':
-          await RegisterHandlers.transfers.registerTransferHandler()
-          break
         case 'fulfil':
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
         case 'timeout':
           await RegisterHandlers.timeouts.registerTimeoutHandler()
+          break
+        case 'get':
+          await RegisterHandlers.transfers.registerGetHandler()
           break
         default:
           var error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`

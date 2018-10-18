@@ -53,13 +53,6 @@ const currencyEntityItem = ({ currencyId, isActive, ledgerAccountTypeId }) => {
   }
 }
 
-// const handleExistingRecord = (entity) => {
-//   if (entity) {
-//     throw new Errors.RecordExistsError()
-//   }
-//   return entity
-// }
-
 const handleMissingRecord = (entity) => {
   if (!entity) {
     throw new Errors.NotFoundError('The requested resource could not be found.')
@@ -215,6 +208,15 @@ const getPositions = async function (request, h) {
   }
 }
 
+const getAccounts = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    return Participant.getAccounts(request.params.name, request.query)
+  } catch (err) {
+    throw Boom.badRequest()
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -225,5 +227,6 @@ module.exports = {
   addLimitAndInitialPosition,
   getLimits,
   adjustLimits,
-  getPositions
+  getPositions,
+  getAccounts
 }

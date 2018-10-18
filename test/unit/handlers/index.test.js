@@ -96,11 +96,6 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
-      // var rejectHandler = {
-      //   type: 'reject',
-      //   enabled: true
-      // }
-
       var modulesList = [
         prepareHandler,
         positionHandler,

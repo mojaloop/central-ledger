@@ -121,7 +121,15 @@ module.exports = [
       description: 'Register position Kafka consumer handler'
     }
   },
-
+  {
+    method: 'POST',
+    path: '/register/transfer/get',
+    handler: TransferHandler.registerGetTransferHandler,
+    options: {
+      id: 'getTransfer',
+      description: 'Register get transfer Kafka consumer handler'
+    }
+  },
   // Following are for testing purposes so that we can produce transfers without the ML-API. To be removed later.
   {
     method: 'POST',
