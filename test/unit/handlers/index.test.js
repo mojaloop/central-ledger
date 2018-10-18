@@ -56,7 +56,7 @@ Test('cli', async (cliTest) => {
         'dfsp1, dfsp2',
         '--position',
         'dfsp1, dfsp2',
-        '--transfer',
+        '--get',
         '--fulfil',
         '--timeout'
       ]
@@ -81,8 +81,8 @@ Test('cli', async (cliTest) => {
         fspList
       }
 
-      var transferHandler = {
-        type: 'transfer',
+      var getHandler = {
+        type: 'get',
         enabled: true
       }
 
@@ -99,7 +99,7 @@ Test('cli', async (cliTest) => {
       var modulesList = [
         prepareHandler,
         positionHandler,
-        transferHandler,
+        getHandler,
         fulfilHandler,
         timeoutHandler
         // rejectHandler
