@@ -24,22 +24,22 @@
 
 'use strict'
 
-const participantCurrency = [
+const participantPosition = [
   {
-    'participantId': 1,
-    'currencyId': 'USD',
-    'ledgerAccountTypeId': 3,
-    'createdBy': 'temp-dev-seed'
+    'participantCurrencyId': 1,
+    'value': 0,
+    'reservedValue': 0
+    // temp-dev-seed
   }
 ]
 
 exports.seed = async function (knex) {
   try {
-    return await knex('participantCurrency').insert(participantCurrency)
+    return await knex('participantPosition').insert(participantPosition)
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return -1001
     else {
-      console.log(`Uploading seeds for participantCurrency has failed with the following error: ${err}`)
+      console.log(`Uploading seeds for participantPosition has failed with the following error: ${err}`)
       return -1000
     }
   }

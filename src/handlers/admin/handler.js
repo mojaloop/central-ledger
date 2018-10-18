@@ -43,6 +43,7 @@ const TransferEventAction = Enum.transferEventAction
 const AdminTransferAction = Enum.adminTransferAction
 const Validator = require('./validator')
 const TransferService = require('../../domain/transfer')
+const Db = require('../../db')
 
 const debug = true
 if (debug) {
@@ -128,12 +129,20 @@ const transfer = async (error, messages) => {
               Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
               // Save the valid transfer into the database
               if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
-                // TODO: RECORD_FUNDS_IN
                 Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
-                await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
-                // await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
+
+                const knex = Db.getKnex()
+                return knex.transaction(async trx => {
+                  try {
+                    await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+                    await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
+                    await trx.commit
+                  } catch (err) {
+                    await trx.rollback
+                    throw err
+                  }
+                })
               } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
-                // TODO: RECORD_FUNDS_OUT_PREPARE
                 Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE`)
                 await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
               }
@@ -155,21 +164,26 @@ const transfer = async (error, messages) => {
           }
         }
       } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT || payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
-        const existingTransfer = await TransferService.getById(transferId)
+        const existingTransfer = await TransferService.getTransferById(transferId)
+        const transferState = await TransferService.getTransferState(transferId)
         if (!existingTransfer) {
           Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::notFound`)
-        } else if (existingTransfer.transferState !== TransferState.RESERVED) {
+        } else if (transferState.transferStateId !== TransferState.RESERVED) {
           Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
         } else if (existingTransfer.expirationDate <= new Date()) {
           Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
         } else { // validations success
           Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
           if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
-            // TODO: RECORD_FUNDS_OUT_COMMIT
             Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
+            await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
           } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
-            // TODO: RECORD_FUNDS_OUT_ABORT
             Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
+            payload.amount = {
+              amount: existingTransfer.amount,
+              currency: existingTransfer.currencyId
+            }
+            await TransferService.reconciliationTransferAbort(payload, transactionTimestamp, enums)
           }
         }
       } else {
