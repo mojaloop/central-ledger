@@ -72,6 +72,7 @@ const getById = async (id) => {
 
 const getByName = async (name) => {
   // TODO: refactor the query to use the facade layer and join query for both tables
+  console.log('name in the getByName ' + name)
   let participant = await ParticipantModel.getByName(name)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)

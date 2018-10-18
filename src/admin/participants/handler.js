@@ -85,6 +85,28 @@ const create = async function (request, h) {
   }
 }
 
+const account = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    let participant = await Participant.getByName(request.params.name)
+    if (participant) {
+      const currencyExists = participant.currencyList.find(currency => {
+        return currency.currencyId === request.payload.currency
+      })
+      if (currencyExists) {
+        throw new Errors.RecordExistsError()
+      }
+    } else {
+      // const participantCurrency =
+      await Participant.createParticipantCurrency(request.payload)
+    }
+    // to do
+    return h.response(entityItem(participant)).code(201)
+  } catch (err) {
+    throw Boom.badRequest(err.message)
+  }
+}
+
 const getAll = async function (request, h) {
   const results = await Participant.getAll()
   const result = results.map(entityItem)
@@ -219,6 +241,7 @@ const getAccounts = async function (request, h) {
 
 module.exports = {
   create,
+  account,
   getAll,
   getByName,
   update,
