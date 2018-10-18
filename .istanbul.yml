@@ -1,6 +1,6 @@
 instrumentation:
   include-all-sources: true
-  excludes: ['**/migrations/**']
+  excludes: ['**/migrations/**', '**/ddl/**']
 check:
   global:
     statements: 90

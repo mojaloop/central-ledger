@@ -51,7 +51,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .description('Start a specified Handler') // command description
   .option('--prepare [fspNameList]', 'Start the Prepare Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
   .option('--position [fspNameList]', 'Start the Position Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
-  .option('--transfer', 'Start the Transfer Handler')
+  .option('--get', 'Start the Transfer Get Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
   .option('--timeout', 'Start the Timeout Handler')
   // .option('--reject', 'Start the Reject Handler')
@@ -109,10 +109,10 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       }
       handlerList.push(handler)
     }
-    if (args.transfer) {
-      Logger.debug(`CLI: Executing --transfer`)
+    if (args.get) {
+      Logger.debug(`CLI: Executing --get`)
       let handler = {
-        type: 'transfer',
+        type: 'get',
         enabled: true
       }
       handlerList.push(handler)
