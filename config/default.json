@@ -2,6 +2,7 @@
   "PORT": 4000,
   "ADMIN_PORT": 3001,
   "HOSTNAME": "http://central-ledger",
+  "RUN_MIGRATIONS": true,
   "AMOUNT": {
     "PRECISION": 10,
     "SCALE": 2
