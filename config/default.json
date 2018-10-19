@@ -3,6 +3,8 @@
   "ADMIN_PORT": 3001,
   "HOSTNAME": "http://central-ledger",
   "RUN_MIGRATIONS": true,
+  "MAX_CONNECTION_POOL": 250,
+  "MIN_CONNECTION_POOL": 2,
   "AMOUNT": {
     "PRECISION": 10,
     "SCALE": 2

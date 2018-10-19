@@ -18,5 +18,5 @@ module.exports = {
     directory: seedsDirectory,
     loadExtensions: ['.js']
   },
-  pool: { min: 0, max: 200 }
+  pool: { min: Config.MIN_CONNECTION_POOL, max: Config.MAX_CONNECTION_POOL }
 }
