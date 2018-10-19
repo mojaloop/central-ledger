@@ -6,7 +6,7 @@ const Joi = require('joi')
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
 // const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
-const currencyValidator = Joi.string().allow([
+const currencyValidator = Joi.string().valid([
   'ALL', 'AFN', 'ARS', 'AWG', 'AUD', 'AZN',
   'BSD', 'BBD', 'BYN', 'BZD', 'BMD', 'BOB', 'BAM', 'BWP', 'BGN', 'BRL', 'BND',
   'KHR', 'CAD', 'KYD', 'CLP', 'CNY', 'COP', 'CRC', 'HRK', 'CUP', 'CZK',
@@ -31,7 +31,7 @@ const currencyValidator = Joi.string().allow([
   'VEF', 'VND',
   'YER',
   'ZWD'
-]).description('Currency code of the participant')
+]).description('Currency code of the participant').required()
 
 module.exports = [
   {
@@ -256,7 +256,7 @@ module.exports = [
           action: Joi.string().required().valid([ 'recordFundsOutPrepare', 'recordFundsIn' ]).label('action is missing or not supported'),
           reason: Joi.string().required(),
           amount: Joi.object({
-            amount: Joi.number().positive().precision(4),
+            amount: Joi.number().positive().precision(4).required(),
             currency: currencyValidator
           }).required().label('No amount provided'),
           extensionList: Joi.object({

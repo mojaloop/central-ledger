@@ -14,33 +14,14 @@ echo "RecordFundsOut ABORT 10"
 echo "---------------------------------------------------------------------"
 
 echo "Sending request for aborting 10 USD to dfsp1 settlement account"
-sh -c "curl -X POST \
-  http://127.0.0.1:3001/participants/dfsp1/accounts/3 \
+sh -c "curl -X PUT \
+  http://127.0.0.1:3001/participants/dfsp1/accounts/3/transfers/523ec634-ef48-6575-a6a0-ded2955b8103 \
   -H 'Content-Type: application/json' \
-  -H 'Postman-Token: 8506bf22-d7a2-4609-8047-de768db623fa' \
+  -H 'Postman-Token: 88f1e4bc-9c15-4628-85c5-6208d71d981a' \
   -H 'cache-control: no-cache' \
   -d '{
-    \"transferId\": \"523ec634-ef48-6575-a6a0-ded2955b8103\",
-    \"externalReference\": \"fgh789\",
     \"action\": \"recordFundsOutAbort\",
-    \"amount\": {
-      \"amount\": 10.0000,
-      \"currency\": \"USD\"
-      
-    },
-    \"reason\": \"Reason for out flow of funds\",
-    \"extensionList\": {
-      \"extension\": [
-        {
-          \"key\": \"extKey1\",
-          \"value\": \"extValue1\"
-        },
-        {
-          \"key\": \"extKey2\",
-          \"value\": \"extValue2\"
-        }
-      ]
-    }
+    \"reason\": \"Reason for out flow of funds\"
   }'"
 echo 
 echo 

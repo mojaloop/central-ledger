@@ -14,33 +14,14 @@ echo "RecordFundsOut COMMIT 50"
 echo "---------------------------------------------------------------------"
 
 echo "Sending request for committing 50 USD to dfsp1 settlement account"
-sh -c "curl -X POST \
-  http://127.0.0.1:3001/participants/dfsp1/accounts/3 \
+sh -c "curl -X PUT \
+  http://127.0.0.1:3001/participants/dfsp1/accounts/3/transfers/523ec634-ef48-6575-a6a0-ded2955b8102 \
   -H 'Content-Type: application/json' \
-  -H 'Postman-Token: 8506bf22-d7a2-4609-8047-de768db623fa' \
+  -H 'Postman-Token: 88f1e4bc-9c15-4628-85c5-6208d71d981a' \
   -H 'cache-control: no-cache' \
   -d '{
-    \"transferId\": \"523ec634-ef48-6575-a6a0-ded2955b8102\",
-    \"externalReference\": \"abc123\",
     \"action\": \"recordFundsOutCommit\",
-    \"amount\": {
-      \"amount\": 50.0000,
-      \"currency\": \"USD\"
-      
-    },
-    \"reason\": \"Reason for commit\",
-    \"extensionList\": {
-      \"extension\": [
-        {
-          \"key\": \"extKey1\",
-          \"value\": \"extValue1\"
-        },
-        {
-          \"key\": \"extKey2\",
-          \"value\": \"extValue2\"
-        }
-      ]
-    }
+    \"reason\": \"Reason for out flow of funds\"
   }'"
 echo 
 echo 
