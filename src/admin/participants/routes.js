@@ -246,20 +246,50 @@ module.exports = [
     path: '/participants/{name}/accounts/{id}',
     handler: Handler.recordFunds,
     options: {
-      id: 'participants_accounts_funds',
+      id: 'post_participants_accounts_funds',
       tags: tags,
       description: 'Record Funds In or Out of participant account',
       validate: {
         payload: {
           transferId: Joi.string().guid().required(),
           externalReference: Joi.string().required(),
-          action: Joi.string().allow([ 'recordFundsOutPrepare', 'recordFundsOutCommit', 'recordFundsOutAbort', 'recordFundsIn' ]),
-          reason: Joi.any(),
+          action: Joi.string().required().valid([ 'recordFundsOutPrepare', 'recordFundsIn' ]).label('action is missing or not supported'),
+          reason: Joi.string().required(),
           amount: Joi.object({
             amount: Joi.number().positive().precision(4),
             currency: currencyValidator
-          }),
-          extensionList: Joi.object()
+          }).required().label('No amount provided'),
+          extensionList: Joi.object({
+            extension: Joi.array().items({
+              key: Joi.string(),
+              value: Joi.string()
+            })
+          })
+        },
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive()
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/participants/{name}/accounts/{id}/transfers/{transferId}',
+    handler: Handler.recordFunds,
+    options: {
+      id: 'put_participants_accounts_funds',
+      tags: tags,
+      description: 'Record Funds In or Out of participant account',
+      validate: {
+        payload: {
+          action: Joi.string().valid([ 'recordFundsOutCommit', 'recordFundsOutAbort' ]).label('action is missing or not supported'),
+          reason: Joi.string().required()
+        },
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive(),
+          transferId: Joi.string().guid().required()
         }
       }
     }

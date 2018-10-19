@@ -456,6 +456,29 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
   }
 }
 
+const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
+  try {
+    return Db.participantCurrency.query(builder => {
+      return builder
+        .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId')
+        .innerJoin('participant AS p', 'p.participantId', 'participantCurrency.participantId')
+        .where({
+          'p.name': name,
+          'p.isActive': 1,
+          'participantCurrency.isActive': 1
+        })
+        .where(q => {
+          if (currencyId != null) {
+            return q.where('participantCurrency.currencyId', '=', currencyId)
+          }
+        })
+        .select('*', 'lap.name AS ledgerAccountType')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
   getByNameAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
@@ -467,5 +490,6 @@ module.exports = {
   addLimitAndInitialPosition,
   adjustLimits,
   getParticipantLimitsByCurrencyId,
-  getParticipantLimitsByParticipantId
+  getParticipantLimitsByParticipantId,
+  getAllAccountsByNameAndCurrency
 }

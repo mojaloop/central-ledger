@@ -527,6 +527,30 @@ const getAccounts = async (name, query) => {
   }
 }
 
+const getAllAccounts = async (name, query) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const result = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, query.currency)
+    let accounts = []
+    if (Array.isArray(result) && result.length) {
+      result.forEach(item => {
+        accounts.push({
+          id: item.participantCurrencyId,
+          ledgerAccountType: item.ledgerAccountType,
+          currency: item.currencyId,
+          value: item.value,
+          reservedValue: item.reservedValue,
+          changedDate: item.changedDate
+        })
+      })
+    }
+    return result
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -549,5 +573,6 @@ module.exports = {
   getLimits,
   adjustLimits,
   getPositions,
-  getAccounts
+  getAccounts,
+  getAllAccounts
 }

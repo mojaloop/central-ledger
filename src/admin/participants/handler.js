@@ -65,6 +65,54 @@ const handleMissingRecord = (entity) => {
   return entity
 }
 
+const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp = '') => {
+  return {
+    id: payload.transferId,
+    from: payload.payerFsp,
+    to: payload.payeeFsp,
+    type: 'application/json',
+    content: {
+      header: {},
+      payload
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: '',
+        type: 'transfer',
+        action,
+        createdAt: new Date(),
+        state
+      }
+    },
+    pp
+  }
+}
+
+const setPayerPayeeFundsInOut = (fspName, payload) => {
+  let { action } = payload
+  const actions = {
+    'recordFundsIn': {
+      payer: fspName,
+      payee: 'HUB'
+    },
+    'recordFundsOutPrepare': {
+      payer: 'HUB',
+      payee: fspName
+    },
+    'recordFundsOutCommit': {
+      payer: 'HUB',
+      payee: fspName
+    },
+    'recordFundsOutAbort': {
+      payer: 'HUB',
+      payee: fspName
+    }
+  }
+  if (!actions[action]) throw new Error('The action is not supported')
+  return Object.assign(payload, actions[action])
+}
+
 const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
@@ -222,56 +270,18 @@ const getAccounts = async function (request, h) {
   }
 }
 
-const createRecordFundsMessageProtocol = (payload, action, state, pp = '') => {
-  return {
-    id: payload.transferId,
-    from: payload.payerFsp,
-    to: payload.payeeFsp,
-    type: 'application/json',
-    content: {
-      header: {},
-      payload
-    },
-    metadata: {
-      event: {
-        id: Uuid(),
-        responseTo: '',
-        type: 'transfer',
-        action,
-        createdAt: new Date(),
-        state
-      }
-    },
-    pp
-  }
-}
-
 const recordFunds = async function (request, h) {
   Sidecar.logRequest(request)
   let payload = request.payload
+  let { name, id, transferId } = request.params
   try {
-    switch (request.payload.action) {
-      case 'recordFundsOutPrepare': {
-        payload.payerFsp = 'HUB'
-        payload.payeeFsp = request.params.name
-      }
-        break
-      case 'recordFundsOutCommit': {
-        payload.payerFsp = 'HUB'
-        payload.payeeFsp = request.params.name
-      }
-        break
-      case 'recordFundsOutAbort': {
-        payload.payerFsp = 'HUB'
-        payload.payeeFsp = request.params.name
-      }
-        break
-      case 'recordFundsIn': {
-        payload.payerFsp = request.params.name
-        payload.payeeFsp = 'HUB'
-      }
+    let accounts = await Participant.getAllAccounts(name, payload.amount || {currency: null})
+    let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
+    if (!(accountMatched && accountMatched.ledgerAccountType === 'SETTLEMENT')) {
+      throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
     }
-    let messageProtocol = createRecordFundsMessageProtocol(payload, payload.action, '')
+    transferId && (payload.transferId = transferId)
+    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload))
     messageProtocol.metadata.request = {
       params: request.params,
       enums: await request.server.methods.enums('all')
@@ -279,7 +289,7 @@ const recordFunds = async function (request, h) {
     await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
     return h.response().code(202)
   } catch (err) {
-
+    throw Boom.badRequest(err.message)
   }
 }
 
