@@ -30,7 +30,7 @@ const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
-const entityItem = ({ name, createdDate, isActive, currencyList }) => {
+const entityItem = ({name, createdDate, isActive, currencyList}) => {
   const link = UrlParser.toParticipantUri(name)
   const currencies = currencyList.map(currencyEntityItem)
   return {
@@ -45,7 +45,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList }) => {
   }
 }
 
-const currencyEntityItem = ({ currencyId, isActive, ledgerAccountTypeId }) => {
+const currencyEntityItem = ({currencyId, isActive, ledgerAccountTypeId}) => {
   return {
     currency: currencyId,
     ledgerAccountTypeId,
@@ -95,12 +95,17 @@ const account = async function (request, h) {
       })
       if (currencyExists) {
         throw new Errors.RecordExistsError()
+      } else {
+        const ledgerAccountType = await Participant.getLedgerAccountType(request.payload.type)
+        if (ledgerAccountType) {
+          await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+        } else {
+          throw new Errors.LedgerAccountTypeNotFoundError()
+        }
       }
     } else {
-      // const participantCurrency =
-      await Participant.createParticipantCurrency(request.payload)
+      throw new Errors.ParticipantNotFoundError()
     }
-    // to do
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
@@ -206,7 +211,7 @@ const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     const result = await Participant.adjustLimits(request.params.name, request.payload)
-    const { participantLimit } = result
+    const {participantLimit} = result
     const updatedLimit = {
       currency: request.payload.currency,
       limit: {

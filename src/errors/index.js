@@ -14,13 +14,17 @@ const UnexecutedTransferError = require('./unexecuted-transfer-error')
 const UnmetConditionError = require('./unmet-condition')
 const UnpreparedTransferError = require('./unprepared-transfer-error')
 const ValidationError = require('./validation-error')
+const ParticipantNotFoundError = require('./participant_not_found')
+const LedgerAccountTypeNotFoundError = require('./ledgerAcoountTypeNotFound')
 
 module.exports = {
   AlreadyRolledBackError,
   ExpiredTransferError,
   InvalidBodyError,
   InvalidModificationError,
+  LedgerAccountTypeNotFoundError,
   MissingFulfilmentError,
+  ParticipantNotFoundError,
   RecordExistsError,
   TransferNotConditionalError,
   TransferNotFoundError,

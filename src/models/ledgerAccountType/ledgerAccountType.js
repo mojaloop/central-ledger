@@ -19,38 +19,21 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Valentin Genev <valentin.genev@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const ledgerAccountTypes = [
-  {
-    'name': 'POSITION',
-    'description': 'Typical accounts from which a DFSP provisions  transfers '
-  },
-  {
-    'name': 'SETTLEMENT',
-    'description': 'Reflects the individual DFSP Settlement Accounts as held at the Settlement Bank'
-  },
-  {
-    'name': 'HUB_RECONCILIATION',
-    'description': 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
-  },
-  {
-    'name': 'HUB_FEE',
-    'description': 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
-  }
-]
+const Db = require('../../db')
 
-exports.seed = async function (knex) {
+exports.getByName = async (name) => {
   try {
-    return await knex('ledgerAccountType').insert(ledgerAccountTypes)
+    const named = await Db.ledgerAccountType.findOne({ name })
+    return named
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
-      return -1000
-    }
+    throw new Error(err.message)
   }
 }
