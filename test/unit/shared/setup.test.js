@@ -85,6 +85,9 @@ Test('setup', setupTest => {
       timeouts: {
         registerAllHandlers: sandbox.stub().returns(P.resolve()),
         registerTimeoutHandler: sandbox.stub().returns(P.resolve())
+      },
+      admin: {
+        registerAdminHandlers: sandbox.stub().returns(P.resolve())
       }
     }
 
@@ -382,6 +385,11 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      var adminHandler = {
+        type: 'admin',
+        enabled: true
+      }
+
       var getHandler = {
         type: 'get',
         enabled: true
@@ -397,6 +405,7 @@ Test('setup', setupTest => {
         positionHandler,
         fulfilHandler,
         timeoutHandler,
+        adminHandler,
         getHandler,
         unknownHandler
         // rejectHandler
@@ -411,6 +420,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
+        test.ok(RegisterHandlersStub.admin.registerAdminHandlers.called)
         test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
         test.ok(err.message === `Handler Setup - ${JSON.stringify(unknownHandler)} is not a valid handler to register!`)
         test.end()
