@@ -94,18 +94,18 @@ const setPayerPayeeFundsInOut = (fspName, payload) => {
   const actions = {
     'recordFundsIn': {
       payer: fspName,
-      payee: 'HUB'
+      payee: 'hub'
     },
     'recordFundsOutPrepare': {
-      payer: 'HUB',
+      payer: 'hub',
       payee: fspName
     },
     'recordFundsOutCommit': {
-      payer: 'HUB',
+      payer: 'hub',
       payee: fspName
     },
     'recordFundsOutAbort': {
-      payer: 'HUB',
+      payer: 'hub',
       payee: fspName
     }
   }

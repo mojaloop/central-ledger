@@ -26,7 +26,7 @@
 
 const participant = [
   {
-    'name': 'HUB',
+    'name': 'hub',
     'description': 'Hub Operator',
     'createdBy': 'seeds'
   }
