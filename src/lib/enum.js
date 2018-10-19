@@ -181,7 +181,8 @@ const transferEventType = {
   TRANSFER: 'transfer',
   FULFIL: 'fulfil',
   NOTIFICATION: 'notification',
-  ADMIN: 'admin'
+  ADMIN: 'admin',
+  GET: 'get'
 }
 const transferEventAction = {
   PREPARE: 'prepare',
@@ -252,6 +253,10 @@ const topicMap = {
       action: transferEventAction.EVENT
     },
     'reject': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'get': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     }

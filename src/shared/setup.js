@@ -167,6 +167,9 @@ const createHandlers = async (handlers) => {
         case 'admin':
           await RegisterHandlers.admin.registerAdminHandlers()
           break
+        case 'get':
+          await RegisterHandlers.transfers.registerGetHandler()
+          break
         default:
           var error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
