@@ -45,7 +45,7 @@ const Validator = require('./validator')
 const TransferService = require('../../domain/transfer')
 const Db = require('../../db')
 
-const debug = true
+const debug = false
 if (debug) {
   Logger.info = (message) => {
     console.log('\x1b[33m', message)
