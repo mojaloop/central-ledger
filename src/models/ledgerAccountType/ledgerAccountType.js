@@ -32,7 +32,6 @@ const Db = require('../../db')
 exports.getByName = async (name) => {
   try {
     const ledgerAccountType = await Db.ledgerAccountType.findOne({ name })
-    console.log('Testing ' + ledgerAccountType)
     return ledgerAccountType
   } catch (err) {
     throw new Error(err.message)

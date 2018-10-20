@@ -456,7 +456,47 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
   }
 }
 
+// ==============MAW================================================
+const addNewCurrencyAndPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
+  try {
+    const knex = Db.getKnex()
+    return knex.transaction(async trx => {
+      try {
+        let result
+        // =========================
+        let participantCurrency = {
+          participantId,
+          currencyId,
+          ledgerAccountTypeId,
+          createdBy: 'unknown'
+        }
+        result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
+        participantCurrency.participantCurrencyId = result[0]
+        let participantPosition = {
+          participantCurrencyId: participantCurrency.participantCurrencyId,
+          value: 0,
+          reservedValue: 0
+        }
+        result = await knex('participantPosition').transacting(trx).insert(participantPosition)
+        participantPosition.participantPositionId = result[0]
+        await trx.commit
+        return {
+          participantCurrency,
+          participantPosition
+        }
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+// ================================================================
+
 module.exports = {
+  addNewCurrencyAndPosition,
   getByNameAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
   getEndpoint,

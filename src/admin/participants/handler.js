@@ -32,7 +32,7 @@ const Boom = require('boom')
 
 const entityItem = ({name, createdDate, isActive, currencyList}) => {
   const link = UrlParser.toParticipantUri(name)
-  const currencies = currencyList.map(currencyEntityItem)
+  const currencies = currencyList.map(currencyEntityItem) // This is a problem
   return {
     name,
     id: link,
