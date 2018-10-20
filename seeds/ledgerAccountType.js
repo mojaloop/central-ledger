@@ -39,7 +39,7 @@ const ledgerAccountTypes = [
   },
   {
     'name': 'HUB_FEE',
-    'description': 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
+    'description': 'An account to which fees will be charged or collected'
   }
 ]
 

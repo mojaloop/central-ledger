@@ -33,6 +33,7 @@ const ParticipantCurrencyModel = require('../../models/participant/participantCu
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
+const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
@@ -527,9 +528,10 @@ const getAccounts = async (name, query) => {
   }
 }
 
-const getLedgerAccountType = async() => {
+const getLedgerAccountTypeName = async(name) => {
   try {
-    console.log('test')
+    console.log('test' + name)
+    return await LedgerAccountTypeModel.getByName(name)
   } catch (err) {
     throw err
   }
@@ -541,7 +543,7 @@ module.exports = {
   getById,
   getByName,
   participantExists,
-  getLedgerAccountType,
+  getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
   getParticipantCurrencyById,

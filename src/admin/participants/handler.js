@@ -96,7 +96,7 @@ const account = async function (request, h) {
       if (currencyExists) {
         throw new Errors.RecordExistsError()
       } else {
-        const ledgerAccountType = await Participant.getLedgerAccountType(request.payload.type)
+        const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
         if (ledgerAccountType) {
           await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
         } else {
