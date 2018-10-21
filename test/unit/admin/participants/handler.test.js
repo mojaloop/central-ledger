@@ -879,7 +879,6 @@ Test('Participant', participantHandlerTest => {
         test.end()
       }
     })
-    // ==================================================
     handlerTest.test('create a ledger account should throw error if the participant is invalid', async function (test) {
       const payload = {
         currency: 'ABC',
@@ -910,8 +909,6 @@ Test('Participant', participantHandlerTest => {
         test.end()
       }
     })
-    // ==================================================
-
     handlerTest.end()
   })
 
