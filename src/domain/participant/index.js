@@ -103,7 +103,7 @@ const update = async (name, payload) => {
 
 const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    //  const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
+    // const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
     const participantCurrency = await LedgerAccountTypeFacade.addNewCurrencyAndPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
@@ -532,7 +532,6 @@ const getAccounts = async (name, query) => {
 
 const getLedgerAccountTypeName = async(name) => {
   try {
-    console.log('test' + name)
     return await LedgerAccountTypeModel.getByName(name)
   } catch (err) {
     throw err

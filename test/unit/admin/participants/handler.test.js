@@ -9,7 +9,7 @@ const Handler = require('../../../../src/admin/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
 
-const createRequest = ({ payload, params, query }) => {
+const createRequest = ({payload, params, query}) => {
   let sandbox = Sinon.createSandbox()
   const requestPayload = payload || {}
   const requestParams = params || {}
@@ -40,8 +40,8 @@ Test('Participant', participantHandlerTest => {
       isActive: 1,
       createdDate: '2018-07-17T16:04:24.185Z',
       currencyList: [
-        { currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1 },
-        { currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1 }
+        {currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1},
+        {currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1}
       ]
     },
     {
@@ -51,8 +51,8 @@ Test('Participant', participantHandlerTest => {
       isActive: 1,
       createdDate: '2018-07-17T16:04:24.185Z',
       currencyList: [
-        { currencyId: 'EUR', ledgerAccountTypeId: 1, isActive: 1 },
-        { currencyId: 'EUR', ledgerAccountTypeId: 2, isActive: 1 }
+        {currencyId: 'EUR', ledgerAccountTypeId: 1, isActive: 1},
+        {currencyId: 'EUR', ledgerAccountTypeId: 2, isActive: 1}
       ]
     }
   ]
@@ -67,8 +67,8 @@ Test('Participant', participantHandlerTest => {
         self: 'http://central-ledger/participants/fsp1'
       },
       currencies: [
-        { currency: 'USD', ledgerAccountTypeId: 1, isActive: 1 },
-        { currency: 'USD', ledgerAccountTypeId: 2, isActive: 1 }
+        {currency: 'USD', ledgerAccountTypeId: 1, isActive: 1},
+        {currency: 'USD', ledgerAccountTypeId: 2, isActive: 1}
       ]
     },
     {
@@ -80,8 +80,8 @@ Test('Participant', participantHandlerTest => {
         self: 'http://central-ledger/participants/fsp2'
       },
       currencies: [
-        { currency: 'EUR', ledgerAccountTypeId: 1, isActive: 1 },
-        { currency: 'EUR', ledgerAccountTypeId: 2, isActive: 1 }
+        {currency: 'EUR', ledgerAccountTypeId: 1, isActive: 1},
+        {currency: 'EUR', ledgerAccountTypeId: 2, isActive: 1}
       ]
     }
   ]
@@ -109,7 +109,7 @@ Test('Participant', participantHandlerTest => {
 
     handlerTest.test('getByName should return the participant', async function (test) {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participantFixtures[0]))
-      const result = await Handler.getByName(createRequest({ params: { name: participantFixtures[0].name } }))
+      const result = await Handler.getByName(createRequest({params: {name: participantFixtures[0].name}}))
       test.deepEqual(result, participantResults[0], 'The results match')
       test.end()
     })
@@ -117,7 +117,7 @@ Test('Participant', participantHandlerTest => {
     handlerTest.test('getByName should throw error', async function (test) {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
       try {
-        await Handler.getByName(createRequest({ params: { name: participantFixtures[0].name } }))
+        await Handler.getByName(createRequest({params: {name: participantFixtures[0].name}}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'The requested resource could not be found.')
@@ -126,16 +126,19 @@ Test('Participant', participantHandlerTest => {
     })
 
     handlerTest.test('update should update and return the participant', async function (test) {
-      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).returns(P.resolve(participantFixtures[0]))
-      const result = await Handler.update(createRequest({ params: { name: participantFixtures[0].name }, payload: { isActive: 1 } }))
+      Participant.update.withArgs(participantFixtures[0].name, {isActive: 1}).returns(P.resolve(participantFixtures[0]))
+      const result = await Handler.update(createRequest({
+        params: {name: participantFixtures[0].name},
+        payload: {isActive: 1}
+      }))
       test.deepEqual(result, participantResults[0], 'The results match')
       test.end()
     })
 
     handlerTest.test('update should throw error', async function (test) {
-      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).throws(new Error())
+      Participant.update.withArgs(participantFixtures[0].name, {isActive: 1}).throws(new Error())
       try {
-        await Handler.update(createRequest({ params: { name: participantFixtures[0].name }, payload: { isActive: 1 } }))
+        await Handler.update(createRequest({params: {name: participantFixtures[0].name}, payload: {isActive: 1}}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
@@ -158,8 +161,8 @@ Test('Participant', participantHandlerTest => {
 
       const participantCurrencyId1 = 1
       const participantCurrencyId2 = 2
-      const currencyList1 = { currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1 }
-      const currencyList2 = { currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1 }
+      const currencyList1 = {currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1}
+      const currencyList2 = {currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1}
 
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
       Participant.create.withArgs(payload).returns(P.resolve(participant.participantId))
@@ -179,7 +182,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      await Handler.create(createRequest({ payload }), reply)
+      await Handler.create(createRequest({payload}), reply)
     })
 
     handlerTest.test('create should fail if the participant exists', async function (test) {
@@ -193,12 +196,12 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
-        currencyList: [{ currencyId: 'USD', isActive: 1 }]
+        currencyList: [{currencyId: 'USD', isActive: 1}]
       }
 
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       try {
-        await Handler.create(createRequest({ payload }))
+        await Handler.create(createRequest({payload}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Participant currency has already been registered')
@@ -217,12 +220,12 @@ Test('Participant', participantHandlerTest => {
         currency: 'EUR',
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
-        currencyList: [{ currencyId: 'EUR', isActive: 1 }]
+        currencyList: [{currencyId: 'EUR', isActive: 1}]
       }
 
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       try {
-        await Handler.create(createRequest({ payload }))
+        await Handler.create(createRequest({payload}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.end()
@@ -237,7 +240,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
       Participant.create.withArgs(payload).throws(new Error('Error while creating participant'))
       try {
-        await Handler.create(createRequest({ payload }))
+        await Handler.create(createRequest({payload}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Error while creating participant')
@@ -265,7 +268,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      await Handler.addEndpoint(createRequest({ params, payload }), reply)
+      await Handler.addEndpoint(createRequest({params, payload}), reply)
     })
 
     handlerTest.test('addEndpoint should throw error', async function (test) {
@@ -280,7 +283,7 @@ Test('Participant', participantHandlerTest => {
       Participant.addEndpoint.withArgs(params.name, payload).throws(new Error())
 
       try {
-        await Handler.addEndpoint(createRequest({ params, payload }))
+        await Handler.addEndpoint(createRequest({params, payload}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
@@ -304,7 +307,7 @@ Test('Participant', participantHandlerTest => {
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }]
       Participant.getEndpoint.withArgs(params.name, query.type).returns(P.resolve(endpointReturn))
-      const result = await Handler.getEndpoint(createRequest({ params, query }))
+      const result = await Handler.getEndpoint(createRequest({params, query}))
       test.deepEqual(result, endpoint, 'The results match')
       test.end()
     })
@@ -319,7 +322,7 @@ Test('Participant', participantHandlerTest => {
       const endpoint = {}
       const endpointReturn = []
       Participant.getEndpoint.withArgs(params.name, query.type).returns(P.resolve(endpointReturn))
-      const result = await Handler.getEndpoint(createRequest({ params, query }))
+      const result = await Handler.getEndpoint(createRequest({params, query}))
       test.deepEqual(result, endpoint, 'The results match')
       test.end()
     })
@@ -350,7 +353,7 @@ Test('Participant', participantHandlerTest => {
       ]
 
       Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpoints))
-      const result = await Handler.getEndpoint(createRequest({ params }))
+      const result = await Handler.getEndpoint(createRequest({params}))
       test.deepEqual(result, endpointsResult, 'The results match')
       test.end()
     })
@@ -363,7 +366,7 @@ Test('Participant', participantHandlerTest => {
       const endpointsResult = []
 
       Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpoints))
-      const result = await Handler.getEndpoint(createRequest({ params }))
+      const result = await Handler.getEndpoint(createRequest({params}))
       test.deepEqual(result, endpointsResult, 'The results match')
       test.end()
     })
@@ -378,7 +381,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getEndpoint.withArgs(params.name, query.type).throws(new Error())
 
       try {
-        await Handler.getEndpoint(createRequest({ params, query }))
+        await Handler.getEndpoint(createRequest({params, query}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
@@ -410,7 +413,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      await Handler.addLimitAndInitialPosition(createRequest({ params, payload }), reply)
+      await Handler.addLimitAndInitialPosition(createRequest({params, payload}), reply)
     })
 
     handlerTest.test('addLimitAndInitialPosition should add the limits and initial position as default 0 if not passed', async function (test) {
@@ -436,7 +439,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      await Handler.addLimitAndInitialPosition(createRequest({ params, payload }), reply)
+      await Handler.addLimitAndInitialPosition(createRequest({params, payload}), reply)
     })
 
     handlerTest.test('addLimitAndInitialPosition should throw error', async function (test) {
@@ -455,7 +458,7 @@ Test('Participant', participantHandlerTest => {
       Participant.addLimitAndInitialPosition.withArgs(params.name, payload).throws(new Error())
 
       try {
-        await Handler.addLimitAndInitialPosition(createRequest({ params, payload }))
+        await Handler.addLimitAndInitialPosition(createRequest({params, payload}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
@@ -488,7 +491,7 @@ Test('Participant', participantHandlerTest => {
         }
       ]
       Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
-      const result = await Handler.getLimits(createRequest({ params, query }))
+      const result = await Handler.getLimits(createRequest({params, query}))
       test.deepEqual(result, expected, 'The results match')
       test.end()
     })
@@ -503,7 +506,7 @@ Test('Participant', participantHandlerTest => {
       }
       const expected = []
       Participant.getLimits.withArgs(params.name, query).returns(P.resolve([]))
-      const result = await Handler.getLimits(createRequest({ params, query }))
+      const result = await Handler.getLimits(createRequest({params, query}))
       test.deepEqual(result, expected, 'The results match')
       test.end()
     })
@@ -538,7 +541,7 @@ Test('Participant', participantHandlerTest => {
         value: 5000000
       }]
       Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
-      const result = await Handler.getLimits(createRequest({ params, query }))
+      const result = await Handler.getLimits(createRequest({params, query}))
       test.deepEqual(result, expected, 'The results match')
       test.end()
     })
@@ -563,7 +566,7 @@ Test('Participant', participantHandlerTest => {
         value: 1000000
       }]
       Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
-      const result = await Handler.getLimits(createRequest({ params, query }))
+      const result = await Handler.getLimits(createRequest({params, query}))
       test.deepEqual(result, expected, 'The results match')
       test.end()
     })
@@ -590,7 +593,7 @@ Test('Participant', participantHandlerTest => {
         value: 1000000
       }]
       Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
-      const result = await Handler.getLimits(createRequest({ params, query }))
+      const result = await Handler.getLimits(createRequest({params, query}))
       test.deepEqual(result, expected, 'The results match')
       test.end()
     })
@@ -606,7 +609,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getLimits.withArgs(params.name, query).throws(new Error())
 
       try {
-        await Handler.getLimits(createRequest({ params, query }))
+        await Handler.getLimits(createRequest({params, query}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
@@ -642,7 +645,7 @@ Test('Participant', participantHandlerTest => {
         }
       }
 
-      Participant.adjustLimits.withArgs(params.name, payload).returns(P.resolve({ participantLimit }))
+      Participant.adjustLimits.withArgs(params.name, payload).returns(P.resolve({participantLimit}))
       const reply = {
         response: (response) => {
           return {
@@ -654,7 +657,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      await Handler.adjustLimits(createRequest({ params, payload }), reply)
+      await Handler.adjustLimits(createRequest({params, payload}), reply)
     })
 
     handlerTest.test('adjustLimits should throw error', async function (test) {
@@ -672,7 +675,7 @@ Test('Participant', participantHandlerTest => {
       Participant.adjustLimits.withArgs(params.name, payload).throws(new Error())
 
       try {
-        await Handler.adjustLimits(createRequest({ params, payload }))
+        await Handler.adjustLimits(createRequest({params, payload}))
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
@@ -698,7 +701,7 @@ Test('Participant', participantHandlerTest => {
         updatedTime: '2018-08-14T04:01:55.000Z'
       }
       Participant.getPositions.withArgs(params.name, query).returns(P.resolve(positionReturn))
-      const result = await Handler.getPositions(createRequest({ params, query }))
+      const result = await Handler.getPositions(createRequest({params, query}))
       test.deepEqual(result, expected, 'The results match')
       test.end()
     })
@@ -754,7 +757,7 @@ Test('Participant', participantHandlerTest => {
       ]
 
       Participant.getPositions.withArgs(params.name, {}).returns(P.resolve(positionReturn))
-      const result = await Handler.getPositions(createRequest({ params }))
+      const result = await Handler.getPositions(createRequest({params}))
       test.deepEqual(result, expected, 'The results match')
       test.end()
     })
@@ -770,7 +773,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getPositions.withArgs(params.name, query).throws(new Error())
 
       try {
-        await Handler.getPositions(createRequest({ params, query }))
+        await Handler.getPositions(createRequest({params, query}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -788,7 +791,7 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD'
       }
       Participant.getAccounts.withArgs(params.name, query).returns(P.resolve(true))
-      const result = await Handler.getAccounts(createRequest({ params, query }))
+      const result = await Handler.getAccounts(createRequest({params, query}))
       test.ok(result, 'Result returned')
       test.ok(Participant.getAccounts.calledOnce, 'Participant.getAccounts called once')
       test.end()
@@ -805,7 +808,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getAccounts.withArgs(params.name, query).throws(new Error())
 
       try {
-        await Handler.getAccounts(createRequest({ params, query }))
+        await Handler.getAccounts(createRequest({params, query}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -815,6 +818,36 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
+    handlerTest.test('account should create a ledger account', async function (test) {
+      const payload = {
+        currency: 'VND',
+        type: 'HUB_SETTLEMENT'
+      }
+      const params = {
+        name: 'fsp1'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: [{currencyId: 'VND', isActive: 1}]
+      }
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
+      try {
+        await Handler.account(createRequest({params, payload}))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Participant currency has already been registered')
+        test.end()
+      }
+    })
     handlerTest.end()
   })
 

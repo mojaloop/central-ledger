@@ -456,14 +456,12 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
   }
 }
 
-// ==============MAW================================================
 const addNewCurrencyAndPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
         let result
-        // =========================
         let participantCurrency = {
           participantId,
           currencyId,
@@ -493,7 +491,6 @@ const addNewCurrencyAndPosition = async (participantId, currencyId, ledgerAccoun
     throw new Error(err.message)
   }
 }
-// ================================================================
 
 module.exports = {
   addNewCurrencyAndPosition,
