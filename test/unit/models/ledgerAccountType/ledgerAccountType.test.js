@@ -30,7 +30,6 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
-const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
