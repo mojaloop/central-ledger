@@ -818,7 +818,7 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('account should create a ledger account', async function (test) {
+    handlerTest.test('create a ledger account should throw a error if the currency exists', async function (test) {
       const payload = {
         currency: 'VND',
         type: 'HUB_SETTLEMENT'
@@ -848,6 +848,70 @@ Test('Participant', participantHandlerTest => {
         test.end()
       }
     })
+
+    handlerTest.test('create a ledger account should throw error if the ledger account type is invalid', async function (test) {
+      const payload = {
+        currency: 'ABC',
+        type: 'HUB_SETTLEMENT'
+      }
+      const params = {
+        name: 'fsp1'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: [{currencyId: 'VND', isActive: 1}]
+      }
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
+      try {
+        await Handler.account(createRequest({params, payload}))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Ledger account type was not found.')
+        test.end()
+      }
+    })
+    // ==================================================
+    handlerTest.test('create a ledger account should throw error if the participant is invalid', async function (test) {
+      const payload = {
+        currency: 'ABC',
+        type: 'HUB_SETTLEMENT'
+      }
+      const params = {
+        name: 'invalid'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: [{currencyId: 'VND', isActive: 1}]
+      }
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
+      try {
+        await Handler.account(createRequest({params, payload}))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Participant was not found.')
+        test.end()
+      }
+    })
+    // ==================================================
+
     handlerTest.end()
   })
 
