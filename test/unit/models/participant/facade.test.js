@@ -47,6 +47,12 @@ Test('Participant facade', async (facadeTest) => {
     Db.participantLimit = {
       query: sandbox.stub()
     }
+    Db.participantCurrency = {
+      query: sandbox.stub()
+    }
+    Db.participantPosition = {
+      query: sandbox.stub()
+    }
     t.end()
   })
 
@@ -971,6 +977,54 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
+  await facadeTest.test('addNewCurrencyAndPosition ..............', async (assert) => {
+    try {
+      let participantPosition = {
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        participantPositionId: 1
+      }
 
+      let participantCurrency = {
+        participantCurrencyId: 1,
+        participantId: 1,
+        currencyId: 1,
+        ledgerAccountTypeId: 1,
+        createdBy: 'unknown'
+      }
+
+      let participant = {
+        participantId: 1,
+        currencyId: 1,
+        ledgerAccountTypeId: 1
+      }
+
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      let transactingStub = sandbox.stub()
+      knexStub.returns({
+        transacting: transactingStub.returns({
+          insert: sandbox.stub().returns([1])
+        })
+      })
+      const result = await Model.addNewCurrencyAndPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
+      assert.pass('completed successfully')
+      assert.ok(knexStub.withArgs('participantCurrency').calledOnce, 'knex called with participantCurrency once')
+      assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
+      assert.deepEqual(result, { participantCurrency, participantPosition })
+
+      assert.end()
+    } catch (err) {
+      console.log(err)
+      Logger.error(`addNewCurrencyAndPosition failed with error - ${err}`)
+      assert.fail('Error thrown')
+      assert.end()
+    }
+  })
   await facadeTest.end()
 })

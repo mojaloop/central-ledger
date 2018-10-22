@@ -39,6 +39,7 @@ const PositionFacade = require('../../../../src/models/position/facade')
 const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
+const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -1486,5 +1487,37 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
+  // ====================================
+
+  await participantTest.test('createParticipantCurrency should return a new currency and position record', async (assert) => {
+    const payload = {
+      participantId: 1,
+      currencyId: 1,
+      ledgerAccountTypeId: 3
+    }
+    const participantCurrency = {
+      participantCurrencyId: 1,
+      participantId: 1,
+      currencyId: 1,
+      ledgerAccountTypeId: 1,
+      isActive: 1,
+      createdDate: '2018-10-11T11:45:00.000Z',
+      createdBy: 'unknown'
+    }
+
+    try {
+      LedgerAccountTypeFacade.addNewCurrencyAndPosition.withArgs(payload.participantId, payload.currencyId, payload.ledgerAccountTypeId).returns(participantCurrency)
+      const expected = await Service.createParticipantCurrency(payload.participantId, payload.currencyId, payload.ledgerAccountTypeId)
+      assert.deepEqual(expected, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+
+  // ====================================
+
   await participantTest.end()
 })
