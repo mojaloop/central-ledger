@@ -1055,12 +1055,6 @@ Test('Participant facade', async (facadeTest) => {
       trxStub.commit = sandbox.stub()
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
-      // let transactingStub = sandbox.stub()
-      /* knexStub.returns({
-        transacting: transactingStub.returns({
-          insert: sandbox.stub().returns([1])
-        })
-      }) */
       knexStub.throws(new Error())
 
       const result = await Model.addNewCurrencyAndPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
