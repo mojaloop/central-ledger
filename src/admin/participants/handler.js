@@ -27,6 +27,7 @@
 const Participant = require('../../domain/participant')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
+const Config = require('../../lib/config')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
@@ -91,6 +92,15 @@ const account = async function (request, h) {
     // start - move to domain
     let participant = await Participant.getByName(request.params.name)
     if (participant) {
+      // Check if participant is a Hub operator or not
+      if (participant.participantId !== 1) {
+        // Check if the ledger account type is allowed for a DFSP
+        for (let value of Config.HUB_OPERATOR) {
+          if (value === request.payload.type) {
+            throw new Error('Oh no you cannot')
+          }
+        }
+      }
       const currencyExists = participant.currencyList.find(currency => {
         return currency.currencyId === request.payload.currency
       })
