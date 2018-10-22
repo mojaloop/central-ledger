@@ -38,6 +38,7 @@ const ParticipantFacade = require('../../../../src/models/participant/facade')
 const PositionFacade = require('../../../../src/models/position/facade')
 const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
+const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -152,6 +153,8 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
+    sandbox.stub(LedgerAccountTypeModel, 'getByName')
+
     Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
@@ -169,12 +172,15 @@ Test('Participant service', async (participantTest) => {
 
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participantResult[index])
-      Db.participant.insert.withArgs({ participant }).returns(index)
-      ParticipantModel.create.withArgs({ name: participant.name }).returns((index + 1))
+      Db.participant.insert.withArgs({participant}).returns(index)
+      ParticipantModel.create.withArgs({name: participant.name}).returns((index + 1))
       ParticipantModel.getByName.withArgs(participant.name).returns(participantResult[index])
       ParticipantModel.getById.withArgs(index).returns(participantResult[index])
       ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
-      ParticipantCurrencyModel.create.withArgs({ participantId: index, currencyId: participant.currency }).returns((index + 1))
+      ParticipantCurrencyModel.create.withArgs({
+        participantId: index,
+        currencyId: participant.currency
+      }).returns((index + 1))
       ParticipantCurrencyModel.getById.withArgs(index).returns({
         participantCurrancyId: participant.participantId,
         participantId: participant.participantId,
@@ -184,7 +190,7 @@ Test('Participant service', async (participantTest) => {
       ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId, 1).returns(participant.currency)
       ParticipantModel.destroyByName.withArgs(participant.name).returns(Promise.resolve(true))
       ParticipantCurrencyModel.destroyByParticipantId.withArgs(participant.participantId).returns(Promise.resolve(true))
-      Db.participant.destroy.withArgs({ name: participant.name }).returns(Promise.resolve(true))
+      Db.participant.destroy.withArgs({name: participant.name}).returns(Promise.resolve(true))
     })
     ParticipantModel.getAll.returns(Promise.resolve(participantResult))
     t.end()
@@ -222,7 +228,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('create false participant', async (assert) => {
-    const falseParticipant = { name: 'fsp3' }
+    const falseParticipant = {name: 'fsp3'}
     ParticipantModel.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)
@@ -234,7 +240,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('create false participant should throw error', async (assert) => {
-    const falseParticipant = { name: 'fsp3' }
+    const falseParticipant = {name: 'fsp3'}
     ParticipantModel.create.withArgs(falseParticipant).returns(null)
     try {
       await Service.create(falseParticipant)
@@ -248,7 +254,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create participant', async (assert) => {
     try {
       for (let [index, participant] of participantMap) {
-        var result = await Service.create({ name: participant.name })
+        var result = await Service.create({name: participant.name})
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
       }
@@ -333,7 +339,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('update', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        let updated = await Service.update(participant.name, { isActive: 1 })
+        let updated = await Service.update(participant.name, {isActive: 1})
         assert.equal(JSON.stringify(updated), JSON.stringify(participantMap.get(index + 1)))
       })
       //  sandbox.restore()
@@ -349,7 +355,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('update should throw an error', async (assert) => {
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).throws(new Error())
     try {
-      await Service.update(participantFixtures[0].name, { isActive: 1 })
+      await Service.update(participantFixtures[0].name, {isActive: 1})
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
@@ -362,7 +368,10 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('createParticipantCurrency should create the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        var result = await Service.createParticipantCurrency({ participantId: participant.participantId, currencyId: participant.currency })
+        var result = await Service.createParticipantCurrency({
+          participantId: participant.participantId,
+          currencyId: participant.currency
+        })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
       })
@@ -375,10 +384,16 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('createParticipantCurrency with false participant should fail', async (assert) => {
-    const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
-    ParticipantCurrencyModel.create.withArgs({ participantId: falseParticipant.participantId, currencyId: falseParticipant.currency }).throws(new Error())
+    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
+    ParticipantCurrencyModel.create.withArgs({
+      participantId: falseParticipant.participantId,
+      currencyId: falseParticipant.currency
+    }).throws(new Error())
     try {
-      await Service.createParticipantCurrency({ participantId: falseParticipant.participantId, currencyId: falseParticipant.currency })
+      await Service.createParticipantCurrency({
+        participantId: falseParticipant.participantId,
+        currencyId: falseParticipant.currency
+      })
       assert.fail('should throw')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err} `)
@@ -401,7 +416,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('getParticipantCurrencyById with false participant should fail', async (assert) => {
-    const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
+    const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
     ParticipantCurrencyModel.getById.withArgs(falseParticipant.currency).throws(new Error())
     try {
       await Service.getParticipantCurrencyById(falseParticipant.currency)
@@ -429,7 +444,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroyByName should throw an error', async (assert) => {
     try {
-      const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
+      const falseParticipant = {name: 'fsp3', participantId: 3, currency: 'FAKE'}
       ParticipantModel.getByName.withArgs(falseParticipant.name).returns(falseParticipant)
       ParticipantModel.destroyByName.withArgs(falseParticipant.name).throws(new Error())
       await Service.destroyByName(falseParticipant.name)
@@ -1040,7 +1055,7 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
 
       ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId, limit[0].name).returns(P.resolve(limit))
-      const result = await Service.getLimits(participant.name, { currency: participant.currency, type: limit[0].name })
+      const result = await Service.getLimits(participant.name, {currency: participant.currency, type: limit[0].name})
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
     } catch (err) {
@@ -1068,7 +1083,7 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
 
       ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId).returns(P.resolve(limit))
-      const result = await Service.getLimits(participant.name, { currency: participant.currency })
+      const result = await Service.getLimits(participant.name, {currency: participant.currency})
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
     } catch (err) {
@@ -1103,7 +1118,7 @@ Test('Participant service', async (participantTest) => {
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
       ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP', 1).returns(P.resolve(limit))
-      const result = await Service.getLimits(participant.name, { type: 'NET_DEBIT_CAP' })
+      const result = await Service.getLimits(participant.name, {type: 'NET_DEBIT_CAP'})
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
     } catch (err) {
@@ -1184,7 +1199,7 @@ Test('Participant service', async (participantTest) => {
         changedDate: '2018-08-14T04:01:55.000Z'
       }
       const participantName = 'fsp1'
-      const query = { currency: 'USD' }
+      const query = {currency: 'USD'}
       const participant = {
         participantId: 0,
         name: 'fsp1',
@@ -1212,7 +1227,7 @@ Test('Participant service', async (participantTest) => {
 
       const expected = {}
       const participantName = 'fsp1'
-      const query = { currency: 'USD' }
+      const query = {currency: 'USD'}
       const participant = {
         participantId: 0,
         name: 'fsp1',
@@ -1312,7 +1327,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getPositions should throw error', async (assert) => {
     const participantName = 'fsp1'
-    const query = { currency: 'USD' }
+    const query = {currency: 'USD'}
 
     PositionFacade.getByNameAndCurrency.withArgs(participantName).throws(new Error())
     try {
@@ -1363,7 +1378,7 @@ Test('Participant service', async (participantTest) => {
         }
       ]
       const participantName = 'fsp1'
-      const query = { currency: 'USD' }
+      const query = {currency: 'USD'}
       const participant = {
         participantId: 0,
         name: 'fsp1',
@@ -1414,7 +1429,7 @@ Test('Participant service', async (participantTest) => {
   })
   await participantTest.test('getAccounts should throw error', async (assert) => {
     const participantName = 'fsp1'
-    const query = { currency: 'USD' }
+    const query = {currency: 'USD'}
 
     PositionFacade.getAllByNameAndCurrency.withArgs(participantName).throws(new Error())
     try {
@@ -1425,6 +1440,28 @@ Test('Participant service', async (participantTest) => {
     }
     assert.end()
   })
+  await participantTest.test('await Service.getLedgerAccountTypeName(ledgerAccountName)getLedgerAccountTypeName should the ledger account type name ', async (assert) => {
+    const name = {
+      currency: 'AFA',
+      type: 'POSITION'
+    }
+    const ledgerAccountsMock = {
+      ledgerAccountTypeId: 1,
+      name: 'POSITION',
+      description: 'Typical accounts from which a DFSP provisions  transfers',
+      isActive: 1,
+      createdDate: '2018-10-11T11:45:00.000Z'
+    }
 
+    try {
+      LedgerAccountTypeModel.getByName.withArgs(name.type).returns(ledgerAccountsMock)
+      const expected = await Service.getLedgerAccountTypeName(name.type)
+      assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
   await participantTest.end()
 })

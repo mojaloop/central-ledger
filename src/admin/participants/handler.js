@@ -88,6 +88,7 @@ const create = async function (request, h) {
 const account = async function (request, h) {
   Sidecar.logRequest(request)
   try {
+    // start - move to domain
     let participant = await Participant.getByName(request.params.name)
     if (participant) {
       const currencyExists = participant.currencyList.find(currency => {
@@ -106,6 +107,7 @@ const account = async function (request, h) {
     } else {
       throw new Errors.ParticipantNotFoundError()
     }
+    // end here
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)

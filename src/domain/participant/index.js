@@ -103,6 +103,7 @@ const update = async (name, payload) => {
 
 const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
+    // const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
     const participantCurrency = await LedgerAccountTypeFacade.addNewCurrencyAndPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
