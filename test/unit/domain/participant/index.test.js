@@ -1440,7 +1440,7 @@ Test('Participant service', async (participantTest) => {
     }
     assert.end()
   })
-  await participantTest.test('await Service.getLedgerAccountTypeName(ledgerAccountName)getLedgerAccountTypeName should the ledger account type name ', async (assert) => {
+  await participantTest.test('getLedgerAccountType by name name should return ledgerAccountType', async (assert) => {
     const name = {
       currency: 'AFA',
       type: 'POSITION'
@@ -1455,6 +1455,29 @@ Test('Participant service', async (participantTest) => {
 
     try {
       LedgerAccountTypeModel.getByName.withArgs(name.type).returns(ledgerAccountsMock)
+      const expected = await Service.getLedgerAccountTypeName(name.type)
+      assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+  await participantTest.test('getLedgerAccountType by name name should throw an error if the name is invalid', async (assert) => {
+    const name = {
+      currency: 'AFA',
+      type: 'POSITION'
+    }
+    const ledgerAccountsMock = {
+      ledgerAccountTypeId: 1,
+      name: 'POSITION',
+      description: 'Typical accounts from which a DFSP provisions  transfers',
+      isActive: 1,
+      createdDate: '2018-10-11T11:45:00.000Z'
+    }
+
+    try {
+      LedgerAccountTypeModel.getByName.withArgs(name.type).throws(new Error())
       const expected = await Service.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
