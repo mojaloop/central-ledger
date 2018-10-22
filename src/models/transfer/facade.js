@@ -38,7 +38,7 @@ const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('../../lib/time')
-// const Crypto = require('crypto')
+const Config = require('../../lib/config')
 const _ = require('lodash')
 
 const getById = async (id) => {
@@ -519,6 +519,8 @@ const reconciliationPositionChange = async function (payload, transferStateId, t
           amount = payload.amount.amount
         } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
           amount = -payload.amount.amount
+        } else {
+          throw new Error('Action not allowed for reconciliationPositionChange')
         }
         latestReconciliationPosition = reconciliationPositionValue + amount
         latestSettlementPosition = settlementPositionValue - amount
@@ -588,10 +590,6 @@ const reconciliationPositionChange = async function (payload, transferStateId, t
 
 const reconciliationTransferPrepare = async function (payload, transactionTimestamp, enums, trx = null) {
   try {
-    const Config = {
-      TRANSFER_VALIDITY_SECONDS: 43200
-    }
-
     const knex = await Db.getKnex()
 
     const trxFunction = async (trx, doCommit = true) => {
@@ -603,7 +601,8 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
             amount: payload.amount.amount,
             currencyId: payload.amount.currency,
             ilpCondition: 0,
-            expirationDate: Time.getUTCString(new Date(+new Date() + 1000 * Number(Config.TRANSFER_VALIDITY_SECONDS))),
+            expirationDate: Time.getUTCString(new Date(+new Date() +
+              1000 * Number(Config.INTERNAL_TRANSFER_VALIDITY_SECONDS))),
             createdDate: transactionTimestamp
           })
           .transacting(trx)
@@ -623,6 +622,8 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_OUT
           amount = -payload.amount.amount
+        } else {
+          throw new Error('Action not allowed for reconciliationTransferPrepare')
         }
 
         // Insert transferParticipant records
@@ -684,12 +685,12 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         }
 
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
-          let position = await reconciliationPositionChange(payload, enums.transferState.RESERVED, transactionTimestamp, enums, trx)
+          let position = await TransferFacade.reconciliationPositionChange(payload, enums.transferState.RESERVED, transactionTimestamp, enums, trx)
 
           if (position.participantSettlementAccountPosition > 0) {
             payload.reason = 'Aborted due to insufficient funds'
             payload.action = Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT
-            await reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
+            await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
           }
         }
 
@@ -735,7 +736,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
           .transacting(trx)
 
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN) {
-          await reconciliationPositionChange(payload, enums.transferState.COMMITTED, transactionTimestamp, enums, trx)
+          await TransferFacade.reconciliationPositionChange(payload, enums.transferState.COMMITTED, transactionTimestamp, enums, trx)
         } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
           // Insert transferStateChange
           await knex('transferStateChange')
@@ -746,6 +747,8 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
               createdDate: transactionTimestamp
             })
             .transacting(trx)
+        } else {
+          throw new Error('Action not allowed for reconciliationTransferCommit')
         }
 
         if (doCommit) {
@@ -789,7 +792,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
           })
           .transacting(trx)
 
-        await reconciliationPositionChange(payload, enums.transferState.ABORTED, transactionTimestamp, enums, trx)
+        await TransferFacade.reconciliationPositionChange(payload, enums.transferState.ABORTED, transactionTimestamp, enums, trx)
 
         if (doCommit) {
           await trx.commit
@@ -813,7 +816,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
   }
 }
 
-module.exports = {
+const TransferFacade = {
   getById,
   getAll,
   getTransferInfoToChangePosition,
@@ -821,7 +824,10 @@ module.exports = {
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,
+  reconciliationPositionChange,
   reconciliationTransferPrepare,
   reconciliationTransferCommit,
   reconciliationTransferAbort
 }
+
+module.exports = TransferFacade
