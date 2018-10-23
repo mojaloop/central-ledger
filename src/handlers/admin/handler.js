@@ -23,7 +23,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
-
+ * Valentin Genev <valentin.genev@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -41,9 +41,11 @@ const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const AdminTransferAction = Enum.adminTransferAction
-const Validator = require('./validator')
 const TransferService = require('../../domain/transfer')
 const Db = require('../../db')
+const postRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE]
+const putRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
+const allowedActions = [].concat(postRelatedActions).concat(putRelatedActions)
 
 const debug = false
 if (debug) {
@@ -65,6 +67,76 @@ const commitMessageSync = async (kafkaTopic, consumer, message) => {
   return true
 }
 
+const createNewRecordFunds = async (payload, transactionTimestamp, enums) => {
+  try {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
+    // Save the valid transfer into the database
+    if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
+      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
+
+      const knex = Db.getKnex()
+      return knex.transaction(async trx => {
+        try {
+          await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+          await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
+          await trx.commit
+        } catch (err) {
+          await trx.rollback
+          throw err
+        }
+      })
+    } else {
+      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE`)
+      await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
+    }
+  } catch (err) {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::duplicate found while inserting into transfer table`)
+  }
+  return true
+}
+
+const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTimestamp, enums) => {
+  const existingTransfer = await TransferService.getTransferById(transferId)
+  const transferState = await TransferService.getTransferState(transferId)
+  if (!existingTransfer) {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::notFound`)
+  } else if (transferState.transferStateId !== TransferState.RESERVED) {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
+  } else if (new Date(existingTransfer.expirationDate) <= new Date()) {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
+  } else { // validations success
+    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
+    if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
+      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
+      await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
+    } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
+      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
+      payload.amount = {
+        amount: existingTransfer.amount,
+        currency: existingTransfer.currencyId
+      }
+      await TransferService.reconciliationTransferAbort(payload, transactionTimestamp, enums)
+    }
+  }
+  return true
+}
+
+const transferExists = async (payload, transferId) => {
+  Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching`)
+  const currentTransferState = await TransferService.getTransferStateChange(transferId)
+  if (!currentTransferState || !currentTransferState.enumeration) {
+    Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::transfer state not found`)
+  } else {
+    const transferStateEnum = currentTransferState.enumeration
+    if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
+      Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::request already finalized`)
+    } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
+      Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::previous request still in progress do nothing`)
+    }
+  }
+  return true
+}
+
 const transfer = async (error, messages) => {
   if (error) {
     Logger.error(error)
@@ -80,10 +152,25 @@ const transfer = async (error, messages) => {
     const payload = message.value.content.payload
     const metadata = message.value.metadata
     const transferId = message.value.id
+
+    if (!payload) {
+      Logger.info(`AdminTransferHandler::validationFailed`)
+      // TODO
+      // try {
+        // Save the invalid request in the database
+        // await TransferService.prepare(payload, 'Transfer must be provided', false)
+      // } catch (err) {
+        // Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::'Transfer must be provided'`)
+      // }
+      // log the invalid transfer into the the transferError table
+      // Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::log the invalid transfer into the the transferError table`)
+      return false
+      // await TransferService.logTransferError(payload.transferId, errorGenericCode, reasons.toString())
+    }
+
     payload.participantCurrencyId = metadata.request.params.id
     const enums = metadata.request.enums
     const transactionTimestamp = Time.getUTCString(new Date())
-
     Logger.info(`AdminTransferHandler::${metadata.event.action}::${transferId}`)
     const kafkaTopic = message.topic
     let consumer
@@ -94,105 +181,29 @@ const transfer = async (error, messages) => {
       Logger.error(e)
       return true
     }
-
-    if (metadata.event.type === TransferEventType.ADMIN && metadata.event.action === TransferEventAction.TRANSFER) {
-      if (payload.action === AdminTransferAction.RECORD_FUNDS_IN || payload.action === AdminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
-        Logger.info(`AdminTransferHandler::${payload.action}::checking for duplicates`)
-
-        const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
-
-        if (existsMatching) {
-          Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching`)
-          const currentTransferState = await TransferService.getTransferStateChange(transferId)
-
-          if (!currentTransferState || !currentTransferState.enumeration) {
-            Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::transfer state not found`)
-          } else {
-            const transferStateEnum = currentTransferState.enumeration
-
-            if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
-              Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::request already finalized`)
-            } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
-              Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::previous request still in progress do nothing`)
-            }
-          }
-        } else if (existsNotMatching) {
-          Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsNotMatching::request exists with different parameters`)
-        } else {
-          Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
-
-          let { validationPassed, reasons } = await Validator.validateByName(payload)
-
-          if (validationPassed) {
-            Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
-            try {
-              Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
-              // Save the valid transfer into the database
-              if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
-                Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
-
-                const knex = Db.getKnex()
-                return knex.transaction(async trx => {
-                  try {
-                    await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
-                    await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
-                    await trx.commit
-                  } catch (err) {
-                    await trx.rollback
-                    throw err
-                  }
-                })
-              } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
-                Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE`)
-                await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
-              }
-            } catch (err) {
-              Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::duplicate found while inserting into transfer table`)
-            }
-          } else {
-            Logger.info(`AdminTransferHandler::${payload.action}::validationFailed`)
-            try {
-              Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::newEntry`)
-              // Save the invalid request in the database
-              await TransferService.prepare(payload, reasons.toString(), false)
-            } catch (err) {
-              Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::${reasons.toString()}`)
-            }
-            // log the invalid transfer into the the transferError table
-            Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::log the invalid transfer into the the transferError table`)
-            // await TransferService.logTransferError(payload.transferId, errorGenericCode, reasons.toString())
-          }
-        }
-      } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT || payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
-        const existingTransfer = await TransferService.getTransferById(transferId)
-        const transferState = await TransferService.getTransferState(transferId)
-        if (!existingTransfer) {
-          Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::notFound`)
-        } else if (transferState.transferStateId !== TransferState.RESERVED) {
-          Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
-        } else if (existingTransfer.expirationDate <= new Date()) {
-          Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
-        } else { // validations success
-          Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
-          if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
-            Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
-            await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
-          } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
-            Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
-            payload.amount = {
-              amount: existingTransfer.amount,
-              currency: existingTransfer.currencyId
-            }
-            await TransferService.reconciliationTransferAbort(payload, transactionTimestamp, enums)
-          }
-        }
-      } else {
-        Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
-      }
-    } else {
+    if (!(metadata.event.type === TransferEventType.ADMIN && metadata.event.action === TransferEventAction.TRANSFER)) {
       Logger.info(`AdminTransferHandler::${payload.action}::invalidEventAction`)
     }
-
+    if (!allowedActions.includes(payload.action)) {
+      Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
+    }
+    if (postRelatedActions.includes(payload.action)) {
+      const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
+      if (!existsMatching && !existsNotMatching) {
+        Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
+        await createNewRecordFunds(payload, transactionTimestamp, enums)
+      } else if (existsMatching) {
+        await transferExists(payload, transferId)
+      } else {
+        Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsNotMatching::request exists with different parameters`)
+      }
+    } else {
+      if (putRelatedActions.includes(payload.action)) {
+        await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
+      } else {
+        Logger.info(`AdminTransferHandler::${payload.action}::invalidEventAction`)
+      }
+    }
     return await commitMessageSync(kafkaTopic, consumer, message)
   } catch (error) {
     Logger.error(error)

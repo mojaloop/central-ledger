@@ -29,11 +29,6 @@ const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
-const Utility = require('../../handlers/lib/utility')
-const Enum = require('../../lib/enum')
-const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
-const Uuid = require('uuid4')
 
 const entityItem = ({ name, createdDate, isActive, currencyList }) => {
   const link = UrlParser.toParticipantUri(name)
@@ -63,54 +58,6 @@ const handleMissingRecord = (entity) => {
     throw new Errors.NotFoundError('The requested resource could not be found.')
   }
   return entity
-}
-
-const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp = '') => {
-  return {
-    id: payload.transferId,
-    from: payload.payerFsp,
-    to: payload.payeeFsp,
-    type: 'application/json',
-    content: {
-      header: {},
-      payload
-    },
-    metadata: {
-      event: {
-        id: Uuid(),
-        responseTo: '',
-        type: 'transfer',
-        action,
-        createdAt: new Date(),
-        state
-      }
-    },
-    pp
-  }
-}
-
-const setPayerPayeeFundsInOut = (fspName, payload) => {
-  let { action } = payload
-  const actions = {
-    'recordFundsIn': {
-      payer: fspName,
-      payee: 'hub'
-    },
-    'recordFundsOutPrepare': {
-      payer: 'hub',
-      payee: fspName
-    },
-    'recordFundsOutCommit': {
-      payer: 'hub',
-      payee: fspName
-    },
-    'recordFundsOutAbort': {
-      payer: 'hub',
-      payee: fspName
-    }
-  }
-  if (!actions[action]) throw new Error('The action is not supported')
-  return Object.assign(payload, actions[action])
 }
 
 const create = async function (request, h) {
@@ -272,21 +219,9 @@ const getAccounts = async function (request, h) {
 
 const recordFunds = async function (request, h) {
   Sidecar.logRequest(request)
-  let payload = request.payload
-  let { name, id, transferId } = request.params
   try {
-    let accounts = await Participant.getAllAccounts(name, payload.amount || {currency: null})
-    let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
-    if (!(accountMatched && accountMatched.ledgerAccountType === 'SETTLEMENT')) {
-      throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
-    }
-    transferId && (payload.transferId = transferId)
-    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload))
-    messageProtocol.metadata.request = {
-      params: request.params,
-      enums: await request.server.methods.enums('all')
-    }
-    await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+    const enums = await request.server.methods.enums('all')
+    await Participant.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
     throw Boom.badRequest(err.message)
