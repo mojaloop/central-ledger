@@ -8,6 +8,6 @@ module.exports = Setup.initialize({
   service: 'api',
   port: Config.PORT,
   modules: [Routes],
-  runMigrations: true,
+  runMigrations: Config.RUN_MIGRATIONS,
   runHandlers: !Config.HANDLERS_DISABLED
 })
