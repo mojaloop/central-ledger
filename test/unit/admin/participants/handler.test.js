@@ -818,9 +818,9 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('create a ledger account should throw a error if the currency exists', async function (test) {
+    handlerTest.test('create a ledger account', async function (test) {
       const payload = {
-        currency: 'VND',
+        currency: 'ZAR',
         type: 'HUB_FEE'
       }
       const params = {
@@ -833,11 +833,111 @@ Test('Participant', participantHandlerTest => {
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
         createdBy: 'unknown',
-        currencyList: [{currencyId: 'VND', isActive: 1}]
+        currencyList: [{currencyId: 'USD', isActive: 1, ledgerAccountTypeId: 1}]
       }
+
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 4,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
+        isActive: 1,
+        createdDate: '2018-10-23 14:14:08'
+      }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      const participantCurrency = {
+        participantId: 1,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdBy: 'unknown',
+        createdDate: '2018-10-23 14:17:07'
+      }
+
+      const participantPosition = {
+        participantPositionId: 1,
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        changedDate: '2018-10-23 14:17:07'
+      }
+
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
+      const reply = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.deepEqual(response, participantResults[0], 'The results match')
+              test.equal(statusCode, 201)
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.account(createRequest({params, payload}), reply)
+    })
+
+    handlerTest.test('create a ledger account should throw an error at an invalid account type', async function (test) {
+      const payload = {
+        currency: 'ZAR',
+        type: 'HUB_FEE'
+      }
+      const params = {
+        name: 'fsp1'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: [{currencyId: 'USD', isActive: 1, ledgerAccountTypeId: 1}]
+      }
+
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 4,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
+        isActive: 1,
+        createdDate: '2018-10-23 14:14:08'
+      }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      const participantCurrency = {
+        participantId: 1,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdBy: 'unknown',
+        createdDate: '2018-10-23 14:17:07'
+      }
+
+      const participantPosition = {
+        participantPositionId: 1,
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        changedDate: '2018-10-23 14:17:07'
+      }
+
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(undefined))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
       try {
         await Handler.account(createRequest({params, payload}))
         test.fail('Error not thrown')
@@ -849,10 +949,10 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('create a ledger account should throw error if the ledger account type is invalid', async function (test) {
+    handlerTest.test('create a ledger account should throw an error if the participant account exists', async function (test) {
       const payload = {
-        currency: 'ABC',
-        type: 'HUB_SETTLEMENT'
+        currency: 'ZAR',
+        type: 'HUB_FEE'
       }
       const params = {
         name: 'fsp1'
@@ -864,71 +964,108 @@ Test('Participant', participantHandlerTest => {
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
         createdBy: 'unknown',
-        currencyList: [{currencyId: 'VND', isActive: 1}]
+        currencyList: [{currencyId: 'USD', isActive: 1, ledgerAccountTypeId: 1}]
       }
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
-      try {
-        await Handler.account(createRequest({params, payload}))
-        test.fail('Error not thrown')
-        test.end()
-      } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Ledger account type was not found.')
-        test.end()
-      }
-    })
-    handlerTest.test('create a ledger account should throw error if the participant is invalid', async function (test) {
-      const payload = {
-        currency: 'ABC',
-        type: 'HUB_SETTLEMENT'
-      }
-      const params = {
-        name: 'invalid'
-      }
-      const participant = {
-        participantId: 1,
-        name: 'fsp1',
-        description: '',
+
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 4,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
         isActive: 1,
-        createdDate: '2018-07-17T16:04:24.185Z',
-        createdBy: 'unknown',
-        currencyList: [{currencyId: 'VND', isActive: 1}]
+        createdDate: '2018-10-23 14:14:08'
       }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      const participantCurrency = {
+        participantId: 1,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdBy: 'unknown',
+        createdDate: '2018-10-23 14:17:07'
+      }
+
+      const participantPosition = {
+        participantPositionId: 1,
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        changedDate: '2018-10-23 14:17:07'
+      }
+
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(participantCurrency))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
       try {
         await Handler.account(createRequest({params, payload}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'Participant was not found.')
+        test.equal(e.message, 'Participant account already exist')
         test.end()
       }
     })
-    handlerTest.test('create a ledger account should throw error if the participant id > 1 and creating a Hub operator account', async function (test) {
+
+    handlerTest.test('create a ledger account should throw an error if the Participant is invalid', async function (test) {
       const payload = {
-        currency: 'USD',
+        currency: 'ZAR',
         type: 'HUB_FEE'
       }
       const params = {
-        name: 'testFsp'
+        name: 'Hub'
       }
       const participant = {
         participantId: 2,
-        name: 'fsp2',
+        name: 'fsp1',
         description: '',
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
         createdBy: 'unknown',
-        currencyList: [{currencyId: 'USD', isActive: 1}]
+        currencyList: [{currencyId: 'USD', isActive: 1, ledgerAccountTypeId: 1}]
       }
+
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 4,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
+        isActive: 1,
+        createdDate: '2018-10-23 14:14:08'
+      }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      const participantCurrency = {
+        participantId: 1,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdBy: 'unknown',
+        createdDate: '2018-10-23 14:17:07'
+      }
+
+      const participantPosition = {
+        participantPositionId: 1,
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        changedDate: '2018-10-23 14:17:07'
+      }
+
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(participantCurrency))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
       try {
         await Handler.account(createRequest({params, payload}))
         test.fail('Error not thrown')
@@ -939,7 +1076,116 @@ Test('Participant', participantHandlerTest => {
         test.end()
       }
     })
+    handlerTest.test('create a ledger account should throw an error if creation fails ', async function (test) {
+      const payload = {
+        currency: 'AED',
+        type: 'SETTLEMENT'
+      }
+      const params = {
+        name: 'fsp1'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: [{currencyId: 'USD', isActive: 1, ledgerAccountTypeId: 1}]
+      }
 
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 4,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
+        isActive: 1,
+        createdDate: '2018-10-23 14:14:08'
+      }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve(undefined))
+      try {
+        await Handler.account(createRequest({params, payload}))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Participant account and Position create have failed')
+        test.end()
+      }
+    })
+
+    handlerTest.test('create a ledger account should !!! ', async function (test) {
+      const payload = {
+        currency: 'AED',
+        type: 'HUB_FEE'
+      }
+      const params = {
+        name: 'fsp1'
+      }
+      const participant = {
+        participantId: 2,
+        name: 'fsp1',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: [{currencyId: 'USD', isActive: 1, ledgerAccountTypeId: 1}]
+      }
+
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 4,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
+        isActive: 1,
+        createdDate: '2018-10-23 14:14:08'
+      }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      const participantCurrency = {
+        participantId: 1,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 2,
+        isActive: 1,
+        createdBy: 'unknown',
+        createdDate: '2018-10-23 14:17:07'
+      }
+
+      const participantPosition = {
+        participantPositionId: 1,
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        changedDate: '2018-10-23 14:17:07'
+      }
+
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
+      try {
+        await Handler.account(createRequest({params, payload}))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Account type is reserved for Hub Operator.')
+        test.end()
+      }
+    })
     handlerTest.end()
   })
 
