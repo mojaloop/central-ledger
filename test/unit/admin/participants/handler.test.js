@@ -909,36 +909,36 @@ Test('Participant', participantHandlerTest => {
         test.end()
       }
     })
-    /* handlerTest.test('create a ledger account should throw error if the participant is invalid', async function (test) {
+    handlerTest.test('create a ledger account should throw error if the participant id > 1 and creating a Hub operator account', async function (test) {
       const payload = {
         currency: 'USD',
-        type: 'HUB_SETTLEMENT'
+        type: 'HUB_RECONCILIATION'
       }
       const params = {
-        name: 'invalid'
+        name: 'fsp1'
       }
       const participant = {
         participantId: 2,
-        name: 'dfsp2',
+        name: 'fsp1',
         description: '',
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
         createdBy: 'unknown',
         currencyList: [{currencyId: 'USD', isActive: 1}]
       }
-      Participant.getByName.withArgs(participant.name).returns(P.resolve(participant))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 3).returns(P.resolve(participant.participantId))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participant.participantId))
       try {
         await Handler.account(createRequest({params, payload}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'This is a Hub Account.')
+        test.equal(e.message, 'Account type is reserved for Hub Operator.')
         test.end()
       }
-    }) */
+    })
 
     handlerTest.end()
   })

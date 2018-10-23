@@ -92,7 +92,7 @@ const account = async function (request, h) {
     // start - To DO move to domain
     let participant = await Participant.getByName(request.params.name)
     if (participant) {
-      // Check if participant is a Hub operator or not
+      // Check if participant is a Hub operator or not. (Participant Id=1 is a Hub operator)
       if (participant.participantId !== 1) {
         // Check if the ledger account type is allowed for a DFSP
         for (let value of Config.HUB_OPERATOR) {
