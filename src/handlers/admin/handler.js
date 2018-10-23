@@ -39,7 +39,6 @@ const Enum = require('../../lib/enum')
 const Time = require('../../lib/time')
 const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
 const AdminTransferAction = Enum.adminTransferAction
 const TransferService = require('../../domain/transfer')
 const Db = require('../../db')
@@ -47,22 +46,9 @@ const postRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAc
 const putRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(postRelatedActions).concat(putRelatedActions)
 
-const debug = false
-if (debug) {
-  Logger.info = (message) => {
-    console.log('\x1b[33m', message)
-  }
-  Logger.error = (message) => {
-    console.error(message)
-  }
-}
-
 const commitMessageSync = async (kafkaTopic, consumer, message) => {
   if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
     await consumer.commitMessageSync(message)
-  }
-  if (debug) {
-    console.log('\x1b[32m', `AdminTransferHandler::commitMessageSync`)
   }
   return true
 }
@@ -104,7 +90,7 @@ const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTime
     Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
   } else if (new Date(existingTransfer.expirationDate) <= new Date()) {
     Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
-  } else { // validations success
+  } else {
     Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
     if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
       Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
@@ -155,17 +141,8 @@ const transfer = async (error, messages) => {
 
     if (!payload) {
       Logger.info(`AdminTransferHandler::validationFailed`)
-      // TODO
-      // try {
-        // Save the invalid request in the database
-        // await TransferService.prepare(payload, 'Transfer must be provided', false)
-      // } catch (err) {
-        // Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::'Transfer must be provided'`)
-      // }
-      // log the invalid transfer into the the transferError table
-      // Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::log the invalid transfer into the the transferError table`)
+        // CANNOT BE SAVED BECAUSE NO PAYLOAD IS PROVIDED. What action should be taken?
       return false
-      // await TransferService.logTransferError(payload.transferId, errorGenericCode, reasons.toString())
     }
 
     payload.participantCurrencyId = metadata.request.params.id
@@ -181,9 +158,6 @@ const transfer = async (error, messages) => {
       Logger.error(e)
       return true
     }
-    if (!(metadata.event.type === TransferEventType.ADMIN && metadata.event.action === TransferEventAction.TRANSFER)) {
-      Logger.info(`AdminTransferHandler::${payload.action}::invalidEventAction`)
-    }
     if (!allowedActions.includes(payload.action)) {
       Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
     }
@@ -198,11 +172,7 @@ const transfer = async (error, messages) => {
         Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsNotMatching::request exists with different parameters`)
       }
     } else {
-      if (putRelatedActions.includes(payload.action)) {
-        await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
-      } else {
-        Logger.info(`AdminTransferHandler::${payload.action}::invalidEventAction`)
-      }
+      await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
     }
     return await commitMessageSync(kafkaTopic, consumer, message)
   } catch (error) {
