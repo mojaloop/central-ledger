@@ -92,6 +92,21 @@ const account = async function (request, h) {
     // start - To DO move to domain
     let participant = await Participant.getByName(request.params.name)
     if (participant) {
+      // Check if the account doesn't already exist for the participant
+      const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
+      if (!ledgerAccountType) {
+        throw new Errors.LedgerAccountTypeNotFoundError()
+      }
+      let accountParams = {
+        participantId: participant.participantId,
+        currencyId: request.payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+      let accountExists = await Participant.getParticipantAccount(accountParams)
+      if (accountExists) {
+        throw new Errors.ParticipantAccountExistError()
+      }
       // Check if participant is a Hub operator or not. (Participant Id=1 is a Hub operator)
       if (participant.participantId !== 1) {
         // Check if the ledger account type is allowed for a DFSP

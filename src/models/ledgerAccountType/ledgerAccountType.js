@@ -29,7 +29,16 @@
 
 const Db = require('../../db')
 
-exports.getByName = async (name) => {
+exports.getByName = async (accountParams) => {
+  try {
+    const participantCurrency = await Db.participantCurrency.findOne(accountParams)
+    return participantCurrency
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.getLedgerAccountByName = async (name) => {
   try {
     const ledgerAccountType = await Db.ledgerAccountType.findOne({ name })
     return ledgerAccountType

@@ -17,6 +17,7 @@ const ValidationError = require('./validation-error')
 const ParticipantNotFoundError = require('./participant_not_found')
 const LedgerAccountTypeNotFoundError = require('./ledgerAcoountTypeNotFound')
 const AccountReservedForHubOperatorError = require('./accountReservedForHubOperator')
+const ParticipantAccountExistError = require('./ParticipantAccountExist')
 
 module.exports = {
   AlreadyRolledBackError,
@@ -35,5 +36,6 @@ module.exports = {
   UnpreparedTransferError,
   ValidationError,
   AccountReservedForHubOperatorError,
+  ParticipantAccountExistError,
   NotFoundError: SharedErrors.NotFoundError
 }

@@ -27,7 +27,7 @@
 const hubParticipant =
   {
     'participantId': 1,
-    'name': 'dfsp1',
+    'name': 'Hub',
     'description': 'Hub operator',
     'isActive': 1,
     'createdBy': 'unknown'

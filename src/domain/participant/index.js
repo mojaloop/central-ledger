@@ -531,7 +531,15 @@ const getAccounts = async (name, query) => {
 
 const getLedgerAccountTypeName = async(name) => {
   try {
-    return await LedgerAccountTypeModel.getByName(name)
+    return await LedgerAccountTypeModel.getLedgerAccountByName(name)
+  } catch (err) {
+    throw err
+  }
+}
+
+const getParticipantAccount = async(accountParams) => {
+  try {
+    return await LedgerAccountTypeModel.getByName(accountParams)
   } catch (err) {
     throw err
   }
@@ -560,5 +568,6 @@ module.exports = {
   getLimits,
   adjustLimits,
   getPositions,
-  getAccounts
+  getAccounts,
+  getParticipantAccount
 }
