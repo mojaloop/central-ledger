@@ -106,7 +106,8 @@ const EnpointType = {
 const LedgerAccountType = {
   POSITION: 1,
   SETTLEMENT: 2,
-  HUB_SETTLEMENT: 3
+  HUB_RECONCILIATION: 3,
+  HUB_FEE: 4
 }
 const LedgerEntryType = {
   PRINCIPLE_VALUE: 1,

@@ -909,6 +909,37 @@ Test('Participant', participantHandlerTest => {
         test.end()
       }
     })
+    /* handlerTest.test('create a ledger account should throw error if the participant is invalid', async function (test) {
+      const payload = {
+        currency: 'USD',
+        type: 'HUB_SETTLEMENT'
+      }
+      const params = {
+        name: 'invalid'
+      }
+      const participant = {
+        participantId: 2,
+        name: 'dfsp2',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: [{currencyId: 'USD', isActive: 1}]
+      }
+      Participant.getByName.withArgs(participant.name).returns(P.resolve(participant))
+      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 3).returns(P.resolve(participant.participantId))
+      try {
+        await Handler.account(createRequest({params, payload}))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'This is a Hub Account.')
+        test.end()
+      }
+    }) */
+
     handlerTest.end()
   })
 

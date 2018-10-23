@@ -89,7 +89,7 @@ const create = async function (request, h) {
 const account = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    // start - move to domain
+    // start - To DO move to domain
     let participant = await Participant.getByName(request.params.name)
     if (participant) {
       // Check if participant is a Hub operator or not
@@ -97,7 +97,7 @@ const account = async function (request, h) {
         // Check if the ledger account type is allowed for a DFSP
         for (let value of Config.HUB_OPERATOR) {
           if (value === request.payload.type) {
-            throw new Error('Oh no you cannot')
+            throw new Errors.AccountReservedForHubOperatorError()
           }
         }
       }
@@ -109,7 +109,8 @@ const account = async function (request, h) {
       } else {
         const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
         if (ledgerAccountType) {
-          await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+          const newCurrencyAccount = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+          participant.currencyList.push(newCurrencyAccount.participantCurrency)
         } else {
           throw new Errors.LedgerAccountTypeNotFoundError()
         }
@@ -117,7 +118,7 @@ const account = async function (request, h) {
     } else {
       throw new Errors.ParticipantNotFoundError()
     }
-    // end here
+    // end here : move to domain
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
