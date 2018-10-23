@@ -821,7 +821,7 @@ Test('Participant', participantHandlerTest => {
     handlerTest.test('create a ledger account should throw a error if the currency exists', async function (test) {
       const payload = {
         currency: 'VND',
-        type: 'HUB_SETTLEMENT'
+        type: 'HUB_FEE'
       }
       const params = {
         name: 'fsp1'
@@ -844,7 +844,7 @@ Test('Participant', participantHandlerTest => {
         test.end()
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'Participant currency has already been registered')
+        test.equal(e.message, 'Ledger account type was not found.')
         test.end()
       }
     })
@@ -912,14 +912,14 @@ Test('Participant', participantHandlerTest => {
     handlerTest.test('create a ledger account should throw error if the participant id > 1 and creating a Hub operator account', async function (test) {
       const payload = {
         currency: 'USD',
-        type: 'HUB_RECONCILIATION'
+        type: 'HUB_FEE'
       }
       const params = {
-        name: 'fsp1'
+        name: 'testFsp'
       }
       const participant = {
         participantId: 2,
-        name: 'fsp1',
+        name: 'fsp2',
         description: '',
         isActive: 1,
         createdDate: '2018-07-17T16:04:24.185Z',
@@ -935,7 +935,7 @@ Test('Participant', participantHandlerTest => {
         test.end()
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'Account type is reserved for Hub Operator.')
+        test.equal(e.message, 'Participant was not found.')
         test.end()
       }
     })

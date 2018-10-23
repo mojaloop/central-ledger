@@ -89,10 +89,9 @@ const create = async function (request, h) {
 const account = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    // start - To DO move to domain
+    // start - To Do move to domain
     let participant = await Participant.getByName(request.params.name)
     if (participant) {
-      // Check if the account doesn't already exist for the participant
       const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
       if (!ledgerAccountType) {
         throw new Errors.LedgerAccountTypeNotFoundError()
@@ -107,29 +106,18 @@ const account = async function (request, h) {
       if (accountExists) {
         throw new Errors.ParticipantAccountExistError()
       }
-      // Check if participant is a Hub operator or not. (Participant Id=1 is a Hub operator)
-      if (participant.participantId !== 1) {
-        // Check if the ledger account type is allowed for a DFSP
-        for (let value of Config.HUB_OPERATOR) {
+      if (participant.participantId !== Config.HUB_OPERATOR_CODE) {
+        for (let value of Config.HUB_OPERATOR_ACCOUNTS) {
           if (value === request.payload.type) {
             throw new Errors.AccountReservedForHubOperatorError()
           }
         }
       }
-      const currencyExists = participant.currencyList.find(currency => {
-        return currency.currencyId === request.payload.currency
-      })
-      if (currencyExists) {
-        throw new Errors.RecordExistsError()
-      } else {
-        const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
-        if (ledgerAccountType) {
-          const newCurrencyAccount = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
-          participant.currencyList.push(newCurrencyAccount.participantCurrency)
-        } else {
-          throw new Errors.LedgerAccountTypeNotFoundError()
-        }
+      const newCurrencyAccount = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+      if (!newCurrencyAccount) {
+        throw new Errors.ParticipantAccountCreateError()
       }
+      participant.currencyList.push(newCurrencyAccount.participantCurrency)
     } else {
       throw new Errors.ParticipantNotFoundError()
     }
