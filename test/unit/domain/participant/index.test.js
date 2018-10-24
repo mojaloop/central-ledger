@@ -38,6 +38,7 @@ const ParticipantFacade = require('../../../../src/models/participant/facade')
 const PositionFacade = require('../../../../src/models/position/facade')
 const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
+const Utility = require('../../../../src/handlers/lib/utility')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -141,6 +142,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'getParticipantLimitsByCurrencyId')
     sandbox.stub(ParticipantFacade, 'getParticipantLimitsByParticipantId')
     sandbox.stub(ParticipantFacade, 'addLimitAndInitialPosition')
+    sandbox.stub(ParticipantFacade, 'getAllAccountsByNameAndCurrency')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
@@ -152,6 +154,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
+    sandbox.stub(Utility, 'produceGeneralMessage')
     Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
@@ -1424,6 +1427,168 @@ Test('Participant service', async (participantTest) => {
       assert.assert(err instanceof Error, ` throws ${err} `)
     }
     assert.end()
+  })
+
+  await participantTest.test('recordFundsInOut should produce message to kafka topic if input is valid', async (assert) => {
+    try {
+      const payload = {
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
+        externalReference: 'string',
+        action: 'recordFundsIn',
+        amount: {
+          amount: 1.0000,
+          currency: 'USD'
+        },
+        reason: 'Reason for in/out flow of funds',
+        extensionList: {}
+      }
+
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+      ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
+        ledgerAccountType: 'SETTLEMENT',
+        participantCurrencyId: 1
+      }])
+      ParticipantModel.getByName.withArgs(params.name).returns({
+        participantId: 0,
+        name: 'dfsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      })
+      Utility.produceGeneralMessage.returns(true)
+      let result = await Service.recordFundsInOut(payload, params, {})
+      assert.ok(result, 'topic created')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('recordFundsInOut should produce message to kafka topic if input is valid and currency is not provided', async (assert) => {
+    try {
+      const payload = {
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
+        externalReference: 'string',
+        action: 'recordFundsIn',
+        // amount: {
+        //   amount: 1.0000,
+        //   currency: 'USD'
+        // },
+        reason: 'Reason for in/out flow of funds',
+        extensionList: {}
+      }
+
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+      ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, null).returns([{
+        ledgerAccountType: 'SETTLEMENT',
+        participantCurrencyId: 1
+      }])
+      ParticipantModel.getByName.withArgs(params.name).returns({
+        participantId: 0,
+        name: 'dfsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      })
+      Utility.produceGeneralMessage.returns(true)
+      let result = await Service.recordFundsInOut(payload, params, {})
+      assert.ok(result, 'topic created')
+      assert.end()
+    } catch (err) {
+      Logger.error(`get position failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('recordFundsInOut should throw if actions is not supported', async (assert) => {
+    try {
+      const payload = {
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
+        externalReference: 'string',
+        action: 'bla',
+        amount: {
+          amount: 1.0000,
+          currency: 'USD'
+        },
+        reason: 'Reason for in/out flow of funds',
+        extensionList: {}
+      }
+
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+      ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
+        ledgerAccountType: 'SETTLEMENT',
+        participantCurrencyId: 1
+      }])
+      ParticipantModel.getByName.withArgs(params.name).returns({
+        participantId: 0,
+        name: 'dfsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      })
+      Utility.produceGeneralMessage.returns(true)
+      await Service.recordFundsInOut(payload, params, {})
+      assert.fail('did not throw')
+      assert.end()
+    } catch (err) {
+      assert.ok(err.message, 'The action is not supported')
+      assert.end()
+    }
+  })
+
+  await participantTest.test('recordFundsInOut should throw if account is not correct', async (assert) => {
+    try {
+      const payload = {
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
+        externalReference: 'string',
+        action: 'bla',
+        amount: {
+          amount: 1.0000,
+          currency: 'USD'
+        },
+        reason: 'Reason for in/out flow of funds',
+        extensionList: {}
+      }
+
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+      ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
+        ledgerAccountType: 'POSITION',
+        participantCurrencyId: 1
+      }])
+      ParticipantModel.getByName.withArgs(params.name).returns({
+        participantId: 0,
+        name: 'dfsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      })
+      Utility.produceGeneralMessage.returns(true)
+      await Service.recordFundsInOut(payload, params, {})
+      assert.fail('did not throw')
+      assert.end()
+    } catch (err) {
+      assert.ok(err.message, 'Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+      assert.end()
+    }
   })
 
   await participantTest.end()

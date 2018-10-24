@@ -99,7 +99,7 @@ Test('Participant', participantHandlerTest => {
     test.end()
   })
 
-  participantHandlerTest.test('Handler Test', handlerTest => {
+  participantHandlerTest.test('Handler Test', async handlerTest => {
     handlerTest.test('getAll should return all the participants', async function (test) {
       Participant.getAll.returns(P.resolve(participantFixtures))
       const result = await Handler.getAll(createRequest({}))
@@ -811,6 +811,74 @@ Test('Participant', participantHandlerTest => {
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
+    await handlerTest.test('recordFundsInOut should be called once with the provided params and payload', async function (test) {
+      const payload = {
+        action: 'recordFundsIn',
+        reason: 'ab'
+      }
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+
+      const h = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 202)
+            }
+          }
+        }
+      }
+
+      let enums = sandbox.stub()
+      enums.withArgs('all').returns({})
+      Participant.recordFundsInOut.withArgs(payload, params, {}).resolves()
+      try {
+        await Handler.recordFunds(createRequest({payload, params}), h)
+        test.end()
+      } catch (e) {
+        test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    await handlerTest.test('recordFundsInOut should throw', async function (test) {
+      const payload = {
+        action: 'any',
+        reason: ''
+      }
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+
+      const error = new Error('error')
+
+      const h = {
+        response: response => {
+          return {
+            code: () => {
+              return test.deepEqual(response, error)
+            }
+          }
+        }
+      }
+
+      let enums = sandbox.stub()
+      enums.withArgs('all').returns({enums: 'a'})
+      Participant.recordFundsInOut.withArgs(payload, params, undefined).throws(error)
+      try {
+        await Handler.recordFunds(createRequest({payload, params}), h)
+        test.fail('error not thrown')
+        test.end()
+      } catch (e) {
         test.end()
       }
     })

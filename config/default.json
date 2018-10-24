@@ -31,6 +31,7 @@
     }
   },
   "PARTICIPANT_INITIAL_POSTITION": 0,
+  "INTERNAL_TRANSFER_VALIDITY_SECONDS": "432000",
   "KAFKA": {
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
@@ -263,6 +264,39 @@
             }
           }
         }
+      },
+      "ADMIN": {
+        "TRANSFER": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "admin-transfer-consume",
+              "debug": "all",
+              "group.id": "central-ledger-kafka",
+              "metadata.broker.list": "localhost:9092",
+              "socket.blocking.max.ms": 1,
+              "fetch.wait.max.ms": 1,
+              "fetch.error.backoff.ms": 1,
+              "queue.buffering.max.ms": 1,
+              "broker.version.fallback": "0.10.1.0",
+              "api.version.request": true,
+              "enable.auto.commit": false,
+              "auto.commit.interval.ms": 200
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
       }
     },
     "PRODUCER": {
@@ -424,6 +458,32 @@
               "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-notification-event",
+              "event_cb": true,
+              "compression.codec": "none",
+              "retry.backoff.ms": 100,
+              "message.send.max.retries": 2,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000,
+              "batch.num.messages": 100,
+              "dr_cb": true,
+              "socket.blocking.max.ms": 1,
+              "queue.buffering.max.ms": 1,
+              "broker.version.fallback": "0.10.1.0",
+              "api.version.request": true
+            }
+          }
+        }
+      },
+      "ADMIN": {
+        "TRANSFER": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "debug": "all",
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "admin-transfer-produce",
               "event_cb": true,
               "compression.codec": "none",
               "retry.backoff.ms": 100,

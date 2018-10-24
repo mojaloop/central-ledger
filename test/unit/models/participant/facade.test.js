@@ -47,6 +47,9 @@ Test('Participant facade', async (facadeTest) => {
     Db.participantLimit = {
       query: sandbox.stub()
     }
+    Db.participantCurrency = {
+      query: sandbox.stub()
+    }
     t.end()
   })
 
@@ -969,6 +972,94 @@ Test('Participant facade', async (facadeTest) => {
       Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
+    }
+  })
+
+  await facadeTest.test('getAllAccountsByNameAndCurrency should return the participant accounts for given currency', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      const currencyId = 'USD'
+      let builderStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantCurrency.query.callsArgWith(0, builderStub)
+      const participantCurrency = {
+        participantCurrancyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            where: sandbox.stub().callsArgWith(0, whereStub).returns({
+              select: sandbox.stub().returns(participantCurrency)
+            })
+          })
+        })
+      })
+
+      let found = await Model.getAllAccountsByNameAndCurrency(participantName, currencyId)
+      test.deepEqual(found, participantCurrency, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getAllAccountsByNameAndCurrency should return the participant accounts for any', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      let builderStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantCurrency.query.callsArgWith(0, builderStub)
+      const participantCurrency = {
+        participantCurrancyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            where: sandbox.stub().callsArgWith(0, whereStub).returns({
+              select: sandbox.stub().returns(participantCurrency)
+            })
+          })
+        })
+      })
+
+      let found = await Model.getAllAccountsByNameAndCurrency(participantName)
+      test.deepEqual(found, participantCurrency, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getAllAccountsByNameAndCurrency should throw error', async (test) => {
+    try {
+      const participantName = 'dfsp1'
+
+      Db.participantCurrency.query.throws(new Error())
+
+      await Model.getAllAccountsByNameAndCurrency(participantName)
+      test.fail(' should throw')
+      test.end()
+      test.end()
+    } catch (err) {
+      Logger.error(`Model.getAllAccountsByNameAndCurrency failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
     }
   })
 
