@@ -262,6 +262,17 @@ const getAccounts = async function (request, h) {
   }
 }
 
+const recordFunds = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    const enums = await request.server.methods.enums('all')
+    await Participant.recordFundsInOut(request.payload, request.params, enums)
+    return h.response().code(202)
+  } catch (err) {
+    throw Boom.badRequest(err.message)
+  }
+}
+
 module.exports = {
   create,
   participantAccount,
@@ -274,5 +285,6 @@ module.exports = {
   getLimits,
   adjustLimits,
   getPositions,
-  getAccounts
+  getAccounts,
+  recordFunds
 }

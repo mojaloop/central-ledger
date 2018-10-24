@@ -23,6 +23,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <lazola.lucas@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
@@ -49,6 +50,7 @@ const requireGlob = require('require-glob')
 const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
+const AdminHandlers = require('./admin/handler')
 
 const registerAllHandlers = async (request, h) => {
   try {
@@ -82,5 +84,8 @@ module.exports = {
   timeouts: {
     registerAllHandlers: TimeoutHandlers.registerAllHandlers,
     registerTimeoutHandler: TimeoutHandlers.registerTimeoutHandler
+  },
+  admin: {
+    registerAdminHandlers: AdminHandlers.registerAllHandlers
   }
 }

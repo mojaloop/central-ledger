@@ -38,7 +38,11 @@ const LedgerAccountTypeFacade = require('../../models/participant/facade')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
+const Utility = require('../../handlers/lib/utility')
+const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
+const TransferEventType = Enum.transferEventType
+const TransferEventAction = Enum.transferEventAction
 
 const create = async (payload) => {
   try {
@@ -529,7 +533,7 @@ const getAccounts = async (name, query) => {
   }
 }
 
-const getLedgerAccountTypeName = async(name) => {
+const getLedgerAccountTypeName = async (name) => {
   try {
     return await LedgerAccountTypeModel.getLedgerAccountByName(name)
   } catch (err) {
@@ -537,9 +541,80 @@ const getLedgerAccountTypeName = async(name) => {
   }
 }
 
-const getParticipantAccount = async(accountParams) => {
+const getParticipantAccount = async (accountParams) => {
   try {
     return await ParticipantCurrencyModel.getByName(accountParams)
+  } catch (err) {
+    throw err
+  }
+}
+
+const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp = '') => {
+  return {
+    id: payload.transferId,
+    from: payload.payerFsp,
+    to: payload.payeeFsp,
+    type: 'application/json',
+    content: {
+      header: {},
+      payload
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: '',
+        type: 'transfer',
+        action,
+        createdAt: new Date(),
+        state
+      }
+    },
+    pp
+  }
+}
+
+const setPayerPayeeFundsInOut = (fspName, payload) => {
+  let { action } = payload
+  const actions = {
+    'recordFundsIn': {
+      payer: fspName,
+      payee: 'hub'
+    },
+    'recordFundsOutPrepare': {
+      payer: 'hub',
+      payee: fspName
+    },
+    'recordFundsOutCommit': {
+      payer: 'hub',
+      payee: fspName
+    },
+    'recordFundsOutAbort': {
+      payer: 'hub',
+      payee: fspName
+    }
+  }
+  if (!actions[action]) throw new Error('The action is not supported')
+  return Object.assign(payload, actions[action])
+}
+
+const recordFundsInOut = async (payload, params, enums) => {
+  try {
+    let { name, id, transferId } = params
+    const participant = await ParticipantModel.getByName(name)
+    const currency = payload.amount && payload.amount.currency
+    participantExists(participant)
+    const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency || null)
+    let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
+    if (!(accountMatched && accountMatched.ledgerAccountType === 'SETTLEMENT')) {
+      throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+    }
+    transferId && (payload.transferId = transferId)
+    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload))
+    messageProtocol.metadata.request = {
+      params: params,
+      enums: enums
+    }
+    return await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
   } catch (err) {
     throw err
   }
@@ -569,5 +644,6 @@ module.exports = {
   adjustLimits,
   getPositions,
   getAccounts,
-  getParticipantAccount
+  getParticipantAccount,
+  recordFundsInOut
 }

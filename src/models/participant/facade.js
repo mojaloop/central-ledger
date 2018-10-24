@@ -55,7 +55,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId) => {
 const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return await builder
+      return builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
@@ -192,7 +192,7 @@ const addEndpoint = async (participantId, endpoint) => {
 const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return await builder
+      return builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
@@ -219,7 +219,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return await builder
+      return builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
@@ -492,6 +492,29 @@ const addNewCurrencyAndPosition = async (participantId, currencyId, ledgerAccoun
   }
 }
 
+const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
+  try {
+    return Db.participantCurrency.query(builder => {
+      return builder
+        .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId')
+        .innerJoin('participant AS p', 'p.participantId', 'participantCurrency.participantId')
+        .where({
+          'p.name': name,
+          'p.isActive': 1,
+          'participantCurrency.isActive': 1
+        })
+        .where(q => {
+          if (currencyId != null) {
+            return q.where('participantCurrency.currencyId', '=', currencyId)
+          }
+        })
+        .select('*', 'lap.name AS ledgerAccountType')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
   addNewCurrencyAndPosition,
   getByNameAndCurrency,
@@ -504,5 +527,6 @@ module.exports = {
   addLimitAndInitialPosition,
   adjustLimits,
   getParticipantLimitsByCurrencyId,
-  getParticipantLimitsByParticipantId
+  getParticipantLimitsByParticipantId,
+  getAllAccountsByNameAndCurrency
 }
