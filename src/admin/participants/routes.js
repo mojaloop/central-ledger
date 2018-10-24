@@ -212,7 +212,7 @@ module.exports = [
     options: {
       id: 'participants_accounts_create',
       tags: tags,
-      description: 'Create new participant account',
+      description: 'Create new Participant and Hub operator accounts',
       payload: {
         allow: ['application/json'],
         failAction: 'error'
