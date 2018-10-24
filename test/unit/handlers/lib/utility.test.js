@@ -118,7 +118,7 @@ Test('Utility Test', utilityTest => {
     createGeneralTopicConfTest.test('return a general topic conf object', test => {
       const response = Utility.createGeneralTopicConf(TRANSFER, FULFIL)
       test.equal(response.topicName, generalTopic)
-      test.equal(response.partition, 0)
+      test.equal(response.partition, null)
       test.equal(response.opaqueKey, 0)
       test.end()
     })
