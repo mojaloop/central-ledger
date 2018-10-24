@@ -27,10 +27,12 @@
 const Participant = require('../../domain/participant')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
+const Config = require('../../lib/config')
+const Enum = require('../../lib/enum')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
-const entityItem = ({ name, createdDate, isActive, currencyList }) => {
+const entityItem = ({name, createdDate, isActive, currencyList}) => {
   const link = UrlParser.toParticipantUri(name)
   const currencies = currencyList.map(currencyEntityItem)
   return {
@@ -45,7 +47,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList }) => {
   }
 }
 
-const currencyEntityItem = ({ currencyId, isActive, ledgerAccountTypeId }) => {
+const currencyEntityItem = ({currencyId, isActive, ledgerAccountTypeId}) => {
   return {
     currency: currencyId,
     ledgerAccountTypeId,
@@ -79,6 +81,49 @@ const create = async function (request, h) {
     const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypeEnum.POSITION)
     const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypeEnum.SETTLEMENT)
     participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId1), await Participant.getParticipantCurrencyById(participantCurrencyId2)]
+    return h.response(entityItem(participant)).code(201)
+  } catch (err) {
+    throw Boom.badRequest(err.message)
+  }
+}
+
+const participantAccount = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    // start - To Do move to domain
+    let participant = await Participant.getByName(request.params.name)
+    if (participant) {
+      const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
+      if (!ledgerAccountType) {
+        throw new Errors.LedgerAccountTypeNotFoundError()
+      }
+      let accountParams = {
+        participantId: participant.participantId,
+        currencyId: request.payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+      let participantAccount = await Participant.getParticipantAccount(accountParams)
+      if (participantAccount) {
+        throw new Errors.ParticipantAccountExistError()
+      }
+
+      if (participant.participantId !== Config.HUB_OPERATOR_CODE) {
+        for (let value of Enum.HubOperatorAccounts.ACCOUNTS) {
+          if (value === request.payload.type) {
+            throw new Errors.AccountReservedForHubOperatorError()
+          }
+        }
+      }
+      const newCurrencyAccount = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+      if (!newCurrencyAccount) {
+        throw new Errors.ParticipantAccountCreateError()
+      }
+      participant.currencyList.push(newCurrencyAccount.participantCurrency)
+    } else {
+      throw new Errors.ParticipantNotFoundError()
+    }
+    // end here : move to domain
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
@@ -184,7 +229,7 @@ const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     const result = await Participant.adjustLimits(request.params.name, request.payload)
-    const { participantLimit } = result
+    const {participantLimit} = result
     const updatedLimit = {
       currency: request.payload.currency,
       limit: {
@@ -230,6 +275,7 @@ const recordFunds = async function (request, h) {
 
 module.exports = {
   create,
+  participantAccount,
   getAll,
   getByName,
   update,

@@ -126,6 +126,10 @@ const all = async function () {
 }
 
 // TODO: To be replaced throughout code with the above
+const HubOperatorAccounts = {
+  ACCOUNTS: ['HUB_RECONCILIATION', 'HUB_FEE']
+}
+
 const EnpointType = {
   ALARM_NOTIFICATION_URL: 1,
   ALARM_NOTIFICATION_TOPIC: 2,
@@ -136,7 +140,8 @@ const EnpointType = {
 const LedgerAccountType = {
   POSITION: 1,
   SETTLEMENT: 2,
-  HUB_SETTLEMENT: 3
+  HUB_RECONCILIATION: 3,
+  HUB_FEE: 4
 }
 const LedgerEntryType = {
   PRINCIPLE_VALUE: 1,
@@ -273,6 +278,7 @@ module.exports = {
   transferStateEnum,
   all,
 
+  HubOperatorAccounts,
   EnpointType,
   LedgerAccountType,
   LedgerEntryType,

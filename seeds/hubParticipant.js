@@ -24,32 +24,22 @@
 
 'use strict'
 
-const ledgerAccountTypes = [
+const hubParticipant =
   {
-    'name': 'POSITION',
-    'description': 'Typical accounts from which a DFSP provisions  transfers '
-  },
-  {
-    'name': 'SETTLEMENT',
-    'description': 'Reflects the individual DFSP Settlement Accounts as held at the Settlement Bank'
-  },
-  {
-    'name': 'HUB_RECONCILIATION',
-    'description': 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
-  },
-  {
-    'name': 'HUB_FEE',
-    'description': 'An account to which fees will be charged or collected'
+    'participantId': 1,
+    'name': 'Hub',
+    'description': 'Hub operator',
+    'isActive': 1,
+    'createdBy': 'unknown'
   }
-]
 
 exports.seed = async function (knex) {
   try {
-    return await knex('ledgerAccountType').insert(ledgerAccountTypes)
+    return await knex('participant').insert(hubParticipant)
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return -1001
     else {
-      console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
+      console.log(`Uploading seeds for participant has failed with the following error: ${err}`)
       return -1000
     }
   }

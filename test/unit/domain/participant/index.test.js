@@ -38,6 +38,7 @@ const ParticipantFacade = require('../../../../src/models/participant/facade')
 const PositionFacade = require('../../../../src/models/position/facade')
 const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
+const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
 const Utility = require('../../../../src/handlers/lib/utility')
 
 const Service = require('../../../../src/domain/participant/index')
@@ -154,6 +155,8 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
+    sandbox.stub(ParticipantCurrencyModel, 'getByName')
+
     sandbox.stub(Utility, 'produceGeneralMessage')
     Db.participant = {
       insert: sandbox.stub(),
@@ -177,7 +180,10 @@ Test('Participant service', async (participantTest) => {
       ParticipantModel.getByName.withArgs(participant.name).returns(participantResult[index])
       ParticipantModel.getById.withArgs(index).returns(participantResult[index])
       ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
-      ParticipantCurrencyModel.create.withArgs({ participantId: index, currencyId: participant.currency }).returns((index + 1))
+      ParticipantCurrencyModel.create.withArgs({
+        participantId: index,
+        currencyId: participant.currency
+      }).returns((index + 1))
       ParticipantCurrencyModel.getById.withArgs(index).returns({
         participantCurrancyId: participant.participantId,
         participantId: participant.participantId,
@@ -365,7 +371,10 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('createParticipantCurrency should create the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        var result = await Service.createParticipantCurrency({ participantId: participant.participantId, currencyId: participant.currency })
+        var result = await Service.createParticipantCurrency({
+          participantId: participant.participantId,
+          currencyId: participant.currency
+        })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
       })
@@ -379,9 +388,15 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('createParticipantCurrency with false participant should fail', async (assert) => {
     const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
-    ParticipantCurrencyModel.create.withArgs({ participantId: falseParticipant.participantId, currencyId: falseParticipant.currency }).throws(new Error())
+    ParticipantCurrencyModel.create.withArgs({
+      participantId: falseParticipant.participantId,
+      currencyId: falseParticipant.currency
+    }).throws(new Error())
     try {
-      await Service.createParticipantCurrency({ participantId: falseParticipant.participantId, currencyId: falseParticipant.currency })
+      await Service.createParticipantCurrency({
+        participantId: falseParticipant.participantId,
+        currencyId: falseParticipant.currency
+      })
       assert.fail('should throw')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err} `)
@@ -1428,6 +1443,83 @@ Test('Participant service', async (participantTest) => {
     }
     assert.end()
   })
+  await participantTest.test('getLedgerAccountType by name name should return ledgerAccountType', async (assert) => {
+    const name = {
+      currency: 'AFA',
+      type: 'POSITION'
+    }
+    const ledgerAccountsMock = {
+      ledgerAccountTypeId: 1,
+      name: 'POSITION',
+      description: 'Typical accounts from which a DFSP provisions  transfers',
+      isActive: 1,
+      createdDate: '2018-10-11T11:45:00.000Z'
+    }
+
+    try {
+      ParticipantCurrencyModel.getByName.withArgs(name.type).returns(ledgerAccountsMock)
+      const expected = await Service.getLedgerAccountTypeName(name.type)
+      assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+  await participantTest.test('getLedgerAccountType by name name should throw an error if the name is invalid', async (assert) => {
+    const name = {
+      currency: 'AFA',
+      type: 'POSITION'
+    }
+    const ledgerAccountsMock = {
+      ledgerAccountTypeId: 1,
+      name: 'POSITION',
+      description: 'Typical accounts from which a DFSP provisions  transfers',
+      isActive: 1,
+      createdDate: '2018-10-11T11:45:00.000Z'
+    }
+
+    try {
+      ParticipantCurrencyModel.getByName.withArgs(name.type).throws(new Error())
+      const expected = await Service.getLedgerAccountTypeName(name.type)
+      assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+
+  // ====================================
+
+  await participantTest.test('createParticipantCurrency should return a new currency and position record', async (assert) => {
+    const payload = {
+      participantId: 1,
+      currencyId: 1,
+      ledgerAccountTypeId: 3
+    }
+    const participantCurrency = {
+      participantCurrencyId: 1,
+      participantId: 1,
+      currencyId: 1,
+      ledgerAccountTypeId: 1,
+      isActive: 1,
+      createdDate: '2018-10-11T11:45:00.000Z',
+      createdBy: 'unknown'
+    }
+
+    try {
+      LedgerAccountTypeFacade.addNewCurrencyAndPosition.withArgs(payload.participantId, payload.currencyId, payload.ledgerAccountTypeId).returns(participantCurrency)
+      const expected = await Service.createParticipantCurrency(payload.participantId, payload.currencyId, payload.ledgerAccountTypeId)
+      assert.deepEqual(expected, 1, 'Results matched')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+
+  // ====================================
 
   await participantTest.test('recordFundsInOut should produce message to kafka topic if input is valid', async (assert) => {
     try {

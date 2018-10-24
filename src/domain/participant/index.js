@@ -33,6 +33,8 @@ const ParticipantCurrencyModel = require('../../models/participant/participantCu
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
+const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
+const LedgerAccountTypeFacade = require('../../models/participant/facade')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
@@ -105,7 +107,7 @@ const update = async (name, payload) => {
 
 const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
+    const participantCurrency = await LedgerAccountTypeFacade.addNewCurrencyAndPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
     throw err
@@ -531,6 +533,22 @@ const getAccounts = async (name, query) => {
   }
 }
 
+const getLedgerAccountTypeName = async (name) => {
+  try {
+    return await LedgerAccountTypeModel.getLedgerAccountByName(name)
+  } catch (err) {
+    throw err
+  }
+}
+
+const getParticipantAccount = async (accountParams) => {
+  try {
+    return await ParticipantCurrencyModel.getByName(accountParams)
+  } catch (err) {
+    throw err
+  }
+}
+
 const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp = '') => {
   return {
     id: payload.transferId,
@@ -608,6 +626,7 @@ module.exports = {
   getById,
   getByName,
   participantExists,
+  getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
   getParticipantCurrencyById,
@@ -625,6 +644,6 @@ module.exports = {
   adjustLimits,
   getPositions,
   getAccounts,
-//  getAllAccounts,
+  getParticipantAccount,
   recordFundsInOut
 }

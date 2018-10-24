@@ -206,6 +206,29 @@ module.exports = [
     }
   },
   {
+    method: 'POST',
+    path: '/participants/{name}/accounts',
+    handler: Handler.participantAccount,
+    options: {
+      id: 'participants_accounts_create',
+      tags: tags,
+      description: 'Create new Participant and Hub operator accounts',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          currency: Joi.string().required().description('Account currency'), // currencyValidator,
+          type: Joi.string().required().description('Account type')  // Needs a validator here
+        },
+        params: {
+          name: Joi.string().required().description('Participant name') // nameValidator
+        }
+      }
+    }
+  },
+  {
     method: 'GET',
     path: '/participants/{name}/positions',
     handler: Handler.getPositions,
