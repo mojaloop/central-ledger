@@ -33,7 +33,7 @@ const ParticipantCurrencyModel = require('../../models/participant/participantCu
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
-const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType') // Remove when facade is operational
+const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const LedgerAccountTypeFacade = require('../../models/participant/facade')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
@@ -539,7 +539,7 @@ const getLedgerAccountTypeName = async(name) => {
 
 const getParticipantAccount = async(accountParams) => {
   try {
-    return await LedgerAccountTypeModel.getByName(accountParams)
+    return await ParticipantCurrencyModel.getByName(accountParams)
   } catch (err) {
     throw err
   }

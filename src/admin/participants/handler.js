@@ -103,8 +103,8 @@ const participantAccount = async function (request, h) {
         ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
         isActive: 1
       }
-      let accountExists = await Participant.getParticipantAccount(accountParams)
-      if (accountExists) {
+      let participantAccount = await Participant.getParticipantAccount(accountParams)
+      if (participantAccount) {
         throw new Errors.ParticipantAccountExistError()
       }
 

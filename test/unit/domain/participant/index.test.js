@@ -38,7 +38,6 @@ const ParticipantFacade = require('../../../../src/models/participant/facade')
 const PositionFacade = require('../../../../src/models/position/facade')
 const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
-const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
 
 const Service = require('../../../../src/domain/participant/index')
@@ -154,7 +153,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
-    sandbox.stub(LedgerAccountTypeModel, 'getByName')
+    sandbox.stub(ParticipantCurrencyModel, 'getByName')
 
     Db.participant = {
       insert: sandbox.stub(),
@@ -1455,7 +1454,7 @@ Test('Participant service', async (participantTest) => {
     }
 
     try {
-      LedgerAccountTypeModel.getByName.withArgs(name.type).returns(ledgerAccountsMock)
+      ParticipantCurrencyModel.getByName.withArgs(name.type).returns(ledgerAccountsMock)
       const expected = await Service.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
@@ -1478,7 +1477,7 @@ Test('Participant service', async (participantTest) => {
     }
 
     try {
-      LedgerAccountTypeModel.getByName.withArgs(name.type).throws(new Error())
+      ParticipantCurrencyModel.getByName.withArgs(name.type).throws(new Error())
       const expected = await Service.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
