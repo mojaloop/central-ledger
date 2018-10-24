@@ -31,9 +31,7 @@
     }
   },
   "PARTICIPANT_INITIAL_POSTITION": 0,
-  "HUB_OPERATOR": {
-    "CODE": 1
-  },
+  "HUB_OPERATOR_CODE": 1,
   "KAFKA": {
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
