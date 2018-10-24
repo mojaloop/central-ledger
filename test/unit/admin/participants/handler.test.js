@@ -882,7 +882,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      await Handler.account(createRequest({params, payload}), reply)
+      await Handler.participantAccount(createRequest({params, payload}), reply)
     })
 
     handlerTest.test('create a ledger account should throw an error at an invalid account type', async function (test) {
@@ -939,7 +939,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
       try {
-        await Handler.account(createRequest({params, payload}))
+        await Handler.participantAccount(createRequest({params, payload}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -1003,7 +1003,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(participantCurrency))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
       try {
-        await Handler.account(createRequest({params, payload}))
+        await Handler.participantAccount(createRequest({params, payload}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -1067,7 +1067,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(participantCurrency))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
       try {
-        await Handler.account(createRequest({params, payload}))
+        await Handler.participantAccount(createRequest({params, payload}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -1113,7 +1113,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve(undefined))
       try {
-        await Handler.account(createRequest({params, payload}))
+        await Handler.participantAccount(createRequest({params, payload}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -1177,7 +1177,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({participantCurrency, participantPosition}))
       try {
-        await Handler.account(createRequest({params, payload}))
+        await Handler.participantAccount(createRequest({params, payload}))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

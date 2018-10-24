@@ -208,7 +208,7 @@ module.exports = [
   {
     method: 'POST',
     path: '/participants/{name}/accounts',
-    handler: Handler.account,
+    handler: Handler.participantAccount,
     options: {
       id: 'participants_accounts_create',
       tags: tags,

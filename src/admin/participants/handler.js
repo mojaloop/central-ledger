@@ -87,7 +87,7 @@ const create = async function (request, h) {
   }
 }
 
-const account = async function (request, h) {
+const participantAccount = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     // start - To Do move to domain
@@ -264,7 +264,7 @@ const getAccounts = async function (request, h) {
 
 module.exports = {
   create,
-  account,
+  participantAccount,
   getAll,
   getByName,
   update,
