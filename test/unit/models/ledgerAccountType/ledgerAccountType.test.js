@@ -37,15 +37,39 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
   let sandbox
 
   const ledgerAccountType = {
-    name: 'SETTLEMENT',
+    name: 'POSITION',
     description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
     isActive: 1,
     createdDate: new Date()
   }
 
+  const participantCurrency = {
+    participantId: 1,
+    currencyId: 'USD',
+    ledgerAccountTypeId: 2,
+    isActive: 1,
+    createdBy: 'unknown',
+    createdDate: '2018-10-23 14:17:07'
+  }
+
+  let accountParams = {
+    participantId: participantCurrency.participantId,
+    currencyId: 'USD',
+    ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+    isActive: 1
+  }
+
+  const name = {
+    name: 'POSITION'
+  }
+
   ledgerAccountTypeTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     Db.ledgerAccountType = {
+      findOne: sandbox.stub(),
+      destroy: sandbox.stub()
+    }
+    Db.participantCurrency = {
       findOne: sandbox.stub(),
       destroy: sandbox.stub()
     }
@@ -57,30 +81,53 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     t.end()
   })
 
-  /* await ledgerAccountTypeTest.test('get a ledger account type', async (assert) => {
+  await ledgerAccountTypeTest.test('get a ledger account type', async (assert) => {
     try {
-      const ledgerTypeName = {name: 'SETTLEMENT'}
-      Db.ledgerAccountType.findOne.withArgs({name: ledgerTypeName.name}).returns(ledgerAccountType)
-      let type = await Model.getByName('SETTLEMENT')
-      assert.equal(JSON.stringify(type), JSON.stringify(ledgerAccountType))
+      Db.participantCurrency.findOne.withArgs(accountParams).returns(participantCurrency)
+      let result = await Model.getByName(accountParams)
+      assert.equal(JSON.stringify(result), JSON.stringify(participantCurrency))
       assert.end()
     } catch (err) {
-      assert.fail()
+      assert.fail(err)
       assert.end()
     }
-  }) */
+  })
 
-  /* await ledgerAccountTypeTest.test('catch error thrown', async (assert) => {
+  await ledgerAccountTypeTest.test('get a ledger account type throws error', async (assert) => {
+    try {
+      Db.participantCurrency.findOne.withArgs(accountParams).throws(new Error())
+      await Model.getByName(accountParams)
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error, 'Error is thrown')
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('Error is thrown on a invalid ledger account name', async (assert) => {
     try {
       Db.ledgerAccountType.findOne.throws(new Error())
-      await Model.getByName('HUB_SETTLEMENT')
+      await Model.getLedgerAccountByName(name)
       assert.fail('Error should be caught')
       assert.end()
     } catch (err) {
-      assert.pass()
+      assert.ok(err instanceof Error, 'Error is thrown')
       assert.end()
     }
-  }) */
+  })
+
+  await ledgerAccountTypeTest.test('ledger account name', async (assert) => {
+    try {
+      Db.ledgerAccountType.findOne.withArgs(name).returns(ledgerAccountType)
+      let result = await Model.getLedgerAccountByName(name.name)
+      assert.equal(JSON.stringify(result), JSON.stringify(ledgerAccountType))
+      assert.end()
+    } catch (err) {
+      assert.fail('Error is thrown' + err)
+      assert.end()
+    }
+  })
 
   await ledgerAccountTypeTest.end()
 })
