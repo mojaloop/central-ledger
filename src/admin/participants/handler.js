@@ -28,6 +28,7 @@ const Participant = require('../../domain/participant')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
+const Enum = require('../../lib/enum')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
@@ -106,8 +107,9 @@ const account = async function (request, h) {
       if (accountExists) {
         throw new Errors.ParticipantAccountExistError()
       }
+
       if (participant.participantId !== Config.HUB_OPERATOR_CODE) {
-        for (let value of Config.HUB_OPERATOR_ACCOUNTS) {
+        for (let value of Enum.HubOperatorAccounts.ACCOUNTS) {
           if (value === request.payload.type) {
             throw new Errors.AccountReservedForHubOperatorError()
           }

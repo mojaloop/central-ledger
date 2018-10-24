@@ -8,7 +8,7 @@
     "SCALE": 2
   },
   "SIDECAR": {
-    "DISABLED": false,
+    "DISABLED": true,
     "HOST": "localhost",
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,
@@ -32,7 +32,6 @@
   },
   "PARTICIPANT_INITIAL_POSTITION": 0,
   "HUB_OPERATOR": {
-    "ACCOUNTS": ["HUB_RECONCILIATION","HUB_FEE"],
     "CODE": 1
   },
   "KAFKA": {
