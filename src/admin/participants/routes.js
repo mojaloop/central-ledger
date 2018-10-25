@@ -257,9 +257,6 @@ module.exports = [
       validate: {
         params: {
           name: nameValidator
-        },
-        query: {
-          currency: currencyValidator
         }
       }
     }
