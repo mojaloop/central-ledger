@@ -33,10 +33,16 @@ const ParticipantCurrencyModel = require('../../models/participant/participantCu
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
+const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
+const LedgerAccountTypeFacade = require('../../models/participant/facade')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
+const Utility = require('../../handlers/lib/utility')
+const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
+const TransferEventType = Enum.transferEventType
+const TransferEventAction = Enum.transferEventAction
 
 const create = async (payload) => {
   try {
@@ -101,7 +107,7 @@ const update = async (name, payload) => {
 
 const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
+    const participantCurrency = await LedgerAccountTypeFacade.addNewCurrencyAndPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
     throw err
@@ -119,6 +125,8 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
 const destroyByName = async (name) => {
   try {
     let participant = await ParticipantModel.getByName(name)
+    await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
+    await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
@@ -254,16 +262,18 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
   try {
     const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
+    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
-    if (existingLimit || existingPosition) {
+    const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
+    if (existingLimit || existingPosition || existingSettlementPosition) {
       throw new Error('Participant Limit or Initial Position already set')
     }
     let limitAndInitialPosition = limitAndInitialPositionObj
     if (limitAndInitialPosition.initialPosition == null) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
-    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, limitAndInitialPosition)
+    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition)
   } catch (err) {
     throw err
   }
@@ -468,32 +478,143 @@ const getPositions = async (name, query) => {
     if (query.currency) {
       const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
       participantExists(participant)
-      const result = await PositionFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
+      const result = await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION, query.currency, Enum.LedgerAccountType.POSITION)
       let position = {}
       if (Array.isArray(result) && result.length > 0) {
         position = {
           currency: result[0].currencyId,
           value: result[0].value,
-          updatedTime: result[0].changedDate
+          changedDate: result[0].changedDate
         }
       }
       return position
     } else {
       const participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      const result = await await PositionFacade.getByNameAndCurrency(name, null, Enum.LedgerAccountType.POSITION)
+      const result = await await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION)
       let positions = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
           positions.push({
             currency: item.currencyId,
             value: item.value,
-            updatedTime: item.changedDate
+            changedDate: item.changedDate
           })
         })
       }
       return positions
     }
+  } catch (err) {
+    throw err
+  }
+}
+
+const getAccounts = async (name, query) => {
+  try {
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const result = await PositionFacade.getAllByNameAndCurrency(name, query.currency)
+    let positions = []
+    if (Array.isArray(result) && result.length > 0) {
+      result.forEach(item => {
+        positions.push({
+          id: item.participantCurrencyId,
+          ledgerAccountType: item.ledgerAccountType,
+          currency: item.currencyId,
+          value: item.value,
+          reservedValue: item.reservedValue,
+          changedDate: item.changedDate
+        })
+      })
+    }
+    return positions
+  } catch (err) {
+    throw err
+  }
+}
+
+const getLedgerAccountTypeName = async (name) => {
+  try {
+    return await LedgerAccountTypeModel.getLedgerAccountByName(name)
+  } catch (err) {
+    throw err
+  }
+}
+
+const getParticipantAccount = async (accountParams) => {
+  try {
+    return await ParticipantCurrencyModel.getByName(accountParams)
+  } catch (err) {
+    throw err
+  }
+}
+
+const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp = '') => {
+  return {
+    id: payload.transferId,
+    from: payload.payerFsp,
+    to: payload.payeeFsp,
+    type: 'application/json',
+    content: {
+      header: {},
+      payload
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: '',
+        type: 'transfer',
+        action,
+        createdAt: new Date(),
+        state
+      }
+    },
+    pp
+  }
+}
+
+const setPayerPayeeFundsInOut = (fspName, payload) => {
+  let { action } = payload
+  const actions = {
+    'recordFundsIn': {
+      payer: fspName,
+      payee: 'hub'
+    },
+    'recordFundsOutPrepare': {
+      payer: 'hub',
+      payee: fspName
+    },
+    'recordFundsOutCommit': {
+      payer: 'hub',
+      payee: fspName
+    },
+    'recordFundsOutAbort': {
+      payer: 'hub',
+      payee: fspName
+    }
+  }
+  if (!actions[action]) throw new Error('The action is not supported')
+  return Object.assign(payload, actions[action])
+}
+
+const recordFundsInOut = async (payload, params, enums) => {
+  try {
+    let { name, id, transferId } = params
+    const participant = await ParticipantModel.getByName(name)
+    const currency = payload.amount && payload.amount.currency
+    participantExists(participant)
+    const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency || null)
+    let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
+    if (!(accountMatched && accountMatched.ledgerAccountType === 'SETTLEMENT')) {
+      throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+    }
+    transferId && (payload.transferId = transferId)
+    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload))
+    messageProtocol.metadata.request = {
+      params: params,
+      enums: enums
+    }
+    return await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
   } catch (err) {
     throw err
   }
@@ -505,6 +626,7 @@ module.exports = {
   getById,
   getByName,
   participantExists,
+  getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
   getParticipantCurrencyById,
@@ -520,5 +642,8 @@ module.exports = {
   destroyParticipantLimitByNameAndCurrency,
   getLimits,
   adjustLimits,
-  getPositions
+  getPositions,
+  getAccounts,
+  getParticipantAccount,
+  recordFundsInOut
 }

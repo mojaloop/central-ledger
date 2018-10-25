@@ -71,25 +71,23 @@ const fromTransferReadModel = (t) => fromTransferAggregate({
   extensionList: t.extensionList
 })
 
-const fromSaveTransferPrepared = (t) => {
-  fromTransferAggregate({
-    transferId: t.transferRecord.transferId,
-    payeeFsp: t.payeeTransferParticipantRecord.name,
-    payerFsp: t.payerTransferParticipantRecord.name,
-    amount:
-    {
-      currency: t.transferRecord.currencyId,
-      amount: t.transferRecord.amount
-    },
-    transferState: t.transferStateChangeRecord.transferStateId,
-    completedTimestamp: t.transferStateChangeRecord.createdDate,
-    ilpPacket: t.ilpPacketRecord.value,
-    fulfilment: null,
-    condition: t.transferRecord.ilpCondition,
-    expiration: t.transferRecord.expirationDate,
-    extensionList: t.transferExtensionsRecordList
-  })
-}
+const fromSaveTransferPrepared = (t) => fromTransferAggregate({
+  transferId: t.transferRecord.transferId,
+  payeeFsp: t.payeeTransferParticipantRecord.name,
+  payerFsp: t.payerTransferParticipantRecord.name,
+  amount:
+  {
+    currency: t.transferRecord.currencyId,
+    amount: t.transferRecord.amount
+  },
+  transferState: t.transferStateChangeRecord.transferStateId,
+  completedTimestamp: t.transferStateChangeRecord.createdDate,
+  ilpPacket: t.ilpPacketRecord.value,
+  fulfilment: null,
+  condition: t.transferRecord.ilpCondition,
+  expiration: t.transferRecord.expirationDate,
+  extensionList: t.transferExtensionsRecordList
+})
 
 const fromSaveTransferExecuted = (t) => {
   return {

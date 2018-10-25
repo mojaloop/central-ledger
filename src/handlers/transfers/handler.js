@@ -47,7 +47,6 @@ const TransferState = require('../../lib/enum').TransferState
 const Enum = require('../../lib/enum')
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
-const TransferEventStatus = Enum.transferEventStatus
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
 
@@ -108,7 +107,7 @@ const prepare = async (error, messages) => {
     const payload = message.value.content.payload
 
     Logger.info('TransferService::prepare::checking for duplicates')
-    const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
+    const {existsMatching, existsNotMatching} = await TransferService.validateDuplicateHash(payload)
 
     if (existsMatching) {
       // There is a matching hash
@@ -154,7 +153,7 @@ const prepare = async (error, messages) => {
       return true
     }
 
-    let { validationPassed, reasons } = await Validator.validateByName(payload)
+    let {validationPassed, reasons} = await Validator.validateByName(payload)
     if (validationPassed) {
       Logger.info('TransferService::prepare::validationPassed')
       try {
@@ -314,22 +313,15 @@ const fulfil = async (error, messages) => {
 }
 
 /**
- * @function TransferTransferService
+ * @function getTransfer
  *
  * @async
- * @description This is the consumer callback function that gets registered to a topic. This then gets a list of message(s),
- * we will only ever use the first message in non batch processing. We then break down the message into its payload and
- * begin validating the payload. Once the payload is validated successfully it will be written to the database to
- * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
- * ABORT status
+ * @description Gets a transfer by transfer id. Gets Kafka config from default.json
  *
- * @param {error} error - error thrown if something fails within Kafka
- * @param {array} messages - a list of messages to consume for the relevant topic
- *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ * Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const transfer = async (error, messages) => {
-  Logger.info('TransferService::transfer')
+const getTransfer = async (error, messages) => {
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -341,116 +333,69 @@ const transfer = async (error, messages) => {
     } else {
       message = messages
     }
-
-    // const {metadata, from, to, content, id} = message.value
-    const { metadata } = message.value
-    const { action, state } = metadata.event
-    const status = state.status
-    Logger.info('TransferService::transfer action: ' + action)
-    Logger.info('TransferService::transfer status: ' + status)
+    Logger.info(`getTransferHandler::${message.value.metadata.event.action}`)
+    const kafkaTopic = message.topic
     let consumer
-    // Validate event - Rule: type == 'transfer' && action == 'commit'
-    if (action.toLowerCase() === TransferEventAction.PREPARE && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = message.topic
-      try {
-        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      } catch (e) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        Logger.error(e)
-        return true
-      }
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-
-      return true
-    } else if (action.toLowerCase() === TransferEventAction.COMMIT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = message.topic
-      try {
-        consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      } catch (e) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        Logger.info()
-        return true
-      }
-      if (!consumer) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        return true
-      }
-      // send notification message to Payee
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      // send notification message to Payer
-      // message.value.to = from
-      // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-
-      return true
-    } else if (action.toLowerCase() === TransferEventAction.REJECT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = message.topic
+    try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        return true
-      }
-      // send notification message to Payee
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      // send notification message to Payer
-      // message.value.to = from
-      // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-
-      return true
-    } else if (action.toLowerCase() === TransferEventAction.ABORT && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = message.topic
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        return true
-      }
-      // send notification message to Payee
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      // send notification message to Payer
-      // message.value.to = from
-      // await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-
-      return true
-    } else if (action.toLowerCase() === TransferEventAction.TIMEOUT_RESERVED && status.toLowerCase() === TransferEventStatus.SUCCESS) {
-      const kafkaTopic = message.topic
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      if (!consumer) {
-        Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        return true
-      }
-      // send notification message to Payee
-      await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Utility.ENUMS.EVENT, message.value, Utility.ENUMS.STATE.SUCCESS)
-
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-
-      return true
-    } else {
-      Logger.warn('TransferService::transfer - Unknown event...nothing to do here')
+    } catch (e) {
+      Logger.info(`No consumer found for topic ${kafkaTopic}`)
+      Logger.error(e)
       return true
     }
-  } catch (error) {
-    Logger.error(error)
-    throw error
+    if (!await Validator.validateParticipantByName(message.value.from)) {
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: FSP Id does not exist')
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      return true
+    }
+    // const metadata = message.value.metadata
+    const transferId = message.value.id
+    const transfer = await TransferService.getById(transferId)
+
+    if (!transfer) {
+      message.value.content.payload = {
+        errorInformation: {
+          errorCode: 3208,
+          errorDescription: 'Provided Transfer ID was not found on the server.'
+        }
+      }
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: Provided Transfer ID was not found on the server.')
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      return true
+    } else {
+      message.value.content.payload = transformTransfer(transfer)
+    }
+    if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+      await consumer.commitMessageSync(message)
+    }
+    // Will follow framework flow in future
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.ENUMS.STATE.SUCCESS)
+    return true
+  } catch (err) {
+    Logger.error(err)
+    throw err
+  }
+}
+
+const transformTransfer = (transfer) => {
+  if (transfer.transferState === Enum.TransferState.COMMITTED) {
+    return {
+      fulfilment: transfer.fulfilment,
+      completedTimestamp: transfer.completedTimestamp,
+      transferState: transfer.transferState,
+      extensionList: transfer.extensionList
+    }
+  } else {
+    return {
+      transferState: transfer.transferState,
+      extensionList: transfer.extensionList
+    }
   }
 }
 
@@ -472,30 +417,6 @@ const createPrepareHandler = async (participantName) => {
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
-    return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
-  }
-}
-
-/**
- * @function RegisterTransferService
- *
- * @async
- * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * createTransferService called to create the handler for each participant
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const registerTransferHandler = async () => {
-  try {
-    const transferHandler = {
-      command: transfer,
-      topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.TRANSFER),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.TRANSFER.toUpperCase())
-    }
-    transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
-    await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
   } catch (e) {
     Logger.error(e)
@@ -561,6 +482,30 @@ const registerPrepareHandlers = async (participantNames = []) => {
 }
 
 /**
+ * @function registerGetTransferHandler
+ *
+ * @async
+ * @description Registers the one handler for get a transfer by Id. Gets Kafka config from default.json
+ * Calls createHandler to register the handler against the Stream Processing API
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const registerGetTransferHandler = async () => {
+  try {
+    const getHandler = {
+      command: getTransfer,
+      topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.GET),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.GET.toUpperCase())
+    }
+    getHandler.config.rdkafkaConf['client.id'] = getHandler.topicName
+    await Kafka.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
+    return true
+  } catch (e) {
+    Logger.error(e)
+    throw e
+  }
+}
+
+/**
  * @function RegisterAllHandlers
  *
  * @async
@@ -572,7 +517,7 @@ const registerAllHandlers = async () => {
   try {
     await registerPrepareHandlers()
     await registerFulfilHandler()
-    await registerTransferHandler()
+    await registerGetTransferHandler()
     return true
   } catch (e) {
     throw e
@@ -580,11 +525,11 @@ const registerAllHandlers = async () => {
 }
 
 module.exports = {
-  registerTransferHandler,
   registerPrepareHandlers,
   registerFulfilHandler,
   registerAllHandlers,
+  registerGetTransferHandler,
+  getTransfer,
   prepare,
-  fulfil,
-  transfer
+  fulfil
 }

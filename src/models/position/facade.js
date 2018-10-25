@@ -237,7 +237,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
  * @returns {array} - Returns an array containing the details of active position(s) for the participant if successful, or throws an error if failed
  */
 
-const getByNameAndCurrency = async (name, currencyId = null, ledgerAccountTypeId) => {
+const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null) => {
   try {
     return Db.participantPosition.query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
@@ -261,8 +261,35 @@ const getByNameAndCurrency = async (name, currencyId = null, ledgerAccountTypeId
   }
 }
 
+const getAllByNameAndCurrency = async (name, currencyId = null) => {
+  try {
+    return Db.participantPosition.query(builder => {
+      return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
+        .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'pc.ledgerAccountTypeId')
+        .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')
+        .where({
+          'p.name': name,
+          'p.isActive': 1,
+          'pc.isActive': 1
+        })
+        .where(q => {
+          if (currencyId != null) {
+            return q.where('pc.currencyId', '=', currencyId)
+          }
+        })
+        .select('participantPosition.*',
+          'lap.name AS ledgerAccountType',
+          'pc.currencyId'
+        )
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
   changeParticipantPositionTransaction,
   prepareChangeParticipantPositionTransaction,
-  getByNameAndCurrency
+  getByNameAndCurrency,
+  getAllByNameAndCurrency
 }

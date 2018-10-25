@@ -47,6 +47,12 @@ Test('Participant facade', async (facadeTest) => {
     Db.participantLimit = {
       query: sandbox.stub()
     }
+    Db.participantCurrency = {
+      query: sandbox.stub()
+    }
+    Db.participantPosition = {
+      query: sandbox.stub()
+    }
     t.end()
   })
 
@@ -62,7 +68,8 @@ Test('Participant facade', async (facadeTest) => {
     isActive: 1,
     createdDate: new Date(),
     createdBy: 'unknown',
-    participantCurrencyId: 1
+    participantCurrencyId: 1,
+    settlementAccountId: 2
   }
 
   const endpoints = [
@@ -419,6 +426,9 @@ Test('Participant facade', async (facadeTest) => {
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
 
+      let insertStub = sandbox.stub()
+      insertStub.returns([1])
+
       knexStub.returns({
         where: sandbox.stub().returns({
           select: sandbox.stub().returns({
@@ -426,12 +436,18 @@ Test('Participant facade', async (facadeTest) => {
           })
         }),
         transacting: sandbox.stub().returns({
-          insert: sandbox.stub().returns([1])
+          insert: insertStub
         })
       })
       let participantPosition = {
         participantCurrencyId: 1,
         value: limitPostionObj.initialPosition,
+        reservedValue: 0,
+        participantPositionId: 1
+      }
+      let settlementPosition = {
+        participantCurrencyId: 2,
+        value: 0,
         reservedValue: 0,
         participantPositionId: 1
       }
@@ -444,11 +460,11 @@ Test('Participant facade', async (facadeTest) => {
         participantLimitId: 1
       }
 
-      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPostionObj)
+      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, participant.settlementAccountId, limitPostionObj)
       assert.pass('completed successfully')
       assert.ok(knexStub.withArgs('participantLimit').calledOnce, 'knex called with participantLimit once')
-      assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
-      assert.deepEqual(result, { participantLimit, participantPosition })
+      assert.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition once')
+      assert.deepEqual(result, { participantLimit, participantPosition, settlementPosition })
 
       assert.end()
     } catch (err) {
@@ -559,6 +575,60 @@ Test('Participant facade', async (facadeTest) => {
       }
 
       const result = await Model.adjustLimits(participant.participantCurrencyId, limit)
+      assert.pass('completed successfully')
+      assert.ok(knexStub.withArgs('participantLimit').calledThrice, 'knex called with participantLimit thrice')
+      assert.ok(knexStub.withArgs('participantLimitType').calledOnce, 'knex called with participantLimitType once')
+      assert.deepEqual(result, { participantLimit })
+
+      assert.end()
+    } catch (err) {
+      Logger.error(`adjustLimits failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('adjustLimits with trx', async (assert) => {
+    try {
+      const limit = {
+        type: 'NET_DEBIT_CAP',
+        value: 10000000
+      }
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        where: sandbox.stub().returns({
+          select: sandbox.stub().returns({
+            first: sandbox.stub().returns({ participantLimitTypeId: 1 })
+          })
+        }),
+        transacting: sandbox.stub().returns({
+          forUpdate: sandbox.stub().returns({
+            select: sandbox.stub().returns({
+              where: sandbox.stub().returns([{ participantLimitId: 1 }])
+            })
+          }),
+          update: sandbox.stub().returns({
+            where: sandbox.stub().returns([1])
+          }),
+          insert: sandbox.stub().returns([1])
+        })
+      })
+      let participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: limit.value,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1
+      }
+
+      const result = await Model.adjustLimits(participant.participantCurrencyId, limit, true)
       assert.pass('completed successfully')
       assert.ok(knexStub.withArgs('participantLimit').calledThrice, 'knex called with participantLimit thrice')
       assert.ok(knexStub.withArgs('participantLimitType').calledOnce, 'knex called with participantLimitType once')
@@ -823,7 +893,7 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 1)
+      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -848,6 +918,242 @@ Test('Participant facade', async (facadeTest) => {
       Logger.error(`getParticipantLimitsByParticipantId failed with error - ${err}`)
       assert.pass('Error thrown')
       assert.end()
+    }
+  })
+
+  await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit', async (assert) => {
+    try {
+      let participantLimit = {
+        participantId: 1,
+        currencyId: 1,
+        participantLimitTypeId: 1,
+        value: 1000000
+      }
+      let ledgerAccountTypeId = 1
+      let participantLimitTypeId = 1
+
+      let builderStub = sandbox.stub()
+      // let whereStub = { where: sandbox.stub().returns() }
+
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        innerJoin: sandbox.stub().returns({
+          innerJoin: sandbox.stub().returns({
+            select: sandbox.stub().returns({
+              first: sandbox.stub().returns(participantLimit)
+            })
+          })
+        })
+      })
+
+      var result = await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
+      assert.deepEqual(result, participantLimit)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit should throw error', async (assert) => {
+    try {
+      let builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.innerJoin = sandbox.stub()
+      let ledgerAccountTypeId = 1
+      let participantLimitTypeId = 1
+
+      builderStub.innerJoin.throws(new Error())
+      await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
+      assert.fail(' should throw')
+      assert.end()
+      assert.end()
+    } catch (err) {
+      Logger.error(`getParticipantLimitByParticipantCurrencyLimit failed with error - ${err}`)
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+  await facadeTest.test('addNewCurrencyAndPosition.', async (assert) => {
+    try {
+      let participantPosition = {
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        participantPositionId: 1
+      }
+
+      let participantCurrency = {
+        participantCurrencyId: 1,
+        participantId: 1,
+        currencyId: 1,
+        ledgerAccountTypeId: 1,
+        createdBy: 'unknown'
+      }
+
+      let participant = {
+        participantId: 1,
+        currencyId: 1,
+        ledgerAccountTypeId: 1
+      }
+
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      let transactingStub = sandbox.stub()
+      knexStub.returns({
+        transacting: transactingStub.returns({
+          insert: sandbox.stub().returns([1])
+        })
+      })
+      const result = await Model.addNewCurrencyAndPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
+      assert.pass('completed successfully')
+      assert.ok(knexStub.withArgs('participantCurrency').calledOnce, 'knex called with participantCurrency once')
+      assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
+      assert.deepEqual(result, { participantCurrency, participantPosition })
+
+      assert.end()
+    } catch (err) {
+      console.log(err)
+      Logger.error(`addNewCurrencyAndPosition failed with error - ${err}`)
+      assert.fail('Error thrown')
+      assert.end()
+    }
+  })
+  await facadeTest.test('addNewCurrencyAndPosition should throw an error.', async (assert) => {
+    try {
+      let participantPosition = {
+        participantCurrencyId: 1,
+        value: 0,
+        reservedValue: 0,
+        participantPositionId: 1
+      }
+
+      let participantCurrency = {
+        participantCurrencyId: 1,
+        participantId: 1,
+        currencyId: 1,
+        ledgerAccountTypeId: 1,
+        createdBy: 'unknown'
+      }
+
+      let participant = {
+        participantId: 1,
+        currencyId: 1,
+        ledgerAccountTypeId: 1
+      }
+
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      knexStub.throws(new Error())
+
+      const result = await Model.addNewCurrencyAndPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
+      assert.pass('completed successfully')
+      assert.ok(knexStub.withArgs('participantCurrency').calledOnce, 'knex called with participantCurrency once')
+      assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
+      assert.deepEqual(result, { participantCurrency, participantPosition })
+
+      assert.end()
+    } catch (err) {
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+  await facadeTest.test('getAllAccountsByNameAndCurrency should return the participant accounts for given currency', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      const currencyId = 'USD'
+      let builderStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantCurrency.query.callsArgWith(0, builderStub)
+      const participantCurrency = {
+        participantCurrancyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            where: sandbox.stub().callsArgWith(0, whereStub).returns({
+              select: sandbox.stub().returns(participantCurrency)
+            })
+          })
+        })
+      })
+
+      let found = await Model.getAllAccountsByNameAndCurrency(participantName, currencyId)
+      test.deepEqual(found, participantCurrency, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getAllAccountsByNameAndCurrency should return the participant accounts for any', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      let builderStub = sandbox.stub()
+
+      builderStub.innerJoin = sandbox.stub()
+      let whereStub = { where: sandbox.stub().returns() }
+      Db.participantCurrency.query.callsArgWith(0, builderStub)
+      const participantCurrency = {
+        participantCurrancyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }
+      builderStub.innerJoin.returns({
+        innerJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns({
+            where: sandbox.stub().callsArgWith(0, whereStub).returns({
+              select: sandbox.stub().returns(participantCurrency)
+            })
+          })
+        })
+      })
+
+      let found = await Model.getAllAccountsByNameAndCurrency(participantName)
+      test.deepEqual(found, participantCurrency, 'retrive the record')
+      test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllByNameAndCurrency failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getAllAccountsByNameAndCurrency should throw error', async (test) => {
+    try {
+      const participantName = 'dfsp1'
+
+      Db.participantCurrency.query.throws(new Error())
+
+      await Model.getAllAccountsByNameAndCurrency(participantName)
+      test.fail(' should throw')
+      test.end()
+      test.end()
+    } catch (err) {
+      Logger.error(`Model.getAllAccountsByNameAndCurrency failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
     }
   })
 

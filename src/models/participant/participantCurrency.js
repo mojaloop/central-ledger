@@ -50,7 +50,11 @@ exports.getById = async (id) => {
 
 exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
   try {
-    return await Db.participantCurrency.find({participantId: id, ledgerAccountTypeId}, { order: 'currencyId asc' })
+    let params = {participantId: id}
+    if (ledgerAccountTypeId) {
+      params.ledgerAccountTypeId = ledgerAccountTypeId
+    }
+    return await Db.participantCurrency.find(params, { order: 'currencyId asc' })
   } catch (err) {
     throw new Error(err.message)
   }
@@ -59,6 +63,15 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
 exports.destroyByParticipantId = async (id) => {
   try {
     return await Db.participantCurrency.destroy({participantId: id})
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.getByName = async (accountParams) => {
+  try {
+    const participantCurrency = await Db.participantCurrency.findOne(accountParams)
+    return participantCurrency
   } catch (err) {
     throw new Error(err.message)
   }

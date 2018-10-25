@@ -7,8 +7,6 @@ const P = require('bluebird')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../src/lib/config')
 const Routes = require('../../../src/admin/routes')
-// const HandlerRoutes = require('../../../src/handlers/plugin')
-const Auth = require('../../../src/admin/auth')
 const Setup = require('../../../src/shared/setup')
 
 Test('Admin index', indexTest => {
@@ -39,7 +37,7 @@ Test('Admin index', indexTest => {
 
       require('../../../src/admin/index').then(() => {
         // test.ok(Setup.initialize.calledWith({ service: 'admin', port: Config.ADMIN_PORT, modules: [Auth, Routes, HandlerRoutes] }))
-        test.ok(Setup.initialize.calledWith({ service: 'admin', port: Config.ADMIN_PORT, modules: [Auth, Routes] }))
+        test.ok(Setup.initialize.calledWith({ service: 'admin', port: Config.ADMIN_PORT, modules: [Routes] }))
         test.end()
       })
     })
