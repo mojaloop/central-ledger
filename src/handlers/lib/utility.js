@@ -399,7 +399,7 @@ const createParticipantTopicConf = (participantName, functionality, action, part
  *
  * @returns {object} - Returns newly created general topicConfig
  */
-const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey = 0) => {
+const createGeneralTopicConf = (functionality, action, partition = null, opaqueKey = 0) => {
   return {
     topicName: transformGeneralTopicName(functionality, action),
     key: Uuid(),
