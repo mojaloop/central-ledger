@@ -67,3 +67,12 @@ exports.destroyByParticipantId = async (id) => {
     throw new Error(err.message)
   }
 }
+
+exports.getByName = async (accountParams) => {
+  try {
+    const participantCurrency = await Db.participantCurrency.findOne(accountParams)
+    return participantCurrency
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}

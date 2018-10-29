@@ -227,5 +227,8 @@ module.exports = {
   expire,
   validateDuplicateHash,
   logTransferError,
-  getTransferStateChange
+  getTransferStateChange,
+  reconciliationTransferPrepare: TransferFacade.reconciliationTransferPrepare,
+  reconciliationTransferCommit: TransferFacade.reconciliationTransferCommit,
+  reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort
 }

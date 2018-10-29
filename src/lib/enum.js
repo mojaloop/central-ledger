@@ -1,3 +1,33 @@
+/*****
+ * @file This registers all handlers for the central-ledger API
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <lazola.lucas@modusbox.com>
+
+ --------------
+ ******/
+
 'use strict'
 
 const Db = require('../db')
@@ -96,6 +126,10 @@ const all = async function () {
 }
 
 // TODO: To be replaced throughout code with the above
+const HubOperatorAccounts = {
+  ACCOUNTS: ['HUB_RECONCILIATION', 'HUB_FEE']
+}
+
 const EnpointType = {
   ALARM_NOTIFICATION_URL: 1,
   ALARM_NOTIFICATION_TOPIC: 2,
@@ -106,7 +140,8 @@ const EnpointType = {
 const LedgerAccountType = {
   POSITION: 1,
   SETTLEMENT: 2,
-  HUB_SETTLEMENT: 3
+  HUB_RECONCILIATION: 3,
+  HUB_FEE: 4
 }
 const LedgerEntryType = {
   PRINCIPLE_VALUE: 1,
@@ -151,6 +186,7 @@ const transferEventType = {
   TRANSFER: 'transfer',
   FULFIL: 'fulfil',
   NOTIFICATION: 'notification',
+  ADMIN: 'admin',
   GET: 'get'
 }
 const transferEventAction = {
@@ -165,6 +201,12 @@ const transferEventAction = {
   FAIL: 'fail',
   EVENT: 'event',
   FULFIL: 'fulfil'
+}
+const adminTransferAction = {
+  RECORD_FUNDS_IN: 'recordFundsIn',
+  RECORD_FUNDS_OUT_PREPARE: 'recordFundsOutPrepare',
+  RECORD_FUNDS_OUT_COMMIT: 'recordFundsOutCommit',
+  RECORD_FUNDS_OUT_ABORT: 'recordFundsOutAbort'
 }
 const rejectionType = {
   EXPIRED: 'expired',
@@ -236,6 +278,7 @@ module.exports = {
   transferStateEnum,
   all,
 
+  HubOperatorAccounts,
   EnpointType,
   LedgerAccountType,
   LedgerEntryType,
@@ -245,6 +288,7 @@ module.exports = {
 
   transferEventType,
   transferEventAction,
+  adminTransferAction,
   rejectionType,
   transferEventStatus,
   headers,

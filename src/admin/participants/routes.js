@@ -6,7 +6,7 @@ const Joi = require('joi')
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
 // const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
-const currencyValidator = Joi.string().allow([
+const currencyValidator = Joi.string().valid([
   'ALL', 'AFN', 'ARS', 'AWG', 'AUD', 'AZN',
   'BSD', 'BBD', 'BYN', 'BZD', 'BMD', 'BOB', 'BAM', 'BWP', 'BGN', 'BRL', 'BND',
   'KHR', 'CAD', 'KYD', 'CLP', 'CNY', 'COP', 'CRC', 'HRK', 'CUP', 'CZK',
@@ -206,6 +206,29 @@ module.exports = [
     }
   },
   {
+    method: 'POST',
+    path: '/participants/{name}/accounts',
+    handler: Handler.createHubAccount,
+    options: {
+      id: 'hub_accounts_create',
+      tags: tags,
+      description: 'Create hub accounts',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          currency: Joi.string().required().description('Account currency'), // currencyValidator,
+          type: Joi.string().required().description('Account type')  // Needs a validator here
+        },
+        params: {
+          name: Joi.string().required().description('Participant name') // nameValidator
+        }
+      }
+    }
+  },
+  {
     method: 'GET',
     path: '/participants/{name}/positions',
     handler: Handler.getPositions,
@@ -234,9 +257,59 @@ module.exports = [
       validate: {
         params: {
           name: nameValidator
+        }
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/accounts/{id}',
+    handler: Handler.recordFunds,
+    options: {
+      id: 'post_participants_accounts_funds',
+      tags: tags,
+      description: 'Record Funds In or Out of participant account',
+      validate: {
+        payload: {
+          transferId: Joi.string().guid().required(),
+          externalReference: Joi.string().required(),
+          action: Joi.string().required().valid([ 'recordFundsOutPrepare', 'recordFundsIn' ]).label('action is missing or not supported'),
+          reason: Joi.string().required(),
+          amount: Joi.object({
+            amount: Joi.number().positive().precision(4).required(),
+            currency: currencyValidator
+          }).required().label('No amount provided'),
+          extensionList: Joi.object({
+            extension: Joi.array().items({
+              key: Joi.string(),
+              value: Joi.string()
+            })
+          })
         },
-        query: {
-          currency: currencyValidator
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive()
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/participants/{name}/accounts/{id}/transfers/{transferId}',
+    handler: Handler.recordFunds,
+    options: {
+      id: 'put_participants_accounts_funds',
+      tags: tags,
+      description: 'Record Funds In or Out of participant account',
+      validate: {
+        payload: {
+          action: Joi.string().valid([ 'recordFundsOutCommit', 'recordFundsOutAbort' ]).label('action is missing or not supported'),
+          reason: Joi.string().required()
+        },
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive(),
+          transferId: Joi.string().guid().required()
         }
       }
     }
