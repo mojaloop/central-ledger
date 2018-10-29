@@ -31,7 +31,7 @@ const currencyValidator = Joi.string().valid([
   'VEF', 'VND',
   'YER',
   'ZWD'
-]).description('Currency code of the participant').required()
+]).description('Currency code of the participant')
 
 module.exports = [
   {
@@ -208,11 +208,11 @@ module.exports = [
   {
     method: 'POST',
     path: '/participants/{name}/accounts',
-    handler: Handler.participantAccount,
+    handler: Handler.createHubAccount,
     options: {
-      id: 'participants_accounts_create',
+      id: 'hub_accounts_create',
       tags: tags,
-      description: 'Create new Participant and Hub operator accounts',
+      description: 'Create hub accounts',
       payload: {
         allow: ['application/json'],
         failAction: 'error'
