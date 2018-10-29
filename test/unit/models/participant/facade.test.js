@@ -977,7 +977,7 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
-  await facadeTest.test('addNewCurrencyAndPosition.', async (assert) => {
+  await facadeTest.test('addHubAccountAndInitPosition', async (assert) => {
     try {
       let participantPosition = {
         participantCurrencyId: 1,
@@ -1012,7 +1012,7 @@ Test('Participant facade', async (facadeTest) => {
           insert: sandbox.stub().returns([1])
         })
       })
-      const result = await Model.addNewCurrencyAndPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
+      const result = await Model.addHubAccountAndInitPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
       assert.pass('completed successfully')
       assert.ok(knexStub.withArgs('participantCurrency').calledOnce, 'knex called with participantCurrency once')
       assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
@@ -1021,7 +1021,7 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     } catch (err) {
       console.log(err)
-      Logger.error(`addNewCurrencyAndPosition failed with error - ${err}`)
+      Logger.error(`addHubAccountAndInitPosition failed with error - ${err}`)
       assert.fail('Error thrown')
       assert.end()
     }

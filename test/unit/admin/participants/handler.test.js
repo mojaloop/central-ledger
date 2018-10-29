@@ -865,7 +865,7 @@ Test('Participant', participantHandlerTest => {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
       const reply = {
         response: (response) => {
           return {
@@ -877,7 +877,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      await Handler.participantAccount(createRequest({ params, payload }), reply)
+      await Handler.createHubAccount(createRequest({ params, payload }), reply)
     })
 
     await handlerTest.test('recordFundsInOut should be called once with the provided params and payload', async function (test) {
@@ -960,9 +960,9 @@ Test('Participant', participantHandlerTest => {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(undefined))
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
       try {
-        await Handler.participantAccount(createRequest({ params, payload }))
+        await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -1020,9 +1020,9 @@ Test('Participant', participantHandlerTest => {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(participantCurrency))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
       try {
-        await Handler.participantAccount(createRequest({ params, payload }))
+        await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -1064,9 +1064,9 @@ Test('Participant', participantHandlerTest => {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve(undefined))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve(undefined))
       try {
-        await Handler.participantAccount(createRequest({ params, payload }))
+        await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -1123,9 +1123,9 @@ Test('Participant', participantHandlerTest => {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
       Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
       try {
-        await Handler.participantAccount(createRequest({ params, payload }))
+        await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

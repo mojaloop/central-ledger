@@ -456,7 +456,7 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
   }
 }
 
-const addNewCurrencyAndPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
+const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
@@ -516,7 +516,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
 }
 
 module.exports = {
-  addNewCurrencyAndPosition,
+  addHubAccountAndInitPosition,
   getByNameAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
   getEndpoint,
