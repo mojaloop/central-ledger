@@ -87,7 +87,7 @@ const create = async function (request, h) {
   }
 }
 
-const participantAccount = async function (request, h) {
+const createHubAccount = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     // start - To Do move to domain
@@ -115,7 +115,7 @@ const participantAccount = async function (request, h) {
           }
         }
       }
-      const newCurrencyAccount = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+      const newCurrencyAccount = await Participant.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
       if (!newCurrencyAccount) {
         throw new Errors.ParticipantAccountCreateError()
       }
@@ -275,7 +275,7 @@ const recordFunds = async function (request, h) {
 
 module.exports = {
   create,
-  participantAccount,
+  createHubAccount,
   getAll,
   getByName,
   update,

@@ -54,6 +54,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--get', 'Start the Transfer Get Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
   .option('--timeout', 'Start the Timeout Handler')
+  .option('--admin', 'Start the Admin Handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
@@ -133,6 +134,15 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       }
       handlerList.push(handler)
     }
+    if (args.admin) {
+      Logger.debug(`CLI: Executing --admin`)
+      let handler = {
+        type: 'admin',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+
     module.exports = Setup.initialize({
       service: 'handler',
       port: Config.PORT,
