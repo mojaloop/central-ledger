@@ -140,7 +140,9 @@ const createHubAccount = async function (request, h) {
 
 const getAll = async function (request, h) {
   const results = await Participant.getAll()
-  const result = results.map(entityItem)
+  const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+  const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+  const result = results.map(record => entityItem(record, ledgerAccountIds))
   return result
 }
 
@@ -156,7 +158,9 @@ const update = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     const updatedEntity = await Participant.update(request.params.name, request.payload)
-    return await entityItem(updatedEntity)
+    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
     throw Boom.badRequest()
   }

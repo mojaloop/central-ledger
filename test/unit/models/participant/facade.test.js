@@ -990,6 +990,7 @@ Test('Participant facade', async (facadeTest) => {
         participantCurrencyId: 1,
         participantId: 1,
         currencyId: 1,
+        isActive: 1,
         ledgerAccountTypeId: 1,
         createdBy: 'unknown'
       }
@@ -1016,6 +1017,7 @@ Test('Participant facade', async (facadeTest) => {
       assert.pass('completed successfully')
       assert.ok(knexStub.withArgs('participantCurrency').calledOnce, 'knex called with participantCurrency once')
       assert.ok(knexStub.withArgs('participantPosition').calledOnce, 'knex called with participantPosition once')
+      delete result.participantCurrency.createdDate
       assert.deepEqual(result, { participantCurrency, participantPosition })
 
       assert.end()
