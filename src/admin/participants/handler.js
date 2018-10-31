@@ -32,9 +32,18 @@ const Enum = require('../../lib/enum')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
-const entityItem = ({name, createdDate, isActive, currencyList}) => {
+const entityItem = ({name, createdDate, isActive, currencyList}, ledgerAccountIds) => {
   const link = UrlParser.toParticipantUri(name)
-  const currencies = currencyList.map(currencyEntityItem)
+  const accounts = currencyList.map((currentValue) => {
+    return {
+      id: currentValue.participantCurrencyId,
+      ledgerAccountType: ledgerAccountIds[currentValue.ledgerAccountTypeId],
+      currency: currentValue.currencyId,
+      isActive: currentValue.isActive,
+      createdDate: new Date(currentValue.createdDate),
+      createdBy: currentValue.createdBy
+    }
+  })
   return {
     name,
     id: link,
@@ -43,15 +52,7 @@ const entityItem = ({name, createdDate, isActive, currencyList}) => {
     links: {
       self: link
     },
-    currencies
-  }
-}
-
-const currencyEntityItem = ({currencyId, isActive, ledgerAccountTypeId}) => {
-  return {
-    currency: currencyId,
-    ledgerAccountTypeId,
-    isActive
+    accounts
   }
 }
 
@@ -65,6 +66,10 @@ const handleMissingRecord = (entity) => {
 const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
+    const hubReconciliationAccountExists = await Participant.hubReconciliationAccountExists(request.payload.currency)
+    if (!hubReconciliationAccountExists) {
+      throw new Errors.HubReconciliationAccountNotFound()
+    }
     let participant = await Participant.getByName(request.payload.name)
     if (participant) {
       const currencyExists = participant.currencyList.find(currency => {
@@ -77,11 +82,12 @@ const create = async function (request, h) {
       const participantId = await Participant.create(request.payload)
       participant = await Participant.getById(participantId)
     }
-    let ledgerAccountTypeEnum = await request.server.methods.enums('ledgerAccountType')
-    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypeEnum.POSITION)
-    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypeEnum.SETTLEMENT)
+    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION)
+    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT)
     participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId1), await Participant.getParticipantCurrencyById(participantCurrencyId2)]
-    return h.response(entityItem(participant)).code(201)
+    return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
   }
@@ -124,7 +130,9 @@ const createHubAccount = async function (request, h) {
       throw new Errors.ParticipantNotFoundError()
     }
     // end here : move to domain
-    return h.response(entityItem(participant)).code(201)
+    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
   }
@@ -139,7 +147,9 @@ const getAll = async function (request, h) {
 const getByName = async function (request, h) {
   const entity = await Participant.getByName(request.params.name)
   handleMissingRecord(entity)
-  return entityItem(entity)
+  const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+  const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+  return entityItem(entity, ledgerAccountIds)
 }
 
 const update = async function (request, h) {

@@ -3,6 +3,7 @@
 const SharedErrors = require('@mojaloop/central-services-shared')
 const AlreadyRolledBackError = require('./already-rolled-back')
 const ExpiredTransferError = require('./expired-transfer-error')
+const HubReconciliationAccountNotFound = require('./hubReconciliationAccountNotFound')
 const InvalidBodyError = require('./invalid-body')
 const InvalidModificationError = require('./invalid-modification')
 const MissingFulfilmentError = require('./missing-fulfilment')
@@ -23,6 +24,7 @@ const ParticipantAccountCreateError = require('./ParticipantAccountCreate')
 module.exports = {
   AlreadyRolledBackError,
   ExpiredTransferError,
+  HubReconciliationAccountNotFound,
   InvalidBodyError,
   InvalidModificationError,
   LedgerAccountTypeNotFoundError,

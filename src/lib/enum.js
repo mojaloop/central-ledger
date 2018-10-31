@@ -125,6 +125,14 @@ const all = async function () {
   }
 }
 
+const transpose = function (obj) {
+  let transposed = new Map()
+  for (let prop in obj) {
+    transposed[obj[prop]] = prop
+  }
+  return transposed
+}
+
 // TODO: To be replaced throughout code with the above
 const HubOperatorAccounts = {
   ACCOUNTS: ['HUB_RECONCILIATION', 'HUB_FEE']
@@ -277,6 +285,7 @@ module.exports = {
   transferState,
   transferStateEnum,
   all,
+  transpose,
 
   HubOperatorAccounts,
   EnpointType,
