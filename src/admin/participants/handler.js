@@ -115,11 +115,11 @@ const createHubAccount = async function (request, h) {
       }
 
       if (participant.participantId !== Config.HUB_OPERATOR_CODE) {
-        for (let value of Enum.HubOperatorAccounts.ACCOUNTS) {
-          if (value === request.payload.type) {
-            throw new Errors.AccountReservedForHubOperatorError()
-          }
-        }
+        throw new Errors.EndpointReservedForHubOperatorAccountsError()
+      }
+      const isPermittedHubAccountType = Enum.HubOperatorAccounts.indexOf(request.payload.type) >= 0
+      if (!isPermittedHubAccountType) {
+        throw new Errors.HubOperatorAccountTypeError()
       }
       const newCurrencyAccount = await Participant.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
       if (!newCurrencyAccount) {

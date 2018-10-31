@@ -133,10 +133,7 @@ const transpose = function (obj) {
   return transposed
 }
 
-// TODO: To be replaced throughout code with the above
-const HubOperatorAccounts = {
-  ACCOUNTS: ['HUB_RECONCILIATION', 'HUB_FEE']
-}
+const HubOperatorAccounts = ['HUB_RECONCILIATION', 'HUB_MULTILATERAL_SETTLEMENT', 'HUB_FEE']
 
 const EnpointType = {
   ALARM_NOTIFICATION_URL: 1,
@@ -149,7 +146,8 @@ const LedgerAccountType = {
   POSITION: 1,
   SETTLEMENT: 2,
   HUB_RECONCILIATION: 3,
-  HUB_FEE: 4
+  HUB_MULTILATERAL_SETTLEMENT: 4,
+  HUB_FEE: 5
 }
 const LedgerEntryType = {
   PRINCIPLE_VALUE: 1,
