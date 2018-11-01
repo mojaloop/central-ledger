@@ -5,7 +5,7 @@ const BaseError = Shared.BaseError
 const ErrorCategory = Shared.ErrorCategory
 
 class ParticipantAccountCreateError extends BaseError {
-  constructor (message = 'Participant account and Position create have failed') {
+  constructor (message = 'Participant account and Position create have failed.') {
     super(ErrorCategory.UNPROCESSABLE, message)
   }
 }

@@ -213,6 +213,73 @@ Test('Participant', participantHandlerTest => {
       await Handler.create(createRequest({ payload }), reply)
     })
 
+    handlerTest.test('create should find the participant and create new account', async function (test) {
+      const payload = {
+        name: 'fsp1',
+        currency: 'USD'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        currencyList: []
+      }
+
+      const participantCurrencyId1 = 1
+      const participantCurrencyId2 = 2
+      const currencyList1 = { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
+      const currencyList2 = { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
+
+      Participant.hubReconciliationAccountExists.withArgs(participant.currency).returns(P.resolve(true))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participantCurrencyId1))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(P.resolve(participantCurrencyId2))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(P.resolve(currencyList1))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(P.resolve(currencyList2))
+      const reply = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.deepEqual(response, participantResults[0], 'The results match')
+              test.equal(statusCode, 201)
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.create(createRequest({ payload }), reply)
+    })
+
+    handlerTest.test('create should fail if participant and account in specified currency exist', async function (test) {
+      const payload = {
+        name: 'fsp1',
+        currency: 'USD'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        currencyList: [
+          { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
+        ]
+      }
+
+      Participant.hubReconciliationAccountExists.withArgs(participant.currency).returns(P.resolve(true))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      try {
+        await Handler.create(createRequest({ payload }))
+        test.fail()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Participant currency has already been registered')
+        test.end()
+      }
+    })
+
     handlerTest.test('create should fail if the participant exists', async function (test) {
       const payload = {
         name: 'fsp1',
@@ -846,6 +913,7 @@ Test('Participant', participantHandlerTest => {
         test.end()
       }
     })
+
     handlerTest.test('create a hub account', async function (test) {
       const payload = {
         currency: 'ZAR',
@@ -910,6 +978,95 @@ Test('Participant', participantHandlerTest => {
       await Handler.createHubAccount(createRequest({ params, payload }), reply)
     })
 
+    handlerTest.test('fail if hub account in currency already exists', async function (test) {
+      const payload = {
+        currency: 'ZAR',
+        type: 'HUB_FEE'
+      }
+      const params = {
+        name: 'Hub'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'Hub',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: []
+      }
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 5,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z'
+      }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      Participant.getByName.withArgs('Hub').returns(P.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(true))
+
+      try {
+        await Handler.createHubAccount(createRequest({ params, payload }))
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.equal(err.message, 'Participant account already exists.')
+        test.end()
+      }
+    })
+
+    handlerTest.test('fail if create hub account fails', async function (test) {
+      const payload = {
+        currency: 'ZAR',
+        type: 'HUB_FEE'
+      }
+      const params = {
+        name: 'Hub'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'Hub',
+        description: '',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        createdBy: 'unknown',
+        currencyList: []
+      }
+      const ledgerAccountType = {
+        ledgerAccountTypeId: 5,
+        name: 'HUB_FEE',
+        description: 'An account to which fees will be charged or collected',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z'
+      }
+      const accountParams = {
+        participantId: participant.participantId,
+        currencyId: payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+
+      Participant.getByName.withArgs(params.name).returns(P.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(null))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve(null))
+
+      try {
+        await Handler.createHubAccount(createRequest({ params, payload }))
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.equal(err.message, 'Participant account and Position create have failed.')
+        test.end()
+      }
+    })
+
     await handlerTest.test('recordFundsInOut should be called once with the provided params and payload', async function (test) {
       const payload = {
         action: 'recordFundsIn',
@@ -938,6 +1095,37 @@ Test('Participant', participantHandlerTest => {
         test.end()
       } catch (e) {
         test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    await handlerTest.test('recordFundsInOut should throw if error occurs', async function (test) {
+      const payload = {
+        action: 'recordFundsIn',
+        reason: 'ab'
+      }
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+
+      const h = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 202)
+            }
+          }
+        }
+      }
+      Participant.recordFundsInOut.throws(new Error('recordFundsInOut error'))
+      try {
+        await Handler.recordFunds(createRequest({ payload, params }), h)
+        test.fail()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'recordFundsInOut error')
         test.end()
       }
     })
