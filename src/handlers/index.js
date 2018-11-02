@@ -38,6 +38,7 @@ const Config = require('../lib/config')
 const Setup = require('../shared/setup')
 const PJson = require('../../package.json')
 const Plugin = require('./api/plugin')
+const MetricPlugin = require('../api/metrics/plugin')
 const { Command } = require('commander')
 
 const Program = new Command()
@@ -136,7 +137,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     module.exports = Setup.initialize({
       service: 'handler',
       port: Config.PORT,
-      modules: [Plugin],
+      modules: [Plugin, MetricPlugin],
       runMigrations: false,
       handlers: handlerList,
       runHandlers: true
