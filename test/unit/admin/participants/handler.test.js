@@ -1017,7 +1017,7 @@ Test('Participant', participantHandlerTest => {
         await Handler.createHubAccount(createRequest({ params, payload }))
       } catch (err) {
         test.ok(err instanceof Error)
-        test.equal(err.message, 'Participant account already exists.')
+        test.equal(err.message, 'Hub account has already been registered.')
         test.end()
       }
     })

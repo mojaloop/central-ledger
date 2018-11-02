@@ -19,7 +19,7 @@ const ParticipantNotFoundError = require('./participant_not_found')
 const LedgerAccountTypeNotFoundError = require('./ledgerAcoountTypeNotFound')
 const EndpointReservedForHubOperatorAccountsError = require('./endpointReservedForHubOperatorAccountsError')
 const HubOperatorAccountTypeError = require('./hubOperatorAccountTypeError')
-const ParticipantAccountExistsError = require('./ParticipantAccountExists')
+const HubAccountExistsError = require('./HubAccountExists')
 const ParticipantAccountCreateError = require('./ParticipantAccountCreate')
 
 module.exports = {
@@ -42,6 +42,6 @@ module.exports = {
   EndpointReservedForHubOperatorAccountsError,
   HubOperatorAccountTypeError,
   ParticipantAccountCreateError,
-  ParticipantAccountExistsError,
+  HubAccountExistsError,
   NotFoundError: SharedErrors.NotFoundError
 }
