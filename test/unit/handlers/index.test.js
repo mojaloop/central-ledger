@@ -6,7 +6,7 @@ const P = require('bluebird')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
-
+const MetricPlugin = require('../../../src/api/metrics/plugin')
 Test('cli', async (cliTest) => {
   cliTest.beforeEach(test => {
     console.log('start')
@@ -108,7 +108,7 @@ Test('cli', async (cliTest) => {
       var initOptions = {
         service: 'handler',
         port: Config.PORT,
-        modules: [Plugin],
+        modules: [Plugin, MetricPlugin],
         runMigrations: false,
         handlers: modulesList,
         runHandlers: true
@@ -156,7 +156,7 @@ Test('cli', async (cliTest) => {
       var initOptions = {
         service: 'handler',
         port: Config.PORT,
-        modules: [Plugin],
+        modules: [Plugin, MetricPlugin],
         runMigrations: false,
         handlers: modulesList,
         runHandlers: true
@@ -197,7 +197,7 @@ Test('cli', async (cliTest) => {
       var initOptions = {
         service: 'handler',
         port: Config.PORT,
-        modules: [Plugin],
+        modules: [Plugin, MetricPlugin],
         runMigrations: false,
         handlers: modulesList,
         runHandlers: true
