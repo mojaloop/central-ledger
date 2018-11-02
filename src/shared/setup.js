@@ -12,11 +12,11 @@ const RequestLogger = require('../lib/requestLogger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Participant = require('../domain/participant')
 const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
 const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
+const Metrics = require('../lib/metrics')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -146,6 +146,12 @@ const createHandlers = async (handlers) => {
   return registeredHandlers
 }
 
+const initializeInstrumentation = () => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+  }
+}
+
 /**
  * @function initialize
  *
@@ -169,7 +175,7 @@ const initialize = async function ({service, port, modules = [], runMigrations =
   await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)
-
+  initializeInstrumentation()
   let server
   switch (service) {
     case 'api':

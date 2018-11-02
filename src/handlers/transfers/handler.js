@@ -49,7 +49,7 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
-
+const Metrics = require('../../lib/metrics')
 // TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorGenericCode = 3100
 const errorGenericDescription = Errors.getErrorDescription(errorGenericCode)
@@ -83,6 +83,11 @@ const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpC
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const prepare = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_prepare',
+    'Consume a prepare transfer message from the kafka topic and process it accordingly',
+    ['success']
+  ).startTimer()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -185,14 +190,23 @@ const prepare = async (error, messages) => {
     if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
       await consumer.commitMessageSync(message)
     }
+    // setTimeout(()=>{
+    histTimerEnd({success: true})
+    // }, 150)
     return true
   } catch (error) {
+    histTimerEnd({success: false})
     Logger.error(error)
     throw error
   }
 }
 
 const fulfil = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_fulfil',
+    'Consume a fulfil transfer message from the kafka topic and process it accordingly',
+    ['success']
+  ).startTimer()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -256,8 +270,12 @@ const fulfil = async (error, messages) => {
     if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
       await consumer.commitMessageSync(message)
     }
+    // setTimeout(()=>{
+    histTimerEnd({success: true})
+    // }, 150)
     return true
   } catch (error) {
+    histTimerEnd({success: false})
     Logger.error(error)
     throw error
   }
@@ -273,6 +291,11 @@ const fulfil = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const getTransfer = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_get',
+    'Consume a get transfer message from the kafka topic and process it accordingly',
+    ['success']
+  ).startTimer()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -320,8 +343,12 @@ const getTransfer = async (error, messages) => {
     if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
       await consumer.commitMessageSync(message)
     }
+    // setTimeout(()=>{
+    histTimerEnd({success: true})
+    // }, 150)
     return true
   } catch (err) {
+    histTimerEnd({success: false})
     Logger.error(err)
     throw err
   }

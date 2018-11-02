@@ -5,10 +5,18 @@ const Util = require('util')
 
 const logRequest = function (request) {
   const traceId = request.headers.traceid
-  Logger.info(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
-  Logger.info(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
-  if (request.body) {
-    Logger.info(`L1p-Trace-Id=${traceId} - Body: ${request.body}`)
+  if (request.url.path !== '/health') {
+    Logger.info(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
+    Logger.info(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
+    if (request.body) {
+      Logger.info(`L1p-Trace-Id=${traceId} - Body: ${request.body}`)
+    }
+  } else {
+    Logger.debug(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
+    Logger.debug(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
+    if (request.body) {
+      Logger.debug(`L1p-Trace-Id=${traceId} - Body: ${request.body}`)
+    }
   }
 }
 
@@ -21,10 +29,18 @@ const logResponse = function (request) {
     } catch (e) {
       response = Util.inspect(request.response.source)
     }
-    if (!response) {
-      Logger.info(`L1p-Trace-Id=${traceId} - Response: ${request.response}`)
+    if (request.url.path !== '/health') {
+      if (!response) {
+        Logger.info(`L1p-Trace-Id=${traceId} - Response: ${request.response}`)
+      } else {
+        Logger.info(`L1p-Trace-Id=${traceId} - Response: ${response} Status: ${request.response.statusCode}`)
+      }
     } else {
-      Logger.info(`L1p-Trace-Id=${traceId} - Response: ${response} Status: ${request.response.statusCode}`)
+      if (!response) {
+        Logger.debug(`L1p-Trace-Id=${traceId} - Response: ${request.response}`)
+      } else {
+        Logger.debug(`L1p-Trace-Id=${traceId} - Response: ${response} Status: ${request.response.statusCode}`)
+      }
     }
   }
 }

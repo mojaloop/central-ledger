@@ -32,7 +32,7 @@
 'use strict'
 
 /**
- * @module src/handlers
+ * @module src/handlers/api/plugin
  */
 
 /**
@@ -44,10 +44,8 @@
  */
 
 exports.plugin = {
-  name: 'handler routes',
+  name: 'handler metrics routes',
   register: function (server, options) {
     server.route(require('./routes'))
-    server.route(require('./admin/routes'))
-    server.route(require('../../api/metrics/plugin'))
   }
 }
