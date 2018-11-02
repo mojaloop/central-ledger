@@ -4,10 +4,10 @@ const Shared = require('@mojaloop/central-services-shared')
 const BaseError = Shared.BaseError
 const ErrorCategory = Shared.ErrorCategory
 
-class AccountReservedForHubOperatorError extends BaseError {
-  constructor (message = 'Account type is reserved for Hub Operator.') {
+class hubReconciliationAccountNotFound extends BaseError {
+  constructor (message = 'Hub reconciliation account for the specified currency does not exist') {
     super(ErrorCategory.UNPROCESSABLE, message)
   }
 }
 
-module.exports = AccountReservedForHubOperatorError
+module.exports = hubReconciliationAccountNotFound

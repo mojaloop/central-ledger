@@ -1,0 +1,1454 @@
+{
+  "swagger": "2.0",
+  "basePath": "/",
+  "schemes": [
+    "http"
+  ],
+  "info": {
+    "title": "Central Ledger API Documentation",
+    "version": "3.8.3"
+  },
+  "tags": [],
+  "paths": {
+    "/enums": {
+      "get": {
+        "operationId": "getEnums",
+        "tags": [
+          "enums"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants": {
+      "get": {
+        "operationId": "getParticipants",
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postParticipants",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 1"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "operationId": "get",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}": {
+      "get": {
+        "operationId": "getParticipantsName",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Participant name",
+            "name": "name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putParticipantsName",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Participant name",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 9"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}/endpoints": {
+      "get": {
+        "summary": "View participant endpoints",
+        "operationId": "getParticipantsNameEndpoints",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      },
+      "post": {
+        "summary": "Add/Update participant endpoints",
+        "operationId": "postParticipantsNameEndpoints",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 2"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}/limits": {
+      "get": {
+        "summary": "View participant limits",
+        "operationId": "getParticipantsNameLimits",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Currency code of the participant",
+            "enum": [
+              "ALL",
+              "AFN",
+              "ARS",
+              "AWG",
+              "AUD",
+              "AZN",
+              "BSD",
+              "BBD",
+              "BYN",
+              "BZD",
+              "BMD",
+              "BOB",
+              "BAM",
+              "BWP",
+              "BGN",
+              "BRL",
+              "BND",
+              "KHR",
+              "CAD",
+              "KYD",
+              "CLP",
+              "CNY",
+              "COP",
+              "CRC",
+              "HRK",
+              "CUP",
+              "CZK",
+              "DKK",
+              "DOP",
+              "XCD",
+              "EGP",
+              "SVC",
+              "EUR",
+              "FKP",
+              "FJD",
+              "GHS",
+              "GIP",
+              "GTQ",
+              "GGP",
+              "GYD",
+              "HNL",
+              "HKD",
+              "HUF",
+              "ISK",
+              "INR",
+              "IDR",
+              "IRR",
+              "IMP",
+              "ILS",
+              "JMD",
+              "JPY",
+              "JEP",
+              "KZT",
+              "KPW",
+              "KRW",
+              "KGS",
+              "LAK",
+              "LBP",
+              "LRD",
+              "MKD",
+              "MYR",
+              "MUR",
+              "MXN",
+              "MNT",
+              "MZN",
+              "NAD",
+              "NPR",
+              "ANG",
+              "NZD",
+              "NIO",
+              "NGN",
+              "NOK",
+              "OMR",
+              "PKR",
+              "PAB",
+              "PYG",
+              "PEN",
+              "PHP",
+              "PLN",
+              "QAR",
+              "RON",
+              "RUB",
+              "SHP",
+              "SAR",
+              "RSD",
+              "SCR",
+              "SGD",
+              "SBD",
+              "SOS",
+              "ZAR",
+              "LKR",
+              "SEK",
+              "CHF",
+              "SRD",
+              "SYP",
+              "TWD",
+              "THB",
+              "TTD",
+              "TRY",
+              "TVD",
+              "UAH",
+              "GBP",
+              "USD",
+              "UYU",
+              "UZS",
+              "VEF",
+              "VND",
+              "YER",
+              "ZWD"
+            ],
+            "name": "currency",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Limit Type",
+            "name": "type",
+            "in": "query",
+            "required": false
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      },
+      "post": {
+        "summary": "Adjust participant limits",
+        "operationId": "postParticipantsNameLimits",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 5"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}/positions": {
+      "get": {
+        "summary": "View participant positions",
+        "operationId": "getParticipantsNamePositions",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Currency code of the participant",
+            "enum": [
+              "ALL",
+              "AFN",
+              "ARS",
+              "AWG",
+              "AUD",
+              "AZN",
+              "BSD",
+              "BBD",
+              "BYN",
+              "BZD",
+              "BMD",
+              "BOB",
+              "BAM",
+              "BWP",
+              "BGN",
+              "BRL",
+              "BND",
+              "KHR",
+              "CAD",
+              "KYD",
+              "CLP",
+              "CNY",
+              "COP",
+              "CRC",
+              "HRK",
+              "CUP",
+              "CZK",
+              "DKK",
+              "DOP",
+              "XCD",
+              "EGP",
+              "SVC",
+              "EUR",
+              "FKP",
+              "FJD",
+              "GHS",
+              "GIP",
+              "GTQ",
+              "GGP",
+              "GYD",
+              "HNL",
+              "HKD",
+              "HUF",
+              "ISK",
+              "INR",
+              "IDR",
+              "IRR",
+              "IMP",
+              "ILS",
+              "JMD",
+              "JPY",
+              "JEP",
+              "KZT",
+              "KPW",
+              "KRW",
+              "KGS",
+              "LAK",
+              "LBP",
+              "LRD",
+              "MKD",
+              "MYR",
+              "MUR",
+              "MXN",
+              "MNT",
+              "MZN",
+              "NAD",
+              "NPR",
+              "ANG",
+              "NZD",
+              "NIO",
+              "NGN",
+              "NOK",
+              "OMR",
+              "PKR",
+              "PAB",
+              "PYG",
+              "PEN",
+              "PHP",
+              "PLN",
+              "QAR",
+              "RON",
+              "RUB",
+              "SHP",
+              "SAR",
+              "RSD",
+              "SCR",
+              "SGD",
+              "SBD",
+              "SOS",
+              "ZAR",
+              "LKR",
+              "SEK",
+              "CHF",
+              "SRD",
+              "SYP",
+              "TWD",
+              "THB",
+              "TTD",
+              "TRY",
+              "TVD",
+              "UAH",
+              "GBP",
+              "USD",
+              "UYU",
+              "UZS",
+              "VEF",
+              "VND",
+              "YER",
+              "ZWD"
+            ],
+            "name": "currency",
+            "in": "query"
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}/accounts": {
+      "get": {
+        "summary": "View participant accounts balances",
+        "operationId": "getParticipantsNameAccounts",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create hub accounts",
+        "operationId": "postParticipantsNameAccounts",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Participant name",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 6"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}/initialPositionAndLimits": {
+      "post": {
+        "summary": "Add initial participant limits and position",
+        "operationId": "postParticipantsNameInitialpositionandlimits",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 3"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}/accounts/{id}": {
+      "post": {
+        "summary": "Record Funds In or Out of participant account",
+        "operationId": "postParticipantsNameAccountsId",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "x-constraint": {
+              "positive": true
+            },
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 8"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    },
+    "/participants/{name}/accounts/{id}/transfers/{transferId}": {
+      "put": {
+        "summary": "Record Funds In or Out of participant account",
+        "operationId": "putParticipantsNameAccountsIdTransfersTransferid",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Name of the participant",
+            "minLength": 2,
+            "maxLength": 30,
+            "x-format": {
+              "alphanum": true
+            },
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "x-constraint": {
+              "positive": true
+            },
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-format": {
+              "guid": true
+            },
+            "name": "transferId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/Model 10"
+            }
+          }
+        ],
+        "tags": [
+          "participants"
+        ],
+        "responses": {
+          "default": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Successful"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Model 1": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the participant",
+          "minLength": 2,
+          "maxLength": 30,
+          "x-format": {
+            "alphanum": true
+          }
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code of the participant",
+          "enum": [
+            "ALL",
+            "AFN",
+            "ARS",
+            "AWG",
+            "AUD",
+            "AZN",
+            "BSD",
+            "BBD",
+            "BYN",
+            "BZD",
+            "BMD",
+            "BOB",
+            "BAM",
+            "BWP",
+            "BGN",
+            "BRL",
+            "BND",
+            "KHR",
+            "CAD",
+            "KYD",
+            "CLP",
+            "CNY",
+            "COP",
+            "CRC",
+            "HRK",
+            "CUP",
+            "CZK",
+            "DKK",
+            "DOP",
+            "XCD",
+            "EGP",
+            "SVC",
+            "EUR",
+            "FKP",
+            "FJD",
+            "GHS",
+            "GIP",
+            "GTQ",
+            "GGP",
+            "GYD",
+            "HNL",
+            "HKD",
+            "HUF",
+            "ISK",
+            "INR",
+            "IDR",
+            "IRR",
+            "IMP",
+            "ILS",
+            "JMD",
+            "JPY",
+            "JEP",
+            "KZT",
+            "KPW",
+            "KRW",
+            "KGS",
+            "LAK",
+            "LBP",
+            "LRD",
+            "MKD",
+            "MYR",
+            "MUR",
+            "MXN",
+            "MNT",
+            "MZN",
+            "NAD",
+            "NPR",
+            "ANG",
+            "NZD",
+            "NIO",
+            "NGN",
+            "NOK",
+            "OMR",
+            "PKR",
+            "PAB",
+            "PYG",
+            "PEN",
+            "PHP",
+            "PLN",
+            "QAR",
+            "RON",
+            "RUB",
+            "SHP",
+            "SAR",
+            "RSD",
+            "SCR",
+            "SGD",
+            "SBD",
+            "SOS",
+            "ZAR",
+            "LKR",
+            "SEK",
+            "CHF",
+            "SRD",
+            "SYP",
+            "TWD",
+            "THB",
+            "TTD",
+            "TRY",
+            "TVD",
+            "UAH",
+            "GBP",
+            "USD",
+            "UYU",
+            "UZS",
+            "VEF",
+            "VND",
+            "YER",
+            "ZWD"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Model 2": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Endpoint Type"
+        },
+        "value": {
+          "type": "string",
+          "description": "Endpoint Value"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "limit": {
+      "type": "object",
+      "description": "Participant Limit",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Limit Type"
+        },
+        "value": {
+          "type": "number",
+          "description": "Limit Value",
+          "enum": [
+            0
+          ],
+          "x-constraint": {
+            "positive": true
+          }
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "Model 3": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "Currency code of the participant",
+          "enum": [
+            "ALL",
+            "AFN",
+            "ARS",
+            "AWG",
+            "AUD",
+            "AZN",
+            "BSD",
+            "BBD",
+            "BYN",
+            "BZD",
+            "BMD",
+            "BOB",
+            "BAM",
+            "BWP",
+            "BGN",
+            "BRL",
+            "BND",
+            "KHR",
+            "CAD",
+            "KYD",
+            "CLP",
+            "CNY",
+            "COP",
+            "CRC",
+            "HRK",
+            "CUP",
+            "CZK",
+            "DKK",
+            "DOP",
+            "XCD",
+            "EGP",
+            "SVC",
+            "EUR",
+            "FKP",
+            "FJD",
+            "GHS",
+            "GIP",
+            "GTQ",
+            "GGP",
+            "GYD",
+            "HNL",
+            "HKD",
+            "HUF",
+            "ISK",
+            "INR",
+            "IDR",
+            "IRR",
+            "IMP",
+            "ILS",
+            "JMD",
+            "JPY",
+            "JEP",
+            "KZT",
+            "KPW",
+            "KRW",
+            "KGS",
+            "LAK",
+            "LBP",
+            "LRD",
+            "MKD",
+            "MYR",
+            "MUR",
+            "MXN",
+            "MNT",
+            "MZN",
+            "NAD",
+            "NPR",
+            "ANG",
+            "NZD",
+            "NIO",
+            "NGN",
+            "NOK",
+            "OMR",
+            "PKR",
+            "PAB",
+            "PYG",
+            "PEN",
+            "PHP",
+            "PLN",
+            "QAR",
+            "RON",
+            "RUB",
+            "SHP",
+            "SAR",
+            "RSD",
+            "SCR",
+            "SGD",
+            "SBD",
+            "SOS",
+            "ZAR",
+            "LKR",
+            "SEK",
+            "CHF",
+            "SRD",
+            "SYP",
+            "TWD",
+            "THB",
+            "TTD",
+            "TRY",
+            "TVD",
+            "UAH",
+            "GBP",
+            "USD",
+            "UYU",
+            "UZS",
+            "VEF",
+            "VND",
+            "YER",
+            "ZWD"
+          ]
+        },
+        "limit": {
+          "$ref": "#/definitions/limit"
+        },
+        "initialPosition": {
+          "type": "number",
+          "description": "Initial Position Value"
+        }
+      },
+      "required": [
+        "limit"
+      ]
+    },
+    "Model 4": {
+      "type": "object",
+      "description": "Participant Limit",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Limit Type"
+        },
+        "value": {
+          "type": "number",
+          "description": "Limit Value"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "Model 5": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "Currency code of the participant",
+          "enum": [
+            "ALL",
+            "AFN",
+            "ARS",
+            "AWG",
+            "AUD",
+            "AZN",
+            "BSD",
+            "BBD",
+            "BYN",
+            "BZD",
+            "BMD",
+            "BOB",
+            "BAM",
+            "BWP",
+            "BGN",
+            "BRL",
+            "BND",
+            "KHR",
+            "CAD",
+            "KYD",
+            "CLP",
+            "CNY",
+            "COP",
+            "CRC",
+            "HRK",
+            "CUP",
+            "CZK",
+            "DKK",
+            "DOP",
+            "XCD",
+            "EGP",
+            "SVC",
+            "EUR",
+            "FKP",
+            "FJD",
+            "GHS",
+            "GIP",
+            "GTQ",
+            "GGP",
+            "GYD",
+            "HNL",
+            "HKD",
+            "HUF",
+            "ISK",
+            "INR",
+            "IDR",
+            "IRR",
+            "IMP",
+            "ILS",
+            "JMD",
+            "JPY",
+            "JEP",
+            "KZT",
+            "KPW",
+            "KRW",
+            "KGS",
+            "LAK",
+            "LBP",
+            "LRD",
+            "MKD",
+            "MYR",
+            "MUR",
+            "MXN",
+            "MNT",
+            "MZN",
+            "NAD",
+            "NPR",
+            "ANG",
+            "NZD",
+            "NIO",
+            "NGN",
+            "NOK",
+            "OMR",
+            "PKR",
+            "PAB",
+            "PYG",
+            "PEN",
+            "PHP",
+            "PLN",
+            "QAR",
+            "RON",
+            "RUB",
+            "SHP",
+            "SAR",
+            "RSD",
+            "SCR",
+            "SGD",
+            "SBD",
+            "SOS",
+            "ZAR",
+            "LKR",
+            "SEK",
+            "CHF",
+            "SRD",
+            "SYP",
+            "TWD",
+            "THB",
+            "TTD",
+            "TRY",
+            "TVD",
+            "UAH",
+            "GBP",
+            "USD",
+            "UYU",
+            "UZS",
+            "VEF",
+            "VND",
+            "YER",
+            "ZWD"
+          ]
+        },
+        "limit": {
+          "$ref": "#/definitions/Model 4"
+        }
+      },
+      "required": [
+        "limit"
+      ]
+    },
+    "Model 6": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "Account currency"
+        },
+        "type": {
+          "type": "string",
+          "description": "Account type"
+        }
+      },
+      "required": [
+        "currency",
+        "type"
+      ]
+    },
+    "No amount provided": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "x-constraint": {
+            "precision": 4,
+            "positive": true
+          }
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code of the participant",
+          "enum": [
+            "ALL",
+            "AFN",
+            "ARS",
+            "AWG",
+            "AUD",
+            "AZN",
+            "BSD",
+            "BBD",
+            "BYN",
+            "BZD",
+            "BMD",
+            "BOB",
+            "BAM",
+            "BWP",
+            "BGN",
+            "BRL",
+            "BND",
+            "KHR",
+            "CAD",
+            "KYD",
+            "CLP",
+            "CNY",
+            "COP",
+            "CRC",
+            "HRK",
+            "CUP",
+            "CZK",
+            "DKK",
+            "DOP",
+            "XCD",
+            "EGP",
+            "SVC",
+            "EUR",
+            "FKP",
+            "FJD",
+            "GHS",
+            "GIP",
+            "GTQ",
+            "GGP",
+            "GYD",
+            "HNL",
+            "HKD",
+            "HUF",
+            "ISK",
+            "INR",
+            "IDR",
+            "IRR",
+            "IMP",
+            "ILS",
+            "JMD",
+            "JPY",
+            "JEP",
+            "KZT",
+            "KPW",
+            "KRW",
+            "KGS",
+            "LAK",
+            "LBP",
+            "LRD",
+            "MKD",
+            "MYR",
+            "MUR",
+            "MXN",
+            "MNT",
+            "MZN",
+            "NAD",
+            "NPR",
+            "ANG",
+            "NZD",
+            "NIO",
+            "NGN",
+            "NOK",
+            "OMR",
+            "PKR",
+            "PAB",
+            "PYG",
+            "PEN",
+            "PHP",
+            "PLN",
+            "QAR",
+            "RON",
+            "RUB",
+            "SHP",
+            "SAR",
+            "RSD",
+            "SCR",
+            "SGD",
+            "SBD",
+            "SOS",
+            "ZAR",
+            "LKR",
+            "SEK",
+            "CHF",
+            "SRD",
+            "SYP",
+            "TWD",
+            "THB",
+            "TTD",
+            "TRY",
+            "TVD",
+            "UAH",
+            "GBP",
+            "USD",
+            "UYU",
+            "UZS",
+            "VEF",
+            "VND",
+            "YER",
+            "ZWD"
+          ]
+        }
+      },
+      "required": [
+        "amount"
+      ]
+    },
+    "Model 7": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "extension": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Model 7"
+      }
+    },
+    "extensionList": {
+      "type": "object",
+      "properties": {
+        "extension": {
+          "$ref": "#/definitions/extension",
+          "type": "array"
+        }
+      }
+    },
+    "Model 8": {
+      "type": "object",
+      "properties": {
+        "transferId": {
+          "type": "string",
+          "x-format": {
+            "guid": true
+          }
+        },
+        "externalReference": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "recordFundsOutPrepare",
+            "recordFundsIn"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "#/definitions/No amount provided"
+        },
+        "extensionList": {
+          "$ref": "#/definitions/extensionList"
+        }
+      },
+      "required": [
+        "transferId",
+        "externalReference",
+        "action",
+        "reason",
+        "amount"
+      ]
+    },
+    "Model 9": {
+      "type": "object",
+      "properties": {
+        "isActive": {
+          "type": "boolean",
+          "description": "Participant isActive boolean"
+        }
+      },
+      "required": [
+        "isActive"
+      ]
+    },
+    "Model 10": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "recordFundsOutCommit",
+            "recordFundsOutAbort"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ]
+    }
+  }
+}
