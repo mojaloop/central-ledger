@@ -111,7 +111,7 @@ const createHubAccount = async function (request, h) {
       }
       let participantAccount = await Participant.getParticipantAccount(accountParams)
       if (participantAccount) {
-        throw new Errors.ParticipantAccountExistsError()
+        throw new Errors.HubAccountExistsError()
       }
 
       if (participant.participantId !== Config.HUB_OPERATOR_CODE) {
