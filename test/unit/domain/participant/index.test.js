@@ -144,6 +144,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'getParticipantLimitsByParticipantId')
     sandbox.stub(ParticipantFacade, 'addLimitAndInitialPosition')
     sandbox.stub(ParticipantFacade, 'getAllAccountsByNameAndCurrency')
+    sandbox.stub(ParticipantFacade, 'addHubAccountAndInitPosition')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
@@ -394,6 +395,39 @@ Test('Participant service', async (participantTest) => {
     }).throws(new Error())
     try {
       await Service.createParticipantCurrency({
+        participantId: falseParticipant.participantId,
+        currencyId: falseParticipant.currency
+      })
+      assert.fail('should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, `throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('createHubAccount should create the account', async (assert) => {
+    try {
+      await participantFixtures.forEach(async (participant, index) => {
+        ParticipantFacade.addHubAccountAndInitPosition.returns(Promise.resolve(index + 1))
+        var result = await Service.createHubAccount({
+          participantId: participant.participantId,
+          currencyId: participant.currency
+        })
+        assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
+      })
+      assert.end()
+    } catch (err) {
+      Logger.error(`createHubAccount failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('createHubAccount with false participant should fail', async (assert) => {
+    const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
+    ParticipantFacade.addHubAccountAndInitPosition.throws(new Error())
+    try {
+      await Service.createHubAccount({
         participantId: falseParticipant.participantId,
         currencyId: falseParticipant.currency
       })

@@ -3,6 +3,7 @@
 const SharedErrors = require('@mojaloop/central-services-shared')
 const AlreadyRolledBackError = require('./already-rolled-back')
 const ExpiredTransferError = require('./expired-transfer-error')
+const HubReconciliationAccountNotFound = require('./hubReconciliationAccountNotFound')
 const InvalidBodyError = require('./invalid-body')
 const InvalidModificationError = require('./invalid-modification')
 const MissingFulfilmentError = require('./missing-fulfilment')
@@ -16,13 +17,15 @@ const UnpreparedTransferError = require('./unprepared-transfer-error')
 const ValidationError = require('./validation-error')
 const ParticipantNotFoundError = require('./participant_not_found')
 const LedgerAccountTypeNotFoundError = require('./ledgerAcoountTypeNotFound')
-const AccountReservedForHubOperatorError = require('./accountReservedForHubOperator')
-const ParticipantAccountExistError = require('./ParticipantAccountExist')
+const EndpointReservedForHubOperatorAccountsError = require('./endpointReservedForHubOperatorAccountsError')
+const HubOperatorAccountTypeError = require('./hubOperatorAccountTypeError')
+const ParticipantAccountExistsError = require('./ParticipantAccountExists')
 const ParticipantAccountCreateError = require('./ParticipantAccountCreate')
 
 module.exports = {
   AlreadyRolledBackError,
   ExpiredTransferError,
+  HubReconciliationAccountNotFound,
   InvalidBodyError,
   InvalidModificationError,
   LedgerAccountTypeNotFoundError,
@@ -36,8 +39,9 @@ module.exports = {
   UnmetConditionError,
   UnpreparedTransferError,
   ValidationError,
-  AccountReservedForHubOperatorError,
+  EndpointReservedForHubOperatorAccountsError,
+  HubOperatorAccountTypeError,
   ParticipantAccountCreateError,
-  ParticipantAccountExistError,
+  ParticipantAccountExistsError,
   NotFoundError: SharedErrors.NotFoundError
 }

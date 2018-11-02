@@ -54,7 +54,7 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
     if (ledgerAccountTypeId) {
       params.ledgerAccountTypeId = ledgerAccountTypeId
     }
-    return await Db.participantCurrency.find(params, { order: 'currencyId asc' })
+    return await Db.participantCurrency.find(params)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -72,6 +72,19 @@ exports.getByName = async (accountParams) => {
   try {
     const participantCurrency = await Db.participantCurrency.findOne(accountParams)
     return participantCurrency
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.hubReconciliationAccountExists = async (currencyId) => {
+  try {
+    const params = {
+      participantId: 1,
+      currencyId
+    }
+    const participantCurrency = await Db.participantCurrency.findOne(params)
+    return !!participantCurrency
   } catch (err) {
     throw new Error(err.message)
   }
