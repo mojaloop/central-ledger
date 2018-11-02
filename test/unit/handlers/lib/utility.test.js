@@ -92,7 +92,7 @@ Test('Utility Test', utilityTest => {
     createParticipantTopicConfTest.test('return a participant topic conf object', test => {
       const response = Utility.createParticipantTopicConf(participantName, TRANSFER, PREPARE)
       test.equal(response.topicName, participantTopic)
-      test.equal(response.partition, 0)
+      test.equal(response.partition, null)
       test.equal(response.opaqueKey, 0)
       test.end()
     })

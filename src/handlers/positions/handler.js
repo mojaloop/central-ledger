@@ -46,6 +46,7 @@ const Enum = require('../../lib/enum')
 const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
+const Metrics = require('../../lib/metrics')
 
 /**
  * @function positions
@@ -63,6 +64,11 @@ const TransferEventAction = Enum.transferEventAction
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const positions = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_position',
+    'Consume a prepare transfer message from the kafka topic and process it accordingly',
+    ['success']
+  ).startTimer()
   if (error) {
     Logger.error(error)
     throw error
@@ -108,6 +114,9 @@ const positions = async (error, messages) => {
         Logger.info(`Limit alarm should be sent with ${limit}`)
         // Publish alarm message to KafkaTopic for the Hub to consume.The Hub rather than the switch will manage this (the topic is an participantEndpoint)
       }
+      // setTimeout(()=>{
+      histTimerEnd({success: true})
+      // }, 150)
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
@@ -170,8 +179,12 @@ const positions = async (error, messages) => {
     if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
       await consumer.commitMessageSync(message)
     }
+    // setTimeout(()=>{
+    histTimerEnd({success: true})
+    // }, 150)
     return true
   } catch (error) {
+    histTimerEnd({success: false})
     Logger.error(error)
     throw error
   }

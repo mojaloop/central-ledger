@@ -87,6 +87,7 @@ Test('logger', loggerTest => {
     responseTest.test('send info message to the serviceslogger', test => {
       const request = {
         headers: { traceid: '123456' },
+        url: { path: '/participants' },
         response: { source: 'this is the response', statusCode: '200' }
       }
       RequestLogger.logResponse(request)
@@ -107,6 +108,7 @@ Test('logger', loggerTest => {
     responseTest.test('use util.inspect if JSON.stringify throws', test => {
       const request = {
         headers: { traceid: '123456' },
+        url: { path: '/participants' },
         response: { source: { body: 'this is the response' }, statusCode: '200' }
       }
       request.response.source.circular = request.response
