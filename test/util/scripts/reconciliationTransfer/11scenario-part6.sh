@@ -15,7 +15,7 @@ echo "---------------------------------------------------------------------"
 
 echo "Sending request for preparing 200 USD to dfsp1 settlement account"
 sh -c "curl -X POST \
-  http://127.0.0.1:3001/participants/dfsp1/accounts/4 \
+  http://127.0.0.1:3001/participants/dfsp1/accounts/3 \
   -H 'Content-Type: application/json' \
   -H 'Postman-Token: 8506bf22-d7a2-4609-8047-de768db623fa' \
   -H 'cache-control: no-cache' \
