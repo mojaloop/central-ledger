@@ -22,12 +22,26 @@ echo " Prerequisites for Central-Ledger:"
 echo "    1. Ensure you run 'npm run migrate'"
 echo "    2. The below requests only work for the 'ADMIN' API"
 
+echo
+echo
+echo "*********************************************************************"
+echo "Creating Hub reconciliation account"
+echo "---------------------------------------------------------------------"
+sh -c "curl -X POST \
+${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts \
+-H 'Content-Type: application/json' \
+-H 'Postman-Token: 8fd1b601-432f-443c-a947-750f60380753' \
+-H 'cache-control: no-cache' \
+-d '{
+  \"currency\": \"USD\",
+  \"type\": \"HUB_RECONCILIATION\"
+}'"
+
 for FSP in "${FSPList[@]}"
 do
-  echo ''
-  echo "*********************************************************************"
-  echo ''
   echo
+  echo
+  echo "*********************************************************************"
   echo "Creating participants '$FSP'"
   echo "---------------------------------------------------------------------"
   sh -c "curl -i -X POST \
