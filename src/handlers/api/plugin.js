@@ -48,5 +48,6 @@ exports.plugin = {
   register: function (server, options) {
     server.route(require('./routes'))
     server.route(require('./admin/routes'))
+    server.route(require('../../api/metrics/plugin'))
   }
 }
