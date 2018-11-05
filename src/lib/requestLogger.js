@@ -5,7 +5,7 @@ const Util = require('util')
 
 const logRequest = function (request) {
   const traceId = request.headers.traceid
-  if (request.url.path !== '/health') {
+  if (request.url.path !== '/health' && request.url.path !== '/metrics') {
     Logger.info(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
     Logger.info(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
     if (request.body) {
@@ -29,7 +29,7 @@ const logResponse = function (request) {
     } catch (e) {
       response = Util.inspect(request.response.source)
     }
-    if (request.url.path !== '/health') {
+    if (request.url.path !== '/health' && request.url.path !== '/metrics') {
       if (!response) {
         Logger.info(`L1p-Trace-Id=${traceId} - Response: ${request.response}`)
       } else {
