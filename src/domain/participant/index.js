@@ -57,7 +57,7 @@ const getAll = async () => {
   try {
     let all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
-      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     }))
     return all
   } catch (err) {
@@ -68,7 +68,7 @@ const getAll = async () => {
 const getById = async (id) => {
   let participant = await ParticipantModel.getById(id)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
   return participant
 }
