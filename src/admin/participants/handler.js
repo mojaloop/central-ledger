@@ -214,7 +214,8 @@ const getLimits = async function (request, h) {
           currency: (item.currencyId || request.query.currency),
           limit: {
             type: item.name,
-            value: item.value
+            value: item.value,
+            alarmPercentage: item.thresholdAlarmPercentage
           }
         })
       })
