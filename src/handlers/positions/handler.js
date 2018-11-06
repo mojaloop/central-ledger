@@ -83,6 +83,7 @@ const positions = async (error, messages) => {
       prepareBatch = [Object.assign({}, JSON.parse(JSON.stringify(messages)))]
       message = Object.assign({}, messages)
     }
+    Logger.info(`[cid=${message.value.id}] ~ Transfers::handler::position - START`)
     Logger.info('PositionHandler::positions')
     let consumer
     let kafkaTopic
@@ -115,6 +116,7 @@ const positions = async (error, messages) => {
         // Publish alarm message to KafkaTopic for the Hub to consume.The Hub rather than the switch will manage this (the topic is an participantEndpoint)
       }
       // setTimeout(()=>{
+      Logger.info(`[cid=${message.value.id}] ~ Transfers::handler::position - END`)
       histTimerEnd({success: true})
       // }, 150)
       return true
@@ -180,6 +182,7 @@ const positions = async (error, messages) => {
       await consumer.commitMessageSync(message)
     }
     // setTimeout(()=>{
+    Logger.info(`[cid=${message.value.id}] ~ Transfers::handler::position - END`)
     histTimerEnd({success: true})
     // }, 150)
     return true

@@ -110,6 +110,7 @@ const prepare = async (error, messages) => {
       return true
     }
     const payload = message.value.content.payload
+    Logger.info(`[cid=${payload.transferId}, fsp=${payload.payerFsp}, source=${payload.payerFsp}, dest=${payload.payeeFsp}] ~ Transfers::handler::prepare - START`)
 
     Logger.info('TransferService::prepare::checking for duplicates')
     const {existsMatching, existsNotMatching} = await TransferService.validateDuplicateHash(payload)
@@ -190,6 +191,7 @@ const prepare = async (error, messages) => {
     if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
       await consumer.commitMessageSync(message)
     }
+    Logger.info(`[cid=${payload.transferId}, fsp=${payload.payerFsp}, source=${payload.payerFsp}, dest=${payload.payeeFsp}] ~ Transfers::handler::prepare - END`)
     // setTimeout(()=>{
     histTimerEnd({success: true})
     // }, 150)
@@ -231,6 +233,7 @@ const fulfil = async (error, messages) => {
     const metadata = message.value.metadata
     const transferId = message.value.id
     const payload = message.value.content.payload
+    Logger.info(`[cid=${transferId}] ~ Transfers::handler::fulfil - START`)
     if (metadata.event.type === TransferEventType.FULFIL &&
       (metadata.event.action === TransferEventAction.COMMIT ||
         metadata.event.action === TransferEventAction.REJECT)) {
@@ -271,6 +274,7 @@ const fulfil = async (error, messages) => {
       await consumer.commitMessageSync(message)
     }
     // setTimeout(()=>{
+    Logger.info(`[cid=${transferId}] ~ Transfers::handler::fulfil - END`)
     histTimerEnd({success: true})
     // }, 150)
     return true
