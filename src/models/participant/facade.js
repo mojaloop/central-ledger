@@ -29,6 +29,7 @@
  */
 
 const Db = require('../../db')
+const Time = require('../../lib/time')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId) => {
   try {
@@ -456,7 +457,7 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
   }
 }
 
-const addNewCurrencyAndPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
+const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
@@ -466,7 +467,9 @@ const addNewCurrencyAndPosition = async (participantId, currencyId, ledgerAccoun
           participantId,
           currencyId,
           ledgerAccountTypeId,
-          createdBy: 'unknown'
+          createdBy: 'unknown',
+          isActive: 1,
+          createdDate: Time.getUTCString(new Date())
         }
         result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
         participantCurrency.participantCurrencyId = result[0]
@@ -516,7 +519,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
 }
 
 module.exports = {
-  addNewCurrencyAndPosition,
+  addHubAccountAndInitPosition,
   getByNameAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
   getEndpoint,

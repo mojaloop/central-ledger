@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -27,22 +27,22 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../seeds/hubParticipant')
+const Model = require('../../../seeds/participant')
 
-Test('Hub participant', async (hubParticipantSeedTest) => {
+Test('Participant ', async (participantTest) => {
   let sandbox
 
-  hubParticipantSeedTest.beforeEach(t => {
+  participantTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     t.end()
   })
 
-  hubParticipantSeedTest.afterEach(t => {
+  participantTest.afterEach(t => {
     sandbox.restore()
     t.end()
   })
 
-  await hubParticipantSeedTest.test('seed should', async (test) => {
+  await participantTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
       insert: sandbox.stub().returns(true)
@@ -51,16 +51,16 @@ Test('Hub participant', async (hubParticipantSeedTest) => {
     try {
       const result = await Model.seed(knexStub)
       test.equal(result, true, 'call insert')
-      test.ok(knexStub.withArgs('participant').calledOnce, 'knex called with hubParticipant once')
+      test.ok(knexStub.withArgs('participant').calledOnce, 'knex called with participant once')
       test.end()
     } catch (err) {
-      Logger.error(`hubParticipant seed failed with error - ${err}`)
+      Logger.error(`participant seed failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await hubParticipantSeedTest.test('seed should', async (test) => {
+  await participantTest.test('seed should', async (test) => {
     function DuplicateEntryError (message) {
       this.name = 'DuplicateEntryError'
       this.message = message || ''
@@ -75,13 +75,13 @@ Test('Hub participant', async (hubParticipantSeedTest) => {
       test.equal(result, -1001, 'Duplicate error intercepted and ignored')
       test.end()
     } catch (err) {
-      Logger.error(`hubParticipant seed failed with error - ${err}`)
+      Logger.error(`participant seed failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await hubParticipantSeedTest.test('seed should', async (test) => {
+  await participantTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
       insert: sandbox.stub().throws(new Error())
@@ -91,11 +91,11 @@ Test('Hub participant', async (hubParticipantSeedTest) => {
       test.equal(result, -1000, 'Generic error intercepted and logged')
       test.end()
     } catch (err) {
-      Logger.error(`hubParticipant seed failed with error - ${err}`)
+      Logger.error(`participant seed failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await hubParticipantSeedTest.end()
+  await participantTest.end()
 })

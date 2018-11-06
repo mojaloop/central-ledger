@@ -34,7 +34,6 @@ const ParticipantPositionModel = require('../../models/participant/participantPo
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
-const LedgerAccountTypeFacade = require('../../models/participant/facade')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
@@ -56,10 +55,9 @@ const create = async (payload) => {
 
 const getAll = async () => {
   try {
-    // TODO: refactor the query to use the facade layer and join query for both tables
     let all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
-      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     }))
     return all
   } catch (err) {
@@ -68,19 +66,17 @@ const getAll = async () => {
 }
 
 const getById = async (id) => {
-  // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getById(id)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
   return participant
 }
 
 const getByName = async (name) => {
-  // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getByName(name)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
   return participant
 }
@@ -107,7 +103,16 @@ const update = async (name, payload) => {
 
 const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    const participantCurrency = await LedgerAccountTypeFacade.addNewCurrencyAndPosition(participantId, currencyId, ledgerAccountTypeId)
+    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
+    return participantCurrency
+  } catch (err) {
+    throw err
+  }
+}
+
+const createHubAccount = async (participantId, currencyId, ledgerAccountTypeId) => {
+  try {
+    const participantCurrency = await ParticipantFacade.addHubAccountAndInitPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
     throw err
@@ -629,6 +634,7 @@ module.exports = {
   getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
+  createHubAccount,
   getParticipantCurrencyById,
   destroyByName,
   addEndpoint,
@@ -645,5 +651,6 @@ module.exports = {
   getPositions,
   getAccounts,
   getParticipantAccount,
-  recordFundsInOut
+  recordFundsInOut,
+  hubReconciliationAccountExists: ParticipantCurrencyModel.hubReconciliationAccountExists
 }
