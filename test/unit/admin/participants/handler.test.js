@@ -742,7 +742,8 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000
+          value: 10000000,
+          thresholdAlarmPercentage: undefined
         }
       }
 

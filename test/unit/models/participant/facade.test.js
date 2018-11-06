@@ -538,7 +538,8 @@ Test('Participant facade', async (facadeTest) => {
     try {
       const limit = {
         type: 'NET_DEBIT_CAP',
-        value: 10000000
+        value: 10000000,
+        thresholdAlarmPercentage: undefined
       }
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -569,6 +570,7 @@ Test('Participant facade', async (facadeTest) => {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: limit.value,
+        thresholdAlarmPercentage: undefined,
         isActive: 1,
         createdBy: 'unknown',
         participantLimitId: 1
@@ -592,7 +594,8 @@ Test('Participant facade', async (facadeTest) => {
     try {
       const limit = {
         type: 'NET_DEBIT_CAP',
-        value: 10000000
+        value: 10000000,
+        thresholdAlarmPercentage: undefined
       }
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -623,6 +626,7 @@ Test('Participant facade', async (facadeTest) => {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: limit.value,
+        thresholdAlarmPercentage: undefined,
         isActive: 1,
         createdBy: 'unknown',
         participantLimitId: 1
