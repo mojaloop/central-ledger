@@ -351,6 +351,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
           participantCurrencyId: participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
           value: limit.value,
+          thresholdAlarmPercentage: limit.thresholdAlarmPercentage,
           isActive: 1,
           createdBy: 'unknown'
         }
