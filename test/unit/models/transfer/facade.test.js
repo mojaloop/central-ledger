@@ -1015,8 +1015,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
           context.from = sandbox.stub().returns({
             innerJoin: sandbox.stub().returns({
               innerJoin: sandbox.stub().returns({
-                whereIn: sandbox.stub().returns({
-                  select: sandbox.stub()
+                leftJoin: sandbox.stub().returns({
+                  whereNull: sandbox.stub().returns({
+                    whereIn: sandbox.stub().returns({
+                      select: sandbox.stub()
+                    })
+                  })
                 }),
                 where: sandbox.stub().returns({
                   andWhere: sandbox.stub().returns({
