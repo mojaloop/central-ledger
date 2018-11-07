@@ -575,7 +575,8 @@ Test('Participant', participantHandlerTest => {
           currency: 'USD',
           limit: {
             type: 'NET_DEBIT_CAP',
-            value: 1000000
+            value: 1000000,
+            alarmPercentage: undefined
           }
         }
       ]
@@ -618,13 +619,15 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 1000000
+          value: 1000000,
+          alarmPercentage: undefined
         }
       }, {
         currency: 'EUR',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 5000000
+          value: 5000000,
+          alarmPercentage: undefined
         }
       }]
       const limitReturn = [{
@@ -654,7 +657,8 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 1000000
+          value: 1000000,
+          alarmPercentage: undefined
         }
       }]
       const limitReturn = [{
@@ -679,7 +683,8 @@ Test('Participant', participantHandlerTest => {
           currency: 'USD',
           limit: {
             type: 'NET_DEBIT_CAP',
-            value: 1000000
+            value: 1000000,
+            alarmPercentage: undefined
           }
         }
       ]
@@ -737,7 +742,8 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000
+          value: 10000000,
+          thresholdAlarmPercentage: undefined
         }
       }
 

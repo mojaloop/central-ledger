@@ -209,7 +209,8 @@ module.exports = [
           currency: currencyValidator,
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
-            value: Joi.number().required().description('Limit Value')
+            value: Joi.number().required().description('Limit Value'),
+            thresholdAlarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
           }).required().description('Participant Limit')
         },
         params: {
