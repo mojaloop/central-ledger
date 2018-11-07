@@ -4,10 +4,10 @@ const Shared = require('@mojaloop/central-services-shared')
 const BaseError = Shared.BaseError
 const ErrorCategory = Shared.ErrorCategory
 
-class AccountReservedForHubOperatorError extends BaseError {
-  constructor (message = 'Account type is reserved for Hub Operator.') {
+class HubAccountExistsError extends BaseError {
+  constructor (message = 'Hub account has already been registered.') {
     super(ErrorCategory.UNPROCESSABLE, message)
   }
 }
 
-module.exports = AccountReservedForHubOperatorError
+module.exports = HubAccountExistsError

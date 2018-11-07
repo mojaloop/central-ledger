@@ -15,7 +15,7 @@ echo "---------------------------------------------------------------------"
 
 echo "Sending request for aborting 10 USD to dfsp1 settlement account"
 sh -c "curl -X PUT \
-  http://127.0.0.1:3001/participants/dfsp1/accounts/4/transfers/523ec634-ef48-6575-a6a0-ded2955b8103 \
+  http://127.0.0.1:3001/participants/dfsp1/accounts/3/transfers/523ec634-ef48-6575-a6a0-ded2955b8103 \
   -H 'Content-Type: application/json' \
   -H 'Postman-Token: 88f1e4bc-9c15-4628-85c5-6208d71d981a' \
   -H 'cache-control: no-cache' \
