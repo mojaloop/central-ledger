@@ -35,6 +35,9 @@
   "INSTRUMENTATION": {
     "METRICS": {
       "DISABLED": false,
+      "labels": {
+        "fspId": "*"
+      },
       "config": {
         "timeout": 5000,
         "prefix": "moja_cl_"

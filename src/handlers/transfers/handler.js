@@ -50,6 +50,7 @@ const TransferEventAction = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
 const Metrics = require('../../lib/metrics')
+const Config = require('../../lib/config')
 // TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorGenericCode = 3100
 const errorGenericDescription = Errors.getErrorDescription(errorGenericCode)
@@ -86,7 +87,7 @@ const prepare = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_prepare',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',
-    ['success']
+    ['success', 'fspId']
   ).startTimer()
   if (error) {
     // Logger.error(error)
@@ -193,11 +194,11 @@ const prepare = async (error, messages) => {
     }
     Logger.info(`[cid=${payload.transferId}, fsp=${payload.payerFsp}, source=${payload.payerFsp}, dest=${payload.payeeFsp}] ~ Transfers::handler::prepare - END`)
     // setTimeout(()=>{
-    histTimerEnd({success: true})
+    histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     // }, 150)
     return true
   } catch (error) {
-    histTimerEnd({success: false})
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(error)
     throw error
   }
@@ -207,7 +208,7 @@ const fulfil = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_fulfil',
     'Consume a fulfil transfer message from the kafka topic and process it accordingly',
-    ['success']
+    ['success', 'fspId']
   ).startTimer()
   if (error) {
     // Logger.error(error)
@@ -275,11 +276,11 @@ const fulfil = async (error, messages) => {
     }
     // setTimeout(()=>{
     Logger.info(`[cid=${transferId}] ~ Transfers::handler::fulfil - END`)
-    histTimerEnd({success: true})
+    histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     // }, 150)
     return true
   } catch (error) {
-    histTimerEnd({success: false})
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(error)
     throw error
   }
@@ -298,7 +299,7 @@ const getTransfer = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_get',
     'Consume a get transfer message from the kafka topic and process it accordingly',
-    ['success']
+    ['success', 'fspId']
   ).startTimer()
   if (error) {
     // Logger.error(error)
@@ -348,11 +349,11 @@ const getTransfer = async (error, messages) => {
       await consumer.commitMessageSync(message)
     }
     // setTimeout(()=>{
-    histTimerEnd({success: true})
+    histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     // }, 150)
     return true
   } catch (err) {
-    histTimerEnd({success: false})
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(err)
     throw err
   }

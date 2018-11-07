@@ -47,6 +47,7 @@ const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const Metrics = require('../../lib/metrics')
+const Config = require('../../lib/config')
 
 /**
  * @function positions
@@ -67,7 +68,7 @@ const positions = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_position',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',
-    ['success']
+    ['success', 'fspId']
   ).startTimer()
   if (error) {
     Logger.error(error)
@@ -117,7 +118,7 @@ const positions = async (error, messages) => {
       }
       // setTimeout(()=>{
       Logger.info(`[cid=${message.value.id}] ~ Transfers::handler::position - END`)
-      histTimerEnd({success: true})
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       // }, 150)
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
@@ -183,11 +184,11 @@ const positions = async (error, messages) => {
     }
     // setTimeout(()=>{
     Logger.info(`[cid=${message.value.id}] ~ Transfers::handler::position - END`)
-    histTimerEnd({success: true})
+    histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     // }, 150)
     return true
   } catch (error) {
-    histTimerEnd({success: false})
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(error)
     throw error
   }
