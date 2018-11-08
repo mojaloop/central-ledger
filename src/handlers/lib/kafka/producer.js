@@ -35,6 +35,7 @@
 
 const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
 const Logger = require('@mojaloop/central-services-shared').Logger
+const uuid = require('uuid4')
 
 let listOfProducers = {}
 
@@ -53,6 +54,11 @@ let listOfProducers = {}
 const produceMessage = async (messageProtocol, topicConf, config) => {
   try {
     let producer
+
+    if (config.rdkafkaConf !== undefined && config.rdkafkaConf['client.id'] !== undefined) {
+      config.rdkafkaConf['client.id'] = `${config.rdkafkaConf['client.id']}-${uuid()}`
+    }
+
     if (listOfProducers[topicConf.topicName]) {
       producer = listOfProducers[topicConf.topicName]
     } else {

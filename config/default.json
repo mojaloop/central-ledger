@@ -73,7 +73,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-prepare",
               "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "localhost:9092",
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
@@ -105,7 +105,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-get",
               "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-get",
               "metadata.broker.list": "localhost:9092",
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
@@ -137,7 +137,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-fulfil",
               "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "localhost:9092",
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
@@ -169,7 +169,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-reject",
               "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-reject",
               "metadata.broker.list": "localhost:9092",
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
@@ -202,7 +202,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-position-prepare",
               "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-position-prepare",
               "metadata.broker.list": "localhost:9092",
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
@@ -233,7 +233,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-position-fulfil",
               "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-position-fulfil",
               "metadata.broker.list": "localhost:9092",
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,
@@ -264,7 +264,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-position-abort",
               "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-position-abort",
               "metadata.broker.list": "localhost:9092",
               "socket.blocking.max.ms": 1,
               "fetch.wait.max.ms": 1,

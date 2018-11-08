@@ -30,6 +30,7 @@
 
 const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
+const uuid = require('uuid4')
 
 let listOfConsumers = {}
 
@@ -47,6 +48,13 @@ let listOfConsumers = {}
  */
 const createHandler = async (topicName, config, command) => {
   let consumer = {}
+
+  if (config.rdkafkaConf['client.id'] !== undefined) {
+    config.rdkafkaConf['client.id'] = `${config.rdkafkaConf['client.id']}-${uuid()}`
+  } else {
+    config.rdkafkaConf['client.id'] = `default-client-id-${uuid()}`
+  }
+
   if (Array.isArray(topicName)) {
     consumer = new Consumer(topicName, config)
   } else {
