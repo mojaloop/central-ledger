@@ -392,6 +392,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
                 .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
               )
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+              .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
+              .whereNull('tt.transferId')
               .whereIn('tsc.transferStateId', [`${Enum.TransferState.RECEIVED_PREPARE}`, `${Enum.TransferState.RESERVED}`])
               .select('t.transferId', 't.expirationDate')
           })// .toSQL().sql

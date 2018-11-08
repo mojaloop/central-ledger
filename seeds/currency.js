@@ -26,16 +26,24 @@
 
 const currencies = [
   {
-    'name': 'Afghanistan afghani',
+    'name': 'Afghanistan afghani (obsolete)',
     'currencyId': 'AFA'
+  },
+  {
+    'name': 'Afghanistan afghani',
+    'currencyId': 'AFN'
+  },
+  {
+    'name': 'Algerian dinar',
+    'currencyId': 'DZD'
   },
   {
     'name': 'Albanian lek',
     'currencyId': 'ALL'
   },
   {
-    'name': 'Algerian dinar',
-    'currencyId': 'DZD'
+    'name': 'Angolan kwanza',
+    'currencyId': 'AOA'
   },
   {
     'name': 'Angolan kwanza reajustado',
@@ -96,6 +104,10 @@ const currencies = [
   {
     'name': 'Bolivian boliviano',
     'currencyId': 'BOB'
+  },
+  {
+    'name': 'Bosnia-Herzegovina convertible mark',
+    'currencyId': 'BAM'
   },
   {
     'name': 'Botswana pula',
@@ -176,6 +188,10 @@ const currencies = [
   {
     'name': 'Croatian kuna',
     'currencyId': 'HRK'
+  },
+  {
+    'name': 'Cuban convertible peso',
+    'currencyId': 'CUC'
   },
   {
     'name': 'Cuban peso',
@@ -262,6 +278,10 @@ const currencies = [
     'currencyId': 'GTQ'
   },
   {
+    'name': 'Guernsey pound',
+    'currencyId': 'GGP'
+  },
+  {
     'name': 'Guinean franc',
     'currencyId': 'GNF'
   },
@@ -310,6 +330,10 @@ const currencies = [
     'currencyId': 'IQD'
   },
   {
+    'name': 'Isle of Man pound',
+    'currencyId': 'IMP'
+  },
+  {
     'name': 'Israeli new shekel',
     'currencyId': 'ILS'
   },
@@ -320,6 +344,10 @@ const currencies = [
   {
     'name': 'Japanese yen',
     'currencyId': 'JPY'
+  },
+  {
+    'name': 'Jersey pound',
+    'currencyId': 'JEP'
   },
   {
     'name': 'Jordanian dinar',
@@ -530,6 +558,10 @@ const currencies = [
     'currencyId': 'SAR'
   },
   {
+    'name': 'Seborgan luigino',
+    'currencyId': 'SPL'
+  },
+  {
     'name': 'Serbian dinar',
     'currencyId': 'RSD'
   },
@@ -630,6 +662,10 @@ const currencies = [
     'currencyId': 'TMT'
   },
   {
+    'name': 'Tuvaluan dollar',
+    'currencyId': 'TVD'
+  },
+  {
     'name': 'UAE dirham',
     'currencyId': 'AED'
   },
@@ -674,16 +710,36 @@ const currencies = [
     'currencyId': 'YER'
   },
   {
-    'name': 'Zambian kwacha',
+    'name': 'Zambian kwacha (obsolete)',
     'currencyId': 'ZMK'
   },
   {
-    'name': 'Zimbabwe dollar',
+    'name': 'Zambian kwacha',
+    'currencyId': 'ZMW'
+  },
+  {
+    'name': 'Zimbabwe dollar (initial)',
+    'currencyId': 'ZWD'
+  },
+  {
+    'name': 'Zimbabwe dollar (1st denomination)',
+    'currencyId': 'ZWN'
+  },
+  {
+    'name': 'Zimbabwe dollar (2nd denomination)',
+    'currencyId': 'ZWR'
+  },
+  {
+    'name': 'Zimbabwe dollar (3rd denomination)',
     'currencyId': 'ZWL'
   }
 ]
 
-exports.seed = async function (knex) {
+const currencyList = currencies.map(currentValue => {
+  return currentValue.currencyId
+}).sort()
+
+const seed = async function (knex) {
   try {
     return await knex('currency').insert(currencies)
   } catch (err) {
@@ -693,4 +749,9 @@ exports.seed = async function (knex) {
       return -1000
     }
   }
+}
+
+module.exports = {
+  currencyList,
+  seed
 }
