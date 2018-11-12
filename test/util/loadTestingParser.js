@@ -39,7 +39,7 @@ const _ = require('lodash')
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
   .describe('file', 'File to be parsed for metrics')
-  .describe('1000', 'Number of entries per transaction')
+  .describe('num', 'Number of entries per transaction')
   .demandOption(['f'])
   .demandOption(['n'])
   .help('h')
@@ -55,6 +55,7 @@ let firstLine
 let lastLine
 let perEntryResponse = []
 let lineCount = 0
+let totalMockDifferenceTime = 0
 
 function compare (a, b) {
   const timestampA = a.timestamp
@@ -95,7 +96,21 @@ lr.on('line', function (line) {
       entry.entries.push(logLine)
       entry.entries.sort(compare)
       if (entry.entries.length === parseInt(argv.num)) {
-        entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime()
+        let mockTimeDifference = 0
+        let preCallbackTime = 0
+        let loopDifference = 0
+        for (var log of entry.entries) {
+          if (log.process.includes('PRE-CALLBACK')) {
+            preCallbackTime = new Date(log.timestamp)
+          } else if (log.process.includes('POST-CALLBACK')) {
+            loopDifference += new Date(log.timestamp) - preCallbackTime
+            mockTimeDifference += loopDifference
+            loopDifference = 0
+            preCallbackTime = 0
+          }
+        }
+        totalMockDifferenceTime += mockTimeDifference
+        entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime() - mockTimeDifference
         perEntryResponse.push(entry.totalDifference)
       }
       logMap[logLine.uuid] = entry
@@ -107,22 +122,22 @@ lr.on('line', function (line) {
 lr.on('end', function () {
   const firstTime = new Date(firstLine.timestamp).getTime()
   const lastTime = new Date(lastLine.timestamp).getTime()
-  const totalTime = (lastTime - firstTime) / 1000
+  // const totalTime = (lastTime - firstTime)
+  const totalTime = (lastTime - firstTime - totalMockDifferenceTime)
   const totalTransactions = perEntryResponse.length
   const sortedPerEntryResponse = perEntryResponse.sort(compareNumbers)
-  const shortestResponse = sortedPerEntryResponse[0] / 1000
-  const longestResponse = sortedPerEntryResponse[perEntryResponse.length - 1] / 1000
-  const averageTransaction = (perEntryResponse.reduce((a, b) => a + b, 0) / totalTransactions) / 1000
+  const shortestResponse = sortedPerEntryResponse[0]
+  const longestResponse = sortedPerEntryResponse[perEntryResponse.length - 1]
+  const averageTransaction = (perEntryResponse.reduce((a, b) => a + b, 0) / totalTransactions)
 
   console.log('First request: ' + firstLine.timestamp)
   console.log('Last request: ' + lastLine.timestamp)
   console.log('Total number of lines in log file: ' + lineCount)
   console.log('Number of unique matched entries: ' + totalTransactions)
-  // console.log('First request duration in milliseconds ' + new Date(firstLine.timestamp).getTime())
-  // console.log('Last request duration in milliseconds ' + new Date(lastLine.timestamp).getTime())
-  console.log('Total difference of all requests in seconds: ' + (totalTime))
-  console.log('Shortest response time in second: ' + shortestResponse)
-  console.log('Longest response time in second: ' + longestResponse)
-  console.log('The average transaction in second: ' + averageTransaction)
-  console.log('Average transactions per second: ' + (totalTransactions / totalTime))
+  console.log('Total difference of all requests in milliseconds: ' + (totalTime))
+  console.log('Shortest response time in millisecond: ' + shortestResponse)
+  console.log('Longest response time in millisecond: ' + longestResponse)
+  console.log('The average time a transaction takes in milliseconds: ' + averageTransaction)
+  console.log('Average transactions per second: ' + (totalTransactions / (totalTime / 1000)))
+  console.log('Total time waiting for mock server in milliseconds: ' + totalMockDifferenceTime)
 })
