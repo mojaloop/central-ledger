@@ -55,7 +55,7 @@ let firstLine
 let lastLine
 let perEntryResponse = []
 let lineCount = 0
-let totalMockDifferenceTime = 0
+let transfersThatTakeLongerThanASecond = 0
 
 function compare (a, b) {
   const timestampA = a.timestamp
@@ -96,22 +96,11 @@ lr.on('line', function (line) {
       entry.entries.push(logLine)
       entry.entries.sort(compare)
       if (entry.entries.length === parseInt(argv.num)) {
-        let mockTimeDifference = 0
-        let preCallbackTime = 0
-        let loopDifference = 0
-        for (var log of entry.entries) {
-          if (log.process.includes('PRE-CALLBACK')) {
-            preCallbackTime = new Date(log.timestamp)
-          } else if (log.process.includes('POST-CALLBACK')) {
-            loopDifference += new Date(log.timestamp) - preCallbackTime
-            mockTimeDifference += loopDifference
-            loopDifference = 0
-            preCallbackTime = 0
-          }
-        }
-        totalMockDifferenceTime += mockTimeDifference
-        entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime() - mockTimeDifference
+        entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime()
         perEntryResponse.push(entry.totalDifference)
+        if (entry.totalDifference >= 1000) {
+          transfersThatTakeLongerThanASecond++
+        }
       }
       logMap[logLine.uuid] = entry
     }
@@ -120,15 +109,20 @@ lr.on('line', function (line) {
 })
 
 lr.on('end', function () {
+  const mean = perEntryResponse.reduce((a, b) => a + b) / perEntryResponse.length
+  let differenceFromMeanSquared = []
+  for (let entry of perEntryResponse) {
+    differenceFromMeanSquared.push(Math.pow((entry - mean), 2))
+  }
+  let variance = differenceFromMeanSquared.reduce((a, b) => a + b) / differenceFromMeanSquared.length
+  let standardDeviation = Math.sqrt(variance)
   const firstTime = new Date(firstLine.timestamp).getTime()
   const lastTime = new Date(lastLine.timestamp).getTime()
-  // const totalTime = (lastTime - firstTime)
-  const totalTime = (lastTime - firstTime - totalMockDifferenceTime)
+  const totalTime = (lastTime - firstTime)
   const totalTransactions = perEntryResponse.length
   const sortedPerEntryResponse = perEntryResponse.sort(compareNumbers)
   const shortestResponse = sortedPerEntryResponse[0]
   const longestResponse = sortedPerEntryResponse[perEntryResponse.length - 1]
-  const averageTransaction = (perEntryResponse.reduce((a, b) => a + b, 0) / totalTransactions)
 
   console.log('First request: ' + firstLine.timestamp)
   console.log('Last request: ' + lastLine.timestamp)
@@ -137,7 +131,10 @@ lr.on('end', function () {
   console.log('Total difference of all requests in milliseconds: ' + (totalTime))
   console.log('Shortest response time in millisecond: ' + shortestResponse)
   console.log('Longest response time in millisecond: ' + longestResponse)
-  console.log('The average time a transaction takes in milliseconds: ' + averageTransaction)
+  console.log('Mean/The average time a transaction takes in millisecond: ' + mean)
+  console.log('Variance in milliseconds: ' + variance)
+  console.log('Standard deviation in milliseconds: ' + standardDeviation)
+  console.log('Number of entries that took longer than a second: ' + transfersThatTakeLongerThanASecond)
+  console.log(`% of entries that took longer than a second: ${(transfersThatTakeLongerThanASecond / totalTransactions * 100).toFixed(2)}%`)
   console.log('Average transactions per second: ' + (totalTransactions / (totalTime / 1000)))
-  console.log('Total time waiting for mock server in milliseconds: ' + totalMockDifferenceTime)
 })
