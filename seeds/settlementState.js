@@ -31,18 +31,18 @@ const settlementStates = [
     'description': 'The net settlement report for this window has been taken, with the parameter set to indicate that settlement is to be processed.'
   },
   {
-    'settlementStateId': 'PENDING_SETTLEMENT_TRANSFERS_RECORDED',
-    'enumeration': 'PENDING_SETTLEMENT_TRANSFERS_RECORDED',
+    'settlementStateId': 'PS_TRANSFERS_RECORDED',
+    'enumeration': 'PS_TRANSFERS_RECORDED',
     'description': 'Record transfer entries against the Position Account and the Multi-lateral Net Settlement Account, these are the "multi-lateral net  settlement transfers" (MLNS transfers). An identifier might be provided to be past to the reference bank.'
   },
   {
-    'settlementStateId': 'PENDING_SETTLEMENT_TRANSFERS_RESERVED',
-    'enumeration': 'PENDING_SETTLEMENT_TRANSFERS_RESERVED',
+    'settlementStateId': 'PS_TRANSFERS_RESERVED',
+    'enumeration': 'PS_TRANSFERS_RESERVED',
     'description': 'All the debit entries for the MLNS transfers are reserved .'
   },
   {
-    'settlementStateId': 'PENDING_SETTLEMENT_TRANSFERS_COMMITTED',
-    'enumeration': 'PENDING_SETTLEMENT_TRANSFERS_COMMITTED',
+    'settlementStateId': 'PS_TRANSFERS_COMMITTED',
+    'enumeration': 'PS_TRANSFERS_COMMITTED',
     'description': 'All the credit entries for the MLNS transfers are committed. An identifier might be received and recorded from the Settlement bank to allow reconciliation.'
   },
   {
