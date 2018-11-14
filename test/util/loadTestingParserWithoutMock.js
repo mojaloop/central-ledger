@@ -108,7 +108,7 @@ lr.on('line', function (line) {
             logMap.set(log.source, logList)
           }
         }
-        for (var [key, value] of logMap) {
+        for (var value of logMap.values()) {
           var preCallbackLog = value[0]
           var postCallBackLog = value[1]
           mockTimeDifference += new Date(postCallBackLog.timestamp).getTime() - new Date(preCallbackLog.timestamp).getTime()
