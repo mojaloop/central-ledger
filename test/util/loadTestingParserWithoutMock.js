@@ -98,17 +98,20 @@ lr.on('line', function (line) {
       entry.entries.sort(compare)
       if (entry.entries.length === parseInt(argv.num)) {
         let mockTimeDifference = 0
-        let preCallbackTime = 0
-        let loopDifference = 0
+        let logMap = new Map()
         for (var log of entry.entries) {
           if (log.process.includes('PRE-CALLBACK')) {
-            preCallbackTime = new Date(log.timestamp)
+            logMap.set(log.source, [log])
           } else if (log.process.includes('POST-CALLBACK')) {
-            loopDifference += new Date(log.timestamp) - preCallbackTime
-            mockTimeDifference += loopDifference
-            loopDifference = 0
-            preCallbackTime = 0
+            var logList = logMap.get(log.source)
+            logList.push(log)
+            logMap.set(log.source, logList)
           }
+        }
+        for (var [key, value] of logMap) {
+          var preCallbackLog = value[0]
+          var postCallBackLog = value[1]
+          mockTimeDifference += new Date(postCallBackLog.timestamp).getTime() - new Date(preCallbackLog.timestamp).getTime()
         }
         totalMockDifferenceTime += mockTimeDifference
         entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime() - mockTimeDifference
