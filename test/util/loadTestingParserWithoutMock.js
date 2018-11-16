@@ -40,23 +40,27 @@ var argv = require('yargs')
   .usage('Usage: $0 [options]')
   .describe('file', 'File to be parsed for metrics')
   .describe('num', 'Number of entries per transaction')
+  .describe('handlers', 'Number of notification handlers used in your test run')
   .demandOption(['f'])
   .demandOption(['n'])
   .help('h')
   .alias('h', 'help')
   .alias('f', 'file')
   .alias('n', 'num')
+  .alias('m', 'handlers')
+  .default('handlers', 1, 'default to one handler if handlers is not supplied')
   .argv
 
 const LineByLineReader = require('line-by-line')
 const lr = new LineByLineReader(argv.file)
-let logMap = {}
+let logMap = new Map()
 let firstLine
 let lastLine
 let perEntryResponse = []
 let lineCount = 0
 let totalMockDifferenceTime = 0
 let transfersThatTakeLongerThanASecond = 0
+let mapOfMockTimes = new Map()
 
 function compare (a, b) {
   const timestampA = a.timestamp
@@ -88,39 +92,40 @@ lr.on('line', function (line) {
     if (_.isEmpty(firstLine)) {
       firstLine = logLine
     }
-    if (!logMap[logLine.uuid]) {
-      logMap[logLine.uuid] = {
+    if (!logMap.get(logLine.uuid)) {
+      logMap.set(logLine.uuid, {
         entries: [logLine]
-      }
+      })
     } else {
-      const entry = logMap[logLine.uuid]
+      const entry = logMap.get(logLine.uuid)
       entry.entries.push(logLine)
       entry.entries.sort(compare)
       if (entry.entries.length === parseInt(argv.num)) {
         let mockTimeDifference = 0
-        let logMap = new Map()
+        let mapOfLogs = new Map()
         for (var log of entry.entries) {
           if (log.process.includes('PRE-CALLBACK')) {
-            logMap.set(log.source, [log])
+            mapOfLogs.set(log.source, [log])
           } else if (log.process.includes('POST-CALLBACK')) {
-            var logList = logMap.get(log.source)
+            var logList = mapOfLogs.get(log.source)
             logList.push(log)
-            logMap.set(log.source, logList)
+            mapOfLogs.set(log.source, logList)
           }
         }
-        for (var value of logMap.values()) {
+        for (var value of mapOfLogs.values()) {
           var preCallbackLog = value[0]
           var postCallBackLog = value[1]
           mockTimeDifference += new Date(postCallBackLog.timestamp).getTime() - new Date(preCallbackLog.timestamp).getTime()
         }
         totalMockDifferenceTime += mockTimeDifference
+        mapOfMockTimes.set(logLine.uuid, mockTimeDifference)
         entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime() - mockTimeDifference
         perEntryResponse.push(entry.totalDifference)
         if (entry.totalDifference >= 1000) {
           transfersThatTakeLongerThanASecond++
         }
       }
-      logMap[logLine.uuid] = entry
+      logMap.set(logLine.uuid, entry)
     }
     lastLine = logLine
   }
@@ -136,7 +141,7 @@ lr.on('end', function () {
   let standardDeviation = Math.sqrt(variance)
   const firstTime = new Date(firstLine.timestamp).getTime()
   const lastTime = new Date(lastLine.timestamp).getTime()
-  const totalTime = (lastTime - firstTime - totalMockDifferenceTime)
+  const totalTime = (lastTime - firstTime - (totalMockDifferenceTime / argv.handlers))
   const totalTransactions = perEntryResponse.length
   const sortedPerEntryResponse = perEntryResponse.sort(compareNumbers)
   const shortestResponse = sortedPerEntryResponse[0]
@@ -146,7 +151,7 @@ lr.on('end', function () {
   console.log('Last request: ' + lastLine.timestamp)
   console.log('Total number of lines in log file: ' + lineCount)
   console.log('Number of unique matched entries: ' + totalTransactions)
-  console.log('Total difference of all requests in milliseconds: ' + (totalTime))
+  console.log('Estimated total difference of all requests in milliseconds: ' + (totalTime))
   console.log('Shortest response time in millisecond: ' + shortestResponse)
   console.log('Longest response time in millisecond: ' + longestResponse)
   console.log('Mean/The average time a transaction takes in millisecond: ' + mean)
@@ -154,6 +159,6 @@ lr.on('end', function () {
   console.log('Standard deviation in milliseconds: ' + standardDeviation)
   console.log('Number of entries that took longer than a second: ' + transfersThatTakeLongerThanASecond)
   console.log(`% of entries that took longer than a second: ${(transfersThatTakeLongerThanASecond / totalTransactions * 100).toFixed(2)}%`)
-  console.log('Average transactions per second: ' + (totalTransactions / (totalTime / 1000)))
+  console.log('Estimate of average transactions per second: ' + (totalTransactions / (totalTime / 1000)))
   console.log('Total time waiting for mock server in milliseconds: ' + totalMockDifferenceTime)
 })
