@@ -60,7 +60,7 @@ let perEntryResponse = []
 let lineCount = 0
 let totalMockDifferenceTime = 0
 let transfersThatTakeLongerThanASecond = 0
-let mapOfMockTimes = new Map()
+let beginTime = new Date().getTime()
 
 function compare (a, b) {
   const timestampA = a.timestamp
@@ -118,7 +118,6 @@ lr.on('line', function (line) {
           mockTimeDifference += new Date(postCallBackLog.timestamp).getTime() - new Date(preCallbackLog.timestamp).getTime()
         }
         totalMockDifferenceTime += mockTimeDifference
-        mapOfMockTimes.set(logLine.uuid, mockTimeDifference)
         entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime() - mockTimeDifference
         perEntryResponse.push(entry.totalDifference)
         if (entry.totalDifference >= 1000) {
@@ -161,4 +160,5 @@ lr.on('end', function () {
   console.log(`% of entries that took longer than a second: ${(transfersThatTakeLongerThanASecond / totalTransactions * 100).toFixed(2)}%`)
   console.log('Estimate of average transactions per second: ' + (totalTransactions / (totalTime / 1000)))
   console.log('Total time waiting for mock server in milliseconds: ' + totalMockDifferenceTime)
+  console.log('Total time that script takes to run in seconds: ' + (new Date().getTime() - beginTime) / 1000)
 })
