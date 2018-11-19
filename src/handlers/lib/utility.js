@@ -383,9 +383,10 @@ const createTransferMessageProtocol = (payload, type, action, state, pp = '') =>
 const createParticipantTopicConf = (participantName, functionality, action, partition = null, opaqueKey = 0) => {
   return {
     topicName: transformAccountToTopicName(participantName, functionality, action),
-    key: Uuid(),
+    key: participantName,
     partition,
-    opaqueKey
+    opaqueKey,
+    'request.required.acks': Config
   }
 }
 
@@ -402,7 +403,7 @@ const createParticipantTopicConf = (participantName, functionality, action, part
 const createGeneralTopicConf = (functionality, action, partition = null, opaqueKey = 0) => {
   return {
     topicName: transformGeneralTopicName(functionality, action),
-    key: Uuid(),
+    key: null,
     partition,
     opaqueKey
   }

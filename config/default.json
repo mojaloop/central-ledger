@@ -305,6 +305,9 @@
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         },
@@ -329,6 +332,9 @@
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         },
@@ -353,6 +359,9 @@
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         }
@@ -379,6 +388,9 @@
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         },
@@ -403,6 +415,9 @@
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         },
@@ -427,6 +442,9 @@
               "queue.buffering.max.ms": 1,
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         }
@@ -454,6 +472,9 @@
               "broker.version.fallback": "0.10.1.0",
               "api.version.request": true,
               "partitioner": "random"
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         }
