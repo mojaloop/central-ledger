@@ -385,8 +385,7 @@ const createParticipantTopicConf = (participantName, functionality, action, part
     topicName: transformAccountToTopicName(participantName, functionality, action),
     key: participantName,
     partition,
-    opaqueKey,
-    'request.required.acks': Config
+    opaqueKey
   }
 }
 
