@@ -106,12 +106,18 @@ lr.on('line', function (line) {
         let mapOfLogs = new Map()
         for (var log of entry.entries) {
           if (log.process.includes('PRE-CALLBACK')) {
-            mapOfLogs.set(log.source, [log])
+            if (mapOfLogs.get(log.source)) {
+              var logs = mapOfLogs.get(log.source)
+              logs.push(log)
+              mapOfLogs.set(log.source, logs)
+            } else {
+              mapOfLogs.set(log.source, [log])
+            }
           } else if (log.process.includes('POST-CALLBACK')) {
             var logList = mapOfLogs.get(log.source)
             logList.push(log)
             mapOfLogs.set(log.source, logList)
-          } else if (log.process.includes('Transfers::api::fulfil - START')) {
+          } else if (log.process.includes(':fulfil - START')) {
             if (mapOfLogs.get(log.source)) {
               var listOfLogs = mapOfLogs.get(log.source)
               listOfLogs.push(log)
@@ -121,6 +127,7 @@ lr.on('line', function (line) {
             }
           }
         }
+        let postPreCallBackLog = {}
         for (var value of mapOfLogs.values()) {
           let preCallbackLog
           let postCallBackLog
@@ -130,13 +137,14 @@ lr.on('line', function (line) {
               preCallbackLog = entry
             } else if (entry.process.includes('POST-CALLBACK')) {
               postCallBackLog = entry
-            } else if (entry.process.includes('Transfers::api::fulfil - START')) {
+            } else if (entry.process.includes('fulfil - START')) {
               simulatorProcessTimeLog = entry
             }
           }
-          if (simulatorProcessTimeLog) {
-            var simulatorProcessTime = value[2]
-            timeForSimulatorList.push(new Date(simulatorProcessTime.timestamp).getTime() - new Date(preCallbackLog.timestamp).getTime())
+          if (!simulatorProcessTimeLog) {
+            postPreCallBackLog = preCallbackLog
+          } else {
+            timeForSimulatorList.push(new Date(simulatorProcessTimeLog.timestamp).getTime() - new Date(postPreCallBackLog.timestamp).getTime())
           }
           mockTimeDifference += new Date(postCallBackLog.timestamp).getTime() - new Date(preCallbackLog.timestamp).getTime()
         }
