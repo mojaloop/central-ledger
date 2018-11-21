@@ -643,7 +643,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .insert({
             transferId: payload.transferId,
             participantCurrencyId: payload.participantCurrencyId,
-            transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT_ACCOUNT,
+            transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT,
             ledgerEntryTypeId: ledgerEntryTypeId,
             amount: -amount,
             createdDate: transactionTimestamp

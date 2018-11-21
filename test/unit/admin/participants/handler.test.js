@@ -191,7 +191,7 @@ Test('Participant', participantHandlerTest => {
       const currencyList1 = { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
       const currencyList2 = { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
 
-      Participant.hubReconciliationAccountExists.withArgs(participant.currency).returns(P.resolve(true))
+      Participant.hubAccountExists.withArgs(participant.currency).returns(P.resolve(true))
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
       Participant.create.withArgs(payload).returns(P.resolve(participant.participantId))
       Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
@@ -232,7 +232,7 @@ Test('Participant', participantHandlerTest => {
       const currencyList1 = { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
       const currencyList2 = { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
 
-      Participant.hubReconciliationAccountExists.withArgs(participant.currency).returns(P.resolve(true))
+      Participant.hubAccountExists.withArgs(participant.currency).returns(P.resolve(true))
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participantCurrencyId1))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(P.resolve(participantCurrencyId2))
@@ -268,7 +268,7 @@ Test('Participant', participantHandlerTest => {
         ]
       }
 
-      Participant.hubReconciliationAccountExists.withArgs(participant.currency).returns(P.resolve(true))
+      Participant.hubAccountExists.withArgs(participant.currency).returns(P.resolve(true))
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       try {
         await Handler.create(createRequest({ payload }))
@@ -332,7 +332,7 @@ Test('Participant', participantHandlerTest => {
         name: 'fsp1',
         currency: 'USD'
       }
-      Participant.hubReconciliationAccountExists.returns(P.resolve(true))
+      Participant.hubAccountExists.returns(P.resolve(true))
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
       Participant.create.withArgs(payload).throws(new Error('Error while creating participant'))
       try {
