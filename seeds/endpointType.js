@@ -46,11 +46,11 @@ const endpointTypes = [
     'description': 'Participant callback URL to which transfer error notifications can be sent'
   },
   {
-    'name': 'NET_DEBIT_CAP_BREACH_MAIL',
+    'name': 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL',
     'description': 'Participant/Hub operator email address to which the net debit cap breach e-mail notification can be sent'
   },
   {
-    'name': 'NET_DEBIT_CAP_ADJUSTMENT',
+    'name': 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL',
     'description': 'Participant/Hub operator email address to which the net debit cap adjustment e-mail notification can be sent'
   }
 ]
