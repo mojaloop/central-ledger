@@ -51,8 +51,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
     transferParticipantRoleType: {
       PAYER_DFSP: 'PAYER_DFSP',
       PAYEE_DFSP: 'PAYEE_DFSP',
-      DFSP_SETTLEMENT_ACCOUNT: 'DFSP_SETTLEMENT_ACCOUNT',
-      DFSP_POSITION_ACCOUNT: 'DFSP_POSITION_ACCOUNT'
+      DFSP_SETTLEMENT: 'DFSP_SETTLEMENT',
+      DFSP_POSITION: 'DFSP_POSITION'
     },
     ledgerAccountType: {
       POSITION: 'POSITION',

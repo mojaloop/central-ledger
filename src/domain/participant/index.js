@@ -652,5 +652,5 @@ module.exports = {
   getAccounts,
   getParticipantAccount,
   recordFundsInOut,
-  hubReconciliationAccountExists: ParticipantCurrencyModel.hubReconciliationAccountExists
+  hubAccountExists: ParticipantCurrencyModel.hubAccountExists
 }
