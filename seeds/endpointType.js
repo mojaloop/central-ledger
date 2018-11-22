@@ -44,6 +44,14 @@ const endpointTypes = [
   {
     'name': 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR',
     'description': 'Participant callback URL to which transfer error notifications can be sent'
+  },
+  {
+    'name': 'NET_DEBIT_CAP_BREACH_MAIL',
+    'description': 'Participant/Hub operator email address to which the net debit cap breach e-mail notification can be sent'
+  },
+  {
+    'name': 'NET_DEBIT_CAP_ADJUSTMENT',
+    'description': 'Participant/Hub operator email address to which the net debit cap adjustment e-mail notification can be sent'
   }
 ]
 
