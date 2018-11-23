@@ -28,7 +28,7 @@
  * @module src/handlers/lib/kafka
  */
 
-const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
+const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 const uuid = require('uuid4')
 

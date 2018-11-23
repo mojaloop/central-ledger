@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "3.7.13-snapshot",
+  "version": "3.9.0-performance",
   "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "repository": {
@@ -59,7 +59,8 @@
     "@mojaloop/central-services-auth": "0.2.0",
     "@mojaloop/central-services-database": "3.1.0-snapshot",
     "@mojaloop/central-services-error-handling": "0.5.1",
-    "@mojaloop/central-services-shared": "3.7.1-snapshot",
+    "@mojaloop/central-services-shared": "3.9.1-snapshot",
+    "@mojaloop/central-services-stream": "3.9.0-snapshot",
     "@mojaloop/forensic-logging-client": "0.5.1",
     "@now-ims/hapi-now-auth": "1.0.1",
     "base64url": "3.0.0",
@@ -97,7 +98,7 @@
     "vision": "5.3.1",
     "winston": "2.4.0",
     "ws": "4.0.0",
-    "yargs": "^12.0.2"
+    "yargs": "^12.0.5"
   },
   "optionalDependencies": {
     "mysql": "2.16.0"

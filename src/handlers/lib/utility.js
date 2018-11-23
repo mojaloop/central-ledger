@@ -380,7 +380,7 @@ const createTransferMessageProtocol = (payload, type, action, state, pp = '') =>
  *
  * @returns {object} - Returns newly created participant topicConfig
  */
-const createParticipantTopicConf = (participantName, functionality, action, partition = null, opaqueKey = 0) => {
+const createParticipantTopicConf = (participantName, functionality, action, partition = null, opaqueKey = null) => {
   return {
     topicName: transformAccountToTopicName(participantName, functionality, action),
     key: participantName,
@@ -399,7 +399,7 @@ const createParticipantTopicConf = (participantName, functionality, action, part
  *
  * @returns {object} - Returns newly created general topicConfig
  */
-const createGeneralTopicConf = (functionality, action, partition = null, opaqueKey = 0) => {
+const createGeneralTopicConf = (functionality, action, partition = null, opaqueKey = null) => {
   return {
     topicName: transformGeneralTopicName(functionality, action),
     key: null,
