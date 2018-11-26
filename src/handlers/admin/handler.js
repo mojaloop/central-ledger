@@ -42,9 +42,9 @@ const TransferEventType = Enum.transferEventType
 const AdminTransferAction = Enum.adminTransferAction
 const TransferService = require('../../domain/transfer')
 const Db = require('../../db')
-const postRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE]
-const putRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
-const allowedActions = [].concat(postRelatedActions).concat(putRelatedActions)
+const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE]
+const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
+const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
 
 const commitMessageSync = async (kafkaTopic, consumer, message) => {
   if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -53,13 +53,14 @@ const commitMessageSync = async (kafkaTopic, consumer, message) => {
   return true
 }
 
-const createNewRecordFunds = async (payload, transactionTimestamp, enums) => {
+const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   try {
     Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
     // Save the valid transfer into the database
     if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
       Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
 
+      /** @namespace Db.getKnex **/
       const knex = Db.getKnex()
       return knex.transaction(async trx => {
         try {
@@ -116,7 +117,7 @@ const transferExists = async (payload, transferId) => {
     const transferStateEnum = currentTransferState.enumeration
     if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
       Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::request already finalized`)
-    } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
+    } else if (transferStateEnum === TransferState.RECEIVED_PREPARE || transferStateEnum === TransferState.RESERVED) {
       Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::previous request still in progress do nothing`)
     }
   }
@@ -141,7 +142,7 @@ const transfer = async (error, messages) => {
 
     if (!payload) {
       Logger.info(`AdminTransferHandler::validationFailed`)
-        // CANNOT BE SAVED BECAUSE NO PAYLOAD IS PROVIDED. What action should be taken?
+      // TODO: Cannot be saved because no payload has been provided. What action should be taken?
       return false
     }
 
@@ -161,11 +162,11 @@ const transfer = async (error, messages) => {
     if (!allowedActions.includes(payload.action)) {
       Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
     }
-    if (postRelatedActions.includes(payload.action)) {
+    if (httpPostRelatedActions.includes(payload.action)) {
       const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
       if (!existsMatching && !existsNotMatching) {
         Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
-        await createNewRecordFunds(payload, transactionTimestamp, enums)
+        await createRecordFundsInOut(payload, transactionTimestamp, enums)
       } else if (existsMatching) {
         await transferExists(payload, transferId)
       } else {

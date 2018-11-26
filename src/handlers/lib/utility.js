@@ -120,7 +120,7 @@ const STATE = {
  *
  * @description Global ENUMS object
  *
- * @enum {object} ENUMS
+ * @enum {string} ENUMS
  * @property {string} PRODUCER - This ENUM is for the PRODUCER
  * @property {string} CONSUMER - This ENUM is for the CONSUMER
  */

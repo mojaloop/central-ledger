@@ -483,7 +483,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
-  await transferFacadeTest.test('saveTransferFulfiled should', async saveTransferFulfiled => {
+  await transferFacadeTest.test('saveTransferFulfilled should', async saveTransferFulfilled => {
     try {
       const transferId = 't1'
       const payload = {
@@ -496,7 +496,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       let isCommit = null
       const stateReason = null
       let hasPassedValidation = null
-      const saveTransferFulfiledExecuted = true
+      const saveTransferFulfilledExecuted = true
       const transferFulfilmentRecord = { transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: Time.getUTCString(now), isValid: true, createdDate: Time.getUTCString(now), settlementWindowId: 1 }
       const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: Time.getUTCString(now) }
       let transferExtensionRecords = transferExtensions.map(ext => {
@@ -507,13 +507,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           value: ext.value
         }
       })
-      const saveTransferFulfiledResult = { saveTransferFulfiledExecuted, transferFulfilmentRecord, transferStateChangeRecord, transferExtensions: transferExtensionRecords }
+      const saveTransferFulfilledResult = { saveTransferFulfilledExecuted, transferFulfilmentRecord, transferStateChangeRecord, transferExtensions: transferExtensionRecords }
 
       const ModuleProxy = Proxyquire('../../../../src/models/transfer/facade', {
         uuid4: sandbox.stub().returns(transferFulfilmentRecord.transferFulfilmentId)
       })
 
-      await saveTransferFulfiled.test('return transfer in RECEIVED_FULFIL state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in RECEIVED_FULFIL state', async (test) => {
         try {
           isCommit = true
           hasPassedValidation = true
@@ -555,8 +555,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
@@ -568,13 +568,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.fail()
           test.end()
         }
       })
 
-      await saveTransferFulfiled.test('return transfer in REJECTED state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in REJECTED state', async (test) => {
         try {
           isCommit = false
           hasPassedValidation = true
@@ -616,8 +616,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
@@ -629,13 +629,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.fail()
           test.end()
         }
       })
 
-      await saveTransferFulfiled.test('return transfer in ABORTED state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in ABORTED state', async (test) => {
         try {
           hasPassedValidation = false
           let record = [{settlementWindowId: 1}]
@@ -676,8 +676,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
@@ -689,13 +689,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.fail()
           test.end()
         }
       })
 
-      await saveTransferFulfiled.test('rollback and throw error', async (test) => {
+      await saveTransferFulfilled.test('rollback and throw error', async (test) => {
         try {
           hasPassedValidation = false
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
@@ -716,33 +716,33 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.pass('Error thrown')
           test.end()
         }
       })
 
-      await saveTransferFulfiled.end()
+      await saveTransferFulfilled.end()
     } catch (err) {
-      Logger.error(`saveTransferFulfiled failed with error - ${err}`)
-      saveTransferFulfiled.fail()
-      await saveTransferFulfiled.end()
+      Logger.error(`saveTransferFulfilled failed with error - ${err}`)
+      saveTransferFulfilled.fail()
+      await saveTransferFulfilled.end()
     }
   })
 
-  await transferFacadeTest.test('saveTransferFulfiled should throw an error', async (test) => {
+  await transferFacadeTest.test('saveTransferFulfilled should throw an error', async (test) => {
     try {
       const transferId = 't1'
       Db.transferParticipant.query.throws(new Error())
-      await Model.saveTransferFulfiled(transferId)
+      await Model.saveTransferFulfilled(transferId)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
-      Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+      Logger.error(`saveTransferFulfilled failed with error - ${err}`)
       test.pass('Error thrown')
       test.end()
     }
@@ -1592,7 +1592,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.equal(knexStub.withArgs('transfer').callCount, 1)
           test.equal(knexStub.withArgs('participantCurrency').callCount, 1)
           test.equal(knexStub.withArgs('transferParticipant').callCount, 2)
-          test.equal(knexStub.withArgs('transferStateChange').callCount, 0)
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
           test.equal(knexStub.withArgs('transferExtension').callCount, 3)
           test.equal(Model.reconciliationPositionChange.callCount, 1)
           test.equal(Model.reconciliationTransferAbort.callCount, 0)
