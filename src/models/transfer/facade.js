@@ -43,6 +43,7 @@ const _ = require('lodash')
 
 const getById = async (id) => {
   try {
+    /** @namespace Db.transfer **/
     return await Db.transfer.query(async (builder) => {
       let transferResult = await builder
         .where({
@@ -154,8 +155,9 @@ const getAll = async () => {
 
 const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
-    return await Db.transferParticipant.query(async (builder) => {
-      let result = await builder
+    /** @namespace Db.transferParticipant **/
+    return await Db.transferParticipant.query(async builder => {
+      return builder
         .where({
           'transferParticipant.transferId': id,
           'transferParticipant.transferParticipantRoleTypeId': transferParticipantRoleTypeId,
@@ -169,14 +171,13 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
-      return result
     })
   } catch (e) {
     throw e
   }
 }
 
-const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
+const saveTransferFulfilled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
   const transferFulfilmentId = Uuid() // TODO: should be generated before TransferFulfilmentDuplicateCheck and passed here as parameter
   const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.REJECTED) : Enum.TransferState.ABORTED)
   const transferFulfilmentRecord = {
@@ -206,9 +207,11 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
   }
 
   try {
+    /** @namespace Db.getKnex **/
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
+        /** @namespace Db.settlementWindow **/
         let result = await Db.settlementWindow.query(builder => {
           return builder
             .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
@@ -237,7 +240,7 @@ const saveTransferFulfiled = async (transferId, payload, isCommit = true, stateR
       throw err
     })
     return {
-      saveTransferFulfiledExecuted: true,
+      saveTransferFulfilledExecuted: true,
       transferFulfilmentRecord,
       transferStateChangeRecord,
       transferExtensions
@@ -358,8 +361,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
 const getTransferStateByTransferId = async (id) => {
   try {
+    /** @namespace Db.transferStateChange **/
     return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
+      return builder
         .innerJoin('transferState AS ts', 'ts.transferStateId', 'transferStateChange.transferStateId')
         .where({
           'transferStateChange.transferId': id,
@@ -368,7 +372,6 @@ const getTransferStateByTransferId = async (id) => {
         .select('transferStateChange.*', 'ts.enumeration')
         .orderBy('transferStateChangeId', 'desc')
         .first()
-      return result
     })
   } catch (err) {
     throw err
@@ -440,7 +443,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
           }
           await knex('segment').transacting(trx).insert(segment)
         } else {
-          await knex('segment').transacting(trx).where({segmentId}).update({value: intervalMax})
+          await knex('segment').transacting(trx).where({ segmentId }).update({ value: intervalMax })
         }
         await trx.commit
       } catch (err) {
@@ -451,7 +454,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       throw err
     })
 
-    let result = knex('transferTimeout AS tt')
+    return knex('transferTimeout AS tt')
       .innerJoin(knex('transferStateChange AS tsc1')
         .select('tsc1.transferId')
         .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
@@ -478,7 +481,6 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .where('tt.expirationDate', '<', transactionTimestamp)
       .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
         'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
-    return result
   } catch (e) {
     throw e
   }
@@ -492,7 +494,7 @@ const reconciliationPositionChange = async function (payload, transferStateId, t
       let latestReconciliationPosition, latestSettlementPosition
       try {
         // Retrieve hub reconciliation account for the specified currency
-        let {reconciliationAccountId} = await knex('participantCurrency')
+        let { reconciliationAccountId } = await knex('participantCurrency')
           .select('participantCurrencyId AS reconciliationAccountId')
           .where('participantId', 1)
           .andWhere('currencyId', payload.amount.currency)
@@ -500,7 +502,7 @@ const reconciliationPositionChange = async function (payload, transferStateId, t
           .transacting(trx)
 
         // Select hub reconciliation account position FOR UPDATE
-        let {reconciliationPositionId, reconciliationPositionValue} = await knex('participantPosition')
+        let { reconciliationPositionId, reconciliationPositionValue } = await knex('participantPosition')
           .select('participantPositionId AS reconciliationPositionId', 'value AS reconciliationPositionValue')
           .where('participantCurrencyId', reconciliationAccountId)
           .first()
@@ -508,7 +510,7 @@ const reconciliationPositionChange = async function (payload, transferStateId, t
           .forUpdate()
 
         // Select participant settlement account position FOR UPDATE
-        let {settlementPositionId, settlementPositionValue} = await knex('participantPosition')
+        let { settlementPositionId, settlementPositionValue } = await knex('participantPosition')
           .select('participantPositionId AS settlementPositionId', 'value AS settlementPositionValue')
           .where('participantCurrencyId', payload.participantCurrencyId)
           .first()
@@ -610,7 +612,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .transacting(trx)
 
         // Retrieve hub reconciliation account for the specified currency
-        let {reconciliationAccountId} = await knex('participantCurrency')
+        let { reconciliationAccountId } = await knex('participantCurrency')
           .select('participantCurrencyId AS reconciliationAccountId')
           .where('participantId', 1)
           .andWhere('currencyId', payload.amount.currency)
@@ -646,6 +648,15 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
             transferParticipantRoleTypeId: enums.transferParticipantRoleType.DFSP_SETTLEMENT,
             ledgerEntryTypeId: ledgerEntryTypeId,
             amount: -amount,
+            createdDate: transactionTimestamp
+          })
+          .transacting(trx)
+
+        await knex('transferStateChange')
+          .insert({
+            transferId: payload.transferId,
+            transferStateId: enums.transferState.RECEIVED_PREPARE,
+            reason: payload.reason,
             createdDate: transactionTimestamp
           })
           .transacting(trx)
@@ -822,7 +833,7 @@ const TransferFacade = {
   getById,
   getAll,
   getTransferInfoToChangePosition,
-  saveTransferFulfiled,
+  saveTransferFulfilled: saveTransferFulfilled,
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,
