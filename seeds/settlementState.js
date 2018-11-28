@@ -56,8 +56,8 @@ const settlementStates = [
     'description': 'When all outstanding accounts are SETTLED, the entire Settlement is moved to SETTLED.'
   },
   {
-    'settlementStateId': 'NOT_SETTLED',
-    'enumeration': 'NOT_SETTLED',
+    'settlementStateId': 'ABORTED',
+    'enumeration': 'ABORTED',
     'description': 'Final state when the settlement is not possible.'
   }
 ]

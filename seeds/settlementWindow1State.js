@@ -46,8 +46,8 @@ const settlementWindowStates = [
     'description': 'The Hub Operator/Settlement Bank has confirmed that all the participants that engaged in the settlement window have now settled their payments in accordance with the net settlement report.'
   },
   {
-    'settlementWindowStateId': 'NOT_SETTLED',
-    'enumeration': 'NOT_SETTLED',
+    'settlementWindowStateId': 'ABORTED',
+    'enumeration': 'ABORTED',
     'description': 'Window returned to this state when the settlement was not possible. This window may now be included in a future settlement.'
   }
 ]
