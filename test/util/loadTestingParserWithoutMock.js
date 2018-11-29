@@ -62,6 +62,7 @@ let totalMockDifferenceTime = 0
 let transfersThatTakeLongerThanASecond = 0
 let beginTime = new Date()
 let timeForSimulatorList = []
+let longestTransaction
 
 function compare (a, b) {
   const timestampA = a.timestamp
@@ -127,32 +128,57 @@ lr.on('line', function (line) {
             }
           }
         }
-        let postPreCallBackLog = {}
+        let preCallbackLog1
+        let postCallBackLog1
+        let preCallbackLog2
+        let postCallBackLog2
         for (var value of mapOfLogs.values()) {
-          let preCallbackLog
-          let postCallBackLog
           let simulatorProcessTimeLog
-          for (let entry of value) {
-            if (entry.process.includes('PRE-CALLBACK')) {
-              preCallbackLog = entry
-            } else if (entry.process.includes('POST-CALLBACK')) {
-              postCallBackLog = entry
-            } else if (entry.process.includes('fulfil - START')) {
-              simulatorProcessTimeLog = entry
+          for (let singleEntry of value) {
+            if (singleEntry.process.includes('PRE-CALLBACK')) {
+              if (!preCallbackLog1) {
+                preCallbackLog1 = singleEntry
+              } else {
+                preCallbackLog2 = singleEntry
+              }
+            } else if (singleEntry.process.includes('POST-CALLBACK')) {
+              if (!postCallBackLog1) {
+                postCallBackLog1 = singleEntry
+              } else {
+                postCallBackLog2 = singleEntry
+              }
+            } else if (singleEntry.process.includes('fulfil - START')) {
+              simulatorProcessTimeLog = singleEntry
             }
           }
-          if (!simulatorProcessTimeLog) {
-            postPreCallBackLog = preCallbackLog
-          } else {
-            timeForSimulatorList.push(new Date(simulatorProcessTimeLog.timestamp).getTime() - new Date(postPreCallBackLog.timestamp).getTime())
+          if (simulatorProcessTimeLog) {
+            timeForSimulatorList.push(new Date(simulatorProcessTimeLog.timestamp).getTime() - new Date(preCallbackLog1.timestamp).getTime())
           }
-          mockTimeDifference += new Date(postCallBackLog.timestamp).getTime() - new Date(preCallbackLog.timestamp).getTime()
+          if (!preCallbackLog2) {
+            mockTimeDifference += new Date(postCallBackLog1.timestamp).getTime() - new Date(preCallbackLog1.timestamp).getTime()
+          } else {
+            mockTimeDifference += new Date(postCallBackLog2.timestamp).getTime() - new Date(preCallbackLog2.timestamp).getTime()
+          }
         }
+
         totalMockDifferenceTime += mockTimeDifference
         entry.totalDifference = new Date(entry.entries[entry.entries.length - 1].timestamp).getTime() - new Date(entry.entries[0].timestamp).getTime() - mockTimeDifference
         perEntryResponse.push(entry.totalDifference)
         if (entry.totalDifference >= 1000) {
           transfersThatTakeLongerThanASecond++
+        }
+        if (longestTransaction) {
+          if (longestTransaction.entry.totalDifference < entry.totalDifference) {
+            longestTransaction = {
+              transferId: entry.entries[0].uuid,
+              entry
+            }
+          }
+        } else {
+          longestTransaction = {
+            transferId: entry.entries[0].uuid,
+            entry
+          }
         }
       }
       logMap.set(logLine.uuid, entry)
@@ -178,6 +204,7 @@ lr.on('end', function () {
   const longestResponse = sortedPerEntryResponse[perEntryResponse.length - 1]
   const sortedTimeForSimulatorList = timeForSimulatorList.sort(compareNumbers)
 
+  console.log(`Started processing ${argv.file} at ${beginTime}`)
   console.log('First request: ' + firstLine.timestamp)
   console.log('Last request: ' + lastLine.timestamp)
   console.log('Total number of lines in log file: ' + lineCount)
@@ -190,9 +217,9 @@ lr.on('end', function () {
   console.log('Standard deviation in milliseconds: ' + standardDeviation)
   console.log('Number of entries that took longer than a second: ' + transfersThatTakeLongerThanASecond)
   console.log(`% of entries that took longer than a second: ${(transfersThatTakeLongerThanASecond / totalTransactions * 100).toFixed(2)}%`)
+  console.log(`The longest transaction was: ${longestTransaction.transferId}`)
   console.log('Estimate of average transactions per second: ' + (totalTransactions / (totalTime / 1000)))
   console.log('Total time waiting for mock server in milliseconds: ' + totalMockDifferenceTime)
-  console.log(`Started processing ${argv.file} at ${beginTime}`)
   console.log('Total time that script takes to run in seconds: ' + (new Date().getTime() - beginTime.getTime()) / 1000)
   console.log('Average time per transaction taken on simulator in milliseconds: ' + (timeForSimulatorList.reduce((a, b) => a + b) / timeForSimulatorList.length))
   console.log('Shortest transaction time taken on simulator in milliseconds: ' + sortedTimeForSimulatorList[0])
