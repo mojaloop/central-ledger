@@ -37,6 +37,7 @@ const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
 const Enum = require('../../lib/enum')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const create = async (payload) => {
   try {
@@ -44,6 +45,7 @@ const create = async (payload) => {
     if (!participant) throw new Error('Something went wrong. Participant cannot be created')
     return participant
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -57,6 +59,7 @@ const getAll = async () => {
     }))
     return all
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -95,6 +98,7 @@ const update = async (name, payload) => {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     return participant
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -104,6 +108,7 @@ const createParticipantCurrency = async (participantId, currencyId, ledgerAccoun
     const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -112,6 +117,7 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
   try {
     return await ParticipantCurrencyModel.getById(participantCurrencyId)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -124,7 +130,8 @@ const destroyByName = async (name) => {
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -152,6 +159,7 @@ const addEndpoint = async (name, payload) => {
     participantExists(participant)
     return ParticipantFacade.addEndpoint(participant.participantId, payload)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -178,6 +186,7 @@ const getEndpoint = async (name, type) => {
     const participantEndpoint = await ParticipantFacade.getEndpoint(participant.participantId, type)
     return participantEndpoint
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -203,6 +212,7 @@ const getAllEndpoints = async (name) => {
     const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant.participantId)
     return participantEndpoints
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -225,6 +235,7 @@ const destroyPariticpantEndpointByName = async (name) => {
     participantExists(participant)
     return ParticipantModel.destroyPariticpantEndpointByParticipantId(participant.participantId)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -269,6 +280,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     }
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -289,6 +301,7 @@ const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -309,6 +322,7 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
   try {
     return ParticipantPositionChangeModel.getByParticipantPositionId(participantPositionId)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -331,6 +345,7 @@ const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => 
     participantExists(participant)
     return ParticipantPositionModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -354,6 +369,7 @@ const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
     participantExists(participant)
     return ParticipantLimitModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -388,6 +404,7 @@ const getLimits = async (name, { currency = null, type = null }) => {
       return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.LedgerAccountType.POSITION)
     }
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -420,6 +437,7 @@ const adjustLimits = async (name, payload) => {
     participantExists(participant)
     return ParticipantFacade.adjustLimits(participant.participantCurrencyId, payload.limit)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -499,6 +517,7 @@ const getPositions = async (name, query) => {
       return positions
     }
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -523,6 +542,7 @@ const getAccounts = async (name, query) => {
     }
     return positions
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
