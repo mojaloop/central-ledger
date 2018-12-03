@@ -29,6 +29,7 @@ const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const entityItem = ({ name, createdDate, isActive, currencyList }) => {
   const link = UrlParser.toParticipantUri(name)
@@ -81,6 +82,7 @@ const create = async function (request, h) {
     participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId1), await Participant.getParticipantCurrencyById(participantCurrencyId2)]
     return h.response(entityItem(participant)).code(201)
   } catch (err) {
+    Logger.error(err)
     throw Boom.badRequest(err.message)
   }
 }
@@ -113,6 +115,7 @@ const addEndpoint = async function (request, h) {
     await Participant.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
+    Logger.error(err)
     throw Boom.badRequest()
   }
 }
@@ -144,6 +147,7 @@ const getEndpoint = async function (request, h) {
       return endpoints
     }
   } catch (err) {
+    Logger.error(err)
     throw Boom.badRequest()
   }
 }
@@ -154,6 +158,7 @@ const addLimitAndInitialPosition = async function (request, h) {
     await Participant.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
+    Logger.error(err)
     throw Boom.badRequest()
   }
 }
@@ -176,6 +181,7 @@ const getLimits = async function (request, h) {
     }
     return limits
   } catch (err) {
+    Logger.error(err)
     throw Boom.badRequest()
   }
 }
@@ -195,6 +201,7 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
+    Logger.error(err)
     throw Boom.badRequest()
   }
 }
@@ -213,6 +220,7 @@ const getAccounts = async function (request, h) {
   try {
     return Participant.getAccounts(request.params.name, request.query)
   } catch (err) {
+    Logger.error(err)
     throw Boom.badRequest()
   }
 }

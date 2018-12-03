@@ -28,11 +28,13 @@
 'use strict'
 
 const Db = require('../../db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 exports.getById = async (id) => {
   try {
     return await Db.participant.findOne({ participantId: id })
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -42,6 +44,7 @@ exports.getByName = async (name) => {
     const named = await Db.participant.findOne({ name })
     return named
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -51,6 +54,7 @@ exports.getAll = async () => {
     const participants = await Db.participant.find({}, { order: 'name asc' })
     return participants
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -63,6 +67,7 @@ exports.create = async (participant) => {
     })
     return result
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -71,6 +76,7 @@ exports.update = async (participant, isActive) => {
   try {
     return await Db.participant.update({ participantId: participant.participantId }, { isActive })
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -79,6 +85,7 @@ exports.destroyByName = async (name) => {
   try {
     return await Db.participant.destroy({name: name})
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
@@ -87,6 +94,7 @@ exports.destroyPariticpantEndpointByParticipantId = async (participantId) => {
   try {
     return Db.participantEndpoint.destroy({participantId: participantId})
   } catch (err) {
+    Logger.error(err)
     throw new Error(err.message)
   }
 }
