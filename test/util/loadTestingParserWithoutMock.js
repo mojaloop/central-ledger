@@ -217,7 +217,7 @@ lr.on('end', function () {
   console.log('Standard deviation in milliseconds: ' + standardDeviation)
   console.log('Number of entries that took longer than a second: ' + transfersThatTakeLongerThanASecond)
   console.log(`% of entries that took longer than a second: ${(transfersThatTakeLongerThanASecond / totalTransactions * 100).toFixed(2)}%`)
-  console.log(`The longest transaction was: ${longestTransaction.transferId}`)
+  console.log(`The longest transaction was: ${longestTransaction.transferId} with a time of ${longestTransaction.entry.totalDifference}`)
   console.log('Estimate of average transactions per second: ' + (totalTransactions / (totalTime / 1000)))
   console.log('Total time waiting for mock server in milliseconds: ' + totalMockDifferenceTime)
   console.log('Total time that script takes to run in seconds: ' + (new Date().getTime() - beginTime.getTime()) / 1000)
