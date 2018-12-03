@@ -35,7 +35,7 @@ const P = require('bluebird')
 const Proxyquire = require('proxyquire')
 const Config = require(`${src}/lib/config`)
 // const CronCronJob = require('cron').CronJob
-// const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
+// const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 
 Test('setup', setupTest => {
   let sandbox
