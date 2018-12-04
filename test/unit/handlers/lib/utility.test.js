@@ -6,7 +6,7 @@ const Mustache = require('mustache')
 const P = require('bluebird')
 const Uuid = require('uuid4')
 // const Logger = require('@mojaloop/central-services-shared').Logger
-const KafkaProducer = require('@mojaloop/central-services-shared').Kafka.Producer
+const KafkaProducer = require('@mojaloop/central-services-stream').Kafka.Producer
 
 const Utility = require('../../../../src/handlers/lib/utility')
 

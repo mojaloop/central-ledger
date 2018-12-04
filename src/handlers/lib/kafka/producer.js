@@ -33,7 +33,7 @@
  * @module src/handlers/lib/kafka
  */
 
-const Producer = require('@mojaloop/central-services-shared').Kafka.Producer
+const Producer = require('@mojaloop/central-services-stream').Kafka.Producer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 let listOfProducers = {}
