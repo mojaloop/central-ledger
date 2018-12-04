@@ -135,7 +135,7 @@ const prepare = async (error, messages) => {
           await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE_DUPLICATE, message.value, Utility.ENUMS.STATE.SUCCESS)
           return true
           // TODO: This state of RECEIVED is no longer available in the Seeds. Need to understand if this should be another state or perhaps even removed?
-        } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
+        } else if (transferStateEnum === TransferState.RECEIVED_PREPARE || transferStateEnum === TransferState.RESERVED) {
           // The request is in progress, do nothing
           Logger.info('TransferService::prepare::dupcheck::existsMatching:: previous request is still in progress do nothing')
         }
