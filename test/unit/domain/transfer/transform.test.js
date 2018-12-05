@@ -140,7 +140,7 @@ Test('Transform Service', transformTest => {
       }
     })
 
-    toTransferTest.test('return result for saveTransferFulfiledExecuted', async (test) => {
+    toTransferTest.test('return result for saveTransferFulfilledExecuted', async (test) => {
       try {
         const executedTransfer = {
           transferFulfilmentRecord: {
@@ -158,7 +158,7 @@ Test('Transform Service', transformTest => {
               value: 'value1'
             }
           ],
-          saveTransferFulfiledExecuted: true
+          saveTransferFulfilledExecuted: true
         }
 
         const expected = {

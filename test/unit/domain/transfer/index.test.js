@@ -314,7 +314,7 @@ Test('Transfer Service', transferIndexTest => {
   transferIndexTest.test('fulfil should', fulfilTest => {
     fulfilTest.test('commit transfer', async (test) => {
       try {
-        TransferFacade.saveTransferFulfiled.returns(Promise.resolve(transferRecord))
+        TransferFacade.saveTransferFulfilled.returns(Promise.resolve(transferRecord))
         TransferObjectTransform.toTransfer.returns(payload)
         const response = await TransferService.fulfil(payload.transferId, payload)
         test.equal(response, payload)
@@ -328,7 +328,7 @@ Test('Transfer Service', transferIndexTest => {
 
     fulfilTest.test('throw error', async (test) => {
       try {
-        TransferFacade.saveTransferFulfiled.throws(new Error())
+        TransferFacade.saveTransferFulfilled.throws(new Error())
         TransferObjectTransform.toTransfer.returns(payload)
         await TransferService.fulfil(payload.transferId, payload)
         test.fail('Error not thrown')
@@ -346,7 +346,7 @@ Test('Transfer Service', transferIndexTest => {
   transferIndexTest.test('reject should', rejectTest => {
     rejectTest.test('commit transfer', async (test) => {
       try {
-        TransferFacade.saveTransferFulfiled.returns(Promise.resolve(transferRecord))
+        TransferFacade.saveTransferFulfilled.returns(Promise.resolve(transferRecord))
         TransferObjectTransform.toTransfer.returns(payload)
         const response = await TransferService.reject(payload.transferId, payload)
         test.equal(response, payload)
@@ -360,7 +360,7 @@ Test('Transfer Service', transferIndexTest => {
 
     rejectTest.test('throw error', async (test) => {
       try {
-        TransferFacade.saveTransferFulfiled.throws(new Error())
+        TransferFacade.saveTransferFulfilled.throws(new Error())
         TransferObjectTransform.toTransfer.returns(payload)
         await TransferService.reject(payload.transferId, payload)
         test.fail('Error not thrown')

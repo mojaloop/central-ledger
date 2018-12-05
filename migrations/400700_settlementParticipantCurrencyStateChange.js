@@ -34,6 +34,7 @@ exports.up = async (knex, Promise) => {
         t.string('settlementStateId', 50).notNullable()
         t.foreign('settlementStateId', 'spcsc_settlementstateid_foreign').references('settlementStateId').inTable('settlementState')
         t.string('reason', 512).defaultTo(null).nullable()
+        t.string('externalReference', 50).defaultTo(null).nullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }

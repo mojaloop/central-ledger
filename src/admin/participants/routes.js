@@ -234,7 +234,7 @@ module.exports = [
       validate: {
         payload: {
           currency: currencyValidator,
-          type: Joi.string().required().description('Account type')  // Needs a validator here
+          type: Joi.string().required().description('Account type') // Needs a validator here
         },
         params: {
           name: Joi.string().required().description('Participant name') // nameValidator

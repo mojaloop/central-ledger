@@ -168,8 +168,8 @@ const TransferParticipantRoleType = {
   PAYER_DFSP: 1,
   PAYEE_DFSP: 2,
   HUB: 3,
-  DFSP_SETTLEMENT_ACCOUNT: 4,
-  DFSP_POSITION_ACCOUNT: 5
+  DFSP_SETTLEMENT: 4,
+  DFSP_POSITION: 5
 }
 const TransferState = {
   ABORTED: 'ABORTED',
