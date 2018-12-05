@@ -92,7 +92,7 @@ const expire = (id) => {
 const fulfil = async (transferId, payload) => {
   try {
     const isCommit = true
-    const transfer = await TransferFacade.saveTransferFulfiled(transferId, payload, isCommit)
+    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
     throw err
@@ -103,7 +103,7 @@ const reject = async (transferId, payload) => {
   try {
     const isCommit = false
     const stateReason = 'Transaction failed due to user rejection' // TODO: move to generic reason
-    const transfer = await TransferFacade.saveTransferFulfiled(transferId, payload, isCommit, stateReason)
+    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
     throw err
@@ -111,7 +111,7 @@ const reject = async (transferId, payload) => {
 }
 
 const saveTransferStateChange = async (stateRecord) => {
-  TransferStateChangeModel.saveTransferStateChange(stateRecord)
+  return TransferStateChangeModel.saveTransferStateChange(stateRecord)
 }
 
 /**

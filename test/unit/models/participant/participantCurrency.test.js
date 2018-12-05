@@ -203,10 +203,10 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
     }
   })
 
-  await participantCurrencyTest.test('hubReconciliationAccountExists', async (assert) => {
+  await participantCurrencyTest.test('hubAccountExists', async (assert) => {
     try {
-      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD' }).returns(Promise.resolve(true))
-      const result = await Model.hubReconciliationAccountExists('USD')
+      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD', ledgerAccountTypeId: 3 }).returns(Promise.resolve(true))
+      const result = await Model.hubAccountExists('USD', 3)
       assert.equal(result, true)
       sandbox.restore()
       assert.end()

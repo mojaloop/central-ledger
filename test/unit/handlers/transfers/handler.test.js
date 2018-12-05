@@ -13,7 +13,7 @@ const Utility = require('../../../../src/handlers/lib/utility')
 const TransferState = require('../../../../src/lib/enum').TransferState
 const ilp = require('../../../../src/models/transfer/ilpPacket')
 const Uuid = require('uuid4')
-const KafkaConsumer = require('@mojaloop/central-services-shared').Kafka.Consumer
+const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Consumer = require('../../../../src/handlers/lib/kafka/consumer')
 const DAO = require('../../../../src/handlers/lib/dao')
 

@@ -26,12 +26,13 @@
 
 const Db = require('../../db')
 
-exports.create = async (participantId, currencyId, ledgerAccountTypeId) => {
+exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
     let result = await Db.participantCurrency.insert({
       participantId,
       currencyId,
       ledgerAccountTypeId,
+      isActive,
       createdBy: 'unknown'
     })
     return result
@@ -77,11 +78,12 @@ exports.getByName = async (accountParams) => {
   }
 }
 
-exports.hubReconciliationAccountExists = async (currencyId) => {
+exports.hubAccountExists = async (currencyId, ledgerAccountTypeId) => {
   try {
     const params = {
       participantId: 1,
-      currencyId
+      currencyId,
+      ledgerAccountTypeId
     }
     const participantCurrency = await Db.participantCurrency.findOne(params)
     return !!participantCurrency

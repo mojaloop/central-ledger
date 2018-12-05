@@ -66,9 +66,14 @@ const handleMissingRecord = (entity) => {
 const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    const hubReconciliationAccountExists = await Participant.hubReconciliationAccountExists(request.payload.currency)
+    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const hubReconciliationAccountExists = await Participant.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
     if (!hubReconciliationAccountExists) {
       throw new Errors.HubReconciliationAccountNotFound()
+    }
+    const hubMlnsAccountExists = await Participant.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
+    if (!hubMlnsAccountExists) {
+      throw new Errors.HubMlnsAccountNotFound()
     }
     let participant = await Participant.getByName(request.payload.name)
     if (participant) {
@@ -82,10 +87,9 @@ const create = async function (request, h) {
       const participantId = await Participant.create(request.payload)
       participant = await Participant.getById(participantId)
     }
-    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
     const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
-    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION)
-    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT)
+    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
+    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
     participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId1), await Participant.getParticipantCurrencyById(participantCurrencyId2)]
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
