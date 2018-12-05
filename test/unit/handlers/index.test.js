@@ -53,7 +53,6 @@ Test('cli', async (cliTest) => {
         'index.js',
         'handler',
         '--prepare',
-        'dfsp1, dfsp2',
         '--position',
         'dfsp1, dfsp2',
         '--get',
@@ -71,8 +70,7 @@ Test('cli', async (cliTest) => {
 
       var prepareHandler = {
         type: 'prepare',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var positionHandler = {
@@ -138,8 +136,7 @@ Test('cli', async (cliTest) => {
 
       var prepareHandler = {
         type: 'prepare',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var positionHandler = {
@@ -172,8 +169,7 @@ Test('cli', async (cliTest) => {
         'node',
         'index.js',
         'handler',
-        '--prepare',
-        'dfsp1,'
+        '--prepare'
       ]
 
       process.argv = argv
@@ -182,12 +178,9 @@ Test('cli', async (cliTest) => {
         '../shared/setup': SetupStub
       })
 
-      var fspList = [ 'dfsp1' ]
-
       var prepareHandler = {
         type: 'prepare',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var modulesList = [

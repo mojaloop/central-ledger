@@ -50,7 +50,7 @@ Program
 Program.command('handler') // sub-command name, coffeeType = type, required
   .alias('h') // alternative sub-command is `o`
   .description('Start a specified Handler') // command description
-  .option('--prepare [fspNameList]', 'Start the Prepare Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
+  .option('--prepare', 'Start the Prepare Handler')
   .option('--position [fspNameList]', 'Start the Position Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
   .option('--get', 'Start the Transfer Get Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
@@ -62,14 +62,10 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     let handlerList = []
     if (args.prepare && typeof args.prepare === 'string') {
       Logger.debug(`CLI: Executing --prepare ${args.prepare}`)
-      let parsedHandlerList = args.prepare.replace(/\s/g, '').split(',')
       // removing holes, and, falsy (null, undefined, 0, -0, NaN, "", false, document.all) etc:
-      parsedHandlerList = parsedHandlerList.filter(x => x)
-      // if (Array.isArray(parsedHandlerList) && parsedHandlerList.length >= 1) {
       let handler = {
         type: 'prepare',
-        enabled: true,
-        fspList: parsedHandlerList
+        enabled: true
       }
       handlerList.push(handler)
       // } else {
@@ -80,8 +76,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       Logger.debug(`CLI: Executing --prepare`)
       let handler = {
         type: 'prepare',
-        enabled: true,
-        fspList: []
+        enabled: true
       }
       handlerList.push(handler)
     }
