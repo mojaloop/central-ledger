@@ -32,7 +32,7 @@ const Enum = require('../../lib/enum')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
-const entityItem = ({name, createdDate, isActive, currencyList}, ledgerAccountIds) => {
+const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccountIds) => {
   const link = UrlParser.toParticipantUri(name)
   const accounts = currencyList.map((currentValue) => {
     return {
@@ -142,15 +142,14 @@ const createHubAccount = async function (request, h) {
   }
 }
 
-const getAll = async function (request, h) {
+const getAll = async function (request) {
   const results = await Participant.getAll()
   const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
   const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
-  const result = results.map(record => entityItem(record, ledgerAccountIds))
-  return result
+  return results.map(record => entityItem(record, ledgerAccountIds))
 }
 
-const getByName = async function (request, h) {
+const getByName = async function (request) {
   const entity = await Participant.getByName(request.params.name)
   handleMissingRecord(entity)
   const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
@@ -158,7 +157,7 @@ const getByName = async function (request, h) {
   return entityItem(entity, ledgerAccountIds)
 }
 
-const update = async function (request, h) {
+const update = async function (request) {
   Sidecar.logRequest(request)
   try {
     const updatedEntity = await Participant.update(request.params.name, request.payload)
@@ -180,7 +179,7 @@ const addEndpoint = async function (request, h) {
   }
 }
 
-const getEndpoint = async function (request, h) {
+const getEndpoint = async function (request) {
   Sidecar.logRequest(request)
   try {
     if (request.query.type) {
@@ -221,7 +220,7 @@ const addLimitAndInitialPosition = async function (request, h) {
   }
 }
 
-const getLimits = async function (request, h) {
+const getLimits = async function (request) {
   Sidecar.logRequest(request)
   try {
     const result = await Participant.getLimits(request.params.name, request.query)
@@ -248,7 +247,7 @@ const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     const result = await Participant.adjustLimits(request.params.name, request.payload)
-    const {participantLimit} = result
+    const { participantLimit } = result
     const updatedLimit = {
       currency: request.payload.currency,
       limit: {
@@ -264,7 +263,7 @@ const adjustLimits = async function (request, h) {
   }
 }
 
-const getPositions = async function (request, h) {
+const getPositions = async function (request) {
   Sidecar.logRequest(request)
   try {
     return Participant.getPositions(request.params.name, request.query)
@@ -273,7 +272,7 @@ const getPositions = async function (request, h) {
   }
 }
 
-const getAccounts = async function (request, h) {
+const getAccounts = async function (request) {
   Sidecar.logRequest(request)
   try {
     return Participant.getAccounts(request.params.name, request.query)

@@ -555,6 +555,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
+          /** @namespace ModuleProxy.saveTransferFulfilled **/
           const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
@@ -954,7 +955,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      var result = await Model.getTransferStateByTransferId(transferStateChange.transferId)
+      let result = await Model.getTransferStateByTransferId(transferStateChange.transferId)
       test.deepEqual(result, transferStateChange)
       test.end()
     } catch (err) {
