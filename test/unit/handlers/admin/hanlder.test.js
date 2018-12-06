@@ -312,6 +312,7 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(Utility)
     sandbox.stub(TransferService, 'validateDuplicateHash')
     sandbox.stub(TransferService, 'reconciliationTransferPrepare')
+    sandbox.stub(TransferService, 'reconciliationTransferReserve')
     sandbox.stub(TransferService, 'reconciliationTransferCommit')
     sandbox.stub(TransferService, 'reconciliationTransferAbort')
     sandbox.stub(TransferService, 'getTransferStateChange')
@@ -378,14 +379,15 @@ Test('Admin handler', adminHandlerTest => {
         Kafka.Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).returns(true)
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
-
         TransferService.validateDuplicateHash.withArgs(messages[0].value.content.payload).returns({
           existsMatching: 0,
           existingNotMatching: 0
         })
+
         const result = await adminHandler.transfer(null, Object.assign({}, messages[0]))
         Logger.info(result)
         test.ok(TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub))
+        test.ok(TransferService.reconciliationTransferReserve.callsArgWith(0, trxStub))
         test.ok(TransferService.reconciliationTransferCommit.callsArgWith(0, trxStub))
         test.equal(result, true)
         test.end()
@@ -394,20 +396,6 @@ Test('Admin handler', adminHandlerTest => {
         test.end()
       }
     })
-
-    // await transferTest.test('throw error with wrong topic', async (test) => {
-    //   try {
-    //     await Kafka.Consumer.createHandler(topicName, config, command)
-    //     Utility.transformGeneralTopicName.returns(topicName)
-    //     Utility.getKafkaConfig.returns(config)
-    //     await adminHandler.transfer(null, Object.assign({}, messageProtocolWrongTopic1))
-    //     test.fail('should throw')
-    //     test.end()
-    //   } catch (e) {
-    //     test.ok('Error is thrown')
-    //     test.end()
-    //   }
-    // })
 
     await transferTest.test('throw error with wrong topic 2', async (test) => {
       try {

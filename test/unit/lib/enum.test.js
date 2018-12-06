@@ -45,6 +45,10 @@ Test('Enum test', async (enumTest) => {
         name: 'ALARM_NOTIFICATION_TOPIC'
       }
     ],
+    hubParticipant: {
+      participantId: 1,
+      name: 'Hub'
+    },
     ledgerAccountType: [
       {
         ledgerAccountTypeId: 1,
@@ -106,6 +110,10 @@ Test('Enum test', async (enumTest) => {
       'ALARM_NOTIFICATION_URL': 1,
       'ALARM_NOTIFICATION_TOPIC': 2
     },
+    hubParticipant: {
+      participantId: 1,
+      name: 'Hub'
+    },
     ledgerAccountType: {
       'POSITION': 1,
       'SETTLEMENT': 2,
@@ -145,6 +153,9 @@ Test('Enum test', async (enumTest) => {
       find: sandbox.stub()
     }
     Db.participantLimitType = {
+      find: sandbox.stub()
+    }
+    Db.participant = {
       find: sandbox.stub()
     }
     Db.transferParticipantRoleType = {
@@ -366,9 +377,10 @@ Test('Enum test', async (enumTest) => {
   })
 
   await enumTest.test('all should', async (allTest) => {
-    await allTest.test('return the all enums', async (test) => {
+    await allTest.test('return all enums', async (test) => {
       try {
         Db.endpointType.find.returns(P.resolve(allEnums.endpointType))
+        Db.participant.find.returns(P.resolve([allEnums.hubParticipant]))
         Db.transferState.find.returns(P.resolve(allEnums.transferState))
         Db.ledgerAccountType.find.returns(P.resolve(allEnums.ledgerAccountType))
         Db.ledgerEntryType.find.returns(P.resolve(allEnums.ledgerEntryType))

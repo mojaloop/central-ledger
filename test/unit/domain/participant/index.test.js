@@ -1568,14 +1568,22 @@ Test('Participant service', async (participantTest) => {
         reason: 'Reason for in/out flow of funds',
         extensionList: {}
       }
-
       const params = {
         name: 'dfsp1',
         id: 1,
         transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
       }
+      const enums = {
+        hubParticipant: {
+          name: 'Hub'
+        },
+        ledgerAccountType: {
+          SETTLEMENT: 2
+        }
+      }
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
         ledgerAccountType: 'SETTLEMENT',
+        ledgerAccountTypeId: 2,
         participantCurrencyId: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
@@ -1586,7 +1594,8 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date()
       })
       Utility.produceGeneralMessage.returns(true)
-      let result = await Service.recordFundsInOut(payload, params, {})
+
+      let result = await Service.recordFundsInOut(payload, params, enums)
       assert.ok(result, 'topic created')
       assert.end()
     } catch (err) {
@@ -1609,14 +1618,22 @@ Test('Participant service', async (participantTest) => {
         reason: 'Reason for in/out flow of funds',
         extensionList: {}
       }
-
       const params = {
         name: 'dfsp1',
         id: 1,
         transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
       }
+      const enums = {
+        hubParticipant: {
+          name: 'Hub'
+        },
+        ledgerAccountType: {
+          SETTLEMENT: 2
+        }
+      }
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, null).returns([{
         ledgerAccountType: 'SETTLEMENT',
+        ledgerAccountTypeId: 2,
         participantCurrencyId: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
@@ -1627,7 +1644,8 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date()
       })
       Utility.produceGeneralMessage.returns(true)
-      let result = await Service.recordFundsInOut(payload, params, {})
+
+      let result = await Service.recordFundsInOut(payload, params, enums)
       assert.ok(result, 'topic created')
       assert.end()
     } catch (err) {
