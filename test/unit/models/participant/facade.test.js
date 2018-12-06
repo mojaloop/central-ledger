@@ -474,6 +474,77 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
+  await facadeTest.test('addLimitAndInitialPosition and activate paticipant currency', async (assert) => {
+    try {
+      const limitPostionObj = {
+        currency: 'USD',
+        limit: {
+          type: 'NET_DEBIT_CAP',
+          value: 10000000
+        },
+        initialPosition: 0
+      }
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+
+      let insertStub = sandbox.stub()
+      insertStub.returns([1])
+
+      let whereStub = sandbox.stub()
+      insertStub.returns([1])
+
+      knexStub.returns({
+        where: sandbox.stub().returns({
+          select: sandbox.stub().returns({
+            first: sandbox.stub().returns({ participantLimitTypeId: 1 })
+          })
+        }),
+        transacting: sandbox.stub().returns({
+          insert: insertStub,
+          update: sandbox.stub().returns({
+            where: whereStub
+          })
+        })
+      })
+      let participantPosition = {
+        participantCurrencyId: 1,
+        value: limitPostionObj.initialPosition,
+        reservedValue: 0,
+        participantPositionId: 1
+      }
+      let settlementPosition = {
+        participantCurrencyId: 2,
+        value: 0,
+        reservedValue: 0,
+        participantPositionId: 1
+      }
+      let participantLimit = {
+        participantCurrencyId: 1,
+        participantLimitTypeId: 1,
+        value: limitPostionObj.limit.value,
+        isActive: 1,
+        createdBy: 'unknown',
+        participantLimitId: 1
+      }
+
+      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, participant.settlementAccountId, limitPostionObj, true)
+      assert.pass('completed successfully')
+      assert.ok(knexStub.withArgs('participantLimit').calledOnce, 'knex called with participantLimit once')
+      assert.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition once')
+      assert.deepEqual(result, { participantLimit, participantPosition, settlementPosition })
+
+      assert.end()
+    } catch (err) {
+      Logger.error(`addLimitAndInitialPosition failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await facadeTest.test('addLimitAndInitialPosition should throw error', async (assert) => {
     try {
       sandbox.stub(Db, 'getKnex')

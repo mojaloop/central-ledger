@@ -26,12 +26,13 @@
 
 const Db = require('../../db')
 
-exports.create = async (participantId, currencyId, ledgerAccountTypeId) => {
+exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
     let result = await Db.participantCurrency.insert({
       participantId,
       currencyId,
       ledgerAccountTypeId,
+      isActive,
       createdBy: 'unknown'
     })
     return result

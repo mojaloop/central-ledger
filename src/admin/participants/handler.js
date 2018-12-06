@@ -88,8 +88,8 @@ const create = async function (request, h) {
       participant = await Participant.getById(participantId)
     }
     const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
-    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION)
-    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT)
+    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
+    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
     participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId1), await Participant.getParticipantCurrencyById(participantCurrencyId2)]
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {

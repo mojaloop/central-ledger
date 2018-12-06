@@ -161,12 +161,13 @@ const prepare = async (error, messages) => {
         // Save the valid transfer into the database
         await TransferService.prepare(payload)
       } catch (err) {
-        Logger.info('TransferService::prepare::validationPassed::duplicate found while inserting into transfer table')
+        Logger.info(`TransferService::prepare::validationPassed::Error while preparing transfer::${err.message}`)
+        Logger.error(`TransferService::prepare::validationPassed::Error while preparing transfer::${err.message}`)
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
         // notification of duplicate to go here
-        Logger.info('TransferService::prepare::validationPassed::send the callback notification for duplicate request')
+        Logger.info(`TransferService::prepare::validationPassed::send the callback notification for error`)
         // send generic internal error
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription))
