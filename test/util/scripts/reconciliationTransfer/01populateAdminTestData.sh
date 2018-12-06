@@ -37,6 +37,21 @@ ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDG
   \"type\": \"HUB_RECONCILIATION\"
 }'"
 
+echo
+echo
+echo "*********************************************************************"
+echo "Creating Hub multilateral net settlement account"
+echo "---------------------------------------------------------------------"
+sh -c "curl -X POST \
+${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts \
+-H 'Content-Type: application/json' \
+-H 'Postman-Token: 8fd1b601-432f-443c-a947-750f60380753' \
+-H 'cache-control: no-cache' \
+-d '{
+  \"currency\": \"USD\",
+  \"type\": \"HUB_MULTILATERAL_SETTLEMENT\"
+}'"
+
 for FSP in "${FSPList[@]}"
 do
   echo

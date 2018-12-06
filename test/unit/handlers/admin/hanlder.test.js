@@ -46,7 +46,7 @@ const transferRecordOutPrepare = {
   payerFsp: 'dfsp1',
   payeeFsp: 'hub',
   externalReference: 'string',
-  action: 'recordFundsOutPrepare',
+  action: 'recordFundsOutPrepareReserve',
   amount: {
     currency: 'USD',
     amount: '433.88'
@@ -98,7 +98,7 @@ const messageProtocolRecordFundsIn = {
   pp: ''
 }
 
-const messageProtocolRecordFundsOutPrepare = {
+const messageProtocolrecordFundsOutPrepareReserve = {
   id: transferRecordOutPrepare.transferId,
   from: transferRecordOutPrepare.payerFsp,
   to: transferRecordOutPrepare.payeeFsp,
@@ -257,7 +257,7 @@ const messages = [
   },
   {
     topic: topicName,
-    value: messageProtocolRecordFundsOutPrepare
+    value: messageProtocolrecordFundsOutPrepareReserve
   },
   {
     topic: topicName,

@@ -287,7 +287,7 @@ module.exports = [
         payload: {
           transferId: Joi.string().guid().required(),
           externalReference: Joi.string().required(),
-          action: Joi.string().required().valid([ 'recordFundsOutPrepare', 'recordFundsIn' ]).label('action is missing or not supported'),
+          action: Joi.string().required().valid([ 'recordFundsIn', 'recordFundsOutPrepareReserve' ]).label('action is missing or not supported'),
           reason: Joi.string().required(),
           amount: Joi.object({
             amount: Joi.number().positive().precision(4).required(),

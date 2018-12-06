@@ -1325,7 +1325,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationPositionChangeTest.test('change position when called in a new transaction and commit it when called from outside of a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -1537,7 +1537,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('make reconciliation transfer prepare when called from within a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -1722,7 +1722,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('throw error and rollback when called outside of a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
             participantCurrencyId: 2,
             amount: {
               amount: 10,

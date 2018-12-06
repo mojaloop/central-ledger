@@ -486,86 +486,88 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
   }
 }
 
-const reconciliationPositionChange = async function (payload, transferStateId, transactionTimestamp, enums, trx = null) {
+const transferStateAndPositionUpdate = async function (param1, enums, trx = null) {
   try {
     const knex = await Db.getKnex()
 
     const trxFunction = async (trx, doCommit = true) => {
-      let latestReconciliationPosition, latestSettlementPosition
+      let info, transferStateChangeId
       try {
-        // Retrieve hub reconciliation account for the specified currency
-        let { reconciliationAccountId } = await knex('participantCurrency')
-          .select('participantCurrencyId AS reconciliationAccountId')
-          .where('participantId', 1)
-          .andWhere('currencyId', payload.amount.currency)
+        info = await knex('transfer AS t')
+          .join('transferParticipant AS dr', function () {
+            this.on('dr.transferId', 't.transferId')
+              .andOn('dr.amount', '<', 0)
+          })
+          .join('participantCurrency AS drpc', 'drpc.participantCurrencyId', 'dr.participantCurrencyId')
+          .join('participantPosition AS drp', 'drp.participantCurrencyId', 'dr.participantCurrencyId')
+          .join('transferParticipant AS cr', function () {
+            this.on('cr.transferId', 't.transferId')
+              .andOn('cr.amount', '>', 0)
+          })
+          .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'dr.participantCurrencyId')
+          .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
+          .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
+          .where('t.transferId', param1.transferId)
+          .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
+            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+          .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
+            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+          .select('dr.participantCurrencyId AS drAccountId', 'dr.amount AS drAmount', 'drp.participantPositionId AS drPositionId',
+            'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',
+            'cr.amount AS crAmount', 'crp.participantPositionId AS crPositionId', 'crp.value AS crPositionValue',
+            'crp.reservedValue AS crReservedValue', 'tsc.transferStateId', 'drpc.ledgerAccountTypeId', 'crpc.ledgerAccountTypeId')
+          .orderBy('tsc.transferStateChangeId', 'desc')
           .first()
           .transacting(trx)
 
-        // Select hub reconciliation account position FOR UPDATE
-        let { reconciliationPositionId, reconciliationPositionValue } = await knex('participantPosition')
-          .select('participantPositionId AS reconciliationPositionId', 'value AS reconciliationPositionValue')
-          .where('participantCurrencyId', reconciliationAccountId)
-          .first()
+        transferStateChangeId = await knex('transferStateChange')
+          .insert({
+            transferId: param1.transferId,
+            transferStateId: param1.transferStateId,
+            reason: param1.reason,
+            createdDate: param1.createdDate
+          })
           .transacting(trx)
-          .forUpdate()
 
-        // Select participant settlement account position FOR UPDATE
-        let { settlementPositionId, settlementPositionValue } = await knex('participantPosition')
-          .select('participantPositionId AS settlementPositionId', 'value AS settlementPositionValue')
-          .where('participantCurrencyId', payload.participantCurrencyId)
-          .first()
-          .transacting(trx)
-          .forUpdate()
+        if (param1.drUpdated === true) {
+          if (param1.transferStateId === 'ABORTED') {
+            info.drAmount = -info.drAmount
+          }
+          await knex('participantPosition')
+            .update('value', info.drPositionValue + info.drAmount)
+            .where('participantPositionId', info.drPositionId)
+            .transacting(trx)
 
-        let amount
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN ||
-          payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT) {
-          amount = payload.amount.amount
-        } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
-          amount = -payload.amount.amount
-        } else {
-          throw new Error('Action not allowed for reconciliationPositionChange')
+          await knex('participantPositionChange')
+            .insert({
+              participantPositionId: info.drPositionId,
+              transferStateChangeId: transferStateChangeId,
+              value: info.drPositionValue + info.drAmount,
+              reservedValue: info.drReservedValue,
+              createdDate: param1.createdDate
+            })
+            .transacting(trx)
         }
-        latestReconciliationPosition = reconciliationPositionValue + amount
-        latestSettlementPosition = settlementPositionValue - amount
 
-        // Persist latestPosition
-        await knex('participantPosition')
-          .update('value', latestReconciliationPosition)
-          .where('participantPositionId', reconciliationPositionId)
-          .transacting(trx)
-        await knex('participantPosition')
-          .update('value', latestSettlementPosition)
-          .where('participantPositionId', settlementPositionId)
-          .transacting(trx)
+        if (param1.crUpdated === true) {
+          if (param1.transferStateId === 'ABORTED') {
+            info.crAmount = -info.crAmount
+          }
+          await knex('participantPosition')
+            .update('value', info.crPositionValue + info.crAmount)
+            .where('participantPositionId', info.crPositionId)
+            .transacting(trx)
 
-        let transferStateChangeId = await knex('transferStateChange')
-          .insert({
-            transferId: payload.transferId,
-            transferStateId: transferStateId,
-            reason: payload.reason,
-            createdDate: transactionTimestamp
-          })
-          .transacting(trx)
-
-        await knex('participantPositionChange')
-          .insert({
-            participantPositionId: reconciliationPositionId,
-            transferStateChangeId: transferStateChangeId,
-            value: latestReconciliationPosition,
-            reservedValue: 0,
-            createdDate: transactionTimestamp
-          })
-          .transacting(trx)
-        await knex('participantPositionChange')
-          .insert({
-            participantPositionId: settlementPositionId,
-            transferStateChangeId: transferStateChangeId,
-            value: latestSettlementPosition,
-            reservedValue: 0,
-            createdDate: transactionTimestamp
-          })
-          .transacting(trx)
+          await knex('participantPositionChange')
+            .insert({
+              participantPositionId: info.crPositionId,
+              transferStateChangeId: transferStateChangeId,
+              value: info.crPositionValue + info.crAmount,
+              reservedValue: info.crReservedValue,
+              createdDate: param1.createdDate
+            })
+            .transacting(trx)
+        }
 
         if (doCommit) {
           await trx.commit
@@ -577,8 +579,9 @@ const reconciliationPositionChange = async function (payload, transferStateId, t
         throw err
       }
       return {
-        hubReconciliationAccountPosition: latestReconciliationPosition,
-        participantSettlementAccountPosition: latestSettlementPosition
+        transferStateChangeId,
+        drPositionValue: info.drPositionValue + info.drAmount,
+        crPositionValue: info.crPositionValue + info.crAmount
       }
     }
 
@@ -598,6 +601,9 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
 
     const trxFunction = async (trx, doCommit = true) => {
       try {
+        // transferDuplicateCheck check and insert is done prior to calling the prepare
+        // see admin/handler.js :: transfer -> TransferService.validateDuplicateHash
+
         // Insert transfer
         await knex('transfer')
           .insert({
@@ -623,7 +629,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_IN
           amount = payload.amount.amount
-        } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
+        } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_OUT
           amount = -payload.amount.amount
         } else {
@@ -661,18 +667,6 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           })
           .transacting(trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN) {
-          // Insert transferStateChange
-          await knex('transferStateChange')
-            .insert({
-              transferId: payload.transferId,
-              transferStateId: enums.transferState.RESERVED,
-              reason: payload.reason,
-              createdDate: transactionTimestamp
-            })
-            .transacting(trx)
-        }
-
         // Save transaction reference and transfer extensions
         let transferExtensions = []
         transferExtensions.push({
@@ -697,14 +691,49 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           await knex('transferExtension').insert(transferExtension).transacting(trx)
         }
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE) {
-          let position = await TransferFacade.reconciliationPositionChange(payload, enums.transferState.RESERVED, transactionTimestamp, enums, trx)
+        if (doCommit) {
+          await trx.commit
+        }
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw err
+      }
+    }
 
-          if (position.participantSettlementAccountPosition > 0) {
-            payload.reason = 'Aborted due to insufficient funds'
-            payload.action = Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT
-            await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
-          }
+    if (trx) {
+      await trxFunction(trx, false)
+    } else {
+      await knex.transaction(trxFunction)
+    }
+    return 0
+  } catch (err) {
+    throw err
+  }
+}
+
+const reconciliationTransferReserve = async function (payload, transactionTimestamp, enums, trx = null) {
+  try {
+    const knex = await Db.getKnex()
+
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        let param1 = {
+          transferId: payload.transferId,
+          transferStateId: enums.transferState.RESERVED,
+          reason: payload.reason,
+          createdDate: transactionTimestamp,
+          drUpdated: true,
+          crUpdated: false
+        }
+        let positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
+
+        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
+          positionResult.crPositionValue > 0 /* not changed, but projected CR position value */) {
+          payload.reason = 'Aborted due to insufficient funds'
+          payload.action = Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT
+          await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
         }
 
         if (doCommit) {
@@ -748,18 +777,17 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
           })
           .transacting(trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN) {
-          await TransferFacade.reconciliationPositionChange(payload, enums.transferState.COMMITTED, transactionTimestamp, enums, trx)
-        } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
-          // Insert transferStateChange
-          await knex('transferStateChange')
-            .insert({
-              transferId: payload.transferId,
-              transferStateId: enums.transferState.COMMITTED,
-              reason: payload.reason,
-              createdDate: transactionTimestamp
-            })
-            .transacting(trx)
+        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN ||
+          payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
+          let param1 = {
+            transferId: payload.transferId,
+            transferStateId: enums.transferState.COMMITTED,
+            reason: payload.reason,
+            createdDate: transactionTimestamp,
+            drUpdated: false,
+            crUpdated: true
+          }
+          await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
         } else {
           throw new Error('Action not allowed for reconciliationTransferCommit')
         }
@@ -805,7 +833,19 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
           })
           .transacting(trx)
 
-        await TransferFacade.reconciliationPositionChange(payload, enums.transferState.ABORTED, transactionTimestamp, enums, trx)
+        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT) {
+          let param1 = {
+            transferId: payload.transferId,
+            transferStateId: enums.transferState.ABORTED,
+            reason: payload.reason,
+            createdDate: transactionTimestamp,
+            drUpdated: true,
+            crUpdated: false
+          }
+          await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
+        } else {
+          throw new Error('Action not allowed for reconciliationTransferAbort')
+        }
 
         if (doCommit) {
           await trx.commit
@@ -837,8 +877,9 @@ const TransferFacade = {
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,
-  reconciliationPositionChange,
+  transferStateAndPositionUpdate,
   reconciliationTransferPrepare,
+  reconciliationTransferReserve,
   reconciliationTransferCommit,
   reconciliationTransferAbort
 }

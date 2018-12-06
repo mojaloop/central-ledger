@@ -229,6 +229,7 @@ module.exports = {
   logTransferError,
   getTransferStateChange,
   reconciliationTransferPrepare: TransferFacade.reconciliationTransferPrepare,
+  reconciliationTransferReserve: TransferFacade.reconciliationTransferReserve,
   reconciliationTransferCommit: TransferFacade.reconciliationTransferCommit,
   reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort
 }
