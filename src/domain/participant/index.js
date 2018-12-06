@@ -610,7 +610,7 @@ const recordFundsInOut = async (payload, params, enums) => {
     participantExists(participant)
     const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency || null)
     let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
-    if (!(accountMatched && accountMatched.ledgerAccountType === 'SETTLEMENT')) {
+    if (!(accountMatched && accountMatched.ledgerAccountTypeId === enums.ledgerAccountType.SETTLEMENT)) {
       throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
     }
     transferId && (payload.transferId = transferId)
