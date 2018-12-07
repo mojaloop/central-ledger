@@ -152,7 +152,7 @@ const prepare = async (error, messages) => {
         try {
           Logger.info('TransferService::prepare::validationPassed::newEntry')
           // Save the valid transfer into the database
-          await TransferService.prepare(payload)
+          message.value.content.prism = await TransferService.prepare(payload)
           Logger.info('TransferService::prepare::validationPassed::create position topic')
           // position topic to be created and inserted here
           await Utility.produceParticipantMessage(payload.payerFsp, TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
@@ -258,11 +258,16 @@ const fulfil = async (error, messages) => {
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
       } else { // validations success
         Logger.info(`FulfilHandler::${metadata.event.action}::validationPassed`)
+        message.value.content.prism = {
+          transferById: existingTransfer
+        }
         if (metadata.event.action === TransferEventAction.COMMIT) {
           await TransferService.fulfil(transferId, payload)
+          message.value.content.prism.transferById.transferState = Enum.TransferState.RECEIVED_FULFIL
           await Utility.produceParticipantMessage(existingTransfer.payeeFsp, TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
         } else {
           await TransferService.reject(transferId, payload)
+          message.value.content.prism.transferById.transferState = Enum.TransferState.REJECTED
           await Utility.produceParticipantMessage(existingTransfer.payerFsp, TransferEventType.POSITION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
         }
       }

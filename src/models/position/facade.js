@@ -37,42 +37,50 @@ const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Time = require('../../lib/time')
 
-const prepareChangeParticipantPositionTransaction = async (transferList) => {
+const prepareChangeParticipantPositionTransaction = async (transferList, prism) => {
   try {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
-    const currencyId = transferList[0].value.content.payload.amount.currency
-    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.LedgerAccountType.POSITION)
+    // const currencyId = transferList[0].value.content.payload.amount.currency
+    let participantCurrency
+    for (let currency of prism.participantCurrencies) {
+      if (currency.name === participantName) {
+        participantCurrency = currency
+      }
+    }
+    // const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.LedgerAccountType.POSITION)
     let processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     let reservedTransfers = []
     let abortedTransfers = []
-    let initialTransferStateChangePromises = []
+    // let initialTransferStateChangePromises = []
     let transferIdList = []
     let limitAlarms = []
     let sumTransfersInBatch = 0
     await knex.transaction(async (trx) => {
       try {
         for (let transfer of transferList) {
-          // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
-          // ^^^^^ this is how we want to get this later to reduce the DB queries into one.
-
-          /*
-          TODO Possibly the commented block of validations in this comment block will be validated with message validations for each topic
-          (are they valid or not LIME messages and are they valid for the given topic)
-           ====
-           Since iterating over the list of transfers, validate here that each transfer is for the PayerFSP and Currency
-           if (participantName !== transfer.value.content.payload.payerFSP)
-             {} // log error for particular transfer because it should not be in this topic (and might be injected)
-           if (currencyId != transfer.value.content.payload.payerFSP)
-             {} // log error for particular transfer because it should not be in this topic (and might be injected)
-           ====
-           */
-
+        //   // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
+        //   // ^^^^^ this is how we want to get this later to reduce the DB queries into one.
+        //
+        //   /*
+        //   TODO Possibly the commented block of validations in this comment block will be validated with message validations for each topic
+        //   (are they valid or not LIME messages and are they valid for the given topic)
+        //    ====
+        //    Since iterating over the list of transfers, validate here that each transfer is for the PayerFSP and Currency
+        //    if (participantName !== transfer.value.content.payload.payerFSP)
+        //      {} // log error for particular transfer because it should not be in this topic (and might be injected)
+        //    if (currencyId != transfer.value.content.payload.payerFSP)
+        //      {} // log error for particular transfer because it should not be in this topic (and might be injected)
+        //    ====
+        //    */
+        //
           const id = transfer.value.content.payload.transferId
           transferIdList.push(id)
-          initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
+        //   initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
         }
-        let initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
+        // let initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
+        let initialTransferStateChangeList = [prism.transferStateChange]
+        // Note that
         for (let id in initialTransferStateChangeList) {
           let transferState = initialTransferStateChangeList[id]
           let transfer = transferList[id].value.content.payload
@@ -129,7 +137,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
         }
         /*
-          Update the participanyPosition with the eventual impact of the Batch
+          Update the participantPosition with the eventual impact of the Batch
           So the position moves forward by the sum of the transfers actually reserved (sumReserved)
           and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
         */

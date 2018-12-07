@@ -100,7 +100,7 @@ const positions = async (error, messages) => {
     }
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
-      const {preparedMessagesList, limitAlarms} = await PositionService.calculatePreparePositionsBatch(prepareBatch)
+      const {preparedMessagesList, limitAlarms} = await PositionService.calculatePreparePositionsBatch(prepareBatch, message.value.content.prism)
       for (let prepareMessage of preparedMessagesList) {
         const {transferState, rawMessage} = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
@@ -124,7 +124,24 @@ const positions = async (error, messages) => {
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
       // Check current transfer state
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      // const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let transferInfo
+      if (message.value.content.prism.transferById) {
+        const transferById = message.value.content.prism.transferById
+        transferInfo = {
+          amount: transferById.payeeAmount,
+          ledgerEntryTypeId: transferById.payeeLedgerEntryTypeId,
+          participantCurrencyId: transferById.payeeParticipantCurrencyId,
+          reason: transferById.reason,
+          transferId: transferById.transferId,
+          transferParticipantId: transferById.payeeTransferParticipantId,
+          transferParticipantRoleTypeId: transferById.payeeTransferParticipantRoleTypeId,
+          transferStateId: transferById.transferState
+        }
+      } else {
+        transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      }
+      // don't think we can use this as it does a status check on the next line for transfer state
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
         Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
         // TODO: throw Error 2001
@@ -141,7 +158,24 @@ const positions = async (error, messages) => {
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      // const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let transferInfo
+      if (message.value.content.prism.transferById) {
+        const transferById = message.value.content.prism.transferById
+        transferInfo = {
+          amount: transferById.payerAmount,
+          ledgerEntryTypeId: transferById.payerLedgerEntryTypeId,
+          participantCurrencyId: transferById.payerParticipantCurrencyId,
+          reason: transferById.reason,
+          transferId: transferById.transferId,
+          transferParticipantId: transferById.payerTransferParticipantId,
+          transferParticipantRoleTypeId: transferById.payerTransferParticipantRoleTypeId,
+          transferStateId: transferById.transferState
+        }
+      } else {
+        transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      }
+      // don't think we can use this as it does a status check on the next line for transfer state
       if (transferInfo.transferStateId !== TransferState.REJECTED) {
         Logger.info('PositionHandler::positions::reject::validationFailed::notRejectedState')
         // TODO: throw Error 2001

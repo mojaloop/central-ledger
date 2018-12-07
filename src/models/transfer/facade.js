@@ -82,7 +82,13 @@ const getById = async (id) => {
           'tsc.createdDate AS completedTimestamp',
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
-          'tf.ilpFulfilment AS fulfilment'
+          'tf.ilpFulfilment AS fulfilment',
+          'tp1.transferParticipantId AS payerTransferParticipantId',
+          'tp1.transferParticipantRoleTypeId AS payerTransferParticipantRoleTypeId',
+          'tp1.ledgerEntryTypeId AS payerLedgerEntryTypeId',
+          'tp2.transferParticipantId AS payeeTransferParticipantId',
+          'tp2.transferParticipantRoleTypeId AS payeeTransferParticipantRoleTypeId',
+          'tp2.ledgerEntryTypeId AS payeeLedgerEntryTypeId'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
@@ -302,7 +308,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     const knex = await Db.getKnex()
-    return await knex.transaction(async (trx) => {
+    await knex.transaction(async (trx) => {
       try {
         await knex('transfer').transacting(trx).insert(transferRecord)
         await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
@@ -328,6 +334,10 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         throw err
       }
     })
+    return {
+      participantCurrencies: participants,
+      transferStateChange: transferStateChangeRecord
+    }
   } catch (e) {
     throw e
   }

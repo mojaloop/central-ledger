@@ -35,8 +35,8 @@ const changeParticipantPosition = (participantCurrencyId, isReversal, amount, tr
   return PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
 }
 
-const calculatePreparePositionsBatch = async (transferList) => {
-  return await PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+const calculatePreparePositionsBatch = async (transferList, prism) => {
+  return await PositionFacade.prepareChangeParticipantPositionTransaction(transferList, prism)
 }
 
 module.exports = {
