@@ -134,6 +134,44 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
     sandbox.restore()
   })
 
+  await transferStateChangeModel.test('get latest', async (assert) => {
+    try {
+      let builderStub = sandbox.stub()
+      let orderStub = sandbox.stub()
+      let firstStub = sandbox.stub()
+
+      Db.transferStateChange.query.callsArgWith(0, builderStub)
+      Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
+      builderStub.selext = sandbox.stub().returns({
+        orderBy: orderStub.returns({
+          first: firstStub.returns(transferStateChangeModelFixtures[0])
+        })
+      })
+
+      let result = await Model.getLatest()
+      assert.deepEqual(result, transferStateChangeModelFixtures[0])
+      assert.end()
+      sandbox.restore()
+    } catch (err) {
+      Logger.error(`create transferStateChange failed with error - ${err}`)
+      assert.fail()
+      sandbox.restore()
+      assert.end()
+    }
+  })
+
+  await transferStateChangeModel.test('get latest', async (assert) => {
+    Db.transferStateChange.query.throws(new Error())
+    try {
+      await Model.getLatest()
+      assert.fail('should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+    sandbox.restore()
+  })
+
   await transferStateChangeModel.test('truncateTransfers should throw an error', async (assert) => {
     try {
       Db.transferStateChange.truncate.throws(new Error())

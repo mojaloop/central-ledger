@@ -8,6 +8,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Handler = require('../../../../src/admin/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
+const Enum = require('../../../../src/lib/enum')
 
 const createRequest = ({ payload, params, query }) => {
   let sandbox = Sinon.createSandbox()
@@ -280,7 +281,7 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('create should fail if the participant exists', async function (test) {
+    handlerTest.test('create should fail if hub reconciliation account does not exist', async function (test) {
       const payload = {
         name: 'fsp1',
         currency: 'USD'
@@ -297,9 +298,36 @@ Test('Participant', participantHandlerTest => {
       Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
       try {
         await Handler.create(createRequest({ payload }))
+        test.fail('Error not thrown')
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Hub reconciliation account for the specified currency does not exist')
+        test.end()
+      }
+    })
+
+    handlerTest.test('create should fail if hmlns account does not exists', async function (test) {
+      const payload = {
+        name: 'fsp1',
+        currency: 'USD'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z',
+        currencyList: []
+      }
+
+      Participant.hubAccountExists.withArgs(participant.currency, Enum.LedgerAccountType.HUB_RECONCILIATION).returns(P.resolve(true))
+      Participant.hubAccountExists.withArgs(participant.currency, Enum.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT).returns(P.resolve(false))
+      try {
+        await Handler.create(createRequest({ payload }))
+        test.fail('Error not thrown')
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Hub multilateral net settlement account for the specified currency does not exist')
         test.end()
       }
     })

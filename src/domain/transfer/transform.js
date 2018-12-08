@@ -40,7 +40,7 @@ const formatExtensionList = (assets) => {
 const fromTransferAggregate = (t) => {
   const cleanProperties = Util.omitNil({
     transferId: t.transferId,
-    amount: t.amount ? formatAmount(t.amount) : null,
+    amount: formatAmount(t.amount),
     // transferState: Util.omitNil(t.transferState),
     transferState: t.transferState,
     completedTimestamp: t.completedTimestamp,

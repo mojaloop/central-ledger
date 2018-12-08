@@ -148,8 +148,10 @@ Test('Participant service', async (participantTest) => {
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
+    sandbox.stub(ParticipantLimitModel, 'destroyByParticipantId')
     sandbox.stub(ParticipantPositionModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantPositionModel, 'destroyByParticipantCurrencyId')
+    sandbox.stub(ParticipantPositionModel, 'destroyByParticipantId')
 
     sandbox.stub(ParticipantPositionChangeModel, 'getByParticipantPositionId')
 
@@ -466,7 +468,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroyByName', async (assert) => {
     try {
-      participantFixtures.forEach(async (participant, index) => {
+      ParticipantModel.destroyByName = sandbox.stub().returns(Promise.resolve(true))
+      await participantFixtures.forEach(async (participant, index) => {
         var result = await Service.destroyByName(participant.name)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.equal(result, true, `equals ${result}`)
@@ -1523,6 +1526,43 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+  await participantTest.test('getParticipantAccount should return participant account', async (assert) => {
+    const params = {
+      participantCurrecyId: 1
+    }
+    const participantAccountsMock = {
+      participantCurrencyId: 1,
+      ledgerAccountTypeId: 1,
+      name: 'POSITION',
+      description: 'Typical accounts from which a DFSP provisions transfers',
+      isActive: 1,
+      createdDate: '2018-10-11T11:45:00.000Z'
+    }
+
+    try {
+      ParticipantCurrencyModel.getByName.withArgs(params).returns(participantAccountsMock)
+      const expected = await Service.getParticipantAccount(params)
+      assert.deepEqual(expected, participantAccountsMock, 'Results matched')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+  await participantTest.test('getParticipantAccount should throw an error', async (assert) => {
+    const params = {
+      participantCurrecyId: 1
+    }
+
+    try {
+      ParticipantCurrencyModel.getByName.withArgs(params).throws(new Error())
+      await Service.getParticipantAccount(params)
+      assert.fail('Error not thrown')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
 
   // ====================================
 
@@ -1611,10 +1651,6 @@ Test('Participant service', async (participantTest) => {
         transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
         externalReference: 'string',
         action: 'recordFundsIn',
-        // amount: {
-        //   amount: 1.0000,
-        //   currency: 'USD'
-        // },
         reason: 'Reason for in/out flow of funds',
         extensionList: {}
       }
@@ -1655,12 +1691,12 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  await participantTest.test('recordFundsInOut should throw if actions is not supported', async (assert) => {
+  await participantTest.test('recordFundsInOut should throw if account is not settlement type', async (assert) => {
     try {
       const payload = {
         transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
         externalReference: 'string',
-        action: 'bla',
+        action: 'recordFundsIn',
         amount: {
           amount: 1.0000,
           currency: 'USD'
@@ -1668,14 +1704,22 @@ Test('Participant service', async (participantTest) => {
         reason: 'Reason for in/out flow of funds',
         extensionList: {}
       }
-
       const params = {
         name: 'dfsp1',
         id: 1,
         transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
       }
+      const enums = {
+        ledgerAccountType: {
+          SETTLEMENT: 2
+        },
+        hubParticipant: {
+          name: 'Hub'
+        }
+      }
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
-        ledgerAccountType: 'SETTLEMENT',
+        ledgerAccountType: 'POSITION',
+        ledgerAccountTypeId: 1,
         participantCurrencyId: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
@@ -1686,11 +1730,11 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date()
       })
       Utility.produceGeneralMessage.returns(true)
-      await Service.recordFundsInOut(payload, params, {})
+      await Service.recordFundsInOut(payload, params, enums)
       assert.fail('did not throw')
       assert.end()
     } catch (err) {
-      assert.ok(err.message, 'The action is not supported')
+      assert.ok(err.message, 'Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
       assert.end()
     }
   })
@@ -1731,6 +1775,51 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     } catch (err) {
       assert.ok(err.message, 'Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+      assert.end()
+    }
+  })
+
+  await participantTest.test('recordFundsInOut should throw if action is not allowed', async (assert) => {
+    try {
+      const payload = {
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
+        externalReference: 'string',
+        action: 'notAllowedAction',
+        reason: 'Reason for in/out flow of funds',
+        extensionList: {}
+      }
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+      const enums = {
+        hubParticipant: {
+          name: 'Hub'
+        },
+        ledgerAccountType: {
+          SETTLEMENT: 2
+        }
+      }
+      ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, null).returns([{
+        ledgerAccountType: 'SETTLEMENT',
+        ledgerAccountTypeId: 2,
+        participantCurrencyId: 1
+      }])
+      ParticipantModel.getByName.withArgs(params.name).returns({
+        participantId: 0,
+        name: 'dfsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      })
+      Utility.produceGeneralMessage.returns(true)
+
+      await Service.recordFundsInOut(payload, params, enums)
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      assert.ok(err.message, 'The action is not supported')
       assert.end()
     }
   })
