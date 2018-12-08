@@ -111,7 +111,7 @@ Test('Extension model test', async (extensionTest) => {
       assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create ilp without transferId is failing with message ')
+      // Logger.error('create ilp without transferId is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
@@ -127,7 +127,7 @@ Test('Extension model test', async (extensionTest) => {
       assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create transferExtension without value is failing with message ')
+      // Logger.error('create transferExtension without value is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
@@ -143,7 +143,7 @@ Test('Extension model test', async (extensionTest) => {
       assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create transferExtension without key is failing with message ')
+      // Logger.error('create transferExtension without key is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
