@@ -253,7 +253,9 @@ Test('Position handler', transferHandlerTest => {
         }],
         limitAlarms: []
       })
-      const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
+      let message = JSON.parse(JSON.stringify(messages[0]))
+      message.value.content.payload = undefined
+      const result = await allTransferHandlers.positions(null, Object.assign({}, message))
       Logger.info(result)
       test.equal(result, true)
       test.end()

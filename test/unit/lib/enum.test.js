@@ -202,6 +202,22 @@ Test('Enum test', async (enumTest) => {
     await endpointTypeTest.end()
   })
 
+  await enumTest.test('hubParticipant should', async (hubParticipantTest) => {
+    await hubParticipantTest.test('throw error', async (test) => {
+      try {
+        Db.participant.find.throws(new Error())
+        await Model.hubParticipant()
+        test.fail('should throw error')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
+    await hubParticipantTest.end()
+  })
+
   await enumTest.test('ledgerAccountType should', async (ledgerAccountTypeTest) => {
     await ledgerAccountTypeTest.test('return the ledgerAccountType', async (test) => {
       try {

@@ -184,7 +184,7 @@ Test('Position facade', async (positionFacadeTest) => {
         payeeFsp: 'dfsp2',
         amount: {
           currency: 'USD',
-          amount: '433.88'
+          amount: '100'
         },
         ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
         condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
@@ -379,6 +379,28 @@ Test('Position facade', async (positionFacadeTest) => {
         }
       })
 
+      await prepareChangeParticipantPositionTransaction.test('throw and rollback', async test => {
+        // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
+        try {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          const trxStub = sandbox.stub()
+          trxStub.rollback = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          Db.getKnex.returns(knexStub)
+
+          knexStub.throws(new Error())
+
+          await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
+          test.fail('error not thrown')
+          test.end()
+        } catch (err) {
+          Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
+          test.ok('error thrown')
+          test.end()
+        }
+      })
+
       await prepareChangeParticipantPositionTransaction.test('abort transfer if net-debit-cap is exceeded ', async test => {
         // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
         try {
@@ -434,28 +456,6 @@ Test('Position facade', async (positionFacadeTest) => {
         } catch (err) {
           Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
           test.fail()
-          test.end()
-        }
-      })
-
-      await prepareChangeParticipantPositionTransaction.test('throw and rollback', async test => {
-        // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
-        try {
-          sandbox.stub(Db, 'getKnex')
-          const knexStub = sandbox.stub()
-          const trxStub = sandbox.stub()
-          trxStub.rollback = sandbox.stub()
-          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-          Db.getKnex.returns(knexStub)
-
-          knexStub.throws(new Error())
-
-          await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
-          test.fail('error not thrown')
-          test.end()
-        } catch (err) {
-          Logger.error(`prepareChangeParticipantPositionTransaction failed with error - ${err}`)
-          test.ok('error thrown')
           test.end()
         }
       })

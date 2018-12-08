@@ -748,7 +748,7 @@ Test('Participant facade', async (facadeTest) => {
           insert: sandbox.stub().returns([1])
         })
       })
-      await Model.adjustLimits(participant.participantCurrencyId, limit)
+      await Model.adjustLimits(participant.participantCurrencyId, limit, trxStub)
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
@@ -801,7 +801,6 @@ Test('Participant facade', async (facadeTest) => {
 
       await Model.adjustLimits(participant.participantCurrencyId, limit)
       assert.fail(' should throw')
-      assert.end()
       assert.end()
     } catch (err) {
       Logger.error(`adjustLimits failed with error - ${err}`)
@@ -1052,6 +1051,7 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
+
   await facadeTest.test('addHubAccountAndInitPosition', async (assert) => {
     try {
       let participantPosition = {
@@ -1095,6 +1095,26 @@ Test('Participant facade', async (facadeTest) => {
       delete result.participantCurrency.createdDate
       assert.deepEqual(result, { participantCurrency, participantPosition })
 
+      knexStub.returns({
+        transacting: transactingStub.returns({
+          insert: sandbox.stub().throws(new Error())
+        })
+      })
+      try {
+        await Model.addHubAccountAndInitPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
+        assert.fail('Error not thrown!')
+      } catch (err) {
+        assert.pass('Error thrown')
+      }
+
+      Db.getKnex.throws(new Error())
+      try {
+        await Model.addHubAccountAndInitPosition(participant.participantId, participant.currencyId, participant.ledgerAccountTypeId)
+        assert.fail('Error not thrown!')
+      } catch (err) {
+        assert.pass('Error thrown')
+      }
+
       assert.end()
     } catch (err) {
       console.log(err)
@@ -1103,6 +1123,7 @@ Test('Participant facade', async (facadeTest) => {
       assert.end()
     }
   })
+
   await facadeTest.test('addNewCurrencyAndPosition should throw an error.', async (assert) => {
     try {
       let participantPosition = {
