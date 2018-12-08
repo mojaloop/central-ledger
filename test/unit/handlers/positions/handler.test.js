@@ -99,7 +99,7 @@ const messages = [
   }
 ]
 
-const config = {
+let config = {
   options: {
     'mode': 2,
     'batchSize': 1,
@@ -229,7 +229,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.calculatePreparePositionsBatch.returns({
         preparedMessagesList: [{
-          transferState: {transferStateId: 'RESERVED'},
+          transferState: { transferStateId: 'RESERVED' },
           rawMessage: {}
         }],
         limitAlarms: []
@@ -248,7 +248,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.calculatePreparePositionsBatch.returns({
         preparedMessagesList: [{
-          transferState: {transferStateId: 'RESERVED'},
+          transferState: { transferStateId: 'RESERVED' },
           rawMessage: {}
         }],
         limitAlarms: []
@@ -266,7 +266,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.calculatePreparePositionsBatch.returns({
         preparedMessagesList: [{
-          transferState: {transferStateId: 'RESERVED'},
+          transferState: { transferStateId: 'RESERVED' },
           rawMessage: {}
         }],
         limitAlarms: [participantLimit]
@@ -302,7 +302,7 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.calculatePreparePositionsBatch.returns({
         preparedMessagesList: [{
-          transferState: {transferStateId: 'RESERVED'},
+          transferState: { transferStateId: 'RESERVED' },
           rawMessage: {}
         }],
         limitAlarms: []
@@ -314,7 +314,9 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('Update transferStateChange in the database for PREPARE when messages is an array no transfer state id is available', async (test) => {
+      config.rdkafkaConf['enable.auto.commit'] = true
       await Kafka.Consumer.createHandler(topicName, config, command)
+      config.rdkafkaConf['enable.auto.commit'] = false
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -384,7 +386,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
 
         TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-          .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
+          .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
         TransferStateChange.saveTransferStateChange.resolves(true)
 
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
@@ -405,7 +407,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, {transferStateId: 'REJECT'}))
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'REJECT' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
@@ -428,7 +430,7 @@ Test('Position handler', transferHandlerTest => {
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
@@ -452,7 +454,7 @@ Test('Position handler', transferHandlerTest => {
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
@@ -463,12 +465,14 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
+      config.rdkafkaConf['enable.auto.commit'] = true
       await Kafka.Consumer.createHandler(topicName, config, command)
+      config.rdkafkaConf['enable.auto.commit'] = false
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.COMMIT
@@ -483,7 +487,7 @@ Test('Position handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, {transferStateId: 'FAKE'}))
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
@@ -500,13 +504,15 @@ Test('Position handler', transferHandlerTest => {
         transferStateId: TransferState.ABORTED,
         reason: transferInfo.reason
       }
+      config.rdkafkaConf['enable.auto.commit'] = true
       await Kafka.Consumer.createHandler(topicName, config, command)
+      config.rdkafkaConf['enable.auto.commit'] = false
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, {transferStateId: TransferState.REJECTED}))
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
@@ -523,7 +529,30 @@ Test('Position handler', transferHandlerTest => {
         Utility.createPrepareErrorStatus.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
-        TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'RESERVED_TIMEOUT'})
+        TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
+        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+        m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
+        const result = await allTransferHandlers.positions(null, [m])
+        Logger.info(result)
+        test.equal(result, true)
+        test.end()
+      } catch (e) {
+        console.log('error thrown' + e)
+        test.fail('Error thrown' + e)
+        test.end()
+      }
+    })
+
+    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RESERVED when messages is an array (auto.commit)', async (test) => {
+      try {
+        config.rdkafkaConf['enable.auto.commit'] = true
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        config.rdkafkaConf['enable.auto.commit'] = false
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.createPrepareErrorStatus.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
+        TransferStateChange.saveTransferStateChange.resolves(true)
+        TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, [m])
@@ -545,7 +574,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.createPrepareErrorStatus.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
-        TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'RESERVED_TIMEOUT'})
+        TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, [m])
@@ -566,7 +595,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.createPrepareErrorStatus.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
-        TransferService.getTransferInfoToChangePosition.resolves({transferStateId: 'INVALID_STATE'})
+        TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'INVALID_STATE' })
         let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         await allTransferHandlers.positions(null, [m])
@@ -582,6 +611,24 @@ Test('Position handler', transferHandlerTest => {
     positionsTest.test('Throw error when invalid action is recieved', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
+        Utility.transformGeneralTopicName.returns(topicName)
+        Utility.getKafkaConfig.returns(config)
+        TransferStateChange.saveTransferStateChange.resolves(true)
+        messages[0].value.metadata.event.action = 'invalid'
+        await allTransferHandlers.positions(null, messages)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    positionsTest.test('Throw error when invalid action is recieved (auto.commit)', async (test) => {
+      try {
+        config.rdkafkaConf['enable.auto.commit'] = true
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        config.rdkafkaConf['enable.auto.commit'] = false
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
