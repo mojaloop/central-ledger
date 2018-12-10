@@ -84,7 +84,7 @@ echo
 
 echo "TABLE transferStateChange"
 docker exec -it $DB_ID mysql -uroot -e "SELECT * FROM central_ledger.transferStateChange ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: Transfer state changed RECEIVED_PREPARE -> RESERVED. Showing 5 records (previously 3)."
+echo "=> EXPECTED RESULT: Transfer state changed RECEIVED_PREPARE -> RESERVED. Showing 6 records (previously 4)."
 echo
 echo
 

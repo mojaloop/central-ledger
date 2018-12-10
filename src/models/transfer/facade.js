@@ -496,13 +496,13 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         info = await knex('transfer AS t')
           .join('transferParticipant AS dr', function () {
             this.on('dr.transferId', 't.transferId')
-              .andOn('dr.amount', '<', 0)
+              .andOn('dr.amount', '>', 0)
           })
           .join('participantCurrency AS drpc', 'drpc.participantCurrencyId', 'dr.participantCurrencyId')
           .join('participantPosition AS drp', 'drp.participantCurrencyId', 'dr.participantCurrencyId')
           .join('transferParticipant AS cr', function () {
             this.on('cr.transferId', 't.transferId')
-              .andOn('cr.amount', '>', 0)
+              .andOn('cr.amount', '<', 0)
           })
           .join('participantCurrency AS crpc', 'crpc.participantCurrencyId', 'dr.participantCurrencyId')
           .join('participantPosition AS crp', 'crp.participantCurrencyId', 'cr.participantCurrencyId')
@@ -520,6 +520,25 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .first()
           .transacting(trx)
 
+        if (param1.transferStateId === enums.transferState.COMMITTED) {
+          await knex('transferStateChange')
+            .insert({
+              transferId: param1.transferId,
+              transferStateId: enums.transferState.RECEIVED_FULFIL,
+              reason: param1.reason,
+              createdDate: param1.createdDate
+            })
+            .transacting(trx)
+        } else if (param1.transferStateId === enums.transferState.ABORTED) {
+          await knex('transferStateChange')
+            .insert({
+              transferId: param1.transferId,
+              transferStateId: enums.transferState.REJECTED,
+              reason: param1.reason,
+              createdDate: param1.createdDate
+            })
+            .transacting(trx)
+        }
         transferStateChangeId = await knex('transferStateChange')
           .insert({
             transferId: param1.transferId,
@@ -730,7 +749,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
         let positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
 
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
-          positionResult.crPositionValue > 0 /* not changed, but projected CR position value */) {
+          positionResult.drPositionValue > 0) {
           payload.reason = 'Aborted due to insufficient funds'
           payload.action = Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT
           await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)

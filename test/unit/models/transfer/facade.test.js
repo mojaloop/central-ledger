@@ -47,7 +47,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
   const enums = {
     transferState: {
       RESERVED: 'RESERVED',
-      COMMITTED: 'COMMITTED'
+      COMMITTED: 'COMMITTED',
+      ABORTED: 'ABORTED'
     },
     transferParticipantRoleType: {
       PAYER_DFSP: 'PAYER_DFSP',
@@ -1146,7 +1147,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           let param1 = {
             transferId: Uuid(),
-            transferStateId: Enum.TransferState.RECEIVED_PREPARE,
+            transferStateId: Enum.TransferState.COMMITTED,
             reason: 'text',
             createdDate: Time.getUTCString(now),
             drUpdated: true,
@@ -1163,7 +1164,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             crPositionId: 1,
             crPositionValue: 0,
             crReservedValue: 0,
-            transferStateId: 'RECEIVED_PREPARE',
+            transferStateId: Enum.TransferState.COMMITTED,
             ledgerAccountTypeId: 2
           }
           const trxStub = sandbox.stub()
@@ -1228,7 +1229,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           }
           let result = await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
           test.deepEqual(result, expectedResult, 'Expected result is returned')
-          test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 2)
           test.equal(knexStub.withArgs('participantPosition').callCount, 1)
           test.equal(knexStub.withArgs('participantPositionChange').callCount, 1)
 
@@ -1236,7 +1237,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           param1.crUpdated = true
           result = await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
           test.deepEqual(result, expectedResult, 'Expected result is returned')
-          test.equal(knexStub.withArgs('transferStateChange').callCount, 2)
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 4)
           test.equal(knexStub.withArgs('participantPosition').callCount, 2)
           test.equal(knexStub.withArgs('participantPositionChange').callCount, 2)
           test.end()
@@ -1268,7 +1269,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             crPositionId: 1,
             crPositionValue: 0,
             crReservedValue: 0,
-            transferStateId: 'ABORT',
+            transferStateId: Enum.TransferState.ABORTED,
             ledgerAccountTypeId: 2
           }
           const trxStub = sandbox.stub()
@@ -1334,7 +1335,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           }
           let result = await Model.transferStateAndPositionUpdate(param1, enums)
           test.deepEqual(result, expectedResult, 'Expected result is returned')
-          test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 2)
           test.equal(knexStub.withArgs('participantPosition').callCount, 2)
           test.equal(knexStub.withArgs('participantPositionChange').callCount, 2)
           test.end()
@@ -1717,7 +1718,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         }
       })
 
-      await reconciliationTransferReserveTest.test('reserve funds and abort when crPositionValue is gt 0', async test => {
+      await reconciliationTransferReserveTest.test('reserve funds and abort when drPositionValue is gt 0', async test => {
         try {
           const payload = {
             action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE
@@ -1727,7 +1728,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const trxStub = sandbox.stub()
           const knexStub = sandbox.stub()
           sandbox.stub(Db, 'getKnex').returns(knexStub)
-          sandbox.stub(Model, 'transferStateAndPositionUpdate').returns({ crPositionValue: 100 })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate').returns({ drPositionValue: 100 })
           sandbox.stub(Model, 'reconciliationTransferAbort')
 
           let result = await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums, trxStub)
