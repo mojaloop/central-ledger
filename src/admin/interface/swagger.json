@@ -1398,7 +1398,7 @@
         "action": {
           "type": "string",
           "enum": [
-            "recordFundsOutPrepare",
+            "recordFundsOutPrepareReserve",
             "recordFundsIn"
           ]
         },

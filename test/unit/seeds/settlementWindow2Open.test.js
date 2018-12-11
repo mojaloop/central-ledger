@@ -42,23 +42,57 @@ Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {
     t.end()
   })
 
-  // await settlementWindow2OpenTest.test('seed should', async (test) => {
-  //   const knexStub = sandbox.stub()
-  //   knexStub.returns({
-  //     insert: sandbox.stub().returns(true)
-  //   })
+  await settlementWindow2OpenTest.test('seed should', async (test) => {
+    const knexStub = sandbox.stub()
+    knexStub.returns({
+      insert: sandbox.stub().returns(true),
+      select: sandbox.stub().returns({
+        leftJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns([])
+        })
+      }),
+      where: sandbox.stub().returns({
+        update: sandbox.stub()
+      })
+    })
 
-  //   try {
-  //     const result = await Model.seed(knexStub)
-  //     test.equal(result, true, 'call insert')
-  //     test.ok(knexStub.withArgs('settlementWindow2Open').calledOnce, 'knex called with settlementWindow2Open once')
-  //     test.end()
-  //   } catch (err) {
-  //     Logger.error(`settlementWindow2Open seed failed with error - ${err}`)
-  //     test.fail()
-  //     test.end()
-  //   }
-  // })
+    try {
+      const result = await Model.seed(knexStub)
+      test.equal(result, true, 'insert initial settlement window')
+      test.ok(knexStub.withArgs('settlementWindow').calledTwice, 'knex called with settlementWindow twice')
+      test.end()
+    } catch (err) {
+      Logger.error(`settlementWindow2Open seed failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await settlementWindow2OpenTest.test('seed should', async (test) => {
+    const knexStub = sandbox.stub()
+    knexStub.returns({
+      insert: sandbox.stub().returns(true),
+      select: sandbox.stub().returns({
+        leftJoin: sandbox.stub().returns({
+          where: sandbox.stub().returns([1])
+        })
+      }),
+      where: sandbox.stub().returns({
+        update: sandbox.stub()
+      })
+    })
+
+    try {
+      const result = await Model.seed(knexStub)
+      test.equal(result, true, 'return success but do not perform insert initial settlement window')
+      test.equal(knexStub.withArgs('settlementWindow').callCount, 0, 'knex has not been called with settlementWindow')
+      test.end()
+    } catch (err) {
+      Logger.error(`settlementWindow2Open seed failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
 
   await settlementWindow2OpenTest.test('seed should', async (test) => {
     function DuplicateEntryError (message) {

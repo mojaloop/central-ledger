@@ -80,7 +80,7 @@ const positions = async (error, messages) => {
     Logger.info('PositionHandler::positions')
     let consumer = {}
     let kafkaTopic
-    const payload = message.value.content && message.value.content.payload || {}
+    const payload = (message.value.content && message.value.content.payload) || {}
     payload.transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
@@ -92,9 +92,9 @@ const positions = async (error, messages) => {
         Logger.error(e)
         return true
       }
-      const {preparedMessagesList, limitAlarms} = await PositionService.calculatePreparePositionsBatch(prepareBatch)
+      const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(prepareBatch)
       for (let prepareMessage of preparedMessagesList) {
-        const {transferState, rawMessage} = prepareMessage
+        const { transferState, rawMessage } = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
           await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.ENUMS.STATE.SUCCESS)
         } else {

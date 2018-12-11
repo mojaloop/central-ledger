@@ -43,6 +43,13 @@ const endpointType = async function () {
     throw err
   }
 }
+const hubParticipant = async function () {
+  try {
+    return (await Db.participant.find({ participantId: HubParticipantParticipantId }))[0]
+  } catch (err) {
+    throw err
+  }
+}
 const ledgerAccountType = async function () {
   try {
     let ledgerAccountType = {}
@@ -100,11 +107,11 @@ const transferState = async function () {
 }
 const transferStateEnum = async function () {
   try {
-    let transferState = {}
+    let transferStateEnum = {}
     for (let record of await Db.transferState.find({})) {
-      transferState[`${record.transferStateId}`] = record.enumeration
+      transferStateEnum[`${record.transferStateId}`] = record.enumeration
     }
-    return transferState
+    return transferStateEnum
   } catch (err) {
     throw err
   }
@@ -113,6 +120,7 @@ const all = async function () {
   try {
     return {
       endpointType: await endpointType(),
+      hubParticipant: await hubParticipant(),
       ledgerAccountType: await ledgerAccountType(),
       ledgerEntryType: await ledgerEntryType(),
       participantLimitType: await participantLimitType(),
@@ -132,6 +140,8 @@ const transpose = function (obj) {
   }
   return transposed
 }
+
+const HubParticipantParticipantId = 1
 
 const HubOperatorAccounts = ['HUB_RECONCILIATION', 'HUB_MULTILATERAL_SETTLEMENT', 'HUB_FEE']
 
@@ -210,7 +220,7 @@ const transferEventAction = {
 }
 const adminTransferAction = {
   RECORD_FUNDS_IN: 'recordFundsIn',
-  RECORD_FUNDS_OUT_PREPARE: 'recordFundsOutPrepare',
+  RECORD_FUNDS_OUT_PREPARE_RESERVE: 'recordFundsOutPrepareReserve',
   RECORD_FUNDS_OUT_COMMIT: 'recordFundsOutCommit',
   RECORD_FUNDS_OUT_ABORT: 'recordFundsOutAbort'
 }
@@ -276,6 +286,7 @@ const topicMap = {
 
 module.exports = {
   endpointType,
+  hubParticipant,
   ledgerAccountType,
   ledgerEntryType,
   participantLimitType,
@@ -285,6 +296,7 @@ module.exports = {
   all,
   transpose,
 
+  HubParticipantParticipantId,
   HubOperatorAccounts,
   EnpointType,
   LedgerAccountType,

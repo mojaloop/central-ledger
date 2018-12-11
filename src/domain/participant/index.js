@@ -578,23 +578,23 @@ const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp =
   }
 }
 
-const setPayerPayeeFundsInOut = (fspName, payload) => {
+const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
   let { action } = payload
   const actions = {
     'recordFundsIn': {
       payer: fspName,
-      payee: 'hub'
+      payee: enums.hubParticipant.name
     },
-    'recordFundsOutPrepare': {
-      payer: 'hub',
+    'recordFundsOutPrepareReserve': {
+      payer: enums.hubParticipant.name,
       payee: fspName
     },
     'recordFundsOutCommit': {
-      payer: 'hub',
+      payer: enums.hubParticipant.name,
       payee: fspName
     },
     'recordFundsOutAbort': {
-      payer: 'hub',
+      payer: enums.hubParticipant.name,
       payee: fspName
     }
   }
@@ -610,11 +610,11 @@ const recordFundsInOut = async (payload, params, enums) => {
     participantExists(participant)
     const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency || null)
     let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
-    if (!(accountMatched && accountMatched.ledgerAccountType === 'SETTLEMENT')) {
+    if (!(accountMatched && accountMatched.ledgerAccountTypeId === enums.ledgerAccountType.SETTLEMENT)) {
       throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
     }
     transferId && (payload.transferId = transferId)
-    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload))
+    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
     messageProtocol.metadata.request = {
       params: params,
       enums: enums

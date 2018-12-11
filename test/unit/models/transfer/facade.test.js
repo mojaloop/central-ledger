@@ -37,6 +37,7 @@ const Enum = require('../../../../src/lib/enum')
 const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const Time = require('../../../../src/lib/time')
+const Uuid = require('uuid4')
 
 Test('Transfer facade', async (transferFacadeTest) => {
   let sandbox
@@ -46,7 +47,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
   const enums = {
     transferState: {
       RESERVED: 'RESERVED',
-      COMMITTED: 'COMMITTED'
+      COMMITTED: 'COMMITTED',
+      ABORTED: 'ABORTED'
     },
     transferParticipantRoleType: {
       PAYER_DFSP: 'PAYER_DFSP',
@@ -517,7 +519,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           isCommit = true
           hasPassedValidation = true
-          let record = [{settlementWindowId: 1}]
+          let record = [{ settlementWindowId: 1 }]
           transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_FULFIL
 
           sandbox.stub(Db, 'getKnex')
@@ -555,6 +557,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
+          /** @namespace ModuleProxy.saveTransferFulfilled **/
           const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
@@ -578,7 +581,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           isCommit = false
           hasPassedValidation = true
-          let record = [{settlementWindowId: 1}]
+          let record = [{ settlementWindowId: 1 }]
           transferStateChangeRecord.transferStateId = Enum.TransferState.REJECTED
 
           sandbox.stub(Db, 'getKnex')
@@ -638,7 +641,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await saveTransferFulfilled.test('return transfer in ABORTED state', async (test) => {
         try {
           hasPassedValidation = false
-          let record = [{settlementWindowId: 1}]
+          let record = [{ settlementWindowId: 1 }]
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
 
           sandbox.stub(Db, 'getKnex')
@@ -954,7 +957,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      var result = await Model.getTransferStateByTransferId(transferStateChange.transferId)
+      let result = await Model.getTransferStateByTransferId(transferStateChange.transferId)
       test.deepEqual(result, transferStateChange)
       test.end()
     } catch (err) {
@@ -1120,91 +1123,84 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
-  await transferFacadeTest.test('reconciliationPositionChange should', async reconciliationPositionChangeTest => {
+  await transferFacadeTest.test('transferStateAndPositionUpdate should', async transferStateAndPositionUpdateTest => {
     try {
-      await reconciliationPositionChangeTest.test('throw error if database is not available', async test => {
+      await transferStateAndPositionUpdateTest.test('throw error if database is not available', async test => {
         try {
-          const payload = {}
-          const transferStateId = 1
-          const transactionTimestamp = Time.getUTCString(now)
+          const param1 = {}
           const trxStub = sandbox.stub()
 
           const knexStub = sandbox.stub().throws(new Error('Database unavailable'))
           sandbox.stub(Db, 'getKnex').returns(knexStub)
 
-          await Model.reconciliationPositionChange(payload, transferStateId, transactionTimestamp, enums, trxStub)
+          await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
-          Logger.error(`reconciliationPositionChange failed with error - ${err}`)
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
           test.pass('Error thrown')
           test.end()
         }
       })
 
-      await reconciliationPositionChangeTest.test('change position when called from within a transaction', async test => {
+      await transferStateAndPositionUpdateTest.test('change position when called from within a transaction', async test => {
         try {
-          const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
-            participantCurrencyId: 2,
-            amount: {
-              amount: 10,
-              currency: 'USD'
-            }
+          let param1 = {
+            transferId: Uuid(),
+            transferStateId: Enum.TransferState.COMMITTED,
+            reason: 'text',
+            createdDate: Time.getUTCString(now),
+            drUpdated: true,
+            crUpdated: false
           }
-          const transferStateId = 1
-          const transactionTimestamp = Time.getUTCString(now)
+          const infoDataStub = {
+            drAccountId: 4,
+            drAmount: -100,
+            drPositionId: 4,
+            drPositionValue: 0,
+            drReservedValue: 0,
+            crAccountId: 1,
+            crAmount: 100,
+            crPositionId: 1,
+            crPositionValue: 0,
+            crReservedValue: 0,
+            transferStateId: Enum.TransferState.COMMITTED,
+            ledgerAccountTypeId: 2
+          }
           const trxStub = sandbox.stub()
 
           const knexStub = sandbox.stub()
+          let context = sandbox.stub()
+          context.on = sandbox.stub().returns({
+            andOn: sandbox.stub()
+          })
           sandbox.stub(Db, 'getKnex').returns(knexStub)
-          knexStub.withArgs('participantCurrency').returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns({
-                andWhere: sandbox.stub().returns({
-                  first: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns(
-                      Promise.resolve({
-                        reconciliationAccountId: 1
+          knexStub.withArgs('transfer AS t').returns({
+            join: sandbox.stub().callsArgOn(1, context).returns({
+              join: sandbox.stub().returns({
+                join: sandbox.stub().returns({
+                  join: sandbox.stub().callsArgOn(1, context).returns({
+                    join: sandbox.stub().returns({
+                      join: sandbox.stub().returns({
+                        join: sandbox.stub().returns({
+                          where: sandbox.stub().returns({
+                            whereIn: sandbox.stub().returns({
+                              whereIn: sandbox.stub().returns({
+                                select: sandbox.stub().returns({
+                                  orderBy: sandbox.stub().returns({
+                                    first: sandbox.stub().returns({
+                                      transacting: sandbox.stub().returns(Promise.resolve(infoDataStub))
+                                    })
+                                  })
+                                })
+                              })
+                            })
+                          })
+                        })
                       })
-                    )
+                    })
                   })
                 })
-              })
-            })
-          })
-          let participantPositionWhereStub = sandbox.stub()
-          participantPositionWhereStub.withArgs('participantCurrencyId', 1).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    reconciliationPositionId: 1,
-                    reconciliationPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
-          participantPositionWhereStub.withArgs('participantCurrencyId', 2).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    settlementPositionId: 2,
-                    settlementPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
-          knexStub.withArgs('participantPosition').returns({
-            select: sandbox.stub().returns({
-              where: participantPositionWhereStub
-            }),
-            update: sandbox.stub().returns({
-              where: sandbox.stub().returns({
-                transacting: sandbox.stub()
               })
             })
           })
@@ -1213,179 +1209,104 @@ Test('Transfer facade', async (transferFacadeTest) => {
               transacting: sandbox.stub().returns(9)
             })
           })
-          knexStub.returns({
+          knexStub.withArgs('participantPosition').returns({
+            update: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                transacting: sandbox.stub()
+              })
+            })
+          })
+          knexStub.withArgs('participantPositionChange').returns({
             insert: sandbox.stub().returns({
               transacting: sandbox.stub()
             })
           })
-          const expectedResult = {
-            hubReconciliationAccountPosition: 10,
-            participantSettlementAccountPosition: -10
-          }
 
-          let result = await Model.reconciliationPositionChange(payload, transferStateId, transactionTimestamp, enums, trxStub)
+          let expectedResult = {
+            transferStateChangeId: 9,
+            drPositionValue: infoDataStub.drPositionValue + infoDataStub.drAmount,
+            crPositionValue: infoDataStub.crPositionValue + infoDataStub.crAmount
+          }
+          let result = await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
           test.deepEqual(result, expectedResult, 'Expected result is returned')
-          test.equal(knexStub.withArgs('participantCurrency').callCount, 1)
-          test.equal(knexStub.withArgs('participantPosition').callCount, 4)
-          test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 2)
+          test.equal(knexStub.withArgs('participantPosition').callCount, 1)
+          test.equal(knexStub.withArgs('participantPositionChange').callCount, 1)
+
+          param1.drUpdated = false
+          param1.crUpdated = true
+          result = await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
+          test.deepEqual(result, expectedResult, 'Expected result is returned')
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 4)
+          test.equal(knexStub.withArgs('participantPosition').callCount, 2)
           test.equal(knexStub.withArgs('participantPositionChange').callCount, 2)
           test.end()
         } catch (err) {
-          Logger.error(`reconciliationPositionChange failed with error - ${err}`)
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
           test.fail()
           test.end()
         }
       })
 
-      await reconciliationPositionChangeTest.test('throw error if insert participantPositionChange fails', async test => {
+      await transferStateAndPositionUpdateTest.test('commit when called outside of a transaction', async test => {
         try {
-          const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT,
-            participantCurrencyId: 2,
-            amount: {
-              amount: 10,
-              currency: 'USD'
-            }
+          let param1 = {
+            transferId: Uuid(),
+            transferStateId: Enum.TransferState.ABORTED,
+            reason: 'text',
+            createdDate: Time.getUTCString(now),
+            drUpdated: true,
+            crUpdated: true
           }
-          const transferStateId = 1
-          const transactionTimestamp = Time.getUTCString(now)
+          const infoDataStub = {
+            drAccountId: 4,
+            drAmount: -100,
+            drPositionId: 4,
+            drPositionValue: 0,
+            drReservedValue: 0,
+            crAccountId: 1,
+            crAmount: 100,
+            crPositionId: 1,
+            crPositionValue: 0,
+            crReservedValue: 0,
+            transferStateId: Enum.TransferState.ABORTED,
+            ledgerAccountTypeId: 2
+          }
           const trxStub = sandbox.stub()
 
           const knexStub = sandbox.stub()
-          sandbox.stub(Db, 'getKnex').returns(knexStub)
-          knexStub.withArgs('participantCurrency').returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns({
-                andWhere: sandbox.stub().returns({
-                  first: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns(
-                      Promise.resolve({
-                        reconciliationAccountId: 1
-                      })
-                    )
-                  })
-                })
-              })
-            })
-          })
-          let participantPositionWhereStub = sandbox.stub()
-          participantPositionWhereStub.withArgs('participantCurrencyId', 1).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    reconciliationPositionId: 1,
-                    reconciliationPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
-          participantPositionWhereStub.withArgs('participantCurrencyId', 2).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    settlementPositionId: 2,
-                    settlementPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
-          knexStub.withArgs('participantPosition').returns({
-            select: sandbox.stub().returns({
-              where: participantPositionWhereStub
-            }),
-            update: sandbox.stub().returns({
-              where: sandbox.stub().returns({
-                transacting: sandbox.stub()
-              })
-            })
-          })
-          knexStub.withArgs('transferStateChange').returns({
-            insert: sandbox.stub().returns({
-              transacting: sandbox.stub().returns(11)
-            })
-          })
-          knexStub.returns({
-            insert: sandbox.stub().throws(new Error('Insert failed'))
-          })
-
-          await Model.reconciliationPositionChange(payload, transferStateId, transactionTimestamp, enums, trxStub)
-          test.fail('Error not thrown!')
-          test.end()
-        } catch (err) {
-          Logger.error(`reconciliationPositionChange failed with error - ${err}`)
-          test.pass('Error thrown')
-          test.end()
-        }
-      })
-
-      await reconciliationPositionChangeTest.test('change position when called in a new transaction and commit it when called from outside of a transaction', async test => {
-        try {
-          const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE,
-            participantCurrencyId: 2,
-            amount: {
-              amount: 10,
-              currency: 'USD'
-            }
-          }
-          const transferStateId = 1
-          const transactionTimestamp = Time.getUTCString(now)
-
-          const knexStub = sandbox.stub()
-          const trxStub = sandbox.stub()
           knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          let context = sandbox.stub()
+          context.on = sandbox.stub().returns({
+            andOn: sandbox.stub()
+          })
           sandbox.stub(Db, 'getKnex').returns(knexStub)
-          knexStub.withArgs('participantCurrency').returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns({
-                andWhere: sandbox.stub().returns({
-                  first: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns(
-                      Promise.resolve({
-                        reconciliationAccountId: 1
+          knexStub.withArgs('transfer AS t').returns({
+            join: sandbox.stub().callsArgOn(1, context).returns({
+              join: sandbox.stub().returns({
+                join: sandbox.stub().returns({
+                  join: sandbox.stub().callsArgOn(1, context).returns({
+                    join: sandbox.stub().returns({
+                      join: sandbox.stub().returns({
+                        join: sandbox.stub().returns({
+                          where: sandbox.stub().returns({
+                            whereIn: sandbox.stub().returns({
+                              whereIn: sandbox.stub().returns({
+                                select: sandbox.stub().returns({
+                                  orderBy: sandbox.stub().returns({
+                                    first: sandbox.stub().returns({
+                                      transacting: sandbox.stub().returns(Promise.resolve(infoDataStub))
+                                    })
+                                  })
+                                })
+                              })
+                            })
+                          })
+                        })
                       })
-                    )
+                    })
                   })
                 })
-              })
-            })
-          })
-          let participantPositionWhereStub = sandbox.stub()
-          participantPositionWhereStub.withArgs('participantCurrencyId', 1).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    reconciliationPositionId: 1,
-                    reconciliationPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
-          participantPositionWhereStub.withArgs('participantCurrencyId', 2).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    settlementPositionId: 2,
-                    settlementPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
-          knexStub.withArgs('participantPosition').returns({
-            select: sandbox.stub().returns({
-              where: participantPositionWhereStub
-            }),
-            update: sandbox.stub().returns({
-              where: sandbox.stub().returns({
-                transacting: sandbox.stub()
               })
             })
           })
@@ -1394,122 +1315,130 @@ Test('Transfer facade', async (transferFacadeTest) => {
               transacting: sandbox.stub().returns(9)
             })
           })
-          knexStub.returns({
-            insert: sandbox.stub().returns({
-              transacting: sandbox.stub()
-            })
-          })
-          const expectedResult = {
-            hubReconciliationAccountPosition: -10,
-            participantSettlementAccountPosition: 10
-          }
-
-          let result = await Model.reconciliationPositionChange(payload, transferStateId, transactionTimestamp, enums)
-          test.deepEqual(result, expectedResult, 'Expected result is returned')
-          test.equal(knexStub.withArgs('participantCurrency').callCount, 1)
-          test.equal(knexStub.withArgs('participantPosition').callCount, 4)
-          test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
-          test.equal(knexStub.withArgs('participantPositionChange').callCount, 2)
-          test.end()
-        } catch (err) {
-          Logger.error(`reconciliationPositionChange failed with error - ${err}`)
-          test.fail()
-          test.end()
-        }
-      })
-
-      await reconciliationPositionChangeTest.test('throw error and rollback when called outside of a transaction', async test => {
-        try {
-          const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
-            participantCurrencyId: 2,
-            amount: {
-              amount: 10,
-              currency: 'USD'
-            }
-          }
-          const transferStateId = 1
-          const transactionTimestamp = Time.getUTCString(now)
-
-          const knexStub = sandbox.stub()
-          let trxStub = sandbox.stub()
-          trxStub.rollback = sandbox.stub()
-          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-          sandbox.stub(Db, 'getKnex').returns(knexStub)
-          knexStub.withArgs('participantCurrency').returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns({
-                andWhere: sandbox.stub().returns({
-                  first: sandbox.stub().returns({
-                    transacting: sandbox.stub().returns(
-                      Promise.resolve({
-                        reconciliationAccountId: 1
-                      })
-                    )
-                  })
-                })
-              })
-            })
-          })
-          let participantPositionWhereStub = sandbox.stub()
-          participantPositionWhereStub.withArgs('participantCurrencyId', 1).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    reconciliationPositionId: 1,
-                    reconciliationPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
-          participantPositionWhereStub.withArgs('participantCurrencyId', 2).returns({
-            first: sandbox.stub().returns({
-              transacting: sandbox.stub().returns({
-                forUpdate: sandbox.stub().returns(
-                  Promise.resolve({
-                    settlementPositionId: 2,
-                    settlementPositionValue: 0
-                  })
-                )
-              })
-            })
-          })
           knexStub.withArgs('participantPosition').returns({
-            select: sandbox.stub().returns({
-              where: participantPositionWhereStub
-            }),
             update: sandbox.stub().returns({
               where: sandbox.stub().returns({
                 transacting: sandbox.stub()
               })
             })
           })
-          knexStub.withArgs('transferStateChange').returns({
+          knexStub.withArgs('participantPositionChange').returns({
             insert: sandbox.stub().returns({
-              transacting: sandbox.stub().returns(11)
+              transacting: sandbox.stub()
             })
           })
-          knexStub.returns({
+
+          let expectedResult = {
+            transferStateChangeId: 9,
+            drPositionValue: infoDataStub.drPositionValue - infoDataStub.drAmount,
+            crPositionValue: infoDataStub.crPositionValue - infoDataStub.crAmount
+          }
+          let result = await Model.transferStateAndPositionUpdate(param1, enums)
+          test.deepEqual(result, expectedResult, 'Expected result is returned')
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 2)
+          test.equal(knexStub.withArgs('participantPosition').callCount, 2)
+          test.equal(knexStub.withArgs('participantPositionChange').callCount, 2)
+          test.end()
+        } catch (err) {
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await transferStateAndPositionUpdateTest.test('throw error and rollback when called outside of a transaction', async test => {
+        try {
+          let param1 = {
+            transferId: Uuid(),
+            transferStateId: Enum.TransferState.RECEIVED_PREPARE,
+            reason: 'text',
+            createdDate: Time.getUTCString(now),
+            drUpdated: true,
+            crUpdated: false
+          }
+          const infoDataStub = {
+            drAccountId: 4,
+            drAmount: -100,
+            drPositionId: 4,
+            drPositionValue: 0,
+            drReservedValue: 0,
+            crAccountId: 1,
+            crAmount: 100,
+            crPositionId: 1,
+            crPositionValue: 0,
+            crReservedValue: 0,
+            transferStateId: 'RECEIVED_PREPARE',
+            ledgerAccountTypeId: 2
+          }
+          const trxStub = sandbox.stub()
+
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          let context = sandbox.stub()
+          context.on = sandbox.stub().returns({
+            andOn: sandbox.stub()
+          })
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.withArgs('transfer AS t').returns({
+            join: sandbox.stub().callsArgOn(1, context).returns({
+              join: sandbox.stub().returns({
+                join: sandbox.stub().returns({
+                  join: sandbox.stub().callsArgOn(1, context).returns({
+                    join: sandbox.stub().returns({
+                      join: sandbox.stub().returns({
+                        join: sandbox.stub().returns({
+                          where: sandbox.stub().returns({
+                            whereIn: sandbox.stub().returns({
+                              whereIn: sandbox.stub().returns({
+                                select: sandbox.stub().returns({
+                                  orderBy: sandbox.stub().returns({
+                                    first: sandbox.stub().returns({
+                                      transacting: sandbox.stub().returns(Promise.resolve(infoDataStub))
+                                    })
+                                  })
+                                })
+                              })
+                            })
+                          })
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+          knexStub.withArgs('transferStateChange').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub().returns(9)
+            })
+          })
+          knexStub.withArgs('participantPosition').returns({
+            update: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                transacting: sandbox.stub()
+              })
+            })
+          })
+          knexStub.withArgs('participantPositionChange').returns({
             insert: sandbox.stub().throws(new Error('Insert failed'))
           })
 
-          await Model.reconciliationPositionChange(payload, transferStateId, transactionTimestamp, enums)
+          await Model.transferStateAndPositionUpdate(param1, enums)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
-          Logger.error(`reconciliationPositionChange failed with error - ${err}`)
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
           test.pass('Error thrown')
           test.end()
         }
       })
 
-      await reconciliationPositionChangeTest.end()
+      await transferStateAndPositionUpdateTest.end()
     } catch (err) {
       Logger.error(`transferFacadeTest failed with error - ${err}`)
-      reconciliationPositionChangeTest.fail()
-      reconciliationPositionChangeTest.end()
+      transferStateAndPositionUpdateTest.fail()
+      transferStateAndPositionUpdateTest.end()
     }
   })
 
@@ -1537,7 +1466,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('make reconciliation transfer prepare when called from within a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -1582,9 +1511,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
               })
             })
           })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: -10
-          })
           sandbox.stub(Model, 'reconciliationTransferAbort')
 
           let result = await Model.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trxStub)
@@ -1594,8 +1520,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.equal(knexStub.withArgs('transferParticipant').callCount, 2)
           test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
           test.equal(knexStub.withArgs('transferExtension').callCount, 3)
-          test.equal(Model.reconciliationPositionChange.callCount, 1)
-          test.equal(Model.reconciliationTransferAbort.callCount, 0)
           test.end()
         } catch (err) {
           Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
@@ -1704,9 +1628,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
               })
             })
           })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: -10
-          })
           sandbox.stub(Model, 'reconciliationTransferAbort')
 
           let result = await Model.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
@@ -1722,7 +1643,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('throw error and rollback when called outside of a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -1749,17 +1670,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns(
-                      Promise.resolve({
-                        reconciliationAccountId: 1
-                      })
+                      Promise.reject(new Error('An error occured'))
                     )
                   })
                 })
               })
             })
-          })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: 10
           })
           sandbox.stub(Model, 'reconciliationTransferAbort').throws(new Error('Reconciliation Transfer Abort Failure'))
 
@@ -1778,6 +1694,105 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Logger.error(`transferFacadeTest failed with error - ${err}`)
       reconciliationTransferPrepareTest.fail()
       reconciliationTransferPrepareTest.end()
+    }
+  })
+
+  await transferFacadeTest.test('reconciliationTransferReserve should', async reconciliationTransferReserveTest => {
+    try {
+      await reconciliationTransferReserveTest.test('throw error if database is not available', async test => {
+        try {
+          const payload = {}
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub().throws(new Error('Database unavailable'))
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+
+          await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.test('reserve funds and abort when drPositionValue is gt 0', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          sandbox.stub(Model, 'transferStateAndPositionUpdate').returns({ drPositionValue: 100 })
+          sandbox.stub(Model, 'reconciliationTransferAbort')
+
+          let result = await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums, trxStub)
+          test.equal(result, 0, 'Result for successful operation is returned')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.test('reserve funds and commit when called outside of a transaction', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          sandbox.stub(Model, 'transferStateAndPositionUpdate').returns({ crPositionValue: -100 })
+          sandbox.stub(Model, 'reconciliationTransferAbort')
+
+          let result = await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums)
+          test.equal(result, 0, 'Result for successful operation is returned')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.test('rollback when called outside of a transaction and error occurs', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          sandbox.stub(Model, 'transferStateAndPositionUpdate').throws(new Error('transferStateAndPositionUpdate failed'))
+
+          let result = await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums)
+          test.equal(result, 0, 'Result for successful operation is returned')
+          test.fail('Error not thrown!')
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.ok('Error thrown as expected')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.end()
+    } catch (err) {
+      Logger.error(`transferFacadeTest failed with error - ${err}`)
+      reconciliationTransferReserveTest.fail()
+      reconciliationTransferReserveTest.end()
     }
   })
 
@@ -1819,14 +1834,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
               transacting: sandbox.stub()
             })
           })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: 10
-          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
 
           let result = await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums, trxStub)
           test.equal(result, 0, 'Result for successful operation returned')
-          test.equal(knexStub().insert.callCount, 2)
-          test.equal(Model.reconciliationPositionChange.callCount, 0)
+          test.equal(knexStub().insert.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
           Logger.error(`reconciliationTransferCommit failed with error - ${err}`)
@@ -1849,17 +1862,10 @@ Test('Transfer facade', async (transferFacadeTest) => {
           sandbox.stub(Db, 'getKnex').returns(knexStub)
           knexStub.withArgs('transferFulfilment').returns({
             insert: sandbox.stub().returns({
-              transacting: sandbox.stub()
-            })
-          })
-          knexStub.withArgs('transferStateChange').returns({
-            insert: sandbox.stub().returns({
               transacting: sandbox.stub().throws(new Error('Insert fails!'))
             })
           })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: 10
-          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
 
           await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums, trxStub)
           test.fail('Error not thrown!')
@@ -1890,14 +1896,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
               transacting: sandbox.stub()
             })
           })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: 10
-          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
 
           let result = await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums)
           test.equal(result, 0, 'Result for successful operation returned')
           test.equal(knexStub().insert.callCount, 1)
-          test.equal(Model.reconciliationPositionChange.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
           Logger.error(`reconciliationTransferCommit failed with error - ${err}`)
@@ -1983,14 +1987,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
               transacting: sandbox.stub()
             })
           })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: -10
-          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
 
           let result = await Model.reconciliationTransferAbort(payload, transactionTimestamp, enums, trxStub)
           test.equal(result, 0, 'Result for successful operation returned')
           test.equal(knexStub().insert.callCount, 1)
-          test.equal(Model.reconciliationPositionChange.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
           Logger.error(`reconciliationTransferAbort failed with error - ${err}`)
@@ -2046,14 +2048,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
               transacting: sandbox.stub()
             })
           })
-          sandbox.stub(Model, 'reconciliationPositionChange').returns({
-            participantSettlementAccountPosition: -10
-          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
 
           let result = await Model.reconciliationTransferAbort(payload, transactionTimestamp, enums)
           test.equal(result, 0, 'Result for successful operation returned')
           test.equal(knexStub().insert.callCount, 1)
-          test.equal(Model.reconciliationPositionChange.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
           Logger.error(`reconciliationTransferAbort failed with error - ${err}`)
@@ -2066,7 +2066,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2079,7 +2079,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           sandbox.stub(Db, 'getKnex').returns(knexStub)
           knexStub.returns({
             insert: sandbox.stub().returns({
-              transacting: sandbox.stub().throws(new Error('Insert fails!'))
+              transacting: sandbox.stub()
             })
           })
 

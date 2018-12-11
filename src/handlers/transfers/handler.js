@@ -107,7 +107,7 @@ const prepare = async (error, messages) => {
     const payload = message.value.content.payload
 
     Logger.info('TransferService::prepare::checking for duplicates')
-    const {existsMatching, existsNotMatching} = await TransferService.validateDuplicateHash(payload)
+    const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
 
     if (existsMatching) {
       // There is a matching hash
@@ -153,7 +153,7 @@ const prepare = async (error, messages) => {
       return true
     }
 
-    let {validationPassed, reasons} = await Validator.validateByName(payload)
+    let { validationPassed, reasons } = await Validator.validateByName(payload)
     if (validationPassed) {
       Logger.info('TransferService::prepare::validationPassed')
       try {

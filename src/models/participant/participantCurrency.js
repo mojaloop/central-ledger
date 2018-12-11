@@ -51,7 +51,7 @@ exports.getById = async (id) => {
 
 exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
   try {
-    let params = {participantId: id}
+    let params = { participantId: id }
     if (ledgerAccountTypeId) {
       params.ledgerAccountTypeId = ledgerAccountTypeId
     }
@@ -63,7 +63,7 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
 
 exports.destroyByParticipantId = async (id) => {
   try {
-    return await Db.participantCurrency.destroy({participantId: id})
+    return await Db.participantCurrency.destroy({ participantId: id })
   } catch (err) {
     throw new Error(err.message)
   }

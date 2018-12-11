@@ -30,6 +30,7 @@
     "standard": "standard",
     "test:unit": "tape 'test/unit/**/*.test.js'",
     "test:int": "tape 'test/integration/**/*.test.js'",
+    "test:int-": "tape 'test/integration/**/*.test-.js'",
     "test:all": "run-s test test:integration test:functional test:spec",
     "test:xunit": "tape 'test/unit/**/*.test.js' | tap-xunit",
     "test:coverage": "istanbul cover tape -- 'test/unit/**/*.test.js'",

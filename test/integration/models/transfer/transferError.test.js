@@ -78,7 +78,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
       assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create transfer error without transferStateChangeId is failing with message ')
+      // Logger.error('create transfer error without transferStateChangeId is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
