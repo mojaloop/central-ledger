@@ -287,9 +287,10 @@ const fulfil = async (error, messages) => {
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
+          // TODO payeeFsp needs to be aligned for multi-CNP-hops
           await Utility.produceParticipantMessage(existingTransfer.payeeFsp, TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
           return true
-        } else {
+        } else { // TODO WTF is this block doing?
           await TransferService.reject(transferId, payload)
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)

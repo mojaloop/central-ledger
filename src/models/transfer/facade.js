@@ -264,9 +264,17 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     }
 
-    const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
-      _.set(m, acct.name, acct.participantCurrencyId), {})
+    // TODO - temp to deal with names containing .
+    let obj = {}
+    participants.forEach(function (item) {
+      obj[ String(item.name) ] = item.participantCurrencyId
+    })
 
+    const participantCurrencyIds = obj
+    // const participantCurrencyIds = await _.reduce(participants, (m, acct) =>
+    //   _.set(m, acct.name, acct.participantCurrencyId), {})
+
+    console.log(participantCurrencyIds)
     const transferRecord = {
       transferId: payload.transferId,
       amount: payload.amount.amount,
