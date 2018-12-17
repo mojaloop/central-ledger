@@ -101,7 +101,7 @@ ON lat.ledgerAccountTypeId = pc.ledgerAccountTypeId
 JOIN central_ledger.participant p
 ON p.participantId = pc.participantId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT account balance is unchanged at -80, Hub-HUB_RECONCILIATION is restored at 80."
+echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT is restored to -80, Hub-HUB_RECONCILIATION account balance is unchanged at 80."
 echo
 echo
 
@@ -123,8 +123,8 @@ ON p.participantId = pc.participantId
 JOIN central_ledger.transferStateChange tsc
 ON tsc.transferStateChangeId = ppc.transferStateChangeId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: DR is applied during 8-RESERVED, thus Hub-HUB_RECONCILIATION account is changed to -120 (29:05)."
-echo "CR is not applied to dfsp1-SETTLEMENT account (29:22)."
-echo "During 9-ABORTED DR is reverted back to 80 for Hub-HUB_RECONCILIATION account (29:46). Showing 6 records (previously 4)."
+echo "=> EXPECTED RESULT: DR is applied during 8-RESERVED, thus dfsp1-SETTLEMENT account is changed to 120 (29:05)."
+echo "CR is not applied to Hub-HUB_RECONCILIATION account (29:22)."
+echo "During 9-ABORTED DR is reverted back to -80 for dfsp1-SETTLEMENT account (29:46). Showing 6 records (previously 4)."
 echo
 echo

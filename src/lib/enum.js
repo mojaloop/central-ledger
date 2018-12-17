@@ -29,6 +29,7 @@
  ******/
 
 'use strict'
+const Config = require('./config')
 
 const Db = require('../db')
 
@@ -45,7 +46,7 @@ const endpointType = async function () {
 }
 const hubParticipant = async function () {
   try {
-    return (await Db.participant.find({ participantId: HubParticipantParticipantId }))[0]
+    return (await Db.participant.find({ participantId: Config.HUB_ID }))[0]
   } catch (err) {
     throw err
   }
@@ -140,10 +141,6 @@ const transpose = function (obj) {
   }
   return transposed
 }
-
-const HubParticipantParticipantId = 1
-
-const HubOperatorAccounts = ['HUB_RECONCILIATION', 'HUB_MULTILATERAL_SETTLEMENT', 'HUB_FEE']
 
 const EnpointType = {
   ALARM_NOTIFICATION_URL: 1,
@@ -296,8 +293,6 @@ module.exports = {
   all,
   transpose,
 
-  HubParticipantParticipantId,
-  HubOperatorAccounts,
   EnpointType,
   LedgerAccountType,
   LedgerEntryType,

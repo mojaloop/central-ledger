@@ -101,7 +101,7 @@ ON lat.ledgerAccountTypeId = pc.ledgerAccountTypeId
 JOIN central_ledger.participant p
 ON p.participantId = pc.participantId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT account balance is unchanged at -80, Hub-HUB_RECONCILIATION is reverted back to 80."
+echo "=> EXPECTED RESULT: Hub-HUB_RECONCILIATION account balance is unchanged at 80, dfsp1-SETTLEMENT is reverted back to -80."
 echo
 echo
 
@@ -123,6 +123,6 @@ ON p.participantId = pc.participantId
 JOIN central_ledger.transferStateChange tsc
 ON tsc.transferStateChangeId = ppc.transferStateChangeId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: DR is reverted back during 12-ABORTED, thus Hub-HUB_RECONCILIATION account balance is 80 (32:30). Showing 8 records (previously 7)."
+echo "=> EXPECTED RESULT: DR is reverted back during 12-ABORTED, thus dfsp1-SETTLEMENT account balance is -80 (32:30). Showing 8 records (previously 7)."
 echo
 echo
