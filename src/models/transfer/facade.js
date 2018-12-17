@@ -639,7 +639,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         // Retrieve hub reconciliation account for the specified currency
         let { reconciliationAccountId } = await knex('participantCurrency')
           .select('participantCurrencyId AS reconciliationAccountId')
-          .where('participantId', 1)
+          .where('participantId', Config.HUB_ID)
           .andWhere('currencyId', payload.amount.currency)
           .first()
           .transacting(trx)

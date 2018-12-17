@@ -101,7 +101,7 @@ ON lat.ledgerAccountTypeId = pc.ledgerAccountTypeId
 JOIN central_ledger.participant p
 ON p.participantId = pc.participantId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT account balance is -100, Hub-HUB_RECONCILIATION: 80."
+echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT account balance is -80, Hub-HUB_RECONCILIATION: 100."
 echo
 echo
 
@@ -123,7 +123,7 @@ ON p.participantId = pc.participantId
 JOIN central_ledger.transferStateChange tsc
 ON tsc.transferStateChangeId = ppc.transferStateChangeId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: DR is applied during 5-RESERVED, thus Hub-HUB_RECONCILIATION account is 80 (21:00)."
-echo "CR is not applied to dfsp1-SETTLEMENT account yet (21:05). Showing 3 records (previously 2)."
+echo "=> EXPECTED RESULT: DR is applied during 5-RESERVED, thus dfsp1-SETTLEMENT account is -80 (21:00)."
+echo "CR is not applied to Hub-HUB_RECONCILIATION account yet (21:05). Showing 3 records (previously 2)."
 echo
 echo

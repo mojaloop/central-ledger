@@ -18,10 +18,10 @@ const UnpreparedTransferError = require('./unprepared-transfer-error')
 const ValidationError = require('./validation-error')
 const ParticipantNotFoundError = require('./participant_not_found')
 const LedgerAccountTypeNotFoundError = require('./ledgerAcoountTypeNotFound')
-const EndpointReservedForHubOperatorAccountsError = require('./endpointReservedForHubOperatorAccountsError')
-const HubOperatorAccountTypeError = require('./hubOperatorAccountTypeError')
-const HubAccountExistsError = require('./HubAccountExists')
-const ParticipantAccountCreateError = require('./ParticipantAccountCreate')
+const EndpointReservedForHubAccountsError = require('./endpointReservedForHubAccountsError')
+const HubAccountTypeError = require('./hubAccountTypeError')
+const HubAccountExistsError = require('./hubAccountExists')
+const ParticipantAccountCreateError = require('./participantAccountCreate')
 
 module.exports = {
   AlreadyRolledBackError,
@@ -41,8 +41,8 @@ module.exports = {
   UnmetConditionError,
   UnpreparedTransferError,
   ValidationError,
-  EndpointReservedForHubOperatorAccountsError,
-  HubOperatorAccountTypeError,
+  EndpointReservedForHubAccountsError,
+  HubAccountTypeError,
   ParticipantAccountCreateError,
   HubAccountExistsError,
   NotFoundError: SharedErrors.NotFoundError

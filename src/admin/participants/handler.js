@@ -118,12 +118,12 @@ const createHubAccount = async function (request, h) {
         throw new Errors.HubAccountExistsError()
       }
 
-      if (participant.participantId !== Config.HUB_OPERATOR_CODE) {
-        throw new Errors.EndpointReservedForHubOperatorAccountsError()
+      if (participant.participantId !== Config.HUB_ID) {
+        throw new Errors.EndpointReservedForHubAccountsError()
       }
-      const isPermittedHubAccountType = Enum.HubOperatorAccounts.indexOf(request.payload.type) >= 0
+      const isPermittedHubAccountType = Config.HUB_ACCOUNTS.indexOf(request.payload.type) >= 0
       if (!isPermittedHubAccountType) {
-        throw new Errors.HubOperatorAccountTypeError()
+        throw new Errors.HubAccountTypeError()
       }
       const newCurrencyAccount = await Participant.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
       if (!newCurrencyAccount) {
@@ -165,7 +165,7 @@ const update = async function (request) {
     const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -175,7 +175,7 @@ const addEndpoint = async function (request, h) {
     await Participant.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -206,7 +206,7 @@ const getEndpoint = async function (request) {
       return endpoints
     }
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -216,7 +216,7 @@ const addLimitAndInitialPosition = async function (request, h) {
     await Participant.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -239,7 +239,7 @@ const getLimits = async function (request) {
     }
     return limits
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -259,7 +259,7 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -268,7 +268,7 @@ const getPositions = async function (request) {
   try {
     return Participant.getPositions(request.params.name, request.query)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -277,7 +277,7 @@ const getAccounts = async function (request) {
   try {
     return Participant.getAccounts(request.params.name, request.query)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 

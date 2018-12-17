@@ -25,6 +25,7 @@
 'use strict'
 
 const Db = require('../../db')
+const Config = require('../../../src/lib/config')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
@@ -81,7 +82,7 @@ exports.getByName = async (accountParams) => {
 exports.hubAccountExists = async (currencyId, ledgerAccountTypeId) => {
   try {
     const params = {
-      participantId: 1,
+      participantId: Config.HUB_ID,
       currencyId,
       ledgerAccountTypeId
     }
