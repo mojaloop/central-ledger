@@ -1,7 +1,10 @@
 FROM mhart/alpine-node:8.9.4
 
 WORKDIR /opt/central-ledger
-COPY . /opt/central-ledger
+COPY src /opt/central-ledger/src
+COPY config /opt/central-ledger/config
+COPY package.json /opt/central-ledger/
+
 
 RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
     && cd $(npm root -g)/npm \
