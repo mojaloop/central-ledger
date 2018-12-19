@@ -3,6 +3,7 @@ FROM mhart/alpine-node:8.9.4
 WORKDIR /opt/central-ledger
 COPY src /opt/central-ledger/src
 COPY config /opt/central-ledger/config
+COPY seeds /opt/central-ledger/seeds
 COPY migrations /opt/central-ledger/migrations
 COPY test /opt/central-ledger/test
 COPY package.json /opt/central-ledger/
