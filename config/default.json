@@ -61,13 +61,13 @@
         "PREPARE": {
           "config": {
             "options": {
-              "mode": 2,
+              "mode": 1,
               "batchSize": 1,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
               "messageAsJSON": true,
-              "sync": true,
+              "sync": false,
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
@@ -75,15 +75,8 @@
               "debug": "all",
               "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200,
-              "partition.assignment.strategy": "range"
+              "enable.auto.commit": true,
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -93,7 +86,7 @@
         "GET": {
           "config": {
             "options": {
-              "mode": 2,
+              "mode": 1,
               "batchSize": 1,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
@@ -107,15 +100,8 @@
               "debug": "all",
               "group.id": "cl-group-transfer-get",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200,
-              "partition.assignment.strategy": "range"
+              "enable.auto.commit": true,
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -139,15 +125,8 @@
               "debug": "all",
               "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200,
-              "partition.assignment.strategy": "range"
+              "enable.auto.commit": true,
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -171,14 +150,8 @@
               "debug": "all",
               "group.id": "cl-group-transfer-reject",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "enable.auto.commit": true,
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -204,14 +177,8 @@
               "debug": "all",
               "group.id": "cl-group-position-prepare",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "enable.auto.commit": true,
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -235,14 +202,8 @@
               "debug": "all",
               "group.id": "cl-group-position-fulfil",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "enable.auto.commit": true,
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -266,14 +227,8 @@
               "debug": "all",
               "group.id": "cl-group-position-abort",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "enable.auto.commit": true,
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -294,17 +249,9 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-prepare",
               "event_cb": true,
-              "compression.codec": "none",
-              "retry.backoff.ms": 100,
-              "message.send.max.retries": 2,
+              "dr_cb": false,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000,
-              "batch.num.messages": 100,
-              "dr_cb": true,
-              "socket.blocking.max.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true
+              "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
               "request.required.acks": "all"
@@ -321,17 +268,9 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-fulfil",
               "event_cb": true,
-              "compression.codec": "none",
-              "retry.backoff.ms": 100,
-              "message.send.max.retries": 2,
+              "dr_cb": false,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000,
-              "batch.num.messages": 100,
-              "dr_cb": true,
-              "socket.blocking.max.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true
+              "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
               "request.required.acks": "all"
@@ -348,17 +287,9 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-transfer-reject",
               "event_cb": true,
-              "compression.codec": "none",
-              "retry.backoff.ms": 100,
-              "message.send.max.retries": 2,
+              "dr_cb": false,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000,
-              "batch.num.messages": 100,
-              "dr_cb": true,
-              "socket.blocking.max.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true
+              "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
               "request.required.acks": "all"
@@ -377,17 +308,9 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-position-prepare",
               "event_cb": true,
-              "compression.codec": "none",
-              "retry.backoff.ms": 100,
-              "message.send.max.retries": 2,
+              "dr_cb": false,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000,
-              "batch.num.messages": 100,
-              "dr_cb": true,
-              "socket.blocking.max.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true
+              "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
               "request.required.acks": "all"
@@ -404,17 +327,9 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-position-fulfil",
               "event_cb": true,
-              "compression.codec": "none",
-              "retry.backoff.ms": 100,
-              "message.send.max.retries": 2,
+              "dr_cb": false,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000,
-              "batch.num.messages": 100,
-              "dr_cb": true,
-              "socket.blocking.max.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true
+              "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
               "request.required.acks": "all"
@@ -431,17 +346,9 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-position-abort",
               "event_cb": true,
-              "compression.codec": "none",
-              "retry.backoff.ms": 100,
-              "message.send.max.retries": 2,
+              "dr_cb": false,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000,
-              "batch.num.messages": 100,
-              "dr_cb": true,
-              "socket.blocking.max.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true
+              "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
               "request.required.acks": "all"
@@ -460,18 +367,9 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-notification-event",
               "event_cb": true,
-              "compression.codec": "none",
-              "retry.backoff.ms": 100,
-              "message.send.max.retries": 2,
+              "dr_cb": false,
               "socket.keepalive.enable": true,
-              "queue.buffering.max.messages": 10000000,
-              "batch.num.messages": 100,
-              "dr_cb": true,
-              "socket.blocking.max.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "partitioner": "random"
+              "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
               "request.required.acks": "all"
