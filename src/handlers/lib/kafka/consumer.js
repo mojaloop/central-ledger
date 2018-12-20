@@ -28,7 +28,8 @@
  * @module src/handlers/lib/kafka
  */
 
-const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
+// const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
+const Stream = require('@mojaloop/central-services-stream').Stream
 const Logger = require('@mojaloop/central-services-shared').Logger
 const uuid = require('uuid4')
 
@@ -47,47 +48,100 @@ let listOfConsumers = {}
  * @throws {Error} -  if failure occurs
  */
 const createHandler = async (topicName, config, command) => {
-  let consumer = {}
+  Logger.info(`createHandler::createHandler(${topicName}, ${config}, ${command.name})`)
+  try {
+    let consumer = {}
 
-  if (config.rdkafkaConf['client.id'] !== undefined) {
-    config.rdkafkaConf['client.id'] = `${config.rdkafkaConf['client.id']}-${uuid()}`
-  } else {
-    config.rdkafkaConf['client.id'] = `default-client-id-${uuid()}`
-  }
+    if (config.rdkafkaConf['client.id'] !== undefined) {
+      config.rdkafkaConf['client.id'] = `${config.rdkafkaConf['client.id']}-${uuid()}`
+    } else {
+      config.rdkafkaConf['client.id'] = `default-client-id-${uuid()}`
+    }
 
-  if (Array.isArray(topicName)) {
-    consumer = new Consumer(topicName, config)
-  } else {
-    consumer = new Consumer([topicName], config)
-  }
-
-  let autoCommitEnabled = true
-  if (config.rdkafkaConf !== undefined && config.rdkafkaConf['enable.auto.commit'] !== undefined) {
-    autoCommitEnabled = config.rdkafkaConf['enable.auto.commit']
-  }
-
-  await consumer.connect().then(async () => {
-    Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
-    await consumer.consume(command)
     if (Array.isArray(topicName)) {
-      for (let topic of topicName) { // NOT OK
-        listOfConsumers[topic] = {
+      consumer = new Stream.Consumer(topicName, config, command)
+    } else {
+      consumer = new Stream.Consumer([topicName], config, command)
+    }
+
+    consumer.connect()
+    consumer.on('ready', () => {
+      Logger.info(`consumer['${topicName}'] - connected`)
+      let autoCommitEnabled = true
+      if (Array.isArray(topicName)) {
+        for (let topic of topicName) { // NOT OK
+          listOfConsumers[topic] = {
+            consumer: consumer,
+            autoCommitEnabled: autoCommitEnabled
+          }
+        }
+      } else {
+        listOfConsumers[topicName] = {
           consumer: consumer,
           autoCommitEnabled: autoCommitEnabled
         }
       }
-    } else {
-      listOfConsumers[topicName] = {
-        consumer: consumer,
-        autoCommitEnabled: autoCommitEnabled
+      // Logger.info(`listOfConsumers: ${JSON.stringify(listOfConsumers.keys())}`)
+      Logger.debug(`consumer['${topicName}'] - List of Consumers:`)
+      for (var key in listOfConsumers) {
+        Logger.debug(`consumer['${topicName}'] - listOfConsumers[${key}]`)
       }
-    }
-  }).catch((e) => {
-    Logger.error(e)
-    Logger.info('Consumer error has occurred')
-    throw e
-  })
+    })
+
+    // process.on('SIGINT', () => {
+    //   for (var key in listOfConsumers) {
+    //     Logger.info(`Disconnecting listOfConsumers[${key}]`)
+    //     listOfConsumers[key].consumer.disconnect(() => {
+    //       Logger.info(`Disconnected listOfConsumers[${key}]`)
+    //     })
+    //   }
+    // })
+  } catch (err) {
+    Logger.error(err)
+  }
 }
+// const createHandler = async (topicName, config, command) => {
+//   let consumer = {}
+//
+//   if (config.rdkafkaConf['client.id'] !== undefined) {
+//     config.rdkafkaConf['client.id'] = `${config.rdkafkaConf['client.id']}-${uuid()}`
+//   } else {
+//     config.rdkafkaConf['client.id'] = `default-client-id-${uuid()}`
+//   }
+//
+//   if (Array.isArray(topicName)) {
+//     consumer = new Consumer(topicName, config)
+//   } else {
+//     consumer = new Consumer([topicName], config)
+//   }
+//
+//   let autoCommitEnabled = true
+//   if (config.rdkafkaConf !== undefined && config.rdkafkaConf['enable.auto.commit'] !== undefined) {
+//     autoCommitEnabled = config.rdkafkaConf['enable.auto.commit']
+//   }
+//
+//   await consumer.connect().then(async () => {
+//     Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
+//     await consumer.consume(command)
+//     if (Array.isArray(topicName)) {
+//       for (let topic of topicName) { // NOT OK
+//         listOfConsumers[topic] = {
+//           consumer: consumer,
+//           autoCommitEnabled: autoCommitEnabled
+//         }
+//       }
+//     } else {
+//       listOfConsumers[topicName] = {
+//         consumer: consumer,
+//         autoCommitEnabled: autoCommitEnabled
+//       }
+//     }
+//   }).catch((e) => {
+//     Logger.error(e)
+//     Logger.info('Consumer error has occurred')
+//     throw e
+//   })
+// }
 
 /**
  * @function GetConsumer

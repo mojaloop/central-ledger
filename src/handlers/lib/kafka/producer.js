@@ -60,6 +60,7 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
     }
 
     if (listOfProducers[topicConf.topicName]) {
+      Logger.info('Producer::fetch::topic=' + topicConf.topicName)
       producer = listOfProducers[topicConf.topicName]
     } else {
       Logger.info('Producer::start::topic=' + topicConf.topicName)
@@ -69,6 +70,12 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
       Logger.info('Producer::connect::end')
       listOfProducers[topicConf.topicName] = producer
     }
+
+    Logger.debug('List of Producers:')
+    for (var key in listOfProducers) {
+      Logger.debug(`listOfProducers[${key}]`)
+    }
+
     Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
     await producer.sendMessage(messageProtocol, topicConf)
     Logger.info('Producer::end')

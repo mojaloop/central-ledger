@@ -83,6 +83,7 @@ const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpC
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
+// const prepare = async (error, messages) => {
 const prepare = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_prepare',
@@ -196,10 +197,12 @@ const prepare = async (error, messages) => {
     // setTimeout(()=>{
     histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     // }, 150)
+    // await cb()
     return true
   } catch (error) {
     histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(error)
+    // await cb(error)
     throw error
   }
 }
