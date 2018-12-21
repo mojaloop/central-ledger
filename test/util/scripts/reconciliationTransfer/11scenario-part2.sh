@@ -10,21 +10,21 @@ echo "Loading env vars..."
 source $CWD/env.sh
 
 echo "---------------------------------------------------------------------"
-echo "RecordFundsOut PREPARE 50"
+echo "RecordFundsOut PREPARE & RESERVE 20"
 echo "---------------------------------------------------------------------"
 
-echo "Sending request for preparing 50 USD to dfsp1 settlement account"
+echo "Sending request for prepare & reserve 20 USD from dfsp1 settlement account"
 sh -c "curl -X POST \
-  http://127.0.0.1:3001/participants/dfsp1/accounts/3 \
+  http://127.0.0.1:3001/participants/dfsp1/accounts/4 \
   -H 'Content-Type: application/json' \
   -H 'Postman-Token: 8506bf22-d7a2-4609-8047-de768db623fa' \
   -H 'cache-control: no-cache' \
   -d '{
     \"transferId\": \"523ec634-ef48-6575-a6a0-ded2955b8102\",
     \"externalReference\": \"cde456\",
-    \"action\": \"recordFundsOutPrepare\",
+    \"action\": \"recordFundsOutPrepareReserve\",
     \"amount\": {
-      \"amount\": 50.0000,
+      \"amount\": 20.0000,
       \"currency\": \"USD\"
       
     },
@@ -44,10 +44,12 @@ sh -c "curl -X POST \
   }'"
 echo 
 echo 
-echo "Awaiting $SLEEP_FACTOR_IN_SECONDS seconds for the transfer prepare to happen..."
+echo "Awaiting $SLEEP_FACTOR_IN_SECONDS seconds for the transfer to happen..."
 sleep $SLEEP_FACTOR_IN_SECONDS
 
 echo
 echo
-echo "Completed Scenario 11-1 - Settlement transfer prepare"
+echo "Completed Scenario 11-2 - Reconciliation transfer prepare & reserve (recordFundsOutPrepareReserve)"
 echo
+
+sh $CWD/21scenario-part2-results.sh

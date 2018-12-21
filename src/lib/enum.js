@@ -29,6 +29,7 @@
  ******/
 
 'use strict'
+const Config = require('./config')
 
 const Db = require('../db')
 
@@ -39,6 +40,13 @@ const endpointType = async function () {
       endpointType[`${record.name}`] = record.endpointTypeId
     }
     return endpointType
+  } catch (err) {
+    throw err
+  }
+}
+const hubParticipant = async function () {
+  try {
+    return (await Db.participant.find({ participantId: Config.HUB_ID }))[0]
   } catch (err) {
     throw err
   }
@@ -100,11 +108,11 @@ const transferState = async function () {
 }
 const transferStateEnum = async function () {
   try {
-    let transferState = {}
+    let transferStateEnum = {}
     for (let record of await Db.transferState.find({})) {
-      transferState[`${record.transferStateId}`] = record.enumeration
+      transferStateEnum[`${record.transferStateId}`] = record.enumeration
     }
-    return transferState
+    return transferStateEnum
   } catch (err) {
     throw err
   }
@@ -113,6 +121,7 @@ const all = async function () {
   try {
     return {
       endpointType: await endpointType(),
+      hubParticipant: await hubParticipant(),
       ledgerAccountType: await ledgerAccountType(),
       ledgerEntryType: await ledgerEntryType(),
       participantLimitType: await participantLimitType(),
@@ -132,8 +141,6 @@ const transpose = function (obj) {
   }
   return transposed
 }
-
-const HubOperatorAccounts = ['HUB_RECONCILIATION', 'HUB_MULTILATERAL_SETTLEMENT', 'HUB_FEE']
 
 const EnpointType = {
   ALARM_NOTIFICATION_URL: 1,
@@ -210,7 +217,7 @@ const transferEventAction = {
 }
 const adminTransferAction = {
   RECORD_FUNDS_IN: 'recordFundsIn',
-  RECORD_FUNDS_OUT_PREPARE: 'recordFundsOutPrepare',
+  RECORD_FUNDS_OUT_PREPARE_RESERVE: 'recordFundsOutPrepareReserve',
   RECORD_FUNDS_OUT_COMMIT: 'recordFundsOutCommit',
   RECORD_FUNDS_OUT_ABORT: 'recordFundsOutAbort'
 }
@@ -276,6 +283,7 @@ const topicMap = {
 
 module.exports = {
   endpointType,
+  hubParticipant,
   ledgerAccountType,
   ledgerEntryType,
   participantLimitType,
@@ -285,7 +293,6 @@ module.exports = {
   all,
   transpose,
 
-  HubOperatorAccounts,
   EnpointType,
   LedgerAccountType,
   LedgerEntryType,

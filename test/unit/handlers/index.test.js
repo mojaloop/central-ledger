@@ -58,7 +58,8 @@ Test('cli', async (cliTest) => {
         'dfsp1, dfsp2',
         '--get',
         '--fulfil',
-        '--timeout'
+        '--timeout',
+        '--admin'
       ]
 
       process.argv = argv
@@ -96,12 +97,18 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
+      var adminHandler = {
+        type: 'admin',
+        enabled: true
+      }
+
       var modulesList = [
         prepareHandler,
         positionHandler,
         getHandler,
         fulfilHandler,
-        timeoutHandler
+        timeoutHandler,
+        adminHandler
         // rejectHandler
       ]
 

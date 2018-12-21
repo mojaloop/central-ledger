@@ -169,7 +169,7 @@ const participantTopicTemplate = (participantName, functionality, action) => {
  */
 const generalTopicTemplate = (functionality, action) => {
   try {
-    return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, {functionality, action})
+    return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, { functionality, action })
   } catch (e) {
     Logger.error(e)
     throw e
@@ -433,7 +433,7 @@ const produceGeneralMessage = async (functionality, action, message, state) => {
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
+  return Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
     createGeneralTopicConf(functionalityMapped, actionMapped),
     getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
 }
@@ -465,7 +465,7 @@ const produceParticipantMessage = async (participantName, functionality, action,
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
+  return Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
     createParticipantTopicConf(participantName, functionalityMapped, actionMapped),
     getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
 }

@@ -42,7 +42,7 @@ const TransferEventType = Enum.transferEventType
 const AdminTransferAction = Enum.adminTransferAction
 const TransferService = require('../../domain/transfer')
 const Db = require('../../db')
-const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE]
+const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE]
 const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
 
@@ -55,16 +55,17 @@ const commitMessageSync = async (kafkaTopic, consumer, message) => {
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   try {
+    /** @namespace Db.getKnex **/
+    const knex = Db.getKnex()
+
     Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
     // Save the valid transfer into the database
     if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
       Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
-
-      /** @namespace Db.getKnex **/
-      const knex = Db.getKnex()
       return knex.transaction(async trx => {
         try {
           await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+          await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
           await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
           await trx.commit
         } catch (err) {
@@ -73,8 +74,17 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         }
       })
     } else {
-      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE`)
-      await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
+      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE_RESERVE`)
+      return knex.transaction(async trx => {
+        try {
+          await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+          await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
+          await trx.commit
+        } catch (err) {
+          await trx.rollback
+          throw err
+        }
+      })
     }
   } catch (err) {
     Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::duplicate found while inserting into transfer table`)

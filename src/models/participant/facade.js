@@ -31,14 +31,14 @@
 const Db = require('../../db')
 const Time = require('../../lib/time')
 
-const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId) => {
+const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive = true) => {
   try {
     return await Db.participant.query(async (builder) => {
       return builder
         .where({ 'participant.name': name })
         .andWhere({ 'participant.isActive': true })
         .andWhere({ 'pc.currencyId': currencyId })
-        .andWhere({ 'pc.isActive': true })
+        .andWhere({ 'pc.isActive': isCurrencyActive })
         .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
@@ -261,7 +261,7 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccountId, limitPostionObj) => {
+const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccountId, limitPostionObj, setCurrencyActive = false) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
@@ -292,6 +292,10 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         }
         result = await knex('participantPosition').transacting(trx).insert(settlementPosition)
         settlementPosition.participantPositionId = result[0]
+        if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
+          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
+          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
+        }
         await trx.commit
         return {
           participantLimit,

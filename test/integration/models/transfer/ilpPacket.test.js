@@ -106,7 +106,7 @@ Test('Ilp service tests', async (ilpTest) => {
       })
       assert.end()
     } catch (err) {
-      Logger.error('create ilp without transferId is failing with message ')
+      // Logger.error('create ilp without transferId is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
@@ -119,7 +119,7 @@ Test('Ilp service tests', async (ilpTest) => {
       })
       assert.end()
     } catch (err) {
-      Logger.error('create ilp without packet is failing with message ')
+      // Logger.error('create ilp without packet is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }

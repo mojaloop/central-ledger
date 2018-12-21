@@ -174,5 +174,44 @@ Test('transfer validator', validatorTest => {
     validateByIdTest.end()
   })
 
+  validatorTest.test('validateFulfilCondition should', validateFulfilConditionTest => {
+    validateFulfilConditionTest.test('validated fulfilment against condition', async (test) => {
+      const fulfilment = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEF-'
+      const condition = 'aAGyvOxOr4yvZo3TalJwvhdWelZp5JNC0MRqwK4DXQI'
+      let result = Validator.validateFulfilCondition(fulfilment, condition)
+      test.ok(result)
+      test.end()
+    })
+
+    validateFulfilConditionTest.test('fail when preimage is less than 32 chars', async (test) => {
+      try {
+        Validator.validateFulfilCondition(1, 1)
+        test.fail('Error not thrown!')
+      } catch (err) {
+        test.pass('Error thrown')
+      }
+      test.end()
+    })
+
+    // validateFulfilConditionTest.test('fail validation for no payload', async (test) => {
+    //   const { validationPassed, reasons } = await Validator.validateFulfilCondition(null)
+    //   test.equal(validationPassed, false)
+    //   test.deepEqual(reasons, ['Transfer must be provided'])
+    //   test.end()
+    // })
+    //
+    // validateFulfilConditionTest.test('fail validation for invalid participant', async (test) => {
+    //   Participant.getById.withArgs('dfsp1').returns(P.resolve({}))
+    //   Participant.getById.withArgs('dfsp2').returns(P.resolve(null))
+    //   CryptoConditions.validateCondition.returns(true)
+    //   const { validationPassed, reasons } = await Validator.validateFulfilCondition(payload)
+    //   test.equal(validationPassed, false)
+    //   test.deepEqual(reasons, ['Participant dfsp2 not found'])
+    //   test.end()
+    // })
+
+    validateFulfilConditionTest.end()
+  })
+
   validatorTest.end()
 })

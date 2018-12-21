@@ -95,7 +95,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create state change without transferId is failing with message ')
+      // Logger.error('create state change without transferId is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }
@@ -111,7 +111,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.fail('should throw')
       assert.end()
     } catch (err) {
-      Logger.error('create state change without transferStateId is failing with message ')
+      // Logger.error('create state change without transferStateId is failing with message ')
       assert.ok((('message' in err) && ('stack' in err)), err.message)
       assert.end()
     }

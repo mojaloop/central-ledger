@@ -101,9 +101,9 @@ const update = async (name, payload) => {
   }
 }
 
-const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
+const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
-    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
+    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId, isActive)
     return participantCurrency
   } catch (err) {
     throw err
@@ -265,9 +265,9 @@ const destroyPariticpantEndpointByName = async (name) => {
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION, false)
     participantExists(participant)
-    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT)
+    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT, false)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
@@ -278,7 +278,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     if (limitAndInitialPosition.initialPosition == null) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
-    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition)
+    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
     throw err
   }
@@ -578,23 +578,23 @@ const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp =
   }
 }
 
-const setPayerPayeeFundsInOut = (fspName, payload) => {
+const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
   let { action } = payload
   const actions = {
     'recordFundsIn': {
       payer: fspName,
-      payee: 'hub'
+      payee: enums.hubParticipant.name
     },
-    'recordFundsOutPrepare': {
-      payer: 'hub',
+    'recordFundsOutPrepareReserve': {
+      payer: enums.hubParticipant.name,
       payee: fspName
     },
     'recordFundsOutCommit': {
-      payer: 'hub',
+      payer: enums.hubParticipant.name,
       payee: fspName
     },
     'recordFundsOutAbort': {
-      payer: 'hub',
+      payer: enums.hubParticipant.name,
       payee: fspName
     }
   }
@@ -610,11 +610,11 @@ const recordFundsInOut = async (payload, params, enums) => {
     participantExists(participant)
     const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency || null)
     let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
-    if (!(accountMatched && accountMatched.ledgerAccountType === 'SETTLEMENT')) {
+    if (!(accountMatched && accountMatched.ledgerAccountTypeId === enums.ledgerAccountType.SETTLEMENT)) {
       throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
     }
     transferId && (payload.transferId = transferId)
-    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload))
+    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
     messageProtocol.metadata.request = {
       params: params,
       enums: enums

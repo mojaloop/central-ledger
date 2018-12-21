@@ -9,17 +9,13 @@ fi
 echo "Loading env vars..."
 source $CWD/env.sh
 
-sh $CWD/00recreateDatabase.sh
-sh $CWD/01populateAdminTestData.sh
-
-echo
 echo "---------------------------------------------------------------------"
-echo "RecordFundsIn PREPARE & COMMIT 100"
+echo "RecordFundsIn PREPARE, RESERVE & COMMIT 100"
 echo "---------------------------------------------------------------------"
 
 echo "Sending request for preparing 100 USD to dfsp1 settlement account"
 sh -c "curl -X POST \
-  http://127.0.0.1:3001/participants/dfsp1/accounts/3 \
+  http://127.0.0.1:3001/participants/dfsp1/accounts/4 \
   -H 'Content-Type: application/json' \
   -H 'Postman-Token: 8506bf22-d7a2-4609-8047-de768db623fa' \
   -H 'cache-control: no-cache' \
@@ -48,10 +44,12 @@ sh -c "curl -X POST \
   }'"
 echo 
 echo 
-echo "Awaiting $SLEEP_FACTOR_IN_SECONDS seconds for the transfer prepare to happen..."
+echo "Awaiting $SLEEP_FACTOR_IN_SECONDS seconds for the transfer to happen..."
 sleep $SLEEP_FACTOR_IN_SECONDS
 
 echo
 echo
-echo "Completed Scenario 11-1 - Settlement transfer prepare"
+echo "Completed Scenario 11-1 - Reconciliation transfer prepare, reserve & commit (recordFundsIn)"
 echo
+
+sh $CWD/21scenario-part1-results.sh

@@ -7,7 +7,7 @@ const P = require('bluebird')
 const Uuid = require('uuid4')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 const KafkaProducer = require('@mojaloop/central-services-stream').Kafka.Producer
-
+const Proxyquire = require('proxyquire')
 const Utility = require('../../../../src/handlers/lib/utility')
 
 let participantName
@@ -123,6 +123,26 @@ Test('Utility Test', utilityTest => {
       test.end()
     })
 
+    createGeneralTopicConfTest.test('return a general topic conf object using topicMap', test => {
+      const ModuleProxy = Proxyquire('../../../../src/handlers/lib/utility', {
+        '../../lib/enum': {
+          topicMap: {
+            transfer: {
+              fulfil: {
+                functionality: 'transfer',
+                action: 'fulfil'
+              }
+            }
+          }
+        }
+      })
+      const response = ModuleProxy.createGeneralTopicConf(TRANSFER, FULFIL)
+      test.equal(response.topicName, generalTopic)
+      test.equal(response.partition, 0)
+      test.equal(response.opaqueKey, 0)
+      test.end()
+    })
+
     createGeneralTopicConfTest.test('throw error when Mustache cannot find config', test => {
       try {
         Sinon.stub(Mustache, 'render').throws(new Error())
@@ -205,6 +225,24 @@ Test('Utility Test', utilityTest => {
       test.end()
     })
 
+    produceGeneralMessageTest.test('produce a general message using topicMap', async (test) => {
+      const ModuleProxy = Proxyquire('../../../../src/handlers/lib/utility', {
+        '../../lib/enum': {
+          topicMap: {
+            transfer: {
+              prepare: {
+                functionality: 'transfer',
+                action: 'prepare'
+              }
+            }
+          }
+        }
+      })
+      const result = await ModuleProxy.produceGeneralMessage(TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+      test.equal(result, true)
+      test.end()
+    })
+
     produceGeneralMessageTest.test('produce a general message', async (test) => {
       try {
         await Utility.produceGeneralMessage(TRANSFER, 'invalid', messageProtocol, Utility.ENUMS.STATE.SUCCESS)
@@ -220,6 +258,24 @@ Test('Utility Test', utilityTest => {
   utilityTest.test('produceParticipantMessage should', produceParticipantMessageTest => {
     produceParticipantMessageTest.test('produce a participant message', async (test) => {
       const result = await Utility.produceParticipantMessage(participantName, TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+      test.equal(result, true)
+      test.end()
+    })
+
+    produceParticipantMessageTest.test('produce a participant message using topicMap', async (test) => {
+      const ModuleProxy = Proxyquire('../../../../src/handlers/lib/utility', {
+        '../../lib/enum': {
+          topicMap: {
+            transfer: {
+              prepare: {
+                functionality: 'transfer',
+                action: 'prepare'
+              }
+            }
+          }
+        }
+      })
+      const result = await ModuleProxy.produceParticipantMessage(participantName, TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
       test.equal(result, true)
       test.end()
     })
