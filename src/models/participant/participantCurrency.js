@@ -50,6 +50,14 @@ exports.getById = async (id) => {
   }
 }
 
+exports.update = async (participantCurrencyId, isActive) => {
+  try {
+    return await Db.participantCurrency.update({ participantCurrencyId }, { isActive })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
   try {
     let params = { participantId: id }

@@ -260,7 +260,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       if (participant) {
         participants.push(participant)
       } else {
-        throw new Error('Invalid FSP name')
+        throw new Error('Invalid FSP name or account')
       }
     }
 

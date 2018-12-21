@@ -526,6 +526,7 @@ const getAccounts = async (name, query) => {
           id: item.participantCurrencyId,
           ledgerAccountType: item.ledgerAccountType,
           currency: item.currencyId,
+          isActive: item.isActive,
           value: item.value,
           reservedValue: item.reservedValue,
           changedDate: item.changedDate
@@ -533,6 +534,25 @@ const getAccounts = async (name, query) => {
       })
     }
     return positions
+  } catch (err) {
+    throw err
+  }
+}
+
+const updateAccount = async (payload, params, enums) => {
+  try {
+    let { name, id } = params
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const account = await ParticipantCurrencyModel.getById(id)
+    if (!account) {
+      throw new Error('Account not found')
+    } else if (account.participantId !== participant.participantId) {
+      throw new Error('Participant/account mismatch')
+    } else if (account.ledgerAccountTypeId !== enums.ledgerAccountType.POSITION) {
+      throw new Error('Only position account update is permitted')
+    }
+    return await ParticipantCurrencyModel.update(id, payload.isActive)
   } catch (err) {
     throw err
   }
@@ -630,7 +650,7 @@ module.exports = {
   getAll,
   getById,
   getByName,
-  participantExists,
+  // participantExists,
   getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
@@ -650,6 +670,7 @@ module.exports = {
   adjustLimits,
   getPositions,
   getAccounts,
+  updateAccount,
   getParticipantAccount,
   recordFundsInOut,
   hubAccountExists: ParticipantCurrencyModel.hubAccountExists

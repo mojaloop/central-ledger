@@ -232,7 +232,8 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
  *
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {string} [currencyId = null] - the optional currency parameter
+ * @param {integer} ledgerAccountTypeId - ledger account type. Example: 1
+ * @param [currencyId = null] - optional currency parameter
  *
  * @returns {array} - Returns an array containing the details of active position(s) for the participant if successful, or throws an error if failed
  */
@@ -249,8 +250,8 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
           'pc.ledgerAccountTypeId': ledgerAccountTypeId
         })
         .where(q => {
-          if (currencyId != null) {
-            return q.where('pc.currencyId', '=', currencyId)
+          if (currencyId !== null) {
+            return q.where('pc.currencyId', currencyId)
           }
         })
         .select('participantPosition.*',
@@ -268,18 +269,17 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'pc.ledgerAccountTypeId')
         .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')
         .where({
-          'p.name': name,
-          'p.isActive': 1,
-          'pc.isActive': 1
+          'p.name': name
         })
         .where(q => {
-          if (currencyId != null) {
-            return q.where('pc.currencyId', '=', currencyId)
+          if (currencyId !== null) {
+            return q.where('pc.currencyId', currencyId)
           }
         })
         .select('participantPosition.*',
           'lap.name AS ledgerAccountType',
-          'pc.currencyId'
+          'pc.currencyId',
+          'pc.isActive'
         )
     })
   } catch (err) {
