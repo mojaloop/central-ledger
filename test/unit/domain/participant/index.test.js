@@ -1471,6 +1471,7 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
   await participantTest.test('getAccounts should throw error', async (assert) => {
     const participantName = 'fsp1'
     const query = { currency: 'USD' }
@@ -1484,6 +1485,120 @@ Test('Participant service', async (participantTest) => {
     }
     assert.end()
   })
+
+  await participantTest.test('updateAccount should update account', async (assert) => {
+    try {
+      const payload = {
+        isActive: 1
+      }
+      const params = {
+        name: 'dfsp1',
+        id: 1
+      }
+      const enums = {
+        ledgerAccountType: {
+          POSITION: 1
+        }
+      }
+      const participant = {
+        participantId: 2,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      const account = {
+        participantCurrencyId: 3,
+        participantId: 2,
+        currencyId: 'USD',
+        ledgerAccountTypeId: 1,
+        isActive: 1,
+        createdDate: new Date(),
+        createdBy: 'unknown'
+      }
+      ParticipantModel.getByName.withArgs(params.name).returns(P.resolve(participant))
+      ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+
+      await Service.updateAccount(payload, params, enums)
+      assert.pass('Account updated')
+      assert.end()
+    } catch (err) {
+      Logger.error(`updateAccount failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('updateAccount should throw Account not found error', async (assert) => {
+    try {
+      const payload = {
+        isActive: 1
+      }
+      const params = {
+        name: 'dfsp1',
+        id: 1
+      }
+      const enums = {
+        ledgerAccountType: {
+          POSITION: 1
+        }
+      }
+      const participant = {
+        participantId: 2,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date(),
+        participantCurrencyId: 1
+      }
+      ParticipantModel.getByName.withArgs(params.name).returns(P.resolve(participant))
+
+      try {
+        let account = null
+        ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+
+        await Service.updateAccount(payload, params, enums)
+        assert.fail('Error not thrown')
+      } catch (err) {
+        assert.ok(err instanceof Error)
+        assert.equal(err.message, 'Account not found')
+      }
+
+      try {
+        let account = {
+          participantId: 1
+        }
+        ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+
+        await Service.updateAccount(payload, params, enums)
+        assert.fail('Error not thrown')
+      } catch (err) {
+        assert.ok(err instanceof Error)
+        assert.equal(err.message, 'Participant/account mismatch')
+      }
+
+      try {
+        let account = {
+          participantId: participant.participantId,
+          ledgerAccountTypeId: 2
+        }
+        ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+
+        await Service.updateAccount(payload, params, enums)
+        assert.fail('Error not thrown')
+      } catch (err) {
+        assert.ok(err instanceof Error)
+        assert.equal(err.message, 'Only position account update is permitted')
+      }
+      assert.end()
+    } catch (err) {
+      Logger.error(`updateAccount failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await participantTest.test('getLedgerAccountType by name name should return ledgerAccountType', async (assert) => {
     const name = {
       currency: 'AFA',
@@ -1507,6 +1622,7 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
   await participantTest.test('getLedgerAccountType by name name should throw an error if the name is invalid', async (assert) => {
     const name = {
       currency: 'AFA',
@@ -1530,6 +1646,7 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
   await participantTest.test('getParticipantAccount should return participant account', async (assert) => {
     const params = {
       participantCurrecyId: 1
@@ -1553,6 +1670,7 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
+
   await participantTest.test('getParticipantAccount should throw an error', async (assert) => {
     const params = {
       participantCurrecyId: 1
