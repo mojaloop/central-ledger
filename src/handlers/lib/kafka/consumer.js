@@ -29,7 +29,8 @@
  */
 
 // const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
-const Stream = require('@mojaloop/central-services-stream').Stream
+// const KafkaEnums = require('@mojaloop/central-services-stream').ENUMS
+const KafkaPoc = require('@mojaloop/central-services-stream').Poc
 const Logger = require('@mojaloop/central-services-shared').Logger
 const uuid = require('uuid4')
 
@@ -51,6 +52,7 @@ const createHandler = async (topicName, config, command) => {
   Logger.info(`createHandler::createHandler(${topicName}, ${config}, ${command.name})`)
   try {
     let consumer = {}
+    // let topicList = []
 
     if (config.rdkafkaConf['client.id'] !== undefined) {
       config.rdkafkaConf['client.id'] = `${config.rdkafkaConf['client.id']}-${uuid()}`
@@ -58,35 +60,74 @@ const createHandler = async (topicName, config, command) => {
       config.rdkafkaConf['client.id'] = `default-client-id-${uuid()}`
     }
 
-    if (Array.isArray(topicName)) {
-      consumer = new Stream.Consumer(topicName, config, command)
-    } else {
-      consumer = new Stream.Consumer([topicName], config, command)
-    }
+    consumer = KafkaPoc.createConsumer(topicName, config, command)
+    // switch (config.options.mode) {
+    //   case KafkaEnums.pocConsumer:
+    //     Logger.info(`consumer['${topicName}'] - creating Kafka PoC Consumer`)
+    //     consumer = new KafkaPoc.Consumer(topicList, config, command)
+    //     consumer.connect()
+    //     consumer.on('ready', () => {
+    //       Logger.info(`consumer['${topicName}'] - connected`)
+    //     })
+    //     break
+    //   case KafkaEnums.pocStream:
+    //     Logger.info(`consumer['${topicName}'] - creating Kafka PoC Stream Consumer`)
+    //     consumer = new KafkaPoc.StreamConsumer(topicList, config, command)
+    //     Logger.info(`consumer['${topicName}'] - connected`)
+    //     break
+    //   case KafkaEnums.pocNode:
+    //     Logger.info(`consumer['${topicName}'] - creating Kafka PoC Node Consumer`)
+    //     consumer = new KafkaPoc.Node(topicList, config, command)
+    //     break
+    //   default:
+    //     Logger.info(`consumer['${topicName}'] - creating Kafka PoC Stream Consumer - DEFAULT`)
+    //     consumer = new KafkaPoc.StreamConsumer(topicList, config, command)
+    //     Logger.info(`consumer['${topicName}'] - connected`)
+    // }
 
-    consumer.connect()
-    consumer.on('ready', () => {
-      Logger.info(`consumer['${topicName}'] - connected`)
-      let autoCommitEnabled = true
-      if (Array.isArray(topicName)) {
-        for (let topic of topicName) { // NOT OK
-          listOfConsumers[topic] = {
-            consumer: consumer,
-            autoCommitEnabled: autoCommitEnabled
-          }
-        }
-      } else {
-        listOfConsumers[topicName] = {
+    let autoCommitEnabled = true
+    if (Array.isArray(topicName)) {
+      for (let topic of topicName) { // NOT OK
+        listOfConsumers[topic] = {
           consumer: consumer,
           autoCommitEnabled: autoCommitEnabled
         }
       }
-      // Logger.info(`listOfConsumers: ${JSON.stringify(listOfConsumers.keys())}`)
-      Logger.debug(`consumer['${topicName}'] - List of Consumers:`)
-      for (var key in listOfConsumers) {
-        Logger.debug(`consumer['${topicName}'] - listOfConsumers[${key}]`)
+    } else {
+      listOfConsumers[topicName] = {
+        consumer: consumer,
+        autoCommitEnabled: autoCommitEnabled
       }
-    })
+    }
+    // Logger.info(`listOfConsumers: ${JSON.stringify(listOfConsumers.keys())}`)
+    Logger.debug(`consumer['${topicName}'] - List of Consumers:`)
+    for (var key in listOfConsumers) {
+      Logger.debug(`consumer['${topicName}'] - listOfConsumers[${key}]`)
+    }
+    //
+    // // consumer.connect()
+    // consumer.on('ready', () => {
+    //   Logger.info(`consumer['${topicName}'] - connected`)
+    //   let autoCommitEnabled = true
+    //   if (Array.isArray(topicName)) {
+    //     for (let topic of topicName) { // NOT OK
+    //       listOfConsumers[topic] = {
+    //         consumer: consumer,
+    //         autoCommitEnabled: autoCommitEnabled
+    //       }
+    //     }
+    //   } else {
+    //     listOfConsumers[topicName] = {
+    //       consumer: consumer,
+    //       autoCommitEnabled: autoCommitEnabled
+    //     }
+    //   }
+    //   // Logger.info(`listOfConsumers: ${JSON.stringify(listOfConsumers.keys())}`)
+    //   Logger.debug(`consumer['${topicName}'] - List of Consumers:`)
+    //   for (var key in listOfConsumers) {
+    //     Logger.debug(`consumer['${topicName}'] - listOfConsumers[${key}]`)
+    //   }
+    // })
 
     // process.on('SIGINT', () => {
     //   for (var key in listOfConsumers) {
@@ -100,6 +141,59 @@ const createHandler = async (topicName, config, command) => {
     Logger.error(err)
   }
 }
+// const createHandler = async (topicName, config, command) => {
+//   Logger.info(`createHandler::createHandler(${topicName}, ${config}, ${command.name})`)
+//   try {
+//     let consumer = {}
+//
+//     if (config.rdkafkaConf['client.id'] !== undefined) {
+//       config.rdkafkaConf['client.id'] = `${config.rdkafkaConf['client.id']}-${uuid()}`
+//     } else {
+//       config.rdkafkaConf['client.id'] = `default-client-id-${uuid()}`
+//     }
+//
+//     if (Array.isArray(topicName)) {
+//       consumer = new Stream.Consumer(topicName, config, command)
+//     } else {
+//       consumer = new Stream.Consumer([topicName], config, command)
+//     }
+//
+//     consumer.connect()
+//     consumer.on('ready', () => {
+//       Logger.info(`consumer['${topicName}'] - connected`)
+//       let autoCommitEnabled = true
+//       if (Array.isArray(topicName)) {
+//         for (let topic of topicName) { // NOT OK
+//           listOfConsumers[topic] = {
+//             consumer: consumer,
+//             autoCommitEnabled: autoCommitEnabled
+//           }
+//         }
+//       } else {
+//         listOfConsumers[topicName] = {
+//           consumer: consumer,
+//           autoCommitEnabled: autoCommitEnabled
+//         }
+//       }
+//       // Logger.info(`listOfConsumers: ${JSON.stringify(listOfConsumers.keys())}`)
+//       Logger.debug(`consumer['${topicName}'] - List of Consumers:`)
+//       for (var key in listOfConsumers) {
+//         Logger.debug(`consumer['${topicName}'] - listOfConsumers[${key}]`)
+//       }
+//     })
+//
+//     // process.on('SIGINT', () => {
+//     //   for (var key in listOfConsumers) {
+//     //     Logger.info(`Disconnecting listOfConsumers[${key}]`)
+//     //     listOfConsumers[key].consumer.disconnect(() => {
+//     //       Logger.info(`Disconnected listOfConsumers[${key}]`)
+//     //     })
+//     //   }
+//     // })
+//   } catch (err) {
+//     Logger.error(err)
+//   }
+// }
 // const createHandler = async (topicName, config, command) => {
 //   let consumer = {}
 //
