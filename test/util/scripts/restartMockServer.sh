@@ -26,10 +26,10 @@ docker stop $MOCKSERVER_ID
 docker rm $MOCKSERVER_ID
 
 echo "Starting Docker ${MOCKSERVER_ID}"
-docker run --name ${MOCKSERVER_ID} -d -p 1080:1080 jamesdbloom/mockserver;
+docker run --name ${MOCKSERVER_ID} -d -p ${MOCKSERVER_PORT}:1080 jamesdbloom/mockserver;
 
 is_service_up() {
-  docker run --rm --network host byrnedo/alpine-curl -s -X PUT 'http://localhost:1080/status' -d '{"method": "*", "path": "*"}'
+  docker run --rm --network host byrnedo/alpine-curl -s -X PUT "http://localhost:${MOCKSERVER_PORT}/status" -d '{"method": "*", "path": "*"}'
 }
 
 echo "Waiting for mockserver to start"
@@ -40,6 +40,6 @@ done
 
 echo
 echo "Configuring expectation for mockserver"
-docker run --rm --network host byrnedo/alpine-curl -X PUT "http://localhost:1080/expectation" -d '{ "httpRequest": { "method": ".*", "path": "/.*transfers.*" }, "times" : { "remainingTimes" : 0,	"unlimited" : true }, "timeToLive" : { "unlimited" : true }, "httpResponse": { "statusCode": 200, "body": "{}" } }';
+docker run --rm --network host byrnedo/alpine-curl -X PUT "http://localhost:${MOCKSERVER_PORT}/expectation" -d '{ "httpRequest": { "method": ".*", "path": "/.*transfers.*" }, "times" : { "remainingTimes" : 0,	"unlimited" : true }, "timeToLive" : { "unlimited" : true }, "httpResponse": { "statusCode": 200, "body": "{}" } }';
 
 echo "${MOCKSERVER_ID} ready to accept requests..."

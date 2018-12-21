@@ -15,10 +15,10 @@ fi
 echo "Loading env vars..."
 source $CWD/env.sh
 
-sh $CWD/restartDb.sh;
+bash $CWD/restartDb.sh;
 
-sh $CWD/restartKafka-johnnypark.sh;
+bash $CWD/restartKafka-johnnypark.sh;
 
-sh $CWD/restartMockServer.sh;
+bash $CWD/restartMockServer.sh;
 
 echo

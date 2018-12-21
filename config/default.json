@@ -1,8 +1,9 @@
 {
-  "PORT": 4000,
-  "ADMIN_PORT": 3001,
-  "DATABASE_URI": "mysql://central_ledger:password@localhost:3306/central_ledger ",
+  "PORT": 4001,
+  "ADMIN_PORT": 3002,
+  "MOJA_HUB_NAME": "Red Moja",
   "HOSTNAME": "http://central-ledger",
+  "DATABASE_URI": "mysql://central_ledger:password@localhost:3307/central_ledger_red_moja",
   "RUN_MIGRATIONS": true,
   "AMOUNT": {
     "PRECISION": 10,

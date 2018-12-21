@@ -25,25 +25,49 @@
 'use strict'
 
 const Boom = require('boom')
+const config = require('../../lib/config')
+const prefixMap = require('./prefixMap').default
 
-const routes = [
+// hard-coded routes for Blue Moja
+const routesBlueMoja = [
   {
     address: 'moja.tz.red',
     nextHop: 'moja.superremit' // id for CNP
   },
   {
     address: 'moja.za.blue.zar.green',
-    nextHop: 'moja.za.blue.zar.green' // DFSP1 / Green Mobile
+    nextHop: 'moja.za.blue.zar.green' // Green Mobile
+  }
+]
+
+const routesRedMoja = [
+  {
+    address: 'moja.za.blue',
+    nextHop: 'moja.superremit' // id for CNP
+  },
+  {
+    address: 'moja.tz.red.tzs.pink',
+    nextHop: 'moja.tz.red.tzs.pink' // Pink Mobile
   }
 ]
 
 const getNextHop = async function (request) {
   try {
-    // look through routes and match against shortest prefix
-    const route = routes[0]
+    // hard-coded to build route table for now
+    let routes = config['MOJA_HUB_NAME'] === 'Blue Moja' ? routesBlueMoja : routesRedMoja
+    let routeTable = new prefixMap()
+    routes.forEach(route => {
+      routeTable.insert(route.address, route)
+    })
+
+    const finalDestination = request.headers['fspiop-final-destination'] ? request.headers['fspiop-final-destination'] : request.headers['fspiop-destination']
+    const route = routeTable.resolve(finalDestination)
+    if (!route) throw new Error('Cannot resolve route for ' + finalDestination)
+
     return {
-      finalDestination: request.headers['fspiop-final-destination'] ? request.headers['fspiop-final-destination'] : request.headers['fspiop-destination'],
-      destination: route.nextHop
+      finalDestination: finalDestination,
+      destination: route.nextHop,
+      hubName: config['MOJA_HUB_NAME']
     }
   } catch (err) {
     throw Boom.badRequest(err.message)

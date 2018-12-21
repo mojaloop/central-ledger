@@ -1,6 +1,7 @@
 const RC = require('rc')('CLEDG', require('../../config/default.json'))
 
 module.exports = {
+  MOJA_HUB_NAME: RC.MOJA_HUB_NAME,
   HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
   PORT: RC.PORT,
   ADMIN_PORT: RC.ADMIN_PORT,
