@@ -1386,6 +1386,7 @@ Test('Participant service', async (participantTest) => {
           participantCurrencyId: 1,
           ledgerAccountType: 'POSITION',
           currencyId: 'USD',
+          isActive: 1,
           value: 0,
           reservedValue: 0,
           changedDate: '2018-10-11T11:45:00.000Z'
@@ -1394,6 +1395,7 @@ Test('Participant service', async (participantTest) => {
           participantCurrencyId: 2,
           ledgerAccountType: 'SETTLEMENT',
           currencyId: 'USD',
+          isActive: 1,
           value: 800,
           reservedValue: 0,
           changedDate: '2018-10-11T11:45:00.000Z'
@@ -1404,6 +1406,7 @@ Test('Participant service', async (participantTest) => {
           id: 1,
           ledgerAccountType: 'POSITION',
           currency: 'USD',
+          isActive: 1,
           value: 0,
           reservedValue: 0,
           changedDate: '2018-10-11T11:45:00.000Z'
@@ -1412,6 +1415,7 @@ Test('Participant service', async (participantTest) => {
           id: 2,
           ledgerAccountType: 'SETTLEMENT',
           currency: 'USD',
+          isActive: 1,
           value: 800,
           reservedValue: 0,
           changedDate: '2018-10-11T11:45:00.000Z'
