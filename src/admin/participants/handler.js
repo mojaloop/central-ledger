@@ -266,7 +266,7 @@ const adjustLimits = async function (request, h) {
 const getPositions = async function (request) {
   Sidecar.logRequest(request)
   try {
-    return Participant.getPositions(request.params.name, request.query)
+    return await Participant.getPositions(request.params.name, request.query)
   } catch (err) {
     throw Boom.badRequest(err.message)
   }
@@ -275,7 +275,20 @@ const getPositions = async function (request) {
 const getAccounts = async function (request) {
   Sidecar.logRequest(request)
   try {
-    return Participant.getAccounts(request.params.name, request.query)
+    return await Participant.getAccounts(request.params.name, request.query)
+  } catch (err) {
+    throw Boom.badRequest(err.message)
+  }
+}
+
+const updateAccount = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    const enums = {
+      ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
+    }
+    await Participant.updateAccount(request.payload, request.params, enums)
+    return h.response().code(200)
   } catch (err) {
     throw Boom.badRequest(err.message)
   }
@@ -305,5 +318,6 @@ module.exports = {
   adjustLimits,
   getPositions,
   getAccounts,
+  updateAccount,
   recordFunds
 }

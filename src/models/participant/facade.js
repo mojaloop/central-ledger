@@ -513,7 +513,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
         })
         .where(q => {
           if (currencyId != null) {
-            return q.where('participantCurrency.currencyId', '=', currencyId)
+            return q.where('participantCurrency.currencyId', currencyId)
           }
         })
         .select('*', 'lap.name AS ledgerAccountType')

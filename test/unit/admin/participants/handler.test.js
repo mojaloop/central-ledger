@@ -948,6 +948,64 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
+    handlerTest.test('updateAccount should be called with the provided params and payload', async function (test) {
+      const payload = {
+        isActive: true
+      }
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.end()
+      } catch (e) {
+        test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    handlerTest.test('updateAccount should throw error', async function (test) {
+      const payload = {
+        isActive: true
+      }
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+      Participant.updateAccount.throws(new Error())
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
     handlerTest.test('create a hub account', async function (test) {
       const payload = {
         currency: 'ZAR',
