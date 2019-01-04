@@ -650,7 +650,6 @@ module.exports = {
   getAll,
   getById,
   getByName,
-  // participantExists,
   getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
@@ -673,5 +672,6 @@ module.exports = {
   updateAccount,
   getParticipantAccount,
   recordFundsInOut,
+  getAccountByNameAndCurrency: ParticipantFacade.getByNameAndCurrency,
   hubAccountExists: ParticipantCurrencyModel.hubAccountExists
 }
