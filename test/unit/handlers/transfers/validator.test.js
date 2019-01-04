@@ -50,7 +50,8 @@ Test('transfer validator', validatorTest => {
 
   validatorTest.test('validateByName should', validateByNameTest => {
     validateByNameTest.test('pass validation for valid payload', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       const { validationPassed } = await Validator.validateByName(payload)
       test.equal(validationPassed, true)
@@ -65,7 +66,8 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('fail validation for invalid condition', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.throws(new Error())
       const { validationPassed, reasons } = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
@@ -74,7 +76,8 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('fail validation for no condition', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       payload.condition = null
       const { validationPassed, reasons } = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
@@ -83,7 +86,8 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('Fail validation for invalid expiration date', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.expiration = '1971-11-24T08:38:08.699-04:00'
       const { validationPassed, reasons } = await Validator.validateByName(payload)
@@ -93,7 +97,8 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('fail validation for no expiration date', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.expiration = null
       const { validationPassed, reasons } = await Validator.validateByName(payload)
@@ -103,8 +108,9 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('fail validation for invalid participant', async (test) => {
-      Participant.getByName.withArgs('dfsp1').returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
       Participant.getByName.withArgs('dfsp2').returns(P.resolve(null))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       const { validationPassed, reasons } = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
@@ -113,7 +119,8 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('pass validation for valid payload', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.amount.amount = '123.123'
       const { validationPassed, reasons } = await Validator.validateByName(payload)
@@ -123,7 +130,8 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('fail validation for same payer and payee', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.payeeFsp = payload.payerFsp
       const { validationPassed, reasons } = await Validator.validateByName(payload)
@@ -133,7 +141,8 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('pass validation for valid payload', async (test) => {
-      Participant.getByName.returns(P.resolve({}))
+      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.amount.amount = '12345678901.13'
       const { validationPassed, reasons } = await Validator.validateByName(payload)

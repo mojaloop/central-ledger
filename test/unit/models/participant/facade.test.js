@@ -104,13 +104,9 @@ Test('Participant facade', async (facadeTest) => {
       builderStub.where.returns({
         andWhere: sandbox.stub().returns({
           andWhere: sandbox.stub().returns({
-            andWhere: sandbox.stub().returns({
-              andWhere: sandbox.stub().returns({
-                innerJoin: sandbox.stub().returns({
-                  select: sandbox.stub().returns({
-                    first: sandbox.stub().returns(participant)
-                  })
-                })
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns(participant)
               })
             })
           })
