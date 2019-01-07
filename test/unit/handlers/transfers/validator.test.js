@@ -6,6 +6,7 @@ const P = require('bluebird')
 const Participant = require('../../../../src/domain/participant')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const CryptoConditions = require('../../../../src/cryptoConditions')
+const Enum = require('../../../../src/lib/enum')
 
 let payload
 
@@ -108,13 +109,48 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('fail validation for invalid participant', async (test) => {
-      Participant.getByName.returns(P.resolve({ isActive: true }))
+      Participant.getByName.withArgs('dfsp1').returns(P.resolve({ isActive: true }))
       Participant.getByName.withArgs('dfsp2').returns(P.resolve(null))
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       const { validationPassed, reasons } = await Validator.validateByName(payload)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 not found'])
+      test.end()
+    })
+
+    validateByNameTest.test('fail validation for inactive participant', async (test) => {
+      Participant.getByName.withArgs('dfsp1').returns(P.resolve({ isActive: true }))
+      Participant.getByName.withArgs('dfsp2').returns(P.resolve({ isActive: false }))
+      Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
+      CryptoConditions.validateCondition.returns(true)
+      const { validationPassed, reasons } = await Validator.validateByName(payload)
+      test.equal(validationPassed, false)
+      test.deepEqual(reasons, ['Participant dfsp2 is inactive'])
+      test.end()
+    })
+
+    validateByNameTest.test('fail validation for invalid account', async (test) => {
+      Participant.getByName.withArgs('dfsp1').returns(P.resolve({ isActive: true }))
+      Participant.getByName.withArgs('dfsp2').returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve({ currencyIsActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve(null))
+      CryptoConditions.validateCondition.returns(true)
+      const { validationPassed, reasons } = await Validator.validateByName(payload)
+      test.equal(validationPassed, false)
+      test.deepEqual(reasons, ['Participant dfsp2 USD account not found'])
+      test.end()
+    })
+
+    validateByNameTest.test('fail validation for inactive account', async (test) => {
+      Participant.getByName.withArgs('dfsp1').returns(P.resolve({ isActive: true }))
+      Participant.getByName.withArgs('dfsp2').returns(P.resolve({ isActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve({ currencyIsActive: true }))
+      Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve({ currencyIsActive: false }))
+      CryptoConditions.validateCondition.returns(true)
+      const { validationPassed, reasons } = await Validator.validateByName(payload)
+      test.equal(validationPassed, false)
+      test.deepEqual(reasons, ['Participant dfsp2 USD account is inactive'])
       test.end()
     })
 

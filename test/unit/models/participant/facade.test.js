@@ -32,6 +32,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/participant/facade')
+const Enum = require('../../../../src/lib/enum')
 
 Test('Participant facade', async (facadeTest) => {
   let sandbox
@@ -113,7 +114,37 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getByNameAndCurrency({ name: 'fsp1', currencyId: 'USD', ledgerAccountTypeId: 1 })
+      var result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByNameAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByNameAndCurrency', async (assert) => {
+    try {
+      let builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        andWhere: sandbox.stub().returns({
+          andWhere: sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  andWhere: sandbox.stub().returns(participant)
+                })
+              })
+            })
+          })
+        })
+      })
+
+      var result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION, true)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
