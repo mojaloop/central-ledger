@@ -243,6 +243,30 @@ const getLimits = async function (request) {
   }
 }
 
+const getLimitsForAllParticipants = async function (request) {
+  Sidecar.logRequest(request)
+  try {
+    const result = await Participant.getLimitsForAllParticipants(request.query)
+    let limits = []
+    if (Array.isArray(result) && result.length > 0) {
+      result.forEach(item => {
+        limits.push({
+          name: item.name,
+          currency: item.currencyId,
+          limit: {
+            type: item.limitType,
+            value: item.value,
+            alarmPercentage: item.thresholdAlarmPercentage
+          }
+        })
+      })
+    }
+    return limits
+  } catch (err) {
+    throw Boom.badRequest(err.message)
+  }
+}
+
 const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
   try {
@@ -253,7 +277,7 @@ const adjustLimits = async function (request, h) {
       limit: {
         type: request.payload.limit.type,
         value: participantLimit.value,
-        thresholdAlarmPercentage: participantLimit.thresholdAlarmPercentage
+        alarmPercentage: participantLimit.thresholdAlarmPercentage
       }
 
     }
@@ -319,5 +343,6 @@ module.exports = {
   getPositions,
   getAccounts,
   updateAccount,
-  recordFunds
+  recordFunds,
+  getLimitsForAllParticipants
 }

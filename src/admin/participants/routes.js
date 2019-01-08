@@ -179,7 +179,23 @@ module.exports = [
     }
   },
   {
-    method: 'POST',
+    method: 'GET',
+    path: '/participants/limits',
+    handler: Handler.getLimitsForAllParticipants,
+    options: {
+      id: 'participants_limits_get_all',
+      tags: tags,
+      description: 'View limits for all participants',
+      validate: {
+        query: {
+          currency: currencyValidator,
+          type: Joi.string().optional().description('Limit Type')
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
     path: '/participants/{name}/limits',
     handler: Handler.adjustLimits,
     options: {
@@ -196,7 +212,7 @@ module.exports = [
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
             value: Joi.number().required().description('Limit Value'),
-            thresholdAlarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
+            alarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
           }).required().description('Participant Limit')
         },
         params: {

@@ -40,6 +40,7 @@ const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
 const Utility = require('../../../../src/handlers/lib/utility')
+const Enum = require('../../../../src/lib/enum')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -145,6 +146,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'addLimitAndInitialPosition')
     sandbox.stub(ParticipantFacade, 'getAllAccountsByNameAndCurrency')
     sandbox.stub(ParticipantFacade, 'addHubAccountAndInitPosition')
+    sandbox.stub(ParticipantFacade, 'getLimitsForAllParticipants')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
@@ -1216,6 +1218,49 @@ Test('Participant service', async (participantTest) => {
     ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).throws(new Error())
     try {
       await Service.getLimits(participant.name, {})
+      assert.fail('should throw')
+    } catch (err) {
+      assert.assert(err instanceof Error, `throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await participantTest.test('getLimitsForAllParticipants', async (assert) => {
+    try {
+      const currencyId = 'USD'
+      const type = 'NET_DEBIT_CAP'
+      const limits = [
+        {
+          name: 'fsp1',
+          currencyId: 'USD',
+          limitType: 'NET_DEBIT_CAP',
+          value: 1000000
+        },
+        {
+          name: 'fsp2',
+          currencyId: 'USD',
+          limitType: 'NET_DEBIT_CAP',
+          value: 2000000
+        }
+      ]
+      ParticipantFacade.getLimitsForAllParticipants.returns(P.resolve(limits))
+      const result = await Service.getLimitsForAllParticipants(currencyId, type, Enum.LedgerAccountType.POSITION)
+      assert.deepEqual(result, limits, 'Results matched')
+      assert.end()
+    } catch (err) {
+      Logger.error(`getLimitsForAllParticipants failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('getLimitsForAllParticipants', async (assert) => {
+    const currencyId = 'USD'
+    const type = 'NET_DEBIT_CAP'
+
+    ParticipantFacade.getLimitsForAllParticipants.throws(new Error())
+    try {
+      await Service.getLimitsForAllParticipants(currencyId, type, Enum.LedgerAccountType.POSITION)
       assert.fail('should throw')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err} `)
