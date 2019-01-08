@@ -195,7 +195,7 @@ module.exports = [
     }
   },
   {
-    method: 'POST',
+    method: 'PUT',
     path: '/participants/{name}/limits',
     handler: Handler.adjustLimits,
     options: {
@@ -212,7 +212,7 @@ module.exports = [
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
             value: Joi.number().required().description('Limit Value'),
-            thresholdAlarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
+            alarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
           }).required().description('Participant Limit')
         },
         params: {

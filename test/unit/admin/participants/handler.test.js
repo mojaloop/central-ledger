@@ -827,7 +827,8 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000
+          value: 10000000,
+          alarmPercentage: 5
         }
       }
       let participantLimit = {
@@ -836,7 +837,8 @@ Test('Participant', participantHandlerTest => {
         value: payload.limit.value,
         isActive: 1,
         createdBy: 'unknown',
-        participantLimitId: 1
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 5
       }
 
       const expected = {
@@ -844,7 +846,7 @@ Test('Participant', participantHandlerTest => {
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 10000000,
-          thresholdAlarmPercentage: undefined
+          alarmPercentage: 5
         }
       }
 

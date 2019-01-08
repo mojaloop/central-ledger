@@ -277,7 +277,7 @@ const adjustLimits = async function (request, h) {
       limit: {
         type: request.payload.limit.type,
         value: participantLimit.value,
-        thresholdAlarmPercentage: participantLimit.thresholdAlarmPercentage
+        alarmPercentage: participantLimit.thresholdAlarmPercentage
       }
 
     }
