@@ -25,7 +25,7 @@ docker rm $DB_ID
 docker volume rm ${DB_ID}data
 
 echo "Starting Docker ${DB_ID}"
-docker run -p ${DBPORT}:3306 -d --name ${DB_ID} -v ${DB_ID}data:/var/lib/mysql -e MYSQL_USER=$DBUSER -e MYSQL_PASSWORD=$DBPASS -e MYSQL_DATABASE=$DBNAME -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql/mysql-server;
+docker run -p ${DBPORT:=3306}:3306 -d --name ${DB_ID} -v ${DB_ID}data:/var/lib/mysql -e MYSQL_USER=$DBUSER -e MYSQL_PASSWORD=$DBPASS -e MYSQL_DATABASE=$DBNAME -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql/mysql-server;
 
 sleep $DB_SLEEPTIME;
 

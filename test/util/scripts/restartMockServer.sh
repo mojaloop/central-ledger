@@ -26,8 +26,7 @@ docker stop $MOCKSERVER_ID
 docker rm $MOCKSERVER_ID
 
 echo "Starting Docker ${MOCKSERVER_ID}"
-docker run --name ${MOCKSERVER_ID} -d -p ${MOCKSERVER_PORT}:1080 jamesdbloom/mockserver;
-
+docker run --name ${MOCKSERVER_ID} -d -p ${MOCKSERVER_PORT:=1080}:1080 jamesdbloom/mockserver;
 is_service_up() {
   docker run --rm --network host byrnedo/alpine-curl -s -X PUT "http://localhost:${MOCKSERVER_PORT}/status" -d '{"method": "*", "path": "*"}'
 }

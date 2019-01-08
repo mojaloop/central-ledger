@@ -23,7 +23,7 @@ echo "Destroying Docker ${KAFKA_ID}"
 docker stop $KAFKA_ID
 docker rm $KAFKA_ID
 
-docker run -td --name=${KAFKA_ID} -p 2181:2181 -p 9092:9092 -e ADVERTISED_HOST=localhost  johnnypark/kafka-zookeeper
+docker run -td --name=${KAFKA_ID} -p ${ZOOKEEPER_PORT:=2181}:2181 -p ${KAFKA_PORT:=9092}:9092 -e ADVERTISED_HOST=localhost  johnnypark/kafka-zookeeper
 echo "Starting Docker ${KAFKA_ID}"
 
 echo
