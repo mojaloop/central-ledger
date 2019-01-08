@@ -179,6 +179,22 @@ module.exports = [
     }
   },
   {
+    method: 'GET',
+    path: '/participants/limits',
+    handler: Handler.getLimitsForAllParticipants,
+    options: {
+      id: 'participants_limits_get_all',
+      tags: tags,
+      description: 'View limits for all participants',
+      validate: {
+        query: {
+          currency: currencyValidator,
+          type: Joi.string().optional().description('Limit Type')
+        }
+      }
+    }
+  },
+  {
     method: 'POST',
     path: '/participants/{name}/limits',
     handler: Handler.adjustLimits,
