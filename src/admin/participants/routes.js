@@ -1,37 +1,36 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ --------------
+ ******/
+
 'use strict'
 
 const Handler = require('./handler')
 const Joi = require('joi')
+const currencyList = require('../../../seeds/currency.js').currencyList
 
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
-// const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
-const currencyValidator = Joi.string().allow([
-  'ALL', 'AFN', 'ARS', 'AWG', 'AUD', 'AZN',
-  'BSD', 'BBD', 'BYN', 'BZD', 'BMD', 'BOB', 'BAM', 'BWP', 'BGN', 'BRL', 'BND',
-  'KHR', 'CAD', 'KYD', 'CLP', 'CNY', 'COP', 'CRC', 'HRK', 'CUP', 'CZK',
-  'DKK', 'DOP',
-  'XCD', 'EGP', 'SVC', 'EUR',
-  'FKP', 'FJD',
-  'GHS', 'GIP', 'GTQ', 'GGP', 'GYD',
-  'HNL', 'HKD', 'HUF',
-  'ISK', 'INR', 'IDR', 'IRR', 'IMP', 'ILS',
-  'JMD', 'JPY', 'JEP',
-  'KZT', 'KPW', 'KRW', 'KGS',
-  'LAK', 'LBP', 'LRD',
-  'MKD', 'MYR', 'MUR', 'MXN', 'MNT', 'MZN',
-  'NAD', 'NPR', 'ANG', 'NZD', 'NIO', 'NGN', 'KPW', 'NOK',
-  'OMR',
-  'PKR', 'PAB', 'PYG', 'PEN', 'PHP', 'PLN',
-  'QAR',
-  'RON', 'RUB',
-  'SHP', 'SAR', 'RSD', 'SCR', 'SGD', 'SBD', 'SOS', 'ZAR', 'KRW', 'LKR', 'SEK', 'CHF', 'SRD', 'SYP',
-  'TWD', 'THB', 'TTD', 'TRY', 'TVD',
-  'UAH', 'GBP', 'USD', 'UYU', 'UZS',
-  'VEF', 'VND',
-  'YER',
-  'ZWD'
-]).description('Currency code of the participant')
+const currencyValidator = Joi.string().valid(currencyList).description('Currency code')
 
 module.exports = [
   {
@@ -196,11 +195,35 @@ module.exports = [
           currency: currencyValidator,
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
-            value: Joi.number().required().description('Limit Value')
+            value: Joi.number().required().description('Limit Value'),
+            thresholdAlarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
           }).required().description('Participant Limit')
         },
         params: {
           name: nameValidator
+        }
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/accounts',
+    handler: Handler.createHubAccount,
+    options: {
+      id: 'hub_accounts_create',
+      tags: tags,
+      description: 'Create hub accounts',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: {
+          currency: currencyValidator,
+          type: Joi.string().required().description('Account type') // Needs a validator here
+        },
+        params: {
+          name: Joi.string().required().description('Participant name') // nameValidator
         }
       }
     }
@@ -230,13 +253,82 @@ module.exports = [
     options: {
       id: 'participants_accounts_get',
       tags: tags,
-      description: 'View participant accounts balances',
+      description: 'View participant accounts and balances',
       validate: {
         params: {
           name: nameValidator
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/participants/{name}/accounts/{id}',
+    handler: Handler.updateAccount,
+    options: {
+      id: 'participants_accounts_update',
+      tags: tags,
+      description: 'Update participant accounts',
+      validate: {
+        payload: {
+          isActive: Joi.boolean().required().description('Participant currency isActive boolean')
         },
-        query: {
-          currency: currencyValidator
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive()
+        }
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/participants/{name}/accounts/{id}',
+    handler: Handler.recordFunds,
+    options: {
+      id: 'post_participants_accounts_funds',
+      tags: tags,
+      description: 'Record Funds In or Out of participant account',
+      validate: {
+        payload: {
+          transferId: Joi.string().guid().required(),
+          externalReference: Joi.string().required(),
+          action: Joi.string().required().valid([ 'recordFundsIn', 'recordFundsOutPrepareReserve' ]).label('action is missing or not supported'),
+          reason: Joi.string().required(),
+          amount: Joi.object({
+            amount: Joi.number().positive().precision(4).required(),
+            currency: currencyValidator
+          }).required().label('No amount provided'),
+          extensionList: Joi.object({
+            extension: Joi.array().items({
+              key: Joi.string(),
+              value: Joi.string()
+            })
+          })
+        },
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive()
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/participants/{name}/accounts/{id}/transfers/{transferId}',
+    handler: Handler.recordFunds,
+    options: {
+      id: 'put_participants_accounts_funds',
+      tags: tags,
+      description: 'Record Funds In or Out of participant account',
+      validate: {
+        payload: {
+          action: Joi.string().valid([ 'recordFundsOutCommit', 'recordFundsOutAbort' ]).label('action is missing or not supported'),
+          reason: Joi.string().required()
+        },
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive(),
+          transferId: Joi.string().guid().required()
         }
       }
     }

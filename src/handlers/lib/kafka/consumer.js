@@ -28,7 +28,7 @@
  * @module src/handlers/lib/kafka
  */
 
-const Consumer = require('@mojaloop/central-services-shared').Kafka.Consumer
+const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 let listOfConsumers = {}
@@ -46,6 +46,7 @@ let listOfConsumers = {}
  * @throws {Error} -  if failure occurs
  */
 const createHandler = async (topicName, config, command) => {
+  Logger.info(`CreateHandle::connect - creating Consumer for topics: [${topicName}]`)
   let consumer = {}
   if (Array.isArray(topicName)) {
     consumer = new Consumer(topicName, config)
@@ -53,13 +54,21 @@ const createHandler = async (topicName, config, command) => {
     consumer = new Consumer([topicName], config)
   }
 
+  // consumer.on('ready', arg => {
+  //   Logger.debug(`Consumer[${topicName}]::onReady - ${JSON.stringify(arg)}`)
+  // })
+  //
+  // consumer.on('error', error => {
+  //   Logger.error(`Consumer[${topicName}]::onError - ${JSON.stringify(error)}`)
+  // })
+
   let autoCommitEnabled = true
   if (config.rdkafkaConf !== undefined && config.rdkafkaConf['enable.auto.commit'] !== undefined) {
     autoCommitEnabled = config.rdkafkaConf['enable.auto.commit']
   }
 
   await consumer.connect().then(async () => {
-    Logger.info(`CreateHandle::connect successful topic: ${topicName}`)
+    Logger.info(`CreateHandle::connect - successful connected to topics: [${topicName}]`)
     await consumer.consume(command)
     if (Array.isArray(topicName)) {
       for (let topic of topicName) { // NOT OK
@@ -75,8 +84,7 @@ const createHandler = async (topicName, config, command) => {
       }
     }
   }).catch((e) => {
-    Logger.error(e)
-    Logger.info('Consumer error has occurred')
+    Logger.error(`CreateHandle::connect - error: ${e}`)
     throw e
   })
 }

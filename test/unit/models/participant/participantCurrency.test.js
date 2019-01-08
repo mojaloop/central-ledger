@@ -41,13 +41,14 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
     insert: sandbox.stub(),
     findOne: sandbox.stub(),
     find: sandbox.stub(),
-    destroy: sandbox.stub()
+    destroy: sandbox.stub(),
+    update: sandbox.stub()
   }
 
   await participantCurrencyTest.test('create currency for fake participant', async (assert) => {
-    Db.participantCurrency.insert.withArgs({participantId: 3, currencyId: 'FAKE', createdBy: 'unknown'}).throws(new Error('message'))
+    Db.participantCurrency.insert.withArgs({ participantId: 3, currencyId: 'FAKE', createdBy: 'unknown' }).throws(new Error('message'))
     try {
-      let r = await Model.create({participantId: 3, currencyId: 'FAKE', createdBy: 'unknown'})
+      let r = await Model.create({ participantId: 3, currencyId: 'FAKE', createdBy: 'unknown' })
       assert.comment(r)
       assert.fail(' should throw')
     } catch (err) {
@@ -58,8 +59,8 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('create participant Currency', async (assert) => {
     try {
-      Db.participantCurrency.insert.withArgs({participantId: 1, currencyId: 'USD', createdBy: 'unknown'}).returns(1)
-      var result = await Model.create({participantId: 1, currencyId: 'USD', createdBy: 'unknown'})
+      Db.participantCurrency.insert.withArgs({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' }).returns(1)
+      var result = await Model.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
       assert.ok(Sinon.match(result, 1), ` returns ${result}`)
       assert.end()
     } catch (err) {
@@ -72,7 +73,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
   await participantCurrencyTest.test('create participant currency should throw an error', async (assert) => {
     Db.participantCurrency.insert.throws(new Error('message'))
     try {
-      let r = await Model.create({participantId: 1, currencyId: 'USD', createdBy: 'unknown'})
+      let r = await Model.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
       assert.comment(r)
       assert.fail(' should throw')
     } catch (err) {
@@ -85,7 +86,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('getById', async (assert) => {
     try {
-      Db.participantCurrency.findOne.withArgs({participantCurrencyId: 1}).returns({
+      Db.participantCurrency.findOne.withArgs({ participantCurrencyId: 1 }).returns({
         participantCurrancyId: 1,
         participantId: 1,
         currencyId: 'USD',
@@ -109,8 +110,34 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('getById should fail', async (test) => {
     try {
-      Db.participantCurrency.findOne.withArgs({participantCurrencyId: 1}).throws(new Error())
+      Db.participantCurrency.findOne.withArgs({ participantCurrencyId: 1 }).throws(new Error())
       await Model.getById(1)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`get participant currency by Id failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('update', async (assert) => {
+    try {
+      Db.participantCurrency.update.withArgs({ participantCurrencyId: 1 }, { isActive: 1 }).returns(1)
+      let result = await Model.update(1, 1)
+      assert.equal(1, result)
+      assert.end()
+    } catch (err) {
+      Logger.error(`get participant currency by Id failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantCurrencyTest.test('update should fail', async (test) => {
+    try {
+      Db.participantCurrency.update.withArgs({ participantCurrencyId: 1 }, { isActive: 1 }).throws(new Error())
+      await Model.update(1, 1)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
@@ -122,7 +149,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('getByParticipantId', async (assert) => {
     try {
-      Db.participantCurrency.find.withArgs({participantId: 1, ledgerAccountTypeId: 1}).returns([{
+      Db.participantCurrency.find.returns([{
         participantCurrancyId: 1,
         participantId: 1,
         currencyId: 'USD',
@@ -161,8 +188,8 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('getByParticipantId should fail', async (test) => {
     try {
-      Db.participantCurrency.find.withArgs({participantId: 1, ledgerAccountTypeId: 1}).throws(new Error())
-      await Model.getByParticipantId(1, 1)
+      Db.participantCurrency.find.withArgs({ participantId: 1 }).throws(new Error())
+      await Model.getByParticipantId(1)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
@@ -174,7 +201,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('destroyByParticipantId', async (assert) => {
     try {
-      Db.participantCurrency.destroy.withArgs({participantId: 1}).returns(Promise.resolve(true))
+      Db.participantCurrency.destroy.withArgs({ participantId: 1 }).returns(Promise.resolve(true))
       const result = await Model.destroyByParticipantId(1)
       assert.equal(result, true)
       sandbox.restore()
@@ -189,7 +216,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('destroyByParticipantId should throw an error', async (test) => {
     try {
-      Db.participantCurrency.destroy.withArgs({participantId: 1}).throws(new Error())
+      Db.participantCurrency.destroy.withArgs({ participantId: 1 }).throws(new Error())
       const result = await Model.destroyByParticipantId(1)
       test.equal(result, true)
       test.fail('Error not thrown')
@@ -197,6 +224,52 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       test.end()
     } catch (err) {
       Logger.error(`destroy participant failed with error - ${err}`)
+      test.pass('Error thrown')
+      sandbox.restore()
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('hubAccountExists', async (assert) => {
+    try {
+      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD', ledgerAccountTypeId: 3 }).returns(Promise.resolve(true))
+      const result = await Model.hubAccountExists('USD', 3)
+      assert.equal(result, true)
+      sandbox.restore()
+      assert.end()
+    } catch (err) {
+      Logger.error(`hubReconciliationAccountExists failed with error - ${err}`)
+      sandbox.restore()
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantCurrencyTest.test('hubAccountExists should throw', async (assert) => {
+    try {
+      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD', ledgerAccountTypeId: 3 }).throws(new Error())
+      await Model.hubAccountExists('USD', 3)
+      assert.fail('Error not thrown!')
+      sandbox.restore()
+      assert.end()
+    } catch (err) {
+      Logger.error(`hubReconciliationAccountExists failed with error - ${err}`)
+      sandbox.restore()
+      assert.pass('Error thrown')
+      assert.end()
+    }
+  })
+
+  await participantCurrencyTest.test('hubReconciliationAccountExists should throw an error', async (test) => {
+    try {
+      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD' }).throws(new Error())
+      const result = await Model.hubReconciliationAccountExists('USD')
+      test.equal(result, true)
+      test.fail('Error not thrown')
+      sandbox.restore()
+      test.end()
+    } catch (err) {
+      Logger.error(`hubReconciliationAccountExists failed with error - ${err}`)
       test.pass('Error thrown')
       sandbox.restore()
       test.end()

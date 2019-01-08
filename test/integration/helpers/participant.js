@@ -48,8 +48,8 @@ exports.prepareData = async (name, currencyId = 'USD') => {
         name: (name || testParticipant.name) + time.msToday()
       }
     ))
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.POSITION)
-    const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.SETTLEMENT)
+    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.POSITION, false)
+    const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.SETTLEMENT, false)
     const participant = await Model.getById(participantId)
     return {
       participant,

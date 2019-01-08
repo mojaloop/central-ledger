@@ -29,15 +29,16 @@
  */
 
 const Db = require('../../db')
+const Time = require('../../lib/time')
 
-const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId) => {
+const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive = true) => {
   try {
     return await Db.participant.query(async (builder) => {
       return builder
         .where({ 'participant.name': name })
         .andWhere({ 'participant.isActive': true })
         .andWhere({ 'pc.currencyId': currencyId })
-        .andWhere({ 'pc.isActive': true })
+        .andWhere({ 'pc.isActive': isCurrencyActive })
         .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
@@ -55,7 +56,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId) => {
 const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return await builder
+      return builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
@@ -192,7 +193,7 @@ const addEndpoint = async (participantId, endpoint) => {
 const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return await builder
+      return builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
@@ -219,7 +220,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return await builder
+      return builder
         .where({
           'participant.participantId': participantId,
           'pc.currencyId': currencyId,
@@ -260,7 +261,7 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccountId, limitPostionObj) => {
+const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccountId, limitPostionObj, setCurrencyActive = false) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
@@ -291,6 +292,10 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         }
         result = await knex('participantPosition').transacting(trx).insert(settlementPosition)
         settlementPosition.participantPositionId = result[0]
+        if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
+          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
+          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
+        }
         await trx.commit
         return {
           participantLimit,
@@ -350,6 +355,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
           participantCurrencyId: participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
           value: limit.value,
+          thresholdAlarmPercentage: limit.thresholdAlarmPercentage,
           isActive: 1,
           createdBy: 'unknown'
         }
@@ -456,7 +462,69 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
   }
 }
 
+const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAccountTypeId) => {
+  try {
+    const knex = Db.getKnex()
+    return knex.transaction(async trx => {
+      try {
+        let result
+        let participantCurrency = {
+          participantId,
+          currencyId,
+          ledgerAccountTypeId,
+          createdBy: 'unknown',
+          isActive: 1,
+          createdDate: Time.getUTCString(new Date())
+        }
+        result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
+        participantCurrency.participantCurrencyId = result[0]
+        let participantPosition = {
+          participantCurrencyId: participantCurrency.participantCurrencyId,
+          value: 0,
+          reservedValue: 0
+        }
+        result = await knex('participantPosition').transacting(trx).insert(participantPosition)
+        participantPosition.participantPositionId = result[0]
+        await trx.commit
+        return {
+          participantCurrency,
+          participantPosition
+        }
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
+  try {
+    return Db.participantCurrency.query(builder => {
+      return builder
+        .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId')
+        .innerJoin('participant AS p', 'p.participantId', 'participantCurrency.participantId')
+        .where({
+          'p.name': name,
+          'p.isActive': 1,
+          'participantCurrency.isActive': 1
+        })
+        .where(q => {
+          if (currencyId != null) {
+            return q.where('participantCurrency.currencyId', currencyId)
+          }
+        })
+        .select('*', 'lap.name AS ledgerAccountType')
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 module.exports = {
+  addHubAccountAndInitPosition,
   getByNameAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
   getEndpoint,
@@ -467,5 +535,6 @@ module.exports = {
   addLimitAndInitialPosition,
   adjustLimits,
   getParticipantLimitsByCurrencyId,
-  getParticipantLimitsByParticipantId
+  getParticipantLimitsByParticipantId,
+  getAllAccountsByNameAndCurrency
 }

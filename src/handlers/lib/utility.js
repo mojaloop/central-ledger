@@ -120,7 +120,7 @@ const STATE = {
  *
  * @description Global ENUMS object
  *
- * @enum {object} ENUMS
+ * @enum {string} ENUMS
  * @property {string} PRODUCER - This ENUM is for the PRODUCER
  * @property {string} CONSUMER - This ENUM is for the CONSUMER
  */
@@ -169,7 +169,7 @@ const participantTopicTemplate = (participantName, functionality, action) => {
  */
 const generalTopicTemplate = (functionality, action) => {
   try {
-    return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, {functionality, action})
+    return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, { functionality, action })
   } catch (e) {
     Logger.error(e)
     throw e

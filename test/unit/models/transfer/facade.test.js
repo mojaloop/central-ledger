@@ -37,11 +37,40 @@ const Enum = require('../../../../src/lib/enum')
 const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const Time = require('../../../../src/lib/time')
+const Uuid = require('uuid4')
 
 Test('Transfer facade', async (transferFacadeTest) => {
   let sandbox
   let clock
   let now = new Date()
+
+  const enums = {
+    transferState: {
+      RESERVED: 'RESERVED',
+      COMMITTED: 'COMMITTED',
+      ABORTED: 'ABORTED'
+    },
+    transferParticipantRoleType: {
+      PAYER_DFSP: 'PAYER_DFSP',
+      PAYEE_DFSP: 'PAYEE_DFSP',
+      DFSP_SETTLEMENT: 'DFSP_SETTLEMENT',
+      DFSP_POSITION: 'DFSP_POSITION'
+    },
+    ledgerAccountType: {
+      POSITION: 'POSITION',
+      SETTLEMENT: 'SETTLEMENT'
+    },
+    ledgerEntryType: {
+      PRINCIPLE_VALUE: 'PRINCIPLE_VALUE',
+      INTERCHANGE_FEE: 'INTERCHANGE_FEE',
+      HUB_FEE: 'HUB_FEE',
+      SETTLEMENT_NET_RECIPIENT: 'SETTLEMENT_NET_RECIPIENT',
+      SETTLEMENT_NET_SENDER: 'SETTLEMENT_NET_SENDER',
+      SETTLEMENT_NET_ZERO: 'SETTLEMENT_NET_ZERO',
+      RECORD_FUNDS_IN: 'RECORD_FUNDS_IN',
+      RECORD_FUNDS_OUT: 'RECORD_FUNDS_OUT'
+    }
+  }
 
   const transferExtensions = [{ key: 'key1', value: 'value1' }, { key: 'key2', value: 'value2' }]
 
@@ -456,7 +485,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
-  await transferFacadeTest.test('saveTransferFulfiled should', async saveTransferFulfiled => {
+  await transferFacadeTest.test('saveTransferFulfilled should', async saveTransferFulfilled => {
     try {
       const transferId = 't1'
       const payload = {
@@ -469,7 +498,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       let isCommit = null
       const stateReason = null
       let hasPassedValidation = null
-      const saveTransferFulfiledExecuted = true
+      const saveTransferFulfilledExecuted = true
       const transferFulfilmentRecord = { transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: Time.getUTCString(now), isValid: true, createdDate: Time.getUTCString(now), settlementWindowId: 1 }
       const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: Time.getUTCString(now) }
       let transferExtensionRecords = transferExtensions.map(ext => {
@@ -480,17 +509,17 @@ Test('Transfer facade', async (transferFacadeTest) => {
           value: ext.value
         }
       })
-      const saveTransferFulfiledResult = { saveTransferFulfiledExecuted, transferFulfilmentRecord, transferStateChangeRecord, transferExtensions: transferExtensionRecords }
+      const saveTransferFulfilledResult = { saveTransferFulfilledExecuted, transferFulfilmentRecord, transferStateChangeRecord, transferExtensions: transferExtensionRecords }
 
       const ModuleProxy = Proxyquire('../../../../src/models/transfer/facade', {
         uuid4: sandbox.stub().returns(transferFulfilmentRecord.transferFulfilmentId)
       })
 
-      await saveTransferFulfiled.test('return transfer in RECEIVED_FULFIL state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in RECEIVED_FULFIL state', async (test) => {
         try {
           isCommit = true
           hasPassedValidation = true
-          let record = [{settlementWindowId: 1}]
+          let record = [{ settlementWindowId: 1 }]
           transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_FULFIL
 
           sandbox.stub(Db, 'getKnex')
@@ -528,8 +557,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          /** @namespace ModuleProxy.saveTransferFulfilled **/
+          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
@@ -541,17 +571,17 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.fail()
           test.end()
         }
       })
 
-      await saveTransferFulfiled.test('return transfer in REJECTED state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in REJECTED state', async (test) => {
         try {
           isCommit = false
           hasPassedValidation = true
-          let record = [{settlementWindowId: 1}]
+          let record = [{ settlementWindowId: 1 }]
           transferStateChangeRecord.transferStateId = Enum.TransferState.REJECTED
 
           sandbox.stub(Db, 'getKnex')
@@ -589,8 +619,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
@@ -602,16 +632,16 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.fail()
           test.end()
         }
       })
 
-      await saveTransferFulfiled.test('return transfer in ABORTED state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in ABORTED state', async (test) => {
         try {
           hasPassedValidation = false
-          let record = [{settlementWindowId: 1}]
+          let record = [{ settlementWindowId: 1 }]
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
 
           sandbox.stub(Db, 'getKnex')
@@ -649,8 +679,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
-          test.deepEqual(response, saveTransferFulfiledResult, 'response matches expected result')
+          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
           test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
@@ -662,13 +692,13 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.fail()
           test.end()
         }
       })
 
-      await saveTransferFulfiled.test('rollback and throw error', async (test) => {
+      await saveTransferFulfilled.test('rollback and throw error', async (test) => {
         try {
           hasPassedValidation = false
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
@@ -689,33 +719,33 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          await ModuleProxy.saveTransferFulfiled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
-          Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+          Logger.error(`saveTransferFulfilled failed with error - ${err}`)
           test.pass('Error thrown')
           test.end()
         }
       })
 
-      await saveTransferFulfiled.end()
+      await saveTransferFulfilled.end()
     } catch (err) {
-      Logger.error(`saveTransferFulfiled failed with error - ${err}`)
-      saveTransferFulfiled.fail()
-      await saveTransferFulfiled.end()
+      Logger.error(`saveTransferFulfilled failed with error - ${err}`)
+      saveTransferFulfilled.fail()
+      await saveTransferFulfilled.end()
     }
   })
 
-  await transferFacadeTest.test('saveTransferFulfiled should throw an error', async (test) => {
+  await transferFacadeTest.test('saveTransferFulfilled should throw an error', async (test) => {
     try {
       const transferId = 't1'
       Db.transferParticipant.query.throws(new Error())
-      await Model.saveTransferFulfiled(transferId)
+      await Model.saveTransferFulfilled(transferId)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
-      Logger.error(`saveTransferFulfiled failed with error - ${err}`)
+      Logger.error(`saveTransferFulfilled failed with error - ${err}`)
       test.pass('Error thrown')
       test.end()
     }
@@ -787,7 +817,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
-  await transferFacadeTest.test('saveTransferPrepared save prepared transfer -without extensionList', async (test) => {
+  await transferFacadeTest.test('saveTransferPrepared save prepared transfer without extensionList', async (test) => {
     try {
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
@@ -855,10 +885,34 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
-  await transferFacadeTest.test('saveTransferPrepared throw error', async (test) => {
+  await transferFacadeTest.test('saveTransferPrepared should throw error', async (test) => {
     try {
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
-      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp1', 1)
+
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      knexStub.batchInsert = sandbox.stub().returns({ transacting: sandbox.stub().returns(1) })
+      Db.getKnex.returns(knexStub)
+      knexStub.throws(new Error())
+
+      await Model.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
+      test.fail(' should throw')
+      test.end()
+      test.end()
+    } catch (err) {
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await transferFacadeTest.test('saveTransferPrepared should throw error when any participant is not found', async (test) => {
+    try {
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns(null)
 
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -903,7 +957,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      var result = await Model.getTransferStateByTransferId(transferStateChange.transferId)
+      let result = await Model.getTransferStateByTransferId(transferStateChange.transferId)
       test.deepEqual(result, transferStateChange)
       test.end()
     } catch (err) {
@@ -917,11 +971,1133 @@ Test('Transfer facade', async (transferFacadeTest) => {
     try {
       Db.transferStateChange.query.throws(new Error('message'))
       await Model.getTransferStateByTransferId('id')
-      assert.fail(' should throw')
+      assert.fail('Should throw')
       assert.end()
     } catch (err) {
       assert.pass('Error thrown')
       assert.end()
+    }
+  })
+
+  await transferFacadeTest.test('timeoutExpireReserved should', async timeoutExpireReservedTest => {
+    try {
+      await timeoutExpireReservedTest.test('throw error and rollback within transaction', async test => {
+        try {
+          const segmentId = 1
+          const intervalMin = 1
+          const intervalMax = 10
+
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          const trxStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          knexStub.from = sandbox.stub().throws(new Error('Custom error'))
+
+          await Model.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`timeoutExpireReserved failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await timeoutExpireReservedTest.test('perform timeout successfully', async test => {
+        try {
+          let segmentId
+          const intervalMin = 1
+          const intervalMax = 10
+          const expectedResult = 1
+
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          const trxStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          let context = sandbox.stub()
+          context.from = sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              innerJoin: sandbox.stub().returns({
+                leftJoin: sandbox.stub().returns({
+                  whereNull: sandbox.stub().returns({
+                    whereIn: sandbox.stub().returns({
+                      select: sandbox.stub()
+                    })
+                  })
+                }),
+                where: sandbox.stub().returns({
+                  andWhere: sandbox.stub().returns({
+                    select: sandbox.stub()
+                  })
+                })
+              })
+            })
+          })
+          context.on = sandbox.stub().returns({
+            andOn: sandbox.stub().returns({
+              andOn: sandbox.stub()
+            })
+          })
+          knexStub.returns({
+            select: sandbox.stub().returns({
+              max: sandbox.stub().returns({
+                where: sandbox.stub().returns({
+                  andWhere: sandbox.stub().returns({
+                    groupBy: sandbox.stub().returns({
+                      as: sandbox.stub()
+                    })
+                  })
+                }),
+                innerJoin: sandbox.stub().returns({
+                  groupBy: sandbox.stub().returns({
+                    as: sandbox.stub()
+                  })
+                })
+              })
+            }),
+            transacting: sandbox.stub().returns({
+              insert: sandbox.stub(),
+              where: sandbox.stub().returns({
+                update: sandbox.stub()
+              })
+            }),
+            innerJoin: sandbox.stub().returns({
+              innerJoin: sandbox.stub().returns({
+                innerJoin: sandbox.stub().callsArgOn(1, context).returns({
+                  innerJoin: sandbox.stub().callsArgOn(1, context).returns({
+                    innerJoin: sandbox.stub().returns({
+                      innerJoin: sandbox.stub().returns({
+                        innerJoin: sandbox.stub().returns({
+                          innerJoin: sandbox.stub().returns({
+                            where: sandbox.stub().returns({
+                              select: sandbox.stub().returns(
+                                Promise.resolve(expectedResult)
+                              )
+                            })
+                          })
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+          knexStub.raw = sandbox.stub()
+          knexStub.from = sandbox.stub().returns({
+            transacting: sandbox.stub().returns({
+              insert: sandbox.stub().callsArgOn(0, context)
+            })
+          })
+
+          let result
+          try {
+            segmentId = 0
+            result = await Model.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+            test.equal(result, expectedResult, 'Expected result returned')
+          } catch (err) {
+            Logger.error(`timeoutExpireReserved failed with error - ${err}`)
+            test.fail()
+          }
+          try {
+            segmentId = 1
+            await Model.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+            test.equal(result, expectedResult, 'Expected result returned.')
+          } catch (err) {
+            Logger.error(`timeoutExpireReserved failed with error - ${err}`)
+            test.fail()
+          }
+          test.end()
+        } catch (err) {
+          Logger.error(`timeoutExpireReserved failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await timeoutExpireReservedTest.end()
+    } catch (err) {
+      Logger.error(`transferFacadeTest failed with error - ${err}`)
+      timeoutExpireReservedTest.fail()
+      timeoutExpireReservedTest.end()
+    }
+  })
+
+  await transferFacadeTest.test('transferStateAndPositionUpdate should', async transferStateAndPositionUpdateTest => {
+    try {
+      await transferStateAndPositionUpdateTest.test('throw error if database is not available', async test => {
+        try {
+          const param1 = {}
+          const trxStub = sandbox.stub()
+
+          const knexStub = sandbox.stub().throws(new Error('Database unavailable'))
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+
+          await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await transferStateAndPositionUpdateTest.test('change position when called from within a transaction', async test => {
+        try {
+          let param1 = {
+            transferId: Uuid(),
+            transferStateId: Enum.TransferState.COMMITTED,
+            reason: 'text',
+            createdDate: Time.getUTCString(now),
+            drUpdated: true,
+            crUpdated: false
+          }
+          const infoDataStub = {
+            drAccountId: 4,
+            drAmount: -100,
+            drPositionId: 4,
+            drPositionValue: 0,
+            drReservedValue: 0,
+            crAccountId: 1,
+            crAmount: 100,
+            crPositionId: 1,
+            crPositionValue: 0,
+            crReservedValue: 0,
+            transferStateId: Enum.TransferState.COMMITTED,
+            ledgerAccountTypeId: 2
+          }
+          const trxStub = sandbox.stub()
+
+          const knexStub = sandbox.stub()
+          let context = sandbox.stub()
+          context.on = sandbox.stub().returns({
+            andOn: sandbox.stub()
+          })
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.withArgs('transfer AS t').returns({
+            join: sandbox.stub().callsArgOn(1, context).returns({
+              join: sandbox.stub().returns({
+                join: sandbox.stub().returns({
+                  join: sandbox.stub().callsArgOn(1, context).returns({
+                    join: sandbox.stub().returns({
+                      join: sandbox.stub().returns({
+                        join: sandbox.stub().returns({
+                          where: sandbox.stub().returns({
+                            whereIn: sandbox.stub().returns({
+                              whereIn: sandbox.stub().returns({
+                                select: sandbox.stub().returns({
+                                  orderBy: sandbox.stub().returns({
+                                    first: sandbox.stub().returns({
+                                      transacting: sandbox.stub().returns(Promise.resolve(infoDataStub))
+                                    })
+                                  })
+                                })
+                              })
+                            })
+                          })
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+          knexStub.withArgs('transferStateChange').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub().returns(9)
+            })
+          })
+          knexStub.withArgs('participantPosition').returns({
+            update: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                transacting: sandbox.stub()
+              })
+            })
+          })
+          knexStub.withArgs('participantPositionChange').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+
+          let expectedResult = {
+            transferStateChangeId: 9,
+            drPositionValue: infoDataStub.drPositionValue + infoDataStub.drAmount,
+            crPositionValue: infoDataStub.crPositionValue + infoDataStub.crAmount
+          }
+          let result = await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
+          test.deepEqual(result, expectedResult, 'Expected result is returned')
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 2)
+          test.equal(knexStub.withArgs('participantPosition').callCount, 1)
+          test.equal(knexStub.withArgs('participantPositionChange').callCount, 1)
+
+          param1.drUpdated = false
+          param1.crUpdated = true
+          result = await Model.transferStateAndPositionUpdate(param1, enums, trxStub)
+          test.deepEqual(result, expectedResult, 'Expected result is returned')
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 4)
+          test.equal(knexStub.withArgs('participantPosition').callCount, 2)
+          test.equal(knexStub.withArgs('participantPositionChange').callCount, 2)
+          test.end()
+        } catch (err) {
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await transferStateAndPositionUpdateTest.test('commit when called outside of a transaction', async test => {
+        try {
+          let param1 = {
+            transferId: Uuid(),
+            transferStateId: Enum.TransferState.ABORTED,
+            reason: 'text',
+            createdDate: Time.getUTCString(now),
+            drUpdated: true,
+            crUpdated: true
+          }
+          const infoDataStub = {
+            drAccountId: 4,
+            drAmount: -100,
+            drPositionId: 4,
+            drPositionValue: 0,
+            drReservedValue: 0,
+            crAccountId: 1,
+            crAmount: 100,
+            crPositionId: 1,
+            crPositionValue: 0,
+            crReservedValue: 0,
+            transferStateId: Enum.TransferState.ABORTED,
+            ledgerAccountTypeId: 2
+          }
+          const trxStub = sandbox.stub()
+
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          let context = sandbox.stub()
+          context.on = sandbox.stub().returns({
+            andOn: sandbox.stub()
+          })
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.withArgs('transfer AS t').returns({
+            join: sandbox.stub().callsArgOn(1, context).returns({
+              join: sandbox.stub().returns({
+                join: sandbox.stub().returns({
+                  join: sandbox.stub().callsArgOn(1, context).returns({
+                    join: sandbox.stub().returns({
+                      join: sandbox.stub().returns({
+                        join: sandbox.stub().returns({
+                          where: sandbox.stub().returns({
+                            whereIn: sandbox.stub().returns({
+                              whereIn: sandbox.stub().returns({
+                                select: sandbox.stub().returns({
+                                  orderBy: sandbox.stub().returns({
+                                    first: sandbox.stub().returns({
+                                      transacting: sandbox.stub().returns(Promise.resolve(infoDataStub))
+                                    })
+                                  })
+                                })
+                              })
+                            })
+                          })
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+          knexStub.withArgs('transferStateChange').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub().returns(9)
+            })
+          })
+          knexStub.withArgs('participantPosition').returns({
+            update: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                transacting: sandbox.stub()
+              })
+            })
+          })
+          knexStub.withArgs('participantPositionChange').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+
+          let expectedResult = {
+            transferStateChangeId: 9,
+            drPositionValue: infoDataStub.drPositionValue - infoDataStub.drAmount,
+            crPositionValue: infoDataStub.crPositionValue - infoDataStub.crAmount
+          }
+          let result = await Model.transferStateAndPositionUpdate(param1, enums)
+          test.deepEqual(result, expectedResult, 'Expected result is returned')
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 2)
+          test.equal(knexStub.withArgs('participantPosition').callCount, 2)
+          test.equal(knexStub.withArgs('participantPositionChange').callCount, 2)
+          test.end()
+        } catch (err) {
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await transferStateAndPositionUpdateTest.test('throw error and rollback when called outside of a transaction', async test => {
+        try {
+          let param1 = {
+            transferId: Uuid(),
+            transferStateId: Enum.TransferState.RECEIVED_PREPARE,
+            reason: 'text',
+            createdDate: Time.getUTCString(now),
+            drUpdated: true,
+            crUpdated: false
+          }
+          const infoDataStub = {
+            drAccountId: 4,
+            drAmount: -100,
+            drPositionId: 4,
+            drPositionValue: 0,
+            drReservedValue: 0,
+            crAccountId: 1,
+            crAmount: 100,
+            crPositionId: 1,
+            crPositionValue: 0,
+            crReservedValue: 0,
+            transferStateId: 'RECEIVED_PREPARE',
+            ledgerAccountTypeId: 2
+          }
+          const trxStub = sandbox.stub()
+
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          let context = sandbox.stub()
+          context.on = sandbox.stub().returns({
+            andOn: sandbox.stub()
+          })
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.withArgs('transfer AS t').returns({
+            join: sandbox.stub().callsArgOn(1, context).returns({
+              join: sandbox.stub().returns({
+                join: sandbox.stub().returns({
+                  join: sandbox.stub().callsArgOn(1, context).returns({
+                    join: sandbox.stub().returns({
+                      join: sandbox.stub().returns({
+                        join: sandbox.stub().returns({
+                          where: sandbox.stub().returns({
+                            whereIn: sandbox.stub().returns({
+                              whereIn: sandbox.stub().returns({
+                                select: sandbox.stub().returns({
+                                  orderBy: sandbox.stub().returns({
+                                    first: sandbox.stub().returns({
+                                      transacting: sandbox.stub().returns(Promise.resolve(infoDataStub))
+                                    })
+                                  })
+                                })
+                              })
+                            })
+                          })
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+          knexStub.withArgs('transferStateChange').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub().returns(9)
+            })
+          })
+          knexStub.withArgs('participantPosition').returns({
+            update: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                transacting: sandbox.stub()
+              })
+            })
+          })
+          knexStub.withArgs('participantPositionChange').returns({
+            insert: sandbox.stub().throws(new Error('Insert failed'))
+          })
+
+          await Model.transferStateAndPositionUpdate(param1, enums)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`transferStateAndPositionUpdate failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await transferStateAndPositionUpdateTest.end()
+    } catch (err) {
+      Logger.error(`transferFacadeTest failed with error - ${err}`)
+      transferStateAndPositionUpdateTest.fail()
+      transferStateAndPositionUpdateTest.end()
+    }
+  })
+
+  await transferFacadeTest.test('reconciliationTransferPrepare should', async reconciliationTransferPrepareTest => {
+    try {
+      await reconciliationTransferPrepareTest.test('throw error if database is not available', async test => {
+        try {
+          const payload = {}
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub().throws(new Error('Database unavailable'))
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+
+          await Model.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferPrepareTest.test('make reconciliation transfer prepare when called from within a transaction', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
+            participantCurrencyId: 2,
+            amount: {
+              amount: 10,
+              currency: 'USD'
+            },
+            externalReference: 'ref123',
+            extensionList: {
+              extension: [
+                {
+                  key: 'key1',
+                  value: 'value1'
+                },
+                {
+                  key: 'key2',
+                  value: 'value2'
+                }
+              ]
+            }
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          knexStub.withArgs('participantCurrency').returns({
+            select: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                andWhere: sandbox.stub().returns({
+                  first: sandbox.stub().returns({
+                    transacting: sandbox.stub().returns(
+                      Promise.resolve({
+                        reconciliationAccountId: 1
+                      })
+                    )
+                  })
+                })
+              })
+            })
+          })
+          sandbox.stub(Model, 'reconciliationTransferAbort')
+
+          let result = await Model.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trxStub)
+          test.equal(result, 0, 'Result for successful operation returned')
+          test.equal(knexStub.withArgs('transfer').callCount, 1)
+          test.equal(knexStub.withArgs('participantCurrency').callCount, 1)
+          test.equal(knexStub.withArgs('transferParticipant').callCount, 2)
+          test.equal(knexStub.withArgs('transferStateChange').callCount, 1)
+          test.equal(knexStub.withArgs('transferExtension').callCount, 3)
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferPrepareTest.test('throw error if insert fails', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            participantCurrencyId: 2,
+            amount: {
+              amount: 10,
+              currency: 'USD'
+            },
+            externalReference: 'ref123',
+            extensionList: {
+              extension: [
+                {
+                  key: 'key1',
+                  value: 'value1'
+                },
+                {
+                  key: 'key2',
+                  value: 'value2'
+                }
+              ]
+            }
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.withArgs('transfer').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          knexStub.withArgs('transferParticipant').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub().throws(new Error('Insert failed'))
+            })
+          })
+          knexStub.returns({
+            select: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                andWhere: sandbox.stub().returns({
+                  first: sandbox.stub().returns({
+                    transacting: sandbox.stub().returns({
+                      reconciliationAccountId: 1
+                    })
+                  })
+                })
+              })
+            })
+          })
+          await Model.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferPrepareTest.test('make reconciliation transfer commit in a new transaction and commit it when called outside of a transaction', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
+            participantCurrencyId: 2,
+            amount: {
+              amount: 10,
+              currency: 'USD'
+            },
+            externalReference: 'ref123'
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          trxStub.commit = sandbox.stub()
+
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          knexStub.withArgs('participantCurrency').returns({
+            select: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                andWhere: sandbox.stub().returns({
+                  first: sandbox.stub().returns({
+                    transacting: sandbox.stub().returns(
+                      Promise.resolve({
+                        reconciliationAccountId: 1
+                      })
+                    )
+                  })
+                })
+              })
+            })
+          })
+          sandbox.stub(Model, 'reconciliationTransferAbort')
+
+          let result = await Model.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
+          test.equal(result, 0, 'Result for successful operation returned')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferPrepareTest.test('throw error and rollback when called outside of a transaction', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
+            participantCurrencyId: 2,
+            amount: {
+              amount: 10,
+              currency: 'USD'
+            },
+            externalReference: 'ref123'
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          trxStub.rollback = sandbox.stub()
+
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          knexStub.withArgs('participantCurrency').returns({
+            select: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                andWhere: sandbox.stub().returns({
+                  first: sandbox.stub().returns({
+                    transacting: sandbox.stub().returns(
+                      Promise.reject(new Error('An error occured'))
+                    )
+                  })
+                })
+              })
+            })
+          })
+          sandbox.stub(Model, 'reconciliationTransferAbort').throws(new Error('Reconciliation Transfer Abort Failure'))
+
+          await Model.reconciliationTransferPrepare(payload, transactionTimestamp, enums)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferPrepareTest.end()
+    } catch (err) {
+      Logger.error(`transferFacadeTest failed with error - ${err}`)
+      reconciliationTransferPrepareTest.fail()
+      reconciliationTransferPrepareTest.end()
+    }
+  })
+
+  await transferFacadeTest.test('reconciliationTransferReserve should', async reconciliationTransferReserveTest => {
+    try {
+      await reconciliationTransferReserveTest.test('throw error if database is not available', async test => {
+        try {
+          const payload = {}
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub().throws(new Error('Database unavailable'))
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+
+          await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.test('reserve funds and abort when drPositionValue is gt 0', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          sandbox.stub(Model, 'transferStateAndPositionUpdate').returns({ drPositionValue: 100 })
+          sandbox.stub(Model, 'reconciliationTransferAbort')
+
+          let result = await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums, trxStub)
+          test.equal(result, 0, 'Result for successful operation is returned')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.test('reserve funds and commit when called outside of a transaction', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          sandbox.stub(Model, 'transferStateAndPositionUpdate').returns({ crPositionValue: -100 })
+          sandbox.stub(Model, 'reconciliationTransferAbort')
+
+          let result = await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums)
+          test.equal(result, 0, 'Result for successful operation is returned')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.test('rollback when called outside of a transaction and error occurs', async test => {
+        try {
+          const payload = {
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          sandbox.stub(Model, 'transferStateAndPositionUpdate').throws(new Error('transferStateAndPositionUpdate failed'))
+
+          let result = await Model.reconciliationTransferReserve(payload, transactionTimestamp, enums)
+          test.equal(result, 0, 'Result for successful operation is returned')
+          test.fail('Error not thrown!')
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.ok('Error thrown as expected')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferReserveTest.end()
+    } catch (err) {
+      Logger.error(`transferFacadeTest failed with error - ${err}`)
+      reconciliationTransferReserveTest.fail()
+      reconciliationTransferReserveTest.end()
+    }
+  })
+
+  await transferFacadeTest.test('reconciliationTransferCommit should', async reconciliationTransferCommitTest => {
+    try {
+      await reconciliationTransferCommitTest.test('throw error if database is not available', async test => {
+        try {
+          const payload = {}
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub().throws(new Error('Database unavailable'))
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+
+          await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferCommitTest.test('make transfer commit when called from within a transaction', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
+
+          let result = await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums, trxStub)
+          test.equal(result, 0, 'Result for successful operation returned')
+          test.equal(knexStub().insert.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferCommit failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferCommitTest.test('throw error if insert fails', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.withArgs('transferFulfilment').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub().throws(new Error('Insert fails!'))
+            })
+          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
+
+          await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferCommit failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferCommitTest.test('make transfer commit in a new transaction and commit it when called from outside of a transaction', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          trxStub.commit = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
+
+          let result = await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums)
+          test.equal(result, 0, 'Result for successful operation returned')
+          test.equal(knexStub().insert.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferCommit failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferCommitTest.test('throw error and rollback when called outside of a transaction', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          trxStub.commit = sandbox.stub()
+          trxStub.rollback = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+
+          await Model.reconciliationTransferCommit(payload, transactionTimestamp, enums)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferCommit failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferCommitTest.end()
+    } catch (err) {
+      Logger.error(`transferFacadeTest failed with error - ${err}`)
+      reconciliationTransferCommitTest.fail()
+      reconciliationTransferCommitTest.end()
+    }
+  })
+
+  await transferFacadeTest.test('reconciliationTransferAbort should', async reconciliationTransferAbortTest => {
+    try {
+      await reconciliationTransferAbortTest.test('throw error if database is not available', async test => {
+        try {
+          const payload = {}
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub().throws(new Error('Database unavailable'))
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+
+          await Model.reconciliationTransferAbort(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferPrepare failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferAbortTest.test('make transfer abort when called from within a transaction', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
+
+          let result = await Model.reconciliationTransferAbort(payload, transactionTimestamp, enums, trxStub)
+          test.equal(result, 0, 'Result for successful operation returned')
+          test.equal(knexStub().insert.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferAbort failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferAbortTest.test('throw error if insert fails', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.withArgs('transferFulfilment').returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub().throws(new Error('Insert fails!'))
+            })
+          })
+
+          await Model.reconciliationTransferAbort(payload, transactionTimestamp, enums, trxStub)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferAbort failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferAbortTest.test('make transfer commit in a new transaction and commit it when called from outside of a transaction', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          trxStub.commit = sandbox.stub()
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+          sandbox.stub(Model, 'transferStateAndPositionUpdate')
+
+          let result = await Model.reconciliationTransferAbort(payload, transactionTimestamp, enums)
+          test.equal(result, 0, 'Result for successful operation returned')
+          test.equal(knexStub().insert.callCount, 1)
+          test.equal(Model.transferStateAndPositionUpdate.callCount, 1)
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferAbort failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await reconciliationTransferAbortTest.test('throw error and rollback when called outside of a transaction', async test => {
+        try {
+          const payload = {
+            transferId: 1,
+            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
+            participantCurrencyId: 2
+          }
+          const transactionTimestamp = Time.getUTCString(now)
+
+          const trxStub = sandbox.stub()
+          trxStub.commit = sandbox.stub()
+          trxStub.rollback = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          sandbox.stub(Db, 'getKnex').returns(knexStub)
+          knexStub.returns({
+            insert: sandbox.stub().returns({
+              transacting: sandbox.stub()
+            })
+          })
+
+          await Model.reconciliationTransferAbort(payload, transactionTimestamp, enums)
+          test.fail('Error not thrown!')
+          test.end()
+        } catch (err) {
+          Logger.error(`reconciliationTransferAbort failed with error - ${err}`)
+          test.pass('Error thrown')
+          test.end()
+        }
+      })
+
+      await reconciliationTransferAbortTest.end()
+    } catch (err) {
+      Logger.error(`transferFacadeTest failed with error - ${err}`)
+      reconciliationTransferAbortTest.fail()
+      reconciliationTransferAbortTest.end()
     }
   })
 

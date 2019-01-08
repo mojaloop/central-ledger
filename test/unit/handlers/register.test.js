@@ -7,6 +7,7 @@ const Handlers = require('../../../src/handlers/register')
 const TransferHandler = require('../../../src/handlers/transfers/handler')
 const PositionHandler = require('../../../src/handlers/positions/handler')
 const TimeoutHandler = require('../../../src/handlers/timeouts/handler')
+const AdminHandler = require('../../../src/handlers/admin/handler')
 const Proxyquire = require('proxyquire')
 
 Test('handlers', handlersTest => {
@@ -17,6 +18,7 @@ Test('handlers', handlersTest => {
     sandbox.stub(PositionHandler, 'registerAllHandlers').returns(P.resolve(true))
     sandbox.stub(TransferHandler, 'registerAllHandlers').returns(P.resolve(true))
     sandbox.stub(TimeoutHandler, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(AdminHandler, 'registerAllHandlers').returns(P.resolve(true))
     test.end()
   })
 

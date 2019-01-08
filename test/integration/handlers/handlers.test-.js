@@ -73,11 +73,11 @@ const prepareTestData = async (dataObj) => {
   if (debug) console.log(kafkacat)
   let payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
     currency: dataObj.amount.currency,
-    limit: {value: dataObj.payer.limit}
+    limit: { value: dataObj.payer.limit }
   })
   let payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
     currency: dataObj.amount.currency,
-    limit: {value: dataObj.payee.limit}
+    limit: { value: dataObj.payee.limit }
   })
 
   const transfer = {
@@ -123,7 +123,7 @@ const prepareTestData = async (dataObj) => {
     }
   }
 
-  const reject = Object.assign({}, fulfil, {transferState: TransferState.ABORTED})
+  const reject = Object.assign({}, fulfil, { transferState: TransferState.ABORTED })
 
   const messageProtocol = {
     id: transfer.transferId,

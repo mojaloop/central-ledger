@@ -75,7 +75,7 @@ Test('setup', setupTest => {
       registerAllHandlers: sandbox.stub().returns(P.resolve()),
       transfers: {
         registerPrepareHandlers: sandbox.stub().returns(P.resolve()),
-        registerTransferHandler: sandbox.stub().returns(P.resolve()),
+        registerGetHandler: sandbox.stub().returns(P.resolve()),
         registerFulfilHandler: sandbox.stub().returns(P.resolve())
         // registerRejectHandler: sandbox.stub().returns(P.resolve())
       },
@@ -85,6 +85,9 @@ Test('setup', setupTest => {
       timeouts: {
         registerAllHandlers: sandbox.stub().returns(P.resolve()),
         registerTimeoutHandler: sandbox.stub().returns(P.resolve())
+      },
+      admin: {
+        registerAdminHandlers: sandbox.stub().returns(P.resolve())
       }
     }
 
@@ -382,6 +385,16 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      var adminHandler = {
+        type: 'admin',
+        enabled: true
+      }
+
+      var getHandler = {
+        type: 'get',
+        enabled: true
+      }
+
       var unknownHandler = {
         type: 'undefined',
         enabled: true
@@ -392,6 +405,8 @@ Test('setup', setupTest => {
         positionHandler,
         fulfilHandler,
         timeoutHandler,
+        adminHandler,
+        getHandler,
         unknownHandler
         // rejectHandler
       ]
@@ -405,6 +420,8 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
+        test.ok(RegisterHandlersStub.admin.registerAdminHandlers.called)
+        test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
         test.ok(err.message === `Handler Setup - ${JSON.stringify(unknownHandler)} is not a valid handler to register!`)
         test.end()
       })
@@ -437,11 +454,17 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      var getHandler = {
+        type: 'get',
+        enabled: true
+      }
+
       var modulesList = [
         prepareHandler,
         positionHandler,
         fulfilHandler,
-        timeoutHandler
+        timeoutHandler,
+        getHandler
         // rejectHandler
       ]
 
@@ -450,6 +473,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.notOk(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
+        test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
         test.end()
       }).catch(err => {
         test.fail(`Should have not received an error: ${err}`)
@@ -484,11 +508,17 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      var getHandler = {
+        type: 'get',
+        enabled: true
+      }
+
       var modulesList = [
         prepareHandler,
         positionHandler,
         fulfilHandler,
-        timeoutHandler
+        timeoutHandler,
+        getHandler
         // rejectHandler
       ]
 
@@ -497,6 +527,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
+        test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
         test.ok(KafkaCronStub.Cron.start.calledTwice)
         test.end()
       }).catch(err => {

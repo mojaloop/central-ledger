@@ -32,6 +32,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
 const Model = require('../../../../src/models/participant/participantPosition')
 
 Test('Participant Position model', async (participantPositionTest) => {
@@ -113,6 +114,41 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.end()
     } catch (err) {
       Logger.error(`destroyByParticipantCurrencyId failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantPositionTest.test('destroyByParticipantId should clean all participant account positions', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      Db.getKnex.returns(knexStub)
+      sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
+      ParticipantCurrencyModel.getByParticipantId.withArgs(1).returns(Promise.resolve([{ participantCurrencyId: 1 }]))
+      knexStub.withArgs('participantPosition').returns({
+        whereIn: sandbox.stub().returns({
+          del: sandbox.stub().returns(true)
+        })
+      })
+
+      let result = await Model.destroyByParticipantId(1)
+      test.ok(result)
+      test.end()
+    } catch (err) {
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantPositionTest.test('destroyByParticipantId should fail', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      Db.getKnex.throws(new Error())
+      await Model.destroyByParticipantId(1)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
       test.pass('Error thrown')
       test.end()
     }

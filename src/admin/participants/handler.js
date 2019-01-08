@@ -27,12 +27,23 @@
 const Participant = require('../../domain/participant')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
+const Config = require('../../lib/config')
+const Enum = require('../../lib/enum')
 const Sidecar = require('../../lib/sidecar')
 const Boom = require('boom')
 
-const entityItem = ({ name, createdDate, isActive, currencyList }) => {
+const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccountIds) => {
   const link = UrlParser.toParticipantUri(name)
-  const currencies = currencyList.map(currencyEntityItem)
+  const accounts = currencyList.map((currentValue) => {
+    return {
+      id: currentValue.participantCurrencyId,
+      ledgerAccountType: ledgerAccountIds[currentValue.ledgerAccountTypeId],
+      currency: currentValue.currencyId,
+      isActive: currentValue.isActive,
+      createdDate: new Date(currentValue.createdDate),
+      createdBy: currentValue.createdBy
+    }
+  })
   return {
     name,
     id: link,
@@ -41,15 +52,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList }) => {
     links: {
       self: link
     },
-    currencies
-  }
-}
-
-const currencyEntityItem = ({ currencyId, isActive, ledgerAccountTypeId }) => {
-  return {
-    currency: currencyId,
-    ledgerAccountTypeId,
-    isActive
+    accounts
   }
 }
 
@@ -63,6 +66,15 @@ const handleMissingRecord = (entity) => {
 const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
+    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const hubReconciliationAccountExists = await Participant.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
+    if (!hubReconciliationAccountExists) {
+      throw new Errors.HubReconciliationAccountNotFound()
+    }
+    const hubMlnsAccountExists = await Participant.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
+    if (!hubMlnsAccountExists) {
+      throw new Errors.HubMlnsAccountNotFound()
+    }
     let participant = await Participant.getByName(request.payload.name)
     if (participant) {
       const currencyExists = participant.currencyList.find(currency => {
@@ -75,35 +87,85 @@ const create = async function (request, h) {
       const participantId = await Participant.create(request.payload)
       participant = await Participant.getById(participantId)
     }
-    let ledgerAccountTypeEnum = await request.server.methods.enums('ledgerAccountType')
-    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypeEnum.POSITION)
-    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypeEnum.SETTLEMENT)
+    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
+    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
     participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId1), await Participant.getParticipantCurrencyById(participantCurrencyId2)]
-    return h.response(entityItem(participant)).code(201)
+    return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
   }
 }
 
-const getAll = async function (request, h) {
-  const results = await Participant.getAll()
-  const result = results.map(entityItem)
-  return result
+const createHubAccount = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    // start - To Do move to domain
+    let participant = await Participant.getByName(request.params.name)
+    if (participant) {
+      const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
+      if (!ledgerAccountType) {
+        throw new Errors.LedgerAccountTypeNotFoundError()
+      }
+      let accountParams = {
+        participantId: participant.participantId,
+        currencyId: request.payload.currency,
+        ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
+        isActive: 1
+      }
+      let participantAccount = await Participant.getParticipantAccount(accountParams)
+      if (participantAccount) {
+        throw new Errors.HubAccountExistsError()
+      }
+
+      if (participant.participantId !== Config.HUB_ID) {
+        throw new Errors.EndpointReservedForHubAccountsError()
+      }
+      const isPermittedHubAccountType = Config.HUB_ACCOUNTS.indexOf(request.payload.type) >= 0
+      if (!isPermittedHubAccountType) {
+        throw new Errors.HubAccountTypeError()
+      }
+      const newCurrencyAccount = await Participant.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+      if (!newCurrencyAccount) {
+        throw new Errors.ParticipantAccountCreateError()
+      }
+      participant.currencyList.push(newCurrencyAccount.participantCurrency)
+    } else {
+      throw new Errors.ParticipantNotFoundError()
+    }
+    // end here : move to domain
+    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    return h.response(entityItem(participant, ledgerAccountIds)).code(201)
+  } catch (err) {
+    throw Boom.badRequest(err.message)
+  }
 }
 
-const getByName = async function (request, h) {
+const getAll = async function (request) {
+  const results = await Participant.getAll()
+  const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+  const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+  return results.map(record => entityItem(record, ledgerAccountIds))
+}
+
+const getByName = async function (request) {
   const entity = await Participant.getByName(request.params.name)
   handleMissingRecord(entity)
-  return entityItem(entity)
+  const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+  const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+  return entityItem(entity, ledgerAccountIds)
 }
 
-const update = async function (request, h) {
+const update = async function (request) {
   Sidecar.logRequest(request)
   try {
     const updatedEntity = await Participant.update(request.params.name, request.payload)
-    return await entityItem(updatedEntity)
+    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -113,11 +175,11 @@ const addEndpoint = async function (request, h) {
     await Participant.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
-const getEndpoint = async function (request, h) {
+const getEndpoint = async function (request) {
   Sidecar.logRequest(request)
   try {
     if (request.query.type) {
@@ -144,7 +206,7 @@ const getEndpoint = async function (request, h) {
       return endpoints
     }
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -154,11 +216,11 @@ const addLimitAndInitialPosition = async function (request, h) {
     await Participant.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
-const getLimits = async function (request, h) {
+const getLimits = async function (request) {
   Sidecar.logRequest(request)
   try {
     const result = await Participant.getLimits(request.params.name, request.query)
@@ -169,14 +231,15 @@ const getLimits = async function (request, h) {
           currency: (item.currencyId || request.query.currency),
           limit: {
             type: item.name,
-            value: item.value
+            value: item.value,
+            alarmPercentage: item.thresholdAlarmPercentage
           }
         })
       })
     }
     return limits
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
@@ -189,36 +252,62 @@ const adjustLimits = async function (request, h) {
       currency: request.payload.currency,
       limit: {
         type: request.payload.limit.type,
-        value: participantLimit.value
+        value: participantLimit.value,
+        thresholdAlarmPercentage: participantLimit.thresholdAlarmPercentage
       }
 
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
-const getPositions = async function (request, h) {
+const getPositions = async function (request) {
   Sidecar.logRequest(request)
   try {
-    return Participant.getPositions(request.params.name, request.query)
+    return await Participant.getPositions(request.params.name, request.query)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
   }
 }
 
-const getAccounts = async function (request, h) {
+const getAccounts = async function (request) {
   Sidecar.logRequest(request)
   try {
-    return Participant.getAccounts(request.params.name, request.query)
+    return await Participant.getAccounts(request.params.name, request.query)
   } catch (err) {
-    throw Boom.badRequest()
+    throw Boom.badRequest(err.message)
+  }
+}
+
+const updateAccount = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    const enums = {
+      ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
+    }
+    await Participant.updateAccount(request.payload, request.params, enums)
+    return h.response().code(200)
+  } catch (err) {
+    throw Boom.badRequest(err.message)
+  }
+}
+
+const recordFunds = async function (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    const enums = await request.server.methods.enums('all')
+    await Participant.recordFundsInOut(request.payload, request.params, enums)
+    return h.response().code(202)
+  } catch (err) {
+    throw Boom.badRequest(err.message)
   }
 }
 
 module.exports = {
   create,
+  createHubAccount,
   getAll,
   getByName,
   update,
@@ -228,5 +317,7 @@ module.exports = {
   getLimits,
   adjustLimits,
   getPositions,
-  getAccounts
+  getAccounts,
+  updateAccount,
+  recordFunds
 }

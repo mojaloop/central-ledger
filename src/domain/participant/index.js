@@ -33,10 +33,15 @@ const ParticipantCurrencyModel = require('../../models/participant/participantCu
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
+const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
+const Utility = require('../../handlers/lib/utility')
+const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
+const TransferEventType = Enum.transferEventType
+const TransferEventAction = Enum.transferEventAction
 
 const create = async (payload) => {
   try {
@@ -50,10 +55,9 @@ const create = async (payload) => {
 
 const getAll = async () => {
   try {
-    // TODO: refactor the query to use the facade layer and join query for both tables
     let all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
-      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+      participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     }))
     return all
   } catch (err) {
@@ -62,19 +66,17 @@ const getAll = async () => {
 }
 
 const getById = async (id) => {
-  // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getById(id)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
   return participant
 }
 
 const getByName = async (name) => {
-  // TODO: refactor the query to use the facade layer and join query for both tables
   let participant = await ParticipantModel.getByName(name)
   if (participant) {
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId, Enum.LedgerAccountType.POSITION)
+    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
   return participant
 }
@@ -99,9 +101,18 @@ const update = async (name, payload) => {
   }
 }
 
-const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId) => {
+const createParticipantCurrency = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
-    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId)
+    const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId, isActive)
+    return participantCurrency
+  } catch (err) {
+    throw err
+  }
+}
+
+const createHubAccount = async (participantId, currencyId, ledgerAccountTypeId) => {
+  try {
+    const participantCurrency = await ParticipantFacade.addHubAccountAndInitPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
     throw err
@@ -254,9 +265,9 @@ const destroyPariticpantEndpointByName = async (name) => {
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION, false)
     participantExists(participant)
-    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT)
+    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT, false)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
@@ -267,7 +278,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     if (limitAndInitialPosition.initialPosition == null) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
-    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition)
+    return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
     throw err
   }
@@ -515,6 +526,7 @@ const getAccounts = async (name, query) => {
           id: item.participantCurrencyId,
           ledgerAccountType: item.ledgerAccountType,
           currency: item.currencyId,
+          isActive: item.isActive,
           value: item.value,
           reservedValue: item.reservedValue,
           changedDate: item.changedDate
@@ -527,14 +539,122 @@ const getAccounts = async (name, query) => {
   }
 }
 
+const updateAccount = async (payload, params, enums) => {
+  try {
+    let { name, id } = params
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const account = await ParticipantCurrencyModel.getById(id)
+    if (!account) {
+      throw new Error('Account not found')
+    } else if (account.participantId !== participant.participantId) {
+      throw new Error('Participant/account mismatch')
+    } else if (account.ledgerAccountTypeId !== enums.ledgerAccountType.POSITION) {
+      throw new Error('Only position account update is permitted')
+    }
+    return await ParticipantCurrencyModel.update(id, payload.isActive)
+  } catch (err) {
+    throw err
+  }
+}
+
+const getLedgerAccountTypeName = async (name) => {
+  try {
+    return await LedgerAccountTypeModel.getLedgerAccountByName(name)
+  } catch (err) {
+    throw err
+  }
+}
+
+const getParticipantAccount = async (accountParams) => {
+  try {
+    return await ParticipantCurrencyModel.getByName(accountParams)
+  } catch (err) {
+    throw err
+  }
+}
+
+const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp = '') => {
+  return {
+    id: payload.transferId,
+    from: payload.payerFsp,
+    to: payload.payeeFsp,
+    type: 'application/json',
+    content: {
+      header: {},
+      payload
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: '',
+        type: 'transfer',
+        action,
+        createdAt: new Date(),
+        state
+      }
+    },
+    pp
+  }
+}
+
+const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
+  let { action } = payload
+  const actions = {
+    'recordFundsIn': {
+      payer: fspName,
+      payee: enums.hubParticipant.name
+    },
+    'recordFundsOutPrepareReserve': {
+      payer: enums.hubParticipant.name,
+      payee: fspName
+    },
+    'recordFundsOutCommit': {
+      payer: enums.hubParticipant.name,
+      payee: fspName
+    },
+    'recordFundsOutAbort': {
+      payer: enums.hubParticipant.name,
+      payee: fspName
+    }
+  }
+  if (!actions[action]) throw new Error('The action is not supported')
+  return Object.assign(payload, actions[action])
+}
+
+const recordFundsInOut = async (payload, params, enums) => {
+  try {
+    let { name, id, transferId } = params
+    const participant = await ParticipantModel.getByName(name)
+    const currency = payload.amount && payload.amount.currency
+    participantExists(participant)
+    const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency || null)
+    let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
+    if (!(accountMatched && accountMatched.ledgerAccountTypeId === enums.ledgerAccountType.SETTLEMENT)) {
+      throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+    }
+    transferId && (payload.transferId = transferId)
+    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
+    messageProtocol.metadata.request = {
+      params: params,
+      enums: enums
+    }
+    return await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   create,
   getAll,
   getById,
   getByName,
-  participantExists,
+  // participantExists,
+  getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
+  createHubAccount,
   getParticipantCurrencyById,
   destroyByName,
   addEndpoint,
@@ -549,5 +669,9 @@ module.exports = {
   getLimits,
   adjustLimits,
   getPositions,
-  getAccounts
+  getAccounts,
+  updateAccount,
+  getParticipantAccount,
+  recordFundsInOut,
+  hubAccountExists: ParticipantCurrencyModel.hubAccountExists
 }

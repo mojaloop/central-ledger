@@ -40,7 +40,7 @@ const formatExtensionList = (assets) => {
 const fromTransferAggregate = (t) => {
   const cleanProperties = Util.omitNil({
     transferId: t.transferId,
-    amount: t.amount ? formatAmount(t.amount) : null,
+    amount: formatAmount(t.amount),
     // transferState: Util.omitNil(t.transferState),
     transferState: t.transferState,
     completedTimestamp: t.completedTimestamp,
@@ -108,7 +108,7 @@ const toTransfer = (t) => {
   } else if (t.isSaveTransferPrepared) {
     Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
     return fromSaveTransferPrepared(t) // TODO: Remove this once the DB validation is done for 't'
-  } else if (t.saveTransferFulfiledExecuted) {
+  } else if (t.saveTransferFulfilledExecuted) {
     Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
     return fromSaveTransferExecuted(t) // TODO: Remove this once the DB validation is done for 't'
   } else throw new Error(`Unable to transform to transfer: ${t}`)

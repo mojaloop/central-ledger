@@ -25,13 +25,15 @@
 'use strict'
 
 const Db = require('../../db')
+const Config = require('../../../src/lib/config')
 
-exports.create = async (participantId, currencyId, ledgerAccountTypeId) => {
+exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
     let result = await Db.participantCurrency.insert({
       participantId,
       currencyId,
       ledgerAccountTypeId,
+      isActive,
       createdBy: 'unknown'
     })
     return result
@@ -48,13 +50,21 @@ exports.getById = async (id) => {
   }
 }
 
+exports.update = async (participantCurrencyId, isActive) => {
+  try {
+    return await Db.participantCurrency.update({ participantCurrencyId }, { isActive })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
   try {
-    let params = {participantId: id}
+    let params = { participantId: id }
     if (ledgerAccountTypeId) {
       params.ledgerAccountTypeId = ledgerAccountTypeId
     }
-    return await Db.participantCurrency.find(params, { order: 'currencyId asc' })
+    return await Db.participantCurrency.find(params)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -62,7 +72,30 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
 
 exports.destroyByParticipantId = async (id) => {
   try {
-    return await Db.participantCurrency.destroy({participantId: id})
+    return await Db.participantCurrency.destroy({ participantId: id })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.getByName = async (accountParams) => {
+  try {
+    const participantCurrency = await Db.participantCurrency.findOne(accountParams)
+    return participantCurrency
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.hubAccountExists = async (currencyId, ledgerAccountTypeId) => {
+  try {
+    const params = {
+      participantId: Config.HUB_ID,
+      currencyId,
+      ledgerAccountTypeId
+    }
+    const participantCurrency = await Db.participantCurrency.findOne(params)
+    return !!participantCurrency
   } catch (err) {
     throw new Error(err.message)
   }
