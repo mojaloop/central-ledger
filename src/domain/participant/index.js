@@ -404,6 +404,28 @@ const getLimits = async (name, { currency = null, type = null }) => {
 }
 
 /**
+ * @function GetLimitsForAllParticipants
+ *
+ * @async
+ * @description This retuns the active limits value for all the participants for the currency and type combinations
+ *
+ * ParticipantFacade.getLimitsForAllParticipants called to get the participant limit details from participant id
+ *
+ * @param {string} currency - the currency id. Example USD
+ * @param {string} type - the type of the limit. Example 'NET_DEBIT_CAP'
+ *
+ * @returns {array} - Returns an array containing the details of active limits for all the participants if successful, or throws an error if failed
+ */
+
+const getLimitsForAllParticipants = async ({ currency = null, type = null }) => {
+  try {
+    return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.LedgerAccountType.POSITION)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
  * @function AdjustLimits
  *
  * @async
@@ -673,5 +695,6 @@ module.exports = {
   updateAccount,
   getParticipantAccount,
   recordFundsInOut,
-  hubAccountExists: ParticipantCurrencyModel.hubAccountExists
+  hubAccountExists: ParticipantCurrencyModel.hubAccountExists,
+  getLimitsForAllParticipants
 }
