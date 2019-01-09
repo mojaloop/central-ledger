@@ -31,22 +31,27 @@
 const Db = require('../../db')
 const Time = require('../../lib/time')
 
-const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive = true) => {
+const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return builder
+      let b = builder
         .where({ 'participant.name': name })
-        .andWhere({ 'participant.isActive': true })
         .andWhere({ 'pc.currencyId': currencyId })
-        .andWhere({ 'pc.isActive': isCurrencyActive })
         .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
           'pc.participantCurrencyId',
-          'pc.currencyId'
+          'pc.currencyId',
+          'pc.isActive AS currencyIsActive'
         )
         .first()
+
+      if (isCurrencyActive !== undefined) {
+        b = b.andWhere({ 'pc.isActive': isCurrencyActive })
+      }
+
+      return b
     })
   } catch (e) {
     throw e

@@ -41,15 +41,7 @@ const Participant = require('../../domain/participant')
 const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
 const base64url = require('base64url')
-// const Logger = require('@mojaloop/central-services-shared').Logger
-
-// const Joi = require('joi')
-// const Enjoi = require('enjoi')
-// const fs = require('fs')
-
-// Note that the following two lines will be replaced by functionality to load the schemas from DB
-// const transferPrepareSchemaFile = "./transferSchema.json"
-// const transferPrepareSchema  = Enjoi(JSON.parse(fs.readFileSync(transferPrepareSchemaFile, 'utf8')))
+const Enum = require('../../lib/enum')
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
@@ -63,29 +55,32 @@ const validateParticipantById = async function (participantId) {
   return !!participant
 }
 
-/**
- @typedef validationResult
- @type {Object}
- @property {object} error if validation failed, the error reason, otherwise null.
- @property {object} value the validated value with any type conversions and other modifiers applied (the input is left unchanged). value can be incomplete if validation failed and abortEarly is true. If callback is not provided, then returns an object with error and value properties.
- */
-/**
- * Function to validate transfer payload against the transfer schema.
- * @param {object} payload - The prepare transfer payload.
- * @return {validationResult} Returns a Promise of validationResult Object.
- */
-// const validateTransferPrepareSchema = async (payload) => {
-//   const validationResult = await Joi.validate (payload, transferPrepareSchema)
-//   return validationResult
-// }
-
 const validateParticipantByName = async function (participantName) {
   const participant = await Participant.getByName(participantName)
+  let validationPassed = false
   if (!participant) {
     reasons.push(`Participant ${participantName} not found`)
+  } else if (!participant.isActive) {
+    reasons.push(`Participant ${participantName} is inactive`)
+  } else {
+    validationPassed = true
   }
-  return !!participant
+  return validationPassed
 }
+
+const validatePositionAccountByNameAndCurrency = async function (participantName, currency) {
+  const account = await Participant.getAccountByNameAndCurrency(participantName, currency, Enum.LedgerAccountType.POSITION)
+  let validationPassed = false
+  if (!account) {
+    reasons.push(`Participant ${participantName} ${currency} account not found`)
+  } else if (!account.currencyIsActive) {
+    reasons.push(`Participant ${participantName} ${currency} account is inactive`)
+  } else {
+    validationPassed = true
+  }
+  return validationPassed
+}
+
 const validateDifferentDfsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp !== payload.payeeFsp)
   if (!isPayerAndPayeeDifferent) {
@@ -164,7 +159,13 @@ const validateByName = async (payload) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (await validateParticipantByName(payload.payerFsp) && await validateParticipantByName(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload) && validateDifferentDfsp(payload))
+  validationPassed = (await validateParticipantByName(payload.payerFsp) &&
+    await validatePositionAccountByNameAndCurrency(payload.payerFsp, payload.amount.currency) &&
+    await validateParticipantByName(payload.payeeFsp) &&
+    await validatePositionAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency) &&
+    validateAmount(payload.amount) &&
+    await validateConditionAndExpiration(payload) &&
+    validateDifferentDfsp(payload))
   return {
     validationPassed,
     reasons
@@ -179,7 +180,10 @@ const validateById = async (payload) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (await validateParticipantById(payload.payerFsp) && await validateParticipantById(payload.payeeFsp) && validateAmount(payload.amount) && await validateConditionAndExpiration(payload))
+  validationPassed = (await validateParticipantById(payload.payerFsp) &&
+    await validateParticipantById(payload.payeeFsp) &&
+    validateAmount(payload.amount) &&
+    await validateConditionAndExpiration(payload))
   return {
     validationPassed,
     reasons
@@ -191,6 +195,5 @@ module.exports = {
   validateById,
   validateFulfilCondition,
   validateParticipantByName,
-  //  validateTransferPrepareSchema,
   reasons
 }

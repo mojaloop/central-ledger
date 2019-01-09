@@ -161,7 +161,6 @@ const prepare = async (error, messages) => {
         // Save the valid transfer into the database
         await TransferService.prepare(payload)
       } catch (err) {
-        Logger.info(`TransferService::prepare::validationPassed::Error while preparing transfer::${err.message}`)
         Logger.error(`TransferService::prepare::validationPassed::Error while preparing transfer::${err.message}`)
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
@@ -181,7 +180,7 @@ const prepare = async (error, messages) => {
       await Utility.produceParticipantMessage(payload.payerFsp, TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
       return true
     } else {
-      Logger.info('TransferService::prepare::validationFailed')
+      Logger.error('TransferService::prepare::validationFailed')
       try {
         Logger.info('TransferService::prepare::validationFailed::newEntry')
         // Save the invalid request in the database
