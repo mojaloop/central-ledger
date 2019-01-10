@@ -38,6 +38,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Decimal = require('decimal.js')
 const Config = require('../../lib/config')
 const Participant = require('../../domain/participant')
+const Transfer = require('../../domain/transfer')
 const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
 const base64url = require('base64url')
@@ -190,10 +191,20 @@ const validateById = async (payload) => {
   }
 }
 
+const validateParticipantTransferId = async function (participantName, transferId) {
+  const transferParticipant = await Transfer.getTransferParticipant(participantName, Enum.LedgerAccountType.POSITION, transferId)
+  let validationPassed = false
+  if (Array.isArray(transferParticipant) && transferParticipant.length > 0) {
+    validationPassed = true
+  }
+  return validationPassed
+}
+
 module.exports = {
   validateByName,
   validateById,
   validateFulfilCondition,
   validateParticipantByName,
-  reasons
+  reasons,
+  validateParticipantTransferId
 }

@@ -231,5 +231,6 @@ module.exports = {
   reconciliationTransferPrepare: TransferFacade.reconciliationTransferPrepare,
   reconciliationTransferReserve: TransferFacade.reconciliationTransferReserve,
   reconciliationTransferCommit: TransferFacade.reconciliationTransferCommit,
-  reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort
+  reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort,
+  getTransferParticipant: TransferFacade.getTransferParticipant
 }

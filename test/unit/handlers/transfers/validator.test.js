@@ -4,6 +4,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Participant = require('../../../../src/domain/participant')
+const Transfer = require('../../../../src/domain/transfer')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const CryptoConditions = require('../../../../src/cryptoConditions')
 const Enum = require('../../../../src/lib/enum')
@@ -41,6 +42,7 @@ Test('transfer validator', validatorTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Participant)
     sandbox.stub(CryptoConditions, 'validateCondition')
+    sandbox.stub(Transfer, 'getTransferParticipant')
     test.end()
   })
 
@@ -256,6 +258,30 @@ Test('transfer validator', validatorTest => {
     // })
 
     validateFulfilConditionTest.end()
+  })
+
+  validatorTest.test('validateParticipantTransferId should', validateParticipantTransferIdTest => {
+    validateParticipantTransferIdTest.test('validate the transfer id belongs to the requesting fsp', async (test) => {
+      const participantName = 'fsp1'
+      const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
+      const ledgerAccountTypeId = 1
+      Transfer.getTransferParticipant.withArgs(participantName, ledgerAccountTypeId, transferId).returns(P.resolve([1]))
+      const result = await Validator.validateParticipantTransferId(participantName, transferId)
+      test.equal(result, true, 'results match')
+      test.end()
+    })
+
+    validateParticipantTransferIdTest.test('validate the transfer id belongs to the requesting fsp return false for no match', async (test) => {
+      const participantName = 'fsp1'
+      const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
+      const ledgerAccountTypeId = 1
+      Transfer.getTransferParticipant.withArgs(participantName, ledgerAccountTypeId, transferId).returns(P.resolve([]))
+      const result = await Validator.validateParticipantTransferId(participantName, transferId)
+      test.equal(result, false, 'results match')
+      test.end()
+    })
+
+    validateParticipantTransferIdTest.end()
   })
 
   validatorTest.end()
