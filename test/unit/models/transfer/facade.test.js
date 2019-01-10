@@ -2108,7 +2108,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
     try {
       const participantName = 'fsp1'
       const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
-      const ledgerAccountTypeId = 1
       let builderStub = sandbox.stub()
       let participantCurrencyStub = sandbox.stub()
       let transferParticipantStub = sandbox.stub()
@@ -2125,13 +2124,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      let found = await Model.getTransferParticipant(participantName, ledgerAccountTypeId, transferId)
+      let found = await Model.getTransferParticipant(participantName, transferId)
       test.deepEqual(found, [1], 'retrive the record')
       test.ok(builderStub.where.withArgs({
         'participant.name': participantName,
-        'pc.ledgerAccountTypeId': ledgerAccountTypeId,
         'tp.transferId': transferId,
-        'particpant.isActive': 1,
+        'participant.isActive': 1,
         'pc.isActive': 1
       }).calledOnce, 'query builder called once')
       test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')

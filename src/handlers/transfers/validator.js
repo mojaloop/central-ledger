@@ -192,7 +192,7 @@ const validateById = async (payload) => {
 }
 
 const validateParticipantTransferId = async function (participantName, transferId) {
-  const transferParticipant = await Transfer.getTransferParticipant(participantName, Enum.LedgerAccountType.POSITION, transferId)
+  const transferParticipant = await Transfer.getTransferParticipant(participantName, transferId)
   let validationPassed = false
   if (Array.isArray(transferParticipant) && transferParticipant.length > 0) {
     validationPassed = true
