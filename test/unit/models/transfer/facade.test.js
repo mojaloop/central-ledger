@@ -107,6 +107,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
     Db.settlementWindow = {
       query: sandbox.stub()
     }
+    Db.participant = {
+      query: sandbox.stub()
+    }
     clock = Sinon.useFakeTimers(now.getTime())
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
     t.end()
@@ -2098,6 +2101,65 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Logger.error(`transferFacadeTest failed with error - ${err}`)
       reconciliationTransferAbortTest.fail()
       reconciliationTransferAbortTest.end()
+    }
+  })
+
+  await transferFacadeTest.test('getTransferParticipant should', async (test) => {
+    try {
+      const participantName = 'fsp1'
+      const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
+      const ledgerAccountTypeId = 1
+      let builderStub = sandbox.stub()
+      let participantCurrencyStub = sandbox.stub()
+      let transferParticipantStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+
+      builderStub.where = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+
+      builderStub.where.returns({
+        innerJoin: participantCurrencyStub.returns({
+          innerJoin: transferParticipantStub.returns({
+            select: selectStub.returns([1])
+          })
+        })
+      })
+
+      let found = await Model.getTransferParticipant(participantName, ledgerAccountTypeId, transferId)
+      test.deepEqual(found, [1], 'retrive the record')
+      test.ok(builderStub.where.withArgs({
+        'participant.name': participantName,
+        'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+        'tp.transferId': transferId,
+        'particpant.isActive': 1,
+        'pc.isActive': 1
+      }).calledOnce, 'query builder called once')
+      test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
+      test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'transferParticipant inner joined')
+      test.ok(selectStub.withArgs(
+        'tp.*',
+      ).calledOnce, 'select all columns from transferParticipant')
+      test.end()
+    } catch (err) {
+      Logger.error(`getTransferParticipant failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await transferFacadeTest.test('getTransferParticipant should throw error', async (test) => {
+    const participantName = 'fsp1'
+    const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
+    const ledgerAccountTypeId = 1
+    Db.participant.query.throws(new Error())
+    try {
+      await Model.getTransferParticipant(participantName, ledgerAccountTypeId, transferId)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`getTransferParticipant failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
     }
   })
 

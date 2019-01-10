@@ -350,8 +350,25 @@ const getTransfer = async (error, messages) => {
       }
       return true
     }
-    // const metadata = message.value.metadata
+
+    // Validate if the transferId belongs the requesting fsp
     const transferId = message.value.id
+    if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
+      Logger.info('TransferService::getTransferHandler::transferParticipantCheck::doesntMatch:: Transfer Id doesnt belong to the FSP')
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      message.value.content.payload = {
+        errorInformation: {
+          errorCode: 3208,
+          errorDescription: 'Provided Transfer ID doesnt belong to the requesting FSP.'
+        }
+      }
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      return true
+    }
+
     const transfer = await TransferService.getById(transferId)
 
     if (!transfer) {

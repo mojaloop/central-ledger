@@ -888,6 +888,28 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
   }
 }
 
+const getTransferParticipant = async (participantName, ledgerAccountTypeId, transferId) => {
+  try {
+    return Db.participant.query(async (builder) => {
+      return builder
+        .where({
+          'participant.name': participantName,
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+          'tp.transferId': transferId,
+          'particpant.isActive': 1,
+          'pc.isActive': 1
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('transferParticipant AS tp', 'tp.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'tp.*'
+        )
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 const TransferFacade = {
   getById,
   getAll,
@@ -900,7 +922,8 @@ const TransferFacade = {
   reconciliationTransferPrepare,
   reconciliationTransferReserve,
   reconciliationTransferCommit,
-  reconciliationTransferAbort
+  reconciliationTransferAbort,
+  getTransferParticipant
 }
 
 module.exports = TransferFacade
