@@ -48,7 +48,7 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
 }
 
 const getFulfilment = async (id) => {
-  const transfer = await this.getById(id)
+  const transfer = await TransferFacade.getById(id)
   if (!transfer) {
     throw new Errors.TransferNotFoundError()
   }
@@ -161,7 +161,7 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
   }
 }
 
-module.exports = {
+const TransferService = {
   getFulfilment,
   prepare,
   fulfil,
@@ -183,3 +183,5 @@ module.exports = {
   reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort,
   getTransferParticipant: TransferFacade.getTransferParticipant
 }
+
+module.exports = TransferService

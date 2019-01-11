@@ -264,7 +264,6 @@ Test('transfer validator', validatorTest => {
     validateParticipantTransferIdTest.test('validate the transfer id belongs to the requesting fsp', async (test) => {
       const participantName = 'fsp1'
       const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
-      const ledgerAccountTypeId = 1
       Transfer.getTransferParticipant.withArgs(participantName, transferId).returns(P.resolve([1]))
       const result = await Validator.validateParticipantTransferId(participantName, transferId)
       test.equal(result, true, 'results match')
