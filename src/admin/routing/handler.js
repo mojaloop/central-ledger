@@ -37,6 +37,10 @@ const routesBlueMoja = [
   {
     address: 'moja.za.blue.zar.green',
     nextHop: 'moja.za.blue.zar.green' // Green Mobile
+  },
+  {
+    address: 'moja.superremit',
+    nextHop: 'moja.superremit' // id for CNP
   }
 ]
 
@@ -48,6 +52,10 @@ const routesRedMoja = [
   {
     address: 'moja.tz.red.tzs.pink',
     nextHop: 'moja.tz.red.tzs.pink' // Pink Mobile
+  },
+  {
+    address: 'moja.superremit',
+    nextHop: 'moja.superremit' // id for CNP
   }
 ]
 
