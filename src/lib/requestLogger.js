@@ -5,10 +5,10 @@ const Util = require('util')
 
 const logRequest = function (request) {
   const traceId = request.headers.traceid
-  Logger.info(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
-  Logger.info(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
+  Logger.debug(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
+  Logger.debug(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
   if (request.body) {
-    Logger.info(`L1p-Trace-Id=${traceId} - Body: ${request.body}`)
+    Logger.debug(`L1p-Trace-Id=${traceId} - Body: ${request.body}`)
   }
 }
 
@@ -22,9 +22,9 @@ const logResponse = function (request) {
       response = Util.inspect(request.response.source)
     }
     if (!response) {
-      Logger.info(`L1p-Trace-Id=${traceId} - Response: ${request.response}`)
+      Logger.debug(`L1p-Trace-Id=${traceId} - Response: ${request.response}`)
     } else {
-      Logger.info(`L1p-Trace-Id=${traceId} - Response: ${response} Status: ${request.response.statusCode}`)
+      Logger.debug(`L1p-Trace-Id=${traceId} - Response: ${response} Status: ${request.response.statusCode}`)
     }
   }
 }
