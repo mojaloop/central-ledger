@@ -1,9 +1,9 @@
 {
-  "PORT": 4000,
-  "ADMIN_PORT": 3001,
-  "MOJA_HUB_NAME": "Blue Moja",
+  "PORT": 4001,
+  "ADMIN_PORT": 3002,
+  "MOJA_HUB_NAME": "Red Moja",
   "HOSTNAME": "http://central-ledger",
-  "DATABASE_URI": "mysql://central_ledger:password@localhost:3306/central_ledger_blue_moja",
+  "DATABASE_URI": "mysql://central_ledger:password@localhost:3307/central_ledger_red_moja",
   "RUN_MIGRATIONS": true,
   "AMOUNT": {
     "PRECISION": 10,
@@ -63,7 +63,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-prepare",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -86,7 +86,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-get",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "debug": "all",
               "socket.keepalive.enable": true
             },
@@ -110,7 +110,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-fulfil",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -133,7 +133,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-reject",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -158,7 +158,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-position-prepare",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -181,7 +181,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-position-fulfil",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -204,7 +204,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-position-abort",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -229,7 +229,7 @@
             "rdkafkaConf": {
               "client.id": "admin-transfer-consume",
               "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -247,7 +247,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "cl-prod-transfer-prepare",
               "event_cb": true,
               "socket.keepalive.enable": true
@@ -260,7 +260,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "cl-prod-transfer-fulfil",
               "event_cb": true,
               "socket.keepalive.enable": true
@@ -273,7 +273,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "cl-transfer-reject",
               "event_cb": true,
               "socket.keepalive.enable": true
@@ -288,7 +288,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "cl-prod-position-prepare",
               "event_cb": true,
               "socket.keepalive.enable": true
@@ -301,7 +301,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "cl-prod-position-fulfil",
               "event_cb": true,
               "socket.keepalive.enable": true
@@ -314,7 +314,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "cl-prod-position-abort",
               "event_cb": true,
               "socket.keepalive.enable": true
@@ -329,7 +329,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "cl-prod-notification-event",
               "event_cb": true,
               "socket.keepalive.enable": true
@@ -344,7 +344,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
+              "metadata.broker.list": "localhost:9093",
               "client.id": "admin-transfer-produce",
               "event_cb": true,
               "socket.keepalive.enable": true
