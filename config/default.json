@@ -61,13 +61,13 @@
         "PREPARE": {
           "config": {
             "options": {
-              "mode": 1,
+              "mode": 2,
               "batchSize": 1,
               "pollFrequency": 10,
               "recursiveTimeout": 100,
               "messageCharset": "utf8",
               "messageAsJSON": true,
-              "sync": false,
+              "sync": true,
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
