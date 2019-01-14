@@ -369,7 +369,7 @@ const getTransfer = async (error, messages) => {
       return true
     }
 
-    const transfer = await TransferService.getById(transferId)
+    const transfer = await TransferService.getByIdLight(transferId)
 
     if (!transfer) {
       message.value.content.payload = {
@@ -400,20 +400,33 @@ const getTransfer = async (error, messages) => {
   }
 }
 
-const transformTransfer = (transfer) => {
-  if (transfer.transferState === Enum.TransferState.COMMITTED) {
+const transformExtensionList = (extensionList) => {
+  return extensionList.map(x => {
     return {
+      key: x.key,
+      value: x.value
+    }
+  })
+}
+
+const transformTransfer = (transfer) => {
+  let result
+  if (transfer.transferState === Enum.TransferState.COMMITTED) {
+    result = {
       fulfilment: transfer.fulfilment,
       completedTimestamp: transfer.completedTimestamp,
-      transferState: transfer.transferState,
-      extensionList: transfer.extensionList
+      transferState: transfer.transferState
     }
   } else {
-    return {
-      transferState: transfer.transferState,
-      extensionList: transfer.extensionList
+    result = {
+      transferState: transfer.transferState
     }
   }
+  let extensionList = transformExtensionList(transfer.extensionList)
+  if (extensionList.length > 0) {
+    result.extensionList = extensionList
+  }
+  return result
 }
 
 /**

@@ -300,6 +300,183 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
+  await transferFacadeTest.test('getByIdLight should return transfer by id for RESERVED', async (test) => {
+    try {
+      const transferId1 = 't1'
+      const transfer = { transferId: transferId1, extensionList: transferExtensions }
+
+      let builderStub = sandbox.stub()
+      let ilpPacketStub = sandbox.stub()
+      let stateChangeStub = sandbox.stub()
+      let transferFulfilmentStub = sandbox.stub()
+
+      let selectStub = sandbox.stub()
+      let orderByStub = sandbox.stub()
+      let firstStub = sandbox.stub()
+
+      builderStub.where = sandbox.stub()
+
+      Db.transfer.query.callsArgWith(0, builderStub)
+      Db.transfer.query.returns(transfer)
+
+      builderStub.where.returns({
+        leftJoin: ilpPacketStub.returns({
+          leftJoin: stateChangeStub.returns({
+            leftJoin: transferFulfilmentStub.returns({
+              select: selectStub.returns({
+                orderBy: orderByStub.returns({
+                  first: firstStub.returns(transfer)
+                })
+              })
+            })
+          })
+        })
+      })
+
+      sandbox.stub(transferExtensionModel, 'getByTransferId')
+      sandbox.stub(transferExtensionModel, 'getByTransferFulfilmentId')
+      transferExtensionModel.getByTransferId.returns(transferExtensions)
+      transferExtensionModel.getByTransferFulfilmentId.returns(transferExtensions)
+
+      let found = await Model.getByIdLight(transferId1)
+      test.equal(found, transfer)
+      test.ok(builderStub.where.withArgs({ 'transfer.transferId': transferId1 }).calledOnce)
+      test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
+      test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
+      test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
+      test.ok(selectStub.withArgs(
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'tsc.transferStateChangeId',
+        'tsc.transferStateId AS transferState',
+        'tsc.reason AS reason',
+        'tsc.createdDate AS completedTimestamp',
+        'ilpp.value AS ilpPacket',
+        'transfer.ilpCondition AS condition',
+        'tf.ilpFulfilment AS fulfilment',
+        'tf.transferFulfilmentId'
+      ).calledOnce)
+      test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      test.ok(firstStub.withArgs().calledOnce)
+      test.end()
+    } catch (err) {
+      Logger.error(`getByIdLight failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await transferFacadeTest.test('getByIdLight should return transfer by id for COMMITTED', async (test) => {
+    try {
+      const transferId = 't1'
+      const transferFulfilmentId = 'tf1'
+      const fulfilment = 'ff1'
+      const transfer = { transferId, fulfilment, transferFulfilmentId, extensionList: transferExtensions }
+
+      let builderStub = sandbox.stub()
+      let ilpPacketStub = sandbox.stub()
+      let stateChangeStub = sandbox.stub()
+      let transferFulfilmentStub = sandbox.stub()
+
+      let selectStub = sandbox.stub()
+      let orderByStub = sandbox.stub()
+      let firstStub = sandbox.stub()
+
+      builderStub.where = sandbox.stub()
+
+      Db.transfer.query.callsArgWith(0, builderStub)
+      Db.transfer.query.returns(transfer)
+
+      builderStub.where.returns({
+        leftJoin: ilpPacketStub.returns({
+          leftJoin: stateChangeStub.returns({
+            leftJoin: transferFulfilmentStub.returns({
+              select: selectStub.returns({
+                orderBy: orderByStub.returns({
+                  first: firstStub.returns(transfer)
+                })
+              })
+            })
+          })
+        })
+      })
+
+      sandbox.stub(transferExtensionModel, 'getByTransferId')
+      sandbox.stub(transferExtensionModel, 'getByTransferFulfilmentId')
+      transferExtensionModel.getByTransferId.returns(transferExtensions)
+      transferExtensionModel.getByTransferFulfilmentId.returns(transferExtensions)
+
+      let found = await Model.getByIdLight(transferId)
+      test.equal(found, transfer)
+      test.ok(builderStub.where.withArgs({ 'transfer.transferId': transferId }).calledOnce)
+      test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
+      test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
+      test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
+      test.ok(selectStub.withArgs(
+        'transfer.*',
+        'transfer.currencyId AS currency',
+        'tsc.transferStateChangeId',
+        'tsc.transferStateId AS transferState',
+        'tsc.reason AS reason',
+        'tsc.createdDate AS completedTimestamp',
+        'ilpp.value AS ilpPacket',
+        'transfer.ilpCondition AS condition',
+        'tf.ilpFulfilment AS fulfilment',
+        'tf.transferFulfilmentId'
+      ).calledOnce)
+      test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
+      test.ok(firstStub.withArgs().calledOnce)
+      test.end()
+    } catch (err) {
+      Logger.error(`getByIdLight failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await transferFacadeTest.test('getByIdLight should find zero records', async (test) => {
+    try {
+      const transferId1 = 't1'
+      let builderStub = sandbox.stub()
+      Db.transfer.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+      builderStub.where.returns({
+        leftJoin: sandbox.stub().returns({
+          leftJoin: sandbox.stub().returns({
+            leftJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                orderBy: sandbox.stub().returns({
+                  first: sandbox.stub().returns(null)
+                })
+              })
+            })
+          })
+        })
+      })
+      let found = await Model.getByIdLight(transferId1)
+      test.equal(found, null, 'no transfers were found')
+      test.end()
+    } catch (err) {
+      Logger.error(`getByIdLight failed with error - ${err}`)
+      test.fail('Error thrown')
+      test.end()
+    }
+  })
+
+  await transferFacadeTest.test('getByIdLight should throw an error', async (test) => {
+    try {
+      const transferId1 = 't1'
+      Db.transfer.query.throws(new Error())
+      await Model.getByIdLight(transferId1)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`getByIdLight failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
   await transferFacadeTest.test('getAll should return all transfers', async (test) => {
     try {
       const transferId1 = 't1'
@@ -2108,7 +2285,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
     try {
       const participantName = 'fsp1'
       const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
-      const ledgerAccountTypeId = 1
       let builderStub = sandbox.stub()
       let participantCurrencyStub = sandbox.stub()
       let transferParticipantStub = sandbox.stub()
@@ -2125,19 +2301,18 @@ Test('Transfer facade', async (transferFacadeTest) => {
         })
       })
 
-      let found = await Model.getTransferParticipant(participantName, ledgerAccountTypeId, transferId)
+      let found = await Model.getTransferParticipant(participantName, transferId)
       test.deepEqual(found, [1], 'retrive the record')
       test.ok(builderStub.where.withArgs({
         'participant.name': participantName,
-        'pc.ledgerAccountTypeId': ledgerAccountTypeId,
         'tp.transferId': transferId,
-        'particpant.isActive': 1,
+        'participant.isActive': 1,
         'pc.isActive': 1
       }).calledOnce, 'query builder called once')
       test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
       test.ok(transferParticipantStub.withArgs('transferParticipant AS tp', 'tp.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'transferParticipant inner joined')
       test.ok(selectStub.withArgs(
-        'tp.*',
+        'tp.*'
       ).calledOnce, 'select all columns from transferParticipant')
       test.end()
     } catch (err) {
