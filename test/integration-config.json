@@ -33,6 +33,18 @@
       "TIMEZONE": "UTC"
     }
   },
+  "INSTRUMENTATION": {
+    "METRICS": {
+      "DISABLED": false,
+      "labels": {
+        "fspId": "*"
+      },
+      "config": {
+        "timeout": 5000,
+        "prefix": "moja_cl_"
+      }
+    }
+  },
   "PARTICIPANT_INITIAL_POSTITION": 0,
   "HUB_PARTICIPANT": {
     "ID": 1,
