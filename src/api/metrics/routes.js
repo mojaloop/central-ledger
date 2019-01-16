@@ -20,6 +20,7 @@
 
  - Pedro Barreto <pedrob@crosslaketech.com>
  - Rajiv Mothilal <rajivmothilal@gmail.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
