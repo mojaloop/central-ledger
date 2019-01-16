@@ -20,4 +20,9 @@ RUN npm install --production && \
 RUN apk del build-dependencies
 
 EXPOSE 3000
+# Create empty log file
+RUN touch ./log/combined.log
+
+# Link the stdout to the application log file
+RUN ln -sf /dev/stdout ./log/combined.log
 CMD node src/api/index.js
