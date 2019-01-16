@@ -49,7 +49,8 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
-
+const Metrics = require('@mojaloop/central-services-metrics')
+const Config = require('../../lib/config')
 // TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorGenericCode = 3100
 const errorGenericDescription = Errors.getErrorDescription(errorGenericCode)
@@ -83,6 +84,11 @@ const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpC
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const prepare = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_prepare',
+    'Consume a prepare transfer message from the kafka topic and process it accordingly',
+    ['success', 'fspId']
+  ).startTimer()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -209,15 +215,23 @@ const prepare = async (error, messages) => {
       let errorDescription = `${errorGenericDescription}: ${reasons.toString()}`
       message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorDescription))
+      Logger.info(`[cid=${payload.transferId}, fsp=${payload.payerFsp}, source=${payload.payerFsp}, dest=${payload.payeeFsp}] ~ Transfers::handler::prepare - END`)
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     }
   } catch (error) {
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(error)
     throw error
   }
 }
 
 const fulfil = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_fulfil',
+    'Consume a fulfil transfer message from the kafka topic and process it accordingly',
+    ['success', 'fspId']
+  ).startTimer()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -304,9 +318,12 @@ const fulfil = async (error, messages) => {
       }
       message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
+      Logger.info(`[cid=${transferId}] ~ Transfers::handler::fulfil - END`)
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
   } catch (error) {
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(error)
     throw error
   }
@@ -322,6 +339,11 @@ const fulfil = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const getTransfer = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_get',
+    'Consume a get transfer message from the kafka topic and process it accordingly',
+    ['success', 'fspId']
+  ).startTimer()
   if (error) {
     // Logger.error(error)
     throw new Error()
@@ -393,8 +415,10 @@ const getTransfer = async (error, messages) => {
     }
     // Will follow framework flow in future
     await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.ENUMS.STATE.SUCCESS)
+    histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     return true
   } catch (err) {
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(err)
     throw err
   }

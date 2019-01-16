@@ -27,6 +27,7 @@
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
 
  --------------
  ******/
@@ -46,6 +47,8 @@ const Enum = require('../../lib/enum')
 const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
+const Metrics = require('@mojaloop/central-services-metrics')
+const Config = require('../../lib/config')
 
 /**
  * @function positions
@@ -63,6 +66,12 @@ const TransferEventAction = Enum.transferEventAction
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const positions = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_position',
+    'Consume a prepare transfer message from the kafka topic and process it accordingly',
+    ['success', 'fspId']
+  ).startTimer()
+
   if (error) {
     Logger.error(error)
     throw error
@@ -108,6 +117,7 @@ const positions = async (error, messages) => {
         Logger.info(`Limit alarm should be sent with ${limit}`)
         // Publish alarm message to KafkaTopic for the Hub to consume.The Hub rather than the switch will manage this (the topic is an participantEndpoint)
       }
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
@@ -221,9 +231,11 @@ const positions = async (error, messages) => {
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
       }
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       throw new Error('Event type or action is invalid')
     }
   } catch (error) {
+    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
     Logger.error(error)
     throw error
   }
