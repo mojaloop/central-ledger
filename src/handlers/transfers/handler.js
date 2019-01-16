@@ -108,6 +108,7 @@ const prepare = async (error, messages) => {
     } catch (e) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(e)
+      histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     }
     const payload = message.value.content.payload
@@ -129,6 +130,7 @@ const prepare = async (error, messages) => {
         Logger.info('TransferService::prepare::dupcheck::existsMatching::transfer state not found send callback notification')
         message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       }
       const transferStateEnum = transferState.enumeration
@@ -139,12 +141,14 @@ const prepare = async (error, messages) => {
         let record = await TransferService.getById(payload.transferId)
         message.value.content.payload = TransferObjectTransform.toTransfer(record)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE_DUPLICATE, message.value, Utility.ENUMS.STATE.SUCCESS)
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
 
         // TODO: This state of RECEIVED is no longer available in the Seeds. Need to understand if this should be another state or perhaps even removed?
       } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
         // The request is in progress, do nothing
         Logger.info('TransferService::prepare::dupcheck::existsMatching:: previous request is still in progress do nothing')
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       }
     }
@@ -156,6 +160,7 @@ const prepare = async (error, messages) => {
       Logger.info('TransferService::prepare::dupcheck::existsNotMatching:: send callback notification')
       message.value.content.payload = Utility.createPrepareErrorStatus(errorModifiedReqCode, errorModifiedReqDescription, message.value.content.payload.extensionList)
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorModifiedReqCode, errorModifiedReqDescription))
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     }
 
@@ -176,6 +181,7 @@ const prepare = async (error, messages) => {
         // send generic internal error
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription))
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -184,6 +190,7 @@ const prepare = async (error, messages) => {
       Logger.info('TransferService::prepare::validationPassed::create position topic')
       // position topic to be created and inserted here
       await Utility.produceParticipantMessage(payload.payerFsp, TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     } else {
       Logger.error('TransferService::prepare::validationFailed')
@@ -201,6 +208,7 @@ const prepare = async (error, messages) => {
         // send generic internal error
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription))
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -251,6 +259,7 @@ const fulfil = async (error, messages) => {
     } catch (e) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(e)
+      histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     }
     const metadata = message.value.metadata
@@ -268,6 +277,7 @@ const fulfil = async (error, messages) => {
         }
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       } else if (!Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::invalidFulfilment`)
@@ -276,6 +286,7 @@ const fulfil = async (error, messages) => {
         }
         message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::nonReservedState`)
@@ -284,6 +295,7 @@ const fulfil = async (error, messages) => {
         }
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       } else if (existingTransfer.expirationDate <= new Date()) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::transferExpired`)
@@ -292,6 +304,7 @@ const fulfil = async (error, messages) => {
         }
         message.value.content.payload = Utility.createPrepareErrorStatus(errorTransferExpCode, errorTransferExpDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE)
+        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
         return true
       } else { // validations success
         Logger.info(`FulfilHandler::${metadata.event.action}::validationPassed`)
@@ -301,6 +314,7 @@ const fulfil = async (error, messages) => {
             await consumer.commitMessageSync(message)
           }
           await Utility.produceParticipantMessage(existingTransfer.payeeFsp, TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
+          histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
           return true
         } else {
           await TransferService.reject(transferId, payload)
@@ -308,6 +322,7 @@ const fulfil = async (error, messages) => {
             await consumer.commitMessageSync(message)
           }
           await Utility.produceParticipantMessage(existingTransfer.payerFsp, TransferEventType.POSITION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
+          histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
           return true
         }
       }
@@ -363,6 +378,7 @@ const getTransfer = async (error, messages) => {
     } catch (e) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(e)
+      histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     }
     if (!await Validator.validateParticipantByName(message.value.from)) {
@@ -370,6 +386,7 @@ const getTransfer = async (error, messages) => {
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
       }
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     }
 
@@ -388,6 +405,7 @@ const getTransfer = async (error, messages) => {
       }
       Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     }
 
@@ -406,6 +424,7 @@ const getTransfer = async (error, messages) => {
       }
       Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     } else {
       message.value.content.payload = transformTransfer(transfer)

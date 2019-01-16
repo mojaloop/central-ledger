@@ -90,7 +90,7 @@
     "moment": "2.21.0",
     "mustache": "2.3.0",
     "mysql": "2.16.0",
-    "rc": "1.2.5",
+    "rc": "1.2.8",
     "require-glob": "3.2.0",
     "urlsafe-base64": "1.0.0",
     "uuid4": "1.0.0",
