@@ -10,7 +10,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 
 const goodWinstonOptions = {
   levels: {
-    response: 'info',
+    response: 'debug',
     error: 'info'
   }
 }
