@@ -358,6 +358,40 @@ Test('setup', setupTest => {
       })
     })
 
+    initializeTest.test('do not initialize instrumentation if INSTRUMENTATION_METRICS_DISABLED is true', async (test) => {
+      var ConfigStub = Config
+      ConfigStub.HANDLERS_CRON_DISABLED = false
+      ConfigStub.HANDLERS_API_DISABLED = true
+      ConfigStub.INSTRUMENTATION_METRICS_DISABLED = true
+
+      Setup = Proxyquire('../../../src/shared/setup', {
+        'uuid4': uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../db': DbStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        'hapi': HapiStub,
+        '../lib/config': Config,
+        '../handlers/lib/kafka': KafkaCronStub
+      })
+
+      const service = 'handler'
+
+      sandbox.stub(Config, 'HANDLERS_API_DISABLED').returns(true)
+      sandbox.stub(Config, 'INSTRUMENTATION_METRICS_DISABLED').returns(true)
+      Setup.initialize({ service, runHandlers: true }).then((s) => {
+        test.ok(RegisterHandlersStub.registerAllHandlers.called)
+        test.equal(s, undefined)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
     initializeTest.test('run invalid Handler if runHandlers flag enabled with handlers[] populated', async (test) => {
       const service = 'api'
 
