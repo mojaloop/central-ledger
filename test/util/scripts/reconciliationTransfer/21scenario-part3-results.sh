@@ -101,7 +101,7 @@ ON lat.ledgerAccountTypeId = pc.ledgerAccountTypeId
 JOIN central_ledger.participant p
 ON p.participantId = pc.participantId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT account balance is now -80, Hub-HUB_RECONCILIATION is unchanged at 80."
+echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT is unchanged at -80, Hub-HUB_RECONCILIATION account balance is now 80."
 echo
 echo
 
@@ -123,6 +123,6 @@ ON p.participantId = pc.participantId
 JOIN central_ledger.transferStateChange tsc
 ON tsc.transferStateChangeId = ppc.transferStateChangeId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: CR is now applied to dfsp1-SETTLEMENT during 6-COMMITTED, thus balance is -80 (24:44). Showing 4 records (previously 3)."
+echo "=> EXPECTED RESULT: CR is now applied to Hub-HUB_RECONCILIATION during 6-COMMITTED, thus balance is 80 (24:44). Showing 4 records (previously 3)."
 echo
 echo

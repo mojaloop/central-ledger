@@ -23,10 +23,11 @@
  ******/
 
 'use strict'
+const Config = require('../src/lib/config')
 
 const participant = [
   {
-    'name': 'Hub',
+    'name': Config.HUB_NAME,
     'description': 'Hub Operator',
     'createdBy': 'seeds'
   }

@@ -31,20 +31,6 @@ const currencyList = require('../../../seeds/currency.js').currencyList
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().min(2).max(30).required().description('Name of the participant')
 const currencyValidator = Joi.string().valid(currencyList).description('Currency code')
-// const passwordValidator = Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/).required().description('Password for the participant')
-
-/* The following code is used to compare the currency lists: fspiop-rest-v1.0-OpenAPI.yaml vs. seeds/currency.js */
-// const currenciesSpec = ['AED', 'AFN', 'ALL', 'AMD', 'ANG', 'AOA', 'ARS', 'AUD', 'AWG', 'AZN', 'BAM', 'BBD', 'BDT', 'BGN', 'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BRL', 'BSD', 'BTN', 'BWP', 'BYN', 'BZD', 'CAD', 'CDF', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'CUC', 'CUP', 'CVE', 'CZK', 'DJF', 'DKK', 'DOP', 'DZD', 'EGP', 'ERN', 'ETB', 'EUR', 'FJD', 'FKP', 'GBP', 'GEL', 'GGP', 'GHS', 'GIP', 'GMD', 'GNF', 'GTQ', 'GYD', 'HKD', 'HNL', 'HRK', 'HTG', 'HUF', 'IDR', 'ILS', 'IMP', 'INR', 'IQD', 'IRR', 'ISK', 'JEP', 'JMD', 'JOD', 'JPY', 'KES', 'KGS', 'KHR', 'KMF', 'KPW', 'KRW', 'KWD', 'KYD', 'KZT', 'LAK', 'LBP', 'LKR', 'LRD', 'LSL', 'LYD', 'MAD', 'MDL', 'MGA', 'MKD', 'MMK', 'MNT', 'MOP', 'MRO', 'MUR', 'MVR', 'MWK', 'MXN', 'MYR', 'MZN', 'NAD', 'NGN', 'NIO', 'NOK', 'NPR', 'NZD', 'OMR', 'PAB', 'PEN', 'PGK', 'PHP', 'PKR', 'PLN', 'PYG', 'QAR', 'RON', 'RSD', 'RUB', 'RWF', 'SAR', 'SBD', 'SCR', 'SDG', 'SEK', 'SGD', 'SHP', 'SLL', 'SOS', 'SPL', 'SRD', 'STD', 'SVC', 'SYP', 'SZL', 'THB', 'TJS', 'TMT', 'TND', 'TOP', 'TRY', 'TTD', 'TVD', 'TWD', 'TZS', 'UAH', 'UGX', 'USD', 'UYU', 'UZS', 'VEF', 'VND', 'VUV', 'WST', 'XAF', 'XCD', 'XDR', 'XOF', 'XPF', 'YER', 'ZAR', 'ZMW', 'ZWD']
-// currenciesSpec.forEach(value => {
-//   if (currencyList.indexOf(value) === -1) {
-//     console.log(`seeds is missing ${value}`)
-//   }
-// })
-// currencyList.forEach(value => {
-//   if (currenciesSpec.indexOf(value) === -1) {
-//     console.error(`spec is missing ${value}`)
-//   }
-// })
 
 module.exports = [
   {
@@ -193,7 +179,23 @@ module.exports = [
     }
   },
   {
-    method: 'POST',
+    method: 'GET',
+    path: '/participants/limits',
+    handler: Handler.getLimitsForAllParticipants,
+    options: {
+      id: 'participants_limits_get_all',
+      tags: tags,
+      description: 'View limits for all participants',
+      validate: {
+        query: {
+          currency: currencyValidator,
+          type: Joi.string().optional().description('Limit Type')
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
     path: '/participants/{name}/limits',
     handler: Handler.adjustLimits,
     options: {
@@ -210,7 +212,7 @@ module.exports = [
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
             value: Joi.number().required().description('Limit Value'),
-            thresholdAlarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
+            alarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
           }).required().description('Participant Limit')
         },
         params: {
@@ -267,10 +269,29 @@ module.exports = [
     options: {
       id: 'participants_accounts_get',
       tags: tags,
-      description: 'View participant accounts balances',
+      description: 'View participant accounts and balances',
       validate: {
         params: {
           name: nameValidator
+        }
+      }
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/participants/{name}/accounts/{id}',
+    handler: Handler.updateAccount,
+    options: {
+      id: 'participants_accounts_update',
+      tags: tags,
+      description: 'Update participant accounts',
+      validate: {
+        payload: {
+          isActive: Joi.boolean().required().description('Participant currency isActive boolean')
+        },
+        params: {
+          name: nameValidator,
+          id: Joi.number().integer().positive()
         }
       }
     }

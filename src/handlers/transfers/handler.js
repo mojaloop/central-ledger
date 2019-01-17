@@ -161,7 +161,6 @@ const prepare = async (error, messages) => {
         // Save the valid transfer into the database
         await TransferService.prepare(payload)
       } catch (err) {
-        Logger.info(`TransferService::prepare::validationPassed::Error while preparing transfer::${err.message}`)
         Logger.error(`TransferService::prepare::validationPassed::Error while preparing transfer::${err.message}`)
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
@@ -181,7 +180,7 @@ const prepare = async (error, messages) => {
       await Utility.produceParticipantMessage(payload.payerFsp, TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
       return true
     } else {
-      Logger.info('TransferService::prepare::validationFailed')
+      Logger.error('TransferService::prepare::validationFailed')
       try {
         Logger.info('TransferService::prepare::validationFailed::newEntry')
         // Save the invalid request in the database
@@ -352,9 +351,26 @@ const getTransfer = async (error, messages) => {
       }
       return true
     }
-    // const metadata = message.value.metadata
+
+    // Validate if the transferId belongs the requesting fsp
     const transferId = message.value.id
-    const transfer = await TransferService.getById(transferId)
+    if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
+      Logger.info('TransferService::getTransferHandler::transferParticipantCheck::doesntMatch:: Transfer Id doesnt belong to the FSP')
+      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+        await consumer.commitMessageSync(message)
+      }
+      message.value.content.payload = {
+        errorInformation: {
+          errorCode: 3208,
+          errorDescription: 'Provided Transfer ID doesnt belong to the requesting FSP.'
+        }
+      }
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription))
+      return true
+    }
+
+    const transfer = await TransferService.getByIdLight(transferId)
 
     if (!transfer) {
       message.value.content.payload = {
@@ -385,20 +401,33 @@ const getTransfer = async (error, messages) => {
   }
 }
 
-const transformTransfer = (transfer) => {
-  if (transfer.transferState === Enum.TransferState.COMMITTED) {
+const transformExtensionList = (extensionList) => {
+  return extensionList.map(x => {
     return {
+      key: x.key,
+      value: x.value
+    }
+  })
+}
+
+const transformTransfer = (transfer) => {
+  let result
+  if (transfer.transferState === Enum.TransferState.COMMITTED) {
+    result = {
       fulfilment: transfer.fulfilment,
       completedTimestamp: transfer.completedTimestamp,
-      transferState: transfer.transferState,
-      extensionList: transfer.extensionList
+      transferState: transfer.transferState
     }
   } else {
-    return {
-      transferState: transfer.transferState,
-      extensionList: transfer.extensionList
+    result = {
+      transferState: transfer.transferState
     }
   }
+  let extensionList = transformExtensionList(transfer.extensionList)
+  if (extensionList.length > 0) {
+    result.extensionList = extensionList
+  }
+  return result
 }
 
 /**

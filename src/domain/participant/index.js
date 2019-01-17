@@ -404,6 +404,28 @@ const getLimits = async (name, { currency = null, type = null }) => {
 }
 
 /**
+ * @function GetLimitsForAllParticipants
+ *
+ * @async
+ * @description This retuns the active limits value for all the participants for the currency and type combinations
+ *
+ * ParticipantFacade.getLimitsForAllParticipants called to get the participant limit details from participant id
+ *
+ * @param {string} currency - the currency id. Example USD
+ * @param {string} type - the type of the limit. Example 'NET_DEBIT_CAP'
+ *
+ * @returns {array} - Returns an array containing the details of active limits for all the participants if successful, or throws an error if failed
+ */
+
+const getLimitsForAllParticipants = async ({ currency = null, type = null }) => {
+  try {
+    return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.LedgerAccountType.POSITION)
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
  * @function AdjustLimits
  *
  * @async
@@ -526,6 +548,7 @@ const getAccounts = async (name, query) => {
           id: item.participantCurrencyId,
           ledgerAccountType: item.ledgerAccountType,
           currency: item.currencyId,
+          isActive: item.isActive,
           value: item.value,
           reservedValue: item.reservedValue,
           changedDate: item.changedDate
@@ -533,6 +556,25 @@ const getAccounts = async (name, query) => {
       })
     }
     return positions
+  } catch (err) {
+    throw err
+  }
+}
+
+const updateAccount = async (payload, params, enums) => {
+  try {
+    let { name, id } = params
+    const participant = await ParticipantModel.getByName(name)
+    participantExists(participant)
+    const account = await ParticipantCurrencyModel.getById(id)
+    if (!account) {
+      throw new Error('Account not found')
+    } else if (account.participantId !== participant.participantId) {
+      throw new Error('Participant/account mismatch')
+    } else if (account.ledgerAccountTypeId !== enums.ledgerAccountType.POSITION) {
+      throw new Error('Only position account update is permitted')
+    }
+    return await ParticipantCurrencyModel.update(id, payload.isActive)
   } catch (err) {
     throw err
   }
@@ -630,7 +672,6 @@ module.exports = {
   getAll,
   getById,
   getByName,
-  participantExists,
   getLedgerAccountTypeName,
   update,
   createParticipantCurrency,
@@ -650,7 +691,10 @@ module.exports = {
   adjustLimits,
   getPositions,
   getAccounts,
+  updateAccount,
   getParticipantAccount,
   recordFundsInOut,
-  hubAccountExists: ParticipantCurrencyModel.hubAccountExists
+  getAccountByNameAndCurrency: ParticipantFacade.getByNameAndCurrency,
+  hubAccountExists: ParticipantCurrencyModel.hubAccountExists,
+  getLimitsForAllParticipants
 }

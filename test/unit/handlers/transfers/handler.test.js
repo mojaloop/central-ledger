@@ -54,10 +54,12 @@ const transferReturn = {
   condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
   expiration: '2016-05-24T08:38:08.699-04:00',
   fulfilment: 'uz0FAeutW6o8Mz7OmJh8ALX6mmsZCcIDOqtE01eo4uI',
-  extensionList: {
-    extension: []
-  }
+  extensionList: [{
+    key: 'key1',
+    value: 'value1'
+  }]
 }
+
 const fulfil = {
   fulfilment: 'oAKAAA',
   completedTimestamp: '2018-10-24T08:38:08.699-04:00',
@@ -619,7 +621,7 @@ Test('Transfer handler', transferHandlerTest => {
     registerTransferhandler.end()
   })
 
-  transferHandlerTest.test('get transfer by id ', transformTransfer => {
+  transferHandlerTest.test('get transfer by id should', transformTransfer => {
     transformTransfer.test('return a true on a single message', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -667,7 +669,8 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
-      TransferService.getById.returns(null)
+      Validator.validateParticipantTransferId.returns(true)
+      TransferService.getByIdLight.returns(null)
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -678,8 +681,35 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
-      TransferService.getById.returns(null)
+      Validator.validateParticipantTransferId.returns(true)
+      TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+      const result = await allTransferHandlers.getTransfer(null, messages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    transformTransfer.test('return an error when the requester is not involved in the transfer', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(false)
+      TransferService.getByIdLight.returns(null)
+      Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+      const result = await allTransferHandlers.getTransfer(null, messages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    transformTransfer.test('return an error when the requester is not involved in the transfer - autocommit disabled', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformAccountToTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(false)
+      TransferService.getByIdLight.returns(null)
+      Kafka.Consumer.isConsumerAutoCommitEnabled.returns(false)
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -690,7 +720,8 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
-      TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
+      Validator.validateParticipantTransferId.returns(true)
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
@@ -703,8 +734,11 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.getKafkaConfig.returns(config)
       Utility.produceGeneralMessage.throws(new Error())
       Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(true)
       transferReturn.transferState = 'ABORTED'
-      TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
+      let transferResult = Object.assign({}, transferReturn)
+      transferResult.extensionList = []
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferResult))
       try {
         await allTransferHandlers.getTransfer(null, messages)
         test.fail('Error not thrown')

@@ -145,7 +145,7 @@ Test('Position facade', async (positionFacadeTest) => {
         'pc.ledgerAccountTypeId': ledgerAccountTypeId
       }).calledOnce, 'query builder called once')
       test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
-      test.ok(participantLimitStub.withArgs('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId').calledOnce, 'participantLimit inner joined')
+      test.ok(participantLimitStub.withArgs('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'participantLimit inner joined')
       test.ok(selectStub.withArgs(
         'participant.*',
         'pc.*',

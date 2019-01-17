@@ -203,7 +203,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('update', async (assert) => {
     try {
       Db.participant.update.withArgs(
-        {participantId: 1}, {isActive: 1}
+        { participantId: 1 }, { isActive: 1 }
       ).returns(participantId)
       let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
       assert.equal(updatedId, participantId)
@@ -220,7 +220,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('update should throw an error', async (test) => {
     try {
       Db.participant.update.withArgs(
-        {participantId: 1}, {isActive: 1}
+        { participantId: 1 }, { isActive: 1 }
       ).throws(new Error())
       let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
       test.equal(updatedId, participantId)

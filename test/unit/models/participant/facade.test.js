@@ -32,6 +32,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/participant/facade')
+const Enum = require('../../../../src/lib/enum')
 
 Test('Participant facade', async (facadeTest) => {
   let sandbox
@@ -104,12 +105,38 @@ Test('Participant facade', async (facadeTest) => {
       builderStub.where.returns({
         andWhere: sandbox.stub().returns({
           andWhere: sandbox.stub().returns({
-            andWhere: sandbox.stub().returns({
-              andWhere: sandbox.stub().returns({
-                innerJoin: sandbox.stub().returns({
-                  select: sandbox.stub().returns({
-                    first: sandbox.stub().returns(participant)
-                  })
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns(participant)
+              })
+            })
+          })
+        })
+      })
+
+      var result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION)
+      assert.deepEqual(result, participant)
+      assert.end()
+    } catch (err) {
+      Logger.error(`getByNameAndCurrency failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await facadeTest.test('getByNameAndCurrency', async (assert) => {
+    try {
+      let builderStub = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+      builderStub.where = sandbox.stub()
+
+      builderStub.where.returns({
+        andWhere: sandbox.stub().returns({
+          andWhere: sandbox.stub().returns({
+            innerJoin: sandbox.stub().returns({
+              select: sandbox.stub().returns({
+                first: sandbox.stub().returns({
+                  andWhere: sandbox.stub().returns(participant)
                 })
               })
             })
@@ -117,7 +144,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getByNameAndCurrency({ name: 'fsp1', currencyId: 'USD', ledgerAccountTypeId: 1 })
+      var result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION, true)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
@@ -1250,6 +1277,135 @@ Test('Participant facade', async (facadeTest) => {
       test.end()
     } catch (err) {
       Logger.error(`Model.getAllAccountsByNameAndCurrency failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getLimitsForAllParticipants should', async (test) => {
+    try {
+      const type = 'NET_DEBIT_CAP'
+      const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
+      let builderStub = sandbox.stub()
+      let participantCurrencyStub = sandbox.stub()
+      let participantLimitStub = sandbox.stub()
+      let participantLimitTypeStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+      let whereStub1 = { where: sandbox.stub().returns() }
+      let whereStub2 = { where: sandbox.stub().returns() }
+
+      builderStub.where = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+
+      builderStub.where.returns({
+        where: sandbox.stub().callsArgWith(0, whereStub1).returns({
+          innerJoin: participantCurrencyStub.returns({
+            innerJoin: participantLimitStub.returns({
+              where: sandbox.stub().returns({
+                where: sandbox.stub().callsArgWith(0, whereStub2).returns({
+                  innerJoin: participantLimitTypeStub.returns({
+                    select: selectStub.returns(1)
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      let found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
+      test.equal(found, 1, 'retrive the record')
+      test.ok(builderStub.where.withArgs({
+        'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+        'participant.isActive': 1,
+        'pc.isActive': 1
+      }).calledOnce, 'query builder called once')
+      test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
+      test.ok(participantLimitStub.withArgs('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'participantLimit inner joined')
+      test.ok(participantLimitTypeStub.withArgs('participantLimitType AS lt', 'lt.participantLimitTypeId', 'pl.participantLimitTypeId').calledOnce, 'participantLimitType inner joined')
+      test.ok(selectStub.withArgs(
+        'participant.*',
+        'pc.*',
+        'pl.*',
+        'lt.name as limitType'
+    ).calledOnce, 'select all columns from participant, participantCurrency and participantLimit')
+      test.end()
+    } catch (err) {
+      Logger.error(`getLimitsForAllParticipants failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getLimitsForAllParticipants should return when the currency and type is null', async (test) => {
+    try {
+      const type = null
+      const currencyId = null
+      const ledgerAccountTypeId = 1
+      let builderStub = sandbox.stub()
+      let participantCurrencyStub = sandbox.stub()
+      let participantLimitStub = sandbox.stub()
+      let participantLimitTypeStub = sandbox.stub()
+      let selectStub = sandbox.stub()
+      let whereStub1 = { where: sandbox.stub().returns() }
+      let whereStub2 = { where: sandbox.stub().returns() }
+
+      builderStub.where = sandbox.stub()
+      Db.participant.query.callsArgWith(0, builderStub)
+
+      builderStub.where.returns({
+        where: sandbox.stub().callsArgWith(0, whereStub1).returns({
+          innerJoin: participantCurrencyStub.returns({
+            innerJoin: participantLimitStub.returns({
+              where: sandbox.stub().returns({
+                where: sandbox.stub().callsArgWith(0, whereStub2).returns({
+                  innerJoin: participantLimitTypeStub.returns({
+                    select: selectStub.returns(1)
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      let found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
+      test.equal(found, 1, 'retrive the record')
+      test.ok(builderStub.where.withArgs({
+        'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+        'participant.isActive': 1,
+        'pc.isActive': 1
+      }).calledOnce, 'query builder called once')
+      test.ok(participantCurrencyStub.withArgs('participantCurrency AS pc', 'pc.participantId', 'participant.participantId').calledOnce, 'participantCurrency inner joined')
+      test.ok(participantLimitStub.withArgs('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'participantLimit inner joined')
+      test.ok(participantLimitTypeStub.withArgs('participantLimitType AS lt', 'lt.participantLimitTypeId', 'pl.participantLimitTypeId').calledOnce, 'participantLimitType inner joined')
+      test.ok(selectStub.withArgs(
+        'participant.*',
+        'pc.*',
+        'pl.*',
+        'lt.name as limitType'
+    ).calledOnce, 'select all columns from participant, participantCurrency and participantLimit')
+      test.end()
+    } catch (err) {
+      Logger.error(`getLimitsForAllParticipants failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getLimitsForAllParticipants should', async (test) => {
+    try {
+      const type = 'NET_DEBIT_CAP'
+      const currencyId = 'USD'
+      const ledgerAccountTypeId = 1
+      Db.participant.query.throws(new Error())
+
+      await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`getLimitsForAllParticipants failed with error - ${err}`)
       test.pass('Error thrown')
       test.end()
     }

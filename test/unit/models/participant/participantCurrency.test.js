@@ -41,7 +41,8 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
     insert: sandbox.stub(),
     findOne: sandbox.stub(),
     find: sandbox.stub(),
-    destroy: sandbox.stub()
+    destroy: sandbox.stub(),
+    update: sandbox.stub()
   }
 
   await participantCurrencyTest.test('create currency for fake participant', async (assert) => {
@@ -111,6 +112,32 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
     try {
       Db.participantCurrency.findOne.withArgs({ participantCurrencyId: 1 }).throws(new Error())
       await Model.getById(1)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`get participant currency by Id failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('update', async (assert) => {
+    try {
+      Db.participantCurrency.update.withArgs({ participantCurrencyId: 1 }, { isActive: 1 }).returns(1)
+      let result = await Model.update(1, 1)
+      assert.equal(1, result)
+      assert.end()
+    } catch (err) {
+      Logger.error(`get participant currency by Id failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantCurrencyTest.test('update should fail', async (test) => {
+    try {
+      Db.participantCurrency.update.withArgs({ participantCurrencyId: 1 }, { isActive: 1 }).throws(new Error())
+      await Model.update(1, 1)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
