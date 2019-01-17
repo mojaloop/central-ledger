@@ -80,8 +80,7 @@ const positions = async (error, messages) => {
     Logger.info('PositionHandler::positions')
     let consumer = {}
     let kafkaTopic
-    const payload = (message.value.content && message.value.content.payload) || {}
-    payload.transferId = message.value.id
+    const transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
       kafkaTopic = message.topic
@@ -118,7 +117,7 @@ const positions = async (error, messages) => {
         return true
       }
       // Check current transfer state
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
         Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
         // TODO: throw Error 2001
@@ -147,7 +146,7 @@ const positions = async (error, messages) => {
         Logger.error(e)
         return true
       }
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.REJECTED) {
         Logger.info('PositionHandler::positions::reject::validationFailed::notRejectedState')
         // TODO: throw Error 2001
@@ -169,7 +168,7 @@ const positions = async (error, messages) => {
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info('PositionHandler::positions::commit::validationFailed::notReceivedFulfilState')
         // throw Error 2001

@@ -74,8 +74,7 @@ const getNextHop = async function (request) {
 
     return {
       finalDestination: finalDestination,
-      destination: route.nextHop,
-      hubName: config['MOJA_HUB_NAME']
+      destination: route.nextHop
     }
   } catch (err) {
     throw Boom.badRequest(err.message)

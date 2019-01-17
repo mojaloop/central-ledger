@@ -10,7 +10,7 @@ Test('routing', routeTest => {
     }
 
     const response = await Handler.getNextHop({ headers: params })
-    assert.equals(response, {
+    assert.deepEqual(response, {
       finalDestination: 'moja.tz.red.tz.pink',
       destination: 'moja.superremit'
     })

@@ -141,6 +141,15 @@ do
     \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/quotes/{{quoteId}}\"
   }'"
 
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_QUOTE_PUT\",
+    \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/parties/{{type}}/{{typeId}}\"
+  }'"
+
   echo
   echo "Retrieving EndPoints for '$FSP'"
   echo "---------------------------------------------------------------------"

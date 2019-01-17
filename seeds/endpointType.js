@@ -54,6 +54,10 @@ const endpointTypes = [
     'description': 'Participant callback URL to which quote put can be sent'
   },
   {
+    'name': 'FSPIOP_CALLBACK_URL_PARTIES_PUT',
+    'description': 'Participant callback URL to which parties put can be sent'
+  },
+  {
     'name': 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL',
     'description': 'Participant/Hub operator email address to which the net debit cap breach e-mail notification can be sent'
   },
