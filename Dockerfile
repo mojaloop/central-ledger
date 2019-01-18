@@ -7,6 +7,7 @@ COPY seeds /opt/central-ledger/seeds
 COPY migrations /opt/central-ledger/migrations
 COPY test /opt/central-ledger/test
 COPY package.json /opt/central-ledger/
+COPY logs /opt/central-ledger/logs
 
 
 RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
@@ -21,8 +22,8 @@ RUN apk del build-dependencies
 
 EXPOSE 3000
 # Create empty log file
-RUN touch ./log/combined.log
+RUN touch ./logs/combined.log
 
 # Link the stdout to the application log file
-RUN ln -sf /dev/stdout ./log/combined.log
+RUN ln -sf /dev/stdout ./logs/combined.log
 CMD node src/api/index.js
