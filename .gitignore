@@ -1,3 +1,5 @@
+# Logs
+logs/combined.log
 npm-debug.log*
 .[Dd][Ss]_[Ss]tore
 
