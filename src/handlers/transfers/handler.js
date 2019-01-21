@@ -40,7 +40,6 @@
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../domain/transfer')
 const Utility = require('../lib/utility')
-const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferState = require('../../lib/enum').TransferState
@@ -473,19 +472,18 @@ const transformTransfer = (transfer) => {
 }
 
 /**
- * @function CreatePrepareHandler
+ * @function registerPrepareHandler
  *
  * @async
- * @description Registers the handler for each participant topic created. Gets Kafka config from default.json
+ * @description Registers the handler for prepare topic. Gets Kafka config from default.json
  *
- * Calls createHandler to register the handler against the Stream Processing API
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const createPrepareHandler = async (participantName) => {
+const registerPrepareHandler = async () => {
   try {
     const prepareHandler = {
       command: prepare,
-      topicName: Utility.transformAccountToTopicName(participantName, TransferEventType.TRANSFER, TransferEventAction.PREPARE),
+      topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.PREPARE),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
@@ -514,39 +512,6 @@ const registerFulfilHandler = async () => {
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
-    return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
-  }
-}
-
-/**
- * @function RegisterPrepareHandlers
- *
- * @async
- * @description Registers the prepare handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * createPrepareHandler called to create the handler for each participant
- * @param {string[]} participantNames - Array of Participants to register
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const registerPrepareHandlers = async (participantNames = []) => {
-  try {
-    let participantNamesList
-    if (Array.isArray(participantNames) && participantNames.length > 0) {
-      participantNamesList = participantNames
-    } else {
-      participantNamesList = await DAO.retrieveAllParticipants()
-    }
-    if (participantNamesList.length !== 0) {
-      for (let name of participantNamesList) {
-        Logger.info(`Registering prepareHandler for Participant: ${name}`)
-        await createPrepareHandler(name)
-      }
-    } else {
-      Logger.info('No participants for prepare handler creation')
-      return false
-    }
     return true
   } catch (e) {
     Logger.error(e)
@@ -588,7 +553,7 @@ const registerGetTransferHandler = async () => {
  */
 const registerAllHandlers = async () => {
   try {
-    await registerPrepareHandlers()
+    await registerPrepareHandler()
     await registerFulfilHandler()
     await registerGetTransferHandler()
     return true
@@ -598,7 +563,7 @@ const registerAllHandlers = async () => {
 }
 
 module.exports = {
-  registerPrepareHandlers,
+  registerPrepareHandler,
   registerFulfilHandler,
   registerAllHandlers,
   registerGetTransferHandler,

@@ -83,7 +83,7 @@ module.exports = [
   {
     method: 'POST',
     path: '/register/transfer/prepare',
-    handler: TransferHandler.registerPrepareHandlers,
+    handler: TransferHandler.registerPrepareHandler,
     options: {
       id: 'prepare',
       description: 'Register prepare transfer Kafka consumer handler'
