@@ -447,13 +447,50 @@ const getLimitsForAllParticipants = async ({ currency = null, type = null }) => 
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
+// {
+//   "currency": "USD",
+//   "limit": {
+//       "type": "NET_DEBIT_CAP",
+//       "value": 1500,
+//       "thresholdAlarmPercentage": 10
+//   }
+// }
+
 const adjustLimits = async (name, payload) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.currency, Enum.LedgerAccountType.POSITION)
+    let { limit, currency } = payload
+    payload.name = name
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
-    return ParticipantFacade.adjustLimits(participant.participantCurrencyId, payload.limit)
+    let result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.EVENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
+    return result
   } catch (err) {
     throw err
+  }
+}
+
+const createLimitAdjustmentMessageProtocol = (payload, action = 'limitAdjustment', state = '', pp = '') => {
+  return {
+    id: Uuid(),
+    from: payload.name,
+    to: 'SYSTEM',
+    type: 'application/json',
+    content: {
+      header: {},
+      payload
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: '',
+        type: 'notification',
+        action,
+        createdAt: new Date(),
+        state
+      }
+    },
+    pp
   }
 }
 
