@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-echo
-echo "*********************************************************************"
 echo "---------------------------------------------------------------------"
-echo "Showing current database state"
+echo "Showing current database state related to the Reconciliation Transfer"
 echo "---------------------------------------------------------------------"
 echo
 
@@ -17,14 +15,10 @@ source $CWD/env.sh
 
 echo "TABLE transferDuplicateCheck"
 docker exec -it $DB_ID mysql -uroot -e "SELECT * FROM central_ledger.transferDuplicateCheck ORDER BY createdDate DESC"
-echo "=> EXPECTED RESULT: Transfer duplicate check is performed and a record is inserted. Showing 3 records (previously 2)."
-echo
 echo
 
 echo "TABLE transfer"
 docker exec -it $DB_ID mysql -uroot -e "SELECT * FROM central_ledger.transfer ORDER BY createdDate DESC"
-echo "=> EXPECTED RESULT: A transfer record for amount of 200 is inserted. Showing 3 records (previously 2)."
-echo
 echo
 
 echo "TABLE transferFulfilment"
@@ -34,8 +28,6 @@ SUBSTRING(transferFulfilmentId, -20) AS transferFulfilmentId_20,
 ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate
 FROM central_ledger.transferFulfilment 
 ORDER BY createdDate DESC"
-echo "EXPECTED RESULT: The transfer has been fulfilled automatically (aborted). Showing 3 records (previously 2)."
-echo
 echo
 
 echo "TABLE transferParticipant (w/ enums)"
@@ -56,8 +48,6 @@ ON tprt.transferParticipantRoleTypeId = tp.transferParticipantRoleTypeId
 JOIN central_ledger.ledgerEntryType let
 ON let.ledgerEntryTypeId = tp.ledgerEntryTypeId
 ORDER BY tp.transferParticipantId DESC"
-echo "=> EXPECTED RESULT: Transfer participants are inserted for the prepared reconciliation transfer. Showing 6 records (previously 4)."
-echo
 echo
 
 echo "TABLE transferParticipant TOTALS by account REGARDLESS transferState (w/ enums)"
@@ -72,20 +62,14 @@ JOIN central_ledger.participant p
 ON p.participantId = pc.participantId
 GROUP BY CONCAT(tp.participantCurrencyId, '-', p.name, '-', lat.name)
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: The total SUM_amount for transferParticipant records should be always 0."
-echo
-echo
-
-echo "TABLE transferExtension"
-docker exec -it $DB_ID mysql -uroot -e "SELECT * FROM central_ledger.transferExtension ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: Two extensions and externalReference are inserted. Showing 9 records (previously 6)."
-echo
 echo
 
 echo "TABLE transferStateChange"
 docker exec -it $DB_ID mysql -uroot -e "SELECT * FROM central_ledger.transferStateChange ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: Transfer state has changed RECEIVED_PREPARE -> RESERVED -> REJECTED -> ABORTED (27:03). Showing 12 records (previously 8)."
 echo
+
+echo "TABLE transferExtension"
+docker exec -it $DB_ID mysql -uroot -e "SELECT * FROM central_ledger.transferExtension ORDER BY createdDate DESC"
 echo
 
 echo "TABLE participantPosition (w/ enums)"
@@ -101,8 +85,6 @@ ON lat.ledgerAccountTypeId = pc.ledgerAccountTypeId
 JOIN central_ledger.participant p
 ON p.participantId = pc.participantId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: dfsp1-SETTLEMENT is restored to -80, Hub-HUB_RECONCILIATION account balance is unchanged at 80."
-echo
 echo
 
 echo "TABLE participantPositionChange (w/ enums)"
@@ -123,8 +105,23 @@ ON p.participantId = pc.participantId
 JOIN central_ledger.transferStateChange tsc
 ON tsc.transferStateChangeId = ppc.transferStateChangeId
 ORDER BY 1 DESC"
-echo "=> EXPECTED RESULT: DR is applied during 8-RESERVED, thus dfsp1-SETTLEMENT account is changed to 120 (29:05)."
-echo "CR is not applied to Hub-HUB_RECONCILIATION account (29:22)."
-echo "During 9-ABORTED DR is reverted back to -80 for dfsp1-SETTLEMENT account (29:46). Showing 6 records (previously 4)."
 echo
+
+echo "TABLE participantLimit (w/ enums)"
+docker exec -it $DB_ID mysql -uroot -e "
+SELECT pl.participantLimitId AS id,
+CONCAT(pl.participantCurrencyId, '-', p.name, '-', lat.name) AS participantCurrencyId,
+CONCAT(pl.participantLimitTypeId, '-', plt.name) AS participantLimitTypeId,
+pl.value, pl.thresholdAlarmPercentage, pl.startAfterParticipantPositionChangeId,
+pl.isActive, pl.createdDate, pl.createdBy
+FROM central_ledger.participantLimit pl
+JOIN central_ledger.participantCurrency pc
+ON pc.participantCurrencyId = pl.participantCurrencyId
+JOIN central_ledger.ledgerAccountType lat
+ON lat.ledgerAccountTypeId = pc.ledgerAccountTypeId
+JOIN central_ledger.participant p
+ON p.participantId = pc.participantId
+JOIN central_ledger.participantLimitType plt
+ON plt.participantLimitTypeId = pl.participantLimitTypeId
+ORDER BY 1 DESC"
 echo

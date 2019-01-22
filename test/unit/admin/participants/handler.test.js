@@ -746,6 +746,79 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
+    handlerTest.test('getLimitsForAllParticipants should return the participant limits for given currency and type of limit', async function (test) {
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      const expected = [
+        {
+          name: 'fsp1',
+          currency: 'USD',
+          limit: {
+            type: 'NET_DEBIT_CAP',
+            value: 1000000,
+            alarmPercentage: undefined
+          }
+        },
+        {
+          name: 'fsp2',
+          currency: 'USD',
+          limit: {
+            type: 'NET_DEBIT_CAP',
+            value: 2000000,
+            alarmPercentage: undefined
+          }
+        }
+      ]
+      const limitReturn = [
+        {
+          name: 'fsp1',
+          currencyId: 'USD',
+          limitType: 'NET_DEBIT_CAP',
+          value: 1000000
+        },
+        {
+          name: 'fsp2',
+          currencyId: 'USD',
+          limitType: 'NET_DEBIT_CAP',
+          value: 2000000
+        }
+      ]
+      Participant.getLimitsForAllParticipants.withArgs(query).returns(P.resolve(limitReturn))
+      const result = await Handler.getLimitsForAllParticipants(createRequest({ query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getLimitsForAllParticipants should return empty array when no limits found', async function (test) {
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      const expected = []
+      Participant.getLimitsForAllParticipants.withArgs(query).returns(P.resolve([]))
+      const result = await Handler.getLimitsForAllParticipants(createRequest({ query }))
+      test.deepEqual(result, expected, 'The results match')
+      test.end()
+    })
+
+    handlerTest.test('getLimitsForAllParticipants should throw error', async function (test) {
+      const query = {
+        currency: 'USD',
+        type: 'NET_DEBIT_CAP'
+      }
+      Participant.getLimitsForAllParticipants.withArgs(query).throws(new Error())
+
+      try {
+        await Handler.getLimitsForAllParticipants(createRequest({ query }))
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
     handlerTest.test('adjustLimits should adjust existing limits', async function (test) {
       const params = {
         name: 'fsp1'
@@ -754,7 +827,8 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
-          value: 10000000
+          value: 10000000,
+          alarmPercentage: 5
         }
       }
       let participantLimit = {
@@ -763,7 +837,8 @@ Test('Participant', participantHandlerTest => {
         value: payload.limit.value,
         isActive: 1,
         createdBy: 'unknown',
-        participantLimitId: 1
+        participantLimitId: 1,
+        thresholdAlarmPercentage: 5
       }
 
       const expected = {
@@ -771,7 +846,7 @@ Test('Participant', participantHandlerTest => {
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 10000000,
-          thresholdAlarmPercentage: undefined
+          alarmPercentage: 5
         }
       }
 
@@ -939,6 +1014,64 @@ Test('Participant', participantHandlerTest => {
 
       try {
         await Handler.getAccounts(createRequest({ params, query }))
+        test.fail('Error not thrown')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Bad Request')
+        test.end()
+      }
+    })
+
+    handlerTest.test('updateAccount should be called with the provided params and payload', async function (test) {
+      const payload = {
+        isActive: true
+      }
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.end()
+      } catch (e) {
+        test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    handlerTest.test('updateAccount should throw error', async function (test) {
+      const payload = {
+        isActive: true
+      }
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+      Participant.updateAccount.throws(new Error())
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {

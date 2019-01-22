@@ -38,6 +38,7 @@ Test('logger', loggerTest => {
   loggerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger, 'info')
+    sandbox.stub(Logger, 'debug')
     sandbox.stub(Util, 'inspect')
 
     test.end()
@@ -58,10 +59,10 @@ Test('logger', loggerTest => {
         body: 'this is the body'
       }
       RequestLogger.logRequest(request)
-      test.ok(Logger.info.calledThrice)
-      const args = Logger.info.firstCall.args
-      const args2 = Logger.info.secondCall.args
-      const args3 = Logger.info.thirdCall.args
+      test.ok(Logger.debug.calledThrice)
+      const args = Logger.debug.firstCall.args
+      const args2 = Logger.debug.secondCall.args
+      const args3 = Logger.debug.thirdCall.args
       test.equal(args[0], `L1p-Trace-Id=${request.headers.traceid} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
       test.equal(args2[0], `L1p-Trace-Id=${request.headers.traceid} - Headers: ${JSON.stringify(request.headers)}`)
       test.equal(args3[0], `L1p-Trace-Id=${request.headers.traceid} - Body: ${request.body}`)
@@ -76,7 +77,7 @@ Test('logger', loggerTest => {
         query: { token: '1234' }
       }
       RequestLogger.logRequest(request)
-      test.ok(Logger.info.calledTwice)
+      test.ok(Logger.debug.calledTwice)
       test.end()
     })
 
@@ -90,7 +91,7 @@ Test('logger', loggerTest => {
         response: { source: 'this is the response', statusCode: '200' }
       }
       RequestLogger.logResponse(request)
-      const args = Logger.info.firstCall.args
+      const args = Logger.debug.firstCall.args
       test.equal(args[0], `L1p-Trace-Id=${request.headers.traceid} - Response: ${JSON.stringify(request.response.source)} Status: ${request.response.statusCode}`)
       test.end()
     })

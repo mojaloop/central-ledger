@@ -99,6 +99,44 @@ const getById = async (id) => {
   }
 }
 
+const getByIdLight = async (id) => {
+  try {
+    /** @namespace Db.transfer **/
+    return await Db.transfer.query(async (builder) => {
+      let transferResult = await builder
+        .where({ 'transfer.transferId': id })
+        .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
+        .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
+        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
+        .select(
+          'transfer.*',
+          'transfer.currencyId AS currency',
+          'tsc.transferStateChangeId',
+          'tsc.transferStateId AS transferState',
+          'tsc.reason AS reason',
+          'tsc.createdDate AS completedTimestamp',
+          'ilpp.value AS ilpPacket',
+          'transfer.ilpCondition AS condition',
+          'tf.ilpFulfilment AS fulfilment',
+          'tf.transferFulfilmentId'
+        )
+        .orderBy('tsc.transferStateChangeId', 'desc')
+        .first()
+      if (transferResult) {
+        if (!transferResult.fulfilment) {
+          transferResult.extensionList = await TransferExtensionModel.getByTransferId(id)
+        } else {
+          transferResult.extensionList = await TransferExtensionModel.getByTransferFulfilmentId(transferResult.transferFulfilmentId)
+        }
+        transferResult.isTransferReadModel = true
+      }
+      return transferResult
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
 const getAll = async () => {
   try {
     return await Db.transfer.query(async (builder) => {
@@ -647,7 +685,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         // Retrieve hub reconciliation account for the specified currency
         let { reconciliationAccountId } = await knex('participantCurrency')
           .select('participantCurrencyId AS reconciliationAccountId')
-          .where('participantId', 1)
+          .where('participantId', Config.HUB_ID)
           .andWhere('currencyId', payload.amount.currency)
           .first()
           .transacting(trx)
@@ -896,8 +934,30 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
   }
 }
 
+const getTransferParticipant = async (participantName, transferId) => {
+  try {
+    return Db.participant.query(async (builder) => {
+      return builder
+        .where({
+          'participant.name': participantName,
+          'tp.transferId': transferId,
+          'participant.isActive': 1,
+          'pc.isActive': 1
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('transferParticipant AS tp', 'tp.participantCurrencyId', 'pc.participantCurrencyId')
+        .select(
+          'tp.*'
+        )
+    })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 const TransferFacade = {
   getById,
+  getByIdLight,
   getAll,
   getTransferInfoToChangePosition,
   saveTransferFulfilled: saveTransferFulfilled,
@@ -908,7 +968,8 @@ const TransferFacade = {
   reconciliationTransferPrepare,
   reconciliationTransferReserve,
   reconciliationTransferCommit,
-  reconciliationTransferAbort
+  reconciliationTransferAbort,
+  getTransferParticipant
 }
 
 module.exports = TransferFacade

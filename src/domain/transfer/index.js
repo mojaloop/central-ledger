@@ -47,28 +47,8 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   }
 }
 
-const getTransferById = (id) => {
-  return TransferModel.getById(id)
-}
-
-const getById = (id) => {
-  return TransferFacade.getById(id)
-}
-
-const getAll = () => {
-  return TransferFacade.getAll()
-}
-
-const getTransferState = (id) => {
-  return TransferStateChangeModel.getByTransferId(id)
-}
-
-const getTransferInfoToChangePosition = (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
-  return TransferFacade.getTransferInfoToChangePosition(id, transferParticipantRoleTypeId, ledgerEntryTypeId)
-}
-
 const getFulfilment = async (id) => {
-  const transfer = await getById(id)
+  const transfer = await TransferFacade.getById(id)
   if (!transfer) {
     throw new Errors.TransferNotFoundError()
   }
@@ -108,10 +88,6 @@ const reject = async (transferId, payload) => {
   } catch (err) {
     throw err
   }
-}
-
-const saveTransferStateChange = async (stateRecord) => {
-  return TransferStateChangeModel.saveTransferStateChange(stateRecord)
 }
 
 /**
@@ -185,51 +161,27 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
   }
 }
 
-/**
- * @function GetTransferStateChange
- *
- * @async
- * @description This will get the latest transfer state change name for a given transfer id
- *
- * TransferFacade.getTransferStateByTransferId called to get the latest transfer state change id and name
- *
- * @param {string} id - the transfer id
- *
- * @returns {Object} - Returns the details of transfer state change if successful, or throws an error if failed
- * Example:
- * ```
- * {
- *    transferStateChangeId: 1,
- *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b11',
- *    transferStateId: 'COMMITTED',
- *    reason: null,
- *    createdDate: '2018-08-17 09:46:21',
- *    enumeration: 'COMMITTED'
- * }
- * ```
- */
-
-const getTransferStateChange = (id) => {
-  return TransferFacade.getTransferStateByTransferId(id)
-}
-
-module.exports = {
-  getTransferById,
-  getById,
-  getAll,
-  getTransferState,
-  getTransferInfoToChangePosition,
+const TransferService = {
   getFulfilment,
   prepare,
   fulfil,
   reject,
-  saveTransferStateChange,
   expire,
   validateDuplicateHash,
   logTransferError,
-  getTransferStateChange,
+  getTransferById: TransferModel.getById,
+  getById: TransferFacade.getById,
+  getByIdLight: TransferFacade.getByIdLight,
+  getAll: TransferFacade.getAll,
+  getTransferState: TransferStateChangeModel.getByTransferId,
+  getTransferInfoToChangePosition: TransferFacade.getTransferInfoToChangePosition,
+  saveTransferStateChange: TransferStateChangeModel.saveTransferStateChange,
+  getTransferStateChange: TransferFacade.getTransferStateByTransferId,
   reconciliationTransferPrepare: TransferFacade.reconciliationTransferPrepare,
   reconciliationTransferReserve: TransferFacade.reconciliationTransferReserve,
   reconciliationTransferCommit: TransferFacade.reconciliationTransferCommit,
-  reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort
+  reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort,
+  getTransferParticipant: TransferFacade.getTransferParticipant
 }
+
+module.exports = TransferService

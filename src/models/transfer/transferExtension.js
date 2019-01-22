@@ -39,7 +39,15 @@ const saveTransferExtension = async (extension) => {
 
 const getByTransferId = async (transferId) => {
   try {
-    return await Db.transferExtension.find({ transferId: transferId })
+    return await Db.transferExtension.find({ transferId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+const getByTransferFulfilmentId = async (transferFulfilmentId) => {
+  try {
+    return await Db.transferExtension.find({ transferFulfilmentId })
   } catch (err) {
     throw new Error(err.message)
   }
@@ -47,7 +55,7 @@ const getByTransferId = async (transferId) => {
 
 const getByTransferExtensionId = async (transferExtensionId) => {
   try {
-    return await Db.transferExtension.findOne({ transferExtensionId: transferExtensionId })
+    return await Db.transferExtension.findOne({ transferExtensionId })
   } catch (err) {
     throw new Error(err.message)
   }
@@ -55,7 +63,7 @@ const getByTransferExtensionId = async (transferExtensionId) => {
 
 const destroyByTransferId = async (transferId) => {
   try {
-    return await Db.transferExtension.destroy({transferId})
+    return await Db.transferExtension.destroy({ transferId })
   } catch (err) {
     throw new Error(err.message)
   }
@@ -64,6 +72,7 @@ const destroyByTransferId = async (transferId) => {
 module.exports = {
   saveTransferExtension,
   getByTransferId,
+  getByTransferFulfilmentId,
   getByTransferExtensionId,
   destroyByTransferId
 }

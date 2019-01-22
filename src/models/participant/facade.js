@@ -31,22 +31,27 @@
 const Db = require('../../db')
 const Time = require('../../lib/time')
 
-const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive = true) => {
+const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   try {
     return await Db.participant.query(async (builder) => {
-      return builder
+      let b = builder
         .where({ 'participant.name': name })
-        .andWhere({ 'participant.isActive': true })
         .andWhere({ 'pc.currencyId': currencyId })
-        .andWhere({ 'pc.isActive': isCurrencyActive })
         .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
           'pc.participantCurrencyId',
-          'pc.currencyId'
+          'pc.currencyId',
+          'pc.isActive AS currencyIsActive'
         )
         .first()
+
+      if (isCurrencyActive !== undefined) {
+        b = b.andWhere({ 'pc.isActive': isCurrencyActive })
+      }
+
+      return b
     })
   } catch (e) {
     throw e
@@ -63,11 +68,61 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
           'pc.ledgerAccountTypeId': ledgerAccountTypeId
         })
         .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pl.participantCurrencyId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
         .select(
           'participant.*',
           'pc.*',
           'pl.*'
+        )
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+/**
+ * @function GetLimitsForAllParticipants
+ *
+ * @async
+ * @description This retuns the active limits value for all the participants for the currency and type combinations
+ *
+ * @param {string} currency - the currency id. Example USD
+ * @param {string} type - the type of the limit. Example 'NET_DEBIT_CAP'
+ *
+ * @returns {array} - Returns an array containing the details of active limits for all the participants if successful, or throws an error if failed
+ */
+
+const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId) => {
+  try {
+    return Db.participant.query(async (builder) => {
+      return builder
+        .where({
+          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+          'participant.isActive': 1,
+          'pc.isActive': 1
+        })
+        .where(q => {
+          if (currencyId != null) {
+            return q.where('pc.currencyId', '=', currencyId)
+          }
+        })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
+        .where({
+          'pl.isActive': 1,
+          'lt.isActive': 1
+        })
+        .where(q => {
+          if (type != null) {
+            return q.where('lt.name', '=', type)
+          }
+        })
+        .innerJoin('participantLimitType AS lt', 'lt.participantLimitTypeId', 'pl.participantLimitTypeId')
+        .select(
+          'participant.*',
+          'pc.*',
+          'pl.*',
+          'lt.name as limitType'
         )
     })
   } catch (e) {
@@ -355,7 +410,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
           participantCurrencyId: participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
           value: limit.value,
-          thresholdAlarmPercentage: limit.thresholdAlarmPercentage,
+          thresholdAlarmPercentage: limit.alarmPercentage,
           isActive: 1,
           createdBy: 'unknown'
         }
@@ -513,7 +568,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
         })
         .where(q => {
           if (currencyId != null) {
-            return q.where('participantCurrency.currencyId', '=', currencyId)
+            return q.where('participantCurrency.currencyId', currencyId)
           }
         })
         .select('*', 'lap.name AS ledgerAccountType')
@@ -536,5 +591,6 @@ module.exports = {
   adjustLimits,
   getParticipantLimitsByCurrencyId,
   getParticipantLimitsByParticipantId,
-  getAllAccountsByNameAndCurrency
+  getAllAccountsByNameAndCurrency,
+  getLimitsForAllParticipants
 }

@@ -25,6 +25,7 @@
 'use strict'
 
 const Db = require('../../db')
+const Config = require('../../../src/lib/config')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
@@ -44,6 +45,14 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
 exports.getById = async (id) => {
   try {
     return await Db.participantCurrency.findOne({ participantCurrencyId: id })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.update = async (participantCurrencyId, isActive) => {
+  try {
+    return await Db.participantCurrency.update({ participantCurrencyId }, { isActive })
   } catch (err) {
     throw new Error(err.message)
   }
@@ -81,7 +90,7 @@ exports.getByName = async (accountParams) => {
 exports.hubAccountExists = async (currencyId, ledgerAccountTypeId) => {
   try {
     const params = {
-      participantId: 1,
+      participantId: Config.HUB_ID,
       currencyId,
       ledgerAccountTypeId
     }
