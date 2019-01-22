@@ -146,7 +146,7 @@ do
     -H 'Cache-Control: no-cache' \
     -H 'Content-Type: application/json' \
     -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_QUOTE_PUT\",
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT\",
     \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/parties/{{type}}/{{typeId}}\"
   }'"
 
