@@ -146,11 +146,11 @@ const createHandlers = async (handlers) => {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
         case 'prepare':
-          await RegisterHandlers.transfers.registerPrepareHandlers(handler.fspList)
-          if (!Config.HANDLERS_CRON_DISABLED) {
-            Logger.info('Starting Kafka Cron Jobs...')
-            await KafkaCron.start('prepare')
-          }
+          await RegisterHandlers.transfers.registerPrepareHandler()
+          // if (!Config.HANDLERS_CRON_DISABLED) {
+          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   await KafkaCron.start('prepare')
+          // }
           break
         case 'position':
           await RegisterHandlers.positions.registerPositionHandlers(handler.fspList)
@@ -237,7 +237,7 @@ const initialize = async function ({service, port, modules = [], runMigrations =
       await RegisterHandlers.registerAllHandlers()
       if (!Config.HANDLERS_CRON_DISABLED) {
         Logger.info('Starting Kafka Cron Jobs...')
-        await KafkaCron.start('prepare')
+        // await KafkaCron.start('prepare')
         await KafkaCron.start('position')
       }
     }

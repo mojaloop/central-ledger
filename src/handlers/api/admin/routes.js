@@ -38,7 +38,6 @@
 const RegisterAllHandler = require('../../register')
 const TransferHandler = require('../../transfers/handler')
 const PositionHandler = require('../../positions/handler')
-const testProducer = require('../../../../test/integration/helpers/testProducer')
 
 module.exports = [
   /**
@@ -71,22 +70,6 @@ module.exports = [
     options: {
       id: 'transfer',
       description: 'Register all transfer Kafka consumer handlers'
-    }
-  },
-  /**
-   * @function RegisterPrepareHandlerRoute
-   *
-   * @async
-   * @description Registers consumer handlers for prepare transfer all participants
-   * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
-   */
-  {
-    method: 'POST',
-    path: '/register/transfer/prepare',
-    handler: TransferHandler.registerPrepareHandlers,
-    options: {
-      id: 'prepare',
-      description: 'Register prepare transfer Kafka consumer handler'
     }
   },
   /**
@@ -128,34 +111,6 @@ module.exports = [
     options: {
       id: 'getTransfer',
       description: 'Register get transfer Kafka consumer handler'
-    }
-  },
-  // Following are for testing purposes so that we can produce transfers without the ML-API. To be removed later.
-  {
-    method: 'POST',
-    path: '/test/producer/transfer/prepare',
-    handler: testProducer.transferPrepare,
-    options: {
-      id: 'transferPrepareTestProducer',
-      description: 'Produces transfer prepare message to Kafka'
-    }
-  },
-  {
-    method: 'POST',
-    path: '/test/producer/transfer/fulfil',
-    handler: testProducer.transferFulfil,
-    options: {
-      id: 'transferFulfilTestProducer',
-      description: 'Produces transfer fulfil message to Kafka'
-    }
-  },
-  {
-    method: 'POST',
-    path: '/test/producer/transfer/reject',
-    handler: testProducer.transferReject,
-    options: {
-      id: 'transferRejectTestProducer',
-      description: 'Produces transfer reject message to Kafka'
     }
   }
 ]

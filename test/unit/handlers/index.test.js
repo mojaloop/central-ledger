@@ -6,6 +6,7 @@ const P = require('bluebird')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
+const MetricsPlugin = require('../../../src/api/metrics/plugin')
 
 Test('cli', async (cliTest) => {
   cliTest.beforeEach(test => {
@@ -53,7 +54,6 @@ Test('cli', async (cliTest) => {
         'index.js',
         'handler',
         '--prepare',
-        'dfsp1, dfsp2',
         '--position',
         'dfsp1, dfsp2',
         '--get',
@@ -72,8 +72,7 @@ Test('cli', async (cliTest) => {
 
       var prepareHandler = {
         type: 'prepare',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var positionHandler = {
@@ -115,7 +114,7 @@ Test('cli', async (cliTest) => {
       var initOptions = {
         service: 'handler',
         port: Config.PORT,
-        modules: [Plugin],
+        modules: [Plugin, MetricsPlugin],
         runMigrations: false,
         handlers: modulesList,
         runHandlers: true
@@ -145,8 +144,7 @@ Test('cli', async (cliTest) => {
 
       var prepareHandler = {
         type: 'prepare',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var positionHandler = {
@@ -163,7 +161,47 @@ Test('cli', async (cliTest) => {
       var initOptions = {
         service: 'handler',
         port: Config.PORT,
-        modules: [Plugin],
+        modules: [Plugin, MetricsPlugin],
+        runMigrations: false,
+        handlers: modulesList,
+        runHandlers: true
+      }
+
+      test.ok(Index)
+      test.ok(SetupStub.initialize.calledWith(initOptions))
+      test.end()
+    })
+
+    commanderTest.test('start all position Handlers up with no FSPList provided', async test => {
+      var argv = [
+        'node',
+        'index.js',
+        'handler',
+        '--position'
+      ]
+
+      process.argv = argv
+
+      var Index = Proxyquire('../../../src/handlers/index', {
+        '../shared/setup': SetupStub
+      })
+
+      var fspList = [ ]
+
+      var positionHandler = {
+        type: 'position',
+        enabled: true,
+        fspList
+      }
+
+      var modulesList = [
+        positionHandler
+      ]
+
+      var initOptions = {
+        service: 'handler',
+        port: Config.PORT,
+        modules: [Plugin, MetricsPlugin],
         runMigrations: false,
         handlers: modulesList,
         runHandlers: true
@@ -179,8 +217,7 @@ Test('cli', async (cliTest) => {
         'node',
         'index.js',
         'handler',
-        '--prepare',
-        'dfsp1,'
+        '--prepare'
       ]
 
       process.argv = argv
@@ -189,12 +226,9 @@ Test('cli', async (cliTest) => {
         '../shared/setup': SetupStub
       })
 
-      var fspList = [ 'dfsp1' ]
-
       var prepareHandler = {
         type: 'prepare',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var modulesList = [
@@ -204,7 +238,7 @@ Test('cli', async (cliTest) => {
       var initOptions = {
         service: 'handler',
         port: Config.PORT,
-        modules: [Plugin],
+        modules: [Plugin, MetricsPlugin],
         runMigrations: false,
         handlers: modulesList,
         runHandlers: true

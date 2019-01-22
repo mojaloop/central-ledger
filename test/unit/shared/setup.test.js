@@ -74,7 +74,7 @@ Test('setup', setupTest => {
     RegisterHandlersStub = {
       registerAllHandlers: sandbox.stub().returns(P.resolve()),
       transfers: {
-        registerPrepareHandlers: sandbox.stub().returns(P.resolve()),
+        registerPrepareHandler: sandbox.stub().returns(P.resolve()),
         registerGetHandler: sandbox.stub().returns(P.resolve()),
         registerFulfilHandler: sandbox.stub().returns(P.resolve())
         // registerRejectHandler: sandbox.stub().returns(P.resolve())
@@ -450,7 +450,7 @@ Test('setup', setupTest => {
         test.end()
       }).catch(err => {
         console.log(err)
-        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
@@ -503,7 +503,7 @@ Test('setup', setupTest => {
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
-        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.notOk(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
@@ -557,12 +557,12 @@ Test('setup', setupTest => {
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
-        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
-        test.ok(KafkaCronStub.Cron.start.calledTwice)
+        test.ok(KafkaCronStub.Cron.start.calledOnce)
         test.end()
       }).catch(err => {
         test.fail(`Should have not received an error: ${err}`)
@@ -618,7 +618,7 @@ Test('setup', setupTest => {
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
-        test.ok(RegisterHandlersStub.transfers.registerPrepareHandlers.calledWith(fspList))
+        test.ok(RegisterHandlersStub.transfers.registerPrepareHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(!KafkaCronStub.Cron.start.called)

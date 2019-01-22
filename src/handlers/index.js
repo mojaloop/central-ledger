@@ -38,6 +38,7 @@ const Config = require('../lib/config')
 const Setup = require('../shared/setup')
 const PJson = require('../../package.json')
 const Plugin = require('./api/plugin')
+const MetricPlugin = require('../api/metrics/plugin')
 const { Command } = require('commander')
 
 const Program = new Command()
@@ -49,7 +50,7 @@ Program
 Program.command('handler') // sub-command name, coffeeType = type, required
   .alias('h') // alternative sub-command is `o`
   .description('Start a specified Handler') // command description
-  .option('--prepare [fspNameList]', 'Start the Prepare Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
+  .option('--prepare', 'Start the Prepare Handler')
   .option('--position [fspNameList]', 'Start the Position Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
   .option('--get', 'Start the Transfer Get Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
@@ -60,28 +61,11 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   // function to execute when command is uses
   .action(async (args) => {
     let handlerList = []
-    if (args.prepare && typeof args.prepare === 'string') {
-      Logger.debug(`CLI: Executing --prepare ${args.prepare}`)
-      let parsedHandlerList = args.prepare.replace(/\s/g, '').split(',')
-      // removing holes, and, falsy (null, undefined, 0, -0, NaN, "", false, document.all) etc:
-      parsedHandlerList = parsedHandlerList.filter(x => x)
-      // if (Array.isArray(parsedHandlerList) && parsedHandlerList.length >= 1) {
-      let handler = {
-        type: 'prepare',
-        enabled: true,
-        fspList: parsedHandlerList
-      }
-      handlerList.push(handler)
-      // } else {
-      //   throw new Error('Invalid [fspNameList] provided for --prepare. Please ensure that it is a "," delimated string. e.g. "fsp1, fsp2".')
-      // }
-    }
-    if (args.prepare && typeof args.prepare === 'boolean') {
+    if (args.prepare) {
       Logger.debug(`CLI: Executing --prepare`)
       let handler = {
         type: 'prepare',
-        enabled: true,
-        fspList: []
+        enabled: true
       }
       handlerList.push(handler)
     }
@@ -146,7 +130,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     module.exports = Setup.initialize({
       service: 'handler',
       port: Config.PORT,
-      modules: [Plugin],
+      modules: [Plugin, MetricPlugin],
       runMigrations: false,
       handlers: handlerList,
       runHandlers: true
