@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "4.4.1-performance",
+  "version": "4.4.0-performance",
   "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "repository": {
@@ -59,7 +59,7 @@
     "@mojaloop/central-services-auth": "0.2.0",
     "@mojaloop/central-services-database": "3.1.0-snapshot",
     "@mojaloop/central-services-error-handling": "0.5.1",
-    "@mojaloop/central-services-shared": "4.4.0-performance",
+    "@mojaloop/central-services-shared": "4.4.1-performance",
     "@mojaloop/central-services-stream": "4.3.10-performance",
     "@mojaloop/forensic-logging-client": "0.5.1",
     "@now-ims/hapi-now-auth": "1.0.1",
@@ -106,6 +106,7 @@
   },
   "devDependencies": {
     "faucet": "0.0.1",
+    "five-bells-ledger-api-tests": "github:interledgerjs/five-bells-ledger-api-tests",
     "istanbul": "1.1.0-alpha.1",
     "jsonpath": "^1.0.0",
     "npm-run-all": "4.0.1",
