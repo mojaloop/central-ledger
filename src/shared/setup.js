@@ -147,10 +147,10 @@ const createHandlers = async (handlers) => {
       switch (handler.type) {
         case 'prepare':
           await RegisterHandlers.transfers.registerPrepareHandler()
-          if (!Config.HANDLERS_CRON_DISABLED) {
-            Logger.info('Starting Kafka Cron Jobs...')
-            await KafkaCron.start('prepare')
-          }
+          // if (!Config.HANDLERS_CRON_DISABLED) {
+          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   await KafkaCron.start('prepare')
+          // }
           break
         case 'position':
           await RegisterHandlers.positions.registerPositionHandlers(handler.fspList)

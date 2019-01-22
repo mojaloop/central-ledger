@@ -562,7 +562,7 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.positions.registerPositionHandlers.calledWith(fspList))
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
-        test.ok(KafkaCronStub.Cron.start.calledTwice)
+        test.ok(KafkaCronStub.Cron.start.calledOnce)
         test.end()
       }).catch(err => {
         test.fail(`Should have not received an error: ${err}`)
