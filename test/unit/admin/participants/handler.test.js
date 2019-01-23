@@ -163,6 +163,36 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
+    handlerTest.test('update should update and return the participant if participant is NOT active', async function (test) {
+      Participant.update.withArgs(participantFixtures[0].name, { isActive: 0 }).returns(P.resolve(participantFixtures[0]))
+      try {
+        const result = await Handler.update(createRequest({
+          params: { name: participantFixtures[0].name },
+          payload: { isActive: 0 }
+        }))
+        test.deepEqual(result, participantResults[0], 'The results match')
+        test.end()
+      } catch (err) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    handlerTest.test('update should update and return the participant if isActive is undefined', async function (test) {
+      Participant.update.withArgs(participantFixtures[0].name, {}).returns(P.resolve(participantFixtures[0]))
+      try {
+        const result = await Handler.update(createRequest({
+          params: { name: participantFixtures[0].name },
+          payload: {}
+        }))
+        test.deepEqual(result, participantResults[0], 'The results match')
+        test.end()
+      } catch (err) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
     handlerTest.test('update should throw error', async function (test) {
       Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).throws(new Error())
       try {
@@ -1027,6 +1057,60 @@ Test('Participant', participantHandlerTest => {
       const payload = {
         isActive: true
       }
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.end()
+      } catch (e) {
+        test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    handlerTest.test('updateAccount should be called with the provided params and payload when isActive is false', async function (test) {
+      const payload = {
+        isActive: false
+      }
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.end()
+      } catch (e) {
+        test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    handlerTest.test('updateAccount should be called with the provided params and payload when isActive is undefined', async function (test) {
+      const payload = {}
       const params = {
         name: 'fsp1',
         id: 1
