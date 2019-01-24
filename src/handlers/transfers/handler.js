@@ -111,6 +111,7 @@ const prepare = async (error, messages) => {
       return true
     }
     const payload = message.value.content.payload
+    const headers = message.value.content.headers
 
     Logger.info('TransferService::prepare::checking for duplicates')
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
@@ -188,7 +189,7 @@ const prepare = async (error, messages) => {
       }
       Logger.info('TransferService::prepare::validationPassed::create position topic')
       // position topic to be created and inserted here
-      await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS, payload.payeeFsp)
+      await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS, headers['fspiop-destination'])
       histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     } else {
@@ -264,6 +265,7 @@ const fulfil = async (error, messages) => {
     const metadata = message.value.metadata
     const transferId = message.value.id
     const payload = message.value.content.payload
+    const headers = message.value.content.headers
     if (metadata.event.type === TransferEventType.FULFIL &&
       (metadata.event.action === TransferEventAction.COMMIT ||
         metadata.event.action === TransferEventAction.REJECT)) {
@@ -312,7 +314,7 @@ const fulfil = async (error, messages) => {
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
-          await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, payload.payerFsp)
+          await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, headers['fspiop-destination'])
           histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
           return true
         } else {
@@ -320,7 +322,7 @@ const fulfil = async (error, messages) => {
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
-          await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS, payload.payerFsp)
+          await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS, headers['fspiop-destination'])
           histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
           return true
         }
