@@ -33,6 +33,11 @@ const Sidecar = require('../../lib/sidecar')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Boom = require('boom')
 
+const LocalEnum = {
+  activated: 'activated',
+  disabled: 'disabled'
+}
+
 const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccountIds) => {
   const link = UrlParser.toParticipantUri(name)
   const accounts = currencyList.map((currentValue) => {
@@ -163,7 +168,7 @@ const update = async function (request) {
   try {
     const updatedEntity = await Participant.update(request.params.name, request.payload)
     if (request.payload.isActive !== undefined) {
-      const isActiveText = request.payload.isActive ? 'activated' : 'disabled'
+      const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
       Logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
     }
@@ -319,7 +324,7 @@ const updateAccount = async function (request, h) {
     }
     await Participant.updateAccount(request.payload, request.params, enums)
     if (request.payload.isActive !== undefined) {
-      const isActiveText = request.payload.isActive ? 'activated' : 'disabled'
+      const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
       Logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
     }
