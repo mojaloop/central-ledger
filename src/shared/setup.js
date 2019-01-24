@@ -49,6 +49,7 @@ const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
 const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -145,11 +146,11 @@ const createHandlers = async (handlers) => {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
         case 'prepare':
-          await RegisterHandlers.transfers.registerPrepareHandlers(handler.fspList)
-          if (!Config.HANDLERS_CRON_DISABLED) {
-            Logger.info('Starting Kafka Cron Jobs...')
-            await KafkaCron.start('prepare')
-          }
+          await RegisterHandlers.transfers.registerPrepareHandler()
+          // if (!Config.HANDLERS_CRON_DISABLED) {
+          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   await KafkaCron.start('prepare')
+          // }
           break
         case 'position':
           await RegisterHandlers.positions.registerPositionHandlers(handler.fspList)
@@ -181,6 +182,12 @@ const createHandlers = async (handlers) => {
   return registeredHandlers
 }
 
+const initializeInstrumentation = () => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+  }
+}
+
 /**
  * @function initialize
  *
@@ -204,7 +211,7 @@ const initialize = async function ({service, port, modules = [], runMigrations =
   await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)
-
+  initializeInstrumentation()
   let server
   switch (service) {
     case 'api':
@@ -230,7 +237,7 @@ const initialize = async function ({service, port, modules = [], runMigrations =
       await RegisterHandlers.registerAllHandlers()
       if (!Config.HANDLERS_CRON_DISABLED) {
         Logger.info('Starting Kafka Cron Jobs...')
-        await KafkaCron.start('prepare')
+        // await KafkaCron.start('prepare')
         await KafkaCron.start('position')
       }
     }
