@@ -30,7 +30,13 @@ const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Enum = require('../../lib/enum')
 const Sidecar = require('../../lib/sidecar')
+const Logger = require('@mojaloop/central-services-shared').Logger
 const Boom = require('boom')
+
+const LocalEnum = {
+  activated: 'activated',
+  disabled: 'disabled'
+}
 
 const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccountIds) => {
   const link = UrlParser.toParticipantUri(name)
@@ -161,6 +167,11 @@ const update = async function (request) {
   Sidecar.logRequest(request)
   try {
     const updatedEntity = await Participant.update(request.params.name, request.payload)
+    if (request.payload.isActive !== undefined) {
+      const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
+      const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
+      Logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
+    }
     const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
     const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
@@ -312,6 +323,11 @@ const updateAccount = async function (request, h) {
       ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
     }
     await Participant.updateAccount(request.payload, request.params, enums)
+    if (request.payload.isActive !== undefined) {
+      const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
+      const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
+      Logger.info(`Participant account has been ${isActiveText} :: ${changeLog}`)
+    }
     return h.response().code(200)
   } catch (err) {
     throw Boom.badRequest(err.message)
