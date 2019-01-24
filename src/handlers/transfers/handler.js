@@ -188,7 +188,7 @@ const prepare = async (error, messages) => {
       }
       Logger.info('TransferService::prepare::validationPassed::create position topic')
       // position topic to be created and inserted here
-      await Utility.produceParticipantMessage(payload.payerFsp, TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS)
+      await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS, payload.payeeFsp)
       histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
       return true
     } else {
@@ -312,7 +312,7 @@ const fulfil = async (error, messages) => {
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
-          await Utility.produceParticipantMessage(existingTransfer.payeeFsp, TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
+          await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, payload.payerFsp)
           histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
           return true
         } else {
@@ -320,7 +320,7 @@ const fulfil = async (error, messages) => {
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
-          await Utility.produceParticipantMessage(existingTransfer.payerFsp, TransferEventType.POSITION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
+          await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS, payload.payerFsp)
           histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
           return true
         }

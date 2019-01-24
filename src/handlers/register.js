@@ -79,7 +79,7 @@ module.exports = {
   },
   positions: {
     registerAllHandlers: PositionHandlers.registerAllHandlers,
-    registerPositionHandlers: PositionHandlers.registerPositionHandlers
+    registerPositionHandler: PositionHandlers.registerPositionHandler
   },
   timeouts: {
     registerAllHandlers: TimeoutHandlers.registerAllHandlers,

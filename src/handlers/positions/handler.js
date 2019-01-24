@@ -41,7 +41,6 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
 const Utility = require('../lib/utility')
-const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const Enum = require('../../lib/enum')
 const TransferState = Enum.TransferState
@@ -248,54 +247,28 @@ const positions = async (error, messages) => {
   }
 }
 
-const createPositionHandlers = async (participantName) => {
+/**
+ * @function registerPositionHandler
+ *
+ * @async
+ * @description Registers the handler for position topic. Gets Kafka config from default.json
+ *
+ * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
+ */
+const registerPositionHandler = async () => {
   try {
     const positionHandler = {
       command: positions,
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.POSITION.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
+      topicName: Utility.transformGeneralTopicName(TransferEventType.POSITION, TransferEventAction.PREPARE),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.POSITION.toUpperCase())
     }
-    const topicNameList = [
-      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.ABORT),
-      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventType.FULFIL),
-      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.PREPARE)
-    ]
-    await Kafka.Consumer.createHandler(topicNameList, positionHandler.config, positionHandler.command)
-  } catch (error) {
-    Logger.error(error)
-    throw error
+    positionHandler.config.rdkafkaConf['client.id'] = positionHandler.topicName
+    await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
+    return true
+  } catch (e) {
+    Logger.error(e)
+    throw e
   }
-}
-
-/**
- * @function RegisterPositionsHandlers
- *
- * @async
- * @description Registers the position handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * createPositionHandler called to create the handler for each participant
- * @param {string[]} participantNames - Array of Participants to register
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const registerPositionHandlers = async (participantNames = []) => {
-  try {
-    let participantNamesList
-    if (Array.isArray(participantNames) && participantNames.length > 0) {
-      participantNamesList = participantNames
-    } else {
-      participantNamesList = await DAO.retrieveAllParticipants()
-    }
-    if (participantNamesList.length !== 0) {
-      for (let name of participantNamesList) {
-        await createPositionHandlers(name)
-      }
-    } else {
-      Logger.info('No participants for position handler creation')
-      return false
-    }
-  } catch (error) {
-    Logger.error(error)
-    throw error
-  }
-  return true
 }
 
 /**
@@ -308,14 +281,14 @@ const registerPositionHandlers = async (participantNames = []) => {
  */
 const registerAllHandlers = async () => {
   try {
-    return await registerPositionHandlers()
+    return await registerPositionHandler()
   } catch (error) {
     throw error
   }
 }
 
 module.exports = {
-  registerPositionHandlers,
+  registerPositionHandler,
   registerAllHandlers,
   positions
 }
