@@ -25,6 +25,7 @@ then
     export ZOOKEEPER_PORT=2181
     export MOCKSERVER_ID=mockserver_blue_moja
     export MOCKSERVER_PORT=1080
+    export MOCKSERVER_HOST=localhost
     export DB_ID=mysql_blue_moja
     export SLEEP_FACTOR_IN_SECONDS=5
     export DBUSER=central_ledger
@@ -40,6 +41,7 @@ then
     export CENTRAL_LEDGER_ADMIN_HOST=localhost
     export CENTRAL_LEDGER_ADMIN_PORT=3001
     export CENTRAL_LEDGER_ADMIN_BASE=/
+    export CNP_HOST=localhost
     export CNP_PORT=1082
     export CNP_NAME="moja.superremit"
 elif [[ ${MOJA_HUB_COLOUR} = "RED" ]];
@@ -51,6 +53,7 @@ then
     export ZOOKEEPER_PORT=2182
     export MOCKSERVER_ID=mockserver_red_moja
     export MOCKSERVER_PORT=1081
+    export MOCKSERVER_HOST=localhost
     export DB_ID=mysql_red_moja
     export SLEEP_FACTOR_IN_SECONDS=5
     export DBUSER=central_ledger
@@ -66,6 +69,7 @@ then
     export CENTRAL_LEDGER_ADMIN_HOST=localhost
     export CENTRAL_LEDGER_ADMIN_PORT=3002
     export CENTRAL_LEDGER_ADMIN_BASE=/
+    export CNP_HOST=localhost
     export CNP_PORT=1083
     export CNP_NAME="moja.superremit"
 fi

@@ -102,7 +102,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_POST\",
-    \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/transfers\"
+    \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/transfers\"
   }'"
 
   sh -c "curl -X POST \
@@ -111,7 +111,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
-    \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/transfers/{{transferId}}\"
+    \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/transfers/{{transferId}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -120,7 +120,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_ERROR\",
-    \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/transfers/{{transferId}}/error\"
+    \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/transfers/{{transferId}}/error\"
   }'"
 
   sh -c "curl -X POST \
@@ -129,7 +129,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_QUOTE_POST\",
-    \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/quotes\"
+    \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/quotes\"
   }'"
 
   sh -c "curl -X POST \
@@ -138,7 +138,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_QUOTE_PUT\",
-    \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/quotes/{{quoteId}}\"
+    \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/quotes/{{quoteId}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -147,7 +147,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT\",
-    \"value\": \"http://localhost:${MOCKSERVER_PORT}/${FSP}/parties/{{type}}/{{typeId}}\"
+    \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}/parties/{{type}}/{{typeId}}\"
   }'"
 
   echo
@@ -206,7 +206,7 @@ ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDG
 -H 'Content-Type: application/json' \
 -d '{
 \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_POST\",
-\"value\": \"http://localhost:${CNP_PORT}/transfers\"
+\"value\": \"http://${CNP_HOST}:${CNP_PORT}/transfers\"
 }'"
 
 sh -c "curl -X POST \
@@ -215,7 +215,7 @@ ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDG
 -H 'Content-Type: application/json' \
 -d '{
 \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
-\"value\": \"http://localhost:${CNP_PORT}/transfers/{{transferId}}\"
+\"value\": \"http://${CNP_HOST}:${CNP_PORT}/transfers/{{transferId}}\"
 }'"
 
 sh -c "curl -X POST \
@@ -224,7 +224,7 @@ ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDG
 -H 'Content-Type: application/json' \
 -d '{
 \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_ERROR\",
-\"value\": \"http://localhost:${CNP_PORT}/transfers/{{transferId}}/error\"
+\"value\": \"http://${CNP_HOST}:${CNP_PORT}/transfers/{{transferId}}/error\"
 }'"
 
 sh -c "curl -X POST \
@@ -233,7 +233,7 @@ ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDG
 -H 'Content-Type: application/json' \
 -d '{
 \"type\": \"FSPIOP_CALLBACK_URL_QUOTE_POST\",
-\"value\": \"http://localhost:${CNP_PORT}/quotes\"
+\"value\": \"http://${CNP_HOST}:${CNP_PORT}/quotes\"
 }'"
 
 sh -c "curl -X POST \
@@ -242,7 +242,7 @@ ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDG
 -H 'Content-Type: application/json' \
 -d '{
 \"type\": \"FSPIOP_CALLBACK_URL_QUOTE_PUT\",
-\"value\": \"http://localhost:${CNP_PORT}/quotes/{{quoteId}}\"
+\"value\": \"http://${CNP_HOST}:${CNP_PORT}/quotes/{{quoteId}}\"
 }'"
 
 echo
