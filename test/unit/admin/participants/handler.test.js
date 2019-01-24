@@ -148,7 +148,7 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('update should update and return the participant', async function (test) {
+    handlerTest.test('update should update, return participant and utilize logger', async function (test) {
       Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).returns(P.resolve(participantFixtures[0]))
       try {
         const result = await Handler.update(createRequest({
@@ -156,6 +156,39 @@ Test('Participant', participantHandlerTest => {
           payload: { isActive: 1 }
         }))
         test.deepEqual(result, participantResults[0], 'The results match')
+        test.ok(Logger.info.withArgs('Participant has been activated :: {"name":"fsp1","isActive":1}').calledOnce, 'Logger.info called once')
+        test.end()
+      } catch (err) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    handlerTest.test('update should update, return participant if participant when inactive and utilize', async function (test) {
+      Participant.update.withArgs(participantFixtures[0].name, { isActive: 0 }).returns(P.resolve(participantFixtures[0]))
+      try {
+        const result = await Handler.update(createRequest({
+          params: { name: participantFixtures[0].name },
+          payload: { isActive: 0 }
+        }))
+        test.deepEqual(result, participantResults[0], 'The results match')
+        test.ok(Logger.info.withArgs('Participant has been disabled :: {"name":"fsp1","isActive":0}').calledOnce, 'Logger.info called once')
+        test.end()
+      } catch (err) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    handlerTest.test('update should update, return participant, but omit logging when isActive is not being updated', async function (test) {
+      Participant.update.withArgs(participantFixtures[0].name, {}).returns(P.resolve(participantFixtures[0]))
+      try {
+        const result = await Handler.update(createRequest({
+          params: { name: participantFixtures[0].name },
+          payload: {}
+        }))
+        test.deepEqual(result, participantResults[0], 'The results match')
+        test.notOk(Logger.info.called, 'Logger.info call omitted')
         test.end()
       } catch (err) {
         test.fail('Error thrown')
@@ -1023,7 +1056,7 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('updateAccount should be called with the provided params and payload', async function (test) {
+    handlerTest.test('updateAccount should be called with the provided params and payload, and log when activated', async function (test) {
       const payload = {
         isActive: true
       }
@@ -1044,6 +1077,63 @@ Test('Participant', participantHandlerTest => {
 
       try {
         await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.ok(Logger.info.withArgs('Participant account has been activated :: {"name":"fsp1","id":1,"isActive":true}').calledOnce, 'Logger.info called once')
+        test.end()
+      } catch (e) {
+        test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    handlerTest.test('updateAccount should be called with the provided params and payload when isActive is false', async function (test) {
+      const payload = {
+        isActive: false
+      }
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.ok(Logger.info.withArgs('Participant account has been disabled :: {"name":"fsp1","id":1,"isActive":false}').calledOnce, 'Logger.info called once')
+        test.end()
+      } catch (e) {
+        test.fail(`error ${e} was thrown`)
+        test.end()
+      }
+    })
+
+    handlerTest.test('updateAccount should be called with the provided params and payload, and skip logging when isActive is not part of the payload', async function (test) {
+      const payload = {}
+      const params = {
+        name: 'fsp1',
+        id: 1
+      }
+
+      const h = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.deepEqual(statusCode, 200)
+            }
+          }
+        }
+      }
+
+      try {
+        await Handler.updateAccount(createRequest({ payload, params }), h)
+        test.notOk(Logger.info.called, 'Logger.info call omitted')
         test.end()
       } catch (e) {
         test.fail(`error ${e} was thrown`)
