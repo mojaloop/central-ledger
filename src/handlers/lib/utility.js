@@ -399,10 +399,10 @@ const createParticipantTopicConf = (participantName, functionality, action, part
  *
  * @returns {object} - Returns newly created general topicConfig
  */
-const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey = Uuid()) => {
+const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey = null, key = null) => {
   return {
     topicName: transformGeneralTopicName(functionality, action),
-    key: opaqueKey,
+    key,
     partition,
     opaqueKey
   }
@@ -426,7 +426,7 @@ const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey 
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
-const produceGeneralMessage = async (functionality, action, message, state, participantName) => {
+const produceGeneralMessage = async (functionality, action, message, state, key) => {
   let functionalityMapped = functionality
   let actionMapped = action
   if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
@@ -434,7 +434,7 @@ const produceGeneralMessage = async (functionality, action, message, state, part
     actionMapped = Enum.topicMap[functionality][action].action
   }
   return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
-    createGeneralTopicConf(functionalityMapped, actionMapped, 0, participantName),
+    createGeneralTopicConf(functionalityMapped, actionMapped, 0, null, key),
     getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
 }
 

@@ -55,7 +55,6 @@ Test('cli', async (cliTest) => {
         'handler',
         '--prepare',
         '--position',
-        'dfsp1, dfsp2',
         '--get',
         '--fulfil',
         '--timeout',
@@ -68,8 +67,6 @@ Test('cli', async (cliTest) => {
         '../shared/setup': SetupStub
       })
 
-      var fspList = ['dfsp1', 'dfsp2']
-
       var prepareHandler = {
         type: 'prepare',
         enabled: true
@@ -77,8 +74,7 @@ Test('cli', async (cliTest) => {
 
       var positionHandler = {
         type: 'position',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var getHandler = {
@@ -140,8 +136,6 @@ Test('cli', async (cliTest) => {
         '../shared/setup': SetupStub
       })
 
-      var fspList = [ ]
-
       var prepareHandler = {
         type: 'prepare',
         enabled: true
@@ -149,8 +143,7 @@ Test('cli', async (cliTest) => {
 
       var positionHandler = {
         type: 'position',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var modulesList = [
@@ -186,12 +179,9 @@ Test('cli', async (cliTest) => {
         '../shared/setup': SetupStub
       })
 
-      var fspList = [ ]
-
       var positionHandler = {
         type: 'position',
-        enabled: true,
-        fspList
+        enabled: true
       }
 
       var modulesList = [

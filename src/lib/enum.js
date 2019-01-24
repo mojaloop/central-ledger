@@ -232,7 +232,8 @@ const transferEventStatus = {
 }
 const headers = {
   FSPIOP: {
-    SWITCH: 'central-switch'
+    SWITCH: 'central-switch',
+    DESTINATION: 'fspiop-destination'
   }
 }
 const topicMap = {
