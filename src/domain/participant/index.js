@@ -440,29 +440,21 @@ const getLimitsForAllParticipants = async ({ currency = null, type = null }) => 
  *  "currency": "USD",
  *  "limit": {
  *    "type": "NET_DEBIT_CAP",
- *    "value": 10000000
+ *    "value": 10000000,
+ *    "thresholdAlarmPercentage": 10
  *  }
  * }
  *
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-// {
-//   "currency": "USD",
-//   "limit": {
-//       "type": "NET_DEBIT_CAP",
-//       "value": 1500,
-//       "thresholdAlarmPercentage": 10
-//   }
-// }
-
 const adjustLimits = async (name, payload) => {
   try {
     let { limit, currency } = payload
-    payload.name = name
     const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
     let result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
+    payload.name = name
     await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.EVENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
     return result
   } catch (err) {
