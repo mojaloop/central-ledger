@@ -116,10 +116,11 @@ Test('Utility Test', utilityTest => {
 
   utilityTest.test('createGeneralTopicConf should', createGeneralTopicConfTest => {
     createGeneralTopicConfTest.test('return a general topic conf object', test => {
-      const response = Utility.createGeneralTopicConf(TRANSFER, FULFIL, 0, 0)
+      const response = Utility.createGeneralTopicConf(TRANSFER, FULFIL, 0)
       test.equal(response.topicName, generalTopic)
-      test.equal(response.partition, 0)
-      test.equal(response.opaqueKey, 0)
+      test.equal(response.key, 0)
+      test.equal(response.partition, null)
+      test.equal(response.opaqueKey, null)
       test.end()
     })
 
@@ -136,10 +137,11 @@ Test('Utility Test', utilityTest => {
           }
         }
       })
-      const response = ModuleProxy.createGeneralTopicConf(TRANSFER, FULFIL, 0, 0)
+      const response = ModuleProxy.createGeneralTopicConf(TRANSFER, FULFIL, 0)
       test.equal(response.topicName, generalTopic)
-      test.equal(response.partition, 0)
-      test.equal(response.opaqueKey, 0)
+      test.equal(response.key, 0)
+      test.equal(response.partition, null)
+      test.equal(response.opaqueKey, null)
       test.end()
     })
 
