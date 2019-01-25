@@ -380,10 +380,10 @@ const createTransferMessageProtocol = (payload, type, action, state, pp = '') =>
  *
  * @returns {object} - Returns newly created participant topicConfig
  */
-const createParticipantTopicConf = (participantName, functionality, action, partition = 0, opaqueKey = 0) => {
+const createParticipantTopicConf = (participantName, functionality, action, key = null, partition = null, opaqueKey = null) => {
   return {
     topicName: transformAccountToTopicName(participantName, functionality, action),
-    key: Uuid(),
+    key,
     partition,
     opaqueKey
   }
