@@ -32,6 +32,8 @@ const src = '../../../../../src'
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const Consumer = require(`${src}/handlers/lib/kafka/consumer`)
+const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
+
 var rewire = require('rewire')
 
 Test('Consumer', ConsumerTest => {
@@ -39,6 +41,10 @@ Test('Consumer', ConsumerTest => {
 
   ConsumerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(KafkaConsumer.prototype, 'constructor').resolves()
+    sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
+    sandbox.stub(KafkaConsumer.prototype, 'consume').resolves()
+    sandbox.stub(KafkaConsumer.prototype, 'commitMessageSync').resolves()
     test.end()
   })
 
@@ -48,15 +54,41 @@ Test('Consumer', ConsumerTest => {
   })
 
   ConsumerTest.test('createHandler should', createHandlerTest => {
-    const topicName = 'admin'
-    const config = { rdkafkaConf: {} }
-
     createHandlerTest.test('throw error', async (test) => {
+      const topicName = 'admin'
+      const config = { rdkafkaConf: {} }
+      KafkaConsumer.prototype.constructor.throws(new Error())
+      KafkaConsumer.prototype.connect.throws(new Error())
       try {
         await Consumer.createHandler(topicName, config)
         test.fail('Error not thrown!')
       } catch (err) {
         test.pass()
+      }
+      test.end()
+    })
+
+    createHandlerTest.test('array topic', async (test) => {
+      const topicName = ['admin2', 'admin1']
+      const config = {rdkafkaConf: {}}
+      try {
+        await Consumer.createHandler(topicName, config)
+        test.pass('passed')
+      } catch (err) {
+        test.fail('Error Thrown')
+      }
+      test.end()
+    })
+
+    createHandlerTest.test('array topic throws error', async (test) => {
+      const topicName = ['admin2', 'admin1']
+      const config = {rdkafkaConf: {}}
+      KafkaConsumer.prototype.consume.throws(new Error())
+      try {
+        await Consumer.createHandler(topicName, config)
+        test.fail('Error Not Thrown')
+      } catch (err) {
+        test.pass('passed')
       }
       test.end()
     })

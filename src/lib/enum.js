@@ -213,7 +213,8 @@ const transferEventAction = {
   REJECT: 'reject',
   FAIL: 'fail',
   EVENT: 'event',
-  FULFIL: 'fulfil'
+  FULFIL: 'fulfil',
+  POSITION: 'position'
 }
 const adminTransferAction = {
   RECORD_FUNDS_IN: 'recordFundsIn',
@@ -231,22 +232,27 @@ const transferEventStatus = {
 }
 const headers = {
   FSPIOP: {
-    SWITCH: 'central-switch'
+    SWITCH: 'central-switch',
+    DESTINATION: 'fspiop-destination'
   }
 }
 const topicMap = {
   position: {
+    'prepare': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
+    },
     'commit': {
-      functionality: transferEventType.POSITION,
-      action: transferEventAction.FULFIL
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
     },
     'timeout-reserved': {
-      functionality: transferEventType.POSITION,
-      action: transferEventAction.ABORT
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
     },
     'reject': {
-      functionality: transferEventType.POSITION,
-      action: transferEventAction.ABORT
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
     }
   },
   notification: {

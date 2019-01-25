@@ -47,7 +47,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
 const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
-const KafkaCron = require('../handlers/lib/kafka').Cron
+// const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -153,11 +153,11 @@ const createHandlers = async (handlers) => {
           // }
           break
         case 'position':
-          await RegisterHandlers.positions.registerPositionHandlers(handler.fspList)
-          if (!Config.HANDLERS_CRON_DISABLED) {
-            Logger.info('Starting Kafka Cron Jobs...')
-            await KafkaCron.start('position')
-          }
+          await RegisterHandlers.positions.registerPositionHandler()
+          // if (!Config.HANDLERS_CRON_DISABLED) {
+          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   await KafkaCron.start('position')
+          // }
           break
         case 'fulfil':
           await RegisterHandlers.transfers.registerFulfilHandler()
@@ -235,11 +235,11 @@ const initialize = async function ({service, port, modules = [], runMigrations =
       await createHandlers(handlers)
     } else {
       await RegisterHandlers.registerAllHandlers()
-      if (!Config.HANDLERS_CRON_DISABLED) {
-        Logger.info('Starting Kafka Cron Jobs...')
-        // await KafkaCron.start('prepare')
-        await KafkaCron.start('position')
-      }
+      // if (!Config.HANDLERS_CRON_DISABLED) {
+      //   Logger.info('Starting Kafka Cron Jobs...')
+      //   // await KafkaCron.start('prepare')
+      //   await KafkaCron.start('position')
+      // }
     }
   }
 

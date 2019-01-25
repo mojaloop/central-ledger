@@ -380,10 +380,10 @@ const createTransferMessageProtocol = (payload, type, action, state, pp = '') =>
  *
  * @returns {object} - Returns newly created participant topicConfig
  */
-const createParticipantTopicConf = (participantName, functionality, action, partition = 0, opaqueKey = 0) => {
+const createParticipantTopicConf = (participantName, functionality, action, key = null, partition = null, opaqueKey = null) => {
   return {
     topicName: transformAccountToTopicName(participantName, functionality, action),
-    key: Uuid(),
+    key,
     partition,
     opaqueKey
   }
@@ -399,10 +399,10 @@ const createParticipantTopicConf = (participantName, functionality, action, part
  *
  * @returns {object} - Returns newly created general topicConfig
  */
-const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey = 0) => {
+const createGeneralTopicConf = (functionality, action, key = null, partition = null, opaqueKey = null) => {
   return {
     topicName: transformGeneralTopicName(functionality, action),
-    key: Uuid(),
+    key,
     partition,
     opaqueKey
   }
@@ -426,7 +426,7 @@ const createGeneralTopicConf = (functionality, action, partition = 0, opaqueKey 
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
-const produceGeneralMessage = async (functionality, action, message, state) => {
+const produceGeneralMessage = async (functionality, action, message, state, key) => {
   let functionalityMapped = functionality
   let actionMapped = action
   if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
@@ -434,7 +434,7 @@ const produceGeneralMessage = async (functionality, action, message, state) => {
     actionMapped = Enum.topicMap[functionality][action].action
   }
   return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
-    createGeneralTopicConf(functionalityMapped, actionMapped),
+    createGeneralTopicConf(functionalityMapped, actionMapped, key),
     getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
 }
 

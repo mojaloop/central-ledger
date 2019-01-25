@@ -84,7 +84,7 @@ const messageProtocol = {
   to: transfer.payeeFsp,
   type: 'application/json',
   content: {
-    header: {},
+    headers: {'fspiop-destination': transfer.payerFsp},
     payload: transfer
   },
   metadata: {
@@ -116,7 +116,8 @@ const fulfilMessages = [
     topic: topicName,
     value: Object.assign({}, messageProtocol, {
       content: {
-        payload: fulfil
+        payload: fulfil,
+        headers: {'fspiop-destination': 'dfsp2'}
       },
       metadata: {
         event: {

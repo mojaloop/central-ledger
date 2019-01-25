@@ -51,7 +51,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .alias('h') // alternative sub-command is `o`
   .description('Start a specified Handler') // command description
   .option('--prepare', 'Start the Prepare Handler')
-  .option('--position [fspNameList]', 'Start the Position Handler - [fspNameList]: "," delimited list of FSPs. Optional, e,g "dfsp1, dfsp2", and if not provided all existing FSPs will be registered')
+  .option('--position', 'Start the Position Handler')
   .option('--get', 'Start the Transfer Get Handler')
   .option('--fulfil', 'Start the Fulfil Handler')
   .option('--timeout', 'Start the Timeout Handler')
@@ -69,28 +69,11 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       }
       handlerList.push(handler)
     }
-    if (args.position && typeof args.position === 'string') {
-      Logger.debug(`CLI: Executing --position ${args.position}`)
-      let parsedHandlerList = args.position.replace(/\s/g, '').split(',')
-      // removing holes, and, falsy (null, undefined, 0, -0, NaN, "", false, document.all) etc:
-      parsedHandlerList = parsedHandlerList.filter(x => x)
-      // if (Array.isArray(parsedHandlerList) && parsedHandlerList.length >= 1) {
-      let handler = {
-        type: 'position',
-        enabled: true,
-        fspList: parsedHandlerList
-      }
-      handlerList.push(handler)
-      // } else {
-      //   throw new Error('Invalid [fspNameList] provided for --position. Please ensure that it is a "," delimated string. e.g. "fsp1, fsp2".')
-      // }
-    }
-    if (args.position && typeof args.position === 'boolean') {
+    if (args.position) {
       Logger.debug(`CLI: Executing --position`)
       let handler = {
         type: 'position',
-        enabled: true,
-        fspList: []
+        enabled: true
       }
       handlerList.push(handler)
     }
