@@ -455,18 +455,18 @@ const adjustLimits = async (name, payload) => {
     participantExists(participant)
     let result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
     payload.name = name
-    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.EVENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, 'limit-adjustment', createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
     return result
   } catch (err) {
     throw err
   }
 }
 
-const createLimitAdjustmentMessageProtocol = (payload, action = 'limitAdjustment', state = '', pp = '') => {
+const createLimitAdjustmentMessageProtocol = (payload, action = 'limit-adjustment', state = '', pp = '') => {
   return {
     id: Uuid(),
     from: payload.name,
-    to: 'SYSTEM',
+    to: Enum.headers.FSPIOP.SWITCH,
     type: 'application/json',
     content: {
       header: {},

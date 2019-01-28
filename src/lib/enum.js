@@ -277,6 +277,10 @@ const topicMap = {
     'get': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
+    },
+    'limit-adjustment': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
     }
   }
 }
