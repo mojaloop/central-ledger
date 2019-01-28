@@ -466,7 +466,7 @@ const createLimitAdjustmentMessageProtocol = (payload, action = 'limit-adjustmen
   return {
     id: Uuid(),
     from: payload.name,
-    to: Enum.headers.FSPIOP.SWITCH,
+    to: Config.HUB_NAME,
     type: 'application/json',
     content: {
       header: {},
