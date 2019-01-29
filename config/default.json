@@ -80,17 +80,9 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-prepare",
-              "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -111,17 +103,9 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-get",
-              "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-get",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -142,17 +126,9 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-fulfil",
-              "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -173,17 +149,9 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-reject",
-              "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-reject",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -204,17 +172,9 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-position",
-              "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-position",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -236,18 +196,10 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "admin-transfer-consume",
-              "debug": "all",
-              "group.id": "central-ledger-kafka",
+              "client.id": "cl-con-transfer-admin",
+              "group.id": "cl-group-transfer-admin",
               "metadata.broker.list": "localhost:9092",
-              "socket.blocking.max.ms": 1,
-              "fetch.wait.max.ms": 1,
-              "fetch.error.backoff.ms": 1,
-              "queue.buffering.max.ms": 1,
-              "broker.version.fallback": "0.10.1.0",
-              "api.version.request": true,
-              "enable.auto.commit": false,
-              "auto.commit.interval.ms": 200
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -264,7 +216,6 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-prepare",
               "event_cb": true,
@@ -283,7 +234,6 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-fulfil",
               "event_cb": true,
@@ -302,7 +252,6 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-reject",
               "event_cb": true,
@@ -321,7 +270,6 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-position",
               "event_cb": true,
@@ -342,7 +290,6 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "debug": "all",
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-notification-event",
               "event_cb": true,
@@ -363,9 +310,8 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "debug": "all",
               "metadata.broker.list": "localhost:9092",
-              "client.id": "admin-transfer-produce",
+              "client.id": "cl-prod-transfer-admin",
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
