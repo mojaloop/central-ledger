@@ -136,9 +136,12 @@ sudo ln -s /opt/Postman/Postman /usr/bin/postman
 ```
 
 ##### Setup Postman
-* open *Postman*
-* click **Import** and then **Import File**
-* navigate to the central_ledger directory and select (to be added) and import it into postman
+* Download this file https://raw.githubusercontent.com/mojaloop/postman/master/Mojaloop.postman_collection.json
+* Open **Postman**
+* Click **Import** and then **Import File**
+* Select the *Mojaloop.postman_collection.json* file you downloaded
+* In the imported collection, navigate to the *central_ledger* directory  
+
 #### nvm 
 
 ######(This is optional, you can install node directly from the website, node version manager(nvm) isn't really needed unless you want to use multiple versions of node)
