@@ -140,6 +140,9 @@ sudo ln -s /opt/Postman/Postman /usr/bin/postman
 * Open **Postman**
 * Click **Import** and then **Import File**
 * Select the *Mojaloop.postman_collection.json* file you downloaded
+* You'll now need to import environment variables. For local testing, download this file https://raw.githubusercontent.com/mojaloop/postman/master/environments/MojaloopLocal.postman_environment.json
+* Click **Import** and then **Import File**
+* Select the *MojaloopLocal.postman_environment.json* file you downloaded
 * In the imported collection, navigate to the *central_ledger* directory  
 
 #### nvm 
