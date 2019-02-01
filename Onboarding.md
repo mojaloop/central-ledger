@@ -199,7 +199,58 @@ npm rebuild
 export CLEDG_DATABASE_URI=mysql://central_ledger:password@localhost:3306/central_ledger
 ```
 * disable SIDECAR in **config/default.json** temporary by setting `"SIDECAR": { "DISABLED": "true", ...`
-* run `npm start` *(to run it locally)* or `npm run dev` *(to run it on your Docker host)*
+
+Now, we setup Kafka. Navigate `test/util/scripts` and run the script `restartKafka-johnnypark.sh`:
+
+```
+cd test/util/scripts
+./restartKafka-johnnypark.sh
+```
+
+That done, let's setup and populate database. While still in the same directory, run:
+
+```
+./restartDb.sh
+./populateTestData.sh
+```
+
+Lastly, let's start a mock server:
+
+```
+./restartMockServer.sh
+```
+All that done, let's run the central ledger!
+***cd*** into the central_ledger directory (`cd ../../..` if you were in the scripts folder) then run:
+
+`npm start` *(to run it locally)* or `npm run dev` *(to run it on your Docker host)*
+
+Your output should look similar to:
+
+```
+> @mojaloop/ml-api-adapter@4.4.1 start /fullpath/to/ml-api-adapter
+> run-p start:api
+
+
+> @mojaloop/ml-api-adapter@4.4.1 start:api /fullpath/to/ml-api-adapter
+> node src/api/index.js
+
+http://hostname.local:4000
+  GET    /                              Metadata
+  GET    /documentation
+  GET    /health                        Status of adapter
+  GET    /metrics                       Prometheus metrics endpoint
+  GET    /swagger.json
+  GET    /swaggerui/{path*}
+  GET    /swaggerui/extend.js
+  POST   /transfers                     Transfer API.
+  GET    /transfers/{id}                Get a transfer by Id
+  PUT    /transfers/{id}                Fulfil a transfer
+
+2019-02-01T13:30:30.454Z - info: participantEndpointCache::initializeCache::start
+2019-02-01T13:30:30.456Z - info: participantEndpointCache::initializeCache::Cache initialized successfully
+2019-02-01T13:30:30.457Z - info: Notification::startConsumer
+2019-02-01T13:30:30.458Z - info: Notification::startConsumer - starting Consumer for topicNames: [topic-notification-event]
+```
 
 ##### Run Postman
 * Use the postman collection from the [postman repo](https://github.com/mojaloop/postman)
