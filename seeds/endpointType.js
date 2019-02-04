@@ -52,6 +52,10 @@ const endpointTypes = [
   {
     'name': 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL',
     'description': 'Participant/Hub operator email address to which the net debit cap adjustment e-mail notification can be sent'
+  },
+  {
+    'name': 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL',
+    'description': 'Participant/Hub operator email address to which the position change due to settlement transfer e-mail notification can be sent'
   }
 ]
 
