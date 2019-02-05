@@ -26,51 +26,51 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
+const Handler = require('../../../../src/endpoints/metrics/handler')
+const Metrics = require('@mojaloop/central-services-metrics')
 
-const Logger = require('@mojaloop/central-services-shared').Logger
-const Config = require('../../../src/lib/config')
-const Routes = require('../../../src/api/routes')
-const Setup = require('../../../src/shared/setup')
+function createRequest (routes) {
+  let value = routes || []
+  return {
+    server: {
+      table: () => {
+        return [{ table: value }]
+      }
+    }
+  }
+}
 
-Test('Api index', indexTest => {
+Test('metrics handler', (handlerTest) => {
   let sandbox
-
-  indexTest.beforeEach(test => {
+  handlerTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Setup)
-    sandbox.stub(Logger)
-    test.end()
+    sandbox.stub(Metrics)
+    t.end()
   })
 
-  indexTest.afterEach(test => {
+  handlerTest.afterEach(t => {
     sandbox.restore()
-    test.end()
+    t.end()
   })
 
-  indexTest.test('export should', exportTest => {
-    exportTest.test('initialize server', async function (test) {
-      const server = {
-        start: sandbox.stub(),
-        info: {
-          uri: ''
+  handlerTest.test('metrics should', (healthTest) => {
+    healthTest.test('return thr metrics ok', async function (assert) {
+      let reply = {
+        response: (response) => {
+          // assert.equal(response.status, 'OK')
+          return {
+            code: (statusCode) => {
+              assert.equal(statusCode, 200)
+              assert.end()
+            }
+          }
         }
       }
-      server.start.returns(P.resolve({}))
-      Setup.initialize.returns(P.resolve(server))
 
-      await require('../../../src/api/index')
-      test.ok(Setup.initialize.calledWith({
-        service: 'api',
-        port: Config.PORT,
-        modules: [Routes],
-        runMigrations: true,
-        runHandlers: !Config.HANDLERS_DISABLED
-      }))
-      test.end()
+      Handler.metrics(createRequest(), reply)
     })
-    exportTest.end()
+    healthTest.end()
   })
 
-  indexTest.end()
+  handlerTest.end()
 })

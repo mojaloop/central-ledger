@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Config = require('../../../../src/lib/config')
-const Handler = require('../../../../src/api/metadata/handler')
+const Handler = require('../../../../src/endpoints/root/handler')
 const apiTags = ['api']
 
 function createRequest (routes) {
@@ -60,25 +60,6 @@ Test('metadata handler', (handlerTest) => {
     Config.AMOUNT.PRECISION = originalPrecision
     Config.HOSTNAME = originalHostName
     t.end()
-  })
-
-  handlerTest.test('health should', (healthTest) => {
-    healthTest.test('return status ok', async function (assert) {
-      let reply = {
-        response: (response) => {
-          assert.equal(response.status, 'OK')
-          return {
-            code: (statusCode) => {
-              assert.equal(statusCode, 200)
-              assert.end()
-            }
-          }
-        }
-      }
-
-      Handler.health(createRequest(), reply)
-    })
-    healthTest.end()
   })
 
   handlerTest.test('metadata should', function (metadataTest) {

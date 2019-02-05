@@ -24,15 +24,53 @@
 
 'use strict'
 
-const Test = require('tape')
-const Base = require('../../base')
-const AdminRoutes = require('../../../../src/admin/routes')
+const Test = require('tapes')(require('tape'))
+const Sinon = require('sinon')
+const P = require('bluebird')
 
-Test('test participant routes', async function (assert) {
-  let req = Base.buildRequest({ url: '/participants/{name}', method: 'GET' })
-  const server = await Base.setup(AdminRoutes)
-  const res = await server.inject(req)
-  assert.ok(res)
-  await server.stop()
-  assert.end()
+const Logger = require('@mojaloop/central-services-shared').Logger
+const Config = require('../../../src/lib/config')
+const Routes = require('../../../src/endpoints/routes')
+const Setup = require('../../../src/shared/setup')
+
+Test('Api index', indexTest => {
+  let sandbox
+
+  indexTest.beforeEach(test => {
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(Setup)
+    sandbox.stub(Logger)
+    test.end()
+  })
+
+  indexTest.afterEach(test => {
+    sandbox.restore()
+    test.end()
+  })
+
+  indexTest.test('export should', exportTest => {
+    exportTest.test('initialize server', async function (test) {
+      const server = {
+        start: sandbox.stub(),
+        info: {
+          uri: ''
+        }
+      }
+      server.start.returns(P.resolve({}))
+      Setup.initialize.returns(P.resolve(server))
+
+      await require('../../../src/endpoints/index')
+      test.ok(Setup.initialize.calledWith({
+        service: 'api',
+        port: Config.PORT,
+        modules: [Routes],
+        runMigrations: true,
+        runHandlers: !Config.HANDLERS_DISABLED
+      }))
+      test.end()
+    })
+    exportTest.end()
+  })
+
+  indexTest.end()
 })

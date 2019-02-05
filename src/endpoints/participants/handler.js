@@ -24,12 +24,12 @@
 
 'use strict'
 
-const Participant = require('../../domain/participant')
-const Errors = require('../../errors')
+const Participant = require('../../domain/participant/index')
+const Errors = require('../../errors/index')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Enum = require('../../lib/enum')
-const Sidecar = require('../../lib/sidecar')
+const Sidecar = require('../../lib/sidecar/index')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Boom = require('boom')
 

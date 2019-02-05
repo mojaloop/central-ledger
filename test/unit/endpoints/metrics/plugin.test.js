@@ -24,53 +24,34 @@
 
 'use strict'
 
-const Test = require('tapes')(require('tape'))
-const Sinon = require('sinon')
-const Handler = require('../../../../src/api/metrics/handler')
-const Metrics = require('@mojaloop/central-services-metrics')
+const Test = require('tape')
+const Plugins = require('../../../../src/endpoints/metrics/plugin')
 
-function createRequest (routes) {
-  let value = routes || []
-  return {
-    server: {
-      table: () => {
-        return [{ table: value }]
-      }
+class Server {
+  constructor () {
+    this.registrations = []
+    this.route = () => { }
+  }
+
+  register (obj) {
+    if (obj instanceof Array) {
+      this.registrations.push(...obj)
+    } else {
+      this.registrations.push(obj)
     }
+  }
+
+  contains (obj) {
+    return this.registrations.indexOf(obj) > -1
   }
 }
 
-Test('metrics handler', (handlerTest) => {
-  let sandbox
-  handlerTest.beforeEach(t => {
-    sandbox = Sinon.createSandbox()
-    sandbox.stub(Metrics)
-    t.end()
+Test('registerPlugins should', pluginsTest => {
+  pluginsTest.test('registers base modules', async function (test) {
+    const server = await new Server()
+    await Plugins.plugin.register(server)
+    test.pass('plugin registered')
+    test.end()
   })
-
-  handlerTest.afterEach(t => {
-    sandbox.restore()
-    t.end()
-  })
-
-  handlerTest.test('metrics should', (healthTest) => {
-    healthTest.test('return thr metrics ok', async function (assert) {
-      let reply = {
-        response: (response) => {
-          // assert.equal(response.status, 'OK')
-          return {
-            code: (statusCode) => {
-              assert.equal(statusCode, 200)
-              assert.end()
-            }
-          }
-        }
-      }
-
-      Handler.metrics(createRequest(), reply)
-    })
-    healthTest.end()
-  })
-
-  handlerTest.end()
+  pluginsTest.end()
 })

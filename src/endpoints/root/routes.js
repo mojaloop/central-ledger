@@ -1,16 +1,16 @@
 'use strict'
 
 const tags = ['api', 'root']
+const Handler = require('./handler')
 
 module.exports = [
   {
     method: 'GET',
     path: '/',
-    handler: function (request, h) {
-      return h.response({ status: 'OK' }).code(200)
-    },
+    handler: Handler.metadata,
     options: {
-      tags
+      tags: tags,
+      description: 'Metadata'
     }
   },
   {

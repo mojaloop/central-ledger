@@ -25,33 +25,39 @@
 'use strict'
 
 const Test = require('tape')
-const Plugins = require('../../../../src/api/metrics/plugin')
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/endpoints/routes')
+const Sinon = require('sinon')
+const Enum = require('../../../../src/lib/enum')
+const P = require('bluebird')
 
-class Server {
-  constructor () {
-    this.registrations = []
-    this.route = () => { }
-  }
+Test('test root routes - health', async function (assert) {
+  let req = Base.buildRequest({ url: '/health', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  await server.stop()
+  assert.end()
+})
 
-  register (obj) {
-    if (obj instanceof Array) {
-      this.registrations.push(...obj)
-    } else {
-      this.registrations.push(obj)
-    }
-  }
+Test('test root routes - enums', async function (assert) {
+  let sandbox = Sinon.createSandbox()
 
-  contains (obj) {
-    return this.registrations.indexOf(obj) > -1
-  }
-}
+  sandbox.stub(Enum, 'all').returns(P.resolve({}))
+  let req = Base.buildRequest({ url: '/enums', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  sandbox.restore()
+  await server.stop()
+  assert.end()
+})
 
-Test('registerPlugins should', pluginsTest => {
-  pluginsTest.test('registers base modules', async function (test) {
-    const server = await new Server()
-    await Plugins.plugin.register(server)
-    test.pass('plugin registered')
-    test.end()
-  })
-  pluginsTest.end()
+Test('test root routes - /', async function (assert) {
+  let req = Base.buildRequest({ url: '/', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  await server.stop()
+  assert.end()
 })

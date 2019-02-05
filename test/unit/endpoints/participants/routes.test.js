@@ -25,12 +25,12 @@
 'use strict'
 
 const Test = require('tape')
-const Base = require('../base')
-const ApiRoutes = require('../../../src/api/routes')
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/endpoints/routes')
 
-Test('test health', async function (assert) {
-  let req = Base.buildRequest({ url: '/health', method: 'GET' })
-  const server = await Base.setup(ApiRoutes)
+Test('test participant routes', async function (assert) {
+  let req = Base.buildRequest({ url: '/participants/{name}', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)
   await server.stop()
