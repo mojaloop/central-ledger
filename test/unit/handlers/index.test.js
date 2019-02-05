@@ -6,7 +6,7 @@ const P = require('bluebird')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
-const MetricsPlugin = require('../../../src/endpoints/metrics/plugin')
+const MetricsPlugin = require('../../../src/api/metrics/plugin')
 
 Test('cli', async (cliTest) => {
   cliTest.beforeEach(test => {

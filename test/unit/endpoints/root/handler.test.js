@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Config = require('../../../../src/lib/config')
-const Handler = require('../../../../src/endpoints/root/handler')
+const Handler = require('../../../../src/api/root/handler')
 const apiTags = ['api']
 
 function createRequest (routes) {

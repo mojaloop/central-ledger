@@ -26,7 +26,7 @@
 
 const Test = require('tape')
 const Base = require('../base')
-const ApiRoutes = require('../../../src/endpoints/routes')
+const ApiRoutes = require('../../../src/api/routes')
 
 Test('test health', async function (assert) {
   let req = Base.buildRequest({ url: '/health', method: 'GET' })

@@ -26,7 +26,7 @@
 
 const Test = require('tape')
 const Base = require('../../base')
-const AdminRoutes = require('../../../../src/endpoints/routes')
+const AdminRoutes = require('../../../../src/api/routes')
 const Sinon = require('sinon')
 const Enum = require('../../../../src/lib/enum')
 const P = require('bluebird')

@@ -30,7 +30,7 @@ const P = require('bluebird')
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../src/lib/config')
-const Routes = require('../../../src/endpoints/routes')
+const Routes = require('../../../src/api/routes')
 const Setup = require('../../../src/shared/setup')
 
 Test('Api index', indexTest => {
@@ -59,7 +59,7 @@ Test('Api index', indexTest => {
       server.start.returns(P.resolve({}))
       Setup.initialize.returns(P.resolve(server))
 
-      await require('../../../src/endpoints/index')
+      await require('../../../src/api/index')
       test.ok(Setup.initialize.calledWith({
         service: 'api',
         port: Config.PORT,

@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Handler = require('../../../../src/endpoints/metrics/handler')
+const Handler = require('../../../../src/api/metrics/handler')
 const Metrics = require('@mojaloop/central-services-metrics')
 
 function createRequest (routes) {

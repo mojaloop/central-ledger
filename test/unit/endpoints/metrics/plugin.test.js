@@ -25,7 +25,7 @@
 'use strict'
 
 const Test = require('tape')
-const Plugins = require('../../../../src/endpoints/metrics/plugin')
+const Plugins = require('../../../../src/api/metrics/plugin')
 
 class Server {
   constructor () {
