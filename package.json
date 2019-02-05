@@ -20,7 +20,8 @@
     ]
   },
   "scripts": {
-    "start": "CLEDG_HOSTNAME=http://localhost:3001 node src/api/index.js",
+    "start": "run-p start:api",
+    "start:api": "CLEDG_HOSTNAME=http://localhost:3001 node src/api/index.js",
     "start:handlers": "node src/handlers/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "test": "npm run test:unit | faucet",
