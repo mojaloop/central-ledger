@@ -1,18 +1,8 @@
 'use strict'
 
 const tags = ['api', 'root']
-const Handler = require('./handler')
 
 module.exports = [
-  {
-    method: 'GET',
-    path: '/',
-    handler: Handler.metadata,
-    options: {
-      tags: tags,
-      description: 'Metadata'
-    }
-  },
   {
     method: 'GET',
     path: '/health',
