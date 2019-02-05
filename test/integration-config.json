@@ -1,6 +1,5 @@
 {
-  "PORT": 3000,
-  "ADMIN_PORT": 3001,
+  "PORT": 3001,
   "HOSTNAME": "http://central-ledger",
   "ENABLE_TOKEN_AUTH": false,
   "ENABLE_BASIC_AUTH": false,
