@@ -5,7 +5,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Handler = require('../../../../src/admin/participants/handler')
+const Handler = require('../../../../src/api/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
 const Enum = require('../../../../src/lib/enum')
