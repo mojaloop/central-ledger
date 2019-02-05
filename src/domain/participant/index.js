@@ -278,6 +278,9 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     if (limitAndInitialPosition.initialPosition == null) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
+    let payload = limitAndInitialPositionObj
+    payload.name = participantName
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, 'limit-adjustment', createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
     throw err
