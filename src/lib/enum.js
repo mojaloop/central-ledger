@@ -221,6 +221,11 @@ const adminTransferAction = {
   RECORD_FUNDS_OUT_COMMIT: 'recordFundsOutCommit',
   RECORD_FUNDS_OUT_ABORT: 'recordFundsOutAbort'
 }
+
+const adminNotificationActions = {
+  LIMIT_ADJUSTMENT: 'limit-adjustment'
+}
+
 const rejectionType = {
   EXPIRED: 'expired',
   CANCELLED: 'cancelled'
@@ -229,11 +234,13 @@ const transferEventStatus = {
   SUCCESS: 'success',
   FAILED: 'failed'
 }
+
 const headers = {
   FSPIOP: {
     SWITCH: 'central-switch'
   }
 }
+
 const topicMap = {
   position: {
     'commit': {
@@ -307,6 +314,7 @@ module.exports = {
   transferEventType,
   transferEventAction,
   adminTransferAction,
+  adminNotificationActions,
   rejectionType,
   transferEventStatus,
   headers,
