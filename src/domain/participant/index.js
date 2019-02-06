@@ -278,6 +278,8 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     if (limitAndInitialPosition.initialPosition == null) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
     }
+    let payload = Object.assign({}, limitAndInitialPositionObj, {name: participantName})
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
     throw err
@@ -455,18 +457,18 @@ const adjustLimits = async (name, payload) => {
     participantExists(participant)
     let result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
     payload.name = name
-    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.EVENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
+    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
     return result
   } catch (err) {
     throw err
   }
 }
 
-const createLimitAdjustmentMessageProtocol = (payload, action = 'limitAdjustment', state = '', pp = '') => {
+const createLimitAdjustmentMessageProtocol = (payload, action = Enum.adminNotificationActions.LIMIT_ADJUSTMENT, state = '', pp = '') => {
   return {
     id: Uuid(),
     from: payload.name,
-    to: 'SYSTEM',
+    to: Config.HUB_NAME,
     type: 'application/json',
     content: {
       header: {},
