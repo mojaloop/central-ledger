@@ -1,4 +1,8 @@
 # central-ledger
+[![Git Commit](https://img.shields.io/github/last-commit/mojaloop/central-ledger.svg?style=flat)](https://github.com/mojaloop/central-ledger/commits/master)
+[![Git Releases](https://img.shields.io/github/release/mojaloop/central-ledger.svg?style=flat)](https://github.com/mojaloop/central-ledger/releases)
+[![Docker pulls](https://img.shields.io/docker/pulls/mojaloop/central-ledger.svg?style=flat)](https://hub.docker.com/r/mojaloop/central-ledger)
+[![CircleCI](https://circleci.com/gh/mojaloop/central-ledger.svg?style=svg)](https://circleci.com/gh/mojaloop/central-ledger)
 
 The central ledger is a series of services that facilitate clearing and settlement of transfers between DFSPs, including the following functions:
 

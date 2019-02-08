@@ -37,7 +37,10 @@
       },
       "config": {
         "timeout": 5000,
-        "prefix": "moja_cl_"
+        "prefix": "moja_cl_",
+        "defaultLabels": {
+          "serviceName": "central-service"
+        }
       }
     }
   },
