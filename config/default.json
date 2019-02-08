@@ -38,9 +38,9 @@
       "config": {
         "timeout": 5000,
         "prefix": "moja_cl_",
-        "defaultLabels": [
-          {"serviceName": "handler"}
-        ]
+        "defaultLabels": {
+          "serviceName": "central-service"
+        }
       }
     }
   },
