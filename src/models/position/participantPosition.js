@@ -36,7 +36,7 @@ const insert = async (participantPosition) => {
 
 const update = async (participantPosition) => {
   try {
-    return await Db.participantPosition.update({participantCurrencyId: participantPosition.participantCurrencyId}, {value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date()})
+    return await Db.participantPosition.update({ participantCurrencyId: participantPosition.participantCurrencyId }, { value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date() })
   } catch (e) {
     throw e
   }
@@ -44,7 +44,7 @@ const update = async (participantPosition) => {
 
 const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
-    return await Db.participantPosition.findOne({participantCurrencyId})
+    return await Db.participantPosition.findOne({ participantCurrencyId })
   } catch (e) {
     throw e
   }

@@ -41,7 +41,7 @@ const insert = async (participantLimit) => {
 
 const update = async (participantLimit) => {
   try {
-    return await Db.participantLimit.update({participantCurrencyId: participantLimit.participantCurrencyId}, {value: participantLimit.value, isActive: participantLimit.isActive})
+    return await Db.participantLimit.update({ participantCurrencyId: participantLimit.participantCurrencyId }, { value: participantLimit.value, isActive: participantLimit.isActive })
   } catch (e) {
     throw e
   }
@@ -49,7 +49,7 @@ const update = async (participantLimit) => {
 
 const getLimitByCurrencyId = async (participantCurrencyId) => {
   try {
-    return await Db.participantLimit.findOne({participantCurrencyId})
+    return await Db.participantLimit.findOne({ participantCurrencyId })
   } catch (e) {
     throw e
   }

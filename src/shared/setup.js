@@ -57,7 +57,10 @@ const migrate = (runMigrations) => {
 const getEnums = (id) => {
   return Enums[id]()
 }
-const connectDatabase = async () => await Db.connect(Config.DATABASE_URI)
+const connectDatabase = async () => {
+  let result = await Db.connect(Config.DATABASE_URI)
+  return result
+}
 
 /**
  * @function createServer
@@ -207,7 +210,7 @@ const initializeInstrumentation = () => {
  * @param {handler[]} handlers List of Handlers to be registered
  * @returns {object} Returns HTTP Server object
  */
-const initialize = async function ({service, port, modules = [], runMigrations = false, runHandlers = false, handlers = []}) {
+const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
   await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)

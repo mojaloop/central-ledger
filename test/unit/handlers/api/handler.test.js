@@ -10,7 +10,7 @@ function createRequest (routes) {
   return {
     server: {
       table: () => {
-        return [{table: value}]
+        return [{ table: value }]
       }
     }
   }

@@ -60,7 +60,7 @@ Test('Transfer model', async (transfer) => {
     Model.getById(transferRecord.transferId)
       .then(result => {
         assert.deepEqual(result, transferRecord, 'match the result object')
-        assert.ok(Db.transfer.findOne.calledWith({transferId: transferRecord.transferId}), 'called with transferId')
+        assert.ok(Db.transfer.findOne.calledWith({ transferId: transferRecord.transferId }), 'called with transferId')
         assert.end()
       })
   })
@@ -80,7 +80,7 @@ Test('Transfer model', async (transfer) => {
 
   await transfer.test('saveTransfer test', async (assert) => {
     try {
-      let saved = {transferId: transferRecord.transferId}
+      let saved = { transferId: transferRecord.transferId }
       Db.transfer.insert.returns(Promise.resolve(saved))
       let transferCreated = await Model.saveTransfer(transferRecord)
       assert.equal(transferCreated, saved, 'transfer is inserted and id is returned')
