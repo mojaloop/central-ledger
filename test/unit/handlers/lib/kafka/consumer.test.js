@@ -70,7 +70,7 @@ Test('Consumer', ConsumerTest => {
 
     createHandlerTest.test('array topic', async (test) => {
       const topicName = ['admin2', 'admin1']
-      const config = {rdkafkaConf: {}}
+      const config = { rdkafkaConf: {} }
       try {
         await Consumer.createHandler(topicName, config)
         test.pass('passed')
@@ -82,7 +82,7 @@ Test('Consumer', ConsumerTest => {
 
     createHandlerTest.test('array topic throws error', async (test) => {
       const topicName = ['admin2', 'admin1']
-      const config = {rdkafkaConf: {}}
+      const config = { rdkafkaConf: {} }
       KafkaConsumer.prototype.consume.throws(new Error())
       try {
         await Consumer.createHandler(topicName, config)

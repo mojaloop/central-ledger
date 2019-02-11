@@ -46,7 +46,7 @@ const getByParticipantPositionId = async (participantPositionId) => {
   try {
     return await Db.participantPositionChange.query(async (builder) => {
       let result = builder
-        .where({'participantPositionChange.participantPositionId': participantPositionId})
+        .where({ 'participantPositionChange.participantPositionId': participantPositionId })
         .select('participantPositionChange.*')
         .orderBy('participantPositionChangeId', 'desc')
         .first()

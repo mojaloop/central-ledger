@@ -1329,7 +1329,7 @@ Test('Participant facade', async (facadeTest) => {
         'pc.*',
         'pl.*',
         'lt.name as limitType'
-    ).calledOnce, 'select all columns from participant, participantCurrency and participantLimit')
+      ).calledOnce, 'select all columns from participant, participantCurrency and participantLimit')
       test.end()
     } catch (err) {
       Logger.error(`getLimitsForAllParticipants failed with error - ${err}`)
@@ -1385,7 +1385,7 @@ Test('Participant facade', async (facadeTest) => {
         'pc.*',
         'pl.*',
         'lt.name as limitType'
-    ).calledOnce, 'select all columns from participant, participantCurrency and participantLimit')
+      ).calledOnce, 'select all columns from participant, participantCurrency and participantLimit')
       test.end()
     } catch (err) {
       Logger.error(`getLimitsForAllParticipants failed with error - ${err}`)

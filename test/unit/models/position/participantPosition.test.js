@@ -102,7 +102,7 @@ Test('Participant Limit model', async (participantPositionTest) => {
 
   await participantPositionTest.test('getPositionByCurrencyId participant position', async (assert) => {
     try {
-      Db.participantPosition.findOne.withArgs({participantCurrencyId: participantPosition1.participantCurrencyId}).returns(1)
+      Db.participantPosition.findOne.withArgs({ participantCurrencyId: participantPosition1.participantCurrencyId }).returns(1)
       var result = await Model.getPositionByCurrencyId(participantPosition1)
       assert.ok(Sinon.match(result, 1), `returns ${result}`)
       assert.end()
@@ -115,7 +115,7 @@ Test('Participant Limit model', async (participantPositionTest) => {
 
   await participantPositionTest.test('getPositionByCurrencyId participant position should throw an error', async (assert) => {
     try {
-      Db.participantPosition.findOne.withArgs({participantCurrencyId: participantPosition1.participantCurrencyId}).throws(new Error('message'))
+      Db.participantPosition.findOne.withArgs({ participantCurrencyId: participantPosition1.participantCurrencyId }).throws(new Error('message'))
       await Model.getPositionByCurrencyId(participantPosition1.participantCurrencyId)
       assert.fail('Error not thrown!')
       assert.end()

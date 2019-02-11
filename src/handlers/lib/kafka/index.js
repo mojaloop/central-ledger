@@ -35,10 +35,8 @@
 
 const Producer = require('./producer')
 const Consumer = require('./consumer')
-const Cron = require('./cron')
 
 module.exports = {
   Producer,
-  Consumer,
-  Cron
+  Consumer
 }

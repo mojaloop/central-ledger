@@ -33,13 +33,13 @@ const participantRegex = new RegExp(`${Config.HOSTNAME}/participants/([A-Za-z0-9
 const transfersRegex = new RegExp(`${Config.HOSTNAME}/transfers/([a-f\\d]{8}(-[a-f\\d]{4}){3}-[a-f\\d]{12})`, 'i')
 const participantTransfersRouteRegex = new RegExp(/\/participants\/([A-Za-z0-9_]*)\/transfers/, 'i')
 
-const nameFromParticipantUri = (uri, callback) => {
+const nameFromParticipantUri = (uri, done) => {
   const matches = uri.match(participantRegex)
-  const hasCallback = (typeof callback === 'function')
+  const hasCallback = (typeof done === 'function')
   if (matches) {
-    return (hasCallback) ? callback(null, matches[1]) : matches[1]
+    return (hasCallback) ? done(null, matches[1]) : matches[1]
   } else {
-    return (hasCallback) ? callback('no match', null) : null
+    return (hasCallback) ? done('no match', null) : null
   }
 }
 
@@ -54,13 +54,13 @@ const participantNameFromTransfersRoute = (url) => {
   })
 }
 
-const idFromTransferUri = (uri, callback) => {
+const idFromTransferUri = (uri, done) => {
   const matches = uri.match(transfersRegex)
-  const hasCallback = (typeof callback === 'function')
+  const hasCallback = (typeof done === 'function')
   if (matches) {
-    return hasCallback ? callback(null, matches[1]) : matches[1]
+    return hasCallback ? done(null, matches[1]) : matches[1]
   } else {
-    return hasCallback ? callback('no match', null) : null
+    return hasCallback ? done('no match', null) : null
   }
 }
 

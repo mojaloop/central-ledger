@@ -57,7 +57,7 @@ Test('ilpPacket model', async (ilpTest) => {
   }
 
   await ilpTest.test('create false ilpPacket', async (assert) => {
-    const falseIlp = {transferId: '1', value: undefined}
+    const falseIlp = { transferId: '1', value: undefined }
     Db.ilpPacket.insert.withArgs(falseIlp).throws(new Error())
     try {
       let r = await Model.saveIlpPacket(falseIlp)
@@ -86,7 +86,7 @@ Test('ilpPacket model', async (ilpTest) => {
   })
 
   await ilpTest.test('getByTransferId with null transferId', async (assert) => {
-    Db.ilpPacket.findOne.withArgs({transferId: null}).throws(new Error())
+    Db.ilpPacket.findOne.withArgs({ transferId: null }).throws(new Error())
     try {
       await Model.getByTransferId(null)
       assert.fail('should throw')
@@ -97,7 +97,7 @@ Test('ilpPacket model', async (ilpTest) => {
   })
 
   await ilpTest.test('getByTransferId', async (assert) => {
-    Db.ilpPacket.findOne.withArgs({transferId: ilpPacketTestValues[0].transferId}).returns(ilpPacketTestValues[0])
+    Db.ilpPacket.findOne.withArgs({ transferId: ilpPacketTestValues[0].transferId }).returns(ilpPacketTestValues[0])
     try {
       var result = await Model.getByTransferId('1')
       assert.equal(result.transferId, ilpPacket.transferId, 'transferIds are equal')

@@ -48,7 +48,7 @@ Test('Transfer Timeout', async (transferTimeoutTest) => {
 
   await transferTimeoutTest.test('cleanup', async (test) => {
     try {
-      let ttIdListMock = [{transferTimeoutId: 1}]
+      let ttIdListMock = [{ transferTimeoutId: 1 }]
       sandbox.stub(Db, 'getKnex')
 
       let knexStub = sandbox.stub()

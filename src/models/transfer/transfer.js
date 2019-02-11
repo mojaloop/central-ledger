@@ -46,7 +46,7 @@ const saveTransfer = async (record) => {
 
 const destroyById = async (id) => {
   try {
-    await Db.transfer.destroy({transferId: id})
+    await Db.transfer.destroy({ transferId: id })
   } catch (err) {
     throw new Error(err.message)
   }

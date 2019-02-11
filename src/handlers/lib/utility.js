@@ -433,9 +433,10 @@ const produceGeneralMessage = async (functionality, action, message, state, key)
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
+  let result = await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
     createGeneralTopicConf(functionalityMapped, actionMapped, key),
     getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
+  return result
 }
 
 /**
@@ -465,9 +466,10 @@ const produceParticipantMessage = async (participantName, functionality, action,
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  return await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
+  let result = await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
     createParticipantTopicConf(participantName, functionalityMapped, actionMapped),
     getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
+  return result
 }
 
 exports.transformAccountToTopicName = transformAccountToTopicName
