@@ -47,7 +47,7 @@ const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
-const debug = true
+const debug = false
 const delay = 8000 // milliseconds
 let testData = {
   amount: {
