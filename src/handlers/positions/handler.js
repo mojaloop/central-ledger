@@ -260,7 +260,7 @@ const registerPositionHandler = async () => {
   try {
     const positionHandler = {
       command: positions,
-      topicName: Utility.transformGeneralTopicName(TransferEventType.POSITION, TransferEventAction.PREPARE),
+      topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.POSITION),
       config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.POSITION.toUpperCase())
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${Uuid()}`
