@@ -99,7 +99,7 @@ const positions = async (error, messages) => {
       } catch (e) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
         Logger.error(e)
-        histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(prepareBatch)
@@ -118,7 +118,7 @@ const positions = async (error, messages) => {
         Logger.info(`Limit alarm should be sent with ${limit}`)
         // Publish alarm message to KafkaTopic for the Hub to consume.The Hub rather than the switch will manage this (the topic is an participantEndpoint)
       }
-      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
@@ -126,7 +126,7 @@ const positions = async (error, messages) => {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
-        histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       // Check current transfer state
@@ -148,7 +148,7 @@ const positions = async (error, messages) => {
       }
       // Will follow framework flow in future
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, payload.transferId)
-      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
@@ -158,7 +158,7 @@ const positions = async (error, messages) => {
       } catch (e) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
         Logger.error(e)
-        histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       const transferInfo = await TransferService.getTransferInfoToChangePosition(payload.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
@@ -180,7 +180,7 @@ const positions = async (error, messages) => {
       }
       // Will follow framework flow in future
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS, payload.transferId)
-      histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
@@ -206,14 +206,14 @@ const positions = async (error, messages) => {
         } catch (e) {
           Logger.info(`No consumer found for topic ${kafkaTopic}`)
           Logger.error(e)
-          histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+          histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason), payload.transferId)
-        histTimerEnd({success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       // TODO: Need to understand the purpose of this branch.
@@ -233,7 +233,7 @@ const positions = async (error, messages) => {
       } catch (e) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
         Logger.error(e)
-        histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -242,7 +242,7 @@ const positions = async (error, messages) => {
       throw new Error('Event type or action is invalid')
     }
   } catch (error) {
-    histTimerEnd({success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId})
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     Logger.error(error)
     throw error
   }

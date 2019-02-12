@@ -128,7 +128,7 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
           transferId: transferId
         }).then(async () => {
           // await TransferStatePreparationHelper.deletePreparedData()
-          await TransferFacade.destroyByTransferId({transferId: 'test_tr_id'}).then(async () => {
+          await TransferFacade.destroyByTransferId({ transferId: 'test_tr_id' }).then(async () => {
             await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
           })
         })

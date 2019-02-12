@@ -41,6 +41,7 @@ const ParticipantPositionChangeModel = require('../../../../src/models/participa
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
 const Utility = require('../../../../src/handlers/lib/utility')
 const Enum = require('../../../../src/lib/enum')
+const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -161,6 +162,8 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
     sandbox.stub(ParticipantCurrencyModel, 'getByName')
+
+    sandbox.stub(LedgerAccountTypeModel, 'getLedgerAccountByName')
 
     sandbox.stub(Utility, 'produceGeneralMessage')
     Db.participant = {
@@ -1658,7 +1661,7 @@ Test('Participant service', async (participantTest) => {
     }
 
     try {
-      ParticipantCurrencyModel.getByName.withArgs(name.type).returns(ledgerAccountsMock)
+      LedgerAccountTypeModel.getLedgerAccountByName.withArgs(name.type).returns(ledgerAccountsMock)
       const expected = await Service.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
@@ -1682,7 +1685,7 @@ Test('Participant service', async (participantTest) => {
     }
 
     try {
-      ParticipantCurrencyModel.getByName.withArgs(name.type).throws(new Error())
+      LedgerAccountTypeModel.getLedgerAccountByName.withArgs(name.type).throws(new Error())
       const expected = await Service.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()

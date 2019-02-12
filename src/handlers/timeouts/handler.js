@@ -63,7 +63,7 @@ const timeout = async () => {
     let segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
     const cleanup = await TimeoutService.cleanupTransferTimeout()
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
-    let intervalMax = latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId) || 0
+    let intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
     let result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
 
     if (!Array.isArray(result)) {

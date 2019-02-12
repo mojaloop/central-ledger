@@ -40,10 +40,10 @@ const cleanup = async () => {
           `${TS.REJECTED}`, `${TS.EXPIRED_PREPARED}`, `${TS.EXPIRED_RESERVED}`, `${TS.ABORTED}`])
         .innerJoin(
           knex('transferTimeout AS tt1')
-          .select('tsc1.transferId')
-          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-          .innerJoin('transferStateChange AS tsc1', 'tsc1.transferId', 'tt1.transferId')
-          .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'transferTimeout.transferId'
+            .select('tsc1.transferId')
+            .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+            .innerJoin('transferStateChange AS tsc1', 'tsc1.transferId', 'tt1.transferId')
+            .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'transferTimeout.transferId'
         )
         .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
         .select('transferTimeout.transferTimeoutId')

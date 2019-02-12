@@ -74,8 +74,8 @@ Test('Participant model', async (participantTest) => {
   })
 
   await participantTest.test('create false participant', async (assert) => {
-    const falseParticipant = {name: 'fsp3'}
-    Db.participant.insert.withArgs({name: falseParticipant.name}).throws(new Error('message'))
+    const falseParticipant = { name: 'fsp3' }
+    Db.participant.insert.withArgs({ name: falseParticipant.name }).throws(new Error('message'))
     try {
       let r = await Model.create(falseParticipant)
       assert.comment(r)
@@ -120,7 +120,7 @@ Test('Participant model', async (participantTest) => {
   })
 
   await participantTest.test('get with empty name', async (assert) => {
-    Db.participant.findOne.withArgs({name: ''}).throws(new Error())
+    Db.participant.findOne.withArgs({ name: '' }).throws(new Error())
     try {
       await Model.getByName('')
       assert.fail(' should throws with empty name ')
@@ -132,7 +132,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getByName', async (assert) => {
     try {
-      Db.participant.findOne.withArgs({name: participant.name}).returns(participantFixtures[0])
+      Db.participant.findOne.withArgs({ name: participant.name }).returns(participantFixtures[0])
       var result = await Model.getByName(participant.name)
       assert.equal(result.name, participant.name, ' names are equal')
       assert.equal(result.currency, participant.currency, ' currencies match')
@@ -175,7 +175,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getById', async (assert) => {
     try {
-      Db.participant.findOne.withArgs({participantId: 1}).returns(participantFixtures[0])
+      Db.participant.findOne.withArgs({ participantId: 1 }).returns(participantFixtures[0])
       let participant = await Model.getById(1)
       assert.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       assert.end()
@@ -188,7 +188,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getById should fail', async (test) => {
     try {
-      Db.participant.findOne.withArgs({participantId: 1}).throws(new Error())
+      Db.participant.findOne.withArgs({ participantId: 1 }).throws(new Error())
       let participant = await Model.getById(1)
       test.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       test.fail('Error not thrown')
@@ -205,7 +205,7 @@ Test('Participant model', async (participantTest) => {
       Db.participant.update.withArgs(
         { participantId: 1 }, { isActive: 1 }
       ).returns(participantId)
-      let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
+      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
       assert.equal(updatedId, participantId)
       sandbox.restore()
       assert.end()
@@ -222,7 +222,7 @@ Test('Participant model', async (participantTest) => {
       Db.participant.update.withArgs(
         { participantId: 1 }, { isActive: 1 }
       ).throws(new Error())
-      let updatedId = await Model.update(Object.assign(participant, {participantId: 1}), 1)
+      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
       test.equal(updatedId, participantId)
       test.fail('Error not thrown')
       sandbox.restore()
@@ -237,7 +237,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('destroyByName', async (assert) => {
     try {
-      Db.participant.destroy.withArgs({name: participant.name}).returns(Promise.resolve(true))
+      Db.participant.destroy.withArgs({ name: participant.name }).returns(Promise.resolve(true))
       const result = await Model.destroyByName(participant.name)
       assert.equal(result, true)
       sandbox.restore()
@@ -252,7 +252,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('destroyByName should throw an error', async (test) => {
     try {
-      Db.participant.destroy.withArgs({name: participant.name}).throws(new Error())
+      Db.participant.destroy.withArgs({ name: participant.name }).throws(new Error())
       const result = await Model.destroyByName(participant.name)
       test.equal(result, true)
       test.fail('Error not thrown')
@@ -268,7 +268,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('destroyPariticpantEndpointByParticipantId', async (assert) => {
     try {
-      Db.participantEndpoint.destroy.withArgs({participantId: participant.participantId}).returns(Promise.resolve(true))
+      Db.participantEndpoint.destroy.withArgs({ participantId: participant.participantId }).returns(Promise.resolve(true))
       const result = await Model.destroyPariticpantEndpointByParticipantId(participant.participantId)
       assert.equal(result, true)
       sandbox.restore()
@@ -283,7 +283,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('destroyPariticpantEndpointByParticipantId should throw an error', async (test) => {
     try {
-      Db.participantEndpoint.destroy.withArgs({participantId: participant.participantId}).throws(new Error())
+      Db.participantEndpoint.destroy.withArgs({ participantId: participant.participantId }).throws(new Error())
       const result = await Model.destroyPariticpantEndpointByParticipantId(participant.participantId)
       test.equal(result, true)
       test.fail('Error not thrown')

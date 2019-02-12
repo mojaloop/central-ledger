@@ -14,8 +14,8 @@ const l1pPacket = 'AQAAAAAAAABkC3ByaXZhdGUuYm9iggXcZXlKMGNtRnVjMkZqZEdsdmJrbGtJa
 const caluclateFulfil = (base64EncodedPacket, rawSecret) => {
   var encodedSecret = Buffer.from(rawSecret).toString('base64')
 
-  var hmacsignature = Crypto.createHmac('sha256', new Buffer(encodedSecret, 'ascii'))
-    .update(new Buffer(base64EncodedPacket, 'ascii'))
+  var hmacsignature = Crypto.createHmac('sha256', Buffer.from(encodedSecret, 'ascii'))
+    .update(Buffer.from(base64EncodedPacket, 'ascii'))
 
   var generatedFulfilment = hmacsignature.digest('base64')
 

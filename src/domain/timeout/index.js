@@ -39,19 +39,23 @@ const getTimeoutSegment = async () => {
     enumeration: 0,
     tableName: 'transferStateChange'
   }
-  return await SegmentModel.getByParams(params)
+  let result = await SegmentModel.getByParams(params)
+  return result
 }
 
 const cleanupTransferTimeout = async () => {
-  return await TransferTimeoutModel.cleanup()
+  let result = await TransferTimeoutModel.cleanup()
+  return result
 }
 
 const getLatestTransferStateChange = async () => {
-  return await TransferStateChangeModel.getLatest()
+  let result = await TransferStateChangeModel.getLatest()
+  return result
 }
 
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
-  return await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+  let result = await TransferFacade.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+  return result
 }
 
 module.exports = {

@@ -45,7 +45,7 @@ Test('Errors', (errorsTest) => {
   errorsTest.test('createErrorInformation should', async (test) => {
     try {
       const errorCode = 4001
-      const extensionList = {key1: 'value1'}
+      const extensionList = { key1: 'value1' }
       const result = await Model.createErrorInformation(errorCode, extensionList)
       test.equal(errorCode, result.errorCode, 'return result errorCode matching input')
       test.deepEqual(extensionList, result.extensionList, 'return result extensionList matching input')
