@@ -342,7 +342,7 @@ Test('Handlers test', async handlersTest => {
       setTimeout(async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.notEqual(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
+        test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
         test.end()
 
         if (debug) {
