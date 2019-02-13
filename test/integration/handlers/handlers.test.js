@@ -105,6 +105,11 @@ const prepareTestData = async (dataObj) => {
     }
   }
 
+  const header = {
+    'fspiop-destination': payee.participant.name,
+    'fspiop-source': payer.participant.name
+  }
+
   const fulfil = {
     fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
     completedTimestamp: dataObj.now,
@@ -131,7 +136,7 @@ const prepareTestData = async (dataObj) => {
     to: transfer.payeeFsp,
     type: 'application/json',
     content: {
-      header: '',
+      headers: header,
       payload: transfer
     },
     metadata: {
@@ -145,8 +150,7 @@ const prepareTestData = async (dataObj) => {
           code: 0
         }
       }
-    },
-    pp: ''
+    }
   }
 
   const messageProtocolFulfil = JSON.parse(JSON.stringify(messageProtocol))
@@ -159,19 +163,9 @@ const prepareTestData = async (dataObj) => {
   messageProtocolReject.content.payload = reject
   messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 
-  const topicConfTransferPrepare = {
-    topicName: Utility.transformAccountToTopicName(transfer.payerFsp, TransferEventType.TRANSFER, TransferEventType.PREPARE),
-    key: 'producerTest',
-    partition: 0,
-    opaqueKey: 0
-  }
+  const topicConfTransferPrepare = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.PREPARE, transfer.transferId)
 
-  const topicConfTransferFulfil = {
-    topicName: Utility.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL),
-    key: 'producerTest',
-    partition: 0,
-    opaqueKey: 0
-  }
+  const topicConfTransferFulfil = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.FULFIL, transfer.transferId)
 
   const participants = [
     {
@@ -184,8 +178,8 @@ const prepareTestData = async (dataObj) => {
     }
   ]
   const participantNames = participants.map(p => p.name)
-  await Handlers.transfers.registerPrepareHandlers(participantNames)
-  await Handlers.positions.registerPositionHandlers(participantNames)
+  await Handlers.transfers.registerPrepareHandler(participantNames)
+  await Handlers.positions.registerPositionHandler(participantNames)
   sleep(delay / 2, debug, 'prepareTestData', 'awaiting registration of participant handlers')
 
   return {

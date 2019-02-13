@@ -166,7 +166,9 @@ jobs:
       - run:
           <<: *defaults_environment
       - restore_cache:
-          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          keys:
+          - dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          - dependency-cache-
       - run:
           name: Install tape, tapes and tap-xunit
           command: npm install -g tape tapes tap-xunit
@@ -196,7 +198,9 @@ jobs:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
       - restore_cache:
-          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          keys:
+            - dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+            - dependency-cache-
       - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
