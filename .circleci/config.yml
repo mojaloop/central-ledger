@@ -53,17 +53,6 @@ defaults_build_docker_build: &defaults_build_docker_build
   command: |
     docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG .
 
-defaults_build_docker_build_hotfix: &defaults_build_docker_build_hotfix
-  name: Build Docker image
-  command: |
-    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
-
-defaults_build_docker_publish_hotfix: &defaults_build_docker_publish_hotfix
-  name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
-  command: |
-    echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
-    docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-
 defaults_build_docker_publish: &defaults_build_docker_publish
   name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
   command: |
@@ -350,15 +339,15 @@ jobs:
       - run:
           <<: *defaults_environment
       - run:
-          name: setup environment vars for HOTFIX release
+          name: setup environment vars for LATEST release
           command: |
             echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
       - run:
           <<: *defaults_build_docker_login
       - run:
-          <<: *defaults_build_docker_build_hotfix
+          <<: *defaults_build_docker_build
       - run:
-          <<: *defaults_build_docker_publish_hotfix
+          <<: *defaults_build_docker_publish
 
   build:
     machine: true
