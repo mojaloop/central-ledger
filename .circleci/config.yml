@@ -127,6 +127,17 @@ defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgra
         helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION --reuse-values $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
     fi
 
+defaults_slack_announcement: &defaults_slack_announcement
+  name: Slack announcement for tag releases
+  command: |
+    curl -X POST \
+      $SLACK_WEBHOOK_ANNOUNCEMENT \
+      -H 'Content-type: application/json' \
+      -H 'cache-control: no-cache' \
+      -d "{
+      \"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"
+    }"
+
 jobs:
   setup:
     <<: *defaults_working_directory
@@ -334,6 +345,8 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
+      - run:
+          <<: *defaults_slack_announcement
 
   build:
     machine: true
@@ -352,6 +365,8 @@ jobs:
           <<: *defaults_build_docker_build
       - run:
           <<: *defaults_build_docker_publish
+      - run:
+          <<: *defaults_slack_announcement
 
   deploy-snapshot:
     <<: *defaults_working_directory
