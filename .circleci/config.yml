@@ -34,8 +34,7 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
 defaults_Environment: &defaults_environment
   name: Set default environment
   command: |
-    echo "Current CACHE_VERSION: $CACHE_VERSION"
-    echo "Current TEST_VAR1: $TEST_VAR1"
+    echo "Nothing to do here right now...move along!"
 
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
@@ -167,7 +166,7 @@ jobs:
           name: Delete build dependencies
           command: apk del build-dependencies
       - save_cache:
-          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - node_modules
 
@@ -183,8 +182,7 @@ jobs:
           <<: *defaults_environment
       - restore_cache:
           keys:
-          - dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
-          - dependency-cache-
+          - dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Install tape, tapes and tap-xunit
           command: npm install -g tape tapes tap-xunit
@@ -215,8 +213,7 @@ jobs:
           command: *defaults_awsCliDependencies
       - restore_cache:
           keys:
-            - dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
-            - dependency-cache-
+            - dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
