@@ -34,14 +34,7 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
 defaults_Environment: &defaults_environment
   name: Set default environment
   command: |
-    echo "Current CACHE_VERSION: ${CACHE_VERSION}"
-    if [ -z "${CACHE_VERSION}" ];
-    then
-        echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
-        source $BASH_ENV
-    fi
-    echo "Using CACHE_VERSION: ${CACHE_VERSION}"
-    echo "${CACHE_VERSION}" > CACHE_VERSION.txt
+    echo "Nothing to do here right now...move along!"
 
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
@@ -49,15 +42,26 @@ defaults_build_docker_login: &defaults_build_docker_login
     docker login -u $DOCKER_USER -p $DOCKER_PASS
 
 defaults_build_docker_build: &defaults_build_docker_build
-  name: Build Docker image
+  name: Build Docker $CIRCLE_TAG image
   command: |
-    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG .
+    echo "Building Docker image: $CIRCLE_TAG"
+    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
+
+defaults_build_docker_build_release: &defaults_build_docker_build_release
+  name: Build Docker $RELEASE_TAG image
+  command: |
+    echo "Building Docker image: $RELEASE_TAG"
+    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG .
 
 defaults_build_docker_publish: &defaults_build_docker_publish
   name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
   command: |
     echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
     docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+
+defaults_build_docker_publish_release: &defaults_build_docker_publish_release
+  name: Publish Docker image $RELEASE_TAG tag to Docker Hub
+  command: |
     echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
     docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
 
@@ -152,9 +156,9 @@ jobs:
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
-      - run:
-          name: Install interledgerjs/five-bells-ledger-api-tests
-          command: npm install github:interledgerjs/five-bells-ledger-api-tests
+#      - run:
+#          name: Install interledgerjs/five-bells-ledger-api-tests
+#          command: npm install github:interledgerjs/five-bells-ledger-api-tests
       - run:
           name: Update NPM install
           command: npm install
@@ -162,7 +166,7 @@ jobs:
           name: Delete build dependencies
           command: apk del build-dependencies
       - save_cache:
-          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - node_modules
 
@@ -178,8 +182,7 @@ jobs:
           <<: *defaults_environment
       - restore_cache:
           keys:
-          - dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
-          - dependency-cache-
+          - dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Install tape, tapes and tap-xunit
           command: npm install -g tape tapes tap-xunit
@@ -210,8 +213,7 @@ jobs:
           command: *defaults_awsCliDependencies
       - restore_cache:
           keys:
-            - dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
-            - dependency-cache-
+            - dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
@@ -239,7 +241,7 @@ jobs:
       - run:
           <<: *defaults_environment
       - restore_cache:
-          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
@@ -259,7 +261,7 @@ jobs:
 #    steps:
 #      - run:
 #          name: Add the Postgres 9.6 binaries to the path.
-#          command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+#          command: echo "/usr/lib/postgresql/9.6/bin/:$PATH" >> $BASH_ENV
 #      - run:
 #          name: Install Docker Compose
 #          command: |
@@ -306,7 +308,7 @@ jobs:
 #     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose
 #       - run:
 #           name: Add the Postgres 9.6 binaries to the path.
-#           command: echo ‘/usr/lib/postgresql/9.6/bin/:$PATH’ >> $BASH_ENV
+#           command: echo "/usr/lib/postgresql/9.6/bin/:$PATH" >> $BASH_ENV
 #       - run:
 #           name: Install Docker Compose
 #           command: |
@@ -344,6 +346,30 @@ jobs:
       - run:
           <<: *defaults_build_docker_build
       - run:
+          <<: *defaults_build_docker_build_release
+      - run:
+          <<: *defaults_build_docker_publish
+      - run:
+          <<: *defaults_build_docker_publish_release
+      - run:
+          <<: *defaults_slack_announcement
+
+  build-hotfix:
+    machine: true
+    # <<: *default_env
+    steps:
+      - checkout
+      - run:
+          <<: *defaults_environment
+      - run:
+          name: setup environment vars for HOTFIX release
+          command: |
+            echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
+      - run:
+          <<: *defaults_build_docker_login
+      - run:
+          <<: *defaults_build_docker_build
+      - run:
           <<: *defaults_build_docker_publish
       - run:
           <<: *defaults_slack_announcement
@@ -364,7 +390,11 @@ jobs:
       - run:
           <<: *defaults_build_docker_build
       - run:
+          <<: *defaults_build_docker_build_release
+      - run:
           <<: *defaults_build_docker_publish
+      - run:
+          <<: *defaults_build_docker_publish_release
       - run:
           <<: *defaults_slack_announcement
 
@@ -545,6 +575,21 @@ workflows:
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore:
+                - /.*/
+      - build-hotfix:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+#            - test-functional
+#            - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-hotfix(\.[0-9]+)/
             branches:
               ignore:
                 - /.*/
