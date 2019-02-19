@@ -156,9 +156,9 @@ jobs:
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
-      - run:
-          name: Install interledgerjs/five-bells-ledger-api-tests
-          command: npm install github:interledgerjs/five-bells-ledger-api-tests
+#      - run:
+#          name: Install interledgerjs/five-bells-ledger-api-tests
+#          command: npm install github:interledgerjs/five-bells-ledger-api-tests
       - run:
           name: Update NPM install
           command: npm install
