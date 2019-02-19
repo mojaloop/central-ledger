@@ -35,6 +35,7 @@ defaults_Environment: &defaults_environment
   name: Set default environment
   command: |
     echo "Current CACHE_VERSION: $CACHE_VERSION"
+    echo "Current TEST_VAR: TEST_VAR"
 
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
