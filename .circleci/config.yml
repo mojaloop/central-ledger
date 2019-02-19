@@ -529,6 +529,21 @@ workflows:
             branches:
               ignore:
                 - /.*/
+      - build-hotfix:
+          context: org-global
+          requires:
+            - setup
+            - test-unit
+            - test-coverage
+            - test-integration
+#            - test-functional
+#            - test-spec
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-hotfix(\.[0-9]+)/
+            branches:
+              ignore:
+                - /.*/
       - deploy:
           context: org-global
           requires:
