@@ -241,7 +241,7 @@ jobs:
       - run:
           <<: *defaults_environment
       - restore_cache:
-          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
