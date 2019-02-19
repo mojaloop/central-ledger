@@ -35,13 +35,6 @@ defaults_Environment: &defaults_environment
   name: Set default environment
   command: |
     echo "Current CACHE_VERSION: ${CACHE_VERSION}"
-    if [ -z "${CACHE_VERSION}" ];
-    then
-        echo 'export CACHE_VERSION="v0"' >> $BASH_ENV
-        source $BASH_ENV
-    fi
-    echo "Using CACHE_VERSION: ${CACHE_VERSION}"
-    echo "${CACHE_VERSION}" > CACHE_VERSION.txt
 
 defaults_build_docker_login: &defaults_build_docker_login
   name: Login to Docker Hub
@@ -173,7 +166,7 @@ jobs:
           name: Delete build dependencies
           command: apk del build-dependencies
       - save_cache:
-          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
           paths:
             - node_modules
 
@@ -189,7 +182,7 @@ jobs:
           <<: *defaults_environment
       - restore_cache:
           keys:
-          - dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          - dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
           - dependency-cache-
       - run:
           name: Install tape, tapes and tap-xunit
@@ -221,7 +214,7 @@ jobs:
           command: *defaults_awsCliDependencies
       - restore_cache:
           keys:
-            - dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+            - dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
             - dependency-cache-
       - run:
           name: Execute code coverage check
@@ -250,7 +243,7 @@ jobs:
       - run:
           <<: *defaults_environment
       - restore_cache:
-          key: dependency-cache-{{ checksum "CACHE_VERSION.txt" }}-{{ checksum "package.json" }}
+          key: dependency-cache-{{ .Environment.CACHE_VERSION }}-{{ checksum "package.json" }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
