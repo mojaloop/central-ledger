@@ -1,0 +1,32 @@
+commit c726ca66bcf194ed30078ae35583a56bad987dba
+Author: Miguel de Barros <miguel@debarros.me>
+Date:   Tue Feb 19 10:35:41 2019 +0000
+
+    Updated circleci CI/CD pipeline to support v#.#-hotfix.# pattern
+
+diff --git a/.circleci/config.yml b/.circleci/config.yml
+index 82d2396..124d851 100644
+--- a/.circleci/config.yml
++++ b/.circleci/config.yml
+@@ -529,6 +529,21 @@ workflows:
+             branches:
+               ignore:
+                 - /.*/
++      - build-hotfix:
++          context: org-global
++          requires:
++            - setup
++            - test-unit
++            - test-coverage
++            - test-integration
++#            - test-functional
++#            - test-spec
++          filters:
++            tags:
++              only: /v[0-9]+(\.[0-9]+)*\-hotfix(\.[0-9]+)/
++            branches:
++              ignore:
++                - /.*/
+       - deploy:
+           context: org-global
+           requires:
