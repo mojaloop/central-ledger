@@ -54,7 +54,7 @@ exports.deletePreparedData = async (participantName) => {
   }
 
   try {
-    return await Model.destroyPariticpantEndpointByName(participantName)
+    return await Model.destroyParticipantEndpointByName(participantName)
   } catch (err) {
     throw new Error(err.message)
   }

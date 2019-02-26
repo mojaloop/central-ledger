@@ -656,7 +656,7 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    transformTransfer.test('return an error when the Kafaka topic is invalid', async (test) => {
+    transformTransfer.test('return an error when the Kafka topic is invalid', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.getConsumer.throws(new Error())
       Utility.getKafkaConfig.returns(config)

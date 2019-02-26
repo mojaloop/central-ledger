@@ -56,7 +56,7 @@ Test('TransferError model', async (TransferErrorTest) => {
     await insertTest.test('insert the record into database', async test => {
       try {
         Db.transferError.insert.withArgs(transferErrorFixture).returns(1)
-        var result = await Model.insert(transferErrorFixture.transferStateChangeId, transferErrorFixture.errorCode, transferErrorFixture.errorDescription)
+        let result = await Model.insert(transferErrorFixture.transferStateChangeId, transferErrorFixture.errorCode, transferErrorFixture.errorDescription)
         test.equal(result, 1)
         test.end()
       } catch (err) {
@@ -86,7 +86,7 @@ Test('TransferError model', async (TransferErrorTest) => {
     await getByTransferStateChangeIdTest.test('getByTransferStateChangeId the record into database', async test => {
       try {
         Db.transferError.find.returns(transferErrorFixture)
-        var result = await Model.getByTransferStateChangeId(transferErrorFixture.transferStateChangeId)
+        let result = await Model.getByTransferStateChangeId(transferErrorFixture.transferStateChangeId)
         test.deepEqual(result, transferErrorFixture, 'Results match')
         test.end()
       } catch (err) {

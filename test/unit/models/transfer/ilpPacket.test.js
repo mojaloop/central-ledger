@@ -75,7 +75,7 @@ Test('ilpPacket model', async (ilpTest) => {
         transferId: ilpPacket.transferId,
         value: ilpPacket.value
       }).returns(1)
-      var result = await Model.saveIlpPacket(ilpPacket)
+      let result = await Model.saveIlpPacket(ilpPacket)
       assert.ok(result === 1, `returns ${result}`)
       assert.end()
     } catch (err) {
@@ -99,7 +99,7 @@ Test('ilpPacket model', async (ilpTest) => {
   await ilpTest.test('getByTransferId', async (assert) => {
     Db.ilpPacket.findOne.withArgs({ transferId: ilpPacketTestValues[0].transferId }).returns(ilpPacketTestValues[0])
     try {
-      var result = await Model.getByTransferId('1')
+      let result = await Model.getByTransferId('1')
       assert.equal(result.transferId, ilpPacket.transferId, 'transferIds are equal')
       assert.equal(result.condition, ilpPacket.condition, 'conditions match')
       assert.equal(result.fulfilment, ilpPacket.fulfilment, 'fulfilments match')

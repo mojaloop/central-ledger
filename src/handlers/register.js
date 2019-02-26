@@ -52,7 +52,7 @@ const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
 
-const registerAllHandlers = async (request, h) => {
+const registerAllHandlers = async () => {
   try {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))

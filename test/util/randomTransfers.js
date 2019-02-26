@@ -33,7 +33,7 @@ const TS = Enum.TransferState
 const randExpirationDate = (maxHoursDiff) => {
   let ms = Math.floor(Math.random() * maxHoursDiff * 3600 * 1000)
   if (ms > 0) {
-    ms += 1 * 3600 * 1000 // make sure no future transfer expires within 1 hour
+    ms += 3600 * 1000 // make sure no future transfer expires within 1 hour
   }
   return new Date(new Date().getTime() + ms)
 }

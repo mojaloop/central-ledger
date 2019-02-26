@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const TranformService = require('../../../../src/domain/transfer/transform')
+const TransformService = require('../../../../src/domain/transfer/transform')
 
 Test('Transform Service', transformTest => {
   let sandbox
@@ -83,7 +83,7 @@ Test('Transform Service', transformTest => {
           transferState: 'COMMIT'
         }
 
-        const result = TranformService.toTransfer(completedTransfer)
+        const result = TransformService.toTransfer(completedTransfer)
         test.deepEqual(result, expected, 'Results Match')
         test.end()
       } catch (e) {
@@ -130,7 +130,7 @@ Test('Transform Service', transformTest => {
           transferState: 'COMMIT'
         }
 
-        const result = TranformService.toTransfer(completedTransfer)
+        const result = TransformService.toTransfer(completedTransfer)
         test.deepEqual(result, expected, 'Results Match')
         test.end()
       } catch (e) {
@@ -178,7 +178,7 @@ Test('Transform Service', transformTest => {
           transferState: 'PREPARED'
         }
 
-        const result = TranformService.toTransfer(preparedTransfer)
+        const result = TransformService.toTransfer(preparedTransfer)
         test.deepEqual(result, expected, 'Results Match')
         test.end()
       } catch (e) {
@@ -217,7 +217,7 @@ Test('Transform Service', transformTest => {
           transferState: 'COMMIT'
         }
 
-        const result = TranformService.toTransfer(executedTransfer)
+        const result = TransformService.toTransfer(executedTransfer)
         test.deepEqual(result, expected, 'Results Match')
         test.end()
       } catch (e) {
@@ -229,7 +229,7 @@ Test('Transform Service', transformTest => {
     toTransferTest.test('throw error', async (test) => {
       try {
         const invalidTransfer = {}
-        TranformService.toTransfer(invalidTransfer)
+        TransformService.toTransfer(invalidTransfer)
         test.fail('should throw')
         test.end()
       } catch (e) {

@@ -34,7 +34,7 @@ const Test = require('tapes')(require('tape'))
 const Consumer = require(`${src}/handlers/lib/kafka/consumer`)
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 
-var rewire = require('rewire')
+const rewire = require('rewire')
 
 Test('Consumer', ConsumerTest => {
   let sandbox

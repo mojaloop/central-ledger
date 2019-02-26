@@ -84,8 +84,8 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('save extension', async (assert) => {
     Db.transferExtension.insert.withArgs(transferExtensionModelFixtures[0]).returns(1)
     try {
-      var result = await Model.saveTransferExtension(transferExtensionModelFixtures[0])
-      assert.ok(Sinon.match(result, 1), `returns ${result}`)
+      let result = await Model.saveTransferExtension(transferExtensionModelFixtures[0])
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`save extension failed with error - ${err}`)
@@ -108,7 +108,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('get extension by transferId', async (assert) => {
     Db.transferExtension.find.withArgs({ transferId: 1 }).returns(transferExtensionModelFixtures[0])
     try {
-      var result = await Model.getByTransferId(1)
+      let result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
@@ -132,7 +132,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('get extension by fulfilmentId', async (assert) => {
     Db.transferExtension.find.withArgs({ transferFulfilmentId: 1 }).returns(transferExtensionModelFixtures[0])
     try {
-      var result = await Model.getByTransferFulfilmentId(1)
+      let result = await Model.getByTransferFulfilmentId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
@@ -156,7 +156,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('get by transferExtensionId', async (assert) => {
     Db.transferExtension.findOne.withArgs({ transferExtensionId: 1 }).returns(transferExtensionModelFixtures[0])
     try {
-      var result = await Model.getByTransferExtensionId(1)
+      let result = await Model.getByTransferExtensionId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {

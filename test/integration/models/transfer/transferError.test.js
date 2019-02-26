@@ -32,7 +32,7 @@ const Model = require('../../../../src/models/transfer/transferError')
 const HelperModule = require('../../helpers')
 
 Test('Transfer Error model test', async (transferErrorTest) => {
-  var transferErrorPrepareResult = {}
+  let transferErrorPrepareResult = {}
   await transferErrorTest.test('setup', async (assert) => {
     try {
       await Db.connect(Config.DATABASE_URI).then(async () => {

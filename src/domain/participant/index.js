@@ -171,7 +171,7 @@ const addEndpoint = async (name, payload) => {
  * @function GetEndpoint
  *
  * @async
- * @description This retuns the active endpoint value for a give participant and type of endpoint
+ * @description This returns the active endpoint value for a give participant and type of endpoint
  *
  * ParticipantModel.getByName called to get the participant details from the participant name
  * ParticipantFacade.getEndpoint called to get the participant endpoint details
@@ -197,7 +197,7 @@ const getEndpoint = async (name, type) => {
  * @function GetAllEndpoints
  *
  * @async
- * @description This retuns all the active endpoints for a give participant
+ * @description This returns all the active endpoints for a give participant
  *
  * ParticipantModel.getByName called to get the participant details from the participant name
  * ParticipantFacade.getAllEndpoints called to get the participant endpoint details
@@ -219,7 +219,7 @@ const getAllEndpoints = async (name) => {
 }
 
 /**
- * @function DestroyPariticpantEndpointByName
+ * @function DestroyParticipantEndpointByName
  *
  * @async
  * @description This functions deletes the existing endpoints for a given participant name
@@ -230,11 +230,11 @@ const getAllEndpoints = async (name) => {
  * @returns {integer} - Returns the number of rows deleted if successful, or throws an error if failed
  */
 
-const destroyPariticpantEndpointByName = async (name) => {
+const destroyParticipantEndpointByName = async (name) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    return ParticipantModel.destroyPariticpantEndpointByParticipantId(participant.participantId)
+    return ParticipantModel.destroyParticipantEndpointByParticipantId(participant.participantId)
   } catch (err) {
     throw err
   }
@@ -247,10 +247,10 @@ const destroyPariticpantEndpointByName = async (name) => {
  * @description This creates the initial position and limits for a participant
  *
  * ParticipantFacade.getByNameAndCurrency called to get the participant and currency details from the participant name
- * ParticipantFacade.addLimitAndInitialPosition called to add the participant initial postion and limits
+ * ParticipantFacade.addLimitAndInitialPosition called to add the participant initial position and limits
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'
- * @param {object} limitAndInitialPositionObj - the payload containing the currency, limit and initial postion values
+ * @param {object} limitAndInitialPositionObj - the payload containing the currency, limit and initial position values
  * Example: {
  *  "currency": "USD",
  *  "limit": {
@@ -275,8 +275,8 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
       throw new Error('Participant Limit or Initial Position already set')
     }
     let limitAndInitialPosition = limitAndInitialPositionObj
-    if (limitAndInitialPosition.initialPosition == null) {
-      limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSTITION
+    if (limitAndInitialPosition.initialPosition === undefined) {
+      limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSITION
     }
     let payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
     await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
@@ -375,7 +375,7 @@ const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
  * @function GetLimits
  *
  * @async
- * @description This retuns the active endpoint value for a give participant and type of endpoint
+ * @description This returns the active endpoint value for a give participant and type of endpoint
  *
  * ParticipantFacade.getByNameAndCurrency called to get the participant and currency details from the participant name
  * ParticipantModel.getByName called to get the participant details from the participant name
@@ -409,7 +409,7 @@ const getLimits = async (name, { currency = null, type = null }) => {
  * @function GetLimitsForAllParticipants
  *
  * @async
- * @description This retuns the active limits value for all the participants for the currency and type combinations
+ * @description This returns the active limits value for all the participants for the currency and type combinations
  *
  * ParticipantFacade.getLimitsForAllParticipants called to get the participant limit details from participant id
  *
@@ -512,7 +512,7 @@ const createLimitAdjustmentMessageProtocol = (payload, action = Enum.adminNotifi
         "updatedTime": "2018-08-14T04:01:55.000Z"
     }
   ```
- * 2. if the currency object is not passed, then it return an array containig the above mentioned objects for all the currencies defined for that participant.
+ * 2. if the currency object is not passed, then it return an array containing the above mentioned objects for all the currencies defined for that participant.
  *  If no position is found then an empty array is returned.
  * e.g.
  * ```
@@ -712,7 +712,7 @@ module.exports = {
   addEndpoint,
   getEndpoint,
   getAllEndpoints,
-  destroyPariticpantEndpointByName,
+  destroyParticipantEndpointByName,
   addLimitAndInitialPosition,
   getPositionByParticipantCurrencyId,
   getPositionChangeByParticipantPositionId,

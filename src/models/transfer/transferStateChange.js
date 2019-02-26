@@ -78,7 +78,7 @@ const getLatest = async () => {
   }
 }
 
-const truncate = async (id) => {
+const truncate = async () => {
   try {
     return await Db.transferStateChange.truncate()
   } catch (err) {

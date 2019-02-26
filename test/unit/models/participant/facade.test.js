@@ -114,7 +114,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION)
+      let result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
@@ -144,7 +144,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION, true)
+      let result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION, true)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
@@ -319,7 +319,7 @@ Test('Participant facade', async (facadeTest) => {
         participantId: 1,
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
-      var result = await Model.addEndpoint(participant.participantId, endpoint)
+      let result = await Model.addEndpoint(participant.participantId, endpoint)
       assert.ok(knexStub.withArgs('participantEndpoint').calledThrice, 'knex called with participantLimit thrice')
       assert.ok(knexStub.withArgs('endpointType').calledOnce, 'knex called with endpointType once')
       assert.deepEqual(result, expected)
@@ -331,7 +331,7 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
-  await facadeTest.test('addEndpoint if it doesnt exist', async (assert) => {
+  await facadeTest.test('addEndpoint if it does not exist', async (assert) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
@@ -372,7 +372,7 @@ Test('Participant facade', async (facadeTest) => {
         participantId: 1,
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
-      var result = await Model.addEndpoint(participant.participantId, endpoint)
+      const result = await Model.addEndpoint(participant.participantId, endpoint)
       assert.ok(knexStub.withArgs('participantEndpoint').calledTwice, 'knex called with participantLimit twice')
       assert.ok(knexStub.withArgs('endpointType').calledOnce, 'knex called with endpointType once')
       assert.deepEqual(result, expected)
@@ -438,7 +438,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addLimitAndInitialPosition', async (assert) => {
     try {
-      const limitPostionObj = {
+      const limitPositionObj = {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
@@ -468,7 +468,7 @@ Test('Participant facade', async (facadeTest) => {
       })
       let participantPosition = {
         participantCurrencyId: 1,
-        value: limitPostionObj.initialPosition,
+        value: limitPositionObj.initialPosition,
         reservedValue: 0,
         participantPositionId: 1
       }
@@ -481,13 +481,13 @@ Test('Participant facade', async (facadeTest) => {
       let participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
-        value: limitPostionObj.limit.value,
+        value: limitPositionObj.limit.value,
         isActive: 1,
         createdBy: 'unknown',
         participantLimitId: 1
       }
 
-      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, participant.settlementAccountId, limitPostionObj)
+      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, participant.settlementAccountId, limitPositionObj)
       assert.pass('completed successfully')
       assert.ok(knexStub.withArgs('participantLimit').calledOnce, 'knex called with participantLimit once')
       assert.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition once')
@@ -501,9 +501,9 @@ Test('Participant facade', async (facadeTest) => {
     }
   })
 
-  await facadeTest.test('addLimitAndInitialPosition and activate paticipant currency', async (assert) => {
+  await facadeTest.test('addLimitAndInitialPosition and activate participant currency', async (assert) => {
     try {
-      const limitPostionObj = {
+      const limitPositionObj = {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
@@ -539,7 +539,7 @@ Test('Participant facade', async (facadeTest) => {
       })
       let participantPosition = {
         participantCurrencyId: 1,
-        value: limitPostionObj.initialPosition,
+        value: limitPositionObj.initialPosition,
         reservedValue: 0,
         participantPositionId: 1
       }
@@ -552,13 +552,13 @@ Test('Participant facade', async (facadeTest) => {
       let participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
-        value: limitPostionObj.limit.value,
+        value: limitPositionObj.limit.value,
         isActive: 1,
         createdBy: 'unknown',
         participantLimitId: 1
       }
 
-      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, participant.settlementAccountId, limitPostionObj, true)
+      const result = await Model.addLimitAndInitialPosition(participant.participantCurrencyId, participant.settlementAccountId, limitPositionObj, true)
       assert.pass('completed successfully')
       assert.ok(knexStub.withArgs('participantLimit').calledOnce, 'knex called with participantLimit once')
       assert.ok(knexStub.withArgs('participantPosition').calledTwice, 'knex called with participantPosition once')
@@ -582,7 +582,7 @@ Test('Participant facade', async (facadeTest) => {
       const knex = Db.getKnex()
       sandbox.stub(knex, 'transaction')
       knex.transaction.throws(new Error('message'))
-      const limitPostionObj = {
+      const limitPositionObj = {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
@@ -591,7 +591,7 @@ Test('Participant facade', async (facadeTest) => {
         initialPosition: 0
       }
 
-      await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPostionObj)
+      await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPositionObj)
       assert.fail(' should throw')
       assert.end()
     } catch (err) {
@@ -603,7 +603,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addLimitAndInitialPosition should fail and rollback', async (assert) => {
     try {
-      const limitPostionObj = {
+      const limitPositionObj = {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
@@ -621,7 +621,7 @@ Test('Participant facade', async (facadeTest) => {
 
       knexStub.throws(new Error())
 
-      await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPostionObj)
+      await Model.addLimitAndInitialPosition(participant.participantCurrencyId, limitPositionObj)
       assert.fail(' should throw')
       assert.end()
       assert.end()
@@ -864,7 +864,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, 'NET_DEBIT_CAP')
+      const result = await Model.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, 'NET_DEBIT_CAP')
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -900,7 +900,7 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParticipantLimitsByCurrencyId(participant.participantCurrencyId)
+      const result = await Model.getParticipantLimitsByCurrencyId(participant.participantCurrencyId)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -956,7 +956,7 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 1, 'NET_DEBIT_CAP')
+      const result = await Model.getParticipantLimitsByParticipantId(participant.participantId, 1, 'NET_DEBIT_CAP')
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -994,7 +994,7 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      var result = await Model.getParticipantLimitsByParticipantId(participant.participantId)
+      const result = await Model.getParticipantLimitsByParticipantId(participant.participantId)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -1049,7 +1049,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      var result = await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
+      const result = await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
       assert.deepEqual(result, participantLimit)
       assert.end()
     } catch (err) {
@@ -1204,7 +1204,7 @@ Test('Participant facade', async (facadeTest) => {
       let whereStub = { where: sandbox.stub().returns() }
       Db.participantCurrency.query.callsArgWith(0, builderStub)
       const participantCurrency = {
-        participantCurrancyId: 1,
+        participantCurrencyId: 1,
         participantId: 1,
         currencyId: 'USD',
         isActive: 1
@@ -1220,7 +1220,7 @@ Test('Participant facade', async (facadeTest) => {
       })
 
       let found = await Model.getAllAccountsByNameAndCurrency(participantName, currencyId)
-      test.deepEqual(found, participantCurrency, 'retrive the record')
+      test.deepEqual(found, participantCurrency, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
       test.end()
     } catch (err) {
@@ -1239,7 +1239,7 @@ Test('Participant facade', async (facadeTest) => {
       let whereStub = { where: sandbox.stub().returns() }
       Db.participantCurrency.query.callsArgWith(0, builderStub)
       const participantCurrency = {
-        participantCurrancyId: 1,
+        participantCurrencyId: 1,
         participantId: 1,
         currencyId: 'USD',
         isActive: 1
@@ -1255,7 +1255,7 @@ Test('Participant facade', async (facadeTest) => {
       })
 
       let found = await Model.getAllAccountsByNameAndCurrency(participantName)
-      test.deepEqual(found, participantCurrency, 'retrive the record')
+      test.deepEqual(found, participantCurrency, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
       test.end()
     } catch (err) {
@@ -1315,7 +1315,7 @@ Test('Participant facade', async (facadeTest) => {
       })
 
       let found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
-      test.equal(found, 1, 'retrive the record')
+      test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'pc.ledgerAccountTypeId': ledgerAccountTypeId,
         'participant.isActive': 1,
@@ -1371,7 +1371,7 @@ Test('Participant facade', async (facadeTest) => {
       })
 
       let found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
-      test.equal(found, 1, 'retrive the record')
+      test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'pc.ledgerAccountTypeId': ledgerAccountTypeId,
         'participant.isActive': 1,

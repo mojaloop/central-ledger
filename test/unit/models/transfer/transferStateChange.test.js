@@ -224,7 +224,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
       Db.transferStateChange.query.callsArgWith(0, builderStub)
       builderStub.whereIn = sandbox.stub().returns(transferStateChangeList)
 
-      var result = await Model.getByTransferIdList('9136780b-37e2-457c-8c05-f15dbb033b10')
+      let result = await Model.getByTransferIdList('9136780b-37e2-457c-8c05-f15dbb033b10')
       test.deepEqual(result, transferStateChangeList)
       test.end()
     } catch (err) {

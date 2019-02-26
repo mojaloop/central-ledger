@@ -1850,7 +1850,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
                 andWhere: sandbox.stub().returns({
                   first: sandbox.stub().returns({
                     transacting: sandbox.stub().returns(
-                      Promise.reject(new Error('An error occured'))
+                      Promise.reject(new Error('An error occurred'))
                     )
                   })
                 })
@@ -2302,7 +2302,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
 
       let found = await Model.getTransferParticipant(participantName, transferId)
-      test.deepEqual(found, [1], 'retrive the record')
+      test.deepEqual(found, [1], 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'participant.name': participantName,
         'tp.transferId': transferId,

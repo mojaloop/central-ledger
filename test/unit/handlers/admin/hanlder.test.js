@@ -403,7 +403,7 @@ Test('Admin handler', adminHandlerTest => {
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         let result = await adminHandler.transfer(null, messageProtocolWrongAction)
-        test.ok(result, 'exits without erorr')
+        test.ok(result, 'exits without error')
         test.end()
       } catch (e) {
         test.fail(`${e} error thrown`)
@@ -536,7 +536,7 @@ Test('Admin handler', adminHandlerTest => {
       }
     })
 
-    await transferTest.test('Create errorneous msg', async (test) => {
+    await transferTest.test('Create erroneous msg', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)

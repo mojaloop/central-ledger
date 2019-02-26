@@ -37,7 +37,7 @@ const HelperModule = require('../../helpers')
 const Time = require('../../../../src/lib/time')
 
 Test('Transfer State Change model test', async (stateChangeTest) => {
-  var stateChangePrepareResult = {}
+  let stateChangePrepareResult = {}
   await stateChangeTest.test('setup', async (assert) => {
     try {
       await Db.connect(Config.DATABASE_URI).then(async () => {
@@ -62,8 +62,6 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       assert.comment('the prepared data is: ', JSON.stringify(stateChangePrepareResult, null, 4))
 
       let state = stateChangePrepareResult.transferStateResults[1]
-      let createdId = 0
-      let result = {}
       let transferStateChange = {
         transferId: stateChangePrepareResult.transfer.transferId,
         transferStateId: state.transferStateId,
@@ -71,8 +69,8 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
         createdDate: Time.getUTCString(new Date())
       }
 
-      createdId = await Model.saveTransferStateChange(transferStateChange)
-      result = await Model.getByTransferId(stateChangePrepareResult.transfer.transferId)
+      let createdId = await Model.saveTransferStateChange(transferStateChange)
+      let result = await Model.getByTransferId(stateChangePrepareResult.transfer.transferId)
       assert.equal(createdId, result.transferStateChangeId, 'transferId match')
       assert.equal(transferStateChange.transferStateId, result.transferStateId, 'key match')
       assert.equal(transferStateChange.reason, result.reason, 'value match')
