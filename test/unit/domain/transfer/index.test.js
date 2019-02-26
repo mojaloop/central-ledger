@@ -200,9 +200,9 @@ Test('Transfer Service', transferIndexTest => {
 
     getFulfilmentTest.test('throw MissingFulfilmentError when looking up transfer fulfilment', async (test) => {
       try {
-        const transferFuflilment = Object.assign({}, transferFulfilmentRecord, { ilpFulfilment: null })
+        const transferFulfilment = Object.assign({}, transferFulfilmentRecord, { ilpFulfilment: null })
         TransferFacade.getById.returns(Promise.resolve(transferRecord))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFuflilment))
+        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilment))
         await TransferService.getFulfilment(payload.transferId)
         test.fail('Error not thrown!')
         test.end()

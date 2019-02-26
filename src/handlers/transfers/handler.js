@@ -73,7 +73,7 @@ const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpC
  * TransferService.validateDuplicateHash called to validate/insert the hash of the payload of the message
  * Validator.validateByName called to validate the payload of the message
  * TransferService.getById called to get the details of the existing transfer
- * TransferObjectTransform.toTransfer called to tranform the trnasfer object
+ * TransferObjectTransform.toTransfer called to transform the transfer object
  * TransferService.prepare called and creates new entries in transfer tables for successful prepare transfer
  * TransferService.logTransferError called to log the invalid request
  *

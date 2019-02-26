@@ -99,7 +99,7 @@ Test('setup', setupTest => {
     //   }
     // }
 
-    var ConfigStub = Config
+    const ConfigStub = Config
     ConfigStub.HANDLERS_API_DISABLED = false
     ConfigStub.HANDLERS_CRON_DISABLED = false
 
@@ -136,9 +136,9 @@ Test('setup', setupTest => {
 
   setupTest.test('createServer should', async (createServerTest) => {
     createServerTest.test('throw Boom error on fail', async (test) => {
-      var errorToThrow = new Error('Throw Boom error')
+      const errorToThrow = new Error('Throw Boom error')
 
-      var HapiStubThrowError = {
+      const HapiStubThrowError = {
         Server: sandbox.stub().callsFake((opt) => {
           opt.routes.validate.failAction(sandbox.stub(), sandbox.stub(), errorToThrow)
         })
@@ -296,7 +296,7 @@ Test('setup', setupTest => {
     })
 
     initializeTest.test('run Handlers if runHandlers flag enabled and cronjobs are disabled and start API but dont register cronJobs', async (test) => {
-      var ConfigStub = Config
+      const ConfigStub = Config
       ConfigStub.HANDLERS_CRON_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
@@ -326,8 +326,8 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('run Handlers if runHandlers flag enabled and DONT start API', async (test) => {
-      var ConfigStub = Config
+    initializeTest.test('run Handlers if runHandlers flag enabled and dont start API', async (test) => {
+      const ConfigStub = Config
       ConfigStub.HANDLERS_CRON_DISABLED = false
       ConfigStub.HANDLERS_API_DISABLED = true
 
@@ -359,7 +359,7 @@ Test('setup', setupTest => {
     })
 
     initializeTest.test('do not initialize instrumentation if INSTRUMENTATION_METRICS_DISABLED is true', async (test) => {
-      var ConfigStub = Config
+      const ConfigStub = Config
       ConfigStub.HANDLERS_CRON_DISABLED = false
       ConfigStub.HANDLERS_API_DISABLED = true
       ConfigStub.INSTRUMENTATION_METRICS_DISABLED = true
@@ -395,46 +395,46 @@ Test('setup', setupTest => {
     initializeTest.test('run invalid Handler if runHandlers flag enabled with handlers[] populated', async (test) => {
       const service = 'api'
 
-      var fspList = ['dfsp1', 'dfsp2']
+      const fspList = ['dfsp1', 'dfsp2']
 
-      var prepareHandler = {
+      const prepareHandler = {
         type: 'prepare',
         enabled: true,
         fspList
       }
 
-      var positionHandler = {
+      const positionHandler = {
         type: 'position',
         enabled: true,
         fspList
       }
 
-      var fulfilHandler = {
+      const fulfilHandler = {
         type: 'fulfil',
         enabled: true
       }
 
-      var timeoutHandler = {
+      const timeoutHandler = {
         type: 'timeout',
         enabled: true
       }
 
-      var adminHandler = {
+      const adminHandler = {
         type: 'admin',
         enabled: true
       }
 
-      var getHandler = {
+      const getHandler = {
         type: 'get',
         enabled: true
       }
 
-      var unknownHandler = {
+      const unknownHandler = {
         type: 'undefined',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         prepareHandler,
         positionHandler,
         fulfilHandler,
@@ -464,36 +464,36 @@ Test('setup', setupTest => {
     initializeTest.test('run disabled Handler if runHandlers flag enabled with handlers[] populated', async (test) => {
       const service = 'api'
 
-      var fspList = ['dfsp1', 'dfsp2']
+      const fspList = ['dfsp1', 'dfsp2']
 
-      var prepareHandler = {
+      const prepareHandler = {
         type: 'prepare',
         enabled: true,
         fspList
       }
 
-      var positionHandler = {
+      const positionHandler = {
         type: 'position',
         enabled: false,
         fspList
       }
 
-      var fulfilHandler = {
+      const fulfilHandler = {
         type: 'fulfil',
         enabled: true
       }
 
-      var timeoutHandler = {
+      const timeoutHandler = {
         type: 'timeout',
         enabled: true
       }
 
-      var getHandler = {
+      const getHandler = {
         type: 'get',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         prepareHandler,
         positionHandler,
         fulfilHandler,
@@ -518,36 +518,36 @@ Test('setup', setupTest => {
     initializeTest.test('run specific Handlers if runHandlers flag enabled with handlers[] populated', async (test) => {
       const service = 'api'
 
-      var fspList = ['dfsp1', 'dfsp2']
+      const fspList = ['dfsp1', 'dfsp2']
 
-      var prepareHandler = {
+      const prepareHandler = {
         type: 'prepare',
         enabled: true,
         fspList
       }
 
-      var positionHandler = {
+      const positionHandler = {
         type: 'position',
         enabled: true,
         fspList
       }
 
-      var fulfilHandler = {
+      const fulfilHandler = {
         type: 'fulfil',
         enabled: true
       }
 
-      var timeoutHandler = {
+      const timeoutHandler = {
         type: 'timeout',
         enabled: true
       }
 
-      var getHandler = {
+      const getHandler = {
         type: 'get',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         prepareHandler,
         positionHandler,
         fulfilHandler,
@@ -571,7 +571,7 @@ Test('setup', setupTest => {
     })
 
     initializeTest.test('run specific Handlers if runHandlers flag enabled with handlers[] populated with CronJob disabled', async (test) => {
-      var ConfigStub = Config
+      const ConfigStub = Config
       ConfigStub.HANDLERS_CRON_DISABLED = true
       ConfigStub.HANDLERS_API_DISABLED = false
 
@@ -591,26 +591,26 @@ Test('setup', setupTest => {
 
       const service = 'api'
 
-      var fspList = ['dfsp1', 'dfsp2']
+      const fspList = ['dfsp1', 'dfsp2']
 
-      var prepareHandler = {
+      const prepareHandler = {
         type: 'prepare',
         enabled: true,
         fspList
       }
 
-      var positionHandler = {
+      const positionHandler = {
         type: 'position',
         enabled: true,
         fspList
       }
 
-      var fulfilHandler = {
+      const fulfilHandler = {
         type: 'fulfil',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         prepareHandler,
         positionHandler,
         fulfilHandler

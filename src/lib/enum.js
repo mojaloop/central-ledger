@@ -142,7 +142,7 @@ const transpose = function (obj) {
   return transposed
 }
 
-const EnpointType = {
+const EndpointType = {
   ALARM_NOTIFICATION_URL: 1,
   ALARM_NOTIFICATION_TOPIC: 2,
   FSPIOP_CALLBACK_URL_TRANSFER_POST: 3,
@@ -310,7 +310,7 @@ module.exports = {
   all,
   transpose,
 
-  EnpointType,
+  EndpointType,
   LedgerAccountType,
   LedgerEntryType,
   ParticipantLimitType,

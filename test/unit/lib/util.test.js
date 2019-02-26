@@ -311,7 +311,7 @@ Test('util', utilTest => {
   })
 
   utilTest.test('expand should', expandTest => {
-    expandTest.test('return an array by splitting astring', test => {
+    expandTest.test('return an array by splitting a string', test => {
       const expected = ['1', '2', '3', '4', '5']
 
       const string = '1|2|3|4|5'

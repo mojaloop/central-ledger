@@ -49,7 +49,7 @@ Test('cli', async (cliTest) => {
     })
 
     commanderTest.test('start all Handlers up via all switches', async test => {
-      var argv = [
+      const argv = [
         'node',
         'index.js',
         'handler',
@@ -63,41 +63,41 @@ Test('cli', async (cliTest) => {
 
       process.argv = argv
 
-      var Index = Proxyquire('../../../src/handlers/index', {
+      const Index = Proxyquire('../../../src/handlers/index', {
         '../shared/setup': SetupStub
       })
 
-      var prepareHandler = {
+      const prepareHandler = {
         type: 'prepare',
         enabled: true
       }
 
-      var positionHandler = {
+      const positionHandler = {
         type: 'position',
         enabled: true
       }
 
-      var getHandler = {
+      const getHandler = {
         type: 'get',
         enabled: true
       }
 
-      var fulfilHandler = {
+      const fulfilHandler = {
         type: 'fulfil',
         enabled: true
       }
 
-      var timeoutHandler = {
+      const timeoutHandler = {
         type: 'timeout',
         enabled: true
       }
 
-      var adminHandler = {
+      const adminHandler = {
         type: 'admin',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         prepareHandler,
         positionHandler,
         getHandler,
@@ -107,7 +107,7 @@ Test('cli', async (cliTest) => {
         // rejectHandler
       ]
 
-      var initOptions = {
+      const initOptions = {
         service: 'handler',
         port: Config.PORT,
         modules: [Plugin, MetricsPlugin],
@@ -122,7 +122,7 @@ Test('cli', async (cliTest) => {
     })
 
     commanderTest.test('start all prepare Handlers up with no FSPList provided', async test => {
-      var argv = [
+      const argv = [
         'node',
         'index.js',
         'handler',
@@ -132,26 +132,26 @@ Test('cli', async (cliTest) => {
 
       process.argv = argv
 
-      var Index = Proxyquire('../../../src/handlers/index', {
+      const Index = Proxyquire('../../../src/handlers/index', {
         '../shared/setup': SetupStub
       })
 
-      var prepareHandler = {
+      const prepareHandler = {
         type: 'prepare',
         enabled: true
       }
 
-      var positionHandler = {
+      const positionHandler = {
         type: 'position',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         prepareHandler,
         positionHandler
       ]
 
-      var initOptions = {
+      const initOptions = {
         service: 'handler',
         port: Config.PORT,
         modules: [Plugin, MetricsPlugin],
@@ -166,7 +166,7 @@ Test('cli', async (cliTest) => {
     })
 
     commanderTest.test('start all position Handlers up with no FSPList provided', async test => {
-      var argv = [
+      const argv = [
         'node',
         'index.js',
         'handler',
@@ -175,20 +175,20 @@ Test('cli', async (cliTest) => {
 
       process.argv = argv
 
-      var Index = Proxyquire('../../../src/handlers/index', {
+      const Index = Proxyquire('../../../src/handlers/index', {
         '../shared/setup': SetupStub
       })
 
-      var positionHandler = {
+      const positionHandler = {
         type: 'position',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         positionHandler
       ]
 
-      var initOptions = {
+      const initOptions = {
         service: 'handler',
         port: Config.PORT,
         modules: [Plugin, MetricsPlugin],
@@ -203,7 +203,7 @@ Test('cli', async (cliTest) => {
     })
 
     commanderTest.test('start all prepare Handlers up with an invalid FSPList provided', async test => {
-      var argv = [
+      const argv = [
         'node',
         'index.js',
         'handler',
@@ -212,20 +212,20 @@ Test('cli', async (cliTest) => {
 
       process.argv = argv
 
-      var Index = Proxyquire('../../../src/handlers/index', {
+      const Index = Proxyquire('../../../src/handlers/index', {
         '../shared/setup': SetupStub
       })
 
-      var prepareHandler = {
+      const prepareHandler = {
         type: 'prepare',
         enabled: true
       }
 
-      var modulesList = [
+      const modulesList = [
         prepareHandler
       ]
 
-      var initOptions = {
+      const initOptions = {
         service: 'handler',
         port: Config.PORT,
         modules: [Plugin, MetricsPlugin],
@@ -243,14 +243,14 @@ Test('cli', async (cliTest) => {
       // stub process.exit
       sandbox.stub(process, 'exit')
 
-      var argv = [
+      const argv = [
         'node',
         'index.js'
       ]
 
       process.argv = argv
 
-      var Index = Proxyquire('../../../src/handlers/index', {
+      const Index = Proxyquire('../../../src/handlers/index', {
         '../shared/setup': SetupStub
       })
 

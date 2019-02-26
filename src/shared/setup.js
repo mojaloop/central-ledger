@@ -77,9 +77,13 @@ const createServer = (port, modules) => {
       port,
       cache: [
         {
-          name: 'memCache',
-          engine: require('catbox-memory'),
-          partition: 'cache'
+          provider: {
+            constructor: require('catbox-memory'),
+            options: {
+              partition: 'cache'
+            }
+          },
+          name: 'memCache'
         }
       ],
       routes: {
@@ -175,7 +179,7 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.transfers.registerGetHandler()
           break
         default:
-          var error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
+          let error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)
       }
@@ -251,6 +255,5 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
 
 module.exports = {
   initialize,
-  createServer,
-  createHandlers
+  createServer
 }

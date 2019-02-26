@@ -4,7 +4,7 @@ const P = require('bluebird')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 class NullClient {
-  connect (service) {
+  connect () {
     Logger.debug('Sidecar disabled: connecting in NullClient')
     return P.resolve(this)
   }

@@ -39,8 +39,8 @@ Test('route handler', (handlerTest) => {
         }
       }
 
-      var jp = require('jsonpath')
-      var healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
+      const jp = require('jsonpath')
+      const healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
       if (Array.isArray(healthHandler) && healthHandler.length === 1) {
         healthHandler[0].handler(createRequest(), reply)
       } else {

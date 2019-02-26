@@ -610,7 +610,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Throw error when invalid action is recieved', async (test) => {
+    positionsTest.test('Throw error when invalid action is received', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -626,7 +626,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Throw error when invalid action is recieved (auto.commit)', async (test) => {
+    positionsTest.test('Throw error when invalid action is received (auto.commit)', async (test) => {
       try {
         config.rdkafkaConf['enable.auto.commit'] = true
         await Kafka.Consumer.createHandler(topicName, config, command)
@@ -644,7 +644,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Throw error when invalid action is recieved -- consumer throws error', async (test) => {
+    positionsTest.test('Throw error when invalid action is received -- consumer throws error', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Kafka.Consumer.getConsumer.throws(new Error())

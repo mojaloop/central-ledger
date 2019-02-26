@@ -55,7 +55,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
     await saveTransferDuplicateCheckTest.test('save the transfer duplicate check hash', async test => {
       try {
         Db.transferDuplicateCheck.insert.returns(1)
-        var result = await Model.saveTransferDuplicateCheck(existingHash)
+        let result = await Model.saveTransferDuplicateCheck(existingHash)
         test.equal(result, 1)
         test.end()
       } catch (err) {
@@ -101,7 +101,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
             insert: sandbox.stub().returns(null)
           })
         })
-        var result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
+        let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
         test.ok(knexStub.withArgs('transferDuplicateCheck').calledOnce, 'knex called with transferDuplicateCheck once')
         test.deepEqual(result, existingHash)
         test.end()
@@ -131,7 +131,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
             insert: sandbox.stub().returns([1])
           })
         })
-        var result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
+        let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
         test.ok(knexStub.withArgs('transferDuplicateCheck').calledTwice, 'knex called with transferDuplicateCheck once')
         test.equal(result, null)
         test.end()

@@ -147,7 +147,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       test.end()
     })
 
-    registerHandlersTest.test('do not start the handler when its diabled in config', async (test) => {
+    registerHandlersTest.test('do not start the handler when its disabled in config', async (test) => {
       Config.HANDLERS_TIMEOUT_DISABLED = true
       const result = await TimeoutHandler.registerAllHandlers()
       test.equal(result, true)
@@ -167,7 +167,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
 
     registerTimeoutHandlerTest.test('tear down the handler', async (test) => {
       await TimeoutHandler.stop()
-      test.pass('reched stop')
+      test.pass('reached stop')
       test.end()
     })
 
@@ -196,7 +196,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
   TimeoutHandlerTest.test('stop should', stopTest => {
     stopTest.test('to reach else branch', async (test) => {
       await TimeoutHandler.stop()
-      test.pass('reched stop')
+      test.pass('reached stop')
       test.end()
     })
 

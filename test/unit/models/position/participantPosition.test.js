@@ -49,8 +49,8 @@ Test('Participant Limit model', async (participantPositionTest) => {
   await participantPositionTest.test('insert participant position', async (assert) => {
     try {
       Db.participantPosition.insert.withArgs(participantPosition1).returns(1)
-      var result = await Model.insert(participantPosition1)
-      assert.ok(Sinon.match(result, 1), `returns ${result}`)
+      let result = await Model.insert(participantPosition1)
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`insert participant position failed with error - ${err}`)
@@ -76,8 +76,8 @@ Test('Participant Limit model', async (participantPositionTest) => {
   await participantPositionTest.test('update participant position', async (assert) => {
     try {
       Db.participantPosition.update.returns(1)
-      var result = await Model.update(participantPosition1)
-      assert.ok(Sinon.match(result, 1), `returns ${result}`)
+      let result = await Model.update(participantPosition1)
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`update participant position failed with error - ${err}`)
@@ -103,8 +103,8 @@ Test('Participant Limit model', async (participantPositionTest) => {
   await participantPositionTest.test('getPositionByCurrencyId participant position', async (assert) => {
     try {
       Db.participantPosition.findOne.withArgs({ participantCurrencyId: participantPosition1.participantCurrencyId }).returns(1)
-      var result = await Model.getPositionByCurrencyId(participantPosition1)
-      assert.ok(Sinon.match(result, 1), `returns ${result}`)
+      let result = await Model.getPositionByCurrencyId(participantPosition1.participantCurrencyId)
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`getPositionByCurrencyId participant position failed with error - ${err}`)

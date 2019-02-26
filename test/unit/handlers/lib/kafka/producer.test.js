@@ -207,7 +207,7 @@ Test('Producer', producerTest => {
 
     disconnectTest.test('disconnect specific topic correctly', async test => {
       try {
-        var topicName = 'someTopic'
+        const topicName = 'someTopic'
         test.ok(await Producer.produceMessage({}, { topicName: topicName }, {}))
         await Producer.disconnect(topicName)
         test.pass('Disconnect specific topic successfully')
@@ -220,7 +220,7 @@ Test('Producer', producerTest => {
 
     disconnectTest.test('disconnect all topics correctly', async test => {
       try {
-        var topicName = 'someTopic1'
+        let topicName = 'someTopic1'
         test.ok(await Producer.produceMessage({}, { topicName: topicName }, {}))
         await Producer.disconnect(topicName)
         topicName = 'someTopic2'
@@ -237,14 +237,14 @@ Test('Producer', producerTest => {
     disconnectTest.test('throw error if failure to disconnect from kafka when disconnecting all Producers', async test => {
       try {
         // setup stubs for getProducer method
-        var topicNameSuccess = 'topic1'
+        const topicNameSuccess = 'topic1'
         var topicNameFailure = 'topic2'
         var getProducerStub = sandbox.stub()
         getProducerStub.returns(new KafkaProducer({}))
         getProducerStub.withArgs(topicNameFailure).throws(`No producer found for topic ${topicNameFailure}`)
 
         // lets rewire the producer import
-        var KafkaProducerProxy = rewire(`${src}/handlers/lib/kafka/producer`)
+        const KafkaProducerProxy = rewire(`${src}/handlers/lib/kafka/producer`)
 
         // lets override the getProducer method within the import
         KafkaProducerProxy.__set__('getProducer', getProducerStub)
@@ -266,7 +266,7 @@ Test('Producer', producerTest => {
 
     disconnectTest.test('throw error if failure to disconnect from kafka if topic does not exist', async test => {
       try {
-        var topicName = 'someTopic'
+        const topicName = 'someTopic'
         await Producer.produceMessage({}, { topicName: topicName }, {})
         await Producer.disconnect('undefined')
       } catch (e) {
@@ -277,7 +277,7 @@ Test('Producer', producerTest => {
 
     disconnectTest.test('throw error when a non-string value is passed into disconnect', async (test) => {
       try {
-        var badTopicName = { }
+        const badTopicName = {}
         await Producer.disconnect(badTopicName)
         test.fail('Error not thrown')
         test.end()
