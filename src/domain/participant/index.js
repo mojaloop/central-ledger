@@ -275,7 +275,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
       throw new Error('Participant Limit or Initial Position already set')
     }
     let limitAndInitialPosition = limitAndInitialPositionObj
-    if (limitAndInitialPosition.initialPosition === undefined) {
+    if (!limitAndInitialPosition.initialPosition) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSITION
     }
     let payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
