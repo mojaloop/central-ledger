@@ -677,7 +677,8 @@ Test('Participant service', async (participantTest) => {
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 10000000
-        }
+        },
+        initialPosition: 1000
       }
       const limitPositionObj = {
         currency: 'USD',
@@ -685,7 +686,7 @@ Test('Participant service', async (participantTest) => {
           type: 'NET_DEBIT_CAP',
           value: 10000000
         },
-        initialPosition: 0
+        initialPosition: 1000
       }
       const participant = {
         participantId: 0,

@@ -459,11 +459,11 @@ const transformTransfer = (transfer) => {
     result = {
       fulfilment: transfer.fulfilment,
       completedTimestamp: transfer.completedTimestamp,
-      transferState: transfer.transferState
+      transferState: transfer.transferStateEnumeration
     }
   } else {
     result = {
-      transferState: transfer.transferState
+      transferState: transfer.transferStateEnumeration
     }
   }
   let extensionList = transformExtensionList(transfer.extensionList)
