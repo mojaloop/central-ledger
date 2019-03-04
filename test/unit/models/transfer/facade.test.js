@@ -308,6 +308,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       let builderStub = sandbox.stub()
       let ilpPacketStub = sandbox.stub()
       let stateChangeStub = sandbox.stub()
+      let transferStateStub = sandbox.stub()
       let transferFulfilmentStub = sandbox.stub()
 
       let selectStub = sandbox.stub()
@@ -322,10 +323,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
       builderStub.where.returns({
         leftJoin: ilpPacketStub.returns({
           leftJoin: stateChangeStub.returns({
-            leftJoin: transferFulfilmentStub.returns({
-              select: selectStub.returns({
-                orderBy: orderByStub.returns({
-                  first: firstStub.returns(transfer)
+            leftJoin: transferStateStub.returns({
+              leftJoin: transferFulfilmentStub.returns({
+                select: selectStub.returns({
+                  orderBy: orderByStub.returns({
+                    first: firstStub.returns(transfer)
+                  })
                 })
               })
             })
@@ -349,6 +352,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'transfer.currencyId AS currency',
         'tsc.transferStateChangeId',
         'tsc.transferStateId AS transferState',
+        'ts.enumeration AS transferStateEnumeration',
         'tsc.reason AS reason',
         'tsc.createdDate AS completedTimestamp',
         'ilpp.value AS ilpPacket',
@@ -376,6 +380,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       let builderStub = sandbox.stub()
       let ilpPacketStub = sandbox.stub()
       let stateChangeStub = sandbox.stub()
+      let transferStateStub = sandbox.stub()
       let transferFulfilmentStub = sandbox.stub()
 
       let selectStub = sandbox.stub()
@@ -390,10 +395,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
       builderStub.where.returns({
         leftJoin: ilpPacketStub.returns({
           leftJoin: stateChangeStub.returns({
-            leftJoin: transferFulfilmentStub.returns({
-              select: selectStub.returns({
-                orderBy: orderByStub.returns({
-                  first: firstStub.returns(transfer)
+            leftJoin: transferStateStub.returns({
+              leftJoin: transferFulfilmentStub.returns({
+                select: selectStub.returns({
+                  orderBy: orderByStub.returns({
+                    first: firstStub.returns(transfer)
+                  })
                 })
               })
             })
@@ -417,6 +424,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'transfer.currencyId AS currency',
         'tsc.transferStateChangeId',
         'tsc.transferStateId AS transferState',
+        'ts.enumeration AS transferStateEnumeration',
         'tsc.reason AS reason',
         'tsc.createdDate AS completedTimestamp',
         'ilpp.value AS ilpPacket',
@@ -444,9 +452,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
         leftJoin: sandbox.stub().returns({
           leftJoin: sandbox.stub().returns({
             leftJoin: sandbox.stub().returns({
-              select: sandbox.stub().returns({
-                orderBy: sandbox.stub().returns({
-                  first: sandbox.stub().returns(null)
+              leftJoin: sandbox.stub().returns({
+                select: sandbox.stub().returns({
+                  orderBy: sandbox.stub().returns({
+                    first: sandbox.stub().returns(null)
+                  })
                 })
               })
             })

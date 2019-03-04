@@ -107,12 +107,14 @@ const getByIdLight = async (id) => {
         .where({ 'transfer.transferId': id })
         .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
+        .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
         .select(
           'transfer.*',
           'transfer.currencyId AS currency',
           'tsc.transferStateChangeId',
           'tsc.transferStateId AS transferState',
+          'ts.enumeration AS transferStateEnumeration',
           'tsc.reason AS reason',
           'tsc.createdDate AS completedTimestamp',
           'ilpp.value AS ilpPacket',
