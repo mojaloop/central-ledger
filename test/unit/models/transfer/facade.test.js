@@ -941,6 +941,236 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
+  await transferFacadeTest.test('saveTransferAborted should', async saveTransferAborted => {
+    try {
+      // const transferId = 't1'
+      // const payload = {
+      //   fulfilment: 'f1',
+      //   completedTimestamp: now,
+      //   extensionList: {
+      //     extension: transferExtensions
+      //   }
+      // }
+      // const saveTransferAbortedExecuted = true
+      // const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: Time.getUTCString(now) }
+
+      // const saveTransferAbortedResult = { saveTransferAbortedExecuted, transferFulfilmentRecord, transferStateChangeRecord }
+
+      // await saveTransferAborted.test('return transfer in RECEIVED_FULFIL state', async (test) => {
+      //   try {
+      //     let record = [{ settlementWindowId: 1 }]
+      //     transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_FULFIL
+
+      //     sandbox.stub(Db, 'getKnex')
+      //     const trxStub = sandbox.stub()
+      //     trxStub.commit = sandbox.stub()
+      //     const knexStub = sandbox.stub()
+      //     knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      //     Db.getKnex.returns(knexStub)
+
+      //     const transactingStub = sandbox.stub()
+      //     const insertStub = sandbox.stub()
+      //     knexStub.returns({
+      //       transacting: transactingStub.returns({
+      //         insert: insertStub
+      //       })
+      //     })
+
+      //     /** @namespace ModuleProxy.saveTransferAborted **/
+      //     const response = await ModuleProxy.saveTransferAborted(transferId, payload, isCommit, stateReason, hasPassedValidation)
+      //     test.deepEqual(response, saveTransferAbortedResult, 'response matches expected result')
+      //     test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
+      //     test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
+      //     test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+      //     test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
+      //     test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
+      //     for (let extension of transferExtensionRecords) {
+      //       test.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
+      //     }
+      //     test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+      //     test.end()
+      //   } catch (err) {
+      //     Logger.error(`saveTransferAborted failed with error - ${err}`)
+      //     test.fail()
+      //     test.end()
+      //   }
+      // })
+
+      // await saveTransferAborted.test('return transfer in RECEIVED_REJECT state', async (test) => {
+      //   try {
+      //     isCommit = false
+      //     hasPassedValidation = true
+      //     let record = [{ settlementWindowId: 1 }]
+      //     transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_REJECT
+
+      //     sandbox.stub(Db, 'getKnex')
+      //     const trxStub = sandbox.stub()
+      //     trxStub.commit = sandbox.stub()
+      //     const knexStub = sandbox.stub()
+      //     knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      //     Db.getKnex.returns(knexStub)
+
+      //     let builderStub = sandbox.stub()
+      //     let selectStub = sandbox.stub()
+      //     let whereStub = sandbox.stub()
+      //     let orderByStub = sandbox.stub()
+      //     let firstStub = sandbox.stub()
+
+      //     builderStub.leftJoin = sandbox.stub()
+      //     Db.settlementWindow.query.callsArgWith(0, builderStub)
+      //     Db.settlementWindow.query.returns(record)
+
+      //     builderStub.leftJoin.returns({
+      //       select: selectStub.returns({
+      //         where: whereStub.returns({
+      //           orderBy: orderByStub.returns({
+      //             first: firstStub.returns(record)
+      //           })
+      //         })
+      //       })
+      //     })
+
+      //     const transactingStub = sandbox.stub()
+      //     const insertStub = sandbox.stub()
+      //     knexStub.returns({
+      //       transacting: transactingStub.returns({
+      //         insert: insertStub
+      //       })
+      //     })
+
+      //     const response = await ModuleProxy.saveTransferAborted(transferId, payload, isCommit, stateReason, hasPassedValidation)
+      //     test.deepEqual(response, saveTransferAbortedResult, 'response matches expected result')
+      //     test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
+      //     test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
+      //     test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+      //     test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
+      //     test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
+      //     for (let extension of transferExtensionRecords) {
+      //       test.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
+      //     }
+      //     test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+      //     test.end()
+      //   } catch (err) {
+      //     Logger.error(`saveTransferAborted failed with error - ${err}`)
+      //     test.fail()
+      //     test.end()
+      //   }
+      // })
+
+      // await saveTransferAborted.test('return transfer in ABORTED_REJECTED state', async (test) => {
+      //   try {
+      //     hasPassedValidation = false
+      //     let record = [{ settlementWindowId: 1 }]
+      //     transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED_REJECTED
+
+      //     sandbox.stub(Db, 'getKnex')
+      //     const trxStub = sandbox.stub()
+      //     trxStub.commit = sandbox.stub()
+      //     const knexStub = sandbox.stub()
+      //     knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      //     Db.getKnex.returns(knexStub)
+
+      //     let builderStub = sandbox.stub()
+      //     let selectStub = sandbox.stub()
+      //     let whereStub = sandbox.stub()
+      //     let orderByStub = sandbox.stub()
+      //     let firstStub = sandbox.stub()
+
+      //     builderStub.leftJoin = sandbox.stub()
+      //     Db.settlementWindow.query.callsArgWith(0, builderStub)
+      //     Db.settlementWindow.query.returns(record)
+
+      //     builderStub.leftJoin.returns({
+      //       select: selectStub.returns({
+      //         where: whereStub.returns({
+      //           orderBy: orderByStub.returns({
+      //             first: firstStub.returns(record)
+      //           })
+      //         })
+      //       })
+      //     })
+
+      //     const transactingStub = sandbox.stub()
+      //     const insertStub = sandbox.stub()
+      //     knexStub.returns({
+      //       transacting: transactingStub.returns({
+      //         insert: insertStub
+      //       })
+      //     })
+
+      //     const response = await ModuleProxy.saveTransferAborted(transferId, payload, isCommit, stateReason, hasPassedValidation)
+      //     test.deepEqual(response, saveTransferAbortedResult, 'response matches expected result')
+      //     test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
+      //     test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
+      //     test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+      //     test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
+      //     test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
+      //     for (let extension of transferExtensionRecords) {
+      //       test.ok(insertStub.withArgs(extension).calledOnce, `insert transferExtension called once with ${JSON.stringify(extension)}`)
+      //     }
+      //     test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+      //     test.end()
+      //   } catch (err) {
+      //     Logger.error(`saveTransferAborted failed with error - ${err}`)
+      //     test.fail()
+      //     test.end()
+      //   }
+      // })
+
+      // await saveTransferAborted.test('rollback and throw error', async (test) => {
+      //   try {
+      //     hasPassedValidation = false
+      //     transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED_REJECTED
+      //     payload.extensionList = null
+
+      //     sandbox.stub(Db, 'getKnex')
+      //     const trxStub = sandbox.stub()
+      //     trxStub.rollback = sandbox.stub()
+      //     const knexStub = sandbox.stub()
+      //     knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      //     Db.getKnex.returns(knexStub)
+
+      //     const transactingStub = sandbox.stub()
+      //     const insertStub = sandbox.stub()
+      //     knexStub.returns({
+      //       transacting: transactingStub.returns({
+      //         insert: insertStub.throws(new Error())
+      //       })
+      //     })
+
+      //     await ModuleProxy.saveTransferAborted(transferId, payload, isCommit, stateReason, hasPassedValidation)
+      //     test.fail('Error not thrown!')
+      //     test.end()
+      //   } catch (err) {
+      //     Logger.error(`saveTransferAborted failed with error - ${err}`)
+      //     test.pass('Error thrown')
+      //     test.end()
+      //   }
+      // })
+
+      await saveTransferAborted.end()
+    } catch (err) {
+      Logger.error(`saveTransferAborted failed with error - ${err}`)
+      saveTransferAborted.fail()
+      await saveTransferAborted.end()
+    }
+  })
+
+  await transferFacadeTest.test('saveTransferAborted should throw an error', async (test) => {
+    try {
+      const transferId = 't1'
+      sandbox.stub(Db, 'getKnex')
+      Db.getKnex.throws(new Error())
+      await Model.saveTransferAborted(transferId)
+      test.fail('Error not thrown')
+      test.end()
+    } catch (err) {
+      Logger.error(`saveTransferAborted failed with error - ${err}`)
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer', async (test) => {
     try {
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)

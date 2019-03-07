@@ -959,6 +959,40 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    fulfilTest.test('enter ABORT branch with action REJECT', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(true)
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      invalidEventMessage.value.metadata.event.action = 'reject'
+      delete fulfilMessages[0].value.content.payload.fulfilment
+      TransferService.abort.returns({
+        transferErrorRecord: {
+          errorCode: 5000,
+          errorDescription: 'generic'
+        }
+      })
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('enter ABORT branch when action ABORT', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(true)
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      invalidEventMessage.value.metadata.event.action = 'abort'
+      delete fulfilMessages[0].value.content.payload.fulfilment
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
+    })
+
     fulfilTest.test('throw error', async (test) => { // TODO: extend and enable unit test
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)

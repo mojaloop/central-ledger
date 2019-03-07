@@ -404,7 +404,22 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is FAKE when single message', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for RECEIVED_ERROR and transferStateId is FAKE when single message', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Utility.getKafkaConfig.returns(config)
+      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: 'RECEIVED_ERROR' }))
+      TransferStateChange.saveTransferStateChange.resolves(true)
+      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      m.value.metadata.event.action = transferEventAction.REJECT
+      const result = await allTransferHandlers.positions(null, m)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('Update transferStateChange in the database for REJECT and transferStateId is FAKE when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -484,7 +499,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is FAKE when single message', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for REJECT and transferStateId is FAKE when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
