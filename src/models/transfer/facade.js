@@ -35,11 +35,17 @@
 const Db = require('../../db')
 const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
+const TransferEventAction = Enum.transferEventAction
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('../../lib/time')
 const Config = require('../../lib/config')
 const _ = require('lodash')
+const Errors = require('../../lib/errors')
+const errorPayeeGeneric = 5000
+const errorPayeeGenericDescription = Errors.getErrorDescription(errorPayeeGeneric)
+const errorPayeeRejection = 5100
+const errorPayeeRejectionDescription = Errors.getErrorDescription(errorPayeeRejection)
 
 const getById = async (id) => {
   try {
@@ -219,7 +225,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
 
 const saveTransferFulfilled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
   const transferFulfilmentId = Uuid() // TODO: should be generated before TransferFulfilmentDuplicateCheck and passed here as parameter
-  const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.REJECTED) : Enum.TransferState.ABORTED)
+  const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.RECEIVED_REJECT) : Enum.TransferState.ABORTED_REJECTED)
   const transferFulfilmentRecord = {
     transferFulfilmentId,
     transferId,
@@ -284,6 +290,69 @@ const saveTransferFulfilled = async (transferId, payload, isCommit = true, state
       transferFulfilmentRecord,
       transferStateChangeRecord,
       transferExtensions
+    }
+  } catch (e) {
+    throw e
+  }
+}
+
+const saveTransferAborted = async (transferId, payload, eventAction) => {
+  let errorCode
+  let errorDescription
+  let transferErrorRecord
+  const transactionTimestamp = Time.getUTCString(new Date())
+  const state = Enum.TransferState.RECEIVED_ERROR
+  const transferStateChangeRecord = {
+    transferId,
+    transferStateId: state,
+    createdDate: transactionTimestamp
+  }
+
+  if (eventAction === TransferEventAction.REJECT) {
+    errorCode = errorPayeeRejection
+    errorDescription = errorPayeeRejectionDescription
+  } else if (eventAction === TransferEventAction.ABORT) {
+    if (payload.errorCode && payload.errorCode >= 5000 && payload.errorCode < 5500) {
+      errorCode = payload.errorCode
+    } else {
+      errorCode = errorPayeeGeneric
+    }
+    errorDescription = payload.errorDescription
+  } else {
+    errorCode = errorPayeeGeneric
+    errorDescription = errorPayeeGenericDescription
+  }
+
+  try {
+    /** @namespace Db.getKnex **/
+    const knex = await Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+        const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
+          .where({ transferId: transferStateChangeRecord.transferId })
+          .forUpdate().first().orderBy('transferStateChangeId', 'desc')
+        transferStateChangeRecord.transferStateId = insertedTransferStateChange.transferStateId
+
+        transferErrorRecord = {
+          transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
+          errorCode,
+          errorDescription,
+          createdDate: transactionTimestamp
+        }
+        await knex('transferError').transacting(trx).insert(transferErrorRecord)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    }).catch((err) => {
+      throw err
+    })
+    return {
+      saveTransferAbortedExecuted: true,
+      transferStateChangeRecord,
+      transferErrorRecord
     }
   } catch (e) {
     throw e
@@ -569,11 +638,11 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
               createdDate: param1.createdDate
             })
             .transacting(trx)
-        } else if (param1.transferStateId === enums.transferState.ABORTED) {
+        } else if (param1.transferStateId === enums.transferState.ABORTED_REJECTED) {
           await knex('transferStateChange')
             .insert({
               transferId: param1.transferId,
-              transferStateId: enums.transferState.REJECTED,
+              transferStateId: enums.transferState.RECEIVED_REJECT,
               reason: param1.reason,
               createdDate: param1.createdDate
             })
@@ -589,7 +658,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .transacting(trx)
 
         if (param1.drUpdated === true) {
-          if (param1.transferStateId === 'ABORTED') {
+          if (param1.transferStateId === 'ABORTED_REJECTED') {
             info.drAmount = -info.drAmount
           }
           await knex('participantPosition')
@@ -609,7 +678,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         }
 
         if (param1.crUpdated === true) {
-          if (param1.transferStateId === 'ABORTED') {
+          if (param1.transferStateId === 'ABORTED_REJECTED') {
             info.crAmount = -info.crAmount
           }
           await knex('participantPosition')
@@ -895,7 +964,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT) {
           let param1 = {
             transferId: payload.transferId,
-            transferStateId: enums.transferState.ABORTED,
+            transferStateId: enums.transferState.ABORTED_REJECTED,
             reason: payload.reason,
             createdDate: transactionTimestamp,
             drUpdated: true,
@@ -955,6 +1024,7 @@ const TransferFacade = {
   getAll,
   getTransferInfoToChangePosition,
   saveTransferFulfilled: saveTransferFulfilled,
+  saveTransferAborted,
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,

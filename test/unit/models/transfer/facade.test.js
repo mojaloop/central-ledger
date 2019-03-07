@@ -48,7 +48,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
     transferState: {
       RESERVED: 'RESERVED',
       COMMITTED: 'COMMITTED',
-      ABORTED: 'ABORTED'
+      ABORTED_REJECTED: 'ABORTED_REJECTED'
     },
     transferParticipantRoleType: {
       PAYER_DFSP: 'PAYER_DFSP',
@@ -767,12 +767,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
         }
       })
 
-      await saveTransferFulfilled.test('return transfer in REJECTED state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in RECEIVED_REJECT state', async (test) => {
         try {
           isCommit = false
           hasPassedValidation = true
           let record = [{ settlementWindowId: 1 }]
-          transferStateChangeRecord.transferStateId = Enum.TransferState.REJECTED
+          transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_REJECT
 
           sandbox.stub(Db, 'getKnex')
           const trxStub = sandbox.stub()
@@ -828,11 +828,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
         }
       })
 
-      await saveTransferFulfilled.test('return transfer in ABORTED state', async (test) => {
+      await saveTransferFulfilled.test('return transfer in ABORTED_REJECTED state', async (test) => {
         try {
           hasPassedValidation = false
           let record = [{ settlementWindowId: 1 }]
-          transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
+          transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED_REJECTED
 
           sandbox.stub(Db, 'getKnex')
           const trxStub = sandbox.stub()
@@ -891,7 +891,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await saveTransferFulfilled.test('rollback and throw error', async (test) => {
         try {
           hasPassedValidation = false
-          transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED
+          transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED_REJECTED
           payload.extensionList = null
 
           sandbox.stub(Db, 'getKnex')
@@ -1442,7 +1442,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           let param1 = {
             transferId: Uuid(),
-            transferStateId: Enum.TransferState.ABORTED,
+            transferStateId: Enum.TransferState.ABORTED_REJECTED,
             reason: 'text',
             createdDate: Time.getUTCString(now),
             drUpdated: true,
@@ -1459,7 +1459,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             crPositionId: 1,
             crPositionValue: 0,
             crReservedValue: 0,
-            transferStateId: Enum.TransferState.ABORTED,
+            transferStateId: Enum.TransferState.ABORTED_REJECTED,
             ledgerAccountTypeId: 2
           }
           const trxStub = sandbox.stub()

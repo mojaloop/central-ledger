@@ -90,6 +90,14 @@ const reject = async (transferId, payload) => {
   }
 }
 
+const abort = async (transferId, payload, eventAction) => {
+  try {
+    return TransferFacade.saveTransferAborted(transferId, payload, eventAction)
+  } catch (err) {
+    throw err
+  }
+}
+
 /**
  * @function ValidateDuplicateHash
  *
@@ -166,6 +174,7 @@ const TransferService = {
   prepare,
   fulfil,
   reject,
+  abort,
   expire,
   validateDuplicateHash,
   logTransferError,

@@ -95,8 +95,8 @@ Test('Enum test', async (enumTest) => {
     ],
     transferState: [
       {
-        transferStateId: 'ABORTED',
-        enumeration: 'ABORTED'
+        transferStateId: 'ABORTED_REJECTED',
+        enumeration: 'ABORTED_REJECTED'
       },
       {
         transferStateId: 'COMMITTED',
@@ -132,11 +132,11 @@ Test('Enum test', async (enumTest) => {
       'PAYEE_DFSP': 2
     },
     transferState: {
-      'ABORTED': 'ABORTED',
+      'ABORTED_REJECTED': 'ABORTED_REJECTED',
       'COMMITTED': 'COMMITTED'
     },
     transferStateEnum: {
-      'ABORTED': 'ABORTED',
+      'ABORTED_REJECTED': 'ABORTED_REJECTED',
       'COMMITTED': 'COMMITTED'
     }
   }

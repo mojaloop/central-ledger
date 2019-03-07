@@ -30,7 +30,9 @@ const error = {
   3100: 'Generic validation error',
   3303: 'Transfer expired',
   3106: 'Modified request',
-  4001: 'Payer FSP has insufficient liquidity to perform the transfer'
+  4001: 'Payer FSP has insufficient liquidity to perform the transfer',
+  5000: 'Generic payee error',
+  5100: 'Payer aborted transfer without fulfilment'
 }
 
 const createErrorInformation = (errorCode, extensionList) => {

@@ -131,7 +131,7 @@ exports.transferReject = async (transferId) => {
 const requestBodys = (transferId = null) => {
   const localTransfer = Object.assign({}, transfer, { transferId: transferId || Uuid() })
   const localFulfil = Object.assign({}, fulfil, { completedTimestamp: new Date() })
-  const localReject = Object.assign({}, fulfil, { transferState: TransferState.ABORTED })
+  const localReject = Object.assign({}, fulfil, { transferState: TransferState.ABORTED_REJECTED })
 
   return {
     messageProtocol: function () {

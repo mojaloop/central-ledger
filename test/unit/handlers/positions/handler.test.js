@@ -419,11 +419,11 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is REJECTED when single message', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is RECEIVED_REJECT when single message', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
-        transferStateId: TransferState.ABORTED,
+        transferStateId: TransferState.ABORTED_REJECTED,
         reason: transferInfo.reason
       }
       await Kafka.Consumer.createHandler(topicName, config, command)
@@ -432,7 +432,7 @@ Test('Position handler', transferHandlerTest => {
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
@@ -442,11 +442,11 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is REJECTED when single message', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is RECEIVED_REJECT when single message', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
-        transferStateId: TransferState.ABORTED,
+        transferStateId: TransferState.ABORTED_REJECTED,
         reason: transferInfo.reason
       }
       await Kafka.Consumer.createHandler(topicName, config, command)
@@ -456,7 +456,7 @@ Test('Position handler', transferHandlerTest => {
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT
@@ -499,11 +499,11 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is REJECTED when single message', async (test) => {
+    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is RECEIVED_REJECT when single message', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
-        transferStateId: TransferState.ABORTED,
+        transferStateId: TransferState.ABORTED_REJECTED,
         reason: transferInfo.reason
       }
       config.rdkafkaConf['enable.auto.commit'] = true
@@ -514,7 +514,7 @@ Test('Position handler', transferHandlerTest => {
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.REJECTED }))
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
       m.value.metadata.event.action = transferEventAction.REJECT

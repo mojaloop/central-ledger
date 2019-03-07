@@ -313,7 +313,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('send callback when duplicate found and transferState is ABORTED', async (test) => {
+    prepareTest.test('send callback when duplicate found and transferState is ABORTED_REJECTED', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -322,7 +322,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: true,
         existsNotMatching: false
       }))
-      TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED' }))
+      TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED_REJECTED' }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       TransferObjectTransform.toTransfer.withArgs(transferReturn).returns(transfer)
@@ -736,7 +736,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.produceGeneralMessage.throws(new Error())
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
-      transferReturn.transferState = 'ABORTED'
+      transferReturn.transferState = 'ABORTED_REJECTED'
       let transferResult = Object.assign({}, transferReturn)
       transferResult.extensionList = []
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferResult))
