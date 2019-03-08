@@ -332,7 +332,7 @@ const saveTransferAborted = async (transferId, payload, eventAction) => {
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
           .where({ transferId: transferStateChangeRecord.transferId })
           .forUpdate().first().orderBy('transferStateChangeId', 'desc')
-        transferStateChangeRecord.transferStateId = insertedTransferStateChange.transferStateId
+        transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
 
         transferErrorRecord = {
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
