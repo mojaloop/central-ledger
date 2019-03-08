@@ -68,7 +68,7 @@ const transferStates = [
   {
     'transferStateId': 'RECEIVED_ERROR',
     'enumeration': 'RESERVED',
-    'description': 'The switch has received a transfer error request'
+    'description': 'The switch has received a transfer error callback'
   },
   {
     'transferStateId': 'ABORTED_ERROR',
