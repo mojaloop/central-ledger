@@ -82,7 +82,7 @@ Test('Extension model test', async (extensionTest) => {
 
           extensionMap.set(result.extensionId, read)
 
-          assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
+          // assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
           assert.equal(result.transferId, read.extension.transferId, 'transferId match')
           assert.equal(result.key, read.extension.key, 'key match')
           assert.equal(result.value, read.extension.value, 'value match')
@@ -155,7 +155,7 @@ Test('Extension model test', async (extensionTest) => {
         let extension = extensionObj.extension
         let result = await Model.getByTransferId(extension.transferId)
         assert.equal(JSON.stringify(extension), JSON.stringify(result[0]))
-        assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
+        // assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
         assert.equal(result[0].transferId, extension.transferId, 'transferId match')
         assert.equal(result[0].key, extension.key, 'key match')
         assert.equal(result[0].value, extension.value, 'value match')
@@ -175,7 +175,7 @@ Test('Extension model test', async (extensionTest) => {
         let extension = extensionObj.extension
         let result = await Model.getByTransferExtensionId(extension.transferExtensionId)
         assert.equal(JSON.stringify(extension), JSON.stringify(result))
-        assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
+        // assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
         assert.equal(result.extensionId, extensionId, 'extensionId match')
         assert.equal(result.transferId, extension.transferId, 'transferId match')
         assert.equal(result.key, extension.key, 'key match')
@@ -189,9 +189,18 @@ Test('Extension model test', async (extensionTest) => {
       assert.end()
     }
   })
-  extensionTest.end()
-})
 
-Test.onFinish(async () => {
-  process.exit(0)
+  await extensionTest.test('teardown', async (assert) => {
+    try {
+      await Db.disconnect()
+      assert.pass('database connection closed')
+      assert.end()
+    } catch (err) {
+      Logger.error(`teardown failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  extensionTest.end()
 })

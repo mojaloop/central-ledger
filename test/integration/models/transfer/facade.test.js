@@ -81,9 +81,18 @@ Test('Transfer read model test', async (transferReadModelTest) => {
       assert.end()
     }
   })
-  transferReadModelTest.end()
-})
 
-Test.onFinish(async () => {
-  process.exit(0)
+  await transferReadModelTest.test('teardown', async (assert) => {
+    try {
+      await Db.disconnect()
+      assert.pass('database connection closed')
+      assert.end()
+    } catch (err) {
+      Logger.error(`teardown failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  transferReadModelTest.end()
 })

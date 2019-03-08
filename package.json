@@ -102,6 +102,7 @@
     "mysql": "2.16.0"
   },
   "devDependencies": {
+    "async-retry": "1.2.3",
     "faucet": "0.0.1",
     "istanbul": "1.1.0-alpha.1",
     "jsonpath": "1.0.0",

@@ -82,7 +82,7 @@ Test('Ilp service tests', async (ilpTest) => {
 
           ilpMap.set(result.transferId, read)
 
-          assert.comment(`Testing with ilp \n ${JSON.stringify(ilp, null, 2)}`)
+          // assert.comment(`Testing with ilp \n ${JSON.stringify(ilp, null, 2)}`)
           assert.equal(result.transferId, read.transferId, ' transferId match')
           assert.equal(result.value, read.value, ' packet match')
           assert.end()
@@ -141,7 +141,7 @@ Test('Ilp service tests', async (ilpTest) => {
           }
         )), JSON.stringify(ilp))
 
-        assert.comment(`Testing with ilp \n ${JSON.stringify(ilp, null, 2)}`)
+        // assert.comment(`Testing with ilp \n ${JSON.stringify(ilp, null, 2)}`)
         assert.equal(result.transferId, ilp.transferId, ' transferId match')
         assert.equal(result.packet, ilp.packet, ' packet match')
         assert.equal(result.condition, ilp.condition, ' condition match')
@@ -171,9 +171,18 @@ Test('Ilp service tests', async (ilpTest) => {
       assert.end()
     }
   })
-  ilpTest.end()
-})
 
-Test.onFinish(async () => {
-  process.exit(0)
+  await ilpTest.test('teardown', async (assert) => {
+    try {
+      await Db.disconnect()
+      assert.pass('database connection closed')
+      assert.end()
+    } catch (err) {
+      Logger.error(`teardown failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  ilpTest.end()
 })

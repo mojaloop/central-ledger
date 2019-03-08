@@ -59,7 +59,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
     try {
       // Prepare helper tests actually the Model.saveTransferExtension and Model.getByTransferId
       stateChangePrepareResult = await HelperModule.prepareNeededData('transferStateChange')
-      assert.comment('the prepared data is: ', JSON.stringify(stateChangePrepareResult, null, 4))
+      // assert.comment('the prepared data is: ', JSON.stringify(stateChangePrepareResult, null, 4))
 
       let state = stateChangePrepareResult.transferStateResults[1]
       let transferStateChange = {
@@ -115,9 +115,17 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
     }
   })
 
-  await stateChangeTest.end()
-})
+  await stateChangeTest.test('teardown', async (assert) => {
+    try {
+      await Db.disconnect()
+      assert.pass('database connection closed')
+      assert.end()
+    } catch (err) {
+      Logger.error(`teardown failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
 
-Test.onFinish(async () => {
-  process.exit(0)
+  await stateChangeTest.end()
 })
