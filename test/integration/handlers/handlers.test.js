@@ -50,8 +50,8 @@ const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
-const debug = false
-const rebalanceDelay = 8000
+const debug = true
+const rebalanceDelay = 10000
 const retryDelay = 500
 const retryCount = 40
 const retryOpts = {
@@ -151,7 +151,7 @@ const prepareTestData = async (dataObj) => {
     }
   }
 
-  const reject = Object.assign({}, fulfil, { transferState: TransferState.ABORTED })
+  const reject = Object.assign({}, fulfil, { transferState: 'ABORTED' })
 
   const messageProtocol = {
     id: transfer.transferId,
@@ -341,7 +341,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferFulfilReject.test(`update transfer state to ABORTED by ABORT request`, async (test) => {
+    await transferFulfilReject.test(`update transfer state to ABORTED_REJECTED by ABORT request`, async (test) => {
       const config = Utility.getKafkaConfig(
         Utility.ENUMS.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -356,7 +356,7 @@ Test('Handlers test', async handlersTest => {
         const payerExpectedPosition = testData.amount.amount - td.transfer.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
+        test.equal(transfer.transferState, TransferState.ABORTED_REJECTED, `Transfer state changed to ${TransferState.ABORTED_REJECTED}`)
         test.equal(transfer.fulfilment, td.fulfil.fulfilment, 'Reject ilpFulfilment saved')
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
         test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
@@ -366,7 +366,7 @@ Test('Handlers test', async handlersTest => {
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocol.id) || {}
-          if (transfer.transferState !== TransferState.ABORTED) {
+          if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -398,13 +398,13 @@ Test('Handlers test', async handlersTest => {
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocol.id) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferState.ABORTED, `Transfer state changed to ${TransferState.ABORTED}`)
+        test.equal(transfer.transferState, TransferState.ABORTED_REJECTED, `Transfer state changed to ${TransferState.ABORTED_REJECTED}`)
       }
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocol.id) || {}
-          if (transfer.transferState !== TransferState.ABORTED) {
+          if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }

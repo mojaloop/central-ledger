@@ -667,7 +667,7 @@ Test('Admin handler', adminHandlerTest => {
           existingNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
-          enumeration: TransferState.ABORTED
+          enumeration: TransferState.ABORTED_REJECTED
         })
         const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)

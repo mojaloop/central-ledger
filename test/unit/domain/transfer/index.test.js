@@ -92,6 +92,21 @@ const transferFulfilmentRecord = {
   createdDate: new Date()
 }
 
+const saveTransferAbortedResult = {
+  saveTransferAbortedExecuted: true,
+  transferStateChangeRecord: {
+    transferId: '054ef1c9-901d-4570-9c4e-ad99c6bce7af',
+    transferStateId: 'RECEIVED_ERROR',
+    createdDate: '2019-03-07 18:40:25.026'
+  },
+  transferErrorRecord: {
+    transferStateChangeId: 200,
+    errorCode: 5100,
+    errorDescription: 'Payer aborted transfer without fulfilment',
+    createdDate: '2019-03-07 18:40:25.026'
+  }
+}
+
 Test('Transfer Service', transferIndexTest => {
   let sandbox
 
@@ -293,6 +308,36 @@ Test('Transfer Service', transferIndexTest => {
     })
 
     rejectTest.end()
+  })
+
+  transferIndexTest.test('abort should', abortTest => {
+    abortTest.test('abort transfer', async (test) => {
+      try {
+        TransferFacade.saveTransferAborted.returns(Promise.resolve(saveTransferAbortedResult))
+        const response = await TransferService.abort(payload.transferId, payload)
+        test.deepEqual(response, saveTransferAbortedResult)
+        test.end()
+      } catch (err) {
+        Logger.error(`abort failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    abortTest.test('throw error', async (test) => {
+      try {
+        TransferFacade.saveTransferAborted.throws(new Error())
+        await TransferService.abort(payload.transferId, payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (err) {
+        Logger.error(`abort failed with error - ${err}`)
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    abortTest.end()
   })
 
   transferIndexTest.test('logTransferError should', logTransferErrorTest => {

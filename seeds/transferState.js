@@ -56,14 +56,24 @@ const transferStates = [
     'description': 'Expiring the transfer and returning funds to payer fsp.'
   },
   {
-    'transferStateId': 'REJECTED',
+    'transferStateId': 'RECEIVED_REJECT',
     'enumeration': 'RESERVED',
-    'description': 'The switch has aborted the transfer due a rejection from payee fsp.'
+    'description': 'The switch has received a transfer abort from payee fsp.'
   },
   {
-    'transferStateId': 'ABORTED',
+    'transferStateId': 'ABORTED_REJECTED',
     'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to being FAILED or REJECTED.'
+    'description': 'The switch has aborted a transfer due to being RECEIVED_REJECT.'
+  },
+  {
+    'transferStateId': 'RECEIVED_ERROR',
+    'enumeration': 'RESERVED',
+    'description': 'The switch has received a transfer error callback'
+  },
+  {
+    'transferStateId': 'ABORTED_ERROR',
+    'enumeration': 'ABORTED',
+    'description': 'The switch has aborted a transfer due to being RECEIVED_ERROR'
   },
   {
     'transferStateId': 'EXPIRED_PREPARED',

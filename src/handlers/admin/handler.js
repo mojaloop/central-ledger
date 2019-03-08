@@ -125,7 +125,7 @@ const transferExists = async (payload, transferId) => {
     Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::transfer state not found`)
   } else {
     const transferStateEnum = currentTransferState.enumeration
-    if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
+    if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED_REJECTED) {
       Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::request already finalized`)
     } else if (transferStateEnum === TransferState.RECEIVED_PREPARE || transferStateEnum === TransferState.RESERVED) {
       Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::previous request still in progress do nothing`)
