@@ -32,6 +32,7 @@
 const TransferFacade = require('../../models/transfer/facade')
 const TransferModel = require('../../models/transfer/transfer')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
+const TransferErrorModel = require('../../models/transfer/transferError')
 const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferObjectTransform = require('./transform')
@@ -178,6 +179,7 @@ const TransferService = {
   expire,
   validateDuplicateHash,
   logTransferError,
+  getTransferErrorByTransferId: TransferErrorModel.getByTransferId,
   getTransferById: TransferModel.getById,
   getById: TransferFacade.getById,
   getByIdLight: TransferFacade.getByIdLight,

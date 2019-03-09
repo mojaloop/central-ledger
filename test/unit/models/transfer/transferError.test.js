@@ -29,19 +29,29 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/transferError')
 const Db = require('../../../../src/db/index')
+const Time = require('../../../../src/lib/time')
 
 Test('TransferError model', async (TransferErrorTest) => {
   let sandbox
-  const transferErrorFixture = {
+  const transferErrorFixtures = [{
     transferStateChangeId: 1,
     errorCode: 3100,
     errorDescription: 'Invalid Payee'
-  }
+  },
+  {
+    transferErrorId: 12,
+    transferStateChangeId: 99,
+    errorCode: 5101,
+    errorDescription: 'Payee transaction limit reached',
+    createdDate: Time.getUTCString(new Date())
+  }]
+
   TransferErrorTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     Db.transferError = {
       insert: sandbox.stub(),
-      find: sandbox.stub()
+      find: sandbox.stub(),
+      query: sandbox.stub()
     }
 
     test.end()
@@ -55,8 +65,8 @@ Test('TransferError model', async (TransferErrorTest) => {
   await TransferErrorTest.test('insert should', async (insertTest) => {
     await insertTest.test('insert the record into database', async test => {
       try {
-        Db.transferError.insert.withArgs(transferErrorFixture).returns(1)
-        let result = await Model.insert(transferErrorFixture.transferStateChangeId, transferErrorFixture.errorCode, transferErrorFixture.errorDescription)
+        Db.transferError.insert.withArgs(transferErrorFixtures[0]).returns(1)
+        let result = await Model.insert(transferErrorFixtures[0].transferStateChangeId, transferErrorFixtures[0].errorCode, transferErrorFixtures[0].errorDescription)
         test.equal(result, 1)
         test.end()
       } catch (err) {
@@ -68,9 +78,9 @@ Test('TransferError model', async (TransferErrorTest) => {
 
     await insertTest.test('should throw error', async (test) => {
       try {
-        Db.transferError.insert.withArgs(transferErrorFixture).throws(new Error('message'))
+        Db.transferError.insert.withArgs(transferErrorFixtures[0]).throws(new Error('message'))
 
-        await Model.insert(transferErrorFixture.transferStateChangeId, transferErrorFixture.errorCode, transferErrorFixture.errorDescription)
+        await Model.insert(transferErrorFixtures[0].transferStateChangeId, transferErrorFixtures[0].errorCode, transferErrorFixtures[0].errorDescription)
         test.fail(' should throw')
         test.end()
       } catch (err) {
@@ -85,9 +95,9 @@ Test('TransferError model', async (TransferErrorTest) => {
   await TransferErrorTest.test('getByTransferStateChangeId should', async (getByTransferStateChangeIdTest) => {
     await getByTransferStateChangeIdTest.test('getByTransferStateChangeId the record into database', async test => {
       try {
-        Db.transferError.find.returns(transferErrorFixture)
-        let result = await Model.getByTransferStateChangeId(transferErrorFixture.transferStateChangeId)
-        test.deepEqual(result, transferErrorFixture, 'Results match')
+        Db.transferError.find.returns(transferErrorFixtures[0])
+        let result = await Model.getByTransferStateChangeId(transferErrorFixtures[0].transferStateChangeId)
+        test.deepEqual(result, transferErrorFixtures[0], 'Results match')
         test.end()
       } catch (err) {
         Logger.error(`getByTransferStateChangeIdTest failed with error - ${err}`)
@@ -100,7 +110,7 @@ Test('TransferError model', async (TransferErrorTest) => {
       try {
         Db.transferError.find.throws(new Error('message'))
 
-        await Model.getByTransferStateChangeId(transferErrorFixture.transferStateChangeId)
+        await Model.getByTransferStateChangeId(transferErrorFixtures[0].transferStateChangeId)
         test.fail(' should throw')
         test.end()
       } catch (err) {
@@ -110,6 +120,53 @@ Test('TransferError model', async (TransferErrorTest) => {
     })
 
     await getByTransferStateChangeIdTest.end()
+  })
+
+  await TransferErrorTest.test('getByTransferId should', async (getByTransferIdTest) => {
+    await getByTransferIdTest.test('retrieve last transfer error from the database', async test => {
+      try {
+        let builderStub = sandbox.stub()
+        let whereStub = sandbox.stub()
+        let selectStub = sandbox.stub()
+        let orderStub = sandbox.stub()
+        let firstStub = sandbox.stub()
+        builderStub.innerJoin = sandbox.stub()
+
+        Db.transferError.query.callsArgWith(0, builderStub)
+        builderStub.innerJoin.returns({
+          where: whereStub.returns({
+            select: selectStub.returns({
+              orderBy: orderStub.returns({
+                first: firstStub.returns(transferErrorFixtures[1])
+              })
+            })
+          })
+        })
+
+        let result = await Model.getByTransferId(1)
+        test.equal(result, transferErrorFixtures[1])
+        test.end()
+      } catch (err) {
+        Logger.error(`getByTransferIdTest failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await getByTransferIdTest.test('throw error', async (test) => {
+      try {
+        Db.transferError.query.throws(new Error('message'))
+
+        await Model.getByTransferId(1)
+        test.fail('should throw')
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await getByTransferIdTest.end()
   })
 
   await TransferErrorTest.end()

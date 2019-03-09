@@ -50,7 +50,7 @@ const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
-const debug = true
+const debug = false
 const rebalanceDelay = 10000
 const retryDelay = 500
 const retryCount = 40
@@ -418,6 +418,174 @@ Test('Handlers test', async handlersTest => {
     })
 
     transferPrepareExceedLimit.end()
+  })
+
+  await handlersTest.test('transferFulfilAbort should', async transferFulfilAbort => {
+    testData.amount.amount = 10
+    const td = await prepareTestData(testData)
+
+    await transferFulfilAbort.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocol, td.topicConfTransferPrepare, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        test.equal(producerResponse, true, 'Producer for prepare published message')
+        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+      }
+
+      try {
+        await retry(async bail => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+          if (transfer.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+
+    await transferFulfilAbort.test(`update transfer state to ABORTED_ERROR by ABORT request without fulfilment`, async (test) => {
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      config.logger = Logger
+
+      delete td.messageProtocolReject.content.payload.fulfilment
+      const producerResponse = await Producer.produceMessage(td.messageProtocolReject, td.topicConfTransferFulfil, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+        const payerExpectedPosition = testData.amount.amount - td.transfer.amount.amount
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+        const transferError = await TransferService.getTransferErrorByTransferId(transfer.transferId)
+        test.equal(producerResponse, true, 'Producer for fulfil published message')
+        test.equal(transfer.transferState, TransferState.ABORTED_ERROR, `Transfer state changed to ${TransferState.ABORTED_ERROR}`)
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+        test.ok(transferError, 'A transfer error has been recorded')
+        test.equal(transferError.errorCode, 5100, 'Transfer error code matches')
+        test.equal(transferError.errorDescription, 'Payer aborted transfer without fulfilment', 'Transfer error description matches')
+        test.notEqual(transferError.transferStateChangeId, transfer.transferStateChangeId, 'Transfer error record is bound to previous state of transfer')
+      }
+
+      try {
+        await retry(async bail => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+          if (transfer.transferState !== TransferState.ABORTED_ERROR) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+
+    transferFulfilAbort.end()
+  })
+
+  await handlersTest.test('transferAbort should', async transferAbort => {
+    testData.amount.amount = 5
+    const td = await prepareTestData(testData)
+
+    await transferAbort.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocol, td.topicConfTransferPrepare, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        test.equal(producerResponse, true, 'Producer for prepare published message')
+        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+      }
+
+      try {
+        await retry(async bail => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+          if (transfer.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+
+    await transferAbort.test(`update transfer state to ABORTED_ERROR by PUT /transfers/{id}/error endpoint`, async (test) => {
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.FULFIL.toUpperCase())
+      config.logger = Logger
+
+      const errorInformation = {
+        errorCode: 5101,
+        errorDescription: 'Payee transaction limit reached'
+      }
+      td.messageProtocolReject.metadata.event.action = 'abort'
+      td.messageProtocolReject.content.payload = errorInformation
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocolReject, td.topicConfTransferFulfil, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+        const payerExpectedPosition = testData.amount.amount - td.transfer.amount.amount
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+        const transferError = await TransferService.getTransferErrorByTransferId(transfer.transferId)
+        test.equal(producerResponse, true, 'Producer for fulfil published message')
+        test.equal(transfer.transferState, TransferState.ABORTED_ERROR, `Transfer state changed to ${TransferState.ABORTED_ERROR}`)
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+        test.ok(transferError, 'A transfer error has been recorded')
+        test.equal(transferError.errorCode, errorInformation.errorCode, 'Transfer error code matches')
+        test.equal(transferError.errorDescription, errorInformation.errorDescription, 'Transfer error description matches')
+        test.notEqual(transferError.transferStateChangeId, transfer.transferStateChangeId, 'Transfer error record is bound to previous state of transfer')
+      }
+
+      try {
+        await retry(async bail => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocol.id) || {}
+          if (transfer.transferState !== TransferState.ABORTED_ERROR) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+      test.end()
+    })
+
+    transferAbort.end()
   })
 
   await handlersTest.test('teardown', async (assert) => {

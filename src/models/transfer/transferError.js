@@ -18,6 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
@@ -82,7 +83,24 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   }
 }
 
+const getByTransferId = async (id) => {
+  try {
+    return await Db.transferError.query(async (builder) => {
+      let result = builder
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'transferError.transferStateChangeId')
+        .where({ 'tsc.transferId': id })
+        .select('transferError.*')
+        .orderBy('transferErrorId', 'desc')
+        .first()
+      return result
+    })
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   insert,
-  getByTransferStateChangeId
+  getByTransferStateChangeId,
+  getByTransferId
 }
