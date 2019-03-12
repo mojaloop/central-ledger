@@ -50,6 +50,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
+
 // TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorGenericCode = 3100
 const errorGenericDescription = Errors.getErrorDescription(errorGenericCode)
@@ -320,22 +321,12 @@ const fulfil = async (error, messages) => {
           return true
         } else {
           let transferEventAction
-          if (metadata.event.action === TransferEventAction.REJECT && payload.fulfilment) {
-            await TransferService.reject(transferId, payload)
+          if (metadata.event.action === TransferEventAction.REJECT) {
             transferEventAction = TransferEventAction.REJECT
+            await TransferService.reject(transferId, payload)
           } else {
-            let abortResult = await TransferService.abort(transferId, payload, metadata.event.action)
-            if (metadata.event.action === TransferEventAction.REJECT) {
-              message.value.content.payload.errorInformation = {
-                errorCode: abortResult.transferErrorRecord.errorCode,
-                errorDescription: abortResult.transferErrorRecord.errorDescription
-              }
-            } else {
-              message.value.content.payload = {
-                errorInformation: Object.assign({}, message.value.content.payload)
-              }
-            }
             transferEventAction = TransferEventAction.ABORT
+            await TransferService.abort(transferId, payload)
           }
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)

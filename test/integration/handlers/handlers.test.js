@@ -151,7 +151,7 @@ const prepareTestData = async (dataObj) => {
     }
   }
 
-  const reject = Object.assign({}, fulfil, { transferState: 'ABORTED' })
+  const reject = Object.assign({}, fulfil, { transferState: TransferState.ABORTED_REJECTED })
 
   const messageProtocol = {
     id: transfer.transferId,
