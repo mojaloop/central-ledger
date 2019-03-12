@@ -38,7 +38,6 @@ const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const Time = require('../../../../src/lib/time')
 const Uuid = require('uuid4')
-const Errors = require('../../../../src/lib/errors')
 
 Test('Transfer facade', async (transferFacadeTest) => {
   let sandbox
@@ -894,6 +893,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           hasPassedValidation = false
           transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED_REJECTED
           payload.extensionList = null
+          delete payload.completedTimestamp
 
           sandbox.stub(Db, 'getKnex')
           const trxStub = sandbox.stub()
@@ -952,7 +952,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         }
       })
       const state = Enum.TransferState.RECEIVED_ERROR
-      const transferStateChangeRecord = {
+      let transferStateChangeRecord = {
         transferId,
         transferStateId: state,
         createdDate: transactionTimestamp
@@ -960,76 +960,38 @@ Test('Transfer facade', async (transferFacadeTest) => {
       let insertedTransferStateChange = transferStateChangeRecord
       insertedTransferStateChange.transferStateChangeId = 1
 
-      await saveTransferAborted.test('return transfer in RECEIVED_ERROR state when no fulfilment is provided', async (test) => {
-        try {
-          const payload = { transferState: 'ABORTED' }
-          const eventAction = 'reject'
-          const errorPayeeRejection = 5100
-          const errorPayeeRejectionDescription = Errors.getErrorDescription(errorPayeeRejection)
-          let transferErrorRecord = {
-            transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-            errorCode: errorPayeeRejection,
-            errorDescription: errorPayeeRejectionDescription,
-            createdDate: transactionTimestamp
-          }
-          const expectedResult = {
-            saveTransferAbortedExecuted: true,
-            transferStateChangeRecord,
-            transferErrorRecord
-          }
-
-          sandbox.stub(Db, 'getKnex')
-          const trxStub = sandbox.stub()
-          trxStub.commit = sandbox.stub()
-          const knexStub = sandbox.stub()
-          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-          Db.getKnex.returns(knexStub)
-          const transactingStub = sandbox.stub()
-          const insertStub = sandbox.stub()
-          const whereStub = sandbox.stub()
-          knexStub.returns({
-            transacting: transactingStub.returns({
-              insert: insertStub,
-              where: whereStub.returns({
-                forUpdate: sandbox.stub().returns({
-                  first: sandbox.stub().returns({
-                    orderBy: sandbox.stub().returns(insertedTransferStateChange)
-                  })
-                })
-              })
-            })
-          })
-
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, eventAction)
-          test.deepEqual(expectedResult, response, 'response matches expected result')
-          test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
-          test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-          test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
-          test.ok(whereStub.withArgs({ transferId: transferStateChangeRecord.transferId }).calledOnce, 'where with transferId condtion called once')
-          test.end()
-        } catch (err) {
-          Logger.error(`saveTransferAborted failed with error - ${err}`)
-          test.fail()
-          test.end()
-        }
-      })
-
       await saveTransferAborted.test('return transfer in RECEIVED_ERROR state with custom payee error', async (test) => {
         try {
-          const payload = { errorCode: 5001, errorDescription: 'error description' }
+          let transferExtensions = [{ key: 'key', value: 'value' }]
+          const payload = {
+            errorInformation: {
+              errorCode: 5001,
+              errorDescription: 'error description',
+              extensionList: {
+                extension: transferExtensions
+              }
+            }
+          }
           const eventAction = 'abort'
-          const errorPayeeCustom = payload.errorCode
-          const errorPayeeCustomDescription = payload.errorDescription
+          const errorPayeeCustom = payload.errorInformation.errorCode
+          const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           let transferErrorRecord = {
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
             errorCode: errorPayeeCustom,
             errorDescription: errorPayeeCustomDescription,
             createdDate: transactionTimestamp
           }
+          const insertedTransferError = {
+            transferErrorId: 1
+          }
+          transferExtensions[0].transferId = transferId
+          transferExtensions[0].transferErrorId = insertedTransferError.transferErrorId
+          transferStateChangeRecord.reason = payload.errorInformation.errorDescription
           const expectedResult = {
             saveTransferAbortedExecuted: true,
             transferStateChangeRecord,
-            transferErrorRecord
+            transferErrorRecord,
+            transferExtensions
           }
 
           sandbox.stub(Db, 'getKnex')
@@ -1049,6 +1011,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
+                }),
+                first: sandbox.stub().returns({
+                  orderBy: sandbox.stub().returns(insertedTransferError)
                 })
               })
             })
@@ -1059,6 +1024,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+          test.ok(insertStub.withArgs(transferErrorRecord).calledOnce, 'insert transferErrorRecord called once')
           test.ok(whereStub.withArgs({ transferId: transferStateChangeRecord.transferId }).calledOnce, 'where with transferId condtion called once')
           test.end()
         } catch (err) {
@@ -1068,22 +1034,36 @@ Test('Transfer facade', async (transferFacadeTest) => {
         }
       })
 
-      await saveTransferAborted.test('return transfer in RECEIVED_ERROR state with generic payee error code and custom error message', async (test) => {
+      await saveTransferAborted.test('return transfer in RECEIVED_ERROR state when no extensions are provided', async (test) => {
         try {
-          const payload = { errorCode: 5500, errorDescription: 'invalid error code' }
+          let transferExtensions = []
+          const payload = {
+            errorInformation: {
+              errorCode: 5001,
+              errorDescription: 'error description',
+              extensionList: {
+                extension: transferExtensions
+              }
+            }
+          }
           const eventAction = 'abort'
-          const errorPayeeGeneric = 5000
-          const errorPayeeGenericDescription = payload.errorDescription
+          const errorPayeeCustom = payload.errorInformation.errorCode
+          const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           let transferErrorRecord = {
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-            errorCode: errorPayeeGeneric,
-            errorDescription: errorPayeeGenericDescription,
+            errorCode: errorPayeeCustom,
+            errorDescription: errorPayeeCustomDescription,
             createdDate: transactionTimestamp
           }
+          const insertedTransferError = {
+            transferErrorId: 1
+          }
+          transferStateChangeRecord.reason = payload.errorInformation.errorDescription
           const expectedResult = {
             saveTransferAbortedExecuted: true,
             transferStateChangeRecord,
-            transferErrorRecord
+            transferErrorRecord,
+            transferExtensions
           }
 
           sandbox.stub(Db, 'getKnex')
@@ -1103,6 +1083,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
+                }),
+                first: sandbox.stub().returns({
+                  orderBy: sandbox.stub().returns(insertedTransferError)
                 })
               })
             })
@@ -1113,60 +1096,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
           test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
-          test.ok(whereStub.withArgs({ transferId: transferStateChangeRecord.transferId }).calledOnce, 'where with transferId condtion called once')
-          test.end()
-        } catch (err) {
-          Logger.error(`saveTransferAborted failed with error - ${err}`)
-          test.fail()
-          test.end()
-        }
-      })
-
-      await saveTransferAborted.test('return transfer in RECEIVED_ERROR state with generic payee error code and message', async (test) => {
-        try {
-          const payload = {}
-          const eventAction = 'invalid-event-action'
-          const errorPayeeGeneric = 5000
-          const errorPayeeGenericDescription = Errors.getErrorDescription(errorPayeeGeneric)
-          let transferErrorRecord = {
-            transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-            errorCode: errorPayeeGeneric,
-            errorDescription: errorPayeeGenericDescription,
-            createdDate: transactionTimestamp
-          }
-          const expectedResult = {
-            saveTransferAbortedExecuted: true,
-            transferStateChangeRecord,
-            transferErrorRecord
-          }
-
-          sandbox.stub(Db, 'getKnex')
-          const trxStub = sandbox.stub()
-          trxStub.commit = sandbox.stub()
-          const knexStub = sandbox.stub()
-          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-          Db.getKnex.returns(knexStub)
-          const transactingStub = sandbox.stub()
-          const insertStub = sandbox.stub()
-          const whereStub = sandbox.stub()
-          knexStub.returns({
-            transacting: transactingStub.returns({
-              insert: insertStub,
-              where: whereStub.returns({
-                forUpdate: sandbox.stub().returns({
-                  first: sandbox.stub().returns({
-                    orderBy: sandbox.stub().returns(insertedTransferStateChange)
-                  })
-                })
-              })
-            })
-          })
-
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, eventAction)
-          test.deepEqual(expectedResult, response, 'response matches expected result')
-          test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
-          test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-          test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
+          test.ok(insertStub.withArgs(transferErrorRecord).calledOnce, 'insert transferErrorRecord called once')
           test.ok(whereStub.withArgs({ transferId: transferStateChangeRecord.transferId }).calledOnce, 'where with transferId condtion called once')
           test.end()
         } catch (err) {
@@ -1187,6 +1117,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
   await transferFacadeTest.test('saveTransferAborted should throw an error', async (test) => {
     try {
       const transferId = 't1'
+      const payload = {
+        errorInformation: {
+          errorCode: 5500,
+          errorDescription: 'error text'
+        }
+      }
       sandbox.stub(Db, 'getKnex')
       const trxStub = sandbox.stub()
       trxStub.commit = sandbox.stub()
@@ -1200,7 +1136,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           insert: insertStub.throws(new Error('insert error'))
         })
       })
-      await TransferFacade.saveTransferAborted(transferId)
+      await TransferFacade.saveTransferAborted(transferId, payload)
       test.fail('Error not thrown')
       test.end()
     } catch (err) {
