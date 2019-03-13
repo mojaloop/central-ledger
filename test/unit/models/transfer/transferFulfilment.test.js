@@ -83,7 +83,7 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
 
   await transferFulfilment.test('saveTransferFulfilment test', async (assert) => {
     try {
-      let saved = {transferFulfilmentId: transferFulfilmentRecord.transferFulfilmentId}
+      let saved = { transferFulfilmentId: transferFulfilmentRecord.transferFulfilmentId }
       Db.transferFulfilment.insert.returns(Promise.resolve(saved))
       let transferFulfilmentCreated = await Model.saveTransferFulfilment(transferFulfilmentRecord)
       assert.equal(transferFulfilmentCreated, saved, 'transfer fulfilment is inserted and id is returned')

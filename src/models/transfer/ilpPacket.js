@@ -55,7 +55,7 @@ exports.update = async (record) => {
     value: record.value
   }
   try {
-    return await Db.ilpPacket.update({transferId: record.transferId}, Util.filterUndefined(fields))
+    return await Db.ilpPacket.update({ transferId: record.transferId }, Util.filterUndefined(fields))
   } catch (err) {
     throw new Error(err.message)
   }
@@ -63,7 +63,7 @@ exports.update = async (record) => {
 
 exports.destroyByTransferId = async (record) => {
   try {
-    return await Db.ilpPacket.destroy({transferId: record.transferId})
+    return await Db.ilpPacket.destroy({ transferId: record.transferId })
   } catch (err) {
     throw new Error(err.message)
   }

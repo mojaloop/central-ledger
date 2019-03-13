@@ -47,8 +47,9 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
 const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
-const KafkaCron = require('../handlers/lib/kafka').Cron
+// const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -56,7 +57,10 @@ const migrate = (runMigrations) => {
 const getEnums = (id) => {
   return Enums[id]()
 }
-const connectDatabase = async () => await Db.connect(Config.DATABASE_URI)
+const connectDatabase = async () => {
+  let result = await Db.connect(Config.DATABASE_URI)
+  return result
+}
 
 /**
  * @function createServer
@@ -73,9 +77,13 @@ const createServer = (port, modules) => {
       port,
       cache: [
         {
-          name: 'memCache',
-          engine: require('catbox-memory'),
-          partition: 'cache'
+          provider: {
+            constructor: require('catbox-memory'),
+            options: {
+              partition: 'cache'
+            }
+          },
+          name: 'memCache'
         }
       ],
       routes: {
@@ -145,18 +153,18 @@ const createHandlers = async (handlers) => {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
         case 'prepare':
-          await RegisterHandlers.transfers.registerPrepareHandlers(handler.fspList)
-          if (!Config.HANDLERS_CRON_DISABLED) {
-            Logger.info('Starting Kafka Cron Jobs...')
-            await KafkaCron.start('prepare')
-          }
+          await RegisterHandlers.transfers.registerPrepareHandler()
+          // if (!Config.HANDLERS_CRON_DISABLED) {
+          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   await KafkaCron.start('prepare')
+          // }
           break
         case 'position':
-          await RegisterHandlers.positions.registerPositionHandlers(handler.fspList)
-          if (!Config.HANDLERS_CRON_DISABLED) {
-            Logger.info('Starting Kafka Cron Jobs...')
-            await KafkaCron.start('position')
-          }
+          await RegisterHandlers.positions.registerPositionHandler()
+          // if (!Config.HANDLERS_CRON_DISABLED) {
+          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   await KafkaCron.start('position')
+          // }
           break
         case 'fulfil':
           await RegisterHandlers.transfers.registerFulfilHandler()
@@ -171,7 +179,7 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.transfers.registerGetHandler()
           break
         default:
-          var error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
+          let error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)
       }
@@ -179,6 +187,12 @@ const createHandlers = async (handlers) => {
   }
 
   return registeredHandlers
+}
+
+const initializeInstrumentation = () => {
+  if (!Config.INSTRUMENTATION_METRICS_DISABLED) {
+    Metrics.setup(Config.INSTRUMENTATION_METRICS_CONFIG)
+  }
 }
 
 /**
@@ -200,11 +214,11 @@ const createHandlers = async (handlers) => {
  * @param {handler[]} handlers List of Handlers to be registered
  * @returns {object} Returns HTTP Server object
  */
-const initialize = async function ({service, port, modules = [], runMigrations = false, runHandlers = false, handlers = []}) {
+const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
   await migrate(runMigrations)
   await connectDatabase()
   await Sidecar.connect(service)
-
+  initializeInstrumentation()
   let server
   switch (service) {
     case 'api':
@@ -228,11 +242,11 @@ const initialize = async function ({service, port, modules = [], runMigrations =
       await createHandlers(handlers)
     } else {
       await RegisterHandlers.registerAllHandlers()
-      if (!Config.HANDLERS_CRON_DISABLED) {
-        Logger.info('Starting Kafka Cron Jobs...')
-        await KafkaCron.start('prepare')
-        await KafkaCron.start('position')
-      }
+      // if (!Config.HANDLERS_CRON_DISABLED) {
+      //   Logger.info('Starting Kafka Cron Jobs...')
+      //   // await KafkaCron.start('prepare')
+      //   await KafkaCron.start('position')
+      // }
     }
   }
 
@@ -241,6 +255,5 @@ const initialize = async function ({service, port, modules = [], runMigrations =
 
 module.exports = {
   initialize,
-  createServer,
-  createHandlers
+  createServer
 }

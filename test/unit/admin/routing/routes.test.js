@@ -24,15 +24,15 @@
 
 'use strict'
 
-const Test = require('tape')
-const Base = require('../../base')
-const AdminRoutes = require('../../../../src/admin/routes')
+// const Test = require('tape')
+// const Base = require('../../base')
+// const AdminRoutes = require('../../../../src/admin/routing/routes')
 
-Test('nextHop route', async function (assert) {
-  let req = Base.buildRequest({ url: '/nextHop', method: 'GET', headers: {'FSPIOP-Final-Destination': '', 'FSPIOP-Destination': 'moja.tz.red.tzs.pink'} })
-  const server = await Base.setup(AdminRoutes)
-  const res = await server.inject(req)
-  assert.ok(res)
-  await server.stop()
-  assert.end()
-})
+// Test('nextHop route', async function (assert) {
+//   let req = Base.buildRequest({ url: '/nextHop', method: 'GET', headers: { 'FSPIOP-Final-Destination': '', 'FSPIOP-Destination': 'moja.tz.red.tzs.pink' } })
+//   const server = await Base.setup(AdminRoutes)
+//   const res = await server.inject(req)
+//   assert.ok(res)
+//   await server.stop()
+//   assert.end()
+// })

@@ -37,7 +37,7 @@ const TransferFacade = require('../../../../src/models/transfer/facade')
 const HelperModule = require('../../helpers')
 
 Test('Transfer read model test', async (transferReadModelTest) => {
-  var transferPrepareResult = {}
+  let transferPrepareResult = {}
 
   await transferReadModelTest.test('setup', async (assert) => {
     try {

@@ -27,6 +27,7 @@
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
 
  --------------
  ******/
@@ -40,12 +41,14 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
 const Utility = require('../lib/utility')
-const DAO = require('../lib/dao')
 const Kafka = require('../lib/kafka')
 const Enum = require('../../lib/enum')
 const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
+const Metrics = require('@mojaloop/central-services-metrics')
+const Config = require('../../lib/config')
+const Uuid = require('uuid4')
 
 /**
  * @function positions
@@ -63,6 +66,12 @@ const TransferEventAction = Enum.transferEventAction
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const positions = async (error, messages) => {
+  const histTimerEnd = Metrics.getHistogram(
+    'transfer_position',
+    'Consume a prepare transfer message from the kafka topic and process it accordingly',
+    ['success', 'fspId']
+  ).startTimer()
+
   if (error) {
     Logger.error(error)
     throw error
@@ -80,7 +89,7 @@ const positions = async (error, messages) => {
     Logger.info('PositionHandler::positions')
     let consumer = {}
     let kafkaTopic
-    const transferId = message.value.id
+    let transferId = message.value.id
     if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.PREPARE) {
       Logger.info('PositionHandler::positions::prepare')
       kafkaTopic = message.topic
@@ -89,15 +98,16 @@ const positions = async (error, messages) => {
       } catch (e) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
         Logger.error(e)
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(prepareBatch)
       for (let prepareMessage of preparedMessagesList) {
         const { transferState, rawMessage } = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
-          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.ENUMS.STATE.SUCCESS)
+          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.ENUMS.STATE.SUCCESS, transferId)
         } else {
-          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason))
+          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason), transferId)
         }
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
@@ -107,6 +117,7 @@ const positions = async (error, messages) => {
         Logger.info(`Limit alarm should be sent with ${limit}`)
         // Publish alarm message to KafkaTopic for the Hub to consume.The Hub rather than the switch will manage this (the topic is an participantEndpoint)
       }
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.COMMIT) {
       Logger.info('PositionHandler::positions::commit')
@@ -114,6 +125,7 @@ const positions = async (error, messages) => {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
       if (!consumer) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       // Check current transfer state
@@ -134,7 +146,8 @@ const positions = async (error, messages) => {
         await consumer.commitMessageSync(message)
       }
       // Will follow framework flow in future
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
       Logger.info('PositionHandler::positions::reject')
@@ -144,6 +157,7 @@ const positions = async (error, messages) => {
       } catch (e) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
         Logger.error(e)
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
@@ -164,7 +178,8 @@ const positions = async (error, messages) => {
         await consumer.commitMessageSync(message)
       }
       // Will follow framework flow in future
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info('PositionHandler::positions::timeout')
@@ -190,12 +205,14 @@ const positions = async (error, messages) => {
         } catch (e) {
           Logger.info(`No consumer found for topic ${kafkaTopic}`)
           Logger.error(e)
+          histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason))
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason), transferId)
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       // TODO: Need to understand the purpose of this branch.
@@ -215,6 +232,7 @@ const positions = async (error, messages) => {
       } catch (e) {
         Logger.info(`No consumer found for topic ${kafkaTopic}`)
         Logger.error(e)
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
@@ -223,59 +241,34 @@ const positions = async (error, messages) => {
       throw new Error('Event type or action is invalid')
     }
   } catch (error) {
-    Logger.error(error)
-    throw error
-  }
-}
-
-const createPositionHandlers = async (participantName) => {
-  try {
-    const positionHandler = {
-      command: positions,
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.POSITION.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
-    }
-    const topicNameList = [
-      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.ABORT),
-      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventType.FULFIL),
-      Utility.transformAccountToTopicName(participantName, TransferEventType.POSITION, TransferEventAction.PREPARE)
-    ]
-    await Kafka.Consumer.createHandler(topicNameList, positionHandler.config, positionHandler.command)
-  } catch (error) {
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     Logger.error(error)
     throw error
   }
 }
 
 /**
- * @function RegisterPositionsHandlers
+ * @function registerPositionHandler
  *
  * @async
- * @description Registers the position handlers for all participants. Retrieves the list of all participants from the database and loops through each
- * createPositionHandler called to create the handler for each participant
- * @param {string[]} participantNames - Array of Participants to register
+ * @description Registers the handler for position topic. Gets Kafka config from default.json
+ *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerPositionHandlers = async (participantNames = []) => {
+const registerPositionHandler = async () => {
   try {
-    let participantNamesList
-    if (Array.isArray(participantNames) && participantNames.length > 0) {
-      participantNamesList = participantNames
-    } else {
-      participantNamesList = await DAO.retrieveAllParticipants()
+    const positionHandler = {
+      command: positions,
+      topicName: Utility.transformGeneralTopicName(TransferEventType.POSITION, TransferEventAction.PREPARE),
+      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.POSITION.toUpperCase())
     }
-    if (participantNamesList.length !== 0) {
-      for (let name of participantNamesList) {
-        await createPositionHandlers(name)
-      }
-    } else {
-      Logger.info('No participants for position handler creation')
-      return false
-    }
-  } catch (error) {
-    Logger.error(error)
-    throw error
+    positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${Uuid()}`
+    await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
+    return true
+  } catch (e) {
+    Logger.error(e)
+    throw e
   }
-  return true
 }
 
 /**
@@ -288,14 +281,14 @@ const registerPositionHandlers = async (participantNames = []) => {
  */
 const registerAllHandlers = async () => {
   try {
-    return await registerPositionHandlers()
+    return await registerPositionHandler()
   } catch (error) {
     throw error
   }
 }
 
 module.exports = {
-  registerPositionHandlers,
+  registerPositionHandler,
   registerAllHandlers,
   positions
 }

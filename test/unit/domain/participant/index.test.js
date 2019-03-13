@@ -41,6 +41,7 @@ const ParticipantPositionChangeModel = require('../../../../src/models/participa
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
 const Utility = require('../../../../src/handlers/lib/utility')
 const Enum = require('../../../../src/lib/enum')
+const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -83,13 +84,13 @@ Test('Participant service', async (participantTest) => {
   ]
   const participantCurrencyResult = [
     {
-      participantCurrancyId: 0,
+      participantCurrencyId: 0,
       participantId: 0,
       currencyId: 'USD',
       isActive: 1
     },
     {
-      participantCurrancyId: 1,
+      participantCurrencyId: 1,
       participantId: 1,
       currencyId: 'EUR',
       isActive: 1
@@ -129,7 +130,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantModel, 'getById')
     sandbox.stub(ParticipantModel, 'update')
     sandbox.stub(ParticipantModel, 'destroyByName')
-    sandbox.stub(ParticipantModel, 'destroyPariticpantEndpointByParticipantId')
+    sandbox.stub(ParticipantModel, 'destroyParticipantEndpointByParticipantId')
 
     sandbox.stub(ParticipantCurrencyModel, 'create')
     sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
@@ -162,6 +163,8 @@ Test('Participant service', async (participantTest) => {
 
     sandbox.stub(ParticipantCurrencyModel, 'getByName')
 
+    sandbox.stub(LedgerAccountTypeModel, 'getLedgerAccountByName')
+
     sandbox.stub(Utility, 'produceGeneralMessage')
     Db.participant = {
       insert: sandbox.stub(),
@@ -190,7 +193,7 @@ Test('Participant service', async (participantTest) => {
         currencyId: participant.currency
       }).returns((index + 1))
       ParticipantCurrencyModel.getById.withArgs(index).returns({
-        participantCurrancyId: participant.participantId,
+        participantCurrencyId: participant.participantId,
         participantId: participant.participantId,
         currencyId: participant.currency,
         isActive: 1
@@ -209,7 +212,7 @@ Test('Participant service', async (participantTest) => {
     t.end()
   })
 
-  await participantTest.test('getById with non-exisiting id should', async (assert) => {
+  await participantTest.test('getById with non-existing id should', async (assert) => {
     try {
       ParticipantModel.getById.withArgs(10).returns(Promise.resolve(null))
       let result = await Service.getById(10)
@@ -222,7 +225,7 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  await participantTest.test('getByName with non-exisiting name should', async (assert) => {
+  await participantTest.test('getByName with non-existing name should', async (assert) => {
     try {
       ParticipantModel.getByName.withArgs('name').returns(Promise.resolve(null))
       let result = await Service.getByName('name')
@@ -262,9 +265,9 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('create participant', async (assert) => {
     try {
       for (let [index, participant] of participantMap) {
-        var result = await Service.create({ name: participant.name })
+        let result = await Service.create({ name: participant.name })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
-        assert.ok(Sinon.match(result, index + 1), `returns ${result}`)
+        assert.equal(result, index, `returns ${result}`)
       }
       assert.end()
     } catch (err) {
@@ -289,7 +292,7 @@ Test('Participant service', async (participantTest) => {
     try {
       // assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        var result = await Service.getByName(participant.name)
+        let result = await Service.getByName(participant.name)
         assert.equal(result.participantId, participant.participantId, 'participantIds are equal')
         assert.equal(result.name, participant.name, 'names are equal')
         assert.equal(result.currency, participant.currency, 'currencies match')
@@ -307,7 +310,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll', async (assert) => {
     try {
-      var result = await Service.getAll()
+      let result = await Service.getAll()
       assert.deepEqual(result, participantResult)
       assert.end()
     } catch (err) {
@@ -376,7 +379,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('createParticipantCurrency should create the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        var result = await Service.createParticipantCurrency({
+        let result = await Service.createParticipantCurrency({
           participantId: participant.participantId,
           currencyId: participant.currency
         })
@@ -413,7 +416,7 @@ Test('Participant service', async (participantTest) => {
     try {
       await participantFixtures.forEach(async (participant, index) => {
         ParticipantFacade.addHubAccountAndInitPosition.returns(Promise.resolve(index + 1))
-        var result = await Service.createHubAccount({
+        let result = await Service.createHubAccount({
           participantId: participant.participantId,
           currencyId: participant.currency
         })
@@ -445,7 +448,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getParticipantCurrencyById should return the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        var result = await Service.getParticipantCurrencyById(index)
+        let result = await Service.getParticipantCurrencyById(index)
         assert.deepEqual(result, participantCurrencyResult[index])
       })
       assert.end()
@@ -471,8 +474,8 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('destroyByName', async (assert) => {
     try {
       ParticipantModel.destroyByName = sandbox.stub().returns(Promise.resolve(true))
-      await participantFixtures.forEach(async (participant, index) => {
-        var result = await Service.destroyByName(participant.name)
+      await participantFixtures.forEach(async (participant) => {
+        let result = await Service.destroyByName(participant.name)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.equal(result, true, `equals ${result}`)
       })
@@ -600,28 +603,28 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('destroyPariticpantEndpointByName', async (assert) => {
+  await participantTest.test('destroyParticipantEndpointByName', async (assert) => {
     try {
       ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-      ParticipantModel.destroyPariticpantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).returns(true)
-      const result = await Service.destroyPariticpantEndpointByName(participantFixtures[0].name)
+      ParticipantModel.destroyParticipantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).returns(true)
+      const result = await Service.destroyParticipantEndpointByName(participantFixtures[0].name)
       assert.equal(result, true, 'Results matched')
       assert.end()
     } catch (err) {
-      Logger.error(`destroyPariticpantEndpointByName failed with error - ${err}`)
+      Logger.error(`destroyParticipantEndpointByName failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await participantTest.test('destroyPariticpantEndpointByName should fail', async (assert) => {
+  await participantTest.test('destroyParticipantEndpointByName should fail', async (assert) => {
     ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-    ParticipantModel.destroyPariticpantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).throws(new Error())
+    ParticipantModel.destroyParticipantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).throws(new Error())
 
     try {
-      await Service.destroyPariticpantEndpointByName(participantFixtures[0].name)
+      await Service.destroyParticipantEndpointByName(participantFixtures[0].name)
       assert.fail(' should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
@@ -674,16 +677,16 @@ Test('Participant service', async (participantTest) => {
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 10000000
-        }
+        },
+        initialPosition: 1000
       }
-
-      const limitPostionObj = {
+      const limitPositionObj = {
         currency: 'USD',
         limit: {
           type: 'NET_DEBIT_CAP',
           value: 10000000
         },
-        initialPosition: 0
+        initialPosition: 1000
       }
       const participant = {
         participantId: 0,
@@ -701,8 +704,8 @@ Test('Participant service', async (participantTest) => {
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(settlementAccount.participantCurrencyId).returns(null)
-      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitPostionObj).returns(1)
-
+      ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitPositionObj).returns(1)
+      Utility.produceGeneralMessage.returns(true)
       const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
       assert.end()
@@ -1155,7 +1158,7 @@ Test('Participant service', async (participantTest) => {
         currency: 'USD',
         isActive: 1,
         createdDate: new Date(),
-        participantCurrancyId: 1
+        participantCurrencyId: 1
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
@@ -1190,7 +1193,7 @@ Test('Participant service', async (participantTest) => {
         currency: 'USD',
         isActive: 1,
         createdDate: new Date(),
-        participantCurrancyId: 1
+        participantCurrencyId: 1
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
@@ -1212,7 +1215,7 @@ Test('Participant service', async (participantTest) => {
       currency: 'USD',
       isActive: 1,
       createdDate: new Date(),
-      participantCurrancyId: 1
+      participantCurrencyId: 1
     }
     ParticipantModel.getByName.withArgs(participant.name).returns(participant)
     ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).throws(new Error())
@@ -1658,7 +1661,7 @@ Test('Participant service', async (participantTest) => {
     }
 
     try {
-      ParticipantCurrencyModel.getByName.withArgs(name.type).returns(ledgerAccountsMock)
+      LedgerAccountTypeModel.getLedgerAccountByName.withArgs(name.type).returns(ledgerAccountsMock)
       const expected = await Service.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
@@ -1682,7 +1685,7 @@ Test('Participant service', async (participantTest) => {
     }
 
     try {
-      ParticipantCurrencyModel.getByName.withArgs(name.type).throws(new Error())
+      LedgerAccountTypeModel.getLedgerAccountByName.withArgs(name.type).throws(new Error())
       const expected = await Service.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
@@ -1694,7 +1697,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getParticipantAccount should return participant account', async (assert) => {
     const params = {
-      participantCurrecyId: 1
+      participantCurrencyId: 1
     }
     const participantAccountsMock = {
       participantCurrencyId: 1,
@@ -1718,7 +1721,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getParticipantAccount should throw an error', async (assert) => {
     const params = {
-      participantCurrecyId: 1
+      participantCurrencyId: 1
     }
 
     try {

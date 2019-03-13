@@ -1,6 +1,5 @@
 {
-  "PORT": 4000,
-  "ADMIN_PORT": 3001,
+  "PORT": 3001,
   "MOJA_HUB_NAME": "Blue Moja",
   "HOSTNAME": "http://central-ledger",
   "DATABASE_URI": "mysql://central_ledger:password@localhost:3306/central_ledger_blue_moja",
@@ -32,7 +31,22 @@
       "TIMEZONE": "UTC"
     }
   },
-  "PARTICIPANT_INITIAL_POSTITION": 0,
+  "INSTRUMENTATION": {
+    "METRICS": {
+      "DISABLED": false,
+      "labels": {
+        "fspId": "*"
+      },
+      "config": {
+        "timeout": 5000,
+        "prefix": "moja_cl_",
+        "defaultLabels": {
+          "serviceName": "central-service"
+        }
+      }
+    }
+  },
+  "PARTICIPANT_INITIAL_POSITION": 0,
   "HUB_PARTICIPANT": {
     "ID": 1,
     "NAME": "Hub",
@@ -70,7 +84,7 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-prepare",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true
             },
@@ -93,9 +107,8 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-get",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-get",
               "metadata.broker.list": "localhost:9092",
-              "debug": "all",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -117,7 +130,7 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-fulfil",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true
             },
@@ -140,32 +153,7 @@
             },
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-reject",
-              "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true
-            },
-            "topicConf": {
-              "auto.offset.reset": "earliest"
-            }
-          }
-        }
-      },
-      "POSITION": {
-        "PREPARE": {
-          "config": {
-            "options": {
-              "mode": 2,
-              "batchSize": 1,
-              "pollFrequency": 500,
-              "recursiveTimeout": 100,
-              "messageCharset": "utf8",
-              "messageAsJSON": true,
-              "sync": true,
-              "consumeTimeout": 1000
-            },
-            "rdkafkaConf": {
-              "client.id": "cl-con-position-prepare",
-              "group.id": "central-ledger-kafka",
+              "group.id": "cl-group-transfer-reject",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true
             },
@@ -174,7 +162,7 @@
             }
           }
         },
-        "FULFIL": {
+        "POSITION": {
           "config": {
             "options": {
               "mode": 2,
@@ -187,31 +175,8 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "cl-con-position-fulfil",
-              "group.id": "central-ledger-kafka",
-              "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true
-            },
-            "topicConf": {
-              "auto.offset.reset": "earliest"
-            }
-          }
-        },
-        "ABORT": {
-          "config": {
-            "options": {
-              "mode": 2,
-              "batchSize": 1,
-              "pollFrequency": 500,
-              "recursiveTimeout": 100,
-              "messageCharset": "utf8",
-              "messageAsJSON": true,
-              "sync": true,
-              "consumeTimeout": 1000
-            },
-            "rdkafkaConf": {
-              "client.id": "cl-con-position-abort",
-              "group.id": "central-ledger-kafka",
+              "client.id": "cl-con-transfer-position",
+              "group.id": "cl-group-transfer-position",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true
             },
@@ -235,8 +200,8 @@
               "consumeTimeout": 1000
             },
             "rdkafkaConf": {
-              "client.id": "admin-transfer-consume",
-              "group.id": "central-ledger-kafka",
+              "client.id": "cl-con-transfer-admin",
+              "group.id": "cl-group-transfer-admin",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true
             },
@@ -258,7 +223,12 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-prepare",
               "event_cb": true,
-              "socket.keepalive.enable": true
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         },
@@ -271,7 +241,12 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-fulfil",
               "event_cb": true,
-              "socket.keepalive.enable": true
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         },
@@ -282,50 +257,32 @@
             },
             "rdkafkaConf": {
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-transfer-reject",
+              "client.id": "cl-prod-transfer-reject",
               "event_cb": true,
-              "socket.keepalive.enable": true
-            }
-          }
-        }
-      },
-      "POSITION": {
-        "PREPARE": {
-          "config": {
-            "options": {
-              "messageCharset": "utf8"
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
             },
-            "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-prod-position-prepare",
-              "event_cb": true,
-              "socket.keepalive.enable": true
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         },
-        "FULFIL": {
+        "POSITION": {
           "config": {
             "options": {
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
               "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-prod-position-fulfil",
+              "client.id": "cl-prod-transfer-position",
               "event_cb": true,
-              "socket.keepalive.enable": true
-            }
-          }
-        },
-        "ABORT": {
-          "config": {
-            "options": {
-              "messageCharset": "utf8"
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
             },
-            "rdkafkaConf": {
-              "metadata.broker.list": "localhost:9092",
-              "client.id": "cl-prod-position-abort",
-              "event_cb": true,
-              "socket.keepalive.enable": true
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         }
@@ -340,7 +297,12 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-notification-event",
               "event_cb": true,
-              "socket.keepalive.enable": true
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         }
@@ -353,9 +315,14 @@
             },
             "rdkafkaConf": {
               "metadata.broker.list": "localhost:9092",
-              "client.id": "admin-transfer-produce",
+              "client.id": "cl-prod-transfer-admin",
               "event_cb": true,
-              "socket.keepalive.enable": true
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all"
             }
           }
         }

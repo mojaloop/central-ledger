@@ -22,14 +22,14 @@ class PrefixMap {
     return prefix
   }
   get (prefix) { return this.items[prefix] }
-  *getKeysStartingWith (prefix) {
+  * getKeysStartingWith (prefix) {
     const predicate = (key) => key.startsWith(prefix)
     let index = -1
     while ((index = lodash1.findIndex(this.prefixes, predicate, index + 1)) !== -1) {
       yield this.prefixes[index]
     }
   }
-  *getKeysPrefixesOf (search) {
+  * getKeysPrefixesOf (search) {
     const predicate = (key) => search.startsWith(key + '.')
     let index = -1
     while ((index = lodash1.findIndex(this.prefixes, predicate, index + 1)) !== -1) {

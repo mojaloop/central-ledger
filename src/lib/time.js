@@ -1,7 +1,7 @@
 'use strict'
 
 const sleep = (milliseconds = 1000, debug = false, caller = null, reason = null) => {
-  var start = new Date().getTime()
+  let start = new Date().getTime()
   if (debug) {
     let output = caller ? `(${caller}) ` : ''
     output += reason ? `${reason}: ` : ''

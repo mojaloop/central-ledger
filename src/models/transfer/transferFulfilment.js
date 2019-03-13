@@ -30,7 +30,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const getByTransferId = async (transferId) => {
   Logger.debug('getByTransferId ' + transferId.toString())
   try {
-    return await Db.transferFulfilment.find({transferId: transferId})
+    return await Db.transferFulfilment.find({ transferId: transferId })
   } catch (err) {
     throw new Error(err.message)
   }

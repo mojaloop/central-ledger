@@ -18,44 +18,46 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
+const Test = require('tape')
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/api/routes')
+const Sinon = require('sinon')
+const Enum = require('../../../../src/lib/enum')
+const P = require('bluebird')
 
-const endpointsFixtures = {
-  FSPIOP_CALLBACK_URL_TRANSFER_POST: {
-    type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
-    value: 'http://localhost:3001/participants/dfsp1/notification1'
-  },
-  ALARM_NOTIFICATION_URL: {
-    type: 'ALARM_NOTIFICATION_URL',
-    value: 'http://localhost:3001/participants/dfsp1/notification2'
-  }
-}
-exports.prepareData = async (name, endpointType) => {
-  try {
-    if (endpointsFixtures[endpointType] == null) {
-      throw new Error('invalid endpointType')
-    }
-    await Model.addEndpoint(name, endpointsFixtures[endpointType])
-    return endpointsFixtures[endpointType]
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+Test('test root routes - health', async function (assert) {
+  let req = Base.buildRequest({ url: '/health', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  await server.stop()
+  assert.end()
+})
 
-exports.deletePreparedData = async (participantName) => {
-  if (!participantName) {
-    throw new Error('Please provide a valid participant name!')
-  }
+Test('test root routes - enums', async function (assert) {
+  let sandbox = Sinon.createSandbox()
 
-  try {
-    return await Model.destroyParticipantEndpointByName(participantName)
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+  sandbox.stub(Enum, 'all').returns(P.resolve({}))
+  let req = Base.buildRequest({ url: '/enums', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  sandbox.restore()
+  await server.stop()
+  assert.end()
+})
+
+Test('test root routes - /', async function (assert) {
+  let req = Base.buildRequest({ url: '/', method: 'GET' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  await server.stop()
+  assert.end()
+})

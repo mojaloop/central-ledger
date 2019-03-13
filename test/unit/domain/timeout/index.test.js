@@ -83,7 +83,7 @@ Test('Timeout Service', timeoutTest => {
   })
 
   timeoutTest.test('cleanupTransferTimeout should', cleanupTransferTimeoutTest => {
-    cleanupTransferTimeoutTest.test('cleanup the timedout transfers and return the id', async (test) => {
+    cleanupTransferTimeoutTest.test('cleanup the timed out transfers and return the id', async (test) => {
       try {
         TransferTimeoutModel.cleanup.returns(Promise.resolve(1))
         const result = await TimeoutService.cleanupTransferTimeout()

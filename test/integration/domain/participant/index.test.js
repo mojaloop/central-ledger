@@ -75,7 +75,7 @@ Test('Participant service', async (participantTest) => {
         assert.equal(read.name, participant.name, 'names are equal')
         assert.deepEqual(read.currencyList, participant.currencyList, 'currency match')
         assert.equal(read.isActive, participant.isActive, 'isActive flag matches')
-        assert.ok(Sinon.match(read.createdDate, participant.createdDate), 'created date matches')
+        assert.equal(read.createdDate.toString(), participant.createdDate.toString(), 'created date matches')
       })
       assert.end()
     } catch (err) {
@@ -92,7 +92,7 @@ Test('Participant service', async (participantTest) => {
         assert.equal(result.name, participant.name, 'names are equal')
         assert.deepEqual(result.currencyList, participant.currencyList, 'currencies match')
         assert.equal(result.isActive, participant.isActive, 'isActive flag matches')
-        assert.ok(Sinon.match(result.createdDate, participant.createdDate), 'created date matches')
+        assert.equal(result.createdDate.toString(), participant.createdDate.toString(), 'created date matches')
       })
       assert.end()
     } catch (err) {
@@ -186,13 +186,13 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  await participantTest.test('destroyPariticpantEndpointByName', async (assert) => {
+  await participantTest.test('destroyParticipantEndpointByName', async (assert) => {
     try {
       const result = await ParticipantEndpointHelper.deletePreparedData(participantFixtures[0].name)
       assert.ok(result, `destroy endpoint for ${participantFixtures[0].name} success`)
       assert.end()
     } catch (err) {
-      Logger.error(`destroyPariticpantEndpointByName failed with error - ${err}`)
+      Logger.error(`destroyParticipantEndpointByName failed with error - ${err}`)
       assert.fail()
       assert.end()
     }

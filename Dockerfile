@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:8.9.4
+FROM mhart/alpine-node:10.15.1
 
 WORKDIR /opt/central-ledger
 COPY . /opt/central-ledger
@@ -13,5 +13,5 @@ RUN npm install --production && \
 
 RUN apk del build-dependencies
 
-EXPOSE 3000
+EXPOSE 3001
 CMD node src/api/index.js

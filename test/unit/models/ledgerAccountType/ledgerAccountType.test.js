@@ -32,7 +32,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/db/index')
 
 const Model = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
-const participanttCurrencyModel = require('../../../../src/models/participant/participantCurrency')
+const participantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
 
 Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
   let sandbox
@@ -85,7 +85,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
   await ledgerAccountTypeTest.test('get a ledger account type', async (assert) => {
     try {
       Db.participantCurrency.findOne.withArgs(accountParams).returns(participantCurrency)
-      let result = await participanttCurrencyModel.getByName(accountParams)
+      let result = await participantCurrencyModel.getByName(accountParams)
       assert.equal(JSON.stringify(result), JSON.stringify(participantCurrency))
       assert.end()
     } catch (err) {
@@ -97,7 +97,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
   await ledgerAccountTypeTest.test('get a ledger account type throws error', async (assert) => {
     try {
       Db.participantCurrency.findOne.withArgs(accountParams).throws(new Error())
-      await participanttCurrencyModel.getByName(accountParams)
+      await participantCurrencyModel.getByName(accountParams)
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {

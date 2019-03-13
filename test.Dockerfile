@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:8.9.4
+FROM mhart/alpine-node:10.15.1
 USER root
 
 WORKDIR /opt/central-ledger
@@ -21,5 +21,5 @@ RUN npm install -g tape tap-xunit \
 
 RUN apk del build-dependencies
 
-EXPOSE 3000
+EXPOSE 3001
 CMD ["/opt/central-ledger/server.sh"]

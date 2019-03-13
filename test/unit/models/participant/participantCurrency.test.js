@@ -59,9 +59,14 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('create participant Currency', async (assert) => {
     try {
-      Db.participantCurrency.insert.withArgs({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' }).returns(1)
-      var result = await Model.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
-      assert.ok(Sinon.match(result, 1), ` returns ${result}`)
+      const participantId = 1
+      const ledgerAccountTypeId = 1
+      const currencyId = 'USD'
+      const isActive = true
+      const createdBy = 'unknown'
+      Db.participantCurrency.insert.withArgs({ participantId, currencyId, ledgerAccountTypeId, isActive, createdBy }).returns(1)
+      let result = await Model.create(participantId, currencyId, ledgerAccountTypeId)
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`create participant currency failed with error - ${err}`)
@@ -87,13 +92,13 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
   await participantCurrencyTest.test('getById', async (assert) => {
     try {
       Db.participantCurrency.findOne.withArgs({ participantCurrencyId: 1 }).returns({
-        participantCurrancyId: 1,
+        participantCurrencyId: 1,
         participantId: 1,
         currencyId: 'USD',
         isActive: 1
       })
       const expected = {
-        participantCurrancyId: 1,
+        participantCurrencyId: 1,
         participantId: 1,
         currencyId: 'USD',
         isActive: 1
@@ -150,13 +155,13 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
   await participantCurrencyTest.test('getByParticipantId', async (assert) => {
     try {
       Db.participantCurrency.find.returns([{
-        participantCurrancyId: 1,
+        participantCurrencyId: 1,
         participantId: 1,
         currencyId: 'USD',
         isActive: 1
       },
       {
-        participantCurrancyId: 2,
+        participantCurrencyId: 2,
         participantId: 1,
         currencyId: 'EUR',
         isActive: 1
@@ -164,13 +169,13 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       ])
       const expected = [
         {
-          participantCurrancyId: 1,
+          participantCurrencyId: 1,
           participantId: 1,
           currencyId: 'USD',
           isActive: 1
         },
         {
-          participantCurrancyId: 2,
+          participantCurrencyId: 2,
           participantId: 1,
           currencyId: 'EUR',
           isActive: 1

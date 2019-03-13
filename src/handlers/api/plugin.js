@@ -45,8 +45,7 @@
 
 exports.plugin = {
   name: 'handler routes',
-  register: function (server, options) {
+  register: function (server) {
     server.route(require('./routes'))
-    server.route(require('./admin/routes'))
   }
 }

@@ -84,9 +84,9 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
  * @function GetLimitsForAllParticipants
  *
  * @async
- * @description This retuns the active limits value for all the participants for the currency and type combinations
+ * @description This returns the active limits value for all the participants for the currency and type combinations
  *
- * @param {string} currency - the currency id. Example USD
+ * @param {string} currencyId - the currency id. Example USD
  * @param {string} type - the type of the limit. Example 'NET_DEBIT_CAP'
  *
  * @returns {array} - Returns an array containing the details of active limits for all the participants if successful, or throws an error if failed
@@ -134,11 +134,11 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
  * @function GetEndpoint
  *
  * @async
- * @description This retuns the active endpoint value for a give participantId and type of endpoint
+ * @description This returns the active endpoint value for a give participantId and type of endpoint
  *
  *
  * @param {integer} participantId - the id of the participant in the database. Example 1
- * @param {string} type - the type of the endpoint. Example 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
+ * @param {string} endpointType - the type of the endpoint. Example 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
  *
  * @returns {array} - Returns participantEndpoint array containing the details of active endpoint for the participant if successful, or throws an error if failed
  */
@@ -163,7 +163,7 @@ const getEndpoint = async (participantId, endpointType) => {
  * @function GetAllEndpoints
  *
  * @async
- * @description This retuns all the active endpoints for a give participantId
+ * @description This returns all the active endpoints for a give participantId
  *
  *
  * @param {integer} participantId - the id of the participant in the database. Example 1
@@ -192,9 +192,9 @@ const getAllEndpoints = async (participantId) => {
  * @async
  * @description This adds the endpoint details for a participant into the database
  *
- * If there is an existing active endpoint for the give participant and endpointType, That endpoing will be made inactive,
+ * If there is an existing active endpoint for the give participant and endpointType, That endpoint will be made inactive,
  * by updating the database entry isActive = 0.
- * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
+ * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintain the database integrity
  *
  * @param {integer} participantId - the participant id. Example: 1
  * @param {object} endpoint - the payload containing object with 'type' and 'value' of the endpoint.
@@ -297,14 +297,14 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
  * @function addLimitAndInitialPosition
  *
  * @async
- * @description This adds the limits and initial postion details for a participant into the database
+ * @description This adds the limits and initial position details for a participant into the database
  *
- * This is one time process, the initial postion and limits can be set only once
+ * This is one time process, the initial position and limits can be set only once
  * by updating the database entry isActive = 0.
- * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
+ * Then new endpoint entry will be inserted into the database, all this will happen inside a database transaction to maintain the database integrity
  *
  * @param {integer} participantId - the participant id. Example: 1
- * @param {object} limitPostionObj - the payload containing and limit and postion values .
+ * @param {object} limitPositionObj - the payload containing and limit and position values .
  * Example: {
  *  "currency": "USD",
  *  "limit": {
@@ -316,18 +316,18 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
  * @returns {integer} - Returns number of database rows affected if successful, or throws an error if failed
  */
 
-const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccountId, limitPostionObj, setCurrencyActive = false) => {
+const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccountId, limitPositionObj, setCurrencyActive = false) => {
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
         let result
-        let limitType = await knex('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
-        //  let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPostionObj.limit.type, 'isActive': 1 })
+        let limitType = await knex('participantLimitType').where({ 'name': limitPositionObj.limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
+        //  let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPositionObj.limit.type, 'isActive': 1 })
         let participantLimit = {
           participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
-          value: limitPostionObj.limit.value,
+          value: limitPositionObj.limit.value,
           isActive: 1,
           createdBy: 'unknown'
         }
@@ -335,7 +335,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         participantLimit.participantLimitId = result[0]
         let participantPosition = {
           participantCurrencyId,
-          value: limitPostionObj.initialPosition,
+          value: limitPositionObj.initialPosition,
           reservedValue: 0
         }
         result = await knex('participantPosition').transacting(trx).insert(participantPosition)
@@ -375,7 +375,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
  *
  * If there is an existing active limit for the give participant and limitType, That limit will be made inactive,
  * by updating the database entry isActive = 0.
- * Then new limit entry will be inserted into the database, all this will happen inside a database transaction to maintaing the database integrity
+ * Then new limit entry will be inserted into the database, all this will happen inside a database transaction to maintain the database integrity
  *
  * @param {integer} participantCurrencyId - the participant currency id. Example: 1
  * @param {object} limit - the payload containing object with 'type' and 'value' of the limit.
@@ -445,7 +445,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
  * @function GetParticipantLimitsByCurrencyId
  *
  * @async
- * @description This retuns the active participant limits for a give participantCurrencyId and limit type
+ * @description This returns the active participant limits for a give participantCurrencyId and limit type
  *
  *
  * @param {integer} participantCurrencyId - the id of the participant currency in the database. Example 1
@@ -481,7 +481,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
  * @function GetParticipantLimitsByParticipantId
  *
  * @async
- * @description This retuns all the active endpoints for a give participantId  and limit type
+ * @description This returns all the active endpoints for a give participantId  and limit type
  *
  *
  * @param {integer} participantId - the id of the participant currency in the database. Example 1

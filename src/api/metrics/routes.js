@@ -18,44 +18,26 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ - Pedro Barreto <pedrob@crosslaketech.com>
+ - Rajiv Mothilal <rajivmothilal@gmail.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
+const Handler = require('./handler')
+const tags = ['api', 'metrics']
 
-const endpointsFixtures = {
-  FSPIOP_CALLBACK_URL_TRANSFER_POST: {
-    type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
-    value: 'http://localhost:3001/participants/dfsp1/notification1'
-  },
-  ALARM_NOTIFICATION_URL: {
-    type: 'ALARM_NOTIFICATION_URL',
-    value: 'http://localhost:3001/participants/dfsp1/notification2'
-  }
-}
-exports.prepareData = async (name, endpointType) => {
-  try {
-    if (endpointsFixtures[endpointType] == null) {
-      throw new Error('invalid endpointType')
+module.exports = [
+  {
+    method: 'GET',
+    path: '/metrics',
+    handler: Handler.metrics,
+    config: {
+      tags: tags,
+      description: 'Prometheus metrics endpoint',
+      id: 'metrics'
     }
-    await Model.addEndpoint(name, endpointsFixtures[endpointType])
-    return endpointsFixtures[endpointType]
-  } catch (err) {
-    throw new Error(err.message)
   }
-}
-
-exports.deletePreparedData = async (participantName) => {
-  if (!participantName) {
-    throw new Error('Please provide a valid participant name!')
-  }
-
-  try {
-    return await Model.destroyParticipantEndpointByName(participantName)
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+]

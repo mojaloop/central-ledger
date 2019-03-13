@@ -27,7 +27,7 @@
 
 'use strict'
 
-exports.prepareNeededData = async (tableName, data) => {
+exports.prepareNeededData = async (tableName) => {
   if (!tableName) {
     throw new Error('Please provide a table name parameter to function "prepareNeededData"!')
   }
@@ -65,7 +65,7 @@ exports.deletePreparedData = async (tableName, data) => {
       if (!data || !data.transferExtensionId || !data.transferId || !data.payerName || !data.payeeName) {
         throw new Error('Please provide transferExtensionId, transferId in order to delete the prepared data!')
       }
-      return require('./extension').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
+      return require('./transferExtension').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'transferStateChange':
       if (!data || !data.transferId || !data.payerName || !data.payeeName) {
         throw new Error('Please provide transferId, payer and payee names in order to delete the prepared data!')

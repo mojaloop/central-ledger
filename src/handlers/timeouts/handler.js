@@ -63,7 +63,7 @@ const timeout = async () => {
     let segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
     const cleanup = await TimeoutService.cleanupTransferTimeout()
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
-    let intervalMax = latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId) || 0
+    let intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
     let result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
 
     if (!Array.isArray(result)) {
@@ -94,7 +94,7 @@ const timeout = async () => {
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
       } else if (result[i].transferStateId === Enum.TransferState.RESERVED_TIMEOUT) {
         message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RESERVED
-        await Utility.produceParticipantMessage(result[i].payerFsp, Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
+        await Utility.produceGeneralMessage(Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal), result[i].payerFsp)
       }
     }
     return {

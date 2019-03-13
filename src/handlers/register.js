@@ -52,7 +52,7 @@ const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
 
-const registerAllHandlers = async (request, h) => {
+const registerAllHandlers = async () => {
   try {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))
@@ -73,13 +73,13 @@ module.exports = {
   registerAllHandlers,
   transfers: {
     registerAllHandlers: TransferHandlers.registerAllHandlers,
-    registerPrepareHandlers: TransferHandlers.registerPrepareHandlers,
+    registerPrepareHandler: TransferHandlers.registerPrepareHandler,
     registerGetHandler: TransferHandlers.registerGetTransferHandler,
     registerFulfilHandler: TransferHandlers.registerFulfilHandler
   },
   positions: {
     registerAllHandlers: PositionHandlers.registerAllHandlers,
-    registerPositionHandlers: PositionHandlers.registerPositionHandlers
+    registerPositionHandler: PositionHandlers.registerPositionHandler
   },
   timeouts: {
     registerAllHandlers: TimeoutHandlers.registerAllHandlers,

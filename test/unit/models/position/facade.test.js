@@ -78,7 +78,7 @@ Test('Position facade', async (positionFacadeTest) => {
       })
 
       let found = await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
-      test.equal(found, 1, 'retrive the record')
+      test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
         'pc.currencyId': currencyId,
@@ -138,7 +138,7 @@ Test('Position facade', async (positionFacadeTest) => {
       })
 
       let found = await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
-      test.equal(found, 1, 'retrive the record')
+      test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
         'pc.currencyId': currencyId,
@@ -300,7 +300,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
           sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
-            participantCurrancyId: 1,
+            participantCurrencyId: 1,
             participantId: 1,
             currencyId: 'USD',
             isActive: 1
@@ -359,7 +359,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
           sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
-            participantCurrancyId: 1,
+            participantCurrencyId: 1,
             participantId: 1,
             currencyId: 'USD',
             isActive: 1
@@ -440,7 +440,7 @@ Test('Position facade', async (positionFacadeTest) => {
 
           sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
           sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
-            participantCurrancyId: 1,
+            participantCurrencyId: 1,
             participantId: 1,
             currencyId: 'USD',
             isActive: 1
@@ -608,8 +608,8 @@ Test('Position facade', async (positionFacadeTest) => {
 
       const participantPosition = [
         {
-          participantPostionId: 1,
-          participantCurrancyId: 1,
+          participantPositionId: 1,
+          participantCurrencyId: 1,
           value: 1000,
           reservedValue: 0.0,
           changedDate: new Date()
@@ -631,7 +631,7 @@ Test('Position facade', async (positionFacadeTest) => {
       })
 
       let found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId, currencyId)
-      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
       test.end()
@@ -650,15 +650,15 @@ Test('Position facade', async (positionFacadeTest) => {
 
       const participantPosition = [
         {
-          participantPostionId: 1,
-          participantCurrancyId: 1,
+          participantPositionId: 1,
+          participantCurrencyId: 1,
           value: 1000,
           reservedValue: 0.0,
           changedDate: new Date()
         },
         {
-          participantPostionId: 2,
-          participantCurrancyId: 3,
+          participantPositionId: 2,
+          participantCurrencyId: 3,
           value: 2000,
           reservedValue: 0.0,
           changedDate: new Date()
@@ -680,7 +680,7 @@ Test('Position facade', async (positionFacadeTest) => {
       })
 
       let found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId)
-      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
       test.end()
@@ -719,8 +719,8 @@ Test('Position facade', async (positionFacadeTest) => {
 
       const participantPosition = [
         {
-          participantPostionId: 1,
-          participantCurrancyId: 1,
+          participantPositionId: 1,
+          participantCurrencyId: 1,
           value: 1000,
           reservedValue: 0.0,
           changedDate: new Date()
@@ -744,7 +744,7 @@ Test('Position facade', async (positionFacadeTest) => {
       })
 
       let found = await ModelPosition.getAllByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
-      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
       test.end()
@@ -762,15 +762,15 @@ Test('Position facade', async (positionFacadeTest) => {
 
       const participantPosition = [
         {
-          participantPostionId: 1,
-          participantCurrancyId: 1,
+          participantPositionId: 1,
+          participantCurrencyId: 1,
           value: 1000,
           reservedValue: 0.0,
           changedDate: new Date()
         },
         {
-          participantPostionId: 2,
-          participantCurrancyId: 3,
+          participantPositionId: 2,
+          participantCurrencyId: 3,
           value: 2000,
           reservedValue: 0.0,
           changedDate: new Date()
@@ -794,7 +794,7 @@ Test('Position facade', async (positionFacadeTest) => {
       })
 
       let found = await ModelPosition.getAllByNameAndCurrency(participantName)
-      test.deepEqual(found, participantPosition, 'retrive the record')
+      test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
       test.end()

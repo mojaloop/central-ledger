@@ -26,7 +26,7 @@
 
 const Test = require('tape')
 const Base = require('../../base')
-const AdminRoutes = require('../../../../src/admin/routes')
+const AdminRoutes = require('../../../../src/api/routes')
 
 Test('test participant routes', async function (assert) {
   let req = Base.buildRequest({ url: '/participants/{name}', method: 'GET' })

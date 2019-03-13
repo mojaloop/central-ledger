@@ -42,7 +42,7 @@ const getByTransferId = async (id) => {
   try {
     return await Db.transferStateChange.query(async (builder) => {
       let result = builder
-        .where({'transferStateChange.transferId': id})
+        .where({ 'transferStateChange.transferId': id })
         .select('transferStateChange.*')
         .orderBy('transferStateChangeId', 'desc')
         .first()
@@ -78,7 +78,7 @@ const getLatest = async () => {
   }
 }
 
-const truncate = async (id) => {
+const truncate = async () => {
   try {
     return await Db.transferStateChange.truncate()
   } catch (err) {

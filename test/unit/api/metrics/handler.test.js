@@ -18,44 +18,59 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
+const Test = require('tapes')(require('tape'))
+const Sinon = require('sinon')
+const Handler = require('../../../../src/api/metrics/handler')
+const Metrics = require('@mojaloop/central-services-metrics')
 
-const endpointsFixtures = {
-  FSPIOP_CALLBACK_URL_TRANSFER_POST: {
-    type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
-    value: 'http://localhost:3001/participants/dfsp1/notification1'
-  },
-  ALARM_NOTIFICATION_URL: {
-    type: 'ALARM_NOTIFICATION_URL',
-    value: 'http://localhost:3001/participants/dfsp1/notification2'
-  }
-}
-exports.prepareData = async (name, endpointType) => {
-  try {
-    if (endpointsFixtures[endpointType] == null) {
-      throw new Error('invalid endpointType')
+function createRequest (routes) {
+  let value = routes || []
+  return {
+    server: {
+      table: () => {
+        return [{ table: value }]
+      }
     }
-    await Model.addEndpoint(name, endpointsFixtures[endpointType])
-    return endpointsFixtures[endpointType]
-  } catch (err) {
-    throw new Error(err.message)
   }
 }
 
-exports.deletePreparedData = async (participantName) => {
-  if (!participantName) {
-    throw new Error('Please provide a valid participant name!')
-  }
+Test('metrics handler', (handlerTest) => {
+  let sandbox
+  handlerTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(Metrics)
+    t.end()
+  })
 
-  try {
-    return await Model.destroyParticipantEndpointByName(participantName)
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+  handlerTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
+
+  handlerTest.test('metrics should', (healthTest) => {
+    healthTest.test('return thr metrics ok', async function (assert) {
+      let reply = {
+        response: (response) => {
+          // assert.equal(response.status, 'OK')
+          return {
+            code: (statusCode) => {
+              assert.equal(statusCode, 200)
+              assert.end()
+            }
+          }
+        }
+      }
+
+      Handler.metrics(createRequest(), reply)
+    })
+    healthTest.end()
+  })
+
+  handlerTest.end()
+})

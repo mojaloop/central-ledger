@@ -234,7 +234,6 @@ const registerAllHandlers = async () => {
 }
 
 module.exports = {
-  registerTransferHandler,
   registerAllHandlers,
   transfer
 }

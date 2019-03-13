@@ -26,17 +26,17 @@ Test('events', eventTest => {
     emitTest.test('publish transfer prepared event', (t) => {
       let spy = Sinon.spy()
       Events.onTransferPrepared(spy)
-      let transfer = {id: 12}
+      let transfer = { id: 12 }
       TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferPrepared(transfer)
-      t.ok(spy.calledWith({resource: transfer}))
+      t.ok(spy.calledWith({ resource: transfer }))
       t.end()
     })
 
     emitTest.test('not push transfer executed event', (t) => {
       let spy = Sinon.spy()
       Events.onTransferExecuted(spy)
-      let transfer = {id: 12}
+      let transfer = { id: 12 }
       TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferPrepared({})
       t.notOk(spy.called)
@@ -46,7 +46,7 @@ Test('events', eventTest => {
     emitTest.test('not push transfer rejected event', (t) => {
       let spy = Sinon.spy()
       Events.onTransferRejected(spy)
-      let transfer = {id: 12}
+      let transfer = { id: 12 }
       TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferPrepared({})
       t.notOk(spy.called)
@@ -60,18 +60,18 @@ Test('events', eventTest => {
     emitTest.test('publish transfer executed event', (t) => {
       let spy = Sinon.spy()
       Events.onTransferExecuted(spy)
-      let transfer = {id: 12}
+      let transfer = { id: 12 }
       TransferObjectTransform.toTransfer.returns(transfer)
-      let relatedResources = {execution_condition_fulfilment: 'oAKAAA'}
+      let relatedResources = { execution_condition_fulfilment: 'oAKAAA' }
       Events.emitTransferExecuted(transfer, relatedResources)
-      t.ok(spy.calledWith({resource: transfer, related_resources: relatedResources}))
+      t.ok(spy.calledWith({ resource: transfer, related_resources: relatedResources }))
       t.end()
     })
 
     emitTest.test('not push transfer prepared event', (t) => {
       let spy = Sinon.spy()
       Events.onTransferPrepared(spy)
-      let transfer = {id: 12}
+      let transfer = { id: 12 }
       TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferExecuted({})
       t.notOk(spy.called)
@@ -81,7 +81,7 @@ Test('events', eventTest => {
     emitTest.test('not push transfer rejected event', (t) => {
       let spy = Sinon.spy()
       Events.onTransferRejected(spy)
-      let transfer = {id: 12}
+      let transfer = { id: 12 }
       TransferObjectTransform.toTransfer.returns(transfer)
       Events.emitTransferExecuted({})
       t.notOk(spy.called)
@@ -95,12 +95,12 @@ Test('events', eventTest => {
     emitTest.test('publish transfer rejected event', (t) => {
       let spy = Sinon.spy()
       Events.onTransferRejected(spy)
-      let transfer = {id: 12}
+      let transfer = { id: 12 }
       TransferObjectTransform.toTransfer.returns(transfer)
-      let resource = {id: 12}
-      let relatedResources = {execution_condition_fulfilment: 'oAKAAA'}
+      let resource = { id: 12 }
+      let relatedResources = { execution_condition_fulfilment: 'oAKAAA' }
       Events.emitTransferRejected(resource, relatedResources)
-      t.ok(spy.calledWith({resource: transfer, related_resources: relatedResources}))
+      t.ok(spy.calledWith({ resource: transfer, related_resources: relatedResources }))
       t.end()
     })
 

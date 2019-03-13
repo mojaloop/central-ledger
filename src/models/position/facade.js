@@ -129,7 +129,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
         }
         /*
-          Update the participanyPosition with the eventual impact of the Batch
+          Update the participantPosition with the eventual impact of the Batch
           So the position moves forward by the sum of the transfers actually reserved (sumReserved)
           and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
         */
@@ -157,7 +157,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             participantPositionId: initialParticipantPosition.participantPositionId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
             value: runningPosition,
-            // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch canbe clearly grouped
+            // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
             reservedValue: runningReservedValue
           }
           batchParticipantPositionChange.push(participantPositionChange)
@@ -228,7 +228,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
  * @function GetByNameAndCurrency
  *
  * @async
- * @description This retuns the active position of a participant and currency combination, if currency is not passed then all the active currencies are considered
+ * @description This returns the active position of a participant and currency combination, if currency is not passed then all the active currencies are considered
  *
  *
  * @param {string} name - the name of the participant. Example 'dfsp1'

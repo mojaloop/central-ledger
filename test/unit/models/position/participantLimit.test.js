@@ -54,8 +54,8 @@ Test('Participant Limit model', async (participantLimitTest) => {
   await participantLimitTest.test('insert participant limit', async (assert) => {
     try {
       Db.participantLimit.insert.withArgs(participantLimit1).returns(1)
-      var result = await Model.insert(participantLimit1)
-      assert.ok(Sinon.match(result, 1), `returns ${result}`)
+      let result = await Model.insert(participantLimit1)
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`insert participant limit failed with error - ${err}`)
@@ -80,9 +80,9 @@ Test('Participant Limit model', async (participantLimitTest) => {
 
   await participantLimitTest.test('update participant limit', async (assert) => {
     try {
-      Db.participantLimit.update.withArgs({participantCurrencyId: participantLimit1.participantCurrencyId}, {value: participantLimit1.value, isActive: participantLimit1.isActive}).returns(1)
-      var result = await Model.update(participantLimit1)
-      assert.ok(Sinon.match(result, 1), `returns ${result}`)
+      Db.participantLimit.update.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }, { value: participantLimit1.value, isActive: participantLimit1.isActive }).returns(1)
+      let result = await Model.update(participantLimit1)
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`update participant limit failed with error - ${err}`)
@@ -93,7 +93,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
 
   await participantLimitTest.test('update participant limit should throw an error', async (assert) => {
     try {
-      Db.participantLimit.update.withArgs({participantCurrencyId: participantLimit1.participantCurrencyId}, {value: participantLimit1.value, isActive: participantLimit1.isActive}).throws(new Error('message'))
+      Db.participantLimit.update.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }, { value: participantLimit1.value, isActive: participantLimit1.isActive }).throws(new Error('message'))
       await Model.update(participantLimit1)
       assert.fail('Error not thrown!')
       assert.end()
@@ -107,9 +107,9 @@ Test('Participant Limit model', async (participantLimitTest) => {
 
   await participantLimitTest.test('getLimitByCurrencyId participant limit', async (assert) => {
     try {
-      Db.participantLimit.findOne.withArgs({participantCurrencyId: participantLimit1.participantCurrencyId}).returns(1)
-      var result = await Model.getLimitByCurrencyId(participantLimit1)
-      assert.ok(Sinon.match(result, 1), `returns ${result}`)
+      Db.participantLimit.findOne.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }).returns(1)
+      let result = await Model.getLimitByCurrencyId(participantLimit1.participantCurrencyId)
+      assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
       Logger.error(`getLimitByCurrencyId participant limit failed with error - ${err}`)
@@ -120,7 +120,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
 
   await participantLimitTest.test('getLimitByCurrencyId participant limit should throw an error', async (assert) => {
     try {
-      Db.participantLimit.findOne.withArgs({participantCurrencyId: participantLimit1.participantCurrencyId}).throws(new Error('message'))
+      Db.participantLimit.findOne.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }).throws(new Error('message'))
       await Model.getLimitByCurrencyId(participantLimit1.participantCurrencyId)
       assert.fail('Error not thrown!')
       assert.end()

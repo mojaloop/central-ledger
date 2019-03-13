@@ -196,7 +196,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         await DAO.retrieveAllParticipants.resolves([])
         const result = await allTransferHandlers.registerAllHandlers()
-        test.equal(result, false)
+        test.equal(result, true)
         test.end()
       } catch (e) {
         test.pass('Error thrown')
@@ -204,12 +204,12 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('registerPrepareHandlers topic list is passed', async (test) => {
+    registerHandlersTest.test('registerPrepareHandler topic list is passed', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
-        await allTransferHandlers.registerPositionHandlers(participants)
+        await allTransferHandlers.registerPositionHandler()
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -610,7 +610,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Throw error when invalid action is recieved', async (test) => {
+    positionsTest.test('Throw error when invalid action is received', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -626,7 +626,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Throw error when invalid action is recieved (auto.commit)', async (test) => {
+    positionsTest.test('Throw error when invalid action is received (auto.commit)', async (test) => {
       try {
         config.rdkafkaConf['enable.auto.commit'] = true
         await Kafka.Consumer.createHandler(topicName, config, command)
@@ -644,7 +644,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Throw error when invalid action is recieved -- consumer throws error', async (test) => {
+    positionsTest.test('Throw error when invalid action is received -- consumer throws error', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Kafka.Consumer.getConsumer.throws(new Error())

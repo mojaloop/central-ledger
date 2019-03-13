@@ -18,44 +18,40 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const Model = require('../../../src/domain/participant')
+const Test = require('tape')
+const Plugins = require('../../../../src/api/metrics/plugin')
 
-const endpointsFixtures = {
-  FSPIOP_CALLBACK_URL_TRANSFER_POST: {
-    type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
-    value: 'http://localhost:3001/participants/dfsp1/notification1'
-  },
-  ALARM_NOTIFICATION_URL: {
-    type: 'ALARM_NOTIFICATION_URL',
-    value: 'http://localhost:3001/participants/dfsp1/notification2'
+class Server {
+  constructor () {
+    this.registrations = []
+    this.route = () => { }
   }
-}
-exports.prepareData = async (name, endpointType) => {
-  try {
-    if (endpointsFixtures[endpointType] == null) {
-      throw new Error('invalid endpointType')
+
+  register (obj) {
+    if (obj instanceof Array) {
+      this.registrations.push(...obj)
+    } else {
+      this.registrations.push(obj)
     }
-    await Model.addEndpoint(name, endpointsFixtures[endpointType])
-    return endpointsFixtures[endpointType]
-  } catch (err) {
-    throw new Error(err.message)
+  }
+
+  contains (obj) {
+    return this.registrations.indexOf(obj) > -1
   }
 }
 
-exports.deletePreparedData = async (participantName) => {
-  if (!participantName) {
-    throw new Error('Please provide a valid participant name!')
-  }
-
-  try {
-    return await Model.destroyParticipantEndpointByName(participantName)
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
+Test('registerPlugins should', pluginsTest => {
+  pluginsTest.test('registers base modules', async function (test) {
+    const server = await new Server()
+    await Plugins.plugin.register(server)
+    test.pass('plugin registered')
+    test.end()
+  })
+  pluginsTest.end()
+})
