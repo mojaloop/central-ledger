@@ -142,6 +142,30 @@ Test('Extension model', async (extensionModelTest) => {
     }
   })
 
+  await extensionModelTest.test('get extensions by transferErrorId with empty id', async (assert) => {
+    Db.transferExtension.find.withArgs({ transferErrorId: null }).throws(new Error())
+    try {
+      await Model.getByTransferErrorId(null)
+      assert.fail('should throw with empty ErrorId')
+    } catch (err) {
+      assert.assert(err instanceof Error, `throws ${err}`)
+    }
+    assert.end()
+  })
+
+  await extensionModelTest.test('get extension by transferErrorId', async (assert) => {
+    Db.transferExtension.find.withArgs({ transferErrorId: 1 }).returns(transferExtensionModelFixtures[0])
+    try {
+      let result = await Model.getByTransferErrorId(1)
+      assert.deepEqual(result, transferExtensionModelFixtures[0])
+      assert.end()
+    } catch (err) {
+      Logger.error(`get extension by transferId failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await extensionModelTest.test('get extensions by transferExtensionId with empty id', async (assert) => {
     Db.transferExtension.findOne.withArgs({ transferExtensionId: '' }).throws(new Error())
     try {
