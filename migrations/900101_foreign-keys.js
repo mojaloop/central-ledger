@@ -24,31 +24,17 @@
 
 'use strict'
 
-const error = {
-  2001: 'Internal server error',
-  2003: 'Service currently unavailable',
-  3100: 'Generic validation error',
-  3303: 'Transfer expired',
-  3106: 'Modified request',
-  4001: 'Payer FSP has insufficient liquidity to perform the transfer',
-  5000: 'Generic payee error',
-  5100: 'Payee or Payee FSP rejected the request',
-  5104: 'Payee rejected the financial transaction'
+exports.up = function (knex, Promise) {
+  // foreign keys sorted alphabetically by table name
+  return knex.schema
+  .table('transferExtension', (t) => {
+    t.foreign('transferErrorId').references('transferError.transferErrorId')
+  })
 }
 
-const createErrorInformation = (errorCode, extensionList) => {
-  return {
-    errorCode,
-    errorDescription: error[errorCode],
-    extensionList
-  }
-}
-
-const getErrorDescription = (errorCode) => {
-  return error[errorCode]
-}
-
-module.exports = {
-  createErrorInformation,
-  getErrorDescription
+exports.down = function (knex, Promise) {
+  return knex.schema
+  .table('transferExtension', (t) => {
+    t.dropForeign('transferErrorId')
+  })
 }

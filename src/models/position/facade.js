@@ -85,7 +85,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             sumTransfersInBatch += transferAmount
           } else {
             transferState.transferStateChangeId = null
-            transferState.transferStateId = Enum.TransferState.ABORTED
+            transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
             transferState.reason = 'Transfer in incorrect state'
             abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
           }
@@ -118,7 +118,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             transferState.transferStateId = Enum.TransferState.RESERVED
             sumReserved += transferAmount /* actually used */
           } else {
-            transferState.transferStateId = Enum.TransferState.ABORTED
+            transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
             transferState.reason = Errors.getErrorDescription(4001)
             rawMessage.value.content.payload = {
               errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)

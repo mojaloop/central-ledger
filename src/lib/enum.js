@@ -179,15 +179,17 @@ const TransferParticipantRoleType = {
   DFSP_POSITION: 5
 }
 const TransferState = {
-  ABORTED: 'ABORTED',
+  ABORTED_ERROR: 'ABORTED_ERROR',
+  ABORTED_REJECTED: 'ABORTED_REJECTED',
   COMMITTED: 'COMMITTED',
   EXPIRED_PREPARED: 'EXPIRED_PREPARED',
   EXPIRED_RESERVED: 'EXPIRED_RESERVED',
   FAILED: 'FAILED',
   INVALID: 'INVALID',
+  RECEIVED_ERROR: 'RECEIVED_ERROR',
   RECEIVED_FULFIL: 'RECEIVED_FULFIL',
   RECEIVED_PREPARE: 'RECEIVED_PREPARE',
-  REJECTED: 'REJECTED',
+  RECEIVED_REJECT: 'RECEIVED_REJECT',
   RESERVED: 'RESERVED',
   RESERVED_TIMEOUT: 'RESERVED_TIMEOUT'
 }
@@ -258,6 +260,10 @@ const topicMap = {
       action: transferEventAction.POSITION
     },
     'reject': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
+    },
+    'abort': {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
     }

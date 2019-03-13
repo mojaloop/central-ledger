@@ -50,6 +50,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
+
 // TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorGenericCode = 3100
 const errorGenericDescription = Errors.getErrorDescription(errorGenericCode)
@@ -135,7 +136,7 @@ const prepare = async (error, messages) => {
       }
       const transferStateEnum = transferState.enumeration
 
-      if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
+      if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED_REJECTED) {
         // The request is already finalized
         Logger.info('TransferService::prepare::dupcheck::existsMatching::The request is already finalized, send the callback with status of the request')
         let record = await TransferService.getById(payload.transferId)
@@ -268,7 +269,8 @@ const fulfil = async (error, messages) => {
     const headers = message.value.content.headers
     if (metadata.event.type === TransferEventType.FULFIL &&
       (metadata.event.action === TransferEventAction.COMMIT ||
-        metadata.event.action === TransferEventAction.REJECT)) {
+        metadata.event.action === TransferEventAction.REJECT ||
+        metadata.event.action === TransferEventAction.ABORT)) {
       const existingTransfer = await TransferService.getById(transferId)
 
       if (!existingTransfer) {
@@ -280,7 +282,7 @@ const fulfil = async (error, messages) => {
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
-      } else if (!Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
+      } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::invalidFulfilment`)
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
@@ -318,11 +320,18 @@ const fulfil = async (error, messages) => {
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         } else {
-          await TransferService.reject(transferId, payload)
+          let transferEventAction
+          if (metadata.event.action === TransferEventAction.REJECT) {
+            transferEventAction = TransferEventAction.REJECT
+            await TransferService.reject(transferId, payload)
+          } else {
+            transferEventAction = TransferEventAction.ABORT
+            await TransferService.abort(transferId, payload)
+          }
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
-          await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS, headers[Enum.headers.FSPIOP.DESTINATION])
+          await Utility.produceGeneralMessage(TransferEventType.POSITION, transferEventAction, message.value, Utility.ENUMS.STATE.SUCCESS, headers[Enum.headers.FSPIOP.DESTINATION])
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }

@@ -38,6 +38,7 @@ const TransferObjectTransform = require('./transform')
 const Errors = require('../../errors')
 const Crypto = require('crypto')
 const TransferError = require('../../models/transfer/transferError')
+const ErrorText = require('../../../src/lib/errors')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -82,9 +83,17 @@ const fulfil = async (transferId, payload) => {
 const reject = async (transferId, payload) => {
   try {
     const isCommit = false
-    const stateReason = 'Transaction failed due to user rejection' // TODO: move to generic reason
+    const stateReason = ErrorText.getErrorDescription(5104) // Payee rejected the financial transaction
     const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
+  } catch (err) {
+    throw err
+  }
+}
+
+const abort = async (transferId, payload) => {
+  try {
+    return TransferFacade.saveTransferAborted(transferId, payload)
   } catch (err) {
     throw err
   }
@@ -166,6 +175,7 @@ const TransferService = {
   prepare,
   fulfil,
   reject,
+  abort,
   expire,
   validateDuplicateHash,
   logTransferError,

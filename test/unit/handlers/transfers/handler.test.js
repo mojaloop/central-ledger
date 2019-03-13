@@ -313,7 +313,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('send callback when duplicate found and transferState is ABORTED', async (test) => {
+    prepareTest.test('send callback when duplicate found and transferState is ABORTED_REJECTED', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -322,7 +322,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: true,
         existsNotMatching: false
       }))
-      TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED' }))
+      TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED_REJECTED' }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       TransferObjectTransform.toTransfer.withArgs(transferReturn).returns(transfer)
@@ -736,7 +736,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.produceGeneralMessage.throws(new Error())
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
-      transferReturn.transferState = 'ABORTED'
+      transferReturn.transferState = 'ABORTED_REJECTED'
       let transferResult = Object.assign({}, transferReturn)
       transferResult.extensionList = []
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferResult))
@@ -954,6 +954,40 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       const invalidEventMessage = Object.assign({}, fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('enter ABORT branch with action REJECT', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(true)
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      invalidEventMessage.value.metadata.event.action = 'reject'
+      delete fulfilMessages[0].value.content.payload.fulfilment
+      TransferService.abort.returns({
+        transferErrorRecord: {
+          errorCode: 5000,
+          errorDescription: 'generic'
+        }
+      })
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('enter ABORT branch when action ABORT', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(true)
+      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      invalidEventMessage.value.metadata.event.action = 'abort'
+      delete fulfilMessages[0].value.content.payload.fulfilment
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
       test.end()

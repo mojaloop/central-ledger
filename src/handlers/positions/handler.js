@@ -149,8 +149,12 @@ const positions = async (error, messages) => {
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
-    } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.REJECT) {
-      Logger.info('PositionHandler::positions::reject')
+    } else if (message.value.metadata.event.type === TransferEventType.POSITION &&
+        (message.value.metadata.event.action === TransferEventAction.REJECT ||
+        message.value.metadata.event.action === TransferEventAction.ABORT)) {
+      const action = message.value.metadata.event.action
+
+      Logger.info(`PositionHandler::positions::${action}`)
       kafkaTopic = message.topic
       try {
         consumer = Kafka.Consumer.getConsumer(kafkaTopic)
@@ -161,24 +165,32 @@ const positions = async (error, messages) => {
         return true
       }
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-      if (transferInfo.transferStateId !== TransferState.REJECTED) {
-        Logger.info('PositionHandler::positions::reject::validationFailed::notRejectedState')
-        // TODO: throw Error 2001
-      } else { // transfer state check success
-        Logger.info('PositionHandler::positions::reject::validationPassed')
-        const isReversal = true
-        const transferStateChange = {
-          transferId: transferInfo.transferId,
-          transferStateId: TransferState.ABORTED,
-          reason: transferInfo.reason
-        }
-        await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+
+      let transferEventAction
+      let transferStateId
+
+      if (transferInfo.transferStateId === TransferState.RECEIVED_REJECT) {
+        Logger.info(`PositionHandler::positions::${action}::receivedReject`)
+        transferEventAction = TransferEventAction.REJECT
+        transferStateId = TransferState.ABORTED_REJECTED
+      } else if (transferInfo.transferStateId === TransferState.RECEIVED_ERROR) {
+        Logger.info(`PositionHandler::positions::${action}::receivedError`)
+        transferEventAction = TransferEventAction.ABORT
+        transferStateId = TransferState.ABORTED_ERROR
       }
+      const isReversal = true
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId,
+        reason: transferInfo.reason
+      }
+      await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
       }
       // Will follow framework flow in future
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.REJECT, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, transferEventAction, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
