@@ -42,6 +42,8 @@ const Config = require('../../lib/config')
 const _ = require('lodash')
 
 const errorPayeeGeneric = 5000
+const intervalMinPayeeError = errorPayeeGeneric
+const intervalMaxPayeeError = 5500
 
 const getById = async (id) => {
   try {
@@ -293,6 +295,18 @@ const saveTransferFulfilled = async (transferId, payload, isCommit = true, state
   }
 }
 
+/**
+ * @function saveTransferAborted
+ *
+ * @async
+ * @description This will set transfer state to RECEIVED_ERROR and record extensions if provided
+ *
+ * @param {string} transfer - transfer id
+ * @param {object} payload - message payload containing errorInformation and extensions
+ *
+ * @returns {Object} - Returns details for the affected db records
+ */
+
 const saveTransferAborted = async (transferId, payload) => {
   let errorCode
   let errorDescription
@@ -301,8 +315,8 @@ const saveTransferAborted = async (transferId, payload) => {
   const transactionTimestamp = Time.getUTCString(new Date())
 
   if (payload.errorInformation.errorCode &&
-    payload.errorInformation.errorCode >= 5000 &&
-    payload.errorInformation.errorCode < 5500) {
+    payload.errorInformation.errorCode > intervalMinPayeeError &&
+    payload.errorInformation.errorCode < intervalMaxPayeeError) {
     errorCode = payload.errorInformation.errorCode
   } else {
     errorCode = errorPayeeGeneric

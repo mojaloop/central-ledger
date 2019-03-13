@@ -58,7 +58,7 @@ const errorModifiedReqCode = 3106
 const errorModifiedReqDescription = Errors.getErrorDescription(errorModifiedReqCode)
 const errorInternalCode = 2001
 const errorInternalDescription = Errors.getErrorDescription(errorInternalCode)
-const errorTransferExpCode = 3303
+const errorTransferExpCode = 3300
 const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
 
 /**
@@ -321,17 +321,20 @@ const fulfil = async (error, messages) => {
           return true
         } else {
           let transferEventAction
+          let metadataState
           if (metadata.event.action === TransferEventAction.REJECT) {
             transferEventAction = TransferEventAction.REJECT
+            metadataState = Utility.ENUMS.STATE.SUCCESS
             await TransferService.reject(transferId, payload)
           } else {
             transferEventAction = TransferEventAction.ABORT
-            await TransferService.abort(transferId, payload)
+            const abortResult = await TransferService.abort(transferId, payload)
+            metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, abortResult.transferErrorRecord.errorCode, abortResult.transferErrorRecord.errorDescription)
           }
           if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
             await consumer.commitMessageSync(message)
           }
-          await Utility.produceGeneralMessage(TransferEventType.POSITION, transferEventAction, message.value, Utility.ENUMS.STATE.SUCCESS, headers[Enum.headers.FSPIOP.DESTINATION])
+          await Utility.produceGeneralMessage(TransferEventType.POSITION, transferEventAction, message.value, metadataState, headers[Enum.headers.FSPIOP.DESTINATION])
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }

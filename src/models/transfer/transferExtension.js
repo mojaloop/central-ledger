@@ -53,6 +53,14 @@ const getByTransferFulfilmentId = async (transferFulfilmentId) => {
   }
 }
 
+const getByTransferErrorId = async (transferErrorId) => {
+  try {
+    return await Db.transferExtension.find({ transferErrorId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
 const getByTransferExtensionId = async (transferExtensionId) => {
   try {
     return await Db.transferExtension.findOne({ transferExtensionId })
@@ -73,6 +81,7 @@ module.exports = {
   saveTransferExtension,
   getByTransferId,
   getByTransferFulfilmentId,
+  getByTransferErrorId,
   getByTransferExtensionId,
   destroyByTransferId
 }

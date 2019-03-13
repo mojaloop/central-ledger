@@ -42,7 +42,6 @@ const getCurrentUTCTimeInMilliseconds = () => {
 
 const getUTCString = (d) => {
   return d.toISOString().replace(/[TZ]/g, ' ').trim()
-  // return new Date(d.getTime() + d.getTimezoneOffset() * 60000)
 }
 
 module.exports = {

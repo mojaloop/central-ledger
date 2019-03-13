@@ -24,7 +24,7 @@
 
 'use strict'
 
-const Participant = require('../../domain/participant')
+const ParticipantService = require('../../domain/participant')
 const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
@@ -73,15 +73,15 @@ const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
-    const hubReconciliationAccountExists = await Participant.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
+    const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
     if (!hubReconciliationAccountExists) {
       throw new Errors.HubReconciliationAccountNotFound()
     }
-    const hubMlnsAccountExists = await Participant.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
+    const hubMlnsAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
     if (!hubMlnsAccountExists) {
       throw new Errors.HubMlnsAccountNotFound()
     }
-    let participant = await Participant.getByName(request.payload.name)
+    let participant = await ParticipantService.getByName(request.payload.name)
     if (participant) {
       const currencyExists = participant.currencyList.find(currency => {
         return currency.currencyId === request.payload.currency
@@ -90,13 +90,13 @@ const create = async function (request, h) {
         throw new Errors.RecordExistsError()
       }
     } else {
-      const participantId = await Participant.create(request.payload)
-      participant = await Participant.getById(participantId)
+      const participantId = await ParticipantService.create(request.payload)
+      participant = await ParticipantService.getById(participantId)
     }
     const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
-    const participantCurrencyId1 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
-    const participantCurrencyId2 = await Participant.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
-    participant.currencyList = [await Participant.getParticipantCurrencyById(participantCurrencyId1), await Participant.getParticipantCurrencyById(participantCurrencyId2)]
+    const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
+    const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
+    participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
@@ -107,9 +107,9 @@ const createHubAccount = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     // start - To Do move to domain
-    let participant = await Participant.getByName(request.params.name)
+    let participant = await ParticipantService.getByName(request.params.name)
     if (participant) {
-      const ledgerAccountType = await Participant.getLedgerAccountTypeName(request.payload.type)
+      const ledgerAccountType = await ParticipantService.getLedgerAccountTypeName(request.payload.type)
       if (!ledgerAccountType) {
         throw new Errors.LedgerAccountTypeNotFoundError()
       }
@@ -119,7 +119,7 @@ const createHubAccount = async function (request, h) {
         ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
         isActive: 1
       }
-      let participantAccount = await Participant.getParticipantAccount(accountParams)
+      let participantAccount = await ParticipantService.getParticipantAccount(accountParams)
       if (participantAccount) {
         throw new Errors.HubAccountExistsError()
       }
@@ -131,7 +131,7 @@ const createHubAccount = async function (request, h) {
       if (!isPermittedHubAccountType) {
         throw new Errors.HubAccountTypeError()
       }
-      const newCurrencyAccount = await Participant.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
+      const newCurrencyAccount = await ParticipantService.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
       if (!newCurrencyAccount) {
         throw new Errors.ParticipantAccountCreateError()
       }
@@ -149,14 +149,14 @@ const createHubAccount = async function (request, h) {
 }
 
 const getAll = async function (request) {
-  const results = await Participant.getAll()
+  const results = await ParticipantService.getAll()
   const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
   const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
   return results.map(record => entityItem(record, ledgerAccountIds))
 }
 
 const getByName = async function (request) {
-  const entity = await Participant.getByName(request.params.name)
+  const entity = await ParticipantService.getByName(request.params.name)
   handleMissingRecord(entity)
   const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
   const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
@@ -166,7 +166,7 @@ const getByName = async function (request) {
 const update = async function (request) {
   Sidecar.logRequest(request)
   try {
-    const updatedEntity = await Participant.update(request.params.name, request.payload)
+    const updatedEntity = await ParticipantService.update(request.params.name, request.payload)
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
@@ -183,7 +183,7 @@ const update = async function (request) {
 const addEndpoint = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    await Participant.addEndpoint(request.params.name, request.payload)
+    await ParticipantService.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
@@ -194,7 +194,7 @@ const getEndpoint = async function (request) {
   Sidecar.logRequest(request)
   try {
     if (request.query.type) {
-      const result = await Participant.getEndpoint(request.params.name, request.query.type)
+      const result = await ParticipantService.getEndpoint(request.params.name, request.query.type)
       let endpoint = {}
       if (Array.isArray(result) && result.length > 0) {
         endpoint = {
@@ -204,7 +204,7 @@ const getEndpoint = async function (request) {
       }
       return endpoint
     } else {
-      const result = await Participant.getAllEndpoints(request.params.name)
+      const result = await ParticipantService.getAllEndpoints(request.params.name)
       let endpoints = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
@@ -224,7 +224,7 @@ const getEndpoint = async function (request) {
 const addLimitAndInitialPosition = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    await Participant.addLimitAndInitialPosition(request.params.name, request.payload)
+    await ParticipantService.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
     throw Boom.badRequest(err.message)
@@ -234,7 +234,7 @@ const addLimitAndInitialPosition = async function (request, h) {
 const getLimits = async function (request) {
   Sidecar.logRequest(request)
   try {
-    const result = await Participant.getLimits(request.params.name, request.query)
+    const result = await ParticipantService.getLimits(request.params.name, request.query)
     let limits = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {
@@ -257,7 +257,7 @@ const getLimits = async function (request) {
 const getLimitsForAllParticipants = async function (request) {
   Sidecar.logRequest(request)
   try {
-    const result = await Participant.getLimitsForAllParticipants(request.query)
+    const result = await ParticipantService.getLimitsForAllParticipants(request.query)
     let limits = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {
@@ -281,7 +281,7 @@ const getLimitsForAllParticipants = async function (request) {
 const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    const result = await Participant.adjustLimits(request.params.name, request.payload)
+    const result = await ParticipantService.adjustLimits(request.params.name, request.payload)
     const { participantLimit } = result
     const updatedLimit = {
       currency: request.payload.currency,
@@ -301,7 +301,7 @@ const adjustLimits = async function (request, h) {
 const getPositions = async function (request) {
   Sidecar.logRequest(request)
   try {
-    return await Participant.getPositions(request.params.name, request.query)
+    return await ParticipantService.getPositions(request.params.name, request.query)
   } catch (err) {
     throw Boom.badRequest(err.message)
   }
@@ -310,7 +310,7 @@ const getPositions = async function (request) {
 const getAccounts = async function (request) {
   Sidecar.logRequest(request)
   try {
-    return await Participant.getAccounts(request.params.name, request.query)
+    return await ParticipantService.getAccounts(request.params.name, request.query)
   } catch (err) {
     throw Boom.badRequest(err.message)
   }
@@ -322,7 +322,7 @@ const updateAccount = async function (request, h) {
     const enums = {
       ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
     }
-    await Participant.updateAccount(request.payload, request.params, enums)
+    await ParticipantService.updateAccount(request.payload, request.params, enums)
     if (request.payload.isActive !== undefined) {
       const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
@@ -338,7 +338,7 @@ const recordFunds = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     const enums = await request.server.methods.enums('all')
-    await Participant.recordFundsInOut(request.payload, request.params, enums)
+    await ParticipantService.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
     throw Boom.badRequest(err.message)

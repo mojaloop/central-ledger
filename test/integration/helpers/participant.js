@@ -39,13 +39,13 @@ const testParticipant = {
   createdDate: new Date()
 }
 
-exports.prepareData = async (name, currencyId = 'USD') => {
+exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
   try {
     const participantId = await Model.create(Object.assign(
       {},
       testParticipant,
       {
-        name: (name || testParticipant.name) + time.msToday()
+        name: (name || testParticipant.name) + (isUnique ? time.msToday().toString().substring(2) : '')
       }
     ))
     const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.POSITION, false)

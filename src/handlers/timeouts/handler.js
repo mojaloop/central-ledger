@@ -38,11 +38,12 @@ const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const Enum = require('../../lib/enum')
 const Utility = require('../lib/utility')
+const Errors = require('../../lib/errors')
 
 let timeoutJob
 let isRegistered
-const errorCodeInternal = 3303
-const errorDescriptionInternal = 'Transfer expired'
+const errorCodeInternal = 3300
+const errorDescriptionInternal = Errors.getErrorDescription(errorCodeInternal)
 
 /**
  * @function TransferTimeoutHandler

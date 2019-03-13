@@ -53,7 +53,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
   await transferErrorTest.test('create transfer Error test', async (assert) => {
     try {
       transferErrorPrepareResult = await HelperModule.prepareNeededData('transferError')
-      assert.comment('the prepared data are: ', JSON.stringify(transferErrorPrepareResult, null, 4))
+      // assert.comment('the prepared data are: ', JSON.stringify(transferErrorPrepareResult, null, 4))
 
       const read = transferErrorPrepareResult.transferError
       const result = await Model.getByTransferStateChangeId(transferErrorPrepareResult.transferStateChange.transferStateChangeId)
@@ -84,9 +84,17 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     }
   })
 
-  await transferErrorTest.end()
-})
+  await transferErrorTest.test('teardown', async (assert) => {
+    try {
+      await Db.disconnect()
+      assert.pass('database connection closed')
+      assert.end()
+    } catch (err) {
+      Logger.error(`teardown failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
 
-Test.onFinish(async () => {
-  process.exit(0)
+  await transferErrorTest.end()
 })

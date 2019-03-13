@@ -26,23 +26,11 @@
 
 const Model = require('../../../src/domain/participant')
 
-const endpointsFixtures = {
-  FSPIOP_CALLBACK_URL_TRANSFER_POST: {
-    type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
-    value: 'http://localhost:3001/participants/dfsp1/notification1'
-  },
-  ALARM_NOTIFICATION_URL: {
-    type: 'ALARM_NOTIFICATION_URL',
-    value: 'http://localhost:3001/participants/dfsp1/notification2'
-  }
-}
-exports.prepareData = async (name, endpointType) => {
+exports.prepareData = async (name, endpointType, endpointValue) => {
   try {
-    if (endpointsFixtures[endpointType] == null) {
-      throw new Error('invalid endpointType')
-    }
-    await Model.addEndpoint(name, endpointsFixtures[endpointType])
-    return endpointsFixtures[endpointType]
+    let endpoint = { type: endpointType, value: endpointValue }
+    await Model.addEndpoint(name, endpoint)
+    return endpoint
   } catch (err) {
     throw new Error(err.message)
   }

@@ -69,7 +69,7 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
     return true
   } catch (e) {
     Logger.error(e)
-    Logger.info('Producer error has occurred')
+    Logger.info(`Producer error has occurred for ${topicConf.topicName}`)
     throw e
   }
 }
