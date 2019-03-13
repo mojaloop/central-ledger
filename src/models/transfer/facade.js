@@ -43,7 +43,7 @@ const _ = require('lodash')
 
 const errorPayeeGeneric = 5000
 const intervalMinPayeeError = errorPayeeGeneric
-const intervalMaxPayeeError = 5499
+const intervalMaxPayeeError = 5500
 
 const getById = async (id) => {
   try {
@@ -315,7 +315,7 @@ const saveTransferAborted = async (transferId, payload) => {
   const transactionTimestamp = Time.getUTCString(new Date())
 
   if (payload.errorInformation.errorCode &&
-    payload.errorInformation.errorCode >= intervalMinPayeeError &&
+    payload.errorInformation.errorCode > intervalMinPayeeError &&
     payload.errorInformation.errorCode < intervalMaxPayeeError) {
     errorCode = payload.errorInformation.errorCode
   } else {
