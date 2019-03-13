@@ -984,6 +984,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      TransferService.abort.returns(P.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       const invalidEventMessage = Object.assign({}, fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'abort'

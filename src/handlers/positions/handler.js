@@ -49,6 +49,10 @@ const TransferEventAction = Enum.transferEventAction
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
+const Errors = require('../../lib/errors')
+
+const errorTransferExpCode = 3300
+const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
 
 /**
  * @function positions
@@ -153,6 +157,7 @@ const positions = async (error, messages) => {
         (message.value.metadata.event.action === TransferEventAction.REJECT ||
         message.value.metadata.event.action === TransferEventAction.ABORT)) {
       const action = message.value.metadata.event.action
+      const metadataState = message.value.metadata.event.state
 
       Logger.info(`PositionHandler::positions::${action}`)
       kafkaTopic = message.topic
@@ -190,7 +195,7 @@ const positions = async (error, messages) => {
         await consumer.commitMessageSync(message)
       }
       // Will follow framework flow in future
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, transferEventAction, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, transferEventAction, message.value, metadataState, transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (message.value.metadata.event.type === TransferEventType.POSITION && message.value.metadata.event.action === TransferEventAction.TIMEOUT_RESERVED) {
@@ -202,15 +207,14 @@ const positions = async (error, messages) => {
         throw new Error('Internal server error')
       } else { // transfer state check success
         const isReversal = true
-        const reason = 'Transfer aborted due to expiration'
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.EXPIRED_RESERVED,
-          reason
+          reason: errorTransferExpDescription
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         let newMessage = Object.assign({}, message)
-        newMessage.value.content.payload = Utility.createPrepareErrorStatus(3303, reason, newMessage.value.content.payload.extensionList)
+        newMessage.value.content.payload = Utility.createPrepareErrorStatus(errorTransferExpCode, errorTransferExpDescription, newMessage.value.content.payload.extensionList)
         kafkaTopic = message.topic
         try {
           consumer = Kafka.Consumer.getConsumer(kafkaTopic)
@@ -223,7 +227,7 @@ const positions = async (error, messages) => {
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
           await consumer.commitMessageSync(message)
         }
-        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferStateChange.reason), transferId)
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorTransferExpCode, errorTransferExpDescription), transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
