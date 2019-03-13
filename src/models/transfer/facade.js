@@ -293,6 +293,18 @@ const saveTransferFulfilled = async (transferId, payload, isCommit = true, state
   }
 }
 
+/**
+ * @function saveTransferAborted
+ *
+ * @async
+ * @description This will set transfer state to RECEIVED_ERROR and record extensions if provided
+ *
+ * @param {string} transfer - transfer id
+ * @param {object} payload - message payload containing errorInformation and extensions
+ *
+ * @returns {Object} - Returns details for the affected db records
+ */
+
 const saveTransferAborted = async (transferId, payload) => {
   let errorCode
   let errorDescription
