@@ -83,6 +83,27 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   }
 }
 
+/**
+ * @function GetByTransferId
+ *
+ * @async
+ * @description This will return the last record from transferError table for the given transfer by transferId.
+ *
+ * @param {string} id - the transferId
+ *
+ * @returns {object} - Returns the record from transferError if exists or null, or throws an error if failed
+ * Example:
+ * ```
+ * {
+ *    transferErrorId: 1,
+ *    transferStateChangeId: 1,
+ *    errorCode: 3100,
+ *    errorDescription: 'Amount 100.123 exceeds allowed scale of 2',
+ *    createdDate: '2018-08-17 09:40:28'
+ * }
+ * ```
+ */
+
 const getByTransferId = async (id) => {
   try {
     return await Db.transferError.query(async (builder) => {
