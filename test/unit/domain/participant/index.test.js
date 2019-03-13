@@ -1794,7 +1794,8 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
         ledgerAccountType: 'SETTLEMENT',
         ledgerAccountTypeId: 2,
-        participantCurrencyId: 1
+        participantCurrencyId: 1,
+        accountIsActive: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
         participantId: 0,
@@ -1840,7 +1841,8 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, null).returns([{
         ledgerAccountType: 'SETTLEMENT',
         ledgerAccountTypeId: 2,
-        participantCurrencyId: 1
+        participantCurrencyId: 1,
+        accountIsActive: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
         participantId: 0,

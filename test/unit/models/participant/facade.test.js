@@ -1213,7 +1213,9 @@ Test('Participant facade', async (facadeTest) => {
         innerJoin: sandbox.stub().returns({
           where: sandbox.stub().returns({
             where: sandbox.stub().callsArgWith(0, whereStub).returns({
-              select: sandbox.stub().returns(participantCurrency)
+              where: sandbox.stub().callsArgWith(0, whereStub).returns({
+                select: sandbox.stub().returns(participantCurrency)
+              })
             })
           })
         })
@@ -1248,7 +1250,9 @@ Test('Participant facade', async (facadeTest) => {
         innerJoin: sandbox.stub().returns({
           where: sandbox.stub().returns({
             where: sandbox.stub().callsArgWith(0, whereStub).returns({
-              select: sandbox.stub().returns(participantCurrency)
+              where: sandbox.stub().callsArgWith(0, whereStub).returns({
+                select: sandbox.stub().returns(participantCurrency)
+              })
             })
           })
         })

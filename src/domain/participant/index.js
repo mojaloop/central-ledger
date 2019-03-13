@@ -43,10 +43,26 @@ const Enum = require('../../lib/enum')
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
+const localEnum = {
+  error: { // Alphabetically ordered list of error texts used below
+    AccountInactive: 'Account is currently set inactive',
+    AccountNotFound: 'Account not found',
+    AccountNotPositionType: 'Only position account update is permitted',
+    AccountNotSettlementType: 'Account is not SETTLEMENT type',
+    ActionNotSupported: 'The action is not supported',
+    CreateParticipantGenericError: 'Something went wrong. Participant cannot be created',
+    ParticipantAccountCurrencyMismatch: 'The account does not match participant or currency specified',
+    ParticipantAccountMismatch: 'Participant/account mismatch',
+    ParticipantInactive: 'Participant is currently set inactive',
+    ParticipantInitialPositionExists: 'Participant Limit or Initial Position already set',
+    ParticipantNotFound: 'Participant does not exist'
+  }
+}
+
 const create = async (payload) => {
   try {
     const participant = await ParticipantModel.create({ name: payload.name })
-    if (!participant) throw new Error('Something went wrong. Participant cannot be created')
+    if (!participant) throw new Error(localEnum.error.CreateParticipantGenericError)
     return participant
   } catch (err) {
     throw err
@@ -81,11 +97,14 @@ const getByName = async (name) => {
   return participant
 }
 
-const participantExists = (participant) => {
+const participantExists = (participant, checkIsActive = false) => {
   if (participant) {
-    return participant
+    if (!checkIsActive || participant.isActive) {
+      return participant
+    }
+    throw new Error(localEnum.error.ParticipantInactive)
   }
-  throw new Error('Participant does not exist')
+  throw new Error(localEnum.error.ParticipantNotFound)
 }
 
 const update = async (name, payload) => {
@@ -272,7 +291,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
     if (existingLimit || existingPosition || existingSettlementPosition) {
-      throw new Error('Participant Limit or Initial Position already set')
+      throw new Error(localEnum.error.ParticipantInitialPositionExists)
     }
     let limitAndInitialPosition = limitAndInitialPositionObj
     if (!limitAndInitialPosition.initialPosition) {
@@ -599,11 +618,11 @@ const updateAccount = async (payload, params, enums) => {
     participantExists(participant)
     const account = await ParticipantCurrencyModel.getById(id)
     if (!account) {
-      throw new Error('Account not found')
+      throw new Error(localEnum.error.AccountNotFound)
     } else if (account.participantId !== participant.participantId) {
-      throw new Error('Participant/account mismatch')
+      throw new Error(localEnum.error.ParticipantAccountMismatch)
     } else if (account.ledgerAccountTypeId !== enums.ledgerAccountType.POSITION) {
-      throw new Error('Only position account update is permitted')
+      throw new Error(localEnum.error.AccountNotPositionType)
     }
     return await ParticipantCurrencyModel.update(id, payload.isActive)
   } catch (err) {
@@ -671,7 +690,7 @@ const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
       payee: fspName
     }
   }
-  if (!actions[action]) throw new Error('The action is not supported')
+  if (!actions[action]) throw new Error(localEnum.error.ActionNotSupported)
   return Object.assign(payload, actions[action])
 }
 
@@ -679,12 +698,18 @@ const recordFundsInOut = async (payload, params, enums) => {
   try {
     let { name, id, transferId } = params
     const participant = await ParticipantModel.getByName(name)
-    const currency = payload.amount && payload.amount.currency
-    participantExists(participant)
-    const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency || null)
+    const currency = (payload.amount && payload.amount.currency) || null
+    const isAccountActive = null
+    const checkIsActive = true
+    participantExists(participant, checkIsActive)
+    const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency, isAccountActive)
     let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
-    if (!(accountMatched && accountMatched.ledgerAccountTypeId === enums.ledgerAccountType.SETTLEMENT)) {
-      throw new Error('Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+    if (!accountMatched) {
+      throw new Error(localEnum.error.ParticipantAccountCurrencyMismatch)
+    } else if (!accountMatched.accountIsActive) {
+      throw new Error(localEnum.error.AccountInactive)
+    } else if (accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT) {
+      throw new Error(localEnum.error.AccountNotSettlementType)
     }
     transferId && (payload.transferId = transferId)
     let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
