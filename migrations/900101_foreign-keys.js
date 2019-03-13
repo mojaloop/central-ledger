@@ -24,16 +24,17 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('transferExtension').then(function(exists) {
-    if (exists) {
-      return knex.schema.alterTable('transferExtension', (t) => {
-        t.bigInteger('transferErrorId').unsigned().defaultTo(null).nullable()
-      })
-    }
+exports.up = function (knex, Promise) {
+  // foreign keys sorted alphabetically by table name
+  return knex.schema
+  .table('transferExtension', (t) => {
+    t.foreign('transferErrorId').references('transferError.transferErrorId')
   })
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('transferExtension')
+  return knex.schema
+  .table('transferExtension', (t) => {
+    t.dropForeign('transferErrorId')
+  })
 }
