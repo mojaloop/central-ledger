@@ -39,7 +39,6 @@ const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('../../lib/time')
 const Config = require('../../lib/config')
-const _ = require('lodash')
 
 const getById = async (id) => {
   try {

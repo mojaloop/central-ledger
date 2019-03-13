@@ -26,7 +26,7 @@
 
 const Boom = require('boom')
 const config = require('../../lib/config')
-const prefixMap = require('./prefixMap').default
+const PrefixMap = require('./prefixMap').default
 
 // hard-coded routes for Blue Moja
 const routesBlueMoja = [
@@ -63,7 +63,7 @@ const getNextHop = async function (request) {
   try {
     // hard-coded to build route table for now
     let routes = config['MOJA_HUB_NAME'] === 'Blue Moja' ? routesBlueMoja : routesRedMoja
-    let routeTable = new prefixMap()
+    let routeTable = new PrefixMap()
     routes.forEach(route => {
       routeTable.insert(route.address, route)
     })
