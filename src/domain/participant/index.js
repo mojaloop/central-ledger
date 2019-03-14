@@ -485,7 +485,7 @@ const createLimitAdjustmentMessageProtocol = (payload, action = Enum.adminNotifi
     to: Config.HUB_NAME,
     type: 'application/json',
     content: {
-      header: {},
+      headers: {},
       payload
     },
     metadata: {
