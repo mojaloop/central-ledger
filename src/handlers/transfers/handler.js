@@ -425,8 +425,8 @@ const getTransfer = async (error, messages) => {
       return true
     }
 
-    // const transfer = await TransferService.getByIdLight(transferId)
-    const transfer = await TransferService.getById(transferId) // note that this is required for the transfer to contain the participant information
+    const transfer = await TransferService.getByIdLight(transferId)
+    // const transfer = await TransferService.getById(transferId) // note that this is required for the transfer to contain the participant information
 
     if (!transfer) {
       // switch headers around and set from switch
