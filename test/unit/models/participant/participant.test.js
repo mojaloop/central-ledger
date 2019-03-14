@@ -79,7 +79,7 @@ Test('Participant model', async (participantTest) => {
     try {
       let r = await Model.create(falseParticipant)
       assert.comment(r)
-      assert.fail(' should throw')
+      assert.fail('should throw')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
     }

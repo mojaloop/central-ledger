@@ -555,7 +555,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
   }
 }
 
-const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
+const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccountActive = 1) => {
   try {
     return Db.participantCurrency.query(builder => {
       return builder
@@ -563,15 +563,19 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null) => {
         .innerJoin('participant AS p', 'p.participantId', 'participantCurrency.participantId')
         .where({
           'p.name': name,
-          'p.isActive': 1,
-          'participantCurrency.isActive': 1
+          'p.isActive': 1
         })
         .where(q => {
           if (currencyId != null) {
             return q.where('participantCurrency.currencyId', currencyId)
           }
         })
-        .select('*', 'lap.name AS ledgerAccountType')
+        .where(q => {
+          if (isAccountActive != null) {
+            return q.where('participantCurrency.isActive', isAccountActive)
+          }
+        })
+        .select('*', 'lap.name AS ledgerAccountType', 'participantCurrency.isActive AS accountIsActive')
     })
   } catch (err) {
     throw new Error(err.message)

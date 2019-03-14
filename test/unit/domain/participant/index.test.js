@@ -250,18 +250,6 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('create false participant should throw error', async (assert) => {
-    const falseParticipant = { name: 'fsp3' }
-    ParticipantModel.create.withArgs(falseParticipant).returns(null)
-    try {
-      await Service.create(falseParticipant)
-      assert.fail('should throw')
-    } catch (err) {
-      assert.assert(err instanceof Error, `throws ${err} `)
-    }
-    assert.end()
-  })
-
   await participantTest.test('create participant', async (assert) => {
     try {
       for (let [index, participant] of participantMap) {
@@ -1734,8 +1722,6 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
-  // ====================================
-
   await participantTest.test('createParticipantCurrency should return a new currency and position record', async (assert) => {
     const payload = {
       participantId: 1,
@@ -1762,8 +1748,6 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     }
   })
-
-  // ====================================
 
   await participantTest.test('recordFundsInOut should produce message to kafka topic if input is valid', async (assert) => {
     try {
@@ -1794,7 +1778,8 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
         ledgerAccountType: 'SETTLEMENT',
         ledgerAccountTypeId: 2,
-        participantCurrencyId: 1
+        participantCurrencyId: 1,
+        accountIsActive: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
         participantId: 0,
@@ -1840,7 +1825,8 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, null).returns([{
         ledgerAccountType: 'SETTLEMENT',
         ledgerAccountTypeId: 2,
-        participantCurrencyId: 1
+        participantCurrencyId: 1,
+        accountIsActive: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
         participantId: 0,
@@ -1857,6 +1843,55 @@ Test('Participant service', async (participantTest) => {
     } catch (err) {
       Logger.error(`get position failed with error - ${err}`)
       assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('recordFundsInOut should throw if account does not match participant', async (assert) => {
+    try {
+      const payload = {
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
+        externalReference: 'string',
+        action: 'recordFundsIn',
+        amount: {
+          amount: 1.0000,
+          currency: 'USD'
+        },
+        reason: 'Reason for in/out flow of funds',
+        extensionList: {}
+      }
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+      const enums = {
+        ledgerAccountType: {
+          SETTLEMENT: 2
+        },
+        hubParticipant: {
+          name: 'Hub'
+        }
+      }
+      ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
+        ledgerAccountType: 'POSITION',
+        ledgerAccountTypeId: 1,
+        participantCurrencyId: 2,
+        accountIsActive: 1
+      }])
+      ParticipantModel.getByName.withArgs(params.name).returns({
+        participantId: 0,
+        name: 'dfsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: new Date()
+      })
+      Utility.produceGeneralMessage.returns(true)
+      await Service.recordFundsInOut(payload, params, enums)
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      assert.ok(err.message, 'Error thrown')
       assert.end()
     }
   })
@@ -1890,7 +1925,8 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
         ledgerAccountType: 'POSITION',
         ledgerAccountTypeId: 1,
-        participantCurrencyId: 1
+        participantCurrencyId: 1,
+        accountIsActive: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
         participantId: 0,
@@ -1901,15 +1937,15 @@ Test('Participant service', async (participantTest) => {
       })
       Utility.produceGeneralMessage.returns(true)
       await Service.recordFundsInOut(payload, params, enums)
-      assert.fail('did not throw')
+      assert.fail('Error not thrown!')
       assert.end()
     } catch (err) {
-      assert.ok(err.message, 'Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+      assert.ok(err.message, 'error thrown')
       assert.end()
     }
   })
 
-  await participantTest.test('recordFundsInOut should throw if account is not correct', async (assert) => {
+  await participantTest.test('recordFundsInOut should throw if account is inactive', async (assert) => {
     try {
       const payload = {
         transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
@@ -1930,7 +1966,8 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
         ledgerAccountType: 'POSITION',
-        participantCurrencyId: 1
+        participantCurrencyId: 1,
+        accountIsActive: 0
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
         participantId: 0,
@@ -1941,10 +1978,51 @@ Test('Participant service', async (participantTest) => {
       })
       Utility.produceGeneralMessage.returns(true)
       await Service.recordFundsInOut(payload, params, {})
-      assert.fail('did not throw')
+      assert.fail('Error not thrown!')
       assert.end()
     } catch (err) {
-      assert.ok(err.message, 'Account id is not SETTLEMENT type or currency of the account does not match the currency requested')
+      assert.ok(err.message, 'error thrown')
+      assert.end()
+    }
+  })
+
+  await participantTest.test('recordFundsInOut should throw if participant is inactive', async (assert) => {
+    try {
+      const payload = {
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413',
+        externalReference: 'string',
+        action: 'bla',
+        amount: {
+          amount: 1.0000,
+          currency: 'USD'
+        },
+        reason: 'Reason for in/out flow of funds',
+        extensionList: {}
+      }
+
+      const params = {
+        name: 'dfsp1',
+        id: 1,
+        transferId: 'a87fc534-ee48-7775-b6a9-ead2955b6413'
+      }
+      ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, payload.amount.currency).returns([{
+        ledgerAccountType: 'POSITION',
+        participantCurrencyId: 1,
+        accountIsActive: 1
+      }])
+      ParticipantModel.getByName.withArgs(params.name).returns({
+        participantId: 0,
+        name: 'dfsp1',
+        currency: 'USD',
+        isActive: 0,
+        createdDate: new Date()
+      })
+      Utility.produceGeneralMessage.returns(true)
+      await Service.recordFundsInOut(payload, params, {})
+      assert.fail('Error not thrown!')
+      assert.end()
+    } catch (err) {
+      assert.ok(err.message, 'error thrown')
       assert.end()
     }
   })
@@ -1974,7 +2052,8 @@ Test('Participant service', async (participantTest) => {
       ParticipantFacade.getAllAccountsByNameAndCurrency.withArgs(params.name, null).returns([{
         ledgerAccountType: 'SETTLEMENT',
         ledgerAccountTypeId: 2,
-        participantCurrencyId: 1
+        participantCurrencyId: 1,
+        accountIsActive: 1
       }])
       ParticipantModel.getByName.withArgs(params.name).returns({
         participantId: 0,
@@ -1989,7 +2068,7 @@ Test('Participant service', async (participantTest) => {
       assert.fail('Error not thrown!')
       assert.end()
     } catch (err) {
-      assert.ok(err.message, 'The action is not supported')
+      assert.ok(err.message, 'Error thrown')
       assert.end()
     }
   })
