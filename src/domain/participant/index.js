@@ -49,7 +49,6 @@ const AccountNotFoundErrorText = 'Account not found'
 const AccountNotPositionTypeErrorText = 'Only position account update is permitted'
 const AccountNotSettlementTypeErrorText = 'Account is not SETTLEMENT type'
 const ActionNotSupportedText = 'The action is not supported'
-const CreateParticipantGenericErrorText = 'Something went wrong. Participant cannot be created'
 const ParticipantAccountCurrencyMismatchText = 'The account does not match participant or currency specified'
 const ParticipantAccountMismatchText = 'Participant/account mismatch'
 const ParticipantInactiveText = 'Participant is currently set inactive'
@@ -59,7 +58,6 @@ const ParticipantNotFoundText = 'Participant does not exist'
 const create = async (payload) => {
   try {
     const participant = await ParticipantModel.create({ name: payload.name })
-    if (!participant) throw new Error(CreateParticipantGenericErrorText)
     return participant
   } catch (err) {
     throw err

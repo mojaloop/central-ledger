@@ -250,18 +250,6 @@ Test('Participant service', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('create false participant should throw error', async (assert) => {
-    const falseParticipant = { name: 'fsp3' }
-    ParticipantModel.create.withArgs(falseParticipant).returns(null)
-    try {
-      await Service.create(falseParticipant)
-      assert.fail('should throw')
-    } catch (err) {
-      assert.assert(err instanceof Error, `throws ${err} `)
-    }
-    assert.end()
-  })
-
   await participantTest.test('create participant', async (assert) => {
     try {
       for (let [index, participant] of participantMap) {
