@@ -140,6 +140,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       let payeeParticipantStub = sandbox.stub()
       let ilpPacketStub = sandbox.stub()
       let stateChangeStub = sandbox.stub()
+      let stateStub = sandbox.stub()
       let transferFulfilmentStub = sandbox.stub()
 
       let selectStub = sandbox.stub()
@@ -164,10 +165,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
                           innerJoin: payeeParticipantStub.returns({
                             innerJoin: ilpPacketStub.returns({
                               leftJoin: stateChangeStub.returns({
-                                leftJoin: transferFulfilmentStub.returns({
-                                  select: selectStub.returns({
-                                    orderBy: orderByStub.returns({
-                                      first: firstStub.returns(transfers)
+                                leftJoin: stateStub.returns({
+                                  leftJoin: transferFulfilmentStub.returns({
+                                    select: selectStub.returns({
+                                      orderBy: orderByStub.returns({
+                                        first: firstStub.returns(transfers)
+                                      })
                                     })
                                   })
                                 })
@@ -207,6 +210,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(payeeParticipantStub.withArgs('participant AS ca', 'ca.participantId', 'pc2.participantId').calledOnce)
       test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
+      test.ok(stateStub.withArgs('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId').calledOnce)
       test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
       test.ok(selectStub.withArgs(
         'transfer.*',
@@ -223,6 +227,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tsc.transferStateId AS transferState',
         'tsc.reason AS reason',
         'tsc.createdDate AS completedTimestamp',
+        'ts.enumeration as transferStateEnumeration',
+        'ts.description as transferStateDescription',
         'ilpp.value AS ilpPacket',
         'transfer.ilpCondition AS condition',
         'tf.ilpFulfilment AS fulfilment'
@@ -257,9 +263,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
                             innerJoin: sandbox.stub().returns({
                               leftJoin: sandbox.stub().returns({
                                 leftJoin: sandbox.stub().returns({
-                                  select: sandbox.stub().returns({
-                                    orderBy: sandbox.stub().returns({
-                                      first: sandbox.stub().returns(null)
+                                  leftJoin: sandbox.stub().returns({
+                                    select: sandbox.stub().returns({
+                                      orderBy: sandbox.stub().returns({
+                                        first: sandbox.stub().returns(null)
+                                      })
                                     })
                                   })
                                 })
@@ -353,6 +361,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tsc.transferStateChangeId',
         'tsc.transferStateId AS transferState',
         'ts.enumeration AS transferStateEnumeration',
+        'ts.description as transferStateDescription',
         'tsc.reason AS reason',
         'tsc.createdDate AS completedTimestamp',
         'ilpp.value AS ilpPacket',
@@ -425,6 +434,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tsc.transferStateChangeId',
         'tsc.transferStateId AS transferState',
         'ts.enumeration AS transferStateEnumeration',
+        'ts.description as transferStateDescription',
         'tsc.reason AS reason',
         'tsc.createdDate AS completedTimestamp',
         'ilpp.value AS ilpPacket',
