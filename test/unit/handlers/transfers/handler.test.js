@@ -624,30 +624,33 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.test('get transfer by id should', transformTransfer => {
     transformTransfer.test('return a true on a single message', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-      const result = await allTransferHandlers.getTransfer(null, messages[0])
+      const result = await allTransferHandlers.getTransfer(null, tempMessages[0])
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return a true on an array of messages', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, tempMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when an error is passed in', async (test) => {
       try {
+        var tempMessages = JSON.parse(JSON.stringify(messages))
         await Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
-        await allTransferHandlers.getTransfer(true, messages)
+        await allTransferHandlers.getTransfer(true, tempMessages)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -657,27 +660,30 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('return an error when the Kafka topic is invalid', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.getConsumer.throws(new Error())
       Utility.getKafkaConfig.returns(config)
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, tempMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the transfer by Id is not found', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.returns(null)
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, tempMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the transfer by Id is not found', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -685,12 +691,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, tempMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the requester is not involved in the transfer', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -698,12 +705,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(false)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, tempMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the requester is not involved in the transfer - autocommit disabled', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -711,12 +719,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(false)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(false)
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, tempMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the transfer by Id is found', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -724,12 +733,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, tempMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('returns an error when general message cannot be produced', async (test) => {
+      var tempMessages = JSON.parse(JSON.stringify(messages))
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -741,7 +751,7 @@ Test('Transfer handler', transferHandlerTest => {
       transferResult.extensionList = []
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferResult))
       try {
-        await allTransferHandlers.getTransfer(null, messages)
+        await allTransferHandlers.getTransfer(null, tempMessages)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
