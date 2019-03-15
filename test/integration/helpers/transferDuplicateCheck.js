@@ -32,8 +32,8 @@ const Uuid = require('uuid4')
 
 exports.prepareData = async () => {
   try {
-    let participantPayerResult = await ParticipantPreparationModule.prepareData('payer')
-    let participantPayeeResult = await ParticipantPreparationModule.prepareData('payee')
+    let participantPayerResult = await ParticipantPreparationModule.prepareData('payerFsp')
+    let participantPayeeResult = await ParticipantPreparationModule.prepareData('payeeFsp')
 
     let transferId = Uuid()
     let payload = {

@@ -67,11 +67,11 @@ let testData = {
     amount: 110
   },
   payer: {
-    name: 'payerfsp',
+    name: 'payerFsp',
     limit: 500
   },
   payee: {
-    name: 'payeefsp',
+    name: 'payeeFsp',
     limit: 300
   },
   endpoint: {
