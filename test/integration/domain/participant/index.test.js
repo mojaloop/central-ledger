@@ -366,6 +366,9 @@ Test('Participant service', async (participantTest) => {
       }
       await Db.disconnect()
       assert.pass('database connection closed')
+      // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,
+      // BUT it is required in order to have successful run of all integration test scripts as a sequence, where
+      // the last script will actually disconnect topic-notification-event producer.
       // const Producer = require('../../../../src/handlers/lib/kafka/producer')
       // await Producer.getProducer('topic-notification-event').disconnect()
       // assert.pass('producer to topic-notification-event disconnected')
