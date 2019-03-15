@@ -823,7 +823,7 @@ Test('Transfer handler', transferHandlerTest => {
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.headers['fspip-source'] = 'dfsp1'
+      fulfilObj[0].value.content.headers['fspiop-source'] = 'dfsp1'
 
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
@@ -838,7 +838,7 @@ Test('Transfer handler', transferHandlerTest => {
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.headers['fspip-source'] = 'dfsp1'
+      fulfilObj[0].value.content.headers['fspiop-source'] = 'dfsp1'
 
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
