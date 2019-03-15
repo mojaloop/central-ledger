@@ -2,6 +2,7 @@
 
 const Util = require('../../lib/util')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Enum = require('../../lib/enum')
 
 const transferProperties = [
   'transferId',
@@ -100,6 +101,35 @@ const fromSaveTransferExecuted = (t) => {
   }
 }
 
+const transformExtensionList = (extensionList) => {
+  return extensionList.map(x => {
+    return {
+      key: x.key,
+      value: x.value
+    }
+  })
+}
+
+const transformTransferToFulfil = (transfer) => {
+  let result
+  if (transfer.transferState === Enum.TransferState.COMMITTED) {
+    result = {
+      fulfilment: transfer.fulfilment,
+      completedTimestamp: transfer.completedTimestamp,
+      transferState: transfer.transferStateEnumeration
+    }
+  } else {
+    result = {
+      transferState: transfer.transferStateEnumeration
+    }
+  }
+  let extensionList = transformExtensionList(transfer.extensionList)
+  if (extensionList.length > 0) {
+    result.extensionList = extensionList
+  }
+  return result
+}
+
 const toTransfer = (t) => {
   // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
   if (t.isTransferReadModel) {
@@ -117,6 +147,7 @@ const toTransfer = (t) => {
 // const fromPayload = (payload) => Util.merge(payload, { id: UrlParser.idFromTransferUri(payload.id) })
 
 module.exports = {
-  toTransfer
+  toTransfer,
+  toFulfil: transformTransferToFulfil
   // fromPayload
 }

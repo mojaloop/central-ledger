@@ -41,11 +41,14 @@ const ParticipantEndpointHelper = require('../helpers/participantEndpoint')
 const TransferService = require('../../../src/domain/transfer')
 const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
+const Util = require('../../../src/lib/util')
+
 const Handlers = {
   index: require('../../../src/handlers/register'),
   positions: require('../../../src/handlers/positions/handler'),
   transfers: require('../../../src/handlers/transfers/handler')
 }
+
 const Enum = require('../../../src/lib/enum')
 const TransferState = Enum.TransferState
 const TransferEventType = Enum.transferEventType
@@ -177,13 +180,13 @@ const prepareTestData = async (dataObj) => {
     }
   }
 
-  const messageProtocolFulfil = JSON.parse(JSON.stringify(messageProtocol))
+  const messageProtocolFulfil = Util.clone(messageProtocol)
   messageProtocolFulfil.content.payload = fulfil
   messageProtocolFulfil.metadata.event.id = Uuid()
   messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
   messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
-  const messageProtocolReject = JSON.parse(JSON.stringify(messageProtocolFulfil))
+  const messageProtocolReject = Util.clone(messageProtocolFulfil)
   messageProtocolReject.content.payload = reject
   messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 

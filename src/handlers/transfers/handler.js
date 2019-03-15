@@ -138,11 +138,11 @@ const prepare = async (error, messages) => {
       }
       const transferStateEnum = transferState.enumeration
 
-      if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED_REJECTED) {
+      if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
         // The request is already finalized
         Logger.info('TransferService::prepare::dupcheck::existsMatching::The request is already finalized, send the callback with status of the request')
         let record = await TransferService.getById(payload.transferId)
-        message.value.content.payload = TransferObjectTransform.toTransfer(record)
+        message.value.content.payload = TransferObjectTransform.toFulfil(record)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE_DUPLICATE, message.value, Utility.ENUMS.STATE.SUCCESS, payload.transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
@@ -449,7 +449,7 @@ const getTransfer = async (error, messages) => {
       message.value.to = message.value.from
       message.value.from = Enum.headers.FSPIOP.SWITCH
       // set payload with content
-      message.value.content.payload = transformTransfer(transfer)
+      message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
 
       if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
         await consumer.commitMessageSync(message)
@@ -464,35 +464,6 @@ const getTransfer = async (error, messages) => {
     Logger.error(err)
     throw err
   }
-}
-
-const transformExtensionList = (extensionList) => {
-  return extensionList.map(x => {
-    return {
-      key: x.key,
-      value: x.value
-    }
-  })
-}
-
-const transformTransfer = (transfer) => {
-  let result
-  if (transfer.transferState === Enum.TransferState.COMMITTED) {
-    result = {
-      fulfilment: transfer.fulfilment,
-      completedTimestamp: transfer.completedTimestamp,
-      transferState: transfer.transferStateEnumeration
-    }
-  } else {
-    result = {
-      transferState: transfer.transferStateEnumeration
-    }
-  }
-  let extensionList = transformExtensionList(transfer.extensionList)
-  if (extensionList.length > 0) {
-    result.extensionList = extensionList
-  }
-  return result
 }
 
 /**

@@ -50,6 +50,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const Errors = require('../../lib/errors')
+const Util = require('../../lib/util')
 
 const errorTransferExpCode = 3300
 const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
@@ -85,9 +86,9 @@ const positions = async (error, messages) => {
   try {
     if (Array.isArray(messages)) {
       prepareBatch = Array.from(messages)
-      message = Object.assign(message, JSON.parse(JSON.stringify(prepareBatch[0])))
+      message = Object.assign(message, Util.clone(prepareBatch[0]))
     } else {
-      prepareBatch = [Object.assign({}, JSON.parse(JSON.stringify(messages)))]
+      prepareBatch = [Object.assign({}, Util.clone(messages))]
       message = Object.assign({}, messages)
     }
     Logger.info('PositionHandler::positions')

@@ -179,6 +179,7 @@ const TransferParticipantRoleType = {
   DFSP_POSITION: 5
 }
 const TransferState = {
+  ABORTED: 'ABORTED',
   ABORTED_ERROR: 'ABORTED_ERROR',
   ABORTED_REJECTED: 'ABORTED_REJECTED',
   COMMITTED: 'COMMITTED',
