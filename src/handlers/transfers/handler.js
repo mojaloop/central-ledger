@@ -282,6 +282,15 @@ const fulfil = async (error, messages) => {
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
+      } else if (message.value.content.headers['fspip-source'] !== existingTransfer.payeeFsp) {
+        Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::sourceDoesntMatchPayeeFsp`)
+        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+          await consumer.commitMessageSync(message)
+        }
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
       } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::invalidFulfilment`)
         if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {

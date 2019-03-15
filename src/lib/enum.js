@@ -23,7 +23,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <lazola.lucas@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
 
  --------------
  ******/

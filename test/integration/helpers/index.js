@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <valentin.genev@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>

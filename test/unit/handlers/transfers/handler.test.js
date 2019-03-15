@@ -16,6 +16,7 @@ const Uuid = require('uuid4')
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Consumer = require('../../../../src/handlers/lib/kafka/consumer')
 const DAO = require('../../../../src/handlers/lib/dao')
+const CloneDeep = require('lodash').cloneDeep
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -221,6 +222,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -237,6 +239,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -254,6 +257,7 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -272,6 +276,7 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -289,6 +294,7 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -412,6 +418,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages[0])
       test.equal(result, true)
       test.end()
@@ -429,6 +436,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages[0])
       test.equal(result, true)
       test.end()
@@ -445,6 +453,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages[0])
       test.equal(result, true)
       test.end()
@@ -461,6 +470,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -478,6 +488,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -495,6 +506,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -513,6 +525,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -529,6 +542,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -546,6 +560,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+
       const result = await allTransferHandlers.prepare(null, messages)
       test.equal(result, true)
       test.end()
@@ -560,6 +575,7 @@ Test('Transfer handler', transferHandlerTest => {
         Validator.validateByName.returns({ validationPassed: true, reasons: [] })
         TransferService.getById.returns(P.resolve(null))
         TransferService.prepare.throws(new Error())
+
         await allTransferHandlers.prepare(null, messages)
         test.fail('No Error Thrown')
         test.end()
@@ -573,6 +589,7 @@ Test('Transfer handler', transferHandlerTest => {
       try {
         await Consumer.createHandler(topicName, config, command)
         Utility.transformAccountToTopicName.returns('invalid-topic')
+
         await allTransferHandlers.prepare(null, messages)
         test.fail('No Error Thrown')
         test.end()
@@ -601,6 +618,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
+
       const result = await allTransferHandlers.registerGetTransferHandler(null, messages)
       test.equal(result, true)
       test.end()
@@ -627,6 +645,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
+
       const result = await allTransferHandlers.getTransfer(null, messages[0])
       test.equal(result, true)
       test.end()
@@ -637,6 +656,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -660,6 +680,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.getConsumer.throws(new Error())
       Utility.getKafkaConfig.returns(config)
+
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -672,6 +693,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.returns(null)
+
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -685,6 +707,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -698,6 +721,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(false)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -711,6 +735,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(false)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(false)
+
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -724,6 +749,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+
       const result = await allTransferHandlers.getTransfer(null, messages)
       test.equal(result, true)
       test.end()
@@ -737,9 +763,10 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       transferReturn.transferState = 'ABORTED_REJECTED'
-      let transferResult = Object.assign({}, transferReturn)
+      let transferResult = CloneDeep(transferReturn)
       transferResult.extensionList = []
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferResult))
+
       try {
         await allTransferHandlers.getTransfer(null, messages)
         test.fail('Error not thrown')
@@ -759,6 +786,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
       test.end()
@@ -770,6 +798,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
       test.equal(result, true)
       test.end()
@@ -781,7 +810,37 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+
       const result = await allTransferHandlers.fulfil(null, fulfilMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('fail validation when fspiop-source does not match payeeFsp', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Utility.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
+      // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
+      Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      let fulfilObj = CloneDeep(fulfilMessages)
+      fulfilObj[0].value.content.headers['fspip-source'] = 'dfsp1'
+
+      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('fail validation when fspiop-source does not match payeeFsp - autocommit is enabled', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+      Utility.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
+      // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
+      Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      let fulfilObj = CloneDeep(fulfilMessages)
+      fulfilObj[0].value.content.headers['fspip-source'] = 'dfsp1'
+
+      const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
       test.end()
     })
@@ -792,8 +851,9 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({ condition: 'condition' }))
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'fulfilment'
+
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
       test.end()
@@ -806,8 +866,9 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({ condition: 'condition' }))
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'fulfilment'
+
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
       test.end()
@@ -820,7 +881,7 @@ Test('Transfer handler', transferHandlerTest => {
       // FiveBellsCondition.fulfillmentToCondition.returns('condition')
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'condition'
 
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
@@ -836,7 +897,7 @@ Test('Transfer handler', transferHandlerTest => {
       // FiveBellsCondition.fulfillmentToCondition.returns('condition')
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'condition'
 
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
@@ -852,8 +913,9 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'condition'
+
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
       test.end()
@@ -868,8 +930,9 @@ Test('Transfer handler', transferHandlerTest => {
       // FiveBellsCondition.fulfillmentToCondition.returns('condition')
       ilp.update.returns(P.resolve())
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'condition'
+
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
       test.end()
@@ -887,8 +950,9 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'condition'
+
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
       test.end()
@@ -907,8 +971,9 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = Object.assign([], fulfilMessages)
+      let fulfilObj = CloneDeep(fulfilMessages)
       fulfilObj[0].value.content.payload.fulfilment = 'condition'
+
       const result = await allTransferHandlers.fulfil(null, fulfilObj)
       test.equal(result, true)
       test.end()
@@ -938,8 +1003,9 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
+
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
       test.end()
@@ -952,8 +1018,9 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
+
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
       test.end()
@@ -965,7 +1032,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
       delete fulfilMessages[0].value.content.payload.fulfilment
       TransferService.abort.returns({
@@ -974,6 +1041,7 @@ Test('Transfer handler', transferHandlerTest => {
           errorDescription: 'generic'
         }
       })
+
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
       test.end()
@@ -986,9 +1054,10 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       TransferService.abort.returns(P.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'abort'
       delete fulfilMessages[0].value.content.payload.fulfilment
+
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
       test.end()
@@ -998,8 +1067,9 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.throws(new Error())
-      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
+
       try {
         await allTransferHandlers.fulfil(null, invalidEventMessage)
         test.fail('should throw error')
@@ -1013,8 +1083,9 @@ Test('Transfer handler', transferHandlerTest => {
     fulfilTest.test('fail validation when invalid event action is provided', async (test) => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'invalid event'
+
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])
       test.equal(result, true)
       test.end()
@@ -1024,9 +1095,10 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
-      const invalidEventMessage = Object.assign({}, fulfilMessages[0])
+      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'invalid event'
       invalidEventMessage.value.content.payload = { extensionList: {} }
+
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])
       test.equal(result, true)
       test.end()
@@ -1068,6 +1140,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
+
       const result = await allTransferHandlers.registerAllHandlers()
       test.equal(result, true)
       test.end()
@@ -1079,6 +1152,7 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       await DAO.retrieveAllParticipants.returns(P.resolve(participants))
+
       const result = await allTransferHandlers.registerAllHandlers()
       test.equal(result, true)
       test.end()
@@ -1091,6 +1165,7 @@ Test('Transfer handler', transferHandlerTest => {
         Utility.transformAccountToTopicName.returns(topicName)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
+
         await allTransferHandlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()
@@ -1107,6 +1182,7 @@ Test('Transfer handler', transferHandlerTest => {
         Utility.transformAccountToTopicName.returns(topicName)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
+
         await allTransferHandlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()
@@ -1121,6 +1197,7 @@ Test('Transfer handler', transferHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
+
         await allTransferHandlers.registerFulfilHandler()
         test.fail('Error not thrown')
         test.end()
@@ -1135,6 +1212,7 @@ Test('Transfer handler', transferHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
+
         await allTransferHandlers.registerTransferHandler()
         test.fail('Error not thrown')
         test.end()
@@ -1149,6 +1227,7 @@ Test('Transfer handler', transferHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
+
         await allTransferHandlers.registerPrepareHandlers(participants)
         test.fail('Error not thrown')
         test.end()
