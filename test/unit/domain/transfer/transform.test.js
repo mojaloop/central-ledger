@@ -241,5 +241,112 @@ Test('Transform Service', transformTest => {
     toTransferTest.end()
   })
 
+  transformTest.test('toFulfil should', toFulfilTest => {
+    toFulfilTest.test('return result for a COMMITTED fulfilment', async (test) => {
+      try {
+        const completedTransfer = {
+          transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+          payerFsp: 'dfsp1',
+          payeeFsp: 'dfsp2',
+          currency: 'USD',
+          amount: 433.88,
+          ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+          condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+          expiration: '2016-05-24T08:38:08.699-04:00',
+          extensionList: [
+            {
+              key: 'key1',
+              value: 'value1'
+            }
+          ],
+          transferState: 'COMMITTED',
+          transferStateEnumeration: 'COMMITTED',
+          completedTimestamp: '2016-06-24T08:38:08.699-04:00',
+          fulfilment: 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+          expirationDate: '2016-06-24T09:38:08.699-04:00',
+          isTransferReadModel: true
+        }
+
+        const expected = {
+          fulfilment: 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+          completedTimestamp: '2016-06-24T08:38:08.699-04:00',
+          transferState: 'COMMITTED',
+          extensionList: [
+            {
+              key: 'key1',
+              value: 'value1'
+            }
+          ]
+        }
+
+        const result = TransformService.toFulfil(completedTransfer)
+        test.deepEqual(result, expected, 'Results Match')
+        test.end()
+      } catch (e) {
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    toFulfilTest.test('return result for a ABORTED fulfilment', async (test) => {
+      try {
+        const completedTransfer = {
+          transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+          payerFsp: 'dfsp1',
+          payeeFsp: 'dfsp2',
+          currency: 'USD',
+          amount: 433.88,
+          ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+          condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+          expiration: '2016-05-24T08:38:08.699-04:00',
+          extensionList: [
+            {
+              key: 'key1',
+              value: 'value1'
+            }
+          ],
+          transferState: 'ABORTED',
+          transferStateEnumeration: 'ABORTED',
+          completedTimestamp: '2016-06-24T08:38:08.699-04:00',
+          fulfilment: 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+          expirationDate: '2016-06-24T09:38:08.699-04:00',
+          isTransferReadModel: true
+        }
+
+        const expected = {
+          completedTimestamp: '2016-06-24T08:38:08.699-04:00',
+          transferState: 'ABORTED',
+          extensionList: [
+            {
+              key: 'key1',
+              value: 'value1'
+            }
+          ]
+        }
+
+        const result = TransformService.toFulfil(completedTransfer)
+        test.deepEqual(result, expected, 'Results Match')
+        test.end()
+      } catch (e) {
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
+
+    toFulfilTest.test('throw error', async (test) => {
+      try {
+        const invalidTransfer = {}
+        TransformService.toFulfil(invalidTransfer)
+        test.fail('should throw')
+        test.end()
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.end()
+      }
+    })
+
+    toFulfilTest.end()
+  })
+
   transformTest.end()
 })

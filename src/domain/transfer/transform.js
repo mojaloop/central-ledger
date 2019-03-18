@@ -111,36 +111,41 @@ const transformExtensionList = (extensionList) => {
 }
 
 const transformTransferToFulfil = (transfer) => {
-  let result
-  if (transfer.transferState === Enum.TransferState.COMMITTED) {
-    result = {
-      fulfilment: transfer.fulfilment,
-      completedTimestamp: transfer.completedTimestamp,
-      transferState: transfer.transferStateEnumeration
+  try {
+    let result
+    if (transfer.transferState === Enum.TransferState.COMMITTED) {
+      result = {
+        fulfilment: transfer.fulfilment,
+        completedTimestamp: transfer.completedTimestamp,
+        transferState: transfer.transferStateEnumeration
+      }
+    } else {
+      result = {
+        completedTimestamp: transfer.completedTimestamp,
+        transferState: transfer.transferStateEnumeration
+      }
     }
-  } else {
-    result = {
-      transferState: transfer.transferStateEnumeration
+    let extensionList = transformExtensionList(transfer.extensionList)
+    if (extensionList.length > 0) {
+      result.extensionList = extensionList
     }
+    return Util.filterUndefined(result)
+  } catch (err) {
+    throw new Error(`Unable to transform to fulfil response: ${err}`)
   }
-  let extensionList = transformExtensionList(transfer.extensionList)
-  if (extensionList.length > 0) {
-    result.extensionList = extensionList
-  }
-  return result
 }
 
 const toTransfer = (t) => {
   // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
   if (t.isTransferReadModel) {
     Logger.debug('In aggregate transfer transform for isTransferReadModel')
-    return fromTransferReadModel(t) // TODO: Remove this once the DB validation is done for 't'
+    return Util.filterUndefined(fromTransferReadModel(t)) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.isSaveTransferPrepared) {
     Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
-    return fromSaveTransferPrepared(t) // TODO: Remove this once the DB validation is done for 't'
+    return Util.filterUndefined(fromSaveTransferPrepared(t)) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.saveTransferFulfilledExecuted) {
     Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
-    return fromSaveTransferExecuted(t) // TODO: Remove this once the DB validation is done for 't'
+    return Util.filterUndefined(fromSaveTransferExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
   } else throw new Error(`Unable to transform to transfer: ${t}`)
 }
 
