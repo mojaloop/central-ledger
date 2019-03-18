@@ -136,9 +136,10 @@ const prepare = async (error, messages) => {
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
+
       const transferStateEnum = transferState.enumeration
 
-      if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
+      if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED_REJECTED || transferStateEnum === TransferState.ABORTED_ERROR) {
         // The request is already finalized
         Logger.info('TransferService::prepare::dupcheck::existsMatching::The request is already finalized, send the callback with status of the request')
         let record = await TransferService.getById(payload.transferId)
