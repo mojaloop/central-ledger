@@ -194,6 +194,13 @@ const TransferState = {
   RESERVED_TIMEOUT: 'RESERVED_TIMEOUT'
 }
 
+const TransferStateEnum = {
+  RECEIVED: 'RECEIVED',
+  ABORTED: 'ABORTED',
+  COMMITTED: 'COMMITTED',
+  RESERVED: 'RESERVED'
+}
+
 // Code specific (non-DB) enumerations sorted alphabetically
 const transferEventType = {
   PREPARE: 'prepare',
@@ -322,6 +329,7 @@ module.exports = {
   ParticipantLimitType,
   TransferParticipantRoleType,
   TransferState,
+  TransferStateEnum,
 
   transferEventType,
   transferEventAction,

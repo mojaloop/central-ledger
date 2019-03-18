@@ -43,6 +43,7 @@ const Utility = require('../lib/utility')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const TransferState = require('../../lib/enum').TransferState
+const TransferStateEnum = require('../../lib/enum').TransferStateEnum
 const Enum = require('../../lib/enum')
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
@@ -139,7 +140,7 @@ const prepare = async (error, messages) => {
 
       const transferStateEnum = transferState.enumeration
 
-      if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED_REJECTED || transferStateEnum === TransferState.ABORTED_ERROR) {
+      if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         // The request is already finalized
         Logger.info('TransferService::prepare::dupcheck::existsMatching::The request is already finalized, send the callback with status of the request')
         let record = await TransferService.getById(payload.transferId)
@@ -149,7 +150,7 @@ const prepare = async (error, messages) => {
         return true
 
         // TODO: This state of RECEIVED is no longer available in the Seeds. Need to understand if this should be another state or perhaps even removed?
-      } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
+      } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
         // The request is in progress, do nothing
         Logger.info('TransferService::prepare::dupcheck::existsMatching:: previous request is still in progress do nothing')
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
