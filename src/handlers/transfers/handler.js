@@ -165,7 +165,7 @@ const prepare = async (error, messages) => {
       return true
     }
 
-    let { validationPassed, reasons } = await Validator.validateByName(payload)
+    let { validationPassed, reasons } = await Validator.validateByName(payload, headers)
     if (validationPassed) {
       Logger.info('TransferService::prepare::validationPassed')
       try {

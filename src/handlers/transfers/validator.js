@@ -85,7 +85,16 @@ const validatePositionAccountByNameAndCurrency = async function (participantName
 const validateDifferentDfsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp !== payload.payeeFsp)
   if (!isPayerAndPayeeDifferent) {
-    reasons.push(`Payer and Payee should be different.`)
+    reasons.push(`Payer and Payee should be different`)
+    return false
+  }
+  return true
+}
+
+const validateFspiopSourceMatchesPayer = (payload, headers) => {
+  const matched = (headers && headers['fspiop-source'] && headers['fspiop-source'] === payload.payerFsp)
+  if (!matched) {
+    reasons.push(`FSPIOP-Source header should match Payer`)
     return false
   }
   return true
@@ -152,7 +161,7 @@ const validateConditionAndExpiration = async (payload) => {
   return true
 }
 
-const validateByName = async (payload) => {
+const validateByName = async (payload, headers) => {
   reasons.length = 0
   let validationPassed
   if (!payload) {
@@ -160,7 +169,8 @@ const validateByName = async (payload) => {
     validationPassed = false
     return { validationPassed, reasons }
   }
-  validationPassed = (await validateParticipantByName(payload.payerFsp) &&
+  validationPassed = (validateFspiopSourceMatchesPayer(payload, headers) &&
+    await validateParticipantByName(payload.payerFsp) &&
     await validatePositionAccountByNameAndCurrency(payload.payerFsp, payload.amount.currency) &&
     await validateParticipantByName(payload.payeeFsp) &&
     await validatePositionAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency) &&
