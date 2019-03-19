@@ -10,6 +10,7 @@ const CryptoConditions = require('../../../../src/cryptoConditions')
 const Enum = require('../../../../src/lib/enum')
 
 let payload
+let headers
 
 Test('transfer validator', validatorTest => {
   let sandbox
@@ -39,6 +40,10 @@ Test('transfer validator', validatorTest => {
         ]
       }
     }
+    headers = {
+      'fspiop-source': 'dfsp1',
+      'fspiop-destination': 'dfsp2'
+    }
     sandbox = Sinon.createSandbox()
     sandbox.stub(Participant)
     sandbox.stub(CryptoConditions, 'validateCondition')
@@ -56,7 +61,8 @@ Test('transfer validator', validatorTest => {
       Participant.getByName.returns(P.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
-      const { validationPassed } = await Validator.validateByName(payload)
+
+      const { validationPassed } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, true)
       test.end()
     })
@@ -68,11 +74,20 @@ Test('transfer validator', validatorTest => {
       test.end()
     })
 
+    validateByNameTest.test('fail validation when FSPIOP-Source doesnt match Payer', async (test) => {
+      let headersModified = { 'fspiop-source': 'dfsp2' }
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headersModified)
+      test.equal(validationPassed, false)
+      test.deepEqual(reasons, ['FSPIOP-Source header should match Payer'])
+      test.end()
+    })
+
     validateByNameTest.test('fail validation for invalid condition', async (test) => {
       Participant.getByName.returns(P.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.throws(new Error())
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Condition validation failed'])
       test.end()
@@ -82,7 +97,8 @@ Test('transfer validator', validatorTest => {
       Participant.getByName.returns(P.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       payload.condition = null
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Condition is required for a conditional transfer'])
       test.end()
@@ -93,7 +109,8 @@ Test('transfer validator', validatorTest => {
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.expiration = '1971-11-24T08:38:08.699-04:00'
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Expiration date 1971-11-24T12:38:08.699Z is already in the past'])
       test.end()
@@ -104,7 +121,8 @@ Test('transfer validator', validatorTest => {
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.expiration = null
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Expiration is required for conditional transfer'])
       test.end()
@@ -115,7 +133,8 @@ Test('transfer validator', validatorTest => {
       Participant.getByName.withArgs('dfsp2').returns(P.resolve(null))
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 not found'])
       test.end()
@@ -126,7 +145,8 @@ Test('transfer validator', validatorTest => {
       Participant.getByName.withArgs('dfsp2').returns(P.resolve({ isActive: false }))
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 is inactive'])
       test.end()
@@ -138,7 +158,8 @@ Test('transfer validator', validatorTest => {
       Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve({ currencyIsActive: true }))
       Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve(null))
       CryptoConditions.validateCondition.returns(true)
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 USD account not found'])
       test.end()
@@ -150,7 +171,8 @@ Test('transfer validator', validatorTest => {
       Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve({ currencyIsActive: true }))
       Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.LedgerAccountType.POSITION).returns(P.resolve({ currencyIsActive: false }))
       CryptoConditions.validateCondition.returns(true)
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 USD account is inactive'])
       test.end()
@@ -161,7 +183,8 @@ Test('transfer validator', validatorTest => {
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.amount.amount = '123.123'
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Amount 123.123 exceeds allowed scale of 2'])
       test.end()
@@ -172,9 +195,10 @@ Test('transfer validator', validatorTest => {
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.payeeFsp = payload.payerFsp
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Payer and Payee should be different.'])
+      test.deepEqual(reasons, ['Payer and Payee should be different'])
       test.end()
     })
 
@@ -183,7 +207,8 @@ Test('transfer validator', validatorTest => {
       Participant.getAccountByNameAndCurrency.returns(P.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.amount.amount = '12345678901.13'
-      const { validationPassed, reasons } = await Validator.validateByName(payload)
+
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Amount 12345678901.13 exceeds allowed precision of 10'])
       test.end()
@@ -196,6 +221,7 @@ Test('transfer validator', validatorTest => {
     validateByIdTest.test('pass validation for valid payload', async (test) => {
       Participant.getById.returns(P.resolve({}))
       CryptoConditions.validateCondition.returns(true)
+
       const { validationPassed } = await Validator.validateById(payload)
       test.equal(validationPassed, true)
       test.end()
@@ -212,6 +238,7 @@ Test('transfer validator', validatorTest => {
       Participant.getById.withArgs('dfsp1').returns(P.resolve({}))
       Participant.getById.withArgs('dfsp2').returns(P.resolve(null))
       CryptoConditions.validateCondition.returns(true)
+
       const { validationPassed, reasons } = await Validator.validateById(payload)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 not found'])
@@ -240,23 +267,6 @@ Test('transfer validator', validatorTest => {
       test.end()
     })
 
-    // validateFulfilConditionTest.test('fail validation for no payload', async (test) => {
-    //   const { validationPassed, reasons } = await Validator.validateFulfilCondition(null)
-    //   test.equal(validationPassed, false)
-    //   test.deepEqual(reasons, ['Transfer must be provided'])
-    //   test.end()
-    // })
-    //
-    // validateFulfilConditionTest.test('fail validation for invalid participant', async (test) => {
-    //   Participant.getById.withArgs('dfsp1').returns(P.resolve({}))
-    //   Participant.getById.withArgs('dfsp2').returns(P.resolve(null))
-    //   CryptoConditions.validateCondition.returns(true)
-    //   const { validationPassed, reasons } = await Validator.validateFulfilCondition(payload)
-    //   test.equal(validationPassed, false)
-    //   test.deepEqual(reasons, ['Participant dfsp2 not found'])
-    //   test.end()
-    // })
-
     validateFulfilConditionTest.end()
   })
 
@@ -265,6 +275,7 @@ Test('transfer validator', validatorTest => {
       const participantName = 'fsp1'
       const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
       Transfer.getTransferParticipant.withArgs(participantName, transferId).returns(P.resolve([1]))
+
       const result = await Validator.validateParticipantTransferId(participantName, transferId)
       test.equal(result, true, 'results match')
       test.end()
@@ -275,6 +286,7 @@ Test('transfer validator', validatorTest => {
       const transferId = '88416f4c-68a3-4819-b8e0-c23b27267cd5'
       const ledgerAccountTypeId = 1
       Transfer.getTransferParticipant.withArgs(participantName, ledgerAccountTypeId, transferId).returns(P.resolve([]))
+
       const result = await Validator.validateParticipantTransferId(participantName, transferId)
       test.equal(result, false, 'results match')
       test.end()
