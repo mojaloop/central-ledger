@@ -31,6 +31,7 @@ const error = {
   3300: 'Transfer expired',
   3303: 'Client requested to use a transfer that has already expired',
   3106: 'Modified request',
+  3208: 'Provided Transfer ID was not found on the server.',
   4001: 'Payer FSP has insufficient liquidity to perform the transfer',
   5000: 'Generic payee error',
   5100: 'Payee or Payee FSP rejected the request',

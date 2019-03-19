@@ -16,6 +16,7 @@ const TransferStateChange = require('../../../../src/models/transfer/transferSta
 const transferEventAction = require('../../../../src/lib/enum').transferEventAction
 const Enum = require('../../../../src/lib/enum')
 const TransferState = Enum.TransferState
+const Util = require('../../../../src/lib/util')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -253,7 +254,7 @@ Test('Position handler', transferHandlerTest => {
         }],
         limitAlarms: []
       })
-      let message = JSON.parse(JSON.stringify(messages[0]))
+      let message = Util.clone(messages[0])
       message.value.content.payload = undefined
       const result = await allTransferHandlers.positions(null, Object.assign({}, message))
       Logger.info(result)
@@ -349,7 +350,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -373,7 +374,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -391,7 +392,7 @@ Test('Position handler', transferHandlerTest => {
           .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
         TransferStateChange.saveTransferStateChange.resolves(true)
 
-        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+        let m = Object.assign({}, Util.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.REJECT
         const result = await allTransferHandlers.positions(null, m)
         Logger.info(result)
@@ -411,7 +412,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'RECEIVED_ERROR' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -426,7 +427,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'REJECT' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -449,7 +450,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -473,7 +474,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -491,7 +492,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.COMMIT
       const result = await allTransferHandlers.positions(null, [m])
       Logger.info(result)
@@ -506,7 +507,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -531,7 +532,7 @@ Test('Position handler', transferHandlerTest => {
       TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+      let m = Object.assign({}, Util.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       const result = await allTransferHandlers.positions(null, m)
       Logger.info(result)
@@ -547,7 +548,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
-        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+        let m = Object.assign({}, Util.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, [m])
         Logger.info(result)
@@ -570,7 +571,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
-        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+        let m = Object.assign({}, Util.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, [m])
         Logger.info(result)
@@ -592,7 +593,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
-        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+        let m = Object.assign({}, Util.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         const result = await allTransferHandlers.positions(null, [m])
         Logger.info(result)
@@ -613,7 +614,7 @@ Test('Position handler', transferHandlerTest => {
         Utility.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'INVALID_STATE' })
-        let m = Object.assign({}, JSON.parse(JSON.stringify(messages[0])))
+        let m = Object.assign({}, Util.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
         await allTransferHandlers.positions(null, [m])
         test.fail('should throw')

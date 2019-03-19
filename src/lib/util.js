@@ -56,6 +56,19 @@ const filterUndefined = (fields) => {
   return fields
 }
 
+/**
+ * Method to provide object clonning
+ *
+ * TODO:
+ *  Implement a better deep copy method
+ *
+ * @param value
+ * @returns {any}
+ */
+const clone = (value) => {
+  return JSON.parse(JSON.stringify(value))
+}
+
 module.exports = {
   assign,
   expand,
@@ -66,5 +79,6 @@ module.exports = {
   parseJson,
   pick,
   squish,
-  filterUndefined
+  filterUndefined,
+  clone
 }

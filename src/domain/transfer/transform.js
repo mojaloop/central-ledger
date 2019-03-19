@@ -2,6 +2,7 @@
 
 const Util = require('../../lib/util')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const Enum = require('../../lib/enum')
 
 const transferProperties = [
   'transferId',
@@ -100,23 +101,58 @@ const fromSaveTransferExecuted = (t) => {
   }
 }
 
+const transformExtensionList = (extensionList) => {
+  return extensionList.map(x => {
+    return {
+      key: x.key,
+      value: x.value
+    }
+  })
+}
+
+const transformTransferToFulfil = (transfer) => {
+  try {
+    let result
+    if (transfer.transferState === Enum.TransferState.COMMITTED) {
+      result = {
+        fulfilment: transfer.fulfilment,
+        completedTimestamp: transfer.completedTimestamp,
+        transferState: transfer.transferStateEnumeration
+      }
+    } else {
+      result = {
+        completedTimestamp: transfer.completedTimestamp,
+        transferState: transfer.transferStateEnumeration
+      }
+    }
+    let extensionList = transformExtensionList(transfer.extensionList)
+    if (extensionList.length > 0) {
+      result.extensionList = extensionList
+    }
+    return Util.filterUndefined(result)
+  } catch (err) {
+    throw new Error(`Unable to transform to fulfil response: ${err}`)
+  }
+}
+
 const toTransfer = (t) => {
   // TODO: Validate 't' to confirm if its from the DB transferReadModel or from the saveTransferPrepare
   if (t.isTransferReadModel) {
     Logger.debug('In aggregate transfer transform for isTransferReadModel')
-    return fromTransferReadModel(t) // TODO: Remove this once the DB validation is done for 't'
+    return Util.filterUndefined(fromTransferReadModel(t)) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.isSaveTransferPrepared) {
     Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
-    return fromSaveTransferPrepared(t) // TODO: Remove this once the DB validation is done for 't'
+    return Util.filterUndefined(fromSaveTransferPrepared(t)) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.saveTransferFulfilledExecuted) {
     Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
-    return fromSaveTransferExecuted(t) // TODO: Remove this once the DB validation is done for 't'
+    return Util.filterUndefined(fromSaveTransferExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
   } else throw new Error(`Unable to transform to transfer: ${t}`)
 }
 
 // const fromPayload = (payload) => Util.merge(payload, { id: UrlParser.idFromTransferUri(payload.id) })
 
 module.exports = {
-  toTransfer
+  toTransfer,
+  toFulfil: transformTransferToFulfil
   // fromPayload
 }

@@ -16,7 +16,7 @@ const Uuid = require('uuid4')
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Consumer = require('../../../../src/handlers/lib/kafka/consumer')
 const DAO = require('../../../../src/handlers/lib/dao')
-const CloneDeep = require('lodash').cloneDeep
+const Util = require('../../../../src/lib/util')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -201,6 +201,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(ilp)
     sandbox.stub(Utility)
     sandbox.stub(TransferObjectTransform, 'toTransfer')
+    sandbox.stub(TransferObjectTransform, 'toFulfil')
     Utility.produceGeneralMessage.returns(P.resolve())
     test.end()
   })
@@ -212,6 +213,7 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.test('prepare should', prepareTest => {
     prepareTest.test('persist transfer to database when messages is an array', async (test) => {
+      let localMessages = Util.clone(messages)
       // here copy
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -222,13 +224,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('persist transfer to database when messages is an array - consumer throws error', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.getConsumer.throws(new Error())
       Utility.transformAccountToTopicName.returns(topicName)
@@ -239,13 +241,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send callback when duplicate found but without transferState', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -257,13 +259,13 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send callback when duplicate found but without transferState - autocommit is enabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -276,13 +278,13 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send callback when duplicate found but without transferState - kafka autocommit enabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -294,13 +296,13 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send callback when duplicate found and transferState is COMMITTED', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -314,12 +316,13 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       TransferObjectTransform.toTransfer.withArgs(transferReturn).returns(transfer)
 
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send callback when duplicate found and transferState is ABORTED_REJECTED', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -328,17 +331,19 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: true,
         existsNotMatching: false
       }))
-      TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED_REJECTED' }))
+      TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED' }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
-      TransferObjectTransform.toTransfer.withArgs(transferReturn).returns(transfer)
 
-      const result = await allTransferHandlers.prepare(null, messages)
+      TransferObjectTransform.toFulfil.withArgs(transferReturn).returns(fulfil)
+
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('do nothing when duplicate found and transferState is RECEIVED', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -350,12 +355,13 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'RECEIVED' }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('do nothing when duplicate found and transferState is RESERVED', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -367,12 +373,13 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'RESERVED' }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send callback when duplicate transfer id found but hash doesnt match', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -384,12 +391,13 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send callback when duplicate transfer id found but hash doesnt match - kafka autocommit enabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -402,12 +410,13 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('persist transfer to database when single message sent', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -418,13 +427,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages[0])
+      const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('persist transfer to database when single message sent - autocommit is enabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -436,13 +445,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages[0])
+      const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('persist transfer to database when single message sent -kafka autocommit enabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -453,13 +462,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages[0])
+      const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send notification when validation successful but duplicate error thrown by prepare', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -470,13 +479,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send notification when validation successful but duplicate error thrown by prepare -kafka autocommit enabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -488,13 +497,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('fail validation and persist INVALID transfer to database and insert transferError', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
@@ -506,8 +515,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
@@ -532,6 +540,7 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     prepareTest.test('send notification when validation failed and duplicate error thrown by prepare', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
@@ -542,13 +551,13 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('send notification when validation failed and duplicate error thrown by prepare -kafka autocommit enabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
@@ -560,14 +569,14 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-
-      const result = await allTransferHandlers.prepare(null, messages)
+      const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     prepareTest.test('throw an error when an error is thrown by prepare', async (test) => {
       try {
+        let localMessages = Util.clone(messages)
         await Consumer.createHandler(topicName, config, command)
         Utility.transformAccountToTopicName.returns(topicName)
         Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
@@ -575,8 +584,7 @@ Test('Transfer handler', transferHandlerTest => {
         Validator.validateByName.returns({ validationPassed: true, reasons: [] })
         TransferService.getById.returns(P.resolve(null))
         TransferService.prepare.throws(new Error())
-
-        await allTransferHandlers.prepare(null, messages)
+        await allTransferHandlers.prepare(null, localMessages)
         test.fail('No Error Thrown')
         test.end()
       } catch (e) {
@@ -587,10 +595,10 @@ Test('Transfer handler', transferHandlerTest => {
 
     prepareTest.test('throw an error when consumer not found', async (test) => {
       try {
+        let localMessages = Util.clone(messages)
         await Consumer.createHandler(topicName, config, command)
         Utility.transformAccountToTopicName.returns('invalid-topic')
-
-        await allTransferHandlers.prepare(null, messages)
+        await allTransferHandlers.prepare(null, localMessages)
         test.fail('No Error Thrown')
         test.end()
       } catch (e) {
@@ -615,11 +623,11 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.test('register getTransferHandler should', registerTransferhandler => {
     registerTransferhandler.test('return a true when registering the transfer handler', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-
-      const result = await allTransferHandlers.registerGetTransferHandler(null, messages)
+      const result = await allTransferHandlers.registerGetTransferHandler(null, localMessages)
       test.equal(result, true)
       test.end()
     })
@@ -642,32 +650,33 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.test('get transfer by id should', transformTransfer => {
     transformTransfer.test('return a true on a single message', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-
-      const result = await allTransferHandlers.getTransfer(null, messages[0])
+      const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return a true on an array of messages', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when an error is passed in', async (test) => {
       try {
+        let localMessages = Util.clone(messages)
         await Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
-        await allTransferHandlers.getTransfer(true, messages)
+        await allTransferHandlers.getTransfer(true, localMessages)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -677,29 +686,30 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     transformTransfer.test('return an error when the Kafka topic is invalid', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.getConsumer.throws(new Error())
       Utility.getKafkaConfig.returns(config)
-
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the transfer by Id is not found', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.returns(null)
-
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the transfer by Id is not found', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -707,13 +717,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the requester is not involved in the transfer', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -721,13 +731,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(false)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the requester is not involved in the transfer - autocommit disabled', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -735,13 +745,13 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(false)
       TransferService.getByIdLight.returns(null)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(false)
-
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('return an error when the transfer by Id is found', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
@@ -749,26 +759,26 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateParticipantTransferId.returns(true)
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-
-      const result = await allTransferHandlers.getTransfer(null, messages)
+      const result = await allTransferHandlers.getTransfer(null, localMessages)
       test.equal(result, true)
       test.end()
     })
 
     transformTransfer.test('returns an error when general message cannot be produced', async (test) => {
+      let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       Utility.produceGeneralMessage.throws(new Error())
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
+      let transferResult = Util.clone(transferReturn)
       transferReturn.transferState = 'ABORTED_REJECTED'
-      let transferResult = CloneDeep(transferReturn)
       transferResult.extensionList = []
       TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferResult))
 
       try {
-        await allTransferHandlers.getTransfer(null, messages)
+        await allTransferHandlers.getTransfer(null, localMessages)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
@@ -782,114 +792,114 @@ Test('Transfer handler', transferHandlerTest => {
   // =================MAW=============================================
   transferHandlerTest.test('fulfil should', fulfilTest => {
     fulfilTest.test('fail validation when invalid event action is provided', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
-      const result = await allTransferHandlers.fulfil(null, fulfilMessages)
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when invalid event action is provided - consumer throws error', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.getConsumer.throws(new Error())
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
-      const result = await allTransferHandlers.fulfil(null, fulfilMessages)
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when invalid event action is provided - autocommit is enabled', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
-      const result = await allTransferHandlers.fulfil(null, fulfilMessages)
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when fspiop-source does not match payeeFsp', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.headers['fspiop-source'] = 'dfsp1'
 
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when fspiop-source does not match payeeFsp - autocommit is enabled', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.headers['fspiop-source'] = 'dfsp1'
-
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when condition from fulfilment does not match original condition', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ condition: 'condition' }))
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'fulfilment'
-
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when condition from fulfilment does not match original condition - autocommit is enabled', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ condition: 'condition' }))
       // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'fulfilment'
-
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when transfer already committed ', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.COMMITTED }))
       // FiveBellsCondition.fulfillmentToCondition.returns('condition')
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'condition'
 
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('fail validation when transfer already committed - autocommit is enabled', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
@@ -897,15 +907,16 @@ Test('Transfer handler', transferHandlerTest => {
       // FiveBellsCondition.fulfillmentToCondition.returns('condition')
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'condition'
 
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('produce message to position topic when validations pass', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
@@ -913,15 +924,15 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'condition'
 
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('produce message to position topic when validations pass - autocommit is enabled', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Validator.validateFulfilCondition.returns(true)
@@ -930,15 +941,15 @@ Test('Transfer handler', transferHandlerTest => {
       // FiveBellsCondition.fulfillmentToCondition.returns('condition')
       ilp.update.returns(P.resolve())
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'condition'
 
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('expired transfer', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({
@@ -950,15 +961,14 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'condition'
-
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('expired transfer - autocommit is enabled', async (test) => {
+      let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
@@ -971,16 +981,15 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      let fulfilObj = CloneDeep(fulfilMessages)
-      fulfilObj[0].value.content.payload.fulfilment = 'condition'
-
-      const result = await allTransferHandlers.fulfil(null, fulfilObj)
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
     fulfilTest.test('throw an error when something goes wrong', async (test) => {
       try {
+        let localfulfilMessages = Util.clone(fulfilMessages)
         await Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         TransferService.getById.throws(new Error())
@@ -988,7 +997,7 @@ Test('Transfer handler', transferHandlerTest => {
         ilp.update.returns(P.resolve())
         Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
 
-        await allTransferHandlers.fulfil(null, fulfilMessages)
+        await allTransferHandlers.fulfil(null, localfulfilMessages)
         test.fail('No Error Thrown')
         test.end()
       } catch (e) {
@@ -998,12 +1007,12 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     fulfilTest.test('enter reject branch when action REJECT', async (test) => { // TODO: extend and enable unit test
+      let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
@@ -1012,13 +1021,13 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     fulfilTest.test('enter reject branch when action REJECT - autocommit is enabled', async (test) => { // TODO: extend and enable unit test
+      let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
@@ -1027,12 +1036,12 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     fulfilTest.test('enter ABORT branch with action REJECT', async (test) => {
+      let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
       delete fulfilMessages[0].value.content.payload.fulfilment
       TransferService.abort.returns({
@@ -1048,13 +1057,13 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     fulfilTest.test('enter ABORT branch when action ABORT', async (test) => {
+      let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
       TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
       TransferService.abort.returns(P.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'abort'
       delete fulfilMessages[0].value.content.payload.fulfilment
 
@@ -1064,10 +1073,10 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     fulfilTest.test('throw error', async (test) => { // TODO: extend and enable unit test
+      let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.throws(new Error())
-      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'reject'
 
       try {
@@ -1081,9 +1090,9 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     fulfilTest.test('fail validation when invalid event action is provided', async (test) => {
+      let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'invalid event'
 
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])
@@ -1092,10 +1101,10 @@ Test('Transfer handler', transferHandlerTest => {
     })
 
     fulfilTest.test('fail validation when invalid event action is provided - autocommit is enabled', async (test) => {
+      let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
-      const invalidEventMessage = CloneDeep(fulfilMessages[0])
       invalidEventMessage.value.metadata.event.action = 'invalid event'
       invalidEventMessage.value.content.payload = { extensionList: {} }
 

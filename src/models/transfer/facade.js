@@ -70,6 +70,7 @@ const getById = async (id) => {
         // OTHER JOINS
         .innerJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
+        .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
         .select(
           'transfer.*',
@@ -86,6 +87,8 @@ const getById = async (id) => {
           'tsc.transferStateId AS transferState',
           'tsc.reason AS reason',
           'tsc.createdDate AS completedTimestamp',
+          'ts.enumeration as transferStateEnumeration',
+          'ts.description as transferStateDescription',
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
           'tf.ilpFulfilment AS fulfilment'
@@ -119,6 +122,7 @@ const getByIdLight = async (id) => {
           'tsc.transferStateChangeId',
           'tsc.transferStateId AS transferState',
           'ts.enumeration AS transferStateEnumeration',
+          'ts.description as transferStateDescription',
           'tsc.reason AS reason',
           'tsc.createdDate AS completedTimestamp',
           'ilpp.value AS ilpPacket',
