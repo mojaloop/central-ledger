@@ -42,15 +42,16 @@ const TransferService = require('../../domain/transfer')
 const Utility = require('../lib/utility')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
-const TransferState = require('../../lib/enum').TransferState
-const TransferStateEnum = require('../../lib/enum').TransferStateEnum
 const Enum = require('../../lib/enum')
+const TransferState = Enum.TransferState
+const TransferStateEnum = Enum.TransferStateEnum
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
+const Uuid = require('uuid4')
 
 // TODO: This errorCode and errorDescription are dummy values until a rules engine is established
 const errorGenericCode = 3100
@@ -116,55 +117,41 @@ const prepare = async (error, messages) => {
     }
     const payload = message.value.content.payload
     const headers = message.value.content.headers
+    let metadataState
 
     Logger.info('TransferService::prepare::checking for duplicates')
-    const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
+    const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload.transferId, payload)
 
     if (existsMatching) {
-      // There is a matching hash
       Logger.info('TransferService::prepare::dupcheck::existsMatching')
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       const transferState = await TransferService.getTransferStateChange(payload.transferId)
+      const transferStateEnum = transferState && transferState.enumeration
 
-      if (!transferState || !transferState.enumeration) {
-        // Transfer state not found send callback notification
-        Logger.info('TransferService::prepare::dupcheck::existsMatching::transfer state not found send callback notification')
-        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
-        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription), payload.transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
-      }
-
-      const transferStateEnum = transferState.enumeration
-
-      if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
-        // The request is already finalized
-        Logger.info('TransferService::prepare::dupcheck::existsMatching::The request is already finalized, send the callback with status of the request')
+      if (!transferState) {
+        Logger.info('TransferService::prepare::dupcheck::existsMatching::transfer state not found, send callback notification')
+        const errorDescription = `${errorInternalDescription}: transfer state not found`
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorDescription, message.value.content.payload.extensionList)
+        metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorDescription)
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, payload.transferId)
+      } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
+        Logger.info('TransferService::prepare::dupcheck::existsMatching::request is already finalized, send callback with transfer state')
         let record = await TransferService.getById(payload.transferId)
         message.value.content.payload = TransferObjectTransform.toFulfil(record)
-        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE_DUPLICATE, message.value, Utility.ENUMS.STATE.SUCCESS, payload.transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
-
-        // TODO: This state of RECEIVED is no longer available in the Seeds. Need to understand if this should be another state or perhaps even removed?
+        metadataState = Utility.ENUMS.STATE.SUCCESS
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE_DUPLICATE, message.value, metadataState, payload.transferId)
       } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
-        // The request is in progress, do nothing
-        Logger.info('TransferService::prepare::dupcheck::existsMatching:: previous request is still in progress do nothing')
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        Logger.info('TransferService::prepare::dupcheck::existsMatching::previous request is still in progress, do nothing')
       }
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
     }
-    if (existsNotMatching) { // The request already exists with different params, so send error notification
-      Logger.info('TransferService::prepare::dupcheck::existsNotMatching:: request exists with different parameters')
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-      Logger.info('TransferService::prepare::dupcheck::existsNotMatching:: send callback notification')
+    if (existsNotMatching) {
+      Logger.info('TransferService::prepare::dupcheck::existsNotMatching::modifiedRequest')
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       message.value.content.payload = Utility.createPrepareErrorStatus(errorModifiedReqCode, errorModifiedReqDescription, message.value.content.payload.extensionList)
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorModifiedReqCode, errorModifiedReqDescription), payload.transferId)
+      metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorModifiedReqCode, errorModifiedReqDescription)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, payload.transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
@@ -173,62 +160,46 @@ const prepare = async (error, messages) => {
     if (validationPassed) {
       Logger.info('TransferService::prepare::validationPassed')
       try {
-        Logger.info('TransferService::prepare::validationPassed::newEntry')
-        // Save the valid transfer into the database
+        Logger.info('TransferService::prepare::validationPassed::save valid transfer to database')
         await TransferService.prepare(payload)
       } catch (err) {
-        Logger.error(`TransferService::prepare::validationPassed::Error while preparing transfer::${err.message}`)
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
-        // notification of duplicate to go here
-        Logger.info(`TransferService::prepare::validationPassed::send the callback notification for error`)
-        // send generic internal error
+        Logger.error(`TransferService::prepare::validationPassed::error while preparing transfer::${err.message}`)
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
+        Logger.info(`TransferService::prepare::validationPassed::send error callback notification`)
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
-        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription), payload.transferId)
+        metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription)
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, payload.transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-      Logger.info('TransferService::prepare::validationPassed::create position topic')
-      // position topic to be created and inserted here
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
+      Logger.info('TransferService::prepare::validationPassed::produce to position topic')
       await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Utility.ENUMS.STATE.SUCCESS, headers[Enum.headers.FSPIOP.DESTINATION])
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else {
       Logger.error('TransferService::prepare::validationFailed')
       try {
-        Logger.info('TransferService::prepare::validationFailed::newEntry')
-        // Save the invalid request in the database
+        Logger.info('TransferService::prepare::validationFailed::save invalid request to database')
         await TransferService.prepare(payload, reasons.toString(), false)
       } catch (err) {
-        Logger.info(`TransferService::prepare::validationFailed::${reasons.toString()}`)
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
-        // notification of duplicate to go here
+        Logger.error(`TransferService::prepare::validationFailed::${reasons.toString()}`)
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
         Logger.info(`TransferService::prepare::validationFailed::${err.message}`)
-        // send generic internal error
         message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
-        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription), payload.transferId)
+        metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription)
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, payload.transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-      // log the invalid transfer into the the transferError table
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       Logger.info('TransferService::prepare::validationFailed::log the invalid transfer into the the transferError table')
       await TransferService.logTransferError(payload.transferId, errorGenericCode, reasons.toString())
-
-      // send the callback notification for validation error
       Logger.info('TransferService::prepare::validationFailed::send the callback notification for validation error')
-      let errorDescription = `${errorGenericDescription}: ${reasons.toString()}`
+      const errorDescription = `${errorGenericDescription}: ${reasons.toString()}`
       message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
-      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorDescription), payload.transferId)
-      Logger.info(`[cid=${payload.transferId}, fsp=${payload.payerFsp}, source=${payload.payerFsp}, dest=${payload.payeeFsp}] ~ Transfers::handler::prepare - END`)
+      metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorDescription)
+      await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, payload.transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
@@ -269,8 +240,51 @@ const fulfil = async (error, messages) => {
     }
     const metadata = message.value.metadata
     const transferId = message.value.id
+    const transferFulfilmentId = Uuid()
+    const transferEventAction = metadata.event.action
     const payload = message.value.content.payload
     const headers = message.value.content.headers
+    let metadataState
+
+    Logger.info(`TransferService::${metadata.event.action}::checking for duplicates`)
+    const { existsMatching, existsNotMatching, isValid } = await TransferService.validateDuplicateHash(transferId, payload, transferFulfilmentId)
+
+    if (existsMatching) {
+      Logger.info(`TransferService::${metadata.event.action}::dupcheck::existsMatching`)
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
+      const transferState = await TransferService.getTransferStateChange(transferId)
+      const transferStateEnum = transferState && transferState.enumeration
+
+      if (!transferState) {
+        Logger.info(`TransferService::${metadata.event.action}::dupcheck::existsMatching::transfer state not found, send callback notification`)
+        const errorDescription = `${errorInternalDescription}: transfer state not found`
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorDescription, message.value.content.payload.extensionList)
+        metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorInternalCode, errorDescription)
+        await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, metadataState, payload.transferId)
+      } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
+        const errorResent = payload.errorInformation && payload.errorInformation.errorDescription === transferState.reason
+        if (isValid || errorResent) {
+          Logger.info(`TransferService::${metadata.event.action}::dupcheck::existsMatching::request is already finalized, send callback with transfer state`)
+          let record = await TransferService.getById(transferId)
+          message.value.content.payload = TransferObjectTransform.toFulfil(record)
+          metadataState = Utility.ENUMS.STATE.SUCCESS
+          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.FULFIL_DUPLICATE, message.value, metadataState, payload.transferId)
+        } else {
+          Logger.info(`TransferService::${metadata.event.action}::dupcheck::existsMatching::modifiedRequest`)
+          message.value.content.payload = Utility.createPrepareErrorStatus(errorModifiedReqCode, errorModifiedReqDescription, message.value.content.payload.extensionList)
+          metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorModifiedReqCode, errorModifiedReqDescription)
+          await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.FULFIL_DUPLICATE, message.value, metadataState, payload.transferId)
+        }
+      } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
+        Logger.info(`TransferService::${metadata.event.action}::dupcheck::existsMatching::previous request is still in progress, do nothing`)
+      }
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
+    }
+    if (existsNotMatching) {
+      Logger.info(`TransferService::${metadata.event.action}::dupcheck::existsNotMatching::continue execution`)
+    }
+
     if (metadata.event.type === TransferEventType.FULFIL &&
       (metadata.event.action === TransferEventAction.COMMIT ||
         metadata.event.action === TransferEventAction.REJECT ||
@@ -279,45 +293,39 @@ const fulfil = async (error, messages) => {
 
       if (!existingTransfer) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::notFound`)
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
-        message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
+        const errorDescription = `${errorGenericDescription}: transfer not found`
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
-      } else if (message.value.content.headers['fspiop-source'] !== existingTransfer.payeeFsp) {
+      } else if (message.value.content.headers['fspiop-source'].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::sourceDoesntMatchPayeeFsp`)
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
-        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
+        const errorDescription = `${errorGenericDescription}: header fspiop-source does not match payee fsp`
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::invalidFulfilment`)
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
-        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorGenericDescription, message.value.content.payload.extensionList)
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
+        const errorDescription = `${errorGenericDescription}: invalid fulfilment`
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::nonReservedState`)
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
-        message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
+        const errorDescription = `${errorGenericDescription}: transfer state not RESERVED`
+        message.value.content.payload = Utility.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (existingTransfer.expirationDate <= new Date()) {
         Logger.info(`FulfilHandler::${metadata.event.action}::validationFailed::transferExpired`)
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
         message.value.content.payload = Utility.createPrepareErrorStatus(errorTransferExpCode, errorTransferExpDescription, message.value.content.payload.extensionList)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -325,28 +333,20 @@ const fulfil = async (error, messages) => {
       } else { // validations success
         Logger.info(`FulfilHandler::${metadata.event.action}::validationPassed`)
         if (metadata.event.action === TransferEventAction.COMMIT) {
-          await TransferService.fulfil(transferId, payload)
-          if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-            await consumer.commitMessageSync(message)
-          }
+          await TransferService.fulfil(transferFulfilmentId, transferId, payload)
+          await Utility.commitMessageSync(kafkaTopic, consumer, message)
           await Utility.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, headers[Enum.headers.FSPIOP.DESTINATION])
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         } else {
-          let transferEventAction
-          let metadataState
-          if (metadata.event.action === TransferEventAction.REJECT) {
-            transferEventAction = TransferEventAction.REJECT
+          if (transferEventAction === TransferEventAction.REJECT) {
             metadataState = Utility.ENUMS.STATE.SUCCESS
-            await TransferService.reject(transferId, payload)
-          } else {
-            transferEventAction = TransferEventAction.ABORT
+            await TransferService.reject(transferFulfilmentId, transferId, payload)
+          } else { // transferEventAction === TransferEventAction.ABORT
             const abortResult = await TransferService.abort(transferId, payload)
             metadataState = Utility.createState(Utility.ENUMS.STATE.FAILURE.status, abortResult.transferErrorRecord.errorCode, abortResult.transferErrorRecord.errorDescription)
           }
-          if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-            await consumer.commitMessageSync(message)
-          }
+          await Utility.commitMessageSync(kafkaTopic, consumer, message)
           await Utility.produceGeneralMessage(TransferEventType.POSITION, transferEventAction, message.value, metadataState, headers[Enum.headers.FSPIOP.DESTINATION])
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
@@ -354,12 +354,9 @@ const fulfil = async (error, messages) => {
       }
     } else {
       Logger.info(`FulfilHandler::${metadata.event.action}::invalidEventAction`)
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       message.value.content.payload = Utility.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.FAILURE, transferId)
-      Logger.info(`[cid=${transferId}] ~ Transfers::handler::fulfil - END`)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
@@ -409,10 +406,8 @@ const getTransfer = async (error, messages) => {
       return true
     }
     if (!await Validator.validateParticipantByName(message.value.from)) {
-      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: FSP Id does not exist')
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist::fsp id does not exist')
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
@@ -420,17 +415,15 @@ const getTransfer = async (error, messages) => {
     // Validate if the transferId belongs the requesting fsp
     const transferId = message.value.id
     if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
-      Logger.info('TransferService::getTransferHandler::transferParticipantCheck::doesntMatch:: Transfer Id doesnt belong to the FSP')
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+      Logger.info('TransferService::getTransferHandler::transferParticipantCheck::doesntMatch::transfer id doesnt belong to the fsp')
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
 
       // switch headers around and set from switch
       message.value.to = message.value.from
       message.value.from = Enum.headers.FSPIOP.SWITCH
       // set payload with error
       message.value.content.payload = Utility.createPrepareErrorStatus(errorTransferIdNotFoundCode, errorTransferIdNotFoundDescription, message.value.content.payload.extensionList)
-      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist::send callback notification')
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription), transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
@@ -446,12 +439,9 @@ const getTransfer = async (error, messages) => {
       // set payload with error
       message.value.content.payload = Utility.createPrepareErrorStatus(errorTransferIdNotFoundCode, errorTransferIdNotFoundDescription, message.value.content.payload.extensionList)
 
-      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: Provided Transfer ID was not found on the server.')
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
-      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist:: send callback notification')
-
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist::provided transfer id was not found on the server.')
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
+      Logger.info('TransferService::getTransferHandler::participantCheck::doesntExist::send callback notification')
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription), transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
@@ -462,9 +452,7 @@ const getTransfer = async (error, messages) => {
       // set payload with content
       message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
 
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       // Will follow framework flow in future
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

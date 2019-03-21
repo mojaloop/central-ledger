@@ -63,7 +63,7 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
       Logger.info('Producer::connect::end')
       listOfProducers[topicConf.topicName] = producer
     }
-    Logger.info(`Producer.sendMessage:: messageProtocol:'${JSON.stringify(messageProtocol)}'`)
+    Logger.info(`Producer.sendMessage::messageProtocol:'${JSON.stringify(messageProtocol)}'`)
     await producer.sendMessage(messageProtocol, topicConf)
     Logger.info('Producer::end')
     return true

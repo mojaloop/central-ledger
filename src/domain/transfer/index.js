@@ -35,11 +35,14 @@ const TransferStateChangeModel = require('../../models/transfer/transferStateCha
 const TransferErrorModel = require('../../models/transfer/transferError')
 const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
+const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
 const TransferObjectTransform = require('./transform')
 const Errors = require('../../errors')
 const Crypto = require('crypto')
 const TransferError = require('../../models/transfer/transferError')
 const ErrorText = require('../../../src/lib/errors')
+
+const PayeeRejectedTransactionError = 5104
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -71,21 +74,21 @@ const expire = (id) => {
   // return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
 }
 
-const fulfil = async (transferId, payload) => {
+const fulfil = async (transferFulfilmentId, transferId, payload) => {
   try {
     const isCommit = true
-    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit)
+    const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
     throw err
   }
 }
 
-const reject = async (transferId, payload) => {
+const reject = async (transferFulfilmentId, transferId, payload) => {
   try {
     const isCommit = false
-    const stateReason = ErrorText.getErrorDescription(5104) // Payee rejected the financial transaction
-    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason)
+    const stateReason = ErrorText.getErrorDescription(PayeeRejectedTransactionError)
+    const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
     throw err
@@ -120,8 +123,9 @@ const abort = async (transferId, payload) => {
  * ```
  */
 
-const validateDuplicateHash = async (payload) => {
+const validateDuplicateHash = async (transferId, payload, transferFulfilmentId = false) => {
   try {
+    let result
     if (!payload) {
       throw new Error('Invalid payload')
     }
@@ -130,17 +134,12 @@ const validateDuplicateHash = async (payload) => {
     hash = hashSha256.update(hash)
     hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
 
-    let existsMatching = false
-    let existsNotMatching = false
-    const existingHash = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(payload.transferId, hash)
-    if (existingHash && existingHash.hash) {
-      if (hash === existingHash.hash) {
-        existsMatching = true
-      } else {
-        existsNotMatching = true
-      }
+    if (!transferFulfilmentId) {
+      result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
+    } else {
+      result = await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash, transferFulfilmentId)
     }
-    return { existsMatching, existsNotMatching }
+    return result
   } catch (err) {
     throw err
   }

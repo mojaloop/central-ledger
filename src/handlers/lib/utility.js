@@ -472,15 +472,24 @@ const produceParticipantMessage = async (participantName, functionality, action,
   return result
 }
 
-exports.transformAccountToTopicName = transformAccountToTopicName
-exports.transformGeneralTopicName = transformGeneralTopicName
-exports.getKafkaConfig = getKafkaConfig
-exports.updateMessageProtocolMetadata = updateMessageProtocolMetadata
-exports.createPrepareErrorStatus = createPrepareErrorStatus
-exports.createState = createState
-exports.createTransferMessageProtocol = createTransferMessageProtocol
-exports.createParticipantTopicConf = createParticipantTopicConf
-exports.createGeneralTopicConf = createGeneralTopicConf
-exports.produceParticipantMessage = produceParticipantMessage
-exports.produceGeneralMessage = produceGeneralMessage
-exports.ENUMS = ENUMS
+const commitMessageSync = async (kafkaTopic, consumer, message) => {
+  if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+    await consumer.commitMessageSync(message)
+  }
+}
+
+module.exports = {
+  ENUMS,
+  transformAccountToTopicName,
+  transformGeneralTopicName,
+  getKafkaConfig,
+  updateMessageProtocolMetadata,
+  createPrepareErrorStatus,
+  createState,
+  createTransferMessageProtocol,
+  createParticipantTopicConf,
+  createGeneralTopicConf,
+  produceParticipantMessage,
+  produceGeneralMessage,
+  commitMessageSync
+}

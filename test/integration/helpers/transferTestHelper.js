@@ -34,6 +34,7 @@ const StateChangeModel = require('../../../src/models/transfer/transferStateChan
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const IlpModel = require('../../../src/models/transfer/ilpPacket')
 const TransferFacade = require('../../../src/models/transfer/facade')
+const TransferFulfilmentDuplicateCheckModel = require('../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const TransferFulfilmentModel = require('../../../src/models/transfer/transferFulfilment')
 const TransferParticipantModel = require('../../../src/models/transfer/transferParticipant')
 const Enum = require('../../../src/lib/enum')
@@ -73,9 +74,13 @@ exports.prepareData = async () => {
     let ilp = await IlpModel.getByTransferId(transferResult.transfer.transferId)
     let extension = await TransferExtensionModel.getByTransferId(transferResult.transfer.transferId)
     // let transfer = await TransferFacade.getById(transferResult.transfer.transferId)
+
+    const transferId = transferResult.transfer.transferId
+    const transferFulfilmentId = Uuid()
+    await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, 'helper.hash', transferFulfilmentId)
     await TransferFulfilmentModel.saveTransferFulfilment({
-      transferFulfilmentId: Uuid(),
-      transferId: transferResult.transfer.transferId,
+      transferFulfilmentId,
+      transferId,
       ilpFulfilment: 'helper.oAKAAA',
       completedDate: Time.getUTCString(new Date()),
       isValid: true,

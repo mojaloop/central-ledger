@@ -214,6 +214,7 @@ const transferEventType = {
 const transferEventAction = {
   PREPARE: 'prepare',
   PREPARE_DUPLICATE: 'prepare-duplicate',
+  FULFIL_DUPLICATE: 'fulfil-duplicate',
   TRANSFER: 'transfer',
   COMMIT: 'commit',
   ABORT: 'abort',
@@ -281,6 +282,10 @@ const topicMap = {
       action: transferEventAction.EVENT
     },
     'prepare-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'fulfil-duplicate': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
