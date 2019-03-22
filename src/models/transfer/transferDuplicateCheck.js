@@ -79,7 +79,7 @@ const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
  */
 
 const checkAndInsertDuplicateHash = async (transferId, hash) => {
-  Logger.debug('check and insert hash into  transferDuplicateCheck' + transferId.toString())
+  Logger.debug('check and insert hash into transferDuplicateCheck' + transferId.toString())
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {

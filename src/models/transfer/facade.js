@@ -310,7 +310,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
  * @returns {Object} - Returns details for the affected db records
  */
 
-const saveTransferAborted = async (transferId, payload) => {
+const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
   let errorCode
   let errorDescription
   let transferErrorRecord
@@ -361,7 +361,8 @@ const saveTransferAborted = async (transferId, payload) => {
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           errorCode,
           errorDescription,
-          createdDate: transactionTimestamp
+          createdDate: transactionTimestamp,
+          transferErrorDuplicateCheckId
         }
         await knex('transferError').transacting(trx).insert(transferErrorRecord)
 

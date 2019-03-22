@@ -25,7 +25,7 @@
 'use strict'
 
 /**
- * @module src/models/transfer/transferFulfilmentDuplicateCheck/
+ * @module src/models/transfer/transferErrorDuplicateCheck/
  */
 
 const Db = require('../../db')
@@ -35,9 +35,8 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * @function CheckAndInsertDuplicateHash
  *
  * @async
- * @description This checks if there is a matching hash for a transfer request in transferFulfilmentDuplicateCheck table, if it does not exist, it will be inserted
+ * @description This checks if there is a matching hash for a transfer request in transferErrorDuplicateCheck table, if it does not exist, it will be inserted
  *
- * @param {string} transferFulfilmentId - the transfer fulfilment id
  * @param {string} transferId - the transfer id
  * @param {string} hash - the hash of the transfer request payload
  *
@@ -45,7 +44,6 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * Example:
  * ```
  * {
- *    transferFulfilmentId: '2ce13cc7-b685-45e9-aa44-6c37af3757da',
  *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
  *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8',
  *    createdDate: '2018-08-17 09:46:21'
@@ -53,8 +51,8 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * ```
  */
 
-const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentId) => {
-  Logger.debug('check and insert hash into transferFulfilmentDuplicateCheck' + transferId.toString())
+const checkAndInsertDuplicateHash = async (transferId, hash) => {
+  Logger.debug('check and insert hash into transferErrorDuplicateCheck' + transferId.toString())
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
@@ -62,27 +60,29 @@ const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentI
         let existsMatching = false
         let existsNotMatching = false
         let isValid = false
+        let transferErrorDuplicateCheckId
 
-        const existingHashes = await knex('transferFulfilmentDuplicateCheck').transacting(trx)
-          .leftJoin('transferFulfilment AS tf', 'tf.transferFulfilmentId', 'transferFulfilmentDuplicateCheck.transferFulfilmentId')
-          .where({ 'transferFulfilmentDuplicateCheck.transferId': transferId })
-          .select('transferFulfilmentDuplicateCheck.*', 'tf.isValid')
+        const existingHashes = await knex('transferErrorDuplicateCheck').transacting(trx)
+          .leftJoin('transferError AS te', 'te.transferErrorDuplicateCheckId', 'transferErrorDuplicateCheck.transferErrorDuplicateCheckId')
+          .where({ transferId })
+          .select('transferErrorDuplicateCheck.*', 'te.transferErrorId')
 
         const matchedHash = existingHashes.find(record => { return record.hash === hash })
         existsMatching = !!matchedHash
 
         if (existsMatching) {
-          isValid = !!matchedHash.isValid
+          isValid = !!matchedHash.transferErrorId
         } else {
-          await knex('transferFulfilmentDuplicateCheck').transacting(trx)
-            .insert({ transferFulfilmentId, transferId, hash })
+          transferErrorDuplicateCheckId = await knex('transferErrorDuplicateCheck').transacting(trx)
+            .insert({ transferId, hash })
           existsNotMatching = existingHashes.length > 0
         }
         await trx.commit
         return {
           existsMatching,
           existsNotMatching,
-          isValid
+          isValid,
+          transferErrorDuplicateCheckId
         }
       } catch (err) {
         await trx.rollback

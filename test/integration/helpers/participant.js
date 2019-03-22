@@ -45,7 +45,7 @@ exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
       {},
       testParticipant,
       {
-        name: (name || testParticipant.name) + (isUnique ? time.msToday().toString().substring(2) : '')
+        name: (name || testParticipant.name) + (isUnique ? time.msToday().toString() : '')
       }
     ))
     const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.POSITION, false)

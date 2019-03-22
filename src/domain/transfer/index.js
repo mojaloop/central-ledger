@@ -36,6 +36,7 @@ const TransferErrorModel = require('../../models/transfer/transferError')
 const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
+const TransferErrorDuplicateCheckModel = require('../../models/transfer/transferErrorDuplicateCheck')
 const TransferObjectTransform = require('./transform')
 const Errors = require('../../errors')
 const Crypto = require('crypto')
@@ -95,9 +96,9 @@ const reject = async (transferFulfilmentId, transferId, payload) => {
   }
 }
 
-const abort = async (transferId, payload) => {
+const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
   try {
-    return TransferFacade.saveTransferAborted(transferId, payload)
+    return TransferFacade.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
   } catch (err) {
     throw err
   }
@@ -123,7 +124,7 @@ const abort = async (transferId, payload) => {
  * ```
  */
 
-const validateDuplicateHash = async (transferId, payload, transferFulfilmentId = false) => {
+const validateDuplicateHash = async (transferId, payload, transferFulfilmentId = false, isTransferError = false) => {
   try {
     let result
     if (!payload) {
@@ -136,8 +137,10 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
 
     if (!transferFulfilmentId) {
       result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
-    } else {
+    } else if (!isTransferError) {
       result = await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash, transferFulfilmentId)
+    } else {
+      result = await TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
     }
     return result
   } catch (err) {

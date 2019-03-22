@@ -46,13 +46,6 @@ const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransf
 const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
 
-const commitMessageSync = async (kafkaTopic, consumer, message) => {
-  if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-    await consumer.commitMessageSync(message)
-  }
-  return true
-}
-
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   try {
     /** @namespace Db.getKnex **/
@@ -185,7 +178,7 @@ const transfer = async (error, messages) => {
     } else {
       await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
     }
-    return await commitMessageSync(kafkaTopic, consumer, message)
+    return await Utility.commitMessageSync(kafkaTopic, consumer, message)
   } catch (error) {
     Logger.error(error)
     throw error

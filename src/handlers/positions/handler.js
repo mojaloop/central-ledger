@@ -114,9 +114,7 @@ const positions = async (error, messages) => {
         } else {
           await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, rawMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, 4001, transferState.reason), transferId)
         }
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
       }
       for (let limit of limitAlarms) {
         Logger.info(`Limit alarm should be sent with ${limit}`)
@@ -147,9 +145,7 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
       }
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       // Will follow framework flow in future
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Utility.ENUMS.STATE.SUCCESS, transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -192,9 +188,7 @@ const positions = async (error, messages) => {
       }
       await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
 
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       // Will follow framework flow in future
       await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, transferEventAction, message.value, metadataState, transferId)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -225,9 +219,7 @@ const positions = async (error, messages) => {
           histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
-        if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-          await consumer.commitMessageSync(message)
-        }
+        await Utility.commitMessageSync(kafkaTopic, consumer, message)
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.ABORT, newMessage.value, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorTransferExpCode, errorTransferExpDescription), transferId)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
@@ -237,9 +229,7 @@ const positions = async (error, messages) => {
       //   Logger.info('PositionHandler::positions::fail')
       //   kafkaTopic = Utility.transformAccountToTopicName(message.value.from, TransferEventType.POSITION, TransferEventAction.ABORT)
       //   consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-      //   if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-      //     await consumer.commitMessageSync(message)
-      //   }
+      //   await Utility.commitMessageSync(kafkaTopic, consumer, message)
       //   throw new Error('Position Fail messaged received - What do we do here??')
     } else {
       Logger.info('PositionHandler::positions::invalidEventTypeOrAction')
@@ -252,9 +242,7 @@ const positions = async (error, messages) => {
         histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
-      if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-        await consumer.commitMessageSync(message)
-      }
+      await Utility.commitMessageSync(kafkaTopic, consumer, message)
       throw new Error('Event type or action is invalid')
     }
   } catch (error) {
