@@ -137,6 +137,8 @@ const prepare = async (error, messages) => {
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         Logger.info('TransferService::prepare::dupcheck::existsMatching::request is already finalized, send callback with transfer state')
         let record = await TransferService.getById(payload.transferId)
+        message.value.to = message.value.from
+        message.value.from = Enum.headers.FSPIOP.SWITCH
         message.value.content.payload = TransferObjectTransform.toFulfil(record)
         metadataState = Utility.ENUMS.STATE.SUCCESS
         await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE_DUPLICATE, message.value, metadataState, payload.transferId)
