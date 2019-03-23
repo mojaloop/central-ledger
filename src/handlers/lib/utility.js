@@ -478,6 +478,25 @@ const commitMessageSync = async (kafkaTopic, consumer, message) => {
   }
 }
 
+const breadcrumb = (location, message) => {
+  if (typeof message === 'object') {
+    if (message.method) {
+      location.method = message.method
+      location.path = `${location.module}::${location.method}`
+    }
+    if (message.path) {
+      location.path = `${location.module}::${location.method}::${message.path}`
+    }
+  } else if (typeof message === 'string') {
+    location.path += `::${message}`
+  }
+  return location.path
+}
+
+const process = async (opts) => {
+
+}
+
 module.exports = {
   ENUMS,
   transformAccountToTopicName,
@@ -491,5 +510,7 @@ module.exports = {
   createGeneralTopicConf,
   produceParticipantMessage,
   produceGeneralMessage,
-  commitMessageSync
+  commitMessageSync,
+  breadcrumb,
+  process
 }
