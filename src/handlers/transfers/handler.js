@@ -106,8 +106,7 @@ const prepare = async (error, messages) => {
     }
     const payload = message.value.content.payload
     const headers = message.value.content.headers
-    const metadata = message.value.metadata
-    const action = metadata.event.action
+    const action = message.value.metadata.event.action
     const transferId = payload.transferId
     const kafkaTopic = message.topic
     let consumer
@@ -132,14 +131,14 @@ const prepare = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound1--${AL}1`))
-        const errorInformation = Errors.getErrorInformation(eEnum.internal, 'transfer state not found')
-        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+        const errorInformation = Errors.getErrorInformation(eEnum.internal, 'transfer/state not found')
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         Logger.info(Util.breadcrumb(location, `callbackFinilized1--${AL}2`))
         let record = await TransferService.getById(transferId)
-        message.value.content.payload = TransferObjectTransform.toFulfil(record) // TODO: verify params update
-        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE_DUPLICATE }
+        message.value.content.payload = TransferObjectTransform.toFulfil(record)
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch }) // TODO: verify fromSwitch
       } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
         Logger.info(Util.breadcrumb(location, `inProgress1--${AL}3`))
@@ -149,7 +148,7 @@ const prepare = async (error, messages) => {
     if (existsNotMatching) {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${AL}4`))
       const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
-      const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+      const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
     }
 
@@ -163,11 +162,11 @@ const prepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${AL}5`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         const errorInformation = Errors.getErrorInformation(eEnum.internal)
-        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
       }
       Logger.info(Util.breadcrumb(location, `positionTopic1--${AL}6`))
-      const producer = { f: TET.POSITION, a: TEA.PREPARE }
+      const producer = { functionality: TET.POSITION, action: TEA.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
     } else {
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -178,13 +177,13 @@ const prepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${AL}7`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         const errorInformation = Errors.getErrorInformation(eEnum.internal)
-        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${AL}8`))
       await TransferService.logTransferError(transferId, eEnum.generic, reasons.toString())
       const errorInformation = Errors.getErrorInformation(eEnum.generic, reasons.toString())
-      const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+      const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
   } catch (err) {
@@ -213,8 +212,7 @@ const fulfil = async (error, messages) => {
     }
     const payload = message.value.content.payload
     const headers = message.value.content.headers
-    const metadata = message.value.metadata
-    const action = metadata.event.action
+    const action = message.value.metadata.event.action
     const transferId = message.value.id
     const kafkaTopic = message.topic
     let consumer
@@ -244,21 +242,21 @@ const fulfil = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound2--${AL}1`))
-        const errorInformation = Errors.getErrorInformation(eEnum.internal, 'transfer state not found')
-        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        const errorInformation = Errors.getErrorInformation(eEnum.internal, 'transfer/state not found')
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         if (!isTransferError) {
           if (isValid) {
             Logger.info(Util.breadcrumb(location, `callbackFinilized2--${AL}2`))
             let record = await TransferService.getById(transferId)
-            message.value.content.payload = TransferObjectTransform.toFulfil(record) // TODO: verify params update
-            const producer = { f: TET.NOTIFICATION, a: TEA.FULFIL_DUPLICATE }
+            message.value.content.payload = TransferObjectTransform.toFulfil(record)
+            const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
           } else {
             Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${AL}3`))
             const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
-            const producer = { f: TET.NOTIFICATION, a: TEA.FULFIL_DUPLICATE }
+            const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
           }
         } else {
@@ -285,58 +283,58 @@ const fulfil = async (error, messages) => {
       }
     }
 
-    if (metadata.event.type === TET.FULFIL && [TEA.COMMIT, TEA.REJECT, TEA.ABORT].includes(action)) {
+    if (message.value.metadata.event.type === TET.FULFIL && [TEA.COMMIT, TEA.REJECT, TEA.ABORT].includes(action)) {
       const fspiopSource = Enum.headers.FSPIOP.SOURCE
       const existingTransfer = await TransferService.getById(transferId)
       Util.breadcrumb(location, { path: 'validationFailed' })
       if (!existingTransfer) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNotFound--${AL}6`))
         const errorInformation = Errors.getErrorInformation(eEnum.generic, 'transfer not found')
-        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (headers[fspiopSource].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee--${AL}7`))
         const errorInformation = Errors.getErrorInformation(eEnum.generic, `${fspiopSource} does not match payee fsp`)
-        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${AL}8`))
         const errorInformation = Errors.getErrorInformation(eEnum.generic, 'invalid fulfilment')
-        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.transferState === TransferState.COMMITTED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorModifiedRequest--${AL}9`))
         const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
-        const producer = { f: TET.NOTIFICATION, a: TEA.FULFIL_DUPLICATE }
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${AL}10`))
         const errorInformation = Errors.getErrorInformation(eEnum.generic, 'transfer state not reserved')
-        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.expirationDate <= new Date()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${AL}11`))
         const errorInformation = Errors.getErrorInformation(eEnum.transferExpired)
-        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else { // validations success
         Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         if (action === TEA.COMMIT) {
           Logger.info(Util.breadcrumb(location, `positionTopic2--${AL}12`))
           await TransferService.fulfil(transferFulfilmentId, transferId, payload)
-          const producer = { f: TET.POSITION, a: TEA.COMMIT }
+          const producer = { functionality: TET.POSITION, action: TEA.COMMIT }
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         } else {
           if (action === TEA.REJECT) {
             Logger.info(Util.breadcrumb(location, `positionTopic3--${AL}12`))
             await TransferService.reject(transferFulfilmentId, transferId, payload)
-            const producer = { f: TET.POSITION, a: TEA.REJECT }
+            const producer = { functionality: TET.POSITION, action: TEA.REJECT }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
           } else { // action === TEA.ABORT
             Logger.info(Util.breadcrumb(location, `positionTopic4--${AL}12`))
             const abortResult = await TransferService.abort(transferId, payload, transferErrorDuplicateCheckId)
             const TER = abortResult.transferErrorRecord
-            const producer = { f: TET.POSITION, a: TEA.ABORT }
+            const producer = { functionality: TET.POSITION, action: TEA.ABORT }
             const errorInformation = Errors.getErrorInformation(TER.errorCode, { replace: TER.errorDescription })
             return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, toDestination })
           }
@@ -345,7 +343,7 @@ const fulfil = async (error, messages) => {
     } else {
       Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${AL}13`))
       const errorInformation = Errors.getErrorInformation(eEnum.internal)
-      const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+      const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
   } catch (err) {
@@ -397,7 +395,7 @@ const getTransfer = async (error, messages) => {
     }
     const AL = 'G'
     let params = { message, transferId, kafkaTopic, consumer }
-    const producer = { f: TET.NOTIFICATION, a: TEA.GET }
+    const producer = { functionality: TET.NOTIFICATION, action: TEA.GET }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
     if (!await Validator.validateParticipantByName(message.value.from)) {
@@ -406,18 +404,19 @@ const getTransfer = async (error, messages) => {
     }
     if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
       Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${AL}2`))
-      const errorInformation = Errors.getErrorInformation(eEnum.transferNotFound) // TODO: is error appropriate?
+      const errorInformation = Errors.getErrorInformation(eEnum.transferNotFound) // TODO: inappropriate error message
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
 
     const transfer = await TransferService.getByIdLight(transferId)
-    if (!transfer) {
+    if (!transfer) { // TODO: cannot be triggered as callbackErrorNotTransferParticipant comes first
       Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${AL}3`))
       const errorInformation = Errors.getErrorInformation(eEnum.transferNotFound)
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     } else {
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.info(Util.breadcrumb(location, `callbackMessage--${AL}4`))
+      message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
       return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
     }
   } catch (err) {

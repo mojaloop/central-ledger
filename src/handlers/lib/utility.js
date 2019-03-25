@@ -516,7 +516,7 @@ const proceed = async (params, opts) => {
   if (producer) {
     const p = producer
     const key = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : transferId
-    await produceGeneralMessage(p.f, p.a, message.value, metadataState, key)
+    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
   }
   if (histTimerEnd && typeof histTimerEnd === 'function') {
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

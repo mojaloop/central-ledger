@@ -225,7 +225,8 @@ const transferEventAction = {
   FAIL: 'fail',
   EVENT: 'event',
   FULFIL: 'fulfil',
-  POSITION: 'position'
+  POSITION: 'position',
+  GET: 'get'
 }
 const adminTransferAction = {
   RECORD_FUNDS_IN: 'recordFundsIn',
