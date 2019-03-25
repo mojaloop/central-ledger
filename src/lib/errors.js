@@ -50,7 +50,24 @@ const getErrorDescription = (errorCode) => {
   return error[errorCode]
 }
 
+const getErrorInformation = (errorCode, appendDescription) => {
+  let errorDescription
+  if (typeof appendDescription === 'object') {
+    errorDescription = appendDescription.replace
+  } else {
+    errorDescription = getErrorDescription(errorCode)
+    if (appendDescription !== undefined) {
+      errorDescription += `: ${appendDescription}`
+    }
+  }
+  return {
+    errorCode,
+    errorDescription
+  }
+}
+
 module.exports = {
   createErrorInformation,
-  getErrorDescription
+  getErrorDescription,
+  getErrorInformation
 }

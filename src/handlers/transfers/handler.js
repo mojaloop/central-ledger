@@ -45,28 +45,25 @@ const Validator = require('./validator')
 const Enum = require('../../lib/enum')
 const TransferState = Enum.TransferState
 const TransferStateEnum = Enum.TransferStateEnum
-const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
+const TET = Enum.transferEventType
+const TEA = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 
-// TODO: This errorCode and errorDescription are dummy values until a rules engine is established
-const errorGenericCode = 3100
-const errorGenericDescription = Errors.getErrorDescription(errorGenericCode)
-const errorModifiedReqCode = 3106
-const errorModifiedReqDescription = Errors.getErrorDescription(errorModifiedReqCode)
-const errorInternalCode = 2001
-const errorInternalDescription = Errors.getErrorDescription(errorInternalCode)
-const errorTransferExpCode = 3300
-const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
-const errorTransferIdNotFoundCode = 3208
-const errorTransferIdNotFoundDescription = Errors.getErrorDescription(errorTransferIdNotFoundCode)
-
-const location = { module: 'PrepareHandler', method: '', path: '' }
-// const replyFromSwitch = true
+const eEnum = {
+  internal: 2001,
+  generic: 3100,
+  modifiedRequest: 3106,
+  transferExpired: 3300,
+  transferNotFound: 3208
+}
+const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
+const consumerCommit = true
+const fromSwitch = true
+const toDestination = true
 
 /**
  * @function TransferPrepareHandler
@@ -113,7 +110,6 @@ const prepare = async (error, messages) => {
     const action = metadata.event.action
     const transferId = payload.transferId
     const kafkaTopic = message.topic
-    let metadataState
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
     try {
@@ -125,7 +121,8 @@ const prepare = async (error, messages) => {
       return true
     }
     // Action Letter (AL) is used to denote breadcrumb flow end
-    const AL = action === TransferEventAction.PREPARE ? 'P' : '?'
+    const AL = action === TEA.PREPARE ? 'P' : '?'
+    let params = { message, transferId, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
@@ -135,35 +132,25 @@ const prepare = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound1--${AL}1`))
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        const errorDescription = `${errorInternalDescription}: transfer state not found`
-        message.value.content.payload = Util.createPrepareErrorStatus(errorInternalCode, errorDescription, message.value.content.payload.extensionList)
-        metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorInternalCode, errorDescription)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, transferId)
+        const errorInformation = Errors.getErrorInformation(eEnum.internal, 'transfer state not found')
+        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         Logger.info(Util.breadcrumb(location, `callbackFinilized1--${AL}2`))
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
         let record = await TransferService.getById(transferId)
-        message.value.to = message.value.from
-        message.value.from = Enum.headers.FSPIOP.SWITCH
-        message.value.content.payload = TransferObjectTransform.toFulfil(record)
-        metadataState = Util.ENUMS.STATE.SUCCESS
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE_DUPLICATE, message.value, metadataState, transferId)
+        message.value.content.payload = TransferObjectTransform.toFulfil(record) // TODO: verify params update
+        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE_DUPLICATE }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch }) // TODO: verify fromSwitch
       } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
         Logger.info(Util.breadcrumb(location, `inProgress1--${AL}3`))
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
+        return await Util.proceed(params, { consumerCommit, histTimerEnd })
       }
     }
     if (existsNotMatching) {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${AL}4`))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      message.value.content.payload = Util.createPrepareErrorStatus(errorModifiedReqCode, errorModifiedReqDescription, message.value.content.payload.extensionList)
-      metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorModifiedReqCode, errorModifiedReqDescription)
-      await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, transferId)
-    }
-    if (existsMatching || existsNotMatching) {
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
+      const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
     }
 
     let { validationPassed, reasons } = await Validator.validateByName(payload, headers)
@@ -175,18 +162,13 @@ const prepare = async (error, messages) => {
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${AL}5`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        message.value.content.payload = Util.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
-        metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        const errorInformation = Errors.getErrorInformation(eEnum.internal)
+        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
       }
       Logger.info(Util.breadcrumb(location, `positionTopic1--${AL}6`))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      await Util.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.PREPARE, message.value, Util.ENUMS.STATE.SUCCESS, headers[Enum.headers.FSPIOP.DESTINATION])
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      const producer = { f: TET.POSITION, a: TEA.PREPARE }
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
     } else {
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
@@ -195,22 +177,15 @@ const prepare = async (error, messages) => {
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${AL}7`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        message.value.content.payload = Util.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, message.value.content.payload.extensionList)
-        metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorInternalCode, errorInternalDescription)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        const errorInformation = Errors.getErrorInformation(eEnum.internal)
+        const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${AL}8`))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      await TransferService.logTransferError(transferId, errorGenericCode, reasons.toString())
-      const errorDescription = `${errorGenericDescription}: ${reasons.toString()}`
-      message.value.content.payload = Util.createPrepareErrorStatus(errorGenericCode, errorDescription, message.value.content.payload.extensionList)
-      metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorGenericCode, errorDescription)
-      await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.PREPARE, message.value, metadataState, transferId)
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      await TransferService.logTransferError(transferId, eEnum.generic, reasons.toString())
+      const errorInformation = Errors.getErrorInformation(eEnum.generic, reasons.toString())
+      const producer = { f: TET.NOTIFICATION, a: TEA.PREPARE }
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
@@ -242,7 +217,6 @@ const fulfil = async (error, messages) => {
     const action = metadata.event.action
     const transferId = message.value.id
     const kafkaTopic = message.topic
-    let metadataState
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
     try {
@@ -254,13 +228,11 @@ const fulfil = async (error, messages) => {
       return true
     }
     // Action Letter (AL) is used to denote breadcrumb flow end
-    const AL = action === TransferEventAction.COMMIT ? 'C'
-      : (action === TransferEventAction.REJECT ? 'R'
-        : (action === TransferEventAction.ABORT ? 'A'
-          : '?'))
+    const AL = action === TEA.COMMIT ? 'C' : (action === TEA.REJECT ? 'R' : (action === TEA.ABORT ? 'A' : '?'))
     // fulfil-specific declarations
-    const isTransferError = action === TransferEventAction.ABORT
+    const isTransferError = action === TEA.ABORT
     const transferFulfilmentId = Uuid()
+    let params = { message, transferId, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching, isValid, transferErrorDuplicateCheckId } =
@@ -268,44 +240,40 @@ const fulfil = async (error, messages) => {
 
     if (existsMatching) {
       Logger.info(Util.breadcrumb(location, `existsMatching`))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
       const transferState = await TransferService.getTransferStateChange(transferId)
       const transferStateEnum = transferState && transferState.enumeration
-      message.value.to = message.value.from
-      message.value.from = Enum.headers.FSPIOP.SWITCH
-
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound2--${AL}1`))
-        const errorDescription = `${errorInternalDescription}: transfer state not found`
-        message.value.content.payload = Util.createPrepareErrorStatus(errorInternalCode, errorDescription, payload.extensionList)
-        metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorInternalCode, errorDescription)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, metadataState, payload.transferId)
+        const errorInformation = Errors.getErrorInformation(eEnum.internal, 'transfer state not found')
+        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         if (!isTransferError) {
           if (isValid) {
             Logger.info(Util.breadcrumb(location, `callbackFinilized2--${AL}2`))
             let record = await TransferService.getById(transferId)
-            message.value.content.payload = TransferObjectTransform.toFulfil(record)
-            metadataState = Util.ENUMS.STATE.SUCCESS
-            await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.FULFIL_DUPLICATE, message.value, metadataState, payload.transferId)
+            message.value.content.payload = TransferObjectTransform.toFulfil(record) // TODO: verify params update
+            const producer = { f: TET.NOTIFICATION, a: TEA.FULFIL_DUPLICATE }
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
           } else {
             Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${AL}3`))
-            message.value.content.payload = Util.createPrepareErrorStatus(errorModifiedReqCode, errorModifiedReqDescription, payload.extensionList)
-            metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorModifiedReqCode, errorModifiedReqDescription)
-            await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.FULFIL_DUPLICATE, message.value, metadataState, payload.transferId)
+            const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
+            const producer = { f: TET.NOTIFICATION, a: TEA.FULFIL_DUPLICATE }
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
           }
         } else {
           if (isValid) {
             Logger.info(Util.breadcrumb(location, `break--${AL}2`))
+            return await Util.proceed(params, { consumerCommit, histTimerEnd })
           } else {
             Logger.info(Util.breadcrumb(location, `breakModified1--${AL}3`))
+            return await Util.proceed(params, { consumerCommit, histTimerEnd })
           }
         }
       } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
         Logger.info(Util.breadcrumb(location, `inProgress2--${AL}4`))
+        await Util.proceed(params, { consumerCommit, histTimerEnd })
       }
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
     }
     if (existsNotMatching) {
       Logger.info(Util.breadcrumb(location, `existsNotMatching`))
@@ -313,113 +281,72 @@ const fulfil = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `inProgress3--${AL}5`))
       } else {
         Logger.info(Util.breadcrumb(location, `breakModified2--${AL}5`))
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        return await Util.proceed(params, { consumerCommit, histTimerEnd })
       }
     }
 
-    if (metadata.event.type === TransferEventType.FULFIL &&
-      (action === TransferEventAction.COMMIT ||
-        action === TransferEventAction.REJECT ||
-        action === TransferEventAction.ABORT)) {
+    if (metadata.event.type === TET.FULFIL && [TEA.COMMIT, TEA.REJECT, TEA.ABORT].includes(action)) {
+      const fspiopSource = Enum.headers.FSPIOP.SOURCE
       const existingTransfer = await TransferService.getById(transferId)
-
       Util.breadcrumb(location, { path: 'validationFailed' })
       if (!existingTransfer) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNotFound--${AL}6`))
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        message.value.to = message.value.from
-        message.value.from = Enum.headers.FSPIOP.SWITCH
-        const errorDescription = `${errorGenericDescription}: transfer not found`
-        message.value.content.payload = Util.createPrepareErrorStatus(errorGenericCode, errorDescription, payload.extensionList)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Util.ENUMS.STATE.FAILURE, transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
-      } else if (headers['fspiop-source'].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
+        const errorInformation = Errors.getErrorInformation(eEnum.generic, 'transfer not found')
+        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+      } else if (headers[fspiopSource].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee--${AL}7`))
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        message.value.to = message.value.from
-        message.value.from = Enum.headers.FSPIOP.SWITCH
-        const errorDescription = `${errorGenericDescription}: header fspiop-source does not match payee fsp`
-        message.value.content.payload = Util.createPrepareErrorStatus(errorGenericCode, errorDescription, payload.extensionList)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Util.ENUMS.STATE.FAILURE, transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        const errorInformation = Errors.getErrorInformation(eEnum.generic, `${fspiopSource} does not match payee fsp`)
+        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${AL}8`))
-        message.value.to = message.value.from
-        message.value.from = Enum.headers.FSPIOP.SWITCH
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        const errorDescription = `${errorGenericDescription}: invalid fulfilment`
-        message.value.content.payload = Util.createPrepareErrorStatus(errorGenericCode, errorDescription, payload.extensionList)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Util.ENUMS.STATE.FAILURE, transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        const errorInformation = Errors.getErrorInformation(eEnum.generic, 'invalid fulfilment')
+        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.transferState === TransferState.COMMITTED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorModifiedRequest--${AL}9`))
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        message.value.to = message.value.from
-        message.value.from = Enum.headers.FSPIOP.SWITCH
-        message.value.content.payload = Util.createPrepareErrorStatus(errorModifiedReqCode, errorModifiedReqDescription, payload.extensionList)
-        metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorModifiedReqCode, errorModifiedReqDescription)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.FULFIL_DUPLICATE, message.value, metadataState, payload.transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
+        const producer = { f: TET.NOTIFICATION, a: TEA.FULFIL_DUPLICATE }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${AL}10`))
-        message.value.to = message.value.from
-        message.value.from = Enum.headers.FSPIOP.SWITCH
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        const errorDescription = `${errorGenericDescription}: transfer state not reserved`
-        message.value.content.payload = Util.createPrepareErrorStatus(errorGenericCode, errorDescription, payload.extensionList)
-        metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorGenericCode, errorDescription)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, metadataState, transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        const errorInformation = Errors.getErrorInformation(eEnum.generic, 'transfer state not reserved')
+        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.expirationDate <= new Date()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${AL}11`))
-        await Util.commitMessageSync(kafkaTopic, consumer, message)
-        message.value.to = message.value.from
-        message.value.from = Enum.headers.FSPIOP.SWITCH
-        message.value.content.payload = Util.createPrepareErrorStatus(errorTransferExpCode, errorTransferExpDescription, payload.extensionList)
-        metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, errorTransferExpCode, errorTransferExpDescription)
-        await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, metadataState, transferId)
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        const errorInformation = Errors.getErrorInformation(eEnum.transferExpired)
+        const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else { // validations success
         Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-        if (action === TransferEventAction.COMMIT) {
+        if (action === TEA.COMMIT) {
           Logger.info(Util.breadcrumb(location, `positionTopic2--${AL}12`))
           await TransferService.fulfil(transferFulfilmentId, transferId, payload)
-          await Util.commitMessageSync(kafkaTopic, consumer, message)
-          await Util.produceGeneralMessage(TransferEventType.POSITION, TransferEventAction.COMMIT, message.value, Util.ENUMS.STATE.SUCCESS, headers[Enum.headers.FSPIOP.DESTINATION])
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
+          const producer = { f: TET.POSITION, a: TEA.COMMIT }
+          return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         } else {
-          if (action === TransferEventAction.REJECT) {
+          if (action === TEA.REJECT) {
             Logger.info(Util.breadcrumb(location, `positionTopic3--${AL}12`))
-            metadataState = Util.ENUMS.STATE.SUCCESS
             await TransferService.reject(transferFulfilmentId, transferId, payload)
-          } else { // action === TransferEventAction.ABORT
+            const producer = { f: TET.POSITION, a: TEA.REJECT }
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
+          } else { // action === TEA.ABORT
             Logger.info(Util.breadcrumb(location, `positionTopic4--${AL}12`))
             const abortResult = await TransferService.abort(transferId, payload, transferErrorDuplicateCheckId)
-            metadataState = Util.createState(Util.ENUMS.STATE.FAILURE.status, abortResult.transferErrorRecord.errorCode, abortResult.transferErrorRecord.errorDescription)
+            const TER = abortResult.transferErrorRecord
+            const producer = { f: TET.POSITION, a: TEA.ABORT }
+            const errorInformation = Errors.getErrorInformation(TER.errorCode, { replace: TER.errorDescription })
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, toDestination })
           }
-          await Util.commitMessageSync(kafkaTopic, consumer, message)
-          await Util.produceGeneralMessage(TransferEventType.POSITION, action, message.value, metadataState, headers[Enum.headers.FSPIOP.DESTINATION])
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
         }
       }
     } else {
       Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${AL}13`))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      message.value.to = message.value.from
-      message.value.from = Enum.headers.FSPIOP.SWITCH
-      message.value.content.payload = Util.createPrepareErrorStatus(errorInternalCode, errorInternalDescription, payload.extensionList)
-      await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventAction.COMMIT, message.value, Util.ENUMS.STATE.FAILURE, transferId)
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      const errorInformation = Errors.getErrorInformation(eEnum.internal)
+      const producer = { f: TET.NOTIFICATION, a: TEA.COMMIT }
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)
@@ -458,7 +385,6 @@ const getTransfer = async (error, messages) => {
     const action = metadata.event.action
     const transferId = message.value.id
     const kafkaTopic = message.topic
-    // let metadataState
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `getTransfer:${action}` }))
     try {
@@ -470,55 +396,29 @@ const getTransfer = async (error, messages) => {
       return true
     }
     const AL = 'G'
+    let params = { message, transferId, kafkaTopic, consumer }
+    const producer = { f: TET.NOTIFICATION, a: TEA.GET }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
     if (!await Validator.validateParticipantByName(message.value.from)) {
       Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${AL}1`))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      return await Util.proceed(params, { consumerCommit, histTimerEnd })
     }
-
-    // Validate if the transferId belongs the requesting fsp
     if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
       Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${AL}2`))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-
-      // switch headers around and set from switch
-      message.value.to = message.value.from
-      message.value.from = Enum.headers.FSPIOP.SWITCH
-      // set payload with error
-      message.value.content.payload = Util.createPrepareErrorStatus(errorTransferIdNotFoundCode, errorTransferIdNotFoundDescription, message.value.content.payload.extensionList)
-      await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Util.createState(Util.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription), transferId)
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      const errorInformation = Errors.getErrorInformation(eEnum.transferNotFound) // TODO: is error appropriate?
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
 
     const transfer = await TransferService.getByIdLight(transferId)
     if (!transfer) {
       Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${AL}3`))
-      // switch headers around and set from switch
-      message.value.to = message.value.from
-      message.value.from = Enum.headers.FSPIOP.SWITCH
-      // set payload with error
-      message.value.content.payload = Util.createPrepareErrorStatus(errorTransferIdNotFoundCode, errorTransferIdNotFoundDescription, message.value.content.payload.extensionList)
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Util.createState(Util.ENUMS.STATE.FAILURE.status, errorGenericCode, errorGenericDescription), transferId)
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      const errorInformation = Errors.getErrorInformation(eEnum.transferNotFound)
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     } else {
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.info(Util.breadcrumb(location, `callbackMessage--${AL}4`))
-      // switch headers around and set from switch
-      message.value.to = message.value.from
-      message.value.from = Enum.headers.FSPIOP.SWITCH
-      // set payload with content
-      message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      // Will follow framework flow in future
-      await Util.produceGeneralMessage(TransferEventType.NOTIFICATION, TransferEventType.GET, message.value, Util.ENUMS.STATE.SUCCESS, transferId)
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
@@ -539,8 +439,8 @@ const registerPrepareHandler = async () => {
   try {
     const prepareHandler = {
       command: prepare,
-      topicName: Util.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.PREPARE),
-      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
+      topicName: Util.transformGeneralTopicName(TET.TRANSFER, TEA.PREPARE),
+      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TET.TRANSFER.toUpperCase(), TEA.PREPARE.toUpperCase())
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
@@ -563,8 +463,8 @@ const registerFulfilHandler = async () => {
   try {
     const fulfillHandler = {
       command: fulfil,
-      topicName: Util.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.FULFIL),
-      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
+      topicName: Util.transformGeneralTopicName(TET.TRANSFER, TET.FULFIL),
+      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TET.TRANSFER.toUpperCase(), TET.FULFIL.toUpperCase())
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
@@ -587,8 +487,8 @@ const registerGetTransferHandler = async () => {
   try {
     const getHandler = {
       command: getTransfer,
-      topicName: Util.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventType.GET),
-      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.GET.toUpperCase())
+      topicName: Util.transformGeneralTopicName(TET.TRANSFER, TET.GET),
+      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TET.TRANSFER.toUpperCase(), TET.GET.toUpperCase())
     }
     getHandler.config.rdkafkaConf['client.id'] = getHandler.topicName
     await Kafka.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)

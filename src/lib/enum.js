@@ -249,8 +249,9 @@ const transferEventStatus = {
 
 const headers = {
   FSPIOP: {
-    SWITCH: 'switch',
-    DESTINATION: 'fspiop-destination'
+    DESTINATION: 'fspiop-destination',
+    SOURCE: 'fspiop-source',
+    SWITCH: 'switch'
   }
 }
 
