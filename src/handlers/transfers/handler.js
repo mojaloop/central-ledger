@@ -58,6 +58,7 @@ const eEnum = {
   generic: 3100,
   modifiedRequest: 3106,
   transferExpired: 3300,
+  genericClient: 3000,
   transferNotFound: 3208
 }
 const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
@@ -248,11 +249,18 @@ const fulfil = async (error, messages) => {
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         if (!isTransferError) {
           if (isValid) {
-            Logger.info(Util.breadcrumb(location, `callbackFinilized2--${AL}2`))
             let record = await TransferService.getById(transferId)
-            message.value.content.payload = TransferObjectTransform.toFulfil(record)
-            const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
-            return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
+            if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== record.payeeFsp.toLowerCase()) {
+              Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee1--${AL}7<<`))
+              const errorInformation = Errors.getErrorInformation(eEnum.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
+              const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
+              return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+            } else {
+              Logger.info(Util.breadcrumb(location, `callbackFinilized2--${AL}2`))
+              message.value.content.payload = TransferObjectTransform.toFulfil(record)
+              const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
+              return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
+            }
           } else {
             Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${AL}3`))
             const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
@@ -284,7 +292,6 @@ const fulfil = async (error, messages) => {
     }
 
     if (message.value.metadata.event.type === TET.FULFIL && [TEA.COMMIT, TEA.REJECT, TEA.ABORT].includes(action)) {
-      const fspiopSource = Enum.headers.FSPIOP.SOURCE
       const existingTransfer = await TransferService.getById(transferId)
       Util.breadcrumb(location, { path: 'validationFailed' })
       if (!existingTransfer) {
@@ -292,9 +299,9 @@ const fulfil = async (error, messages) => {
         const errorInformation = Errors.getErrorInformation(eEnum.generic, 'transfer not found')
         const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
-      } else if (headers[fspiopSource].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
-        Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee--${AL}7`))
-        const errorInformation = Errors.getErrorInformation(eEnum.generic, `${fspiopSource} does not match payee fsp`)
+      } else if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
+        Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee2--${AL}7`))
+        const errorInformation = Errors.getErrorInformation(eEnum.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
         const producer = { functionality: TET.NOTIFICATION, action: TEA.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
@@ -402,18 +409,20 @@ const getTransfer = async (error, messages) => {
       Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${AL}1`))
       return await Util.proceed(params, { consumerCommit, histTimerEnd })
     }
-    if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
-      Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${AL}2`))
-      const errorInformation = Errors.getErrorInformation(eEnum.transferNotFound) // TODO: inappropriate error message
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
-    }
-
+    // TODO: we might need getByIdLight and validateParticipantTransferId for prepares and fulfils
     const transfer = await TransferService.getByIdLight(transferId)
-    if (!transfer) { // TODO: cannot be triggered as callbackErrorNotTransferParticipant comes first
+    if (!transfer) {
       Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${AL}3`))
       const errorInformation = Errors.getErrorInformation(eEnum.transferNotFound)
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
-    } else {
+    }
+    if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
+      Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${AL}2`))
+      const errorInformation = Errors.getErrorInformation(eEnum.genericClient)
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+    }
+    // ============================================================================================
+    if (transfer) {
       Util.breadcrumb(location, { path: 'validationPassed' })
       Logger.info(Util.breadcrumb(location, `callbackMessage--${AL}4`))
       message.value.content.payload = TransferObjectTransform.toFulfil(transfer)

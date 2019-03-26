@@ -112,18 +112,10 @@ const transformExtensionList = (extensionList) => {
 
 const transformTransferToFulfil = (transfer) => {
   try {
-    let result
-    if (transfer.transferState === Enum.TransferState.COMMITTED) {
-      result = {
-        fulfilment: transfer.fulfilment,
-        completedTimestamp: transfer.completedTimestamp,
-        transferState: transfer.transferStateEnumeration
-      }
-    } else {
-      result = {
-        completedTimestamp: transfer.completedTimestamp,
-        transferState: transfer.transferStateEnumeration
-      }
+    let result = {
+      fulfilment: transfer.fulfilment,
+      completedTimestamp: transfer.completedTimestamp,
+      transferState: transfer.transferStateEnumeration
     }
     let extensionList = transformExtensionList(transfer.extensionList)
     if (extensionList.length > 0) {

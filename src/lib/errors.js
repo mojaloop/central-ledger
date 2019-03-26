@@ -27,6 +27,7 @@
 const error = {
   2001: 'Internal server error',
   2003: 'Service currently unavailable',
+  3000: 'Generic client error',
   3100: 'Generic validation error',
   3300: 'Transfer expired',
   3303: 'Client requested to use a transfer that has already expired',
