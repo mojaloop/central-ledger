@@ -270,10 +270,15 @@ const fulfil = async (error, messages) => {
         } else {
           if (isValid) {
             Logger.info(Util.breadcrumb(location, `break--${AL}2`))
-            return await Util.proceed(params, { consumerCommit, histTimerEnd })
+            const transfer = await TransferService.getByIdLight(transferId)
+            message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+            const producer = { functionality: TET.NOTIFICATION, action: TEA.ABORT_DUPLICATE }
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
           } else {
             Logger.info(Util.breadcrumb(location, `breakModified1--${AL}3`))
-            return await Util.proceed(params, { consumerCommit, histTimerEnd })
+            const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
+            const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
           }
         }
       } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
@@ -287,7 +292,9 @@ const fulfil = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `inProgress3--${AL}5`))
       } else {
         Logger.info(Util.breadcrumb(location, `breakModified2--${AL}5`))
-        return await Util.proceed(params, { consumerCommit, histTimerEnd })
+        const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
+        const producer = { functionality: TET.NOTIFICATION, action: TEA.FULFIL_DUPLICATE }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
     }
 
