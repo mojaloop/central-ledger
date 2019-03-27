@@ -314,6 +314,7 @@ Test('Transform Service', transformTest => {
         }
 
         const expected = {
+          fulfilment: 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
           completedTimestamp: '2016-06-24T08:38:08.699-04:00',
           transferState: 'ABORTED',
           extensionList: [

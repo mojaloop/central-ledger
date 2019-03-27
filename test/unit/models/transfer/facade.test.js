@@ -688,6 +688,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
   await transferFacadeTest.test('saveTransferFulfilled should', async saveTransferFulfilled => {
     try {
       const transferId = 't1'
+      const transferFulfilmentId = 'tf1'
       const payload = {
         fulfilment: 'f1',
         completedTimestamp: now,
@@ -699,7 +700,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const stateReason = null
       let hasPassedValidation = null
       const saveTransferFulfilledExecuted = true
-      const transferFulfilmentRecord = { transferFulfilmentId: 'tf1', transferId, ilpFulfilment: 'f1', completedDate: Time.getUTCString(now), isValid: true, createdDate: Time.getUTCString(now), settlementWindowId: 1 }
+      const transferFulfilmentRecord = { transferFulfilmentId, transferId, ilpFulfilment: 'f1', completedDate: Time.getUTCString(now), isValid: true, createdDate: Time.getUTCString(now), settlementWindowId: 1 }
       const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: Time.getUTCString(now) }
       let transferExtensionRecords = transferExtensions.map(ext => {
         return {
@@ -710,10 +711,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
         }
       })
       const saveTransferFulfilledResult = { saveTransferFulfilledExecuted, transferFulfilmentRecord, transferStateChangeRecord, transferExtensions: transferExtensionRecords }
-
-      const ModuleProxy = Proxyquire('../../../../src/models/transfer/facade', {
-        uuid4: sandbox.stub().returns(transferFulfilmentRecord.transferFulfilmentId)
-      })
 
       await saveTransferFulfilled.test('return transfer in RECEIVED_FULFIL state', async (test) => {
         try {
@@ -757,8 +754,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          /** @namespace ModuleProxy.saveTransferFulfilled **/
-          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          const response = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
@@ -819,7 +815,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          const response = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
@@ -879,7 +875,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          const response = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
@@ -920,7 +916,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          await ModuleProxy.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
+          await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -982,14 +978,15 @@ Test('Transfer facade', async (transferFacadeTest) => {
               }
             }
           }
-          const eventAction = 'abort'
+          const transferErrorDuplicateCheckId = 1
           const errorPayeeCustom = payload.errorInformation.errorCode
           const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           let transferErrorRecord = {
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
             errorCode: errorPayeeCustom,
             errorDescription: errorPayeeCustomDescription,
-            createdDate: transactionTimestamp
+            createdDate: transactionTimestamp,
+            transferErrorDuplicateCheckId
           }
           const insertedTransferError = {
             transferErrorId: 1
@@ -1029,7 +1026,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, eventAction)
+          const response = await ModuleProxy.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
           test.deepEqual(expectedResult, response, 'response matches expected result')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
@@ -1056,14 +1053,15 @@ Test('Transfer facade', async (transferFacadeTest) => {
               }
             }
           }
-          const eventAction = 'abort'
+          const transferErrorDuplicateCheckId = 1
           const errorPayeeCustom = payload.errorInformation.errorCode
           const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           let transferErrorRecord = {
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
             errorCode: errorPayeeCustom,
             errorDescription: errorPayeeCustomDescription,
-            createdDate: transactionTimestamp
+            createdDate: transactionTimestamp,
+            transferErrorDuplicateCheckId
           }
           const insertedTransferError = {
             transferErrorId: 1
@@ -1101,7 +1099,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, eventAction)
+          const response = await ModuleProxy.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
           test.deepEqual(expectedResult, response, 'response matches expected result')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')

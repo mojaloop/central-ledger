@@ -376,13 +376,16 @@ Test('Transfer Service', transferIndexTest => {
   transferIndexTest.test('validateDuplicateHash should', validateDuplicateHashTest => {
     validateDuplicateHashTest.test('hash exists and matches', async (test) => {
       try {
-        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({ hash: hashFixture }))
+        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({
+          existsMatching: true,
+          existsNotMatching: false
+        }))
         const expected = {
           existsMatching: true,
           existsNotMatching: false
         }
 
-        const result = await TransferService.validateDuplicateHash(payload)
+        const result = await TransferService.validateDuplicateHash(payload.transferId, payload)
         test.deepEqual(result, expected, 'results match')
         test.end()
       } catch (err) {
@@ -394,13 +397,16 @@ Test('Transfer Service', transferIndexTest => {
 
     validateDuplicateHashTest.test('hash exists and not matches', async (test) => {
       try {
-        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({ hash: 'fake hash' }))
+        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({
+          existsMatching: false,
+          existsNotMatching: true
+        }))
         const expected = {
           existsMatching: false,
           existsNotMatching: true
         }
 
-        const result = await TransferService.validateDuplicateHash(payload)
+        const result = await TransferService.validateDuplicateHash(payload.transferId, payload)
         test.deepEqual(result, expected, 'results match')
         test.end()
       } catch (err) {
@@ -413,7 +419,7 @@ Test('Transfer Service', transferIndexTest => {
     validateDuplicateHashTest.test('hash not exists then insert the hash', async (test) => {
       try {
         TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve(null))
-        await TransferService.validateDuplicateHash(payload)
+        await TransferService.validateDuplicateHash(payload.transferId, payload)
         test.pass('hash inserted successfully')
         test.end()
       } catch (err) {

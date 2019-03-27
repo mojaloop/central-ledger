@@ -118,7 +118,10 @@ const fulfilMessages = [
     value: Object.assign({}, messageProtocol, {
       content: {
         payload: fulfil,
-        headers: { 'fspiop-destination': 'dfsp2' }
+        headers: {
+          'fspiop-source': 'dfsp1',
+          'fspiop-destination': 'dfsp2'
+        }
       },
       metadata: {
         event: {
@@ -217,10 +220,11 @@ Test('Transfer handler', transferHandlerTest => {
       // here copy
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -237,7 +241,7 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -250,10 +254,11 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: true,
         existsNotMatching: false
       }))
@@ -269,10 +274,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: true,
         existsNotMatching: false
       }))
@@ -287,10 +293,11 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: true,
         existsNotMatching: false
       }))
@@ -305,9 +312,10 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: true,
         existsNotMatching: false
       }))
@@ -325,9 +333,10 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: true,
         existsNotMatching: false
       }))
@@ -346,9 +355,10 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: true,
         existsNotMatching: false
       }))
@@ -364,9 +374,10 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: true,
         existsNotMatching: false
       }))
@@ -382,10 +393,11 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: true
       }))
@@ -401,10 +413,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: true
       }))
@@ -419,10 +432,11 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -437,10 +451,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -454,10 +469,11 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -471,10 +487,11 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -489,10 +506,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -506,8 +524,9 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -524,8 +543,9 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -543,10 +563,11 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -561,10 +582,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
       TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer).returns(P.resolve({
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
       }))
@@ -579,6 +601,7 @@ Test('Transfer handler', transferHandlerTest => {
         let localMessages = Util.clone(messages)
         await Consumer.createHandler(topicName, config, command)
         Utility.transformAccountToTopicName.returns(topicName)
+        Utility.proceed.returns(true)
         Utility.createPrepareErrorStatus.returns(messageProtocol.content.payload)
         Utility.createState.returns(messageProtocol.metadata.event.state)
         Validator.validateByName.returns({ validationPassed: true, reasons: [] })
@@ -626,6 +649,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.registerGetTransferHandler(null, localMessages)
       test.equal(result, true)
@@ -653,6 +677,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.getTransfer(null, localMessages[0])
       test.equal(result, true)
@@ -663,6 +688,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       const result = await allTransferHandlers.getTransfer(null, localMessages)
@@ -699,6 +725,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
@@ -712,6 +739,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
@@ -726,6 +754,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(false)
@@ -740,6 +769,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(false)
@@ -754,6 +784,7 @@ Test('Transfer handler', transferHandlerTest => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.getKafkaConfig.returns(config)
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
@@ -764,12 +795,10 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    transformTransfer.test('returns an error when general message cannot be produced', async (test) => {
+    transformTransfer.test('return an error when general message cannot be produced', async (test) => {
       let localMessages = Util.clone(messages)
       await Consumer.createHandler(topicName, config, command)
-      Utility.transformAccountToTopicName.returns(topicName)
-      Utility.getKafkaConfig.returns(config)
-      Utility.produceGeneralMessage.throws(new Error())
+      Utility.proceed.throws(new Error())
       Validator.validateParticipantByName.returns(true)
       Validator.validateParticipantTransferId.returns(true)
       let transferResult = Util.clone(transferReturn)
@@ -796,7 +825,10 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      Utility.proceed.returns(true)
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -809,6 +841,8 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      Utility.proceed.returns(true)
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -820,7 +854,10 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      Utility.proceed.returns(true)
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -831,10 +868,10 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -847,9 +884,11 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
+      Utility.proceed.returns(true)
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -859,10 +898,12 @@ Test('Transfer handler', transferHandlerTest => {
       let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition' }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
+      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2' }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
+      Utility.proceed.returns(true)
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -873,10 +914,12 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition' }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('fulfilment')
+      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2' }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
+      Utility.proceed.returns(true)
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -886,12 +929,12 @@ Test('Transfer handler', transferHandlerTest => {
       let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.COMMITTED }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.COMMITTED }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -903,12 +946,12 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.COMMITTED }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.COMMITTED }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -919,13 +962,14 @@ Test('Transfer handler', transferHandlerTest => {
       let localfulfilMessages = Util.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RESERVED }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Utility.proceed.returns(true)
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -937,12 +981,13 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Validator.validateFulfilCondition.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RESERVED }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
-
+      Utility.proceed.returns(true)
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -954,14 +999,17 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({
         condition: 'condition',
+        payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
       }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      Utility.proceed.returns(true)
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -974,14 +1022,17 @@ Test('Transfer handler', transferHandlerTest => {
       Utility.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({
         condition: 'condition',
+        payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
       }))
-      // FiveBellsCondition.fulfillmentToCondition.returns('condition')
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      Utility.proceed.returns(true)
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -1011,9 +1062,15 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      TransferService.getById.returns(P.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        transferState: TransferState.RESERVED
+      }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.metadata.event.action = 'reject'
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1026,9 +1083,15 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      TransferService.getById.returns(P.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        transferState: TransferState.RESERVED
+      }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.metadata.event.action = 'reject'
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1040,7 +1103,12 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      TransferService.getById.returns(P.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        transferState: TransferState.RESERVED
+      }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.metadata.event.action = 'reject'
       delete fulfilMessages[0].value.content.payload.fulfilment
@@ -1050,6 +1118,7 @@ Test('Transfer handler', transferHandlerTest => {
           errorDescription: 'generic'
         }
       })
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1061,11 +1130,17 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
       Validator.validateFulfilCondition.returns(true)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', transferState: TransferState.RESERVED }))
+      TransferService.getById.returns(P.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        transferState: TransferState.RESERVED
+      }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       TransferService.abort.returns(P.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       Utility.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.metadata.event.action = 'abort'
       delete fulfilMessages[0].value.content.payload.fulfilment
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1084,7 +1159,7 @@ Test('Transfer handler', transferHandlerTest => {
         test.fail('should throw error')
         test.end()
       } catch (e) {
-        test.pass('Error throws')
+        test.pass('Error thrown')
         test.end()
       }
     })
@@ -1093,7 +1168,9 @@ Test('Transfer handler', transferHandlerTest => {
       let invalidEventMessage = Util.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Utility.transformGeneralTopicName.returns(topicName)
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       invalidEventMessage.value.metadata.event.action = 'invalid event'
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])
       test.equal(result, true)
@@ -1105,8 +1182,10 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
       invalidEventMessage.value.metadata.event.action = 'invalid event'
       invalidEventMessage.value.content.payload = { extensionList: {} }
+      Utility.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])
       test.equal(result, true)
@@ -1147,6 +1226,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       DAO.retrieveAllParticipants.returns(P.resolve(participants))
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
 
@@ -1158,6 +1238,7 @@ Test('Transfer handler', transferHandlerTest => {
     registerHandlersTest.test('register a consumer on Kafka', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Utility.transformAccountToTopicName.returns(topicName)
+      Utility.proceed.returns(true)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
       await DAO.retrieveAllParticipants.returns(P.resolve(participants))
@@ -1172,6 +1253,7 @@ Test('Transfer handler', transferHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         await DAO.retrieveAllParticipants.returns(P.resolve(participants))
         Utility.transformAccountToTopicName.returns(topicName)
+        Utility.proceed.returns(true)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
 
@@ -1189,6 +1271,7 @@ Test('Transfer handler', transferHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         await DAO.retrieveAllParticipants.returns(P.resolve([]))
         Utility.transformAccountToTopicName.returns(topicName)
+        Utility.proceed.returns(true)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.throws(new Error())
 

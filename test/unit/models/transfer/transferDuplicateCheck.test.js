@@ -93,8 +93,8 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
 
         knexStub.returns({
           transacting: sandbox.stub().returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns({
+            where: sandbox.stub().returns({
+              select: sandbox.stub().returns({
                 first: sandbox.stub().returns(existingHash)
               })
             }),
@@ -103,7 +103,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
         })
         let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
         test.ok(knexStub.withArgs('transferDuplicateCheck').calledOnce, 'knex called with transferDuplicateCheck once')
-        test.deepEqual(result, existingHash)
+        test.deepEqual(result, { existsMatching: true, existsNotMatching: false })
         test.end()
       } catch (err) {
         Logger.error(`checkAndInsertDuplicateHash failed with error - ${err}`)
@@ -123,8 +123,8 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
 
         knexStub.returns({
           transacting: sandbox.stub().returns({
-            select: sandbox.stub().returns({
-              where: sandbox.stub().returns({
+            where: sandbox.stub().returns({
+              select: sandbox.stub().returns({
                 first: sandbox.stub().returns(null)
               })
             }),
@@ -133,7 +133,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
         })
         let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
         test.ok(knexStub.withArgs('transferDuplicateCheck').calledTwice, 'knex called with transferDuplicateCheck once')
-        test.equal(result, null)
+        test.deepEqual(result, { existsMatching: false, existsNotMatching: false })
         test.end()
       } catch (err) {
         Logger.error(`checkAndInsertDuplicateHash failed with error - ${err}`)

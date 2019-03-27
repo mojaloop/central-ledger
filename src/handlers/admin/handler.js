@@ -166,7 +166,7 @@ const transfer = async (error, messages) => {
       Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
     }
     if (httpPostRelatedActions.includes(payload.action)) {
-      const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
+      const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload.transferId, payload)
       if (!existsMatching && !existsNotMatching) {
         Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
         await createRecordFundsInOut(payload, transactionTimestamp, enums)
@@ -178,7 +178,8 @@ const transfer = async (error, messages) => {
     } else {
       await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
     }
-    return await Utility.commitMessageSync(kafkaTopic, consumer, message)
+    await Utility.commitMessageSync(kafkaTopic, consumer, message)
+    return true
   } catch (error) {
     Logger.error(error)
     throw error

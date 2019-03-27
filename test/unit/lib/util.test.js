@@ -131,7 +131,8 @@ Test('util', utilTest => {
           'number': 1000
         },
         prop3: null,
-        prop4: null
+        prop4: null,
+        prop5: undefined
       }
 
       const expected = {
