@@ -29,12 +29,11 @@
 'use strict'
 
 const src = '../../../../../src'
+const rewire = require('rewire')
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const Consumer = require(`${src}/handlers/lib/kafka/consumer`)
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
-
-const rewire = require('rewire')
 
 Test('Consumer', ConsumerTest => {
   let sandbox
@@ -131,6 +130,20 @@ Test('Consumer', ConsumerTest => {
 
   ConsumerTest.test('isConsumerAutoCommitEnabled should', isConsumerAutoCommitEnabledTest => {
     const topicName = 'admin'
+
+    isConsumerAutoCommitEnabledTest.test('return consumer auto commit status', async (test) => {
+      const topicName = 'admin'
+      const autoCommitEnabled = false
+      let ConsumerProxy = rewire(`${src}/handlers/lib/kafka/consumer`)
+      ConsumerProxy.__set__('listOfConsumers', { admin: { autoCommitEnabled } })
+      try {
+        const result = await ConsumerProxy.isConsumerAutoCommitEnabled(topicName)
+        test.equal(result, false, 'auto commit is disabled')
+      } catch (err) {
+        test.fail()
+      }
+      test.end()
+    })
 
     isConsumerAutoCommitEnabledTest.test('throw error', async (test) => {
       try {

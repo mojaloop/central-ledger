@@ -23,7 +23,6 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Lazola Lucas <lazola.lucas@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
  * Deon Botha <deon.botha@modusbox.com>
@@ -140,7 +139,7 @@ const prepare = async (error, messages) => {
         let record = await TransferService.getById(transferId)
         message.value.content.payload = TransferObjectTransform.toFulfil(record)
         const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE_DUPLICATE }
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch }) // TODO: verify fromSwitch
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
         Logger.info(Util.breadcrumb(location, `inProgress1--${AL}3`))
         return await Util.proceed(params, { consumerCommit, histTimerEnd })
@@ -150,7 +149,7 @@ const prepare = async (error, messages) => {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${AL}4`))
       const errorInformation = Errors.getErrorInformation(eEnum.modifiedRequest)
       const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE }
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
 
     let { validationPassed, reasons } = await Validator.validateByName(payload, headers)
@@ -164,7 +163,7 @@ const prepare = async (error, messages) => {
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         const errorInformation = Errors.getErrorInformation(eEnum.internal)
         const producer = { functionality: TET.NOTIFICATION, action: TEA.PREPARE }
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch }) // TODO: verify fromSwitch
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
       Logger.info(Util.breadcrumb(location, `positionTopic1--${AL}6`))
       const producer = { functionality: TET.POSITION, action: TEA.PREPARE }
@@ -429,12 +428,10 @@ const getTransfer = async (error, messages) => {
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
     // ============================================================================================
-    if (transfer) {
-      Util.breadcrumb(location, { path: 'validationPassed' })
-      Logger.info(Util.breadcrumb(location, `callbackMessage--${AL}4`))
-      message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
-    }
+    Util.breadcrumb(location, { path: 'validationPassed' })
+    Logger.info(Util.breadcrumb(location, `callbackMessage--${AL}4`))
+    message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+    return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

@@ -47,42 +47,37 @@ const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, Admi
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
-  try {
-    /** @namespace Db.getKnex **/
-    const knex = Db.getKnex()
+  /** @namespace Db.getKnex **/
+  const knex = Db.getKnex()
 
-    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
-    // Save the valid transfer into the database
-    if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
-      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
-      return knex.transaction(async trx => {
-        try {
-          await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
-          await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
-          await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
-          await trx.commit
-        } catch (err) {
-          await trx.rollback
-          throw err
-        }
-      })
-    } else {
-      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE_RESERVE`)
-      return knex.transaction(async trx => {
-        try {
-          await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
-          await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
-          await trx.commit
-        } catch (err) {
-          await trx.rollback
-          throw err
-        }
-      })
-    }
-  } catch (err) {
-    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::duplicate found while inserting into transfer table`)
+  Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
+  // Save the valid transfer into the database
+  if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
+    return knex.transaction(async trx => {
+      try {
+        await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+        await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
+        await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } else {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE_RESERVE`)
+    return knex.transaction(async trx => {
+      try {
+        await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+        await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
   }
-  return true
 }
 
 const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTimestamp, enums) => {

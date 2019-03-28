@@ -133,7 +133,8 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
     const hashSha256 = Crypto.createHash('sha256')
     let hash = JSON.stringify(payload)
     hash = hashSha256.update(hash)
-    hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
+    // remove trailing '=' as per specification
+    hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
 
     if (!transferFulfilmentId) {
       result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)

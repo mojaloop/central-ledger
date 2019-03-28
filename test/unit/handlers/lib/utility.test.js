@@ -1,14 +1,48 @@
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+
+ --------------
+ ******/
+
 'use strict'
 
+const src = '../../../../src'
+const rewire = require('rewire')
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const Mustache = require('mustache')
 const P = require('bluebird')
 const Uuid = require('uuid4')
-// const Logger = require('@mojaloop/central-services-shared').Logger
 const KafkaProducer = require('@mojaloop/central-services-stream').Kafka.Producer
 const Proxyquire = require('proxyquire')
 const Utility = require('../../../../src/handlers/lib/utility')
+const Enum = require('../../../../src/lib/enum')
 
 let participantName
 const TRANSFER = 'transfer'
@@ -323,6 +357,187 @@ Test('Utility Test', utilityTest => {
     })
 
     createPrepareErrorStatusTest.end()
+  })
+
+  utilityTest.test('commitMessageSync should', commitMessageSyncTest => {
+    commitMessageSyncTest.test('commit message when auto commit is disabled', async (test) => {
+      const kafkaTopic = 'test-topic'
+      const message = 'message'
+      const commitMessageSyncStub = sandbox.stub()
+      const consumerStub = {
+        commitMessageSync: commitMessageSyncStub
+      }
+      const KakfaStub = {
+        Consumer: {
+          isConsumerAutoCommitEnabled: sandbox.stub().withArgs(kafkaTopic).returns(false)
+        }
+      }
+      let UtilityProxy = rewire(`${src}/handlers/lib/utility`)
+      UtilityProxy.__set__('Kafka', KakfaStub)
+
+      await UtilityProxy.commitMessageSync(kafkaTopic, consumerStub, message)
+      test.ok(KakfaStub.Consumer.isConsumerAutoCommitEnabled.withArgs(kafkaTopic).calledOnce, 'isConsumerAutoCommitEnabled called once')
+      test.ok(commitMessageSyncStub.withArgs(message).calledOnce, 'commitMessageSyncStub called once')
+      test.end()
+    })
+
+    commitMessageSyncTest.test('skip committing message when auto commit is enabled', async (test) => {
+      const kafkaTopic = 'test-topic'
+      const message = 'message'
+      const commitMessageSyncStub = sandbox.stub()
+      const consumerStub = {
+        commitMessageSync: commitMessageSyncStub
+      }
+      const KakfaStub = {
+        Consumer: {
+          isConsumerAutoCommitEnabled: sandbox.stub().withArgs(kafkaTopic).returns(true)
+        }
+      }
+      let UtilityProxy = rewire(`${src}/handlers/lib/utility`)
+      UtilityProxy.__set__('Kafka', KakfaStub)
+
+      await UtilityProxy.commitMessageSync(kafkaTopic, consumerStub, message)
+      test.ok(KakfaStub.Consumer.isConsumerAutoCommitEnabled.withArgs(kafkaTopic).calledOnce, 'isConsumerAutoCommitEnabled called once')
+      test.equal(commitMessageSyncStub.withArgs(message).callCount, 0, 'commitMessageSyncStub not called')
+      test.end()
+    })
+
+    commitMessageSyncTest.end()
+  })
+
+  utilityTest.test('breadcrumb should', breadcrumbTest => {
+    breadcrumbTest.test('reset location method when provided by message object', (test) => {
+      const location = { module: 'Module', method: '', path: '' }
+      const message = { method: 'method' }
+      const expected = 'Module::method'
+
+      const result = Utility.breadcrumb(location, message)
+      test.equal(location.method, message.method, 'method reset')
+      test.equal(result, expected, 'result matched')
+      test.end()
+    })
+
+    breadcrumbTest.test('reset location path when provided by message object', (test) => {
+      const location = { module: 'Module', method: 'method', path: '' }
+      const message = { path: 'path' }
+      const expected = 'Module::method::path'
+
+      const result = Utility.breadcrumb(location, message)
+      test.equal(location.path, `${location.module}::${location.method}::${message.path}`, 'path reset')
+      test.equal(result, expected, 'result matched')
+      test.end()
+    })
+
+    breadcrumbTest.test('append location path when provided by message string', (test) => {
+      const path = 'path'
+      const location = { module: 'Module', method: 'method', path }
+      const message = 'message'
+      const expected = `${path}::${message}`
+
+      const result = Utility.breadcrumb(location, message)
+      test.equal(location.path, `${path}::${message}`, 'path appended')
+      test.equal(result, expected, 'result matched')
+      test.end()
+    })
+
+    breadcrumbTest.test('return path unchanged when message is not provided', (test) => {
+      const path = 'path'
+      const location = { module: 'Module', method: 'method', path }
+      const expected = `${path}`
+
+      const result = Utility.breadcrumb(location)
+      test.equal(result, expected, 'result matched')
+      test.end()
+    })
+
+    breadcrumbTest.end()
+  })
+
+  utilityTest.test('proceed should', async proceedTest => {
+    const commitMessageSyncStub = sandbox.stub().returns(Promise.resolve())
+    const createPrepareErrorStatusStub = sandbox.stub().returns('PrepareErrorStatus')
+    const createStateStub = sandbox.stub().returns('metadataState')
+    const produceGeneralMessageStub = sandbox.stub().returns(Promise.resolve())
+    const histTimerEndStub = sandbox.stub()
+    const successState = Utility.ENUMS.STATE.SUCCESS
+    const failureStatus = Utility.ENUMS.STATE.FAILURE.status
+    const from = 'from'
+    const extList = []
+    const message = {
+      value: {
+        content: {
+          payload: {
+            extensionList: extList
+          },
+          headers: {
+            'fspiop-destination': 'dfsp'
+          }
+        },
+        from
+      }
+    }
+    const transferId = Uuid()
+    const kafkaTopic = 'kafkaTopic'
+    const consumer = 'consumer'
+    const params = { message, transferId, kafkaTopic, consumer }
+    const producer = { functionality: 'functionality', action: 'action' }
+    let UtilityProxy = rewire(`${src}/handlers/lib/utility`)
+    UtilityProxy.__set__('commitMessageSync', commitMessageSyncStub)
+    UtilityProxy.__set__('createPrepareErrorStatus', createPrepareErrorStatusStub)
+    UtilityProxy.__set__('createState', createStateStub)
+    UtilityProxy.__set__('produceGeneralMessage', produceGeneralMessageStub)
+
+    proceedTest.test('commitMessageSync when consumerCommit and produce toDestination', async test => {
+      const opts = { consumerCommit: true, producer, toDestination: true }
+      try {
+        const result = await UtilityProxy.proceed(params, opts)
+        const p = producer
+        test.ok(commitMessageSyncStub.calledOnce, 'commitMessageSyncStub called once')
+        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState, message.value.content.headers['fspiop-destination']).calledOnce, 'produceGeneralMessageStub called once')
+        test.equal(result, true, 'result returned')
+      } catch (err) {
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    proceedTest.test('produce fromSwitch and do not stop timer', async test => {
+      const opts = { fromSwitch: true, producer, histTimerEnd: true }
+      try {
+        const result = await UtilityProxy.proceed(params, opts)
+        const p = producer
+        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState, transferId).calledOnce, 'produceGeneralMessageStub called once')
+        test.equal(message.value.to, from, 'message destination set to sender')
+        test.equal(message.value.from, Enum.headers.FSPIOP.SWITCH, 'from set to switch')
+        test.equal(histTimerEndStub.callCount, 0, 'timer running')
+        test.equal(result, true, 'result returned')
+      } catch (err) {
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    proceedTest.test('create error status and end timer', async test => {
+      const code = 1
+      const desc = 'desc'
+      const errorInformation = { errorCode: code, errorDescription: desc }
+      const opts = { errorInformation, histTimerEnd: histTimerEndStub }
+      try {
+        const result = await UtilityProxy.proceed(params, opts)
+        test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')
+        test.ok(createStateStub.withArgs(failureStatus, code, desc).calledOnce, 'createStateStub called once')
+        test.ok(histTimerEndStub.calledOnce, 'histTimerEndStub called once')
+        test.equal(result, true, 'result returned')
+      } catch (err) {
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    proceedTest.end()
   })
 
   utilityTest.end()
