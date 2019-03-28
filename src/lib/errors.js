@@ -24,6 +24,15 @@
 
 'use strict'
 
+const errorTitle = {
+  internal: 2001,
+  generic: 3100,
+  modifiedRequest: 3106,
+  transferExpired: 3300,
+  genericClient: 3000,
+  transferNotFound: 3208
+}
+
 const error = {
   2001: 'Internal server error',
   2003: 'Service currently unavailable',
@@ -68,6 +77,7 @@ const getErrorInformation = (errorCode, appendDescription) => {
 }
 
 module.exports = {
+  errorTitle,
   createErrorInformation,
   getErrorDescription,
   getErrorInformation
