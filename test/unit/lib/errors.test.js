@@ -71,5 +71,26 @@ Test('Errors', (errorsTest) => {
     }
   })
 
+  errorsTest.test('getErrorInformation should', async (test) => {
+    try {
+      const newDescription = 'new description'
+      const errorCode = 4001
+      const appendDescription = {
+        replace: newDescription
+      }
+      const expected = {
+        errorCode,
+        errorDescription: newDescription
+      }
+      const result = await Model.getErrorInformation(errorCode, appendDescription)
+      test.deepEqual(result, expected, 'return error information with description replaced')
+      test.end()
+    } catch (err) {
+      Logger.error(`getErrorInformation failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
   errorsTest.end()
 })

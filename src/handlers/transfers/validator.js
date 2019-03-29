@@ -83,7 +83,7 @@ const validatePositionAccountByNameAndCurrency = async function (participantName
 }
 
 const validateDifferentDfsp = (payload) => {
-  const isPayerAndPayeeDifferent = (payload.payerFsp !== payload.payeeFsp)
+  const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
   if (!isPayerAndPayeeDifferent) {
     reasons.push(`Payer and Payee should be different`)
     return false

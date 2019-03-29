@@ -18,7 +18,7 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
@@ -27,82 +27,58 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../../src/models/transfer/transferDuplicateCheck')
+const Model = require('../../../../src/models/transfer/transferErrorDuplicateCheck')
 const Db = require('../../../../src/db/index')
 
-Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
+Test('TransferErrorDuplicateCheck model', async (TransferErrorDuplicateCheckTest) => {
   let sandbox
-  const existingHash = {
+  const newHash = 'EE1H9SMsUlHDMOm0H4OfI4D57MHOVTYwwXBK+BWHr/1'
+  const existingHashes = [{
     transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
     hash: 'EE1H9SMsUlHDMOm0H4OfI4D57MHOVTYwwXBK+BWHr/4',
-    createdDate: '2018-08-15 13:41:28'
-  }
-  TransferDuplicateCheckTest.beforeEach(test => {
+    createdDate: '2018-08-15 13:41:28',
+    transferErrorId: 1
+  }]
+  TransferErrorDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    Db.transferDuplicateCheck = {
-      insert: sandbox.stub()
-    }
     test.end()
   })
 
-  TransferDuplicateCheckTest.afterEach(test => {
+  TransferErrorDuplicateCheckTest.afterEach(test => {
     sandbox.restore()
     test.end()
   })
 
-  await TransferDuplicateCheckTest.test('saveTransferDuplicateCheck should', async (saveTransferDuplicateCheckTest) => {
-    await saveTransferDuplicateCheckTest.test('save the transfer duplicate check hash', async test => {
+  await TransferErrorDuplicateCheckTest.test('checkAndInsertDuplicateHash should', async (checkAndInsertDuplicateHashTest) => {
+    await checkAndInsertDuplicateHashTest.test('insert new hash if it does not exist', async test => {
       try {
-        Db.transferDuplicateCheck.insert.returns(1)
-        let result = await Model.saveTransferDuplicateCheck(existingHash)
-        test.equal(result, 1)
-        test.end()
-      } catch (err) {
-        Logger.error(`saveTransferDuplicateCheck failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    await saveTransferDuplicateCheckTest.test('throw error', async test => {
-      try {
-        Db.transferDuplicateCheck.insert.throws(new Error('message'))
-        await Model.saveTransferDuplicateCheck(existingHash)
-        test.fail(' should throw')
-        test.end()
-        test.end()
-      } catch (err) {
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-
-    await saveTransferDuplicateCheckTest.end()
-  })
-
-  await TransferDuplicateCheckTest.test('checkAndInsertDuplicateHash should', async (checkAndInsertDuplicateHashTest) => {
-    await checkAndInsertDuplicateHashTest.test('return the hash if it exists', async test => {
-      try {
+        const transferErrorDuplicateCheckId = 1
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
         trxStub.commit = sandbox.stub()
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
-
         knexStub.returns({
           transacting: sandbox.stub().returns({
-            where: sandbox.stub().returns({
-              select: sandbox.stub().returns({
-                first: sandbox.stub().returns(existingHash)
+            leftJoin: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                select: sandbox.stub().returns(existingHashes)
               })
             }),
-            insert: sandbox.stub().returns(null)
+            insert: sandbox.stub().returns(transferErrorDuplicateCheckId)
           })
         })
-        let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
-        test.ok(knexStub.withArgs('transferDuplicateCheck').calledOnce, 'knex called with transferDuplicateCheck once')
-        test.deepEqual(result, { existsMatching: true, existsNotMatching: false })
+        const expected = {
+          existsMatching: false,
+          existsNotMatching: true,
+          isValid: false,
+          transferErrorDuplicateCheckId
+        }
+
+        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, newHash)
+        test.ok(knexStub.withArgs('transferErrorDuplicateCheck').calledTwice, 'knex called with transferErrorDuplicateCheck twice')
+        test.deepEqual(result, expected, 'result matched')
         test.end()
       } catch (err) {
         Logger.error(`checkAndInsertDuplicateHash failed with error - ${err}`)
@@ -111,28 +87,35 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
       }
     })
 
-    await checkAndInsertDuplicateHashTest.test('insert the hash if it does not exists', async test => {
+    await checkAndInsertDuplicateHashTest.test('return isValid hash status if exists', async test => {
       try {
+        let transferErrorDuplicateCheckId
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
         trxStub.commit = sandbox.stub()
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
-
         knexStub.returns({
           transacting: sandbox.stub().returns({
-            where: sandbox.stub().returns({
-              select: sandbox.stub().returns({
-                first: sandbox.stub().returns(null)
+            leftJoin: sandbox.stub().returns({
+              where: sandbox.stub().returns({
+                select: sandbox.stub().returns(existingHashes)
               })
-            }),
-            insert: sandbox.stub().returns([1])
+            })
           })
         })
-        let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
-        test.ok(knexStub.withArgs('transferDuplicateCheck').calledTwice, 'knex called with transferDuplicateCheck once')
-        test.deepEqual(result, { existsMatching: false, existsNotMatching: false })
+
+        const expected = {
+          existsMatching: true,
+          existsNotMatching: false,
+          isValid: true,
+          transferErrorDuplicateCheckId
+        }
+
+        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
+        test.ok(knexStub.withArgs('transferErrorDuplicateCheck').calledOnce, 'knex called with transferErrorDuplicateCheck once')
+        test.deepEqual(result, expected, 'result matched')
         test.end()
       } catch (err) {
         Logger.error(`checkAndInsertDuplicateHash failed with error - ${err}`)
@@ -153,8 +136,8 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
 
         knexStub.throws(new Error())
 
-        await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
-        test.fail(' should throw')
+        await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
+        test.fail('Error not thrown!')
         test.end()
         test.end()
       } catch (err) {
@@ -174,8 +157,8 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
         sandbox.stub(knex, 'transaction')
         knex.transaction.throws(new Error('message'))
 
-        await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
-        test.fail(' should throw')
+        await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
+        test.fail('Error not thrown!')
         test.end()
       } catch (err) {
         test.pass('Error thrown')
@@ -186,5 +169,5 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
     await checkAndInsertDuplicateHashTest.end()
   })
 
-  await TransferDuplicateCheckTest.end()
+  await TransferErrorDuplicateCheckTest.end()
 })

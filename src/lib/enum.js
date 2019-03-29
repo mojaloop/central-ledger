@@ -214,6 +214,8 @@ const transferEventType = {
 const transferEventAction = {
   PREPARE: 'prepare',
   PREPARE_DUPLICATE: 'prepare-duplicate',
+  FULFIL_DUPLICATE: 'fulfil-duplicate',
+  ABORT_DUPLICATE: 'abort-duplicate',
   TRANSFER: 'transfer',
   COMMIT: 'commit',
   ABORT: 'abort',
@@ -223,7 +225,16 @@ const transferEventAction = {
   FAIL: 'fail',
   EVENT: 'event',
   FULFIL: 'fulfil',
-  POSITION: 'position'
+  POSITION: 'position',
+  GET: 'get'
+}
+const actionLetter = {
+  abort: 'A',
+  commit: 'C',
+  get: 'G',
+  prepare: 'P',
+  reject: 'R',
+  unknown: '?'
 }
 const adminTransferAction = {
   RECORD_FUNDS_IN: 'recordFundsIn',
@@ -247,8 +258,9 @@ const transferEventStatus = {
 
 const headers = {
   FSPIOP: {
-    SWITCH: 'switch',
-    DESTINATION: 'fspiop-destination'
+    DESTINATION: 'fspiop-destination',
+    SOURCE: 'fspiop-source',
+    SWITCH: 'switch'
   }
 }
 
@@ -281,6 +293,14 @@ const topicMap = {
       action: transferEventAction.EVENT
     },
     'prepare-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'fulfil-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'abort-duplicate': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
@@ -333,6 +353,7 @@ module.exports = {
 
   transferEventType,
   transferEventAction,
+  actionLetter,
   adminTransferAction,
   adminNotificationActions,
   rejectionType,

@@ -225,8 +225,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
   }
 }
 
-const saveTransferFulfilled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
-  const transferFulfilmentId = Uuid() // TODO: should be generated before TransferFulfilmentDuplicateCheck and passed here as parameter
+const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
   const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.RECEIVED_REJECT) : Enum.TransferState.ABORTED_REJECTED)
   const completedTimestamp = (payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date()
   const transferFulfilmentRecord = {
@@ -311,7 +310,7 @@ const saveTransferFulfilled = async (transferId, payload, isCommit = true, state
  * @returns {Object} - Returns details for the affected db records
  */
 
-const saveTransferAborted = async (transferId, payload) => {
+const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
   let errorCode
   let errorDescription
   let transferErrorRecord
@@ -362,7 +361,8 @@ const saveTransferAborted = async (transferId, payload) => {
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           errorCode,
           errorDescription,
-          createdDate: transactionTimestamp
+          createdDate: transactionTimestamp,
+          transferErrorDuplicateCheckId
         }
         await knex('transferError').transacting(trx).insert(transferErrorRecord)
 
@@ -405,7 +405,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       if (participant) {
         participants.push(participant)
       } else {
-        throw new Error('Invalid FSP name')
+        throw new Error('Invalid FSP name or currency')
       }
     }
 

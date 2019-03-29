@@ -18,51 +18,24 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 /**
- * @module src/models/transfer/transferDuplicateCheck/
+ * @module src/models/transfer/transferErrorDuplicateCheck/
  */
 
 const Db = require('../../db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 /**
- * @function SaveTransferDuplicateCheck
- *
- * @async
- * @description This inserts a record into transferDuplicateCheck table
- *
- * @param {object} transferDuplicateCheck - the object to be inserted with values of transferId and hash
- * Example:
- * ```
- * {
- *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
- *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8'
- * }
- * ```
- *
- * @returns {integer} - Returns the database id of the inserted row, or throws an error if failed
- */
-
-const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
-  Logger.debug('save transferDuplicateCheck' + transferDuplicateCheck.toString())
-  try {
-    return Db.transferDuplicateCheck.insert(transferDuplicateCheck)
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-/**
  * @function CheckAndInsertDuplicateHash
  *
  * @async
- * @description This checks if there is a matching hash for a transfer request in transferDuplicateCheck table, if it does not exist, it will be inserted
+ * @description This checks if there is a matching hash for a transfer request in transferErrorDuplicateCheck table, if it does not exist, it will be inserted
  *
  * @param {string} transferId - the transfer id
  * @param {string} hash - the hash of the transfer request payload
@@ -79,30 +52,37 @@ const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
  */
 
 const checkAndInsertDuplicateHash = async (transferId, hash) => {
-  Logger.debug('check and insert hash into transferDuplicateCheck' + transferId.toString())
+  Logger.debug('check and insert hash into transferErrorDuplicateCheck' + transferId.toString())
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
         let existsMatching = false
         let existsNotMatching = false
+        let isValid = false
+        let transferErrorDuplicateCheckId
 
-        const existingHash = await knex('transferDuplicateCheck').transacting(trx)
-          .where({ transferId: transferId })
-          .select('*')
-          .first()
+        const existingHashes = await knex('transferErrorDuplicateCheck').transacting(trx)
+          .leftJoin('transferError AS te', 'te.transferErrorDuplicateCheckId', 'transferErrorDuplicateCheck.transferErrorDuplicateCheckId')
+          .where({ transferId })
+          .select('transferErrorDuplicateCheck.*', 'te.transferErrorId')
 
-        if (!existingHash) {
-          await knex('transferDuplicateCheck').transacting(trx)
-            .insert({ transferId, hash })
+        const matchedHash = existingHashes.find(record => { return record.hash === hash })
+        existsMatching = !!matchedHash
+
+        if (existsMatching) {
+          isValid = !!matchedHash.transferErrorId
         } else {
-          existsMatching = hash === existingHash.hash
-          existsNotMatching = !existsMatching
+          transferErrorDuplicateCheckId = await knex('transferErrorDuplicateCheck').transacting(trx)
+            .insert({ transferId, hash })
+          existsNotMatching = existingHashes.length > 0
         }
         await trx.commit
         return {
           existsMatching,
-          existsNotMatching
+          existsNotMatching,
+          isValid,
+          transferErrorDuplicateCheckId
         }
       } catch (err) {
         await trx.rollback
@@ -115,6 +95,5 @@ const checkAndInsertDuplicateHash = async (transferId, hash) => {
 }
 
 module.exports = {
-  saveTransferDuplicateCheck,
   checkAndInsertDuplicateHash
 }

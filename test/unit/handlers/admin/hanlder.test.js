@@ -2,7 +2,7 @@
 
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
-const adminHandler = require('../../../../src/handlers/admin/handler')
+const AdminHandler = require('../../../../src/handlers/admin/handler')
 const Kafka = require('../../../../src/handlers/lib/kafka')
 const Utility = require('../../../../src/handlers/lib/utility')
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
@@ -305,7 +305,7 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(KafkaConsumer.prototype, 'consume').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'commitMessageSync').resolves()
     sandbox.stub(Kafka.Consumer, 'getConsumer').returns({
-      commitMessageSync: async function () { return true }
+      commitMessageSync: async function () { return Promise.resolve(true) }
     })
     sandbox.stub(Kafka.Consumer, 'isConsumerAutoCommitEnabled')
 
@@ -334,7 +334,7 @@ Test('Admin handler', adminHandlerTest => {
       DAO.retrieveAllParticipants.resolves(participants)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-      const result = await adminHandler.registerAllHandlers()
+      const result = await AdminHandler.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
@@ -343,7 +343,7 @@ Test('Admin handler', adminHandlerTest => {
       DAO.retrieveAllParticipants.resolves(participants)
       Utility.transformGeneralTopicName.returns(topicName)
       Utility.getKafkaConfig.returns(config)
-      const result = await adminHandler.registerAllHandlers()
+      const result = await AdminHandler.registerAllHandlers()
       test.equal(result, true)
       test.end()
     })
@@ -354,7 +354,7 @@ Test('Admin handler', adminHandlerTest => {
         DAO.retrieveAllParticipants.resolves(participants)
         Utility.transformGeneralTopicName.throws(new Error())
         Utility.getKafkaConfig.returns(config)
-        await adminHandler.registerAllHandlers()
+        await AdminHandler.registerAllHandlers()
         test.fails('should throw')
         test.end()
       } catch (e) {
@@ -366,8 +366,8 @@ Test('Admin handler', adminHandlerTest => {
     registerHandlersTest.end()
   })
 
-  adminHandlerTest.test('admin transfer should be able to', async transferTest => {
-    await transferTest.test('Create new transfer for record funds', async (test) => {
+  adminHandlerTest.test('admin transfer should', async transferTest => {
+    await transferTest.test('create new transfer for record funds in', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -379,12 +379,13 @@ Test('Admin handler', adminHandlerTest => {
         Kafka.Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).returns(true)
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
-        TransferService.validateDuplicateHash.withArgs(messages[0].value.content.payload).returns({
+        const payload = messages[0].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
 
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[0]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[0]))
         Logger.info(result)
         test.ok(TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub))
         test.ok(TransferService.reconciliationTransferReserve.callsArgWith(0, trxStub))
@@ -402,7 +403,7 @@ Test('Admin handler', adminHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
-        let result = await adminHandler.transfer(null, messageProtocolWrongAction)
+        let result = await AdminHandler.transfer(null, messageProtocolWrongAction)
         test.ok(result, 'exits without error')
         test.end()
       } catch (e) {
@@ -411,13 +412,13 @@ Test('Admin handler', adminHandlerTest => {
       }
     })
 
-    await transferTest.test('Should exit without error when topic is not found', async (test) => {
+    await transferTest.test('exit without error when topic is not found', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         Kafka.Consumer.getConsumer.withArgs(topicName).throws(new Error())
-        let result = await adminHandler.transfer(null, Object.assign({}, messages[0]))
+        let result = await AdminHandler.transfer(null, Object.assign({}, messages[0]))
         test.ok(result, 'exits')
         test.end()
       } catch (e) {
@@ -426,7 +427,7 @@ Test('Admin handler', adminHandlerTest => {
       }
     })
 
-    await transferTest.test('should catch error and rollback', async (test) => {
+    await transferTest.test('catch error and rollback', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -439,13 +440,14 @@ Test('Admin handler', adminHandlerTest => {
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
 
-        TransferService.validateDuplicateHash.withArgs(messages[0].value.content.payload).returns({
+        const payload = messages[0].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub).throws(new Error())
-        await adminHandler.transfer(null, Object.assign({}, messages[0]))
-        test.fail('should throw and rollback')
+        await AdminHandler.transfer(null, Object.assign({}, messages[0]))
+        test.fail('Error is not thrown!')
         test.end()
       } catch (e) {
         test.ok('Error is thrown')
@@ -453,7 +455,7 @@ Test('Admin handler', adminHandlerTest => {
       }
     })
 
-    await transferTest.test('should catch error and rollback', async (test) => {
+    await transferTest.test('catch error and rollback', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -466,13 +468,14 @@ Test('Admin handler', adminHandlerTest => {
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
 
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub).throws(new Error())
-        await adminHandler.transfer(null, Object.assign({}, messages[1]))
-        test.fail('should throw and rollback')
+        await AdminHandler.transfer(null, Object.assign({}, messages[1]))
+        test.fail('Error is not thrown!')
         test.end()
       } catch (e) {
         test.ok('Error is thrown')
@@ -480,34 +483,7 @@ Test('Admin handler', adminHandlerTest => {
       }
     })
 
-    await transferTest.test('should catch error and rollback', async (test) => {
-      try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
-        sandbox.stub(Db, 'getKnex')
-        const knexStub = sandbox.stub()
-        const trxStub = sandbox.stub()
-        trxStub.rollback = sandbox.stub()
-        Kafka.Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).throws(new Error())
-        knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-        Db.getKnex.throws(new Error())
-
-        TransferService.validateDuplicateHash.withArgs(messages[0].value.content.payload).returns({
-          existsMatching: 0,
-          existingNotMatching: 0
-        })
-        TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub).throws(new Error())
-        await adminHandler.transfer(null, Object.assign({}, messages[0]))
-        test.fail('should throw and rollback')
-        test.end()
-      } catch (e) {
-        test.ok('Error is thrown')
-        test.end()
-      }
-    })
-
-    await transferTest.test('Create new transfer for record funds if array of messages is consumed', async (test) => {
+    await transferTest.test('create new transfer for record funds if array of messages is consumed', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -519,12 +495,12 @@ Test('Admin handler', adminHandlerTest => {
         Kafka.Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).returns(true)
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
-
-        TransferService.validateDuplicateHash.withArgs(messages[0].value.content.payload).returns({
+        const payload = messages[0].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
-        const result = await adminHandler.transfer(null, messages)
+        const result = await AdminHandler.transfer(null, messages)
         Logger.info(result)
         test.ok(TransferService.reconciliationTransferPrepare.callsArgWith(0, trxStub))
         test.ok(TransferService.reconciliationTransferCommit.callsArgWith(0, trxStub))
@@ -536,7 +512,7 @@ Test('Admin handler', adminHandlerTest => {
       }
     })
 
-    await transferTest.test('Create erroneous msg', async (test) => {
+    await transferTest.test('create erroneous msg', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -548,12 +524,12 @@ Test('Admin handler', adminHandlerTest => {
         Kafka.Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).returns(true)
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
-
-        TransferService.validateDuplicateHash.withArgs(messages[0].value.content.payload).returns({
+        const payload = messages[0].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
-        const result = await adminHandler.transfer('ERROR', Object.assign({}, messages[0]))
+        const result = await AdminHandler.transfer('ERROR', Object.assign({}, messages[0]))
         Logger.info(result)
         test.fail('should throw')
         test.end()
@@ -569,12 +545,12 @@ Test('Admin handler', adminHandlerTest => {
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
         Kafka.Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).returns(true)
-
-        TransferService.validateDuplicateHash.withArgs(messages[0].value.content.payload).returns({
+        const payload = messages[0].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
-        let result = await adminHandler.transfer(null, Object.assign({}, messages[0], { value: { content: { payload: undefined } } }))
+        let result = await AdminHandler.transfer(null, Object.assign({}, messages[0], { value: { content: { payload: undefined } } }))
         test.equal(result, false)
         test.end()
       } catch (e) {
@@ -583,7 +559,7 @@ Test('Admin handler', adminHandlerTest => {
       }
     })
     // 7
-    await transferTest.test('Create new transfer for record funds', async (test) => {
+    await transferTest.test('create new transfer for record funds', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
@@ -594,12 +570,12 @@ Test('Admin handler', adminHandlerTest => {
         trxStub.commit = sandbox.stub()
         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
         Db.getKnex.returns(knexStub)
-
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.ok(TransferService.reconciliationTransferCommit.callsArgWith(0, trxStub))
         test.equal(result, true)
@@ -615,11 +591,12 @@ Test('Admin handler', adminHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
           existsNotMatching: 1
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -637,14 +614,15 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -662,14 +640,15 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.ABORTED_REJECTED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -687,14 +666,15 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -712,14 +692,15 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.RESERVED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -737,14 +718,15 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.FAILED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -762,12 +744,13 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[1].value.content.payload).returns({
+        const payload = messages[1].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({})
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[1]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -785,9 +768,10 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[2].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[2].value.content.payload).returns({
+        const payload = messages[2].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferById.withArgs(messages[2].value.content.id)
           .returns(Object.assign({},
@@ -796,7 +780,7 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[2].value.content.id).returns({
           transferStateId: TransferState.RESERVED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[2]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[2]))
         Logger.info(result)
         test.equal(result, true)
         test.end()
@@ -814,9 +798,10 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[2].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[2].value.content.payload).returns({
+        const payload = messages[2].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferById.withArgs(messages[2].value.content.id)
           .returns(Object.assign({},
@@ -824,7 +809,7 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[2].value.content.id).returns({
           transferStateId: TransferState.RESERVED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[2]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[2]))
         Logger.info(result)
         test.equal(result, true)
         test.ok(TransferService.reconciliationTransferCommit.callsArgWith(0, messages[1].value.content.payload), 'transferService.reconciliationTransferCommit Called')
@@ -843,9 +828,10 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[3].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[3].value.content.payload).returns({
+        const payload = messages[3].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferById.withArgs(messages[3].value.content.id)
           .returns(Object.assign({},
@@ -853,7 +839,7 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[3].value.content.id).returns({
           transferStateId: TransferState.RESERVED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[3]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[3]))
         Logger.info(result)
         test.equal(result, true)
         test.ok(TransferService.reconciliationTransferAbort.callsArgWith(0, messages[3].value.content.payload), 'transferService.reconciliationTransferAbort Called')
@@ -871,9 +857,10 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messageProtocolWrongAction.value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messageProtocolWrongAction.value.content.payload).returns({
+        const payload = messageProtocolWrongAction.value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferById.withArgs(messageProtocolWrongAction.value.content.id)
           .returns(Object.assign({},
@@ -881,7 +868,7 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messageProtocolWrongAction.value.content.id).returns({
           transferStateId: TransferState.RESERVED
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messageProtocolWrongAction))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messageProtocolWrongAction))
         Logger.info(result)
         test.equal(result, true)
         test.ok(TransferService.reconciliationTransferAbort.callsArgWith(0, messageProtocolWrongAction.value.content.payload), 'transferService.reconciliationTransferAbort Called')
@@ -899,9 +886,10 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[3].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
-        TransferService.validateDuplicateHash.withArgs(messages[3].value.content.payload).returns({
+        const payload = messages[3].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 1,
-          existingNotMatching: 0
+          existsNotMatching: 0
         })
         TransferService.getTransferById.withArgs(messages[3].value.content.id)
           .returns(Object.assign({},
@@ -909,7 +897,7 @@ Test('Admin handler', adminHandlerTest => {
         TransferService.getTransferState.withArgs(messages[3].value.content.id).returns({
           transferStateId: 'NOT_RESERVED'
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[3]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[3]))
         Logger.info(result)
         test.equal(result, true)
         test.ok(TransferService.reconciliationTransferAbort.callsArgWith(0, messages[3].value.content.payload), 'transferService.reconciliationTransferAbort Called')
@@ -925,11 +913,12 @@ Test('Admin handler', adminHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Utility.transformGeneralTopicName.returns(topicName)
         Utility.getKafkaConfig.returns(config)
-        TransferService.validateDuplicateHash.withArgs(messages[3].value.content.payload).returns({
+        const payload = messages[3].value.content.payload
+        TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
-          existingNotMatching: 1
+          existsNotMatching: 1
         })
-        const result = await adminHandler.transfer(null, Object.assign({}, messages[3]))
+        const result = await AdminHandler.transfer(null, Object.assign({}, messages[3]))
         Logger.info(result)
         test.equal(result, true)
         test.end()

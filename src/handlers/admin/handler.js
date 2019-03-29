@@ -46,50 +46,38 @@ const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransf
 const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
 
-const commitMessageSync = async (kafkaTopic, consumer, message) => {
-  if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
-    await consumer.commitMessageSync(message)
-  }
-  return true
-}
-
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
-  try {
-    /** @namespace Db.getKnex **/
-    const knex = Db.getKnex()
+  /** @namespace Db.getKnex **/
+  const knex = Db.getKnex()
 
-    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
-    // Save the valid transfer into the database
-    if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
-      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
-      return knex.transaction(async trx => {
-        try {
-          await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
-          await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
-          await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
-          await trx.commit
-        } catch (err) {
-          await trx.rollback
-          throw err
-        }
-      })
-    } else {
-      Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE_RESERVE`)
-      return knex.transaction(async trx => {
-        try {
-          await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
-          await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
-          await trx.commit
-        } catch (err) {
-          await trx.rollback
-          throw err
-        }
-      })
-    }
-  } catch (err) {
-    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::duplicate found while inserting into transfer table`)
+  Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
+  // Save the valid transfer into the database
+  if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
+    return knex.transaction(async trx => {
+      try {
+        await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+        await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
+        await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } else {
+    Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_OUT_PREPARE_RESERVE`)
+    return knex.transaction(async trx => {
+      try {
+        await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
+        await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
   }
-  return true
 }
 
 const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTimestamp, enums) => {
@@ -173,7 +161,7 @@ const transfer = async (error, messages) => {
       Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
     }
     if (httpPostRelatedActions.includes(payload.action)) {
-      const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload)
+      const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload.transferId, payload)
       if (!existsMatching && !existsNotMatching) {
         Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
         await createRecordFundsInOut(payload, transactionTimestamp, enums)
@@ -185,7 +173,8 @@ const transfer = async (error, messages) => {
     } else {
       await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
     }
-    return await commitMessageSync(kafkaTopic, consumer, message)
+    await Utility.commitMessageSync(kafkaTopic, consumer, message)
+    return true
   } catch (error) {
     Logger.error(error)
     throw error

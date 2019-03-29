@@ -22,7 +22,8 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
 
@@ -472,15 +473,72 @@ const produceParticipantMessage = async (participantName, functionality, action,
   return result
 }
 
-exports.transformAccountToTopicName = transformAccountToTopicName
-exports.transformGeneralTopicName = transformGeneralTopicName
-exports.getKafkaConfig = getKafkaConfig
-exports.updateMessageProtocolMetadata = updateMessageProtocolMetadata
-exports.createPrepareErrorStatus = createPrepareErrorStatus
-exports.createState = createState
-exports.createTransferMessageProtocol = createTransferMessageProtocol
-exports.createParticipantTopicConf = createParticipantTopicConf
-exports.createGeneralTopicConf = createGeneralTopicConf
-exports.produceParticipantMessage = produceParticipantMessage
-exports.produceGeneralMessage = produceGeneralMessage
-exports.ENUMS = ENUMS
+const commitMessageSync = async (kafkaTopic, consumer, message) => {
+  if (!Kafka.Consumer.isConsumerAutoCommitEnabled(kafkaTopic)) {
+    await consumer.commitMessageSync(message)
+  }
+}
+
+const breadcrumb = (location, message) => {
+  if (typeof message === 'object') {
+    if (message.method) {
+      location.method = message.method
+      location.path = `${location.module}::${location.method}`
+    }
+    if (message.path) {
+      location.path = `${location.module}::${location.method}::${message.path}`
+    }
+  } else if (typeof message === 'string') {
+    location.path += `::${message}`
+  }
+  return location.path
+}
+
+const proceed = async (params, opts) => {
+  const { message, transferId, kafkaTopic, consumer } = params
+  const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch, toDestination } = opts
+  let metadataState
+
+  if (consumerCommit) {
+    await commitMessageSync(kafkaTopic, consumer, message)
+  }
+  if (errorInformation) {
+    const code = errorInformation.errorCode
+    const desc = errorInformation.errorDescription
+    message.value.content.payload = createPrepareErrorStatus(code, desc, message.value.content.payload.extensionList)
+    metadataState = createState(ENUMS.STATE.FAILURE.status, code, desc)
+  } else {
+    metadataState = ENUMS.STATE.SUCCESS
+  }
+  if (fromSwitch) {
+    message.value.to = message.value.from
+    message.value.from = Enum.headers.FSPIOP.SWITCH
+  }
+  if (producer) {
+    const p = producer
+    const key = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : transferId
+    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
+  }
+  if (histTimerEnd && typeof histTimerEnd === 'function') {
+    histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+  }
+  return true
+}
+
+module.exports = {
+  ENUMS,
+  transformAccountToTopicName,
+  transformGeneralTopicName,
+  getKafkaConfig,
+  updateMessageProtocolMetadata,
+  createPrepareErrorStatus,
+  createState,
+  createTransferMessageProtocol,
+  createParticipantTopicConf,
+  createGeneralTopicConf,
+  produceParticipantMessage,
+  produceGeneralMessage,
+  commitMessageSync,
+  breadcrumb,
+  proceed
+}
