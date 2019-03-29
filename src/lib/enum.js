@@ -228,6 +228,14 @@ const transferEventAction = {
   POSITION: 'position',
   GET: 'get'
 }
+const actionLetter = {
+  abort: 'A',
+  commit: 'C',
+  get: 'G',
+  prepare: 'P',
+  reject: 'R',
+  unknown: '?'
+}
 const adminTransferAction = {
   RECORD_FUNDS_IN: 'recordFundsIn',
   RECORD_FUNDS_OUT_PREPARE_RESERVE: 'recordFundsOutPrepareReserve',
@@ -345,6 +353,7 @@ module.exports = {
 
   transferEventType,
   transferEventAction,
+  actionLetter,
   adminTransferAction,
   adminNotificationActions,
   rejectionType,
