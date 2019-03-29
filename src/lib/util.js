@@ -47,15 +47,6 @@ const expand = (value) => {
   return (value) ? _.split(value, '|') : value
 }
 
-const filterUndefined = (fields) => {
-  for (let key in fields) {
-    if (fields[key] === undefined) {
-      delete fields[key]
-    }
-  }
-  return fields
-}
-
 /**
  * Method to provide object clonning
  *
@@ -79,6 +70,5 @@ module.exports = {
   parseJson,
   pick,
   squish,
-  filterUndefined,
   clone
 }

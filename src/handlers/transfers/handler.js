@@ -52,7 +52,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 
-const errorTitle = Errors.errorTitle
+const errorType = Errors.errorType
 const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
 const consumerCommit = true
 const fromSwitch = true
@@ -123,7 +123,7 @@ const prepare = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound1--${actionLetter}1`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.internal, 'transfer/state not found')
+        const errorInformation = Errors.getErrorInformation(errorType.internal, 'transfer/state not found')
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
@@ -139,7 +139,7 @@ const prepare = async (error, messages) => {
     }
     if (existsNotMatching) {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
-      const errorInformation = Errors.getErrorInformation(errorTitle.modifiedRequest)
+      const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
@@ -153,7 +153,7 @@ const prepare = async (error, messages) => {
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        const errorInformation = Errors.getErrorInformation(errorTitle.internal)
+        const errorInformation = Errors.getErrorInformation(errorType.internal)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
@@ -168,13 +168,13 @@ const prepare = async (error, messages) => {
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        const errorInformation = Errors.getErrorInformation(errorTitle.internal)
+        const errorInformation = Errors.getErrorInformation(errorType.internal)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      await TransferService.logTransferError(transferId, errorTitle.generic, reasons.toString())
-      const errorInformation = Errors.getErrorInformation(errorTitle.generic, reasons.toString())
+      await TransferService.logTransferError(transferId, errorType.generic, reasons.toString())
+      const errorInformation = Errors.getErrorInformation(errorType.generic, reasons.toString())
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
@@ -236,7 +236,7 @@ const fulfil = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound2--${actionLetter}1`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.internal, 'transfer/state not found')
+        const errorInformation = Errors.getErrorInformation(errorType.internal, 'transfer/state not found')
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
@@ -245,7 +245,7 @@ const fulfil = async (error, messages) => {
             let record = await TransferService.getById(transferId)
             if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== record.payeeFsp.toLowerCase()) {
               Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee1--${actionLetter}7<<`))
-              const errorInformation = Errors.getErrorInformation(errorTitle.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
+              const errorInformation = Errors.getErrorInformation(errorType.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
               const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
               return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
             } else {
@@ -256,7 +256,7 @@ const fulfil = async (error, messages) => {
             }
           } else {
             Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}3`))
-            const errorInformation = Errors.getErrorInformation(errorTitle.modifiedRequest)
+            const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
             const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
           }
@@ -269,7 +269,7 @@ const fulfil = async (error, messages) => {
             return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
           } else {
             Logger.info(Util.breadcrumb(location, `breakModified1--${actionLetter}3`))
-            const errorInformation = Errors.getErrorInformation(errorTitle.modifiedRequest)
+            const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
             const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
           }
@@ -285,7 +285,7 @@ const fulfil = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `inProgress3--${actionLetter}5`))
       } else {
         Logger.info(Util.breadcrumb(location, `breakModified2--${actionLetter}5`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.modifiedRequest)
+        const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
@@ -296,32 +296,32 @@ const fulfil = async (error, messages) => {
       Util.breadcrumb(location, { path: 'validationFailed' })
       if (!existingTransfer) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNotFound--${actionLetter}6`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.generic, 'transfer not found')
+        const errorInformation = Errors.getErrorInformation(errorType.generic, 'transfer not found')
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee2--${actionLetter}7`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
+        const errorInformation = Errors.getErrorInformation(errorType.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}8`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.generic, 'invalid fulfilment')
+        const errorInformation = Errors.getErrorInformation(errorType.generic, 'invalid fulfilment')
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.transferState === TransferState.COMMITTED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorModifiedRequest--${actionLetter}9`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.modifiedRequest)
+        const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.generic, 'transfer state not reserved')
+        const errorInformation = Errors.getErrorInformation(errorType.generic, 'transfer state not reserved')
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (existingTransfer.expirationDate <= new Date()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
-        const errorInformation = Errors.getErrorInformation(errorTitle.transferExpired)
+        const errorInformation = Errors.getErrorInformation(errorType.transferExpired)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else { // validations success
@@ -349,7 +349,7 @@ const fulfil = async (error, messages) => {
       }
     } else {
       Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}13`))
-      const errorInformation = Errors.getErrorInformation(errorTitle.internal)
+      const errorInformation = Errors.getErrorInformation(errorType.internal)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
@@ -413,12 +413,12 @@ const getTransfer = async (error, messages) => {
     const transfer = await TransferService.getByIdLight(transferId)
     if (!transfer) {
       Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
-      const errorInformation = Errors.getErrorInformation(errorTitle.transferNotFound)
+      const errorInformation = Errors.getErrorInformation(errorType.transferNotFound)
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
     if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
       Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
-      const errorInformation = Errors.getErrorInformation(errorTitle.genericClient)
+      const errorInformation = Errors.getErrorInformation(errorType.genericClient)
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
     // ============================================================================================

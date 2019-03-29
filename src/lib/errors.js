@@ -24,7 +24,7 @@
 
 'use strict'
 
-const errorTitle = {
+const errorType = {
   internal: 2001,
   generic: 3100,
   modifiedRequest: 3106,
@@ -77,7 +77,7 @@ const getErrorInformation = (errorCode, appendDescription) => {
 }
 
 module.exports = {
-  errorTitle,
+  errorType,
   createErrorInformation,
   getErrorDescription,
   getErrorInformation

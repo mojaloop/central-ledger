@@ -55,7 +55,7 @@ exports.update = async (record) => {
     value: record.value
   }
   try {
-    return await Db.ilpPacket.update({ transferId: record.transferId }, Util.filterUndefined(fields))
+    return await Db.ilpPacket.update({ transferId: record.transferId }, Util.omitNil(fields))
   } catch (err) {
     throw new Error(err.message)
   }
