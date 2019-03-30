@@ -26,11 +26,12 @@
 
 const errorType = {
   internal: 2001,
+  genericClient: 3000,
   generic: 3100,
   modifiedRequest: 3106,
+  transferNotFound: 3208,
   transferExpired: 3300,
-  genericClient: 3000,
-  transferNotFound: 3208
+  payerFspInsufficientLiquidity: 4001
 }
 
 const error = {

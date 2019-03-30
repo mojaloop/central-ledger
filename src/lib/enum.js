@@ -234,6 +234,7 @@ const actionLetter = {
   get: 'G',
   prepare: 'P',
   reject: 'R',
+  timeout: 'T',
   unknown: '?'
 }
 const adminTransferAction = {
