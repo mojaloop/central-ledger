@@ -166,7 +166,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    registerHandlersTest.test('Register a consumer on Kafka', async (test) => {
+    registerHandlersTest.test('register a consumer on Kafka', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
@@ -177,7 +177,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    registerHandlersTest.test('Throw error retrieveAllParticipants', async (test) => {
+    registerHandlersTest.test('throw error retrieveAllParticipants', async (test) => {
       try {
         Kafka.Consumer.createHandler(topicName, config, command)
         await DAO.retrieveAllParticipants.resolves(participants)
@@ -193,7 +193,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    registerHandlersTest.test('Log and skip consumer registration when no participants', async (test) => {
+    registerHandlersTest.test('log and skip consumer registration when no participants', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
@@ -271,7 +271,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for PREPARE when single message and participant limit fail', async (test) => {
+    positionsTest.test('update transferStateChange for prepare when single message and participant limit fail', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
@@ -291,7 +291,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for PREPARE when single message and no transfer state id is available', async (test) => {
+    positionsTest.test('update transferStateChange for prepare when single message and no transfer state id is available', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
@@ -311,7 +311,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for PREPARE when messages is an array', async (test) => {
+    positionsTest.test('update transferStateChange for prepare when messages is an array', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
@@ -331,7 +331,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for PREPARE when messages is an array no transfer state id is available', async (test) => {
+    positionsTest.test('update transferStateChange for prepare when messages is an array no transfer state id is available', async (test) => {
       config.rdkafkaConf['enable.auto.commit'] = true
       await Kafka.Consumer.createHandler(topicName, config, command)
       config.rdkafkaConf['enable.auto.commit'] = false
@@ -353,7 +353,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for RECEIVED_FULFIL when single', async (test) => {
+    positionsTest.test('update transferStateChange for received-fulfil when single', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
@@ -377,7 +377,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for RECEIVED_FULFIL when single -- consumer is null', async (test) => {
+    positionsTest.test('update transferStateChange for received-fulfil when single -- consumer is null', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
@@ -403,7 +403,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for FAKE when single', async (test) => {
+    positionsTest.test('update transferStateChange for fake when single', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
@@ -428,7 +428,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Update transferStateChange in the database for RECEIVED_ERROR and transferStateId is FAKE when single message', async (test) => {
+    positionsTest.test('update transferStateChange for received-error and transferStateId is fake when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
@@ -436,7 +436,7 @@ Test('Position handler', transferHandlerTest => {
         .returns(Object.assign({}, transferInfo, { transferStateId: 'RECEIVED_ERROR' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
       let m = Object.assign({}, MainUtil.clone(messages[0]))
-      m.value.metadata.event.action = transferEventAction.REJECT
+      m.value.metadata.event.action = transferEventAction.ABORT
       Util.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)
@@ -445,7 +445,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT and transferStateId is FAKE when single message', async (test) => {
+    positionsTest.test('update transferStateChange for reject and transferStateId is fake when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
@@ -462,7 +462,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is RECEIVED_REJECT when single message', async (test) => {
+    positionsTest.test('update transferStateChange for reject and transferStateId is received-reject when single message', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
@@ -487,7 +487,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is RECEIVED_REJECT when single message', async (test) => {
+    positionsTest.test('update transferStateChange for reject and transferStateId is received-reject when single message', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
@@ -513,7 +513,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RECEIVED when messages is an array', async (test) => {
+    positionsTest.test('update transferStateChange for timeout-received when messages is an array', async (test) => {
       config.rdkafkaConf['enable.auto.commit'] = true
       await Kafka.Consumer.createHandler(topicName, config, command)
       config.rdkafkaConf['enable.auto.commit'] = false
@@ -533,7 +533,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT and transferStateId is FAKE when single message', async (test) => {
+    positionsTest.test('update transferStateChange for reject and transferStateId is fake when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
@@ -550,7 +550,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for REJECT  and transferStateId is RECEIVED_REJECT when single message', async (test) => {
+    positionsTest.test('update transferStateChange for reject and transferStateId is received-reject when single message', async (test) => {
       const isIncrease = false
       const transferStateChange = {
         transferId: transferInfo.transferId,
@@ -577,7 +577,7 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
-    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RESERVED when messages is an array', async (test) => {
+    positionsTest.test('update transferStateChange for timeout-reserved when messages is an array', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
@@ -600,7 +600,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RESERVED when messages is an array (auto.commit)', async (test) => {
+    positionsTest.test('update transferStateChange for timeout-reserved when messages is an array (auto.commit)', async (test) => {
       try {
         config.rdkafkaConf['enable.auto.commit'] = true
         await Kafka.Consumer.createHandler(topicName, config, command)
@@ -625,7 +625,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('Update transferStateChange in the database for TIMEOUT_RESERVED when messages is an array -- consumer throws error', async (test) => {
+    positionsTest.test('update transferStateChange for timeout-reserved when messages is an array -- consumer throws error', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Kafka.Consumer.getConsumer.throws(new Error())
@@ -649,7 +649,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('TIMEOUT_RESERVED should throw error if the transfer state is not RESERVED_TIMEOUT', async (test) => {
+    positionsTest.test('throw error if the transfer state is not reserved-timeout', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
@@ -722,7 +722,7 @@ Test('Position handler', transferHandlerTest => {
         test.end()
       }
     })
-    positionsTest.test('Throw error on positions', async (test) => {
+    positionsTest.test('throw error on positions', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
