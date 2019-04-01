@@ -76,10 +76,10 @@ const timeout = async () => {
         id: result[i].transferId,
         from: result[i].payerFsp,
         to: result[i].payeeFsp,
-        type: 'application/json',
+        type: 'application/vnd.interoperability.transfers+json;version=1.0',
         content: {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
             'Date': new Date().toISOString(),
             'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
             'FSPIOP-Destination': result[i].payerFsp
@@ -92,6 +92,8 @@ const timeout = async () => {
       }
       if (result[i].transferStateId === Enum.TransferState.EXPIRED_PREPARED) {
         message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RECEIVED
+        message.to = message.from
+        message.from = Enum.headers.FSPIOP.SWITCH
         await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
       } else if (result[i].transferStateId === Enum.TransferState.RESERVED_TIMEOUT) {
         message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RESERVED

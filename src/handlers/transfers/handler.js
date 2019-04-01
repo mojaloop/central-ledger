@@ -88,7 +88,7 @@ const prepare = async (error, messages) => {
   ).startTimer()
   if (error) {
     // Logger.error(error)
-    throw new Error()
+    throw error
   }
   let message = {}
   try {
@@ -193,7 +193,7 @@ const fulfil = async (error, messages) => {
   ).startTimer()
   if (error) {
     // Logger.error(error)
-    throw new Error()
+    throw error
   }
   let message = {}
   try {
@@ -244,7 +244,7 @@ const fulfil = async (error, messages) => {
           if (isValid) {
             let record = await TransferService.getById(transferId)
             if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== record.payeeFsp.toLowerCase()) {
-              Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee1--${actionLetter}7<<`))
+              Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee1--${actionLetter}7`))
               const errorInformation = Errors.getErrorInformation(errorType.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
               const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
               return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
@@ -377,7 +377,7 @@ const getTransfer = async (error, messages) => {
   ).startTimer()
   if (error) {
     // Logger.error(error)
-    throw new Error()
+    throw error
   }
   let message = {}
   try {
