@@ -513,7 +513,6 @@ const proceed = async (params, opts) => {
   if (fromSwitch) {
     message.value.to = message.value.from
     message.value.from = Enum.headers.FSPIOP.SWITCH
-    delete message.value.content.headers.accept
   }
   if (producer) {
     const p = producer
