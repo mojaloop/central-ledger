@@ -28,7 +28,8 @@ exports.up = async (knex, Promise) => {
   return await knex.schema.hasTable('transferFulfilmentDuplicateCheck').then(function(exists) {
     if (exists) {
       return knex.schema.alterTable('transferFulfilmentDuplicateCheck', (t) => {
-        t.dropForeign('transferId')
+        t.string('hash', 256).nullable().alter()
+        t.unique(['transferFulfilmentId', 'hash'], 'tfdc_transferfulfilmentid_hash_unique')
       })
     }
   })
