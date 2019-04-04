@@ -929,10 +929,19 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
+        const transferFulfilmentId = Uuid()
+        const transferId = payload.transferId
+        await knex('transferFulfilmentDuplicateCheck')
+          .insert({
+            transferFulfilmentId,
+            transferId
+          })
+          .transacting(trx)
+
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId: Uuid(),
-            transferId: payload.transferId,
+            transferFulfilmentId,
+            transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
             isValid: 1,
@@ -985,10 +994,19 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
+        const transferFulfilmentId = Uuid()
+        const transferId = payload.transferId
+        await knex('transferFulfilmentDuplicateCheck')
+          .insert({
+            transferFulfilmentId,
+            transferId
+          })
+          .transacting(trx)
+
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId: Uuid(),
-            transferId: payload.transferId,
+            transferFulfilmentId,
+            transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
             isValid: 1,
