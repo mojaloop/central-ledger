@@ -1,3 +1,4 @@
+
 /*****
  License
  --------------
@@ -22,20 +23,16 @@
  --------------
  ******/
 
-'use strict'
+ 'use strict'
 
 exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('transferFulfilment').then(function(exists) {
+  return await knex.schema.hasTable('bulkTransferAssociation').then(function(exists) {
     if (!exists) {
-      return knex.schema.createTable('transferFulfilment', (t) => {
-        t.string('transferFulfilmentId', 36).primary().notNullable()
-        t.string('transferId', 36).notNullable()
+      return knex.schema.createTable('bulkTransferAssociation', (t) => {
+        t.string('transferId', 36).primary().notNullable()
         t.foreign('transferId').references('transferId').inTable('transfer')
-        t.string('ilpFulfilment', 256).notNullable()
-        t.dateTime('completedDate').notNullable()
-        t.boolean('isValid').nullable()
-        t.bigInteger('settlementWindowId').unsigned().nullable()
-        t.foreign('settlementWindowId').references('settlementWindowId').inTable('settlementWindow')
+        t.string('bulkTransferId', 36).notNullable()
+        t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransfer')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }
@@ -43,5 +40,5 @@ exports.up = async (knex, Promise) => {
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('transferFulfilment')
+  return knex.schema.dropTableIfExists('bulkTransferAssociation')
 }
