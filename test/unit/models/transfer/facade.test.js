@@ -2241,7 +2241,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           let result = await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums, trxStub)
           test.equal(result, 0, 'Result for successful operation returned')
-          test.equal(knexStub().insert.callCount, 1)
+          test.equal(knexStub().insert.callCount, 2)
           test.equal(TransferFacade.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
@@ -2303,7 +2303,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           let result = await TransferFacade.reconciliationTransferCommit(payload, transactionTimestamp, enums)
           test.equal(result, 0, 'Result for successful operation returned')
-          test.equal(knexStub().insert.callCount, 1)
+          test.equal(knexStub().insert.callCount, 2)
           test.equal(TransferFacade.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
@@ -2394,7 +2394,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           let result = await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trxStub)
           test.equal(result, 0, 'Result for successful operation returned')
-          test.equal(knexStub().insert.callCount, 1)
+          test.equal(knexStub().insert.callCount, 2)
           test.equal(TransferFacade.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
@@ -2455,7 +2455,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           let result = await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums)
           test.equal(result, 0, 'Result for successful operation returned')
-          test.equal(knexStub().insert.callCount, 1)
+          test.equal(knexStub().insert.callCount, 2)
           test.equal(TransferFacade.transferStateAndPositionUpdate.callCount, 1)
           test.end()
         } catch (err) {
