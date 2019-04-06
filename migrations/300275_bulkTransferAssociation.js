@@ -34,6 +34,9 @@ exports.up = async (knex, Promise) => {
         t.string('bulkTransferId', 36).notNullable()
         t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransfer')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+        t.integer('bulkProcessingStateId').unsigned().notNullable()
+        t.foreign('bulkProcessingStateId').references('bulkProcessingStateId').inTable('bulkProcessingState')
+        t.dateTime('lastProcessedDate').nullable()
       })
     }
   })
