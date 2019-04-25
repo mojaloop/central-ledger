@@ -35,13 +35,13 @@ Test('TransferError model', async (TransferErrorTest) => {
   let sandbox
   const transferErrorFixtures = [{
     transferStateChangeId: 1,
-    errorCode: 3100,
+    errorCode: '3100',
     errorDescription: 'Invalid Payee'
   },
   {
     transferErrorId: 12,
     transferStateChangeId: 99,
-    errorCode: 5101,
+    errorCode: '5101',
     errorDescription: 'Payee transaction limit reached',
     createdDate: Time.getUTCString(new Date())
   }]
