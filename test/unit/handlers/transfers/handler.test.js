@@ -1517,7 +1517,7 @@ Test('Transfer handler', transferHandlerTest => {
       delete fulfilMessages[0].value.content.payload.fulfilment
       TransferService.abort.returns({
         transferErrorRecord: {
-          errorCode: 5000,
+          errorCode: '5000',
           errorDescription: 'generic'
         }
       })

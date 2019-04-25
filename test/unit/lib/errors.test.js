@@ -44,7 +44,7 @@ Test('Errors', (errorsTest) => {
 
   errorsTest.test('createErrorInformation should', async (test) => {
     try {
-      const errorCode = 4001
+      const errorCode = '4001'
       const extensionList = { key1: 'value1' }
       const result = await Model.createErrorInformation(errorCode, extensionList)
       test.equal(errorCode, result.errorCode, 'return result errorCode matching input')
@@ -60,7 +60,7 @@ Test('Errors', (errorsTest) => {
 
   errorsTest.test('getErrorDescription should', async (test) => {
     try {
-      const errorCode = 4001
+      const errorCode = '4001'
       const result = await Model.getErrorDescription(errorCode)
       test.ok(result, 'return errorDescription for existing errorCode')
       test.end()
@@ -74,7 +74,7 @@ Test('Errors', (errorsTest) => {
   errorsTest.test('getErrorInformation should', async (test) => {
     try {
       const newDescription = 'new description'
-      const errorCode = 4001
+      const errorCode = '4001'
       const appendDescription = {
         replace: newDescription
       }

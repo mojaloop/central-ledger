@@ -50,6 +50,7 @@ const error = {
 }
 
 const createErrorInformation = (errorCode, extensionList) => {
+  errorCode = errorCode.toString()
   return {
     errorCode,
     errorDescription: error[errorCode],
@@ -71,6 +72,7 @@ const getErrorInformation = (errorCode, appendDescription) => {
       errorDescription += `: ${appendDescription}`
     }
   }
+  errorCode = errorCode.toString()
   return {
     errorCode,
     errorDescription

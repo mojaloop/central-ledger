@@ -68,7 +68,7 @@ const insert = async (transferStateChangeId, errorCode, errorDescription) => {
  * {
  *    transferErrorId: 1,
  *    transferStateChangeId: 1,
- *    errorCode: 3100,
+ *    errorCode: '3100',
  *    errorDescription: 'Amount 100.123 exceeds allowed scale of 2',
  *    createdDate: '2018-08-17 09:40:28'
  * }
@@ -97,7 +97,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
  * {
  *    transferErrorId: 1,
  *    transferStateChangeId: 1,
- *    errorCode: 3100,
+ *    errorCode: '3100',
  *    errorDescription: 'Amount 100.123 exceeds allowed scale of 2',
  *    createdDate: '2018-08-17 09:40:28'
  * }
@@ -106,7 +106,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
 
 const getByTransferId = async (id) => {
   try {
-    return await Db.transferError.query(async (builder) => {
+    let transferError = await Db.transferError.query(async (builder) => {
       let result = builder
         .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'transferError.transferStateChangeId')
         .where({ 'tsc.transferId': id })
@@ -115,6 +115,8 @@ const getByTransferId = async (id) => {
         .first()
       return result
     })
+    transferError.errorCode = transferError.errorCode.toString()
+    return transferError
   } catch (err) {
     throw err
   }

@@ -72,7 +72,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       await Model.insert({
         transferStateChangeId: 0,
-        errorCode: 3106,
+        errorCode: '3106',
         errorDescription: 'Invalid Request'
       })
       assert.fail('should throw')
