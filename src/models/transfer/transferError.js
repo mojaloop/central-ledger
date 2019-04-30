@@ -29,7 +29,7 @@
  * @module src/models/transfer/transferError/
  */
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 /**

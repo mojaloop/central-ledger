@@ -29,7 +29,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')

@@ -32,7 +32,7 @@
  * @module src/models/transfer/facade/
  */
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
