@@ -17,8 +17,8 @@
     "RECONNECT_INTERVAL": 5000
   },
   "DB_CONNECTION": {
-    "DB_CONNECTION_POOL_MIN": 10,
-    "DB_CONNECTION_POOL_MAX": 30
+    "POOL_MIN": 10,
+    "POOL_MAX": 30
   },
   "HANDLERS": {
     "DISABLED": false,
