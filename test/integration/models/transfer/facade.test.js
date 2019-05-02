@@ -30,7 +30,7 @@
 'use strict'
 
 const Test = require('tape')
-const Db = require('../../../../src/db')
+const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const TransferFacade = require('../../../../src/models/transfer/facade')

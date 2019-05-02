@@ -28,7 +28,7 @@
  * @module src/models/transfer/transferErrorDuplicateCheck/
  */
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
 /**

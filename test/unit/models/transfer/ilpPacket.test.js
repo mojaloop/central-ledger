@@ -30,7 +30,7 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/ilpPacket')
 

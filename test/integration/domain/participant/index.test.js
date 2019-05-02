@@ -30,7 +30,7 @@
 
 const Test = require('tape')
 const Sinon = require('sinon')
-const Db = require('../../../../src/db')
+const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const ParticipantService = require('../../../../src/domain/participant')

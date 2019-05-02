@@ -32,7 +32,7 @@
  * @module src/models/participant/
  */
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrency')
 
 /**
