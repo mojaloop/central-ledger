@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const ModelParticipant = require('../../../../src/models/participant/facade')
 const ModelPosition = require('../../../../src/models/position/facade')

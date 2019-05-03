@@ -347,7 +347,7 @@ Test('Utility Test', utilityTest => {
   utilityTest.test('createPrepareErrorStatus should', createPrepareErrorStatusTest => {
     createPrepareErrorStatusTest.test('create Prepare Error Status', async (test) => {
       const errorInformation = {
-        errorCode: 3000,
+        errorCode: '3000',
         errorDescription: 'description',
         extensionList: []
       }
@@ -520,7 +520,7 @@ Test('Utility Test', utilityTest => {
     })
 
     proceedTest.test('create error status and end timer', async test => {
-      const code = 1
+      const code = '1'
       const desc = 'desc'
       const errorInformation = { errorCode: code, errorDescription: desc }
       const opts = { errorInformation, histTimerEnd: histTimerEndStub }

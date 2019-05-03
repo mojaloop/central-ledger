@@ -28,20 +28,20 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/transferError')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/lib/db')
 const Time = require('../../../../src/lib/time')
 
 Test('TransferError model', async (TransferErrorTest) => {
   let sandbox
   const transferErrorFixtures = [{
     transferStateChangeId: 1,
-    errorCode: 3100,
+    errorCode: '3100',
     errorDescription: 'Invalid Payee'
   },
   {
     transferErrorId: 12,
     transferStateChangeId: 99,
-    errorCode: 5101,
+    errorCode: '5101',
     errorDescription: 'Payee transaction limit reached',
     createdDate: Time.getUTCString(new Date())
   }]

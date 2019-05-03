@@ -30,7 +30,7 @@
  * @module src/models/position/
  */
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
 const Errors = require('../../lib/errors')
