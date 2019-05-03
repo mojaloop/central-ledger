@@ -9,6 +9,8 @@ module.exports = {
   client: 'mysql',
   version: '5.5',
   connection: Config.DATABASE_URI,
+  min: Config.DB_CONNECTION_POOL_MIN,
+  max: Config.DB_CONNECTION_POOL_MAX,
   migrations: {
     directory: migrationsDirectory,
     tableName: 'migration',
