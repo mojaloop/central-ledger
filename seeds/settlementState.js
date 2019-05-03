@@ -38,7 +38,7 @@ const settlementStates = [
   {
     'settlementStateId': 'PS_TRANSFERS_RESERVED',
     'enumeration': 'PS_TRANSFERS_RESERVED',
-    'description': 'All the debit entries for the MLNS transfers are reserved .'
+    'description': 'All the debit entries for the MLNS transfers are reserved.'
   },
   {
     'settlementStateId': 'PS_TRANSFERS_COMMITTED',

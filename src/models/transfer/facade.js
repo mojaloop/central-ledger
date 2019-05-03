@@ -32,7 +32,7 @@
  * @module src/models/transfer/facade/
  */
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
@@ -320,9 +320,9 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
   if (payload.errorInformation.errorCode &&
     payload.errorInformation.errorCode > intervalMinPayeeError &&
     payload.errorInformation.errorCode < intervalMaxPayeeError) {
-    errorCode = payload.errorInformation.errorCode
+    errorCode = payload.errorInformation.errorCode.toString()
   } else {
-    errorCode = errorPayeeGeneric
+    errorCode = errorPayeeGeneric.toString()
   }
   errorDescription = payload.errorInformation.errorDescription
 

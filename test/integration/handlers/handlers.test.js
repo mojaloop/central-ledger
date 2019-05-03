@@ -163,7 +163,7 @@ const prepareTestData = async (dataObj) => {
 
   const errorPayload = {
     errorInformation: {
-      errorCode: 5101,
+      errorCode: '5101',
       errorDescription: 'Payee transaction limit reached',
       extensionList: {
         extension: [{

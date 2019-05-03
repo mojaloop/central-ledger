@@ -106,7 +106,7 @@ Test('setup', setupTest => {
     Setup = Proxyquire('../../../src/shared/setup', {
       'uuid4': uuidStub,
       '../handlers/register': RegisterHandlersStub,
-      '../db': DbStub,
+      '../lib/db': DbStub,
       '../lib/migrator': MigratorStub,
       '../lib/sidecar': SidecarStub,
       '../lib/requestLogger': requestLoggerStub,
@@ -147,7 +147,7 @@ Test('setup', setupTest => {
       Setup = Proxyquire('../../../src/shared/setup', {
         'uuid4': uuidStub,
         '../handlers/register': RegisterHandlersStub,
-        '../db': DbStub,
+        '../lib/db': DbStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -271,7 +271,7 @@ Test('setup', setupTest => {
       Setup = Proxyquire('../../../src/shared/setup', {
         'uuid4': uuidStub,
         '../handlers/register': RegisterHandlersStub,
-        '../db': DbStub,
+        '../lib/db': DbStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -302,7 +302,7 @@ Test('setup', setupTest => {
       Setup = Proxyquire('../../../src/shared/setup', {
         'uuid4': uuidStub,
         '../handlers/register': RegisterHandlersStub,
-        '../db': DbStub,
+        '../lib/db': DbStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -334,7 +334,7 @@ Test('setup', setupTest => {
       Setup = Proxyquire('../../../src/shared/setup', {
         'uuid4': uuidStub,
         '../handlers/register': RegisterHandlersStub,
-        '../db': DbStub,
+        '../lib/db': DbStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -367,7 +367,7 @@ Test('setup', setupTest => {
       Setup = Proxyquire('../../../src/shared/setup', {
         'uuid4': uuidStub,
         '../handlers/register': RegisterHandlersStub,
-        '../db': DbStub,
+        '../lib/db': DbStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
@@ -578,7 +578,7 @@ Test('setup', setupTest => {
       Setup = Proxyquire('../../../src/shared/setup', {
         'uuid4': uuidStub,
         '../handlers/register': RegisterHandlersStub,
-        '../db': DbStub,
+        '../lib/db': DbStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,

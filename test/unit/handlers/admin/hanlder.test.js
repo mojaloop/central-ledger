@@ -10,7 +10,7 @@ const DAO = require('../../../../src/handlers/lib/dao')
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../../../src/domain/transfer')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/lib/db')
 const Enum = require('../../../../src/lib/enum')
 const TransferState = Enum.TransferState
 

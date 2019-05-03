@@ -29,7 +29,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../src/lib/enum')
-const Db = require('../../../src/db/index')
+const Db = require('../../../src/lib/db')
 
 Test('Enum test', async (enumTest) => {
   let sandbox

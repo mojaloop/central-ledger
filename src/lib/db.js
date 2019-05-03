@@ -19,22 +19,9 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+
  --------------
  ******/
-
 'use strict'
 
-const Db = require('../../lib/db')
-// const Logger = require('@mojaloop/central-services-shared').Logger
-
-const getByParams = async (params) => {
-  try {
-    return await Db.segment.findOne(params)
-  } catch (err) {
-    throw new Error(err.message)
-  }
-}
-
-module.exports = {
-  getByParams
-}
+module.exports = require('@mojaloop/central-services-database').Db
