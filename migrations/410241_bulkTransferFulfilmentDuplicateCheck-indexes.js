@@ -24,22 +24,14 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('bulkTransferFulfilment').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('bulkTransferFulfilment', (t) => {
-        t.string('bulkTransferFulfilmentId', 36).primary().notNullable()
-        t.foreign('bulkTransferFulfilmentId').references('bulkTransferFulfilmentId').inTable('bulkTransferFulfilmentDuplicateCheck')
-        t.string('bulkTransferId', 36).notNullable()
-        t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransfer')
-        t.dateTime('completedDate').notNullable()
-        t.json('transfersJson').notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
-    }
+exports.up = function (knex, Promise) {
+  return knex.schema.table('bulkTransferFulfilmentDuplicateCheck', (t) => {
+    t.index('bulkTransferId')
   })
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('bulkTransferFulfilment')
+  return knex.schema.table('bulkTransferFulfilmentDuplicateCheck', (t) => {
+    t.dropIndex('bulkTransferId')
+  })
 }
