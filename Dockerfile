@@ -8,10 +8,9 @@ RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool aut
     && npm config set unsafe-perm true \
     && npm install -g node-gyp
 
-RUN npm install --production && \
-  npm uninstall -g npm
+RUN npm install --production
 
 RUN apk del build-dependencies
 
 EXPOSE 3001
-CMD node src/api/index.js
+CMD npm run start
