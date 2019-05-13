@@ -56,6 +56,34 @@ const endpointTypes = [
   {
     'name': 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL',
     'description': 'Participant/Hub operator email address to which the position change due to settlement transfer e-mail notification can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT',
+    'description': 'Participant callback URL to which put participant information can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_PARTIES_GET',
+    'description': 'Participant callback URL to which get parties information can be requested'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR',
+    'description': 'Participant callback URL to which put participant error information can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT',
+    'description': 'Participant callback URL to which put batch participant information can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT_ERROR',
+    'description': 'Participant callback URL to which put batch participant error information can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_PARTIES_PUT',
+    'description': 'Parties callback URL to which put participant information can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR',
+    'description': 'Parties callback URL to which put participant error information can be sent'
   }
 ]
 

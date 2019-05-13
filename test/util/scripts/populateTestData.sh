@@ -110,6 +110,69 @@ do
     -H 'Cache-Control: no-cache' \
     -H 'Content-Type: application/json' \
     -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT\",
+    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_GET\",
+    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR\",
+    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}/error\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT\",
+    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{requestId}}\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT_ERROR\",
+    \"value\": \"http://localhost:1080/fsp/${FSP}\/participants/{{requestId}}/error\"
+   }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT\",
+    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR\",
+    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
     \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}\"
   }'"
