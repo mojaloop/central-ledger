@@ -10,9 +10,8 @@
  --------------------
  The initial functionality and code base was donated by the Mowali project working in conjunction with MTN and Orange as service provides.
  * Project: Mowali
- * Original Author: James Bush
 
- Contributors
+Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
  Names of the original copyright holders (individuals or organizations)

@@ -22,6 +22,7 @@
  --------------
  ******/
 
+// Notes: these changes are required for the quoting-service and are not used by central-ledger
 'use strict'
 
 const Test = require('tapes')(require('tape'))
