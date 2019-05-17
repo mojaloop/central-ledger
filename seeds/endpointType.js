@@ -84,6 +84,10 @@ const endpointTypes = [
   {
     'name': 'FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR',
     'description': 'Parties callback URL to which put participant error information can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_QUOTES',
+    'description': 'Quotes callback URL to which put quotes requests can be sent'
   }
 ]
 
