@@ -262,7 +262,7 @@ Test('Position handler', transferHandlerTest => {
         limitAlarms: []
       })
       let message = MainUtil.clone(messages[0])
-      message.value.content.payload = undefined
+      message.value.content.payload = {}
       Util.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, Object.assign({}, message))
