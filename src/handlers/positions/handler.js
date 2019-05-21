@@ -132,7 +132,6 @@ const positions = async (error, messages) => {
       }
       for (let prepareMessage of preparedMessagesList) {
         const { transferState } = prepareMessage
-        // message.value = rawMessage.value // !!!!!!MUTATION
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
           Logger.info(Util.breadcrumb(location, `payer--${actionLetter}1`))
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
