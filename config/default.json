@@ -7,10 +7,10 @@
     "SCALE": 2
   },
   "SIDECAR": {
-    "DISABLED": true,
+    "DISABLED": false,
     "HOST": "localhost",
     "PORT": 5678,
-    "CONNECT_TIMEOUT": 45000,
+    "CONNECT_TIMEOUT": 4500,
     "RECONNECT_INTERVAL": 5000
   },
   "DB_CONNECTION": {
