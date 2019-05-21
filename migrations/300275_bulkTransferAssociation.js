@@ -29,14 +29,16 @@ exports.up = async (knex, Promise) => {
   return await knex.schema.hasTable('bulkTransferAssociation').then(function(exists) {
     if (!exists) {
       return knex.schema.createTable('bulkTransferAssociation', (t) => {
-        t.string('transferId', 36).primary().notNullable()
-        t.foreign('transferId').references('transferId').inTable('transfer')
+        t.bigIncrements('bulkTransferAssociationId').primary().notNullable()
+        t.string('transferId', 36).notNullable()
         t.string('bulkTransferId', 36).notNullable()
         t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransfer')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
         t.integer('bulkProcessingStateId').unsigned().notNullable()
         t.foreign('bulkProcessingStateId').references('bulkProcessingStateId').inTable('bulkProcessingState')
         t.dateTime('lastProcessedDate').nullable()
+        t.integer('errorCode').unsigned().nullable()
+        t.string('errorDescription', 128).nullable()
       })
     }
   })

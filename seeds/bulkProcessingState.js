@@ -24,61 +24,56 @@
 
 'use strict'
 
-const bulkTransferStates = [
+const bulkProcessingStates = [
   {
-    'bulkTransferStateId': 'RECEIVED',
-    'enumeration': 'RECEIVED',
-    'description': 'The switch has received the bulk transfer'
+    'name': 'RECEIVED',
+    'description': 'The switch has received the individual transfer ids part of the bulk transfer'
   },
   {
-    'bulkTransferStateId': 'PENDING_PREPARE',
-    'enumeration': 'PENDING',
-    'description': 'Validation of received bulk transfer is successful'
+    'name': 'RECEIVED_DUPLICATE',
+    'description': 'The switch has matched individual transfer as duplicate'
   },
   {
-    'bulkTransferStateId': 'PENDING_INVALID',
-    'enumeration': 'PENDING',
-    'description': 'Validation of received bulk transfer is not successful'
+    'name': 'RECEIVED_INVALID',
+    'description': 'The switch has matched individual transfer as invalid within Prepare or Position Handler'
   },
   {
-    'bulkTransferStateId': 'ACCEPTED',
-    'enumeration': 'ACCEPTED',
+    'name': 'ACCEPTED',
     'description': 'The switch has reserved the funds for the transfers in the bulk'
   },
   {
-    'bulkTransferStateId': 'PROCESSING',
-    'enumeration': 'PROCESSING',
-    'description': 'Fulfilment request has been received by the switch'
+    'name': 'PROCESSING',
+    'description': 'Fulfilment request has been received for the individual transfer'
   },
   {
-    'bulkTransferStateId': 'PENDING_FULFIL',
-    'enumeration': 'PROCESSING',
-    'description': 'Fulfilment request has been received by the switch'
+    'name': 'FULFIL_DUPLICATE',
+    'description': 'The switch has matched individual transfer fulfil as duplicate'
   },
   {
-    'bulkTransferStateId': 'COMPLETED',
-    'enumeration': 'COMPLETED',
-    'description': 'Final state when transfers in the bulk are committed'
+    'name': 'FULFIL_INVALID',
+    'description': 'The switch has matched individual transfer fulfilment as invalid within Fulfil or Position Handler'
   },
   {
-    'bulkTransferStateId': 'REJECTED',
-    'enumeration': 'REJECTED',
-    'description': 'Final state when the switch has completed rejection request by the payee'
+    'name': 'COMPLETED',
+    'description': 'The switch has marked the individual transfer as committed'
   },
   {
-    'bulkTransferStateId': 'INVALID',
-    'enumeration': 'REJECTED',
-    'description': 'Final state when the switch has completed processing of pending invalid bulk transfer'
+    'name': 'REJECTED',
+    'description': 'The switch has marked the individual transfer as rejected'
+  },
+  {
+    'name': 'EXPIRED',
+    'description': 'The switch has marked the individual transfer as timed out'
   }
 ]
 
 exports.seed = async function (knex) {
   try {
-    return await knex('bulkTransferState').insert(bulkTransferStates)
+    return await knex('bulkProcessingState').insert(bulkProcessingStates)
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return -1001
     else {
-      console.log(`Uploading seeds for bulkTransferState has failed with the following error: ${err}`)
+      console.log(`Uploading seeds for bulkProcessingState has failed with the following error: ${err}`)
       return -1000
     }
   }
