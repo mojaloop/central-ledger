@@ -10,7 +10,7 @@
     "DISABLED": false,
     "HOST": "localhost",
     "PORT": 5678,
-    "CONNECT_TIMEOUT": 4500,
+    "CONNECT_TIMEOUT": 45000,
     "RECONNECT_INTERVAL": 5000
   },
   "DB_CONNECTION": {
