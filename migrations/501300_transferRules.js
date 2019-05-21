@@ -38,7 +38,7 @@ exports.up = (knex, Promise) => {
         t.increments('transferRulesId').primary().notNullable()
         t.string('name', 128).notNullable()
         t.string('description', 512).defaultTo(null).nullable()
-        t.string('rule', 16384).notNullable()
+        t.string('rule', 1638).notNullable()
         t.boolean('enabled').defaultTo(true).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
