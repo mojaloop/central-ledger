@@ -51,7 +51,8 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const Errors = require('../../lib/errors')
-
+const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
+const decodeMessages = require('@mojaloop/central-services-stream').Kafka.Protocol.decodeMessages
 const errorTransferExpCode = 3300
 const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
 
@@ -98,7 +99,7 @@ const positions = async (error, messages) => {
       message = Object.assign({}, messages)
     }
     const eventType = message.value.metadata.event.type
-    const payload = message.value.content.payload
+    const payload = decodePayload(message.value.content.payload)
     const action = message.value.metadata.event.action
     const transferId = message.value.id
     const kafkaTopic = message.topic
@@ -123,15 +124,14 @@ const positions = async (error, messages) => {
 
     if (eventType === TransferEventType.POSITION && action === TransferEventAction.PREPARE) {
       Logger.info(Util.breadcrumb(location, { path: 'prepare' }))
-      const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(prepareBatch)
+      const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (let limit of limitAlarms) {
         // Publish alarm message to KafkaTopic for the Hub to consume as it is the Hub
         // rather than the switch to manage this (the topic is an participantEndpoint)
         Logger.info(`Limit alarm should be sent with ${limit}`)
       }
       for (let prepareMessage of preparedMessagesList) {
-        const { transferState, rawMessage } = prepareMessage
-        message.value = rawMessage.value
+        const { transferState } = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
           Logger.info(Util.breadcrumb(location, `payer--${actionLetter}1`))
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer })

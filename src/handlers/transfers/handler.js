@@ -51,6 +51,7 @@ const Errors = require('../../lib/errors')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
+const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 
 const errorType = Errors.errorType
 const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
@@ -97,7 +98,8 @@ const prepare = async (error, messages) => {
     } else {
       message = messages
     }
-    const payload = message.value.content.payload
+    // decode payload
+    const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const transferId = payload.transferId
@@ -202,7 +204,7 @@ const fulfil = async (error, messages) => {
     } else {
       message = messages
     }
-    const payload = message.value.content.payload
+    const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const transferId = message.value.id
