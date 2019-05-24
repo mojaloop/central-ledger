@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "6.2.4",
+  "version": "6.2.5",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -28,7 +28,7 @@
   },
   "scripts": {
     "start": "run-p start:api",
-    "start:api": "CLEDG_HOSTNAME=http://localhost:3001 node src/api/index.js",
+    "start:api": "node src/api/index.js",
     "start:handlers": "node src/handlers/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "test": "npm run test:unit | faucet",
@@ -63,7 +63,7 @@
     "@mojaloop/central-services-error-handling": "5.2.0",
     "@mojaloop/central-services-metrics": "5.2.0",
     "@mojaloop/central-services-shared": "5.2.0",
-    "@mojaloop/central-services-stream": "6.2.1",
+    "@mojaloop/central-services-stream": "6.2.2",
     "@mojaloop/forensic-logging-client": "5.2.0",
     "@now-ims/hapi-now-auth": "1.3.1",
     "base64url": "3.0.1",
