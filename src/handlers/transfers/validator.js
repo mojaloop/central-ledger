@@ -175,8 +175,7 @@ const validateByName = async (payload, headers) => {
     await validateParticipantByName(payload.payeeFsp) &&
     await validatePositionAccountByNameAndCurrency(payload.payeeFsp, payload.amount.currency) &&
     validateAmount(payload.amount) &&
-    await validateConditionAndExpiration(payload) &&
-    validateDifferentDfsp(payload))
+    await validateConditionAndExpiration(payload))
   return {
     validationPassed,
     reasons
@@ -216,5 +215,6 @@ module.exports = {
   validateFulfilCondition,
   validateParticipantByName,
   reasons,
-  validateParticipantTransferId
+  validateParticipantTransferId,
+  validateDifferentDfsp
 }
