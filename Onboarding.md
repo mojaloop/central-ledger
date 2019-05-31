@@ -1,232 +1,106 @@
-# Central Ledger Setup
+# Onboarding
 
-***
+>*Note:* Before completing this guide, make sure you have completed the _general_ onboarding guide in the [base mojaloop repository](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#mojaloop-onboarding).
 
-### Introduction 
-In this document we'll walk through the setup for the Mojaloop Central Ledger. It consists of three sections:
+## Contents
 
-* [Software List](#software-list)
-* [Setup](#setup)
-* [Errors On Setup](#errors-on-setup)
+<!-- vscode-markdown-toc -->
+1. [Prerequisites](#Prerequisites)
+2. [Installing and Building](#InstallingandBuilding)
+3. [Running Locally](#RunningLocally)
+4. [Running Inside Docker](#RunningInsideDocker)
+5. [Testing](#Testing)
+6. [Common Errors/FAQs](#CommonErrorsFAQs)
 
-***
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
 
-### Software List
-1. Github
-2. brew
-3. Docker
-4. MySQLWorkbench
-5. Postman
-6. nvm
-7. npm
-8. Zenhub
-9. central_ledger
-10. JavaScript IDE
-***
+#  1. <a name='Prerequisites'></a>Prerequisites
 
-### Setup
-Make sure you have access to [Mojaloop on Github](https://github.com/mojaloop/central-ledger) and clone the project.
+If you have followed the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#mojaloop-onboarding), you should already have the following cli tools installed:
 
-#### Installing brew
-##### macOS
-```
-/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-```
+* `brew` (macOS), [todo: windows package manager]
+* `curl`, `wget`
+* `docker` + `docker-compose`
+* `node`, `npm` and (optionally) `nvm`
 
-##### Ubuntu
-To install Linuxbrew, follow these [instructions](http://linuxbrew.sh/#install-linuxbrew)
+In addition to the above cli tools, you will need to install the following to build and run the `central-ledger`:
 
-#### Installing Docker
-To install Docker, follow these instructions: [Docker for Mac](https://docs.docker.com/docker-for-mac/), [Docker for Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-repository)
 
-#### Installing MySQL
-
-##### Docker
-Run the following commands in your terminal. Please ensure that you run the MySQL statements with the semicolon at the end.
-```
-DBUSER=central_ledger; DBPASS=password; SLEEPTIME=15; docker stop mysql; docker rm mysql; docker run -p 3306:3306 -d --name mysql -e MYSQL_USER=$DBUSER -e MYSQL_PASSWORD=$DBPASS -e MYSQL_DATABASE=$DBUSER -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql/mysql-server; sleep $SLEEPTIME; docker exec -it mysql mysql -uroot -e "ALTER USER '$DBUSER'@'%' IDENTIFIED WITH mysql_native_password BY '$DBPASS';"
+###  1.1. <a name='macOS'></a>macOS
+```bash
+#none - you have everything you need!
 ```
 
-#### Installing MySQLWorkBench
-##### macOS
-```
-Go to and follow the instructions
-https://dev.mysql.com/downloads/workbench/
-```
-##### Ubuntu
-For pgAdmin 4 v2.1 on Ubuntu, according to the [download page](https://www.pgadmin.org/download/pgadmin-4-python-wheel):
+###  1.2. <a name='Linux'></a>Linux
 
-Install dependencies, create a virtual environment, download, install & configure:
-```
-sudo apt-get install virtualenv python-pip libpq-dev python-dev
+[todo]
 
-cd
-virtualenv pgadmin4
-cd pgadmin4
-source bin/activate
+###  1.3. <a name='Windows'></a>Windows
 
-pip install https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v2.1/pip/pgadmin4-2.1-py2.py3-none-any.whl
-```
-Override default paths and set it to single-user mode in the [local configuration file](https://www.pgadmin.org/docs/pgadmin4/dev/server_deployment.html):
-```
-nano lib/python2.7/site-packages/pgadmin4/config_local.py
-```
-*Write:*
-```
-import os
-DATA_DIR = os.path.realpath(os.path.expanduser(u'~/.pgadmin/'))
-LOG_FILE = os.path.join(DATA_DIR, 'pgadmin4.log')
-SQLITE_PATH = os.path.join(DATA_DIR, 'pgadmin4.db')
-SESSION_DB_PATH = os.path.join(DATA_DIR, 'sessions')
-STORAGE_DIR = os.path.join(DATA_DIR, 'storage')
-SERVER_MODE = False
-```
-Make a shortcut:
-```
-touch ~/pgadmin4/start
-chmod +x ~/pgadmin4/start
-nano ~/pgadmin4/start
-```
-*Write:*
-```
-#!/bin/bash
-cd ~/pgadmin4
-source bin/activate
-python lib/python2.7/site-packages/pgadmin4/pgAdmin4.py
-```
-Run with `~/pgadmin4/start`
- and access at [http://localhost:5050](http://localhost:5050)
+[todo]
 
-##### Setup MySQLWorkbench
-Please follow the below instructions:
 
-a. Click the add (+) icon 
+##  2. <a name='InstallingandBuilding'></a>Installing and Building
 
- ![](images/MySQL_Help_a.png)
-
-b. Enter the Connection name and username as per image and click test connection
-
- ![](images/MySQL_Help_2.png)
-
-c. Enter the password => 'password' click OK
-
- ![](images/MySQL_Help_3.png)
-
-d. You should see this click OK
-
- ![](images/MySQL_Help_4.png)
-
-e. This should now be shown on you MySQLWorkbench dashboard
-
- ![](images/MySQL_Help_5.png)
-
-f. You should see the central_ledger database under schema no tables will be present but will get populated when you start your server
-
-![](images/MySQL_Help_6.png)
-
-#### Installing Postman
-Please, follow these instructions: [Get Postman](https://www.getpostman.com/postman)
-
-Alternatively on **Ubuntu** you may run:
-```
-wget https://dl.pstmn.io/download/latest/linux64 -O postman.tar.gz
-sudo tar -xzf postman.tar.gz -C /opt
-rm postman.tar.gz
-sudo ln -s /opt/Postman/Postman /usr/bin/postman
+Firstly, clone your fork of the `central-ledger` onto your local machine:
+```bash
+git clone https://github.com/<your_username>/central-ledger.git
 ```
 
-##### Setup Postman
-* Download this file https://raw.githubusercontent.com/mojaloop/postman/master/Mojaloop.postman_collection.json
-* Open **Postman**
-* Click **Import** and then **Import File**
-* Select the *Mojaloop.postman_collection.json* file you downloaded
-* You'll now need to import environment variables. For local testing, download this file https://raw.githubusercontent.com/mojaloop/postman/master/environments/MojaloopLocal.postman_environment.json
-* Click **Import** and then **Import File**
-* Select the *MojaloopLocal.postman_environment.json* file you downloaded
-* In the imported collection, navigate to the *central_ledger* directory  
-
-#### nvm 
-
-######(This is optional, you can install node directly from the website, node version manager(nvm) isn't really needed unless you want to use multiple versions of node)
-
-If you don't have cURL already installed, on **Ubuntu** run `sudo apt install curl`
-
-Download the nvm install via Homebrew:
-
-```
-brew update
-brew install nvm
-mkdir ~/.nvm
-vi ~/.bash_profile
-```
-
-* Ensure that nvm was installed correctly with `nvm --version`, which should return the version of nvm installed
-* Install the version (at time of publish 8.9.4 current LTS) of Node.js you want:
-  * Install the latest LTS version with `nvm install --lts`
-  * Use the latest LTS verison with `nvm use --lts`
-  * Install the latest version with `nvm install node`
-  * Use the latest version with `nvm use node`
-  * If necessary, fallback to `nvm install 8.9.4`
-
-##### Setup nvm
-Create a *.bash_profile* file with `touch ~/.bash_profile`, then `nano ~/.bash_profile` and *write*:
-```
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" # This loads nvm
-```
-
-#### npm
-By installing *node* during *nvm* installation above, you should have the corresponding npm version installed
-
-##### Setup npm
-* The _.npmrc_ file in your user root just needs to be present as the repository it will use is 
-http://npmjs.org If it doesn't exist just create it.
-
-#### Installing ZenHub for GitHub
-Open Google Chrome browser and navigate to [Zenhub Extension](https://chrome.google.com/webstore/detail/zenhub-for-github/ogcgkffhplmphkaahpmffcafajaocjbd)
-
-#### Installing central_ledger
-* **cd** into the central_ledger project and run subsequently the following commands:
-```
-npm install -g node-gyp (needs to be done once)
-brew install libtool autoconf automake (needs to be done once)
+Then `cd` into the directory and install the node modules:
+```bash
+cd central-ledger
 npm install
-source ~/.bash_profile
-npm rebuild
 ```
-* set *CLEDG_DATABASE_URI* environment variable:
+
+> If you run into problems running `npm install`, make sure to check out the [Common Errors/FAQs](#CommonErrorsFAQs) below.
+
+##  3. <a name='RunningLocally'></a>Running Locally (with dependencies inside of docker)
+
+In this method, we will run all of the core dependencies (`kafka`, `mysql` and `mockserver`) inside of docker containers, while running the `central-ledger` server on your local machine.
+
+> Alternatively, you can run the `central-ledger` inside of `docker-compose` with the rest of the dependencies to make the setup a little easier: [Running Inside Docker](#RunningInsideDocker).
+
+
+**1. Set up the MySQL container, and give it time to initialize**
+>*Note:* Before starting all of the containers, start the `mysql` container alone, to give it some more time to set up the necessary permissions (this only needs to be done once, or every time you remove and re-create the container). 
+
+```bash
+docker-compose up mysql
 ```
+
+**2. Run all of the dependencies in `docker-compose`:**
+
+```bash
+# start all the dependencies inside of docker
+docker-compose up ml-api-adapter mysql kafka mockserver temp_curl
+
+```
+
+**3. Configure the default files and run the server**
+```bash
+# disable SIDECAR in config/default.json temporary by setting 
+# "SIDECAR": { "DISABLED": "true", ...
+
+# set the CLEDG_DATABASE_URI* environment variable:
 export CLEDG_DATABASE_URI=mysql://central_ledger:password@localhost:3306/central_ledger
-```
-* disable SIDECAR in **config/default.json** temporary by setting `"SIDECAR": { "DISABLED": "true", ...`
 
-Now, we setup Kafka. Navigate `test/util/scripts` and run the script `restartKafka-johnnypark.sh`:
-
-```
-cd test/util/scripts
-./restartKafka-johnnypark.sh
+# start the server
+npm run start
 ```
 
-That done, let's setup and populate database. While still in the same directory, run:
-
-```
-./restartDb.sh
-./populateTestData.sh
+**4. Populate the test database**
+```bash
+./test/util/scripts/populateTestData.sh
 ```
 
-Lastly, let's start a mock server:
+Upon running `npm run start`, your output should look similar to:
 
-```
-./restartMockServer.sh
-```
-All that done, let's run the central ledger!
-***cd*** into the central_ledger directory (`cd ../../..` if you were in the scripts folder) then run:
-
-`npm start` *(to run it locally)* or `npm run dev` *(to run it on your Docker host)*
-
-Your output should look similar to:
-
-```
+```bash
 > @mojaloop/ml-api-adapter@4.4.1 start /fullpath/to/ml-api-adapter
 > run-p start:api
 
@@ -252,21 +126,135 @@ http://hostname.local:4000
 2019-02-01T13:30:30.458Z - info: Notification::startConsumer - starting Consumer for topicNames: [topic-notification-event]
 ```
 
-##### Run Postman
-* Use the postman collection from the [postman repo](https://github.com/mojaloop/postman)
-* To use this collection, the ml-api-adapter service needs to be running along with the central-ledger service (preferably central-timeout , cental-settlement as well, but they are optional)
-* click on **mojaloop v1.0** and then **6.a. Transfer Prepare Request**
-* click **Send**
-* if you get a valid response, it is a good first step.
-* You can also then select the **7.a. Transfer Fulfil Request** and perform a corresponding fulfilment request
-* You can check the database to see the transfer state, status changes, positions and other such information. After this if everything looks good, you should be ready to go.
+##  4. <a name='RunningInsideDocker'></a>Running Inside Docker
 
-### Errors On Setup
-* `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
-  - resolved by running `CXX='clang++ -std=c++11 -stdlib=libc++' npm rebuild`
-* sodium v1.2.3 can't compile during npm install
-  - resolved by installing v2.0.3 `npm install sodium@2.0.3`
-* `
+We use `docker-compose` to manage and run the `central-ledger` along with its dependencies with one command.
+
+>*Note:* Before starting all of the containers however, start the `mysql` container alone, to give it some more time to set up the necessary permissions (this only needs to be done once). This is a short-term workaround because the `central-ledger` doesn't retry it's connection to MySQL.
+
+
+**1. First run the mysql container, then run the test of the containers**
+```bash
+docker-compose up mysql #first time only - the initial mysql load takes a while, and if it's not up in time, the central-ledger will just crash
+
+npm run docker:up
+```
+
+This will do the following:
+* `docker pull` down any dependencies defined in the `docker-compose.yml` file
+* `docker build` the `central-ledger` image based on the `Dockerfile` defined in this repo
+* run all of the containers together
+
+**2. Populate the test database - this only needs to be done once**
+```bash
+./test/util/scripts/populateTestData.sh
+```
+
+
+### 4.1 Handy Docker Compose Tips
+
+You can run `docker-compose` in 'detached' mode as follows:
+
+```bash
+npm run docker:up -- -d
+```
+
+And then attach to the logs with:
+```bash
+docker-compose logs -f
+```
+
+When you're done, don't forget to stop your containers however:
+```bash
+npm run docker:stop
+```
+
+### 4.2 (Optional) Connecting MySQLWorkbench to MySQL inside Docker
+
+If you installed MySQLWorkbench from the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#5-mysqlworkbench-optional), follow these instructions to get MySQLWorkbench connected to the `mysql` container running in docker.
+
+Please follow the below instructions:
+
+1. Click the add (+) icon 
+
+<img src="images/MySQL_Help_a.png" width="400">
+
+2. Enter the following details:
+    * **Connection Name:** `central_ledger@localhost`
+    * **Username:** `central_ledger`
+
+   And Click "Test Connection"
+
+<img src="images/MySQL_Help_2.png" width="600">
+
+3. Enter the Password: 'password' > click "OK"
+
+<img src="images/MySQL_Help_3.png" width="400">
+
+4. If successful, you will see the following dialogue:
+    * click "OK" to dismiss the dialogue
+    * click "OK" once more to confirm the database connection
+
+<img src="images/MySQL_Help_4.png" width="400">
+
+5. This should now be shown on you MySQLWorkbench dashboard
+    * click on the connection to open the database
+
+<img src="images/MySQL_Help_5.png" width="400">
+
+6. In the top left, click the **schema** tab > and expand **central_ledger** section
+    * You should see the `central_ledger` database underneath
+    * if you haven't yet started your server, no tables will be present, but they will be populated when you start your server
+
+<img src="images/MySQL_Help_6.png" width="400">
+
+
+##  5. <a name='Testing'></a>Testing
+
+We use `npm` scripts as a common entrypoint for running the tests.
+```bash
+# unit tests:
+npm run test:unit
+
+# integration tests
+npm run test:integration
+
+# check test coverage
+npm run test:coverage
+```
+
+### 5.1 Testing the `central-ledger` API with Postman
+
+>Note: Make sure you have installed Postman and cloned the `mojaloop/postman` repo, which contains all the required collections and environments. You can find detailed instructions for this in the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#2-postman).
+
+
+#### Prerequisites:
+* `ml-api-adapter` and `central-ledger` services running (follow [Running Locally](#RunningLocally) or [Running Inside Docker](#RunningInsideDocker) to get these services up and running)
+* _Optionally_, run `central-timeout` , `cental-settlement` as well.
+
+
+#### Running Example Requests
+1. Import the **Mojaloop v0.1 draft** collection, and open `API Examples` > `mojaloop v1.0` > `6.a. Transfer Prepare Request`
+2. Click **Send**
+3. If you get a valid response, continue to the next step, otherwise it reveals an issue in your configuration. 
+4. Select the `7.a. Transfer Fulfil Request` and perform a corresponding fulfilment request
+5. You can check the database to see the transfer state, status changes, positions and other such information. After this if everything looks good, you should be ready to go.
+
+
+##  6. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs
+
+#### 6.1 `sodium v1.2.3` can't compile during npm install
+
+Resolved by installing v2.0.3 `npm install sodium@2.0.3`
+
+
+#### 6.2 `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
+
+Resolved by running `CXX='clang++ -std=c++11 -stdlib=libc++' npm rebuild`
+
+
+#### 6.3 On macOS, `npm install` fails with the following error
+```
 Undefined symbols for architecture x86_64:
   "_CRYPTO_cleanup_all_ex_data", referenced from:
       _rd_kafka_transport_ssl_term in rdkafka_transport.o
@@ -274,5 +262,11 @@ Undefined symbols for architecture x86_64:
   ........
   ld: symbol(s) not found for architecture x86_64
 clang: error: linker command failed with exit code 1 (use -v to see invocation) 
-`
-  - resolved by installing openssl `brew install openssl` and then running: `CFLAGS=-I/usr/local/opt/openssl/include LDFLAGS=-L/usr/local/opt/openssl/lib npm install --save node-rdkafka`
+```
+
+Resolved by installing openssl `brew install openssl` and then running: 
+  ```bash
+  export CFLAGS=-I/usr/local/opt/openssl/include 
+  export LDFLAGS=-L/usr/local/opt/openssl/lib 
+  npm install
+  ```  

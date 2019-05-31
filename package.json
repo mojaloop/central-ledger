@@ -48,11 +48,12 @@
     "migrate:rollback": "knex migrate:rollback $npm_package_config_knex",
     "migrate:current": "knex migrate:currentVersion $npm_package_config_knex",
     "seed:run": "knex seed:run $npm_package_config_knex",
+    "docker:up": "docker-compose -f docker-compose.yml up",
     "docker:build": "run-s docker:build:test docker:build:api docker:build:admin",
     "docker:build:test": "docker build --no-cache -f test.Dockerfile -t $npm_package_config_images_api:test .",
     "docker:build:api": "docker build --no-cache -f api.Dockerfile -t $npm_package_config_images_api:latest .",
     "docker:build:admin": "docker build --no-cache -f admin.Dockerfile -t $npm_package_config_images_admin:latest .",
-    "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml stop",
+    "docker:stop": "docker-compose -f docker-compose.yml stop",
     "docker:rm": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml rm -f -v",
     "docker:clean": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml down --rmi local",
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json"
