@@ -50,16 +50,8 @@ const serviceName = {
  * Gets the health status of the service.
  *
  *
- * if detailed=false, returns a basic health check:
- *
- * {
- *   "status": "OK",
- *   "uptime": 0,
- *   "started": "2019-05-31T05:09:25.409Z",
- *   "versionNumber": "5.2.3"
- * }
- *
- * if detailed=true, returns the health of related sub-services:
+ * @example:
+ * returns the health of related sub-services:
  * {
  *   "status": "OK",
  *   "uptime": 0,
@@ -67,7 +59,7 @@ const serviceName = {
  *   "versionNumber": "5.2.3",
  *   "services": [
  *     {
- *       "name": "kafka",
+ *       "name": "datastore",
  *       "status": "OK"
  *     }
  *   ]
@@ -144,11 +136,7 @@ const getSubServiceHealth = async function (serviceName) {
         Util.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.POSITION),
         Util.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.FULFIL)
       ]
-
-      // TODO: not sure if this is needed
-      const producerTopics = [
-        // 'topic-notification-event',
-      ]
+      const producerTopics = []
 
       let status = statusEnum.OK
       try {
@@ -176,8 +164,6 @@ const getSubServiceHealth = async function (serviceName) {
  * if any service.status is DOWN, then the entire service
  * is considered unhealthy (will return false)
  *
- * If a sub-service is DISABLED, and the other sub-services are OK, then
- * the entire service is considered healthy
  */
 const evaluateServiceHealth = function (services) {
   return services.reduce((acc, curr) => {

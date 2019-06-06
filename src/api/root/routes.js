@@ -25,8 +25,6 @@
 'use strict'
 
 const Handler = require('./handler')
-const Joi = require('joi')
-
 const tags = ['api', 'root']
 
 module.exports = [
@@ -35,12 +33,7 @@ module.exports = [
     path: '/health',
     handler: Handler.getHealth,
     options: {
-      tags,
-      validate: {
-        query: {
-          detailed: Joi.boolean().default(false).description('Show detailed health check')
-        }
-      }
+      tags
     }
   },
   {

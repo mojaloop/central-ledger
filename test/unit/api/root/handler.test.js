@@ -100,36 +100,10 @@ Test('Root', rootHandlerTest => {
   })
 
   rootHandlerTest.test('Handler Test', async handlerTest => {
-    // handlerTest.test('getHealth should return the basic health check', async function (test) {
-    //   // Arrange
-    //   const schema = {
-    //     status: Joi.string().valid('OK').required(),
-    //     uptime: Joi.number().required(),
-    //     startTime: Joi.date().iso().required(),
-    //     versionNumber: Joi.string().required()
-    //   }
-    //   const expectedStatus = 200
-
-    //   // Act
-    //   const {
-    //     responseBody,
-    //     responseCode
-    //   } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ }), reply))
-    //   const validationResult = Joi.validate(responseBody, schema)
-
-    //   console.log("response body", responseBody)
-
-    //   // Assert
-    //   test.equal(validationResult.error, null, 'The response matches the validation schema')
-    //   test.deepEqual(responseCode, expectedStatus, 'The response code matches')
-    //   test.end()
-    // })
-
     handlerTest.test('getHealth returns the detailed health check', async function (test) {
       // Arrange
       sandbox.stub(Db, '_listTables').returns([123])
       sandbox.stub(Config, 'SIDECAR_DISABLED').value(false)
-      // sandbox.stub(Sidecar, 'isConnected').value(true)
       sandbox.stub(Kafka.Consumer, 'getConsumer').returns(P.resolve())
       sandbox.stub(Kafka.Producer, 'getProducer').returns(P.resolve())
       const schema = {
