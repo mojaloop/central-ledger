@@ -1,0 +1,79 @@
+version: "3.7"
+services:
+  central-ledger:
+    build:
+      context: .
+      cache_from: 
+        - mojaloop/central-ledger
+    container_name: cl_central-ledger
+    links:
+      - mysql
+      - kafka
+    ports:
+      - "3001:3001"
+    volumes:
+       - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
+    environment:
+      - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
+      - CLEDG_SIDECAR__DISABLED=true
+
+  ml-api-adapter:
+    image: mojaloop/ml-api-adapter:latest
+    container_name: cl_ml-api-adapter
+    links:
+      - kafka
+    ports:
+      - "3000:3000"
+    volumes:
+      # override the default values with our own - this is because the KAFKA_HOST env variable is ignored for some reason
+      - ./docker/ml-api-adapter/default.json:/opt/ml-api-adapter/config/default.json
+    
+    # TODO: we should be able to remove this - I think the image command is broken
+    command:
+      - "node"
+      - "src/api/index.js"
+
+  mysql:
+    image: mysql/mysql-server
+    container_name: cl_mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      #this fixes the permissions issue, but docker-compose up will fail on first attempt
+      - ./docker/sql-init/:/docker-entrypoint-initdb.d/
+    environment:
+      - MYSQL_USER=${DBUSER:-central_ledger}
+      - MYSQL_PASSWORD=${DBPASS:-password}
+      - MYSQL_DATABASE=${DBUSER:-central_ledger}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+
+  mockserver:
+    image: jamesdbloom/mockserver
+    container_name: mockserver
+    ports:
+      - "1080:1080"
+
+  temp_curl:
+    image: byrnedo/alpine-curl
+    container_name: cl_temp_curl
+    links:
+      - mockserver
+    volumes:
+      - ./docker/wait-for-mockserver.sh:/opt/wait-for-mockserver.sh
+    entrypoint: [ "sh", "-c" ]
+    command:
+      - /opt/wait-for-mockserver.sh
+    environment:
+      - MOCK_HOST=mockserver
+  
+  kafka:
+    image: johnnypark/kafka-zookeeper
+    container_name: cl_kafka
+    # Disable kafka logging as it is far too verbose for debugging locally
+    logging:
+      driver: none
+    ports:
+      - "2181:2181"
+      - "9092:9092"
+    environment:
+      - ADVERTISED_HOST=kafka

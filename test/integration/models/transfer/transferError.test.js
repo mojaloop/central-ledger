@@ -25,7 +25,7 @@
 'use strict'
 
 const Test = require('tape')
-const Db = require('../../../../src/db')
+const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferError')
@@ -72,7 +72,7 @@ Test('Transfer Error model test', async (transferErrorTest) => {
     try {
       await Model.insert({
         transferStateChangeId: 0,
-        errorCode: 3106,
+        errorCode: '3106',
         errorDescription: 'Invalid Request'
       })
       assert.fail('should throw')

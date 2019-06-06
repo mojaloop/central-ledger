@@ -31,7 +31,7 @@
 'use strict'
 const Config = require('./config')
 
-const Db = require('../db')
+const Db = require('./db')
 
 const endpointType = async function () {
   try {

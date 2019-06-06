@@ -13,6 +13,10 @@
     "CONNECT_TIMEOUT": 45000,
     "RECONNECT_INTERVAL": 5000
   },
+  "DB_CONNECTION": {
+    "POOL_MIN": 10,
+    "POOL_MAX": 30
+  },
   "HANDLERS": {
     "DISABLED": false,
     "API": {

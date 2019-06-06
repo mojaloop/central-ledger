@@ -27,7 +27,7 @@
 
 'use strict'
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Util = require('../../lib/util')
 
 exports.saveIlpPacket = async (record) => {

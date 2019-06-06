@@ -284,7 +284,7 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, metadataAc
  * @param {object} extensionList - list of extensions
  * Example:
  * errorInformation: {
- *   errorCode: 3001,
+ *   errorCode: '3001',
  *   errorDescription: 'A failure has occurred',
  *   extensionList: [{
  *      extension: {
@@ -297,6 +297,7 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, metadataAc
  * @returns {object} - Returns errorInformation object
  */
 const createPrepareErrorStatus = (errorCode, errorDescription, extensionList) => {
+  errorCode = errorCode.toString()
   return {
     errorInformation: {
       errorCode,

@@ -24,7 +24,7 @@
 
 'use strict'
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Config = require('../../../src/lib/config')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {

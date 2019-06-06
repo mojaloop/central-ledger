@@ -28,7 +28,7 @@
  * @module src/models/participant/participantLimit/
  */
 
-const Db = require('../../db/index')
+const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrency')
 
 const insert = async (participantLimit) => {

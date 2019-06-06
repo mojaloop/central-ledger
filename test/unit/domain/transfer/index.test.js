@@ -104,7 +104,7 @@ const saveTransferAbortedResult = {
   },
   transferErrorRecord: {
     transferStateChangeId: 200,
-    errorCode: 5100,
+    errorCode: '5100',
     errorDescription: 'Payer aborted transfer without fulfilment',
     createdDate: '2019-03-07 18:40:25.026'
   }

@@ -6,7 +6,7 @@ defaults_working_directory: &defaults_working_directory
 
 defaults_docker_node: &defaults_docker_node
   docker:
-    - image: mhart/alpine-node:10.15.1
+    - image: node:10.15.3-alpine
 
 defaults_docker_helm_kube: &defaults_docker_helm_kube
   docker:

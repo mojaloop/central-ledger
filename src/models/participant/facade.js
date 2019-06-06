@@ -28,7 +28,7 @@
  * @module src/models/participant/facade/
  */
 
-const Db = require('../../db')
+const Db = require('../../lib/db')
 const Time = require('../../lib/time')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {

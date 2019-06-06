@@ -29,7 +29,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Db = require('../../../../src/db/index')
+const Db = require('../../../../src/lib/db')
 
 const Model = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 const participantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
