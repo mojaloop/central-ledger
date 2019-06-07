@@ -100,12 +100,99 @@ Test('Root', rootHandlerTest => {
   })
 
   rootHandlerTest.test('Handler Test', async handlerTest => {
+    handlerTest.test('getSubServiceHealth gets subservice health for datastore', async test => {
+      // Arrange
+      sandbox.stub(Db, '_listTables').returns([123])
+      const expected = { name: 'datastore', status: 'OK' }
+
+      // Act
+      const result = await Handler.getSubServiceHealth('datastore')
+
+      // Assert
+      test.deepEqual(result, expected, 'Service return correct response')
+      test.end()
+    })
+
+    handlerTest.test('getSubServiceHealth fails for datastore with no tables', async test => {
+      // Arrange
+      sandbox.stub(Db, '_listTables').returns([])
+      const expected = { name: 'datastore', status: 'DOWN' }
+
+      // Act
+      const result = await Handler.getSubServiceHealth('datastore')
+
+      // Assert
+      test.deepEqual(result, expected, 'Service return correct response')
+      test.end()
+    })
+
+    handlerTest.test('getSubServiceHealth gets subservice health for broker', async test => {
+      // Arrange
+      sandbox.stub(Kafka.Consumer, 'getConsumer').returns(P.resolve())
+      sandbox.stub(Kafka.Producer, 'getProducer').returns(P.resolve())
+      const expected = { name: 'broker', status: 'OK' }
+
+      // Act
+      const result = await Handler.getSubServiceHealth('broker')
+
+      // Assert
+      test.deepEqual(result, expected, 'Service return correct response')
+      test.end()
+    })
+
+    handlerTest.test('getSubServiceHealth fails for unknown service', async test => {
+      // Arrange
+      const serviceName = 'bogus_service'
+
+      // Act
+      try {
+        await Handler.getSubServiceHealth(serviceName)
+        test.fail('Error not thrown')
+      } catch (err) {
+        // Assert
+        test.ok(err instanceof Error)
+        test.equal(err.message, `Service: bogus_service not found.`)
+        test.end()
+      }
+    })
+
+    handlerTest.test('evaluateServiceHealth passes if nothing is down', async function (test) {
+      // Arrange
+      const services = [
+        { name: 'datastore', status: 'OK' },
+        { name: 'broker', status: 'OK' }
+      ]
+      const expected = true
+
+      // Act
+      const result = Handler.evaluateServiceHealth(services)
+
+      // Assert
+      test.equal(result, expected, 'Service should be healthy')
+      test.end()
+    })
+
+    handlerTest.test('evaluateServiceHealth fails if anything is down', async function (test) {
+      // Arrange
+      const services = [
+        { name: 'datastore', status: 'OK' },
+        { name: 'broker', status: 'DOWN' }
+      ]
+      const expected = false
+
+      // Act
+      const result = Handler.evaluateServiceHealth(services)
+
+      // Assert
+      test.equal(result, expected, 'Service should be healthy')
+      test.end()
+    })
+
     handlerTest.test('getHealth returns the detailed health check', async function (test) {
       // Arrange
       sandbox.stub(Db, '_listTables').returns([123])
       sandbox.stub(Config, 'SIDECAR_DISABLED').value(false)
       sandbox.stub(Kafka.Consumer, 'getConsumer').returns(P.resolve())
-      sandbox.stub(Kafka.Producer, 'getProducer').returns(P.resolve())
       const schema = {
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
@@ -137,7 +224,6 @@ Test('Root', rootHandlerTest => {
       // Arrange
       sandbox.stub(Db, '_listTables').returns([123])
       sandbox.stub(Kafka.Consumer, 'getConsumer').returns(P.reject()) // Kafka will be down
-      sandbox.stub(Kafka.Producer, 'getProducer').returns(P.resolve())
       const schema = {
         status: Joi.string().valid('DOWN').required(),
         uptime: Joi.number().required(),

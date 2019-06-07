@@ -136,12 +136,10 @@ const getSubServiceHealth = async function (serviceName) {
         Util.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.POSITION),
         Util.transformGeneralTopicName(TransferEventType.TRANSFER, TransferEventAction.FULFIL)
       ]
-      const producerTopics = []
 
       let status = statusEnum.OK
       try {
         await P.all(consumerTopics.map(t => Kafka.Consumer.getConsumer(t)))
-        await P.all(producerTopics.map(t => Kafka.Producer.getProducer(t)))
       } catch (err) {
         status = statusEnum.DOWN
       }
