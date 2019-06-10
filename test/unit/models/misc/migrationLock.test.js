@@ -27,9 +27,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/misc/migrationLock')
-
 
 Test('MigrationLock model', async (migrationLockTest) => {
   let sandbox
@@ -59,12 +57,11 @@ Test('MigrationLock model', async (migrationLockTest) => {
   })
 
   migrationLockTest.test('getIsMigrationLocked should', async getIsMigrationLockedTest => {
-
     getIsMigrationLockedTest.test('return false if the table is not locked', async test => {
       // Arrange
       Db.migration_lock.query.returns({ isLocked: false })
 
-      // Act 
+      // Act
       const result = await Model.getIsMigrationLocked()
 
       // Assert
@@ -76,7 +73,7 @@ Test('MigrationLock model', async (migrationLockTest) => {
       // Arrange
       Db.migration_lock.query.returns({ isLocked: true })
 
-      // Act 
+      // Act
       const result = await Model.getIsMigrationLocked()
 
       // Assert
@@ -88,9 +85,9 @@ Test('MigrationLock model', async (migrationLockTest) => {
       // Arrange
       Db.migration_lock.query.returns(Promise.reject(new Error('Error running query')))
 
-      // Act 
+      // Act
       try {
-        const result = await Model.getIsMigrationLocked()
+        await Model.getIsMigrationLocked()
         test.fail('Error should have thrown')
       } catch (err) {
         // Assert

@@ -32,7 +32,6 @@ const Handler = require('../../../../src/handlers/api/routes')
 const Kafka = require('../../../../src/handlers/lib/kafka/index')
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 
-
 function createRequest (routes) {
   let value = routes || []
   return {
@@ -60,9 +59,7 @@ Test('route handler', (handlerTest) => {
   })
 
   handlerTest.test('health should', healthTest => {
-
     healthTest.test('return status ok', async assert => {
-
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
