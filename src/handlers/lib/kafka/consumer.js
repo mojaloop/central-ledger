@@ -127,8 +127,49 @@ const isConsumerAutoCommitEnabled = (topicName) => {
   }
 }
 
+/**
+ * @function isConsumerConnected
+ *
+ * @param {string} topicName - the topic name of the consumer to check
+ *
+ * @description Use this to determine whether or not we are connected to the broker. Internally, it calls `getMetadata` to determine
+ * if the broker client is connected.
+ *
+ * @returns {Promise<Boolean>} - if connected, resolves with true, else Promise rejects if false or an error occours
+ */
+const isConsumerConnected = async topicName => {
+  let consumer
+  try {
+    consumer = getConsumer(topicName)
+  } catch (err) {
+    return Promise.reject(new Error(`Consumer for topic ${topicName} not found.`))
+  }
+
+  const options = {
+    topicName
+  }
+
+  return new Promise((resolve, reject) => {
+    const cb = (err, metadata) => {
+      if (err) {
+        return reject(new Error(`Error connecting to consumer`))
+      }
+
+      const foundTopics = metadata.topics.map(topic => topic.name)
+      if (foundTopics.indexOf(topicName) === -1) {
+        return reject(new Error(`Connected to consumer, but ${topicName} not found.`))
+      }
+
+      return resolve(true)
+    }
+
+    consumer.getMetadata(options, cb)
+  })
+}
+
 module.exports = {
   createHandler,
   getConsumer,
-  isConsumerAutoCommitEnabled
+  isConsumerAutoCommitEnabled,
+  isConsumerConnected
 }

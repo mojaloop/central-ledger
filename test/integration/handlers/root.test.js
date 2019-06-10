@@ -130,7 +130,8 @@ Test('Root handler test', async handlersTest => {
       const {
         responseBody,
         responseCode
-      } = await unwrapResponse((reply) => rootApiHandler.getHealth(createRequest({ query: { detailed: false } }), reply))
+      } = await unwrapResponse((reply) => rootApiHandler.getHealth(createRequest({}), reply))
+      console.log('responseBody', responseBody)
 
       // Assert
       const validationResult = Joi.validate(responseBody, expectedSchema) // We use Joi to validate the results as they rely on timestamps that are variable

@@ -139,7 +139,7 @@ const getSubServiceHealth = async function (serviceName) {
 
       let status = statusEnum.OK
       try {
-        await P.all(consumerTopics.map(t => Kafka.Consumer.getConsumer(t)))
+        await P.all(consumerTopics.map(t => Kafka.Consumer.isConsumerConnected(t)))
       } catch (err) {
         status = statusEnum.DOWN
       }

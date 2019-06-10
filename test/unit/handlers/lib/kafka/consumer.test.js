@@ -158,5 +158,12 @@ Test('Consumer', ConsumerTest => {
     isConsumerAutoCommitEnabledTest.end()
   })
 
+  ConsumerTest.test('isConsumerConnected should', isConsumerConnectedTest => {
+
+    isConsumerConnectedTest.test('reject with an error if the topic cannot be found')
+    isConsumerConnectedTest.test('reject with an error if it cannot connect') //i.e. getMetadata fails
+    isConsumerConnectedTest.test('pass if the topic can be found')
+  })
+
   ConsumerTest.end()
 })
