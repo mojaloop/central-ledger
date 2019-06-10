@@ -25,10 +25,11 @@
 const P = require('bluebird')
 
 const packageJson = require('../../../package.json')
-const Db = require('../../lib/db')
 const Util = require('../../handlers/lib/utility')
 const Kafka = require('../../handlers/lib/kafka/index')
 const Enum = require('../../lib/enum')
+const MigrationLockModel = require('../../models/misc/migrationLock')
+
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 
@@ -119,15 +120,7 @@ const getHealth = async function (request, h) {
 const getSubServiceHealth = async function (serviceName) {
   switch (serviceName) {
     case 'datastore': {
-      const result = await Db.migration_lock.query(async builder => {
-        builder.select('is_locked')
-          .orderBy('index', 'desc')
-          .first()
-      
-        return builder
-      })
-        
-      const isLocked = result.is_locked;
+      const isLocked = await MigrationLockModel.getIsMigrationLocked()
 
       return {
         name: serviceName,
