@@ -1462,7 +1462,7 @@
         },
         "uptime": {
           "description": "How long (in seconds) the service has been alive for.",
-          "type": "number",
+          "type": "number"
         },
         "started": {
           "description": "When the service was started (UTC)",
@@ -1472,7 +1472,7 @@
         "versionNumber": {
           "description": "The current version of the service.",
           "type": "string",
-          "example": "5.2.3",
+          "example": "5.2.3"
         },
         "services": {
           "description": "A list of services this service depends on, and their connection status",
@@ -1480,8 +1480,8 @@
           "items": {
             "$ref": "#/definitions/serviceHealth"
           }
-        },
-      },
+        }
+      }
     },
     "serviceHealth": {
       "type": "object",
