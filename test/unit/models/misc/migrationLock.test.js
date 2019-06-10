@@ -58,7 +58,7 @@ Test('MigrationLock model', async (migrationLockTest) => {
     t.end()
   })
 
-  migrationLockTest.test('getIsMigrationLocked should', getIsMigrationLockedTest => {
+  migrationLockTest.test('getIsMigrationLocked should', async getIsMigrationLockedTest => {
 
     getIsMigrationLockedTest.test('return false if the table is not locked', async test => {
       // Arrange
@@ -100,9 +100,8 @@ Test('MigrationLock model', async (migrationLockTest) => {
       test.end()
     })
 
-
     getIsMigrationLockedTest.end()
-  }
+  })
 
   migrationLockTest.end()
 })
