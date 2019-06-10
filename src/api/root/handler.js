@@ -119,11 +119,19 @@ const getHealth = async function (request, h) {
 const getSubServiceHealth = async function (serviceName) {
   switch (serviceName) {
     case 'datastore': {
-      const tables = await Db._listTables()
+      const result = await Db.migration_lock.query(async builder => {
+        builder.select('is_locked')
+          .orderBy('index', 'desc')
+          .first()
+      
+        return builder
+      })
+        
+      const isLocked = result.is_locked;
 
       return {
         name: serviceName,
-        status: tables.length > 0 ? statusEnum.OK : statusEnum.DOWN
+        status: isLocked ? statusEnum.DOWN : statusEnum.OK
       }
     }
     case 'broker': {

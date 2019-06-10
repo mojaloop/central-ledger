@@ -113,142 +113,142 @@ Test('Root', rootHandlerTest => {
       test.end()
     })
 
-    handlerTest.test('getSubServiceHealth fails for datastore with no tables', async test => {
-      // Arrange
-      sandbox.stub(Db, '_listTables').returns([])
-      const expected = { name: 'datastore', status: 'DOWN' }
+    // handlerTest.test('getSubServiceHealth fails for datastore with no tables', async test => {
+    //   // Arrange
+    //   sandbox.stub(Db, '_listTables').returns([])
+    //   const expected = { name: 'datastore', status: 'DOWN' }
 
-      // Act
-      const result = await Handler.getSubServiceHealth('datastore')
+    //   // Act
+    //   const result = await Handler.getSubServiceHealth('datastore')
 
-      // Assert
-      test.deepEqual(result, expected, 'Service return correct response')
-      test.end()
-    })
+    //   // Assert
+    //   test.deepEqual(result, expected, 'Service return correct response')
+    //   test.end()
+    // })
 
-    handlerTest.test('getSubServiceHealth gets subservice health for broker', async test => {
-      // Arrange
-      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
-      const expected = { name: 'broker', status: 'OK' }
+    // handlerTest.test('getSubServiceHealth gets subservice health for broker', async test => {
+    //   // Arrange
+    //   sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
+    //   const expected = { name: 'broker', status: 'OK' }
 
-      // Act
-      const result = await Handler.getSubServiceHealth('broker')
+    //   // Act
+    //   const result = await Handler.getSubServiceHealth('broker')
 
-      // Assert
-      test.deepEqual(result, expected, 'Service return correct response')
-      test.end()
-    })
+    //   // Assert
+    //   test.deepEqual(result, expected, 'Service return correct response')
+    //   test.end()
+    // })
 
-    handlerTest.test('getSubServiceHealth fails for unknown service', async test => {
-      // Arrange
-      const serviceName = 'bogus_service'
+    // handlerTest.test('getSubServiceHealth fails for unknown service', async test => {
+    //   // Arrange
+    //   const serviceName = 'bogus_service'
 
-      // Act
-      try {
-        await Handler.getSubServiceHealth(serviceName)
-        test.fail('Error not thrown')
-      } catch (err) {
-        // Assert
-        test.ok(err instanceof Error)
-        test.equal(err.message, `Service: bogus_service not found.`)
-        test.end()
-      }
-    })
+    //   // Act
+    //   try {
+    //     await Handler.getSubServiceHealth(serviceName)
+    //     test.fail('Error not thrown')
+    //   } catch (err) {
+    //     // Assert
+    //     test.ok(err instanceof Error)
+    //     test.equal(err.message, `Service: bogus_service not found.`)
+    //     test.end()
+    //   }
+    // })
 
-    handlerTest.test('evaluateServiceHealth passes if nothing is down', async function (test) {
-      // Arrange
-      const services = [
-        { name: 'datastore', status: 'OK' },
-        { name: 'broker', status: 'OK' }
-      ]
-      const expected = true
+    // handlerTest.test('evaluateServiceHealth passes if nothing is down', async function (test) {
+    //   // Arrange
+    //   const services = [
+    //     { name: 'datastore', status: 'OK' },
+    //     { name: 'broker', status: 'OK' }
+    //   ]
+    //   const expected = true
 
-      // Act
-      const result = Handler.evaluateServiceHealth(services)
+    //   // Act
+    //   const result = Handler.evaluateServiceHealth(services)
 
-      // Assert
-      test.equal(result, expected, 'Service should be healthy')
-      test.end()
-    })
+    //   // Assert
+    //   test.equal(result, expected, 'Service should be healthy')
+    //   test.end()
+    // })
 
-    handlerTest.test('evaluateServiceHealth fails if anything is down', async function (test) {
-      // Arrange
-      const services = [
-        { name: 'datastore', status: 'OK' },
-        { name: 'broker', status: 'DOWN' }
-      ]
-      const expected = false
+    // handlerTest.test('evaluateServiceHealth fails if anything is down', async function (test) {
+    //   // Arrange
+    //   const services = [
+    //     { name: 'datastore', status: 'OK' },
+    //     { name: 'broker', status: 'DOWN' }
+    //   ]
+    //   const expected = false
 
-      // Act
-      const result = Handler.evaluateServiceHealth(services)
+    //   // Act
+    //   const result = Handler.evaluateServiceHealth(services)
 
-      // Assert
-      test.equal(result, expected, 'Service should be healthy')
-      test.end()
-    })
+    //   // Assert
+    //   test.equal(result, expected, 'Service should be healthy')
+    //   test.end()
+    // })
 
-    handlerTest.test('getHealth returns the detailed health check', async function (test) {
-      // Arrange
-      sandbox.stub(Db, '_listTables').returns([123])
-      sandbox.stub(Config, 'SIDECAR_DISABLED').value(false)
-      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
-      const schema = {
-        status: Joi.string().valid('OK').required(),
-        uptime: Joi.number().required(),
-        startTime: Joi.date().iso().required(),
-        versionNumber: Joi.string().required(),
-        services: Joi.array().required()
-      }
-      const expectedStatus = 200
-      const expectedServices = [
-        { name: 'datastore', status: 'OK' },
-        { name: 'broker', status: 'OK' }
-      ]
+    // handlerTest.test('getHealth returns the detailed health check', async function (test) {
+    //   // Arrange
+    //   sandbox.stub(Db, '_listTables').returns([123])
+    //   sandbox.stub(Config, 'SIDECAR_DISABLED').value(false)
+    //   sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
+    //   const schema = {
+    //     status: Joi.string().valid('OK').required(),
+    //     uptime: Joi.number().required(),
+    //     startTime: Joi.date().iso().required(),
+    //     versionNumber: Joi.string().required(),
+    //     services: Joi.array().required()
+    //   }
+    //   const expectedStatus = 200
+    //   const expectedServices = [
+    //     { name: 'datastore', status: 'OK' },
+    //     { name: 'broker', status: 'OK' }
+    //   ]
 
-      // Act
-      const {
-        responseBody,
-        responseCode
-      } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { detailed: true } }), reply))
+    //   // Act
+    //   const {
+    //     responseBody,
+    //     responseCode
+    //   } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { detailed: true } }), reply))
 
-      // Assert
-      const validationResult = Joi.validate(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
-      test.equal(validationResult.error, null, 'The response matches the validation schema')
-      test.deepEqual(responseCode, expectedStatus, 'The response code matches')
-      test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
-      test.end()
-    })
+    //   // Assert
+    //   const validationResult = Joi.validate(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
+    //   test.equal(validationResult.error, null, 'The response matches the validation schema')
+    //   test.deepEqual(responseCode, expectedStatus, 'The response code matches')
+    //   test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
+    //   test.end()
+    // })
 
-    handlerTest.test('detailed health check fails if sub-service is DOWN', async function (test) {
-      // Arrange
-      sandbox.stub(Db, '_listTables').returns([123])
-      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.reject()) // Kafka will be down
-      const schema = {
-        status: Joi.string().valid('DOWN').required(),
-        uptime: Joi.number().required(),
-        startTime: Joi.date().iso().required(),
-        versionNumber: Joi.string().required(),
-        services: Joi.array().required()
-      }
-      const expectedStatus = 502
-      const expectedServices = [
-        { name: 'datastore', status: 'OK' },
-        { name: 'broker', status: 'DOWN' }
-      ]
+    // handlerTest.test('detailed health check fails if sub-service is DOWN', async function (test) {
+    //   // Arrange
+    //   sandbox.stub(Db, '_listTables').returns([123])
+    //   sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.reject()) // Kafka will be down
+    //   const schema = {
+    //     status: Joi.string().valid('DOWN').required(),
+    //     uptime: Joi.number().required(),
+    //     startTime: Joi.date().iso().required(),
+    //     versionNumber: Joi.string().required(),
+    //     services: Joi.array().required()
+    //   }
+    //   const expectedStatus = 502
+    //   const expectedServices = [
+    //     { name: 'datastore', status: 'OK' },
+    //     { name: 'broker', status: 'DOWN' }
+    //   ]
 
-      // Act
-      const {
-        responseBody,
-        responseCode
-      } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { detailed: true } }), reply))
+    //   // Act
+    //   const {
+    //     responseBody,
+    //     responseCode
+    //   } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { detailed: true } }), reply))
 
-      // Assert
-      const validationResult = Joi.validate(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
-      test.equal(validationResult.error, null, 'The response matches the validation schema')
-      test.deepEqual(responseCode, expectedStatus, 'The response code matches')
-      test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
-      test.end()
-    })
+    //   // Assert
+    //   const validationResult = Joi.validate(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
+    //   test.equal(validationResult.error, null, 'The response matches the validation schema')
+    //   test.deepEqual(responseCode, expectedStatus, 'The response code matches')
+    //   test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
+    //   test.end()
+    // })
 
     handlerTest.end()
   })
