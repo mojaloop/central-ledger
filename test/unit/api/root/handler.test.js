@@ -128,8 +128,7 @@ Test('Root', rootHandlerTest => {
 
     handlerTest.test('getSubServiceHealth gets subservice health for broker', async test => {
       // Arrange
-      sandbox.stub(Kafka.Consumer, 'getConsumer').returns(P.resolve())
-      sandbox.stub(Kafka.Producer, 'getProducer').returns(P.resolve())
+      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
       const expected = { name: 'broker', status: 'OK' }
 
       // Act
@@ -192,7 +191,7 @@ Test('Root', rootHandlerTest => {
       // Arrange
       sandbox.stub(Db, '_listTables').returns([123])
       sandbox.stub(Config, 'SIDECAR_DISABLED').value(false)
-      sandbox.stub(Kafka.Consumer, 'getConsumer').returns(P.resolve())
+      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
       const schema = {
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
@@ -223,7 +222,7 @@ Test('Root', rootHandlerTest => {
     handlerTest.test('detailed health check fails if sub-service is DOWN', async function (test) {
       // Arrange
       sandbox.stub(Db, '_listTables').returns([123])
-      sandbox.stub(Kafka.Consumer, 'getConsumer').returns(P.reject()) // Kafka will be down
+      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.reject()) // Kafka will be down
       const schema = {
         status: Joi.string().valid('DOWN').required(),
         uptime: Joi.number().required(),

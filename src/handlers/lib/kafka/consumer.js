@@ -157,6 +157,7 @@ const isConsumerConnected = async topicName => {
 
       const foundTopics = metadata.topics.map(topic => topic.name)
       if (foundTopics.indexOf(topicName) === -1) {
+        console.log('no topics')
         return reject(new Error(`Connected to consumer, but ${topicName} not found.`))
       }
 
