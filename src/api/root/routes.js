@@ -1,5 +1,6 @@
 'use strict'
 
+const BulkTransferHandler = require('../../handlers/bulk/transfers')
 const tags = ['api', 'root']
 
 module.exports = [
@@ -22,6 +23,17 @@ module.exports = [
     },
     options: {
       tags
+    }
+  },
+  {
+    method: 'POST',
+    path: '/bulk-transfers',
+    handler: BulkTransferHandler.bulkPrepare,
+    options: {
+      tags,
+      payload: {
+        failAction: 'error'
+      }
     }
   }
 ]

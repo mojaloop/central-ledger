@@ -102,6 +102,18 @@ Test('Enum test', async (enumTest) => {
         transferStateId: 'COMMITTED',
         enumeration: 'COMMITTED'
       }
+    ],
+    bulkProcessingState: [
+      {
+        bulkProcessingStateId: 1,
+        name: 'RECEIVED'
+      }
+    ],
+    bulkTransferState: [
+      {
+        bulkTransferStateId: 'RECEIVED',
+        enumeration: 'RECEIVED'
+      }
     ]
   }
 
@@ -138,6 +150,15 @@ Test('Enum test', async (enumTest) => {
     transferStateEnum: {
       'ABORTED_REJECTED': 'ABORTED_REJECTED',
       'COMMITTED': 'COMMITTED'
+    },
+    bulkProcessingState: {
+      'RECEIVED': 1
+    },
+    bulkTransferState: {
+      'RECEIVED': 'RECEIVED'
+    },
+    bulkTransferStateEnum: {
+      'RECEIVED': 'RECEIVED'
     }
   }
 
@@ -162,6 +183,12 @@ Test('Enum test', async (enumTest) => {
       find: sandbox.stub()
     }
     Db.transferState = {
+      find: sandbox.stub()
+    }
+    Db.bulkProcessingState = {
+      find: sandbox.stub()
+    }
+    Db.bulkTransferState = {
       find: sandbox.stub()
     }
 
@@ -402,6 +429,8 @@ Test('Enum test', async (enumTest) => {
         Db.ledgerEntryType.find.returns(P.resolve(allEnums.ledgerEntryType))
         Db.participantLimitType.find.returns(P.resolve(allEnums.participantLimitType))
         Db.transferParticipantRoleType.find.returns(P.resolve(allEnums.transferParticipantRoleType))
+        Db.bulkProcessingState.find.returns(P.resolve(allEnums.bulkProcessingState))
+        Db.bulkTransferState.find.returns(P.resolve(allEnums.bulkTransferState))
         const result = await Model.all()
         test.deepEqual(result, allEnumExpected, 'Results match')
         test.end()

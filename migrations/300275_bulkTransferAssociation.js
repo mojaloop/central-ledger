@@ -36,7 +36,7 @@ exports.up = async (knex, Promise) => {
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
         t.integer('bulkProcessingStateId').unsigned().notNullable()
         t.foreign('bulkProcessingStateId').references('bulkProcessingStateId').inTable('bulkProcessingState')
-        t.dateTime('lastProcessedDate').nullable()
+        t.dateTime('lastProcessedDate').defaultTo(knex.fn.now()).notNullable()
         t.integer('errorCode').unsigned().nullable()
         t.string('errorDescription', 128).nullable()
       })

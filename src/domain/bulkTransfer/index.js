@@ -1,4 +1,3 @@
-
 /*****
  License
  --------------
@@ -23,26 +22,50 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
-exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('bulkTransfer').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('bulkTransfer', (t) => {
-        t.string('bulkTransferId', 36).primary().notNullable()
-        t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransferDuplicateCheck')
-        t.string('bulkQuoteId', 36).nullable()
-        t.integer('payerParticipantId').unsigned().nullable()
-        t.foreign('payerParticipantId').references('participantId').inTable('participant')
-        t.integer('payeeParticipantId').unsigned().nullable()
-        t.foreign('payeeParticipantId').references('participantId').inTable('participant')
-        t.dateTime('expirationDate').notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
+/**
+ * @module src/domain/transfer/
+ */
+
+const Crypto = require('crypto')
+const BulkTransferFacade = require('../../models/bulkTransfer/facade')
+const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
+
+const bulkPrepare = async (payload, stateReason, isValid) => {
+  try {
+    return BulkTransferFacade.saveBulkTransferReceived(payload, stateReason, isValid)
+  } catch (e) {
+    throw e
+  }
+}
+const checkDuplicate = async (bulkTransferId, payload, bulkTransferFulfilmentId = false) => {
+  try {
+    let result
+    if (!payload) {
+      throw new Error('Invalid payload')
     }
-  })
+    const hashSha256 = Crypto.createHash('sha256')
+    let hash = JSON.stringify(payload)
+    hash = hashSha256.update(hash)
+    // remove trailing '=' as per specification
+    hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
+
+    if (!bulkTransferFulfilmentId) {
+      result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
+    } else {
+      // TODO: switch to BulkTransferFulfilmentDuplicateCheckModel
+      result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
+    }
+    return result
+  } catch (err) {
+    throw err
+  }
 }
 
-exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('bulkTransfer')
+const BulkTransferService = {
+  bulkPrepare,
+  checkDuplicate
 }
+
+module.exports = BulkTransferService
