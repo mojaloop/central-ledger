@@ -52,6 +52,8 @@ const BULK = 'bulk'
 const PREPARE = 'prepare'
 const { IndividualTransferModel, BulkTransferModel } = require('./bulkModels')
 const Mongoose = require('../../lib/mongodb').Mongoose
+const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
+const decodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').decodePayload
 
 const connectMongoose = async () => {
   let db = await Mongoose.connect(`mongodb://localhost:27017/bulk_transfers`, { // TODO needs config for connection string
@@ -82,7 +84,8 @@ const processBulkMessageAsStream = async (error, messages) => {
     } else {
       message = messages
     }
-    let { bulkTransferId } = message.value.content.payload
+    let payload = message.value.content.payload
+    let bulkTransferId = payload.bulkTransferId
     let headers = message.value.content.headers
     const kafkaTopic = (message && message.topic)
     let consumer
@@ -99,15 +102,22 @@ const processBulkMessageAsStream = async (error, messages) => {
     let reader = aw.createReader(indvidualTransfersStream) // to be able to use the stream with async/await operations (like await for commit in the util.proceed the aw is used to wrap the stream)
     let doc
     while ((doc = await reader.readAsync()) !== null) {
+      let individualTransfer = decodePayload(doc.dataUri)
+      individualTransfer.payerFsp = payload.payerFsp
+      individualTransfer.payeeFsp = payload.payeeFsp
+      individualTransfer.amount = individualTransfer.transferAmount
+      delete individualTransfer.transferAmount
+      individualTransfer.expiration = payload.expiration
+      let dataUri = encodePayload(JSON.stringify(individualTransfer), headers['content-type'])
       const msg = {
         value: {
           id: doc.payload.transferId,
-          from: doc.payload.payerFsp,
-          to: doc.payload.payeeFsp,
+          from: payload.payerFsp,
+          to: payload.payeeFsp,
           type: 'application/json',
           content: {
             headers,
-            payload: doc.dataUri
+            payload: dataUri
           },
           metadata: {
             event: {
