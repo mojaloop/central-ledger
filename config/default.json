@@ -7,7 +7,7 @@
     "SCALE": 2
   },
   "SIDECAR": {
-    "DISABLED": false,
+    "DISABLED": true,
     "HOST": "localhost",
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,
@@ -71,6 +71,31 @@
       }
     },
     "CONSUMER": {
+      "BULK": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-bulk-prepare",
+              "group.id": "cl-group-bulk-prepare",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
+      },
       "TRANSFER": {
         "PREPARE": {
           "config": {
