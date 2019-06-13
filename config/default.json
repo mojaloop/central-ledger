@@ -17,6 +17,9 @@
     "POOL_MIN": 10,
     "POOL_MAX": 30
   },
+  "MONGODB": {
+    "URI": "mongodb://localhost:27017/bulk_transfers"
+  },
   "HANDLERS": {
     "DISABLED": false,
     "API": {
@@ -71,6 +74,31 @@
       }
     },
     "CONSUMER": {
+      "BULK-TRANSFER": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-bulk-prepare",
+              "group.id": "cl-group-bulk-prepare",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
+      },
       "TRANSFER": {
         "PREPARE": {
           "config": {

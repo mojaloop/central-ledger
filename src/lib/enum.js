@@ -117,6 +117,39 @@ const transferStateEnum = async function () {
     throw err
   }
 }
+const bulkProcessingState = async function () {
+  try {
+    let bulkProcessingState = {}
+    for (let record of await Db.bulkProcessingState.find({})) {
+      bulkProcessingState[`${record.name}`] = record.bulkProcessingStateId
+    }
+    return bulkProcessingState
+  } catch (err) {
+    throw err
+  }
+}
+const bulkTransferState = async function () {
+  try {
+    let bulkTransferState = {}
+    for (let record of await Db.bulkTransferState.find({})) {
+      bulkTransferState[`${record.bulkTransferStateId}`] = record.bulkTransferStateId
+    }
+    return bulkTransferState
+  } catch (err) {
+    throw err
+  }
+}
+const bulkTransferStateEnum = async function () {
+  try {
+    let bulkTransferStateEnum = {}
+    for (let record of await Db.bulkTransferState.find({})) {
+      bulkTransferStateEnum[`${record.bulkTransferStateId}`] = record.enumeration
+    }
+    return bulkTransferStateEnum
+  } catch (err) {
+    throw err
+  }
+}
 const all = async function () {
   try {
     return {
@@ -127,7 +160,10 @@ const all = async function () {
       participantLimitType: await participantLimitType(),
       transferParticipantRoleType: await transferParticipantRoleType(),
       transferState: await transferState(),
-      transferStateEnum: await transferStateEnum()
+      transferStateEnum: await transferStateEnum(),
+      bulkProcessingState: await bulkProcessingState(),
+      bulkTransferState: await bulkTransferState(),
+      bulkTransferStateEnum: await bulkTransferStateEnum()
     }
   } catch (err) {
     throw err
@@ -193,16 +229,50 @@ const TransferState = {
   RESERVED: 'RESERVED',
   RESERVED_TIMEOUT: 'RESERVED_TIMEOUT'
 }
-
 const TransferStateEnum = {
   RECEIVED: 'RECEIVED',
   ABORTED: 'ABORTED',
   COMMITTED: 'COMMITTED',
   RESERVED: 'RESERVED'
 }
+const BulkProcessingState = {
+  RECEIVED: 1,
+  RECEIVED_DUPLICATE: 2,
+  RECEIVED_INVALID: 3,
+  ACCEPTED: 4,
+  PROCESSING: 5,
+  FULFIL_DUPLICATE: 6,
+  FULFIL_INVALID: 7,
+  COMPLETED: 8,
+  REJECTED: 9,
+  EXPIRED: 10
+}
+const BulkTransferState = {
+  ACCEPTED: 'ACCEPTED',
+  COMPLETED: 'COMPLETED',
+  INVALID: 'INVALID',
+  PENDING_FULFIL: 'PENDING_FULFIL',
+  PENDING_INVALID: 'PENDING_INVALID',
+  PENDING_PREPARE: 'PENDING_PREPARE',
+  PROCESSING: 'PROCESSING',
+  RECEIVED: 'RECEIVED',
+  REJECTED: 'REJECTED'
+}
+const BulkTransferStateEnum = {
+  ACCEPTED: 'ACCEPTED',
+  COMPLETED: 'COMPLETED',
+  INVALID: 'REJECTED',
+  PENDING_FULFIL: 'PROCESSING',
+  PENDING_INVALID: 'PENDING',
+  PENDING_PREPARE: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  RECEIVED: 'RECEIVED',
+  REJECTED: 'REJECTED'
+}
 
 // Code specific (non-DB) enumerations sorted alphabetically
 const transferEventType = {
+  BULK_TRANSFER: 'bulk-transfer',
   PREPARE: 'prepare',
   POSITION: 'position',
   TRANSFER: 'transfer',
@@ -212,6 +282,7 @@ const transferEventType = {
   GET: 'get'
 }
 const transferEventAction = {
+  BULK_PREPARE: 'bulk-prepare',
   PREPARE: 'prepare',
   PREPARE_DUPLICATE: 'prepare-duplicate',
   FULFIL_DUPLICATE: 'fulfil-duplicate',
@@ -230,6 +301,7 @@ const transferEventAction = {
 }
 const actionLetter = {
   abort: 'A',
+  bulkPrepare: 'BP',
   commit: 'C',
   get: 'G',
   prepare: 'P',
@@ -341,6 +413,9 @@ module.exports = {
   transferParticipantRoleType,
   transferState,
   transferStateEnum,
+  BulkProcessingState,
+  BulkTransferState,
+  BulkTransferStateEnum,
   all,
   transpose,
 
