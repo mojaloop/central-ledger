@@ -118,11 +118,13 @@ const positions = async (error, messages) => {
         : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
           : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
             : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
-              : Enum.actionLetter.unknown))))
+              : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
+                : Enum.actionLetter.unknown)))))
     let params = { message, transferId, kafkaTopic, consumer }
     let producer = { functionality: TransferEventType.NOTIFICATION, action }
+    if (action === TransferEventAction.BULK_PREPARE) producer.functionality = TransferEventType.BULK_PROCESSING
 
-    if (eventType === TransferEventType.POSITION && action === TransferEventAction.PREPARE) {
+    if (eventType === TransferEventType.POSITION && (action === TransferEventAction.PREPARE || action === TransferEventAction.BULK_PREPARE)) {
       Logger.info(Util.breadcrumb(location, { path: 'prepare' }))
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (let limit of limitAlarms) {

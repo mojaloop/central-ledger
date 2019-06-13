@@ -114,7 +114,9 @@ const prepare = async (error, messages) => {
       histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
-    const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare : Enum.actionLetter.unknown
+    const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare
+      : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
+        : Enum.actionLetter.unknown)
     let params = { message, transferId, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
@@ -160,7 +162,7 @@ const prepare = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
       Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}6`))
-      const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.PREPARE }
+      const producer = { functionality: TransferEventType.POSITION, action }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
     } else {
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))

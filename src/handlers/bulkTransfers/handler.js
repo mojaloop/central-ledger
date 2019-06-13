@@ -62,8 +62,8 @@ const prepareHandlerMessageProtocol = {
       event: {
         id: Uuid(),
         responseTo: 'dfa',
-        type: 'bulk-prepare',
-        action: 'prepare',
+        type: 'transfer',
+        action: 'bulk-prepare',
         createdAt: null,
         state: {
           status: 'success',
@@ -197,7 +197,7 @@ const bulkPrepare = async (error, messages) => {
 
           Logger.info(Util.breadcrumb(location, JSON.stringify(message)))
           params = { message, bulkTransferId, kafkaTopic, consumer }
-          const producer = { functionality: TransferEventType.TRANSFER, action: TransferEventAction.PREPARE } // TODO: change to BULK_PREPARE?
+          const producer = { functionality: TransferEventType.TRANSFER, action: TransferEventAction.BULK_PREPARE }
           await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
