@@ -4,7 +4,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 
 Mongoose.connection.on('error', (err) => { Logger.info('connection error ', err) })
 Mongoose.connection.once('open', function callback () {
-  Logger.info('Connection with database succeeded.')
+  Logger.info('MongoDB succesfully connected')
 })
 
 Mongoose.set('useFindAndModify', false)

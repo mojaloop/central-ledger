@@ -28,7 +28,6 @@
  * @module src/domain/transfer/
  */
 
-const Crypto = require('crypto')
 const BulkTransferFacade = require('../../models/bulkTransfer/facade')
 const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
 
@@ -39,17 +38,12 @@ const bulkPrepare = async (payload, stateReason, isValid) => {
     throw e
   }
 }
-const checkDuplicate = async (bulkTransferId, payload, bulkTransferFulfilmentId = false) => {
+const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = false) => {
   try {
     let result
-    if (!payload) {
-      throw new Error('Invalid payload')
+    if (!hash) {
+      throw new Error('Invalid hash')
     }
-    const hashSha256 = Crypto.createHash('sha256')
-    let hash = JSON.stringify(payload)
-    hash = hashSha256.update(hash)
-    // remove trailing '=' as per specification
-    hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
 
     if (!bulkTransferFulfilmentId) {
       result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)

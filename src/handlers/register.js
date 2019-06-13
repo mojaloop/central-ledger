@@ -51,7 +51,7 @@ const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
-const BulkHandlers = require('./bulk/handler')
+const BulkTransferHandlers = require('./bulkTransfers/handler')
 
 const registerAllHandlers = async () => {
   try {
@@ -90,6 +90,6 @@ module.exports = {
     registerAdminHandlers: AdminHandlers.registerAllHandlers
   },
   bulk: {
-    registerBulkHandlers: BulkHandlers.registerAllHandlers
+    registerBulkHandlers: BulkTransferHandlers.registerAllHandlers
   }
 }

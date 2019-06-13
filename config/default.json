@@ -71,7 +71,7 @@
       }
     },
     "CONSUMER": {
-      "BULK": {
+      "BULK-TRANSFER": {
         "PREPARE": {
           "config": {
             "options": {

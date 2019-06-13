@@ -4,11 +4,11 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const P = require('bluebird')
 const Handlers = require('../../../src/handlers/register')
-const TransferHandler = require('../../../src/handlers/transfers/handler')
-const PositionHandler = require('../../../src/handlers/positions/handler')
-const TimeoutHandler = require('../../../src/handlers/timeouts/handler')
-const AdminHandler = require('../../../src/handlers/admin/handler')
-const BulkHandler = require('../../../src/handlers/bulk/handler')
+const TransferHandlers = require('../../../src/handlers/transfers/handler')
+const PositionHandlers = require('../../../src/handlers/positions/handler')
+const TimeoutHandlers = require('../../../src/handlers/timeouts/handler')
+const AdminHandlers = require('../../../src/handlers/admin/handler')
+const BulkTransferHandlers = require('../../../src/handlers/bulkTransfers/handler')
 const Proxyquire = require('proxyquire')
 
 Test('handlers', handlersTest => {
@@ -16,11 +16,11 @@ Test('handlers', handlersTest => {
 
   handlersTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(PositionHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(TransferHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(TimeoutHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(AdminHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(BulkHandler, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(PositionHandlers, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(TransferHandlers, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(TimeoutHandlers, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(AdminHandlers, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(BulkTransferHandlers, 'registerAllHandlers').returns(P.resolve(true))
     test.end()
   })
 
@@ -54,7 +54,7 @@ Test('handlers', handlersTest => {
 
     registerAllTest.test('throw error when transfer handler throws error', async (test) => {
       try {
-        sandbox.stub(TransferHandler, 'registerAllHandlers').throws(new Error())
+        sandbox.stub(TransferHandlers, 'registerAllHandlers').throws(new Error())
         await Handlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()

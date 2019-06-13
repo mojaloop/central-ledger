@@ -272,6 +272,7 @@ const BulkTransferStateEnum = {
 
 // Code specific (non-DB) enumerations sorted alphabetically
 const transferEventType = {
+  BULK_TRANSFER: 'bulk-transfer',
   PREPARE: 'prepare',
   POSITION: 'position',
   TRANSFER: 'transfer',
