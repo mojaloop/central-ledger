@@ -24,7 +24,6 @@
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
-
  --------------
  ******/
 'use strict'
@@ -49,6 +48,31 @@ const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var o
 const consumerCommit = true
 // const fromSwitch = true
 const toDestination = true
+const prepareHandlerMessageProtocol = {
+  value: {
+    id: null,
+    from: null,
+    to: null,
+    type: 'application/json',
+    content: {
+      headers: null,
+      payload: null
+    },
+    metadata: {
+      event: {
+        id: Uuid(),
+        responseTo: 'dfa',
+        type: 'bulk-prepare',
+        action: 'prepare',
+        createdAt: null,
+        state: {
+          status: 'success',
+          code: 0
+        }
+      }
+    }
+  }
+}
 
 const connectMongoose = async () => {
   let db = await Mongoose.connect(Config.MONGODB_URI, {
@@ -100,7 +124,7 @@ const bulkPrepare = async (error, messages) => {
     // decode payload
     const payload = message.value.content.payload
     const headers = message.value.content.headers
-    const action = message.value.metadata.event.action // TODO: check
+    const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
     let consumer
@@ -117,36 +141,16 @@ const bulkPrepare = async (error, messages) => {
     let params = { message, bulkTransferId, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    const { isDuplicateId, isResend } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash) // TODO: switch to hash
+    const { isDuplicateId, isResend } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash)
     if (isDuplicateId && isResend) { // TODO: handle resend
       Logger.info(Util.breadcrumb(location, `resend`))
       Logger.info(Util.breadcrumb(location, `notImplemented`))
       return true
-      // const transferState = await BulkTransferService.getTransferStateChange(bulkTransferId)
-      // const transferStateEnum = transferState && transferState.enumeration
-      // if (!transferState) {
-      //   Logger.error(Util.breadcrumb(location, `callbackErrorNotFound1--${actionLetter}1`))
-      //   const errorInformation = Errors.getErrorInformation(errorType.internal, 'transfer/state not found')
-      //   const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-      //   return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
-      // } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
-      //   Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}2`))
-      //   let record = await BulkTransferService.getById(bulkTransferId)
-      //   message.value.content.payload = TransferObjectTransform.toFulfil(record)
-      //   const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
-      //   return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
-      // } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
-      //   Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}3`))
-      //   return await Util.proceed(params, { consumerCommit, histTimerEnd })
-      // }
     }
     if (isDuplicateId && !isResend) { // TODO: handle modified request
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
       Logger.info(Util.breadcrumb(location, `notImplemented`))
       return true
-      // const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
-      // const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-      // return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
 
     let { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
@@ -154,15 +158,12 @@ const bulkPrepare = async (error, messages) => {
       Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
         Logger.info(Util.breadcrumb(location, `saveBulkTransfer`))
-        // await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId })
+        const participants = { payerParticipantId, payeeParticipantId }
+        await BulkTransferService.bulkPrepare(payload, participants)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.info(Util.breadcrumb(location, `notImplemented`))
         return true
-        // Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
-        // const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-        // return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
       try {
         Logger.info(Util.breadcrumb(location, `individualTransfers`))
@@ -178,34 +179,23 @@ const bulkPrepare = async (error, messages) => {
           individualTransfer.amount = individualTransfer.transferAmount
           delete individualTransfer.transferAmount
           individualTransfer.expiration = payload.expiration
-          let dataUri = encodePayload(JSON.stringify(individualTransfer), headers['content-type'])
-          const message = {
-            value: {
-              id: doc.payload.transferId,
-              from: payload.payerFsp,
-              to: payload.payeeFsp,
-              type: 'application/json',
-              content: {
-                headers,
-                payload: dataUri
-              },
-              metadata: {
-                event: {
-                  id: Uuid(),
-                  responseTo: 'dfa',
-                  type: 'bulk-prepare',
-                  action: 'prepare',
-                  createdAt: new Date(),
-                  state: {
-                    status: 'success',
-                    code: 0
-                  }
-                }
-              }
-            }
+          const bulkTransferAssociationRecord = {
+            transferId: individualTransfer.transferId,
+            bulkTransferId: payload.bulkTransferId,
+            bulkProcessingStateId: Enum.BulkProcessingState.RECEIVED
           }
+          await BulkTransferService.bulkTransferAssociationCreate(bulkTransferAssociationRecord)
+
+          let dataUri = encodePayload(JSON.stringify(individualTransfer), headers['content-type'])
+          let message = Object.assign({}, prepareHandlerMessageProtocol)
+          message.value.id = doc.payload.transferId
+          message.value.from = payload.payerFsp
+          message.value.to = payload.payeeFsp
+          message.value.content.headers = headers
+          message.value.content.payload = dataUri
+          message.value.metadata.event.createdAt = new Date()
+
           Logger.info(Util.breadcrumb(location, JSON.stringify(message)))
-          // TODO: store transferAssocication
           params = { message, bulkTransferId, kafkaTopic, consumer }
           const producer = { functionality: TransferEventType.TRANSFER, action: TransferEventAction.PREPARE } // TODO: change to BULK_PREPARE?
           await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
@@ -214,10 +204,6 @@ const bulkPrepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
         Logger.info(Util.breadcrumb(location, `notImplemented`))
         return true
-        // Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
-        // const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-        // return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
     } else { // TODO: handle validation failure
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -228,19 +214,10 @@ const bulkPrepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.info(Util.breadcrumb(location, `notImplemented`))
         return true
-        // Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
-        // const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-        // return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
       Logger.info(Util.breadcrumb(location, `notImplemented`))
-      return true
-      // TODO: store invalid bulk transfer to database and produce callback notification to payer
-      // await BulkTransferService.logTransferError(bulkTransferId, errorType.generic, reasons.toString())
-      // const errorInformation = Errors.getErrorInformation(errorType.generic, reasons.toString())
-      // const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-      // return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+      return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)

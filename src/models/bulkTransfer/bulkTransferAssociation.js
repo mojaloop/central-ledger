@@ -23,37 +23,12 @@
  ******/
 'use strict'
 
-/**
- * @module src/domain/transfer/
- */
+const Db = require('../../lib/db')
 
-const BulkTransferFacade = require('../../models/bulkTransfer/facade')
-const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
-const BulkTransferAssociationModel = require('../../models/bulkTransfer/bulkTransferAssociation')
-
-const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = false) => {
+exports.create = async (bulkTransferAssociation) => {
   try {
-    let result
-    if (!hash) {
-      throw new Error('Invalid hash')
-    }
-
-    if (!bulkTransferFulfilmentId) {
-      result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
-    } else {
-      // TODO: switch to BulkTransferFulfilmentDuplicateCheckModel
-      result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
-    }
-    return result
+    return Db.bulkTransferAssociation.insert(bulkTransferAssociation)
   } catch (err) {
-    throw err
+    throw new Error(err.message)
   }
 }
-
-const BulkTransferService = {
-  checkDuplicate,
-  bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,
-  bulkTransferAssociationCreate: BulkTransferAssociationModel.create
-}
-
-module.exports = BulkTransferService

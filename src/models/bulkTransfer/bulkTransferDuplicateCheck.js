@@ -21,7 +21,6 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
 /**

@@ -21,7 +21,6 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
 /**
@@ -30,16 +29,15 @@
 
 const Db = require('../../lib/db')
 const Enum = require('../../lib/enum')
-const ParticipantModel = require('../participant/participant')
 const Time = require('../../lib/time')
 
-const saveBulkTransferReceived = async (payload, stateReason = null, isValid = true) => {
+const saveBulkTransferReceived = async (payload, participants, stateReason = null, isValid = true) => {
   try {
     const bulkTransferRecord = {
       bulkTransferId: payload.bulkTransferId,
       bulkQuoteId: payload.bulkQuoteId,
-      payerParticipantId: (await ParticipantModel.getByName(payload.payerFsp)).participantId,
-      payeeParticipantId: (await ParticipantModel.getByName(payload.payeeFsp)).participantId,
+      payerParticipantId: participants.payerParticipantId,
+      payeeParticipantId: participants.payeeParticipantId,
       expirationDate: Time.getUTCString(new Date(payload.expiration))
     }
     const state = (isValid ? Enum.BulkTransferState.RECEIVED : Enum.BulkTransferState.INVALID)
@@ -63,16 +61,16 @@ const saveBulkTransferReceived = async (payload, stateReason = null, isValid = t
           })
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
-        if (payload.individualTransfers) {
-          let individualTransfersRecordList = payload.individualTransfers.map(t => {
-            return {
-              transferId: t.transferId,
-              bulkTransferId: payload.bulkTransferId,
-              bulkProcessingStateId: Enum.BulkProcessingState.RECEIVED
-            }
-          })
-          await knex.batchInsert('bulkTransferAssociation', individualTransfersRecordList).transacting(trx)
-        }
+        // if (payload.individualTransfers) {
+        //   let individualTransfersRecordList = payload.individualTransfers.map(t => {
+        //     return {
+        //       transferId: t.transferId,
+        //       bulkTransferId: payload.bulkTransferId,
+        //       bulkProcessingStateId: Enum.BulkProcessingState.RECEIVED
+        //     }
+        //   })
+        //   await knex.batchInsert('bulkTransferAssociation', individualTransfersRecordList).transacting(trx)
+        // }
         await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
         await trx.commit
       } catch (err) {
