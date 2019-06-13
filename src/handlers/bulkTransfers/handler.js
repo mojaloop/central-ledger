@@ -37,26 +37,21 @@ const Util = require('../lib/utility')
 const Kafka = require('../lib/kafka')
 const Validator = require('./validator')
 const Enum = require('../../lib/enum')
-// const TransferState = Enum.TransferState
-// const TransferStateEnum = Enum.TransferStateEnum
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
-// const Errors = require('../../lib/errors')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Mongoose = require('../../lib/mongodb').Mongoose
 const { IndividualTransferModel, BulkTransferModel } = require('./bulkModels')
 const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
-// const decodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').decodePayload
 
-// const errorType = Errors.errorType
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
 const consumerCommit = true
 // const fromSwitch = true
 const toDestination = true
 
 const connectMongoose = async () => {
-  let db = await Mongoose.connect(`mongodb://localhost:27017/bulk_transfers`, { // TODO needs config for connection string
+  let db = await Mongoose.connect(Config.MONGODB_URI, {
     promiseLibrary: global.Promise
   })
   return db
@@ -212,7 +207,7 @@ const bulkPrepare = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, JSON.stringify(message)))
           // TODO: store transferAssocication
           params = { message, bulkTransferId, kafkaTopic, consumer }
-          const producer = { functionality: TransferEventType.TRANSFER, action: TransferEventAction.PREPARE } // TODO: change to BULK_PREPARE
+          const producer = { functionality: TransferEventType.TRANSFER, action: TransferEventAction.PREPARE } // TODO: change to BULK_PREPARE?
           await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         }
       } catch (err) { // TODO: handle individual transfers streaming error

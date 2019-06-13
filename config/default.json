@@ -17,6 +17,9 @@
     "POOL_MIN": 10,
     "POOL_MAX": 30
   },
+  "MONGODB": {
+    "URI": "mongodb://localhost:27017/bulk_transfers"
+  },
   "HANDLERS": {
     "DISABLED": false,
     "API": {
