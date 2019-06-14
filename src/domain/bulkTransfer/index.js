@@ -27,9 +27,10 @@
  * @module src/domain/transfer/
  */
 
-const BulkTransferFacade = require('../../models/bulkTransfer/facade')
-const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
 const BulkTransferAssociationModel = require('../../models/bulkTransfer/bulkTransferAssociation')
+const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
+const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTransferStateChange')
+const BulkTransferFacade = require('../../models/bulkTransfer/facade')
 
 const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = false) => {
   try {
@@ -53,7 +54,8 @@ const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = f
 const BulkTransferService = {
   checkDuplicate,
   bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,
-  bulkTransferAssociationCreate: BulkTransferAssociationModel.create
+  bulkTransferAssociationCreate: BulkTransferAssociationModel.create,
+  getBulkTransferState: BulkTransferStateChangeModel.getByTransferId
 }
 
 module.exports = BulkTransferService

@@ -271,38 +271,47 @@ const BulkTransferStateEnum = {
 }
 
 // Code specific (non-DB) enumerations sorted alphabetically
+const transferEventState = {
+  SUCCESS: 'success',
+  ERROR: 'error'
+}
 const transferEventType = {
+  ADMIN: 'admin',
+  BULK: 'bulk',
   BULK_TRANSFER: 'bulk-transfer',
   BULK_PROCESSING: 'bulk-processing',
-  PREPARE: 'prepare',
-  POSITION: 'position',
-  TRANSFER: 'transfer',
   FULFIL: 'fulfil',
+  GET: 'get',
   NOTIFICATION: 'notification',
-  ADMIN: 'admin',
-  GET: 'get'
+  POSITION: 'position',
+  PREPARE: 'prepare',
+  TRANSFER: 'transfer'
 }
 const transferEventAction = {
+  ABORT: 'abort',
+  ABORT_DUPLICATE: 'abort-duplicate',
+  BULK_FULFIL: 'bulk-fulfil',
   BULK_PREPARE: 'bulk-prepare',
+  BULK_PROCESSING: 'bulk-processing',
+  COMMIT: 'commit',
+  EVENT: 'event',
+  FAIL: 'fail',
+  FULFIL: 'fulfil',
+  FULFIL_DUPLICATE: 'fulfil-duplicate',
+  GET: 'get',
+  POSITION: 'position',
   PREPARE: 'prepare',
   PREPARE_DUPLICATE: 'prepare-duplicate',
-  FULFIL_DUPLICATE: 'fulfil-duplicate',
-  ABORT_DUPLICATE: 'abort-duplicate',
-  TRANSFER: 'transfer',
-  COMMIT: 'commit',
-  ABORT: 'abort',
+  PROCESSING: 'processing',
+  REJECT: 'reject',
   TIMEOUT_RECEIVED: 'timeout-received',
   TIMEOUT_RESERVED: 'timeout-reserved',
-  REJECT: 'reject',
-  FAIL: 'fail',
-  EVENT: 'event',
-  FULFIL: 'fulfil',
-  POSITION: 'position',
-  GET: 'get'
+  TRANSFER: 'transfer'
 }
 const actionLetter = {
   abort: 'A',
   bulkPrepare: 'BP',
+  bulkFulfil: 'BF',
   commit: 'C',
   get: 'G',
   prepare: 'P',
@@ -321,15 +330,6 @@ const adminNotificationActions = {
   LIMIT_ADJUSTMENT: 'limit-adjustment'
 }
 
-const rejectionType = {
-  EXPIRED: 'expired',
-  CANCELLED: 'cancelled'
-}
-const transferEventStatus = {
-  SUCCESS: 'success',
-  FAILED: 'failed'
-}
-
 const headers = {
   FSPIOP: {
     DESTINATION: 'fspiop-destination',
@@ -338,11 +338,75 @@ const headers = {
   }
 }
 
+const rejectionType = {
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled'
+}
+
+const transferEventStatus = {
+  SUCCESS: 'success',
+  FAILED: 'failed'
+}
+
 const topicMap = {
-  transfer: {
+  'bulk-processing': {
     'bulk-prepare': {
-      functionality: transferEventType.TRANSFER,
-      action: transferEventAction.PREPARE
+      functionality: transferEventType.BULK,
+      action: transferEventAction.PROCESSING
+    }
+  },
+  notification: {
+    'abort': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'abort-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'bulk-prepare': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'bulk-processing': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'commit': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'fulfil-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'get': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'limit-adjustment': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'position': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'prepare': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'prepare-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'reject': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'timeout-received': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
     }
   },
   position: {
@@ -371,46 +435,10 @@ const topicMap = {
       action: transferEventAction.POSITION
     }
   },
-  notification: {
-    'prepare': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'prepare-duplicate': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'fulfil-duplicate': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'abort-duplicate': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'commit': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'abort': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'timeout-received': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'reject': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'get': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'limit-adjustment': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
+  prepare: {
+    'bulk-prepare': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.PREPARE
     }
   }
 }
@@ -438,6 +466,7 @@ module.exports = {
   TransferState,
   TransferStateEnum,
 
+  transferEventState,
   transferEventType,
   transferEventAction,
   actionLetter,

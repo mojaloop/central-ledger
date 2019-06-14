@@ -51,7 +51,7 @@ const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
-const BulkTransferHandlers = require('./bulkTransfers/handler')
+const BulkPrepareHandlers = require('./bulk/prepare/handler')
 
 const registerAllHandlers = async () => {
   try {
@@ -59,9 +59,17 @@ const registerAllHandlers = async () => {
     Logger.info(JSON.stringify(modules))
     for (let key in modules) {
       Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
-      const handlerObject = modules[key]
-      Logger.info(JSON.stringify(handlerObject.handler))
-      await handlerObject.handler.registerAllHandlers()
+      if (modules[key].hasOwnProperty('handler')) {
+        const handlerObject = modules[key]
+        Logger.info(JSON.stringify(handlerObject.handler))
+        await handlerObject.handler.registerAllHandlers()
+      } else {
+        for (let i in modules[key]) {
+          const handlerObject = modules[key][i]
+          Logger.info(JSON.stringify(handlerObject.handler))
+          await handlerObject.handler.registerAllHandlers()
+        }
+      }
     }
     return true
   } catch (e) {
@@ -90,6 +98,6 @@ module.exports = {
     registerAdminHandlers: AdminHandlers.registerAllHandlers
   },
   bulk: {
-    registerBulkHandlers: BulkTransferHandlers.registerAllHandlers
+    registerBulkHandlers: BulkPrepareHandlers.registerAllHandlers
   }
 }

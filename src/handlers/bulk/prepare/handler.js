@@ -31,23 +31,25 @@
 const AwaitifyStream = require('awaitify-stream')
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const BulkTransferService = require('../../domain/bulkTransfer')
-const Util = require('../lib/utility')
-const Kafka = require('../lib/kafka')
-const Validator = require('./validator')
-const Enum = require('../../lib/enum')
+const BulkTransferService = require('../../../domain/bulkTransfer')
+const Util = require('../../lib/utility')
+const Kafka = require('../../lib/kafka')
+const Validator = require('../shared/validator')
+const Enum = require('../../../lib/enum')
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const Metrics = require('@mojaloop/central-services-metrics')
-const Config = require('../../lib/config')
-const Mongoose = require('../../lib/mongodb').Mongoose
-const { IndividualTransferModel, BulkTransferModel } = require('./bulkModels')
+const Config = require('../../../lib/config')
+const Mongoose = require('../../../lib/mongodb').Mongoose
+const { IndividualTransferModel, BulkTransferModel } = require('../shared/bulkModels')
 const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
+
 const consumerCommit = true
 // const fromSwitch = true
 const toDestination = true
+
 const prepareHandlerMessageProtocol = {
   value: {
     id: null,
@@ -87,7 +89,7 @@ const getBulkMessage = async (bulkTransferId) => {
 }
 
 /**
- * @function TransferBulkPrepareHandler
+ * @function BulkPrepareHandler
  *
  * @async
  * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages,
@@ -195,9 +197,9 @@ const bulkPrepare = async (error, messages) => {
           message.value.content.payload = dataUri
           message.value.metadata.event.createdAt = new Date()
 
-          Logger.info(Util.breadcrumb(location, JSON.stringify(message)))
+          // Logger.info(Util.breadcrumb(location, JSON.stringify(message)))
           params = { message, bulkTransferId, kafkaTopic, consumer }
-          const producer = { functionality: TransferEventType.TRANSFER, action: TransferEventAction.BULK_PREPARE }
+          const producer = { functionality: TransferEventType.PREPARE, action: TransferEventAction.BULK_PREPARE }
           await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
@@ -239,8 +241,8 @@ const registerBulkPrepareHandler = async () => {
     await connectMongoose()
     const bulkPrepareHandler = {
       command: bulkPrepare,
-      topicName: Util.transformGeneralTopicName(TransferEventType.BULK_TRANSFER, TransferEventAction.PREPARE),
-      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.BULK_TRANSFER.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
+      topicName: Util.transformGeneralTopicName(TransferEventType.BULK, TransferEventAction.PREPARE),
+      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.BULK.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
     bulkPrepareHandler.config.rdkafkaConf['client.id'] = bulkPrepareHandler.topicName
     await Kafka.Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
@@ -255,7 +257,7 @@ const registerBulkPrepareHandler = async () => {
  * @function RegisterAllHandlers
  *
  * @async
- * @description Registers all handlers in transfers ie: bulkPrepare, bulkFulfil, etc.
+ * @description Registers all module handlers
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */

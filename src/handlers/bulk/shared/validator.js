@@ -31,7 +31,7 @@
  * @module src/handlers/bulk
  */
 
-const Participant = require('../../domain/participant')
+const Participant = require('../../../domain/participant')
 
 let reasons = []
 

@@ -8,7 +8,7 @@ const TransferHandlers = require('../../../src/handlers/transfers/handler')
 const PositionHandlers = require('../../../src/handlers/positions/handler')
 const TimeoutHandlers = require('../../../src/handlers/timeouts/handler')
 const AdminHandlers = require('../../../src/handlers/admin/handler')
-const BulkTransferHandlers = require('../../../src/handlers/bulkTransfers/handler')
+const BulkTransferHandlers = require('../../../src/handlers/bulk/prepare/handler')
 const Proxyquire = require('proxyquire')
 
 Test('handlers', handlersTest => {

@@ -48,13 +48,12 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
+const errorType = Errors.errorType
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 
-const errorType = Errors.errorType
-const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
 const consumerCommit = true
 const fromSwitch = true
 const toDestination = true
@@ -82,6 +81,7 @@ const toDestination = true
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const prepare = async (error, messages) => {
+  const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
   const histTimerEnd = Metrics.getHistogram(
     'transfer_prepare',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',
@@ -190,6 +190,7 @@ const prepare = async (error, messages) => {
 }
 
 const fulfil = async (error, messages) => {
+  const location = { module: 'FulfilHandler', method: '', path: '' } // var object used as pointer
   const histTimerEnd = Metrics.getHistogram(
     'transfer_fulfil',
     'Consume a fulfil transfer message from the kafka topic and process it accordingly',
@@ -374,6 +375,7 @@ const fulfil = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const getTransfer = async (error, messages) => {
+  const location = { module: 'GetTransferHandler', method: '', path: '' } // var object used as pointer
   const histTimerEnd = Metrics.getHistogram(
     'transfer_get',
     'Consume a get transfer message from the kafka topic and process it accordingly',
