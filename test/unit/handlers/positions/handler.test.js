@@ -677,11 +677,14 @@ Test('Position handler', transferHandlerTest => {
         Util.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         messages[0].value.metadata.event.action = 'invalid'
-        await allTransferHandlers.positions(null, messages)
-        test.fail('Error not thrown')
+        Util.proceed.returns(true)
+
+        let result = await allTransferHandlers.positions(null, messages)
+        Logger.info(result)
+        test.equal(result, true)
         test.end()
       } catch (e) {
-        test.pass('Error thrown')
+        test.fail('Error thrown')
         test.end()
       }
     })
@@ -695,12 +698,14 @@ Test('Position handler', transferHandlerTest => {
         Util.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         messages[0].value.metadata.event.action = 'invalid'
+        Util.proceed.returns(true)
 
-        await allTransferHandlers.positions(null, messages)
-        test.fail('Error not thrown')
+        let result = await allTransferHandlers.positions(null, messages)
+        Logger.info(result)
+        test.equal(result, true)
         test.end()
       } catch (e) {
-        test.pass('Error thrown')
+        test.fail('Error thrown')
         test.end()
       }
     })
