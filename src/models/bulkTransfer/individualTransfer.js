@@ -25,7 +25,7 @@
 
 const Db = require('../../lib/db')
 
-const getById = async (id) => {
+const getAllById = async (id) => {
   try {
     const knex = await Db.getKnex()
     return await Db.bulkTransferAssociation.query(async (builder) => {
@@ -36,13 +36,14 @@ const getById = async (id) => {
           .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
           .innerJoin('bulkTransferAssociation AS bta1', 'bta1.transferId', 'tsc1.transferId')
           .where('bta1.bulkTransferId', id)
-          .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'bulkTransferAssociation.transferId'
+          .groupBy('tsc1.transferId').as('ts1'), 'ts1.transferId', 'bulkTransferAssociation.transferId'
         )
-        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts1.maxTransferStateChangeId')
+        .innerJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .where({ 'bulkTransferAssociation.bulkTransferId': id })
         .select('bulkTransferAssociation.transferId', 'tf.ilpFulfilment AS fulfilment',
-          'bulkTransferAssociation.errorCode', 'bulkTransferAssociation.errorDescription', 'tsc.transferStateId')
-        .first()
+          'bulkTransferAssociation.errorCode', 'bulkTransferAssociation.errorDescription',
+          'ts.enumeration AS transferStateEnum')
       return result
     })
   } catch (err) {
@@ -51,5 +52,5 @@ const getById = async (id) => {
 }
 
 module.exports = {
-  getById
+  getAllById
 }

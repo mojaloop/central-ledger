@@ -29,9 +29,8 @@ const getByBulkTransferId = async (id) => {
   try {
     return await Db.bulkTransferExtension.query(async (builder) => {
       let result = builder
-        .where({ 'bulkTransferExtension.bulkTransferId': id })
-        .select('bulkTransfer.bulkTransferId', 'btsc.bulkTransferStateId', 'btf.completedDate AS completedTimestamp',
-          'payer.name AS payerFsp', 'payee.name AS payeeFsp', 'bulkTransfer.bulkQuoteId', 'bulkTransfer.expirationDate')
+        .where({ 'bulkTransferId': id })
+        .select('key', 'value', 'bulkTransferFulfilmentId')
       return result
     })
   } catch (err) {

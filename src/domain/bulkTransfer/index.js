@@ -27,6 +27,7 @@
  * @module src/domain/transfer/
  */
 
+const Enum = require('../../lib/enum')
 const BulkTransferAssociationModel = require('../../models/bulkTransfer/bulkTransferAssociation')
 const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
 const BulkTransferExtensionModel = require('../../models/bulkTransfer/bulkTransferExtension')
@@ -58,8 +59,73 @@ const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = f
 const getBulkTransferById = async (id) => {
   try {
     let bulkTransfer = await BulkTransferModel.getById(id)
-    // TODO: continue here to implement full and payee bulk
-    return bulkTransfer
+    let bulkTransferExtensions = await BulkTransferExtensionModel.getByBulkTransferId(id)
+    let individualTransfers = await IndividualTransferModel.getAllById(id)
+    let payeeIndividualTransfers = []
+    individualTransfers = await Promise.all(individualTransfers.map(async (transfer) => {
+      return new Promise(async (resolve, reject) => {
+        let extensions = await IndividualTransferExtensionModel.getByTransferId(transfer.transferId)
+        let extension
+        let result = {
+          transferId: transfer.transferId
+        }
+        if (transfer.fulfilment) {
+          result.fulfilment = transfer.fulfilment
+        }
+        if (transfer.errorCode) {
+          result.errorInformation = {
+            errorCode: transfer.errorCode,
+            errorDescription: transfer.errorDescription
+          }
+        }
+        if (extensions.length > 0) {
+          if (!transfer.fulfilment) {
+            extension = extensions.map(ext => {
+              return { key: ext.key, value: ext.value }
+            })
+          } else {
+            extension = extensions.filter(ext => {
+              return !!ext.transferFulfilmentId
+            }).map(ext => {
+              return { key: ext.key, value: ext.value }
+            })
+          }
+        }
+        if (extension.length > 0) {
+          result.extensionList = { extension }
+        }
+        const allowedPayeeTransfers = [
+          Enum.TransferStateEnum.RESERVED,
+          Enum.TransferStateEnum.COMMITTED
+        ]
+        if (allowedPayeeTransfers.indexOf(transfer.transferStateEnum) !== -1) {
+          payeeIndividualTransfers.push(result)
+        }
+        return resolve(result)
+      })
+    }))
+    let bulkResponse = {
+      bulkTransferStateId: bulkTransfer.bulkTransferStateId
+    }
+    if (bulkTransfer.completedTimestamp) {
+      bulkResponse.completedTimestamp = bulkTransfer.completedTimestamp
+    }
+    let payerBulkTransfer = Object.assign({}, bulkResponse)
+    let payeeBulkTransfer = Object.assign({}, bulkResponse)
+    if (bulkTransferExtensions.length > 0) {
+      let bulkExtensionsResponse = bulkTransferExtensions.map(ext => {
+        return { key: ext.key, value: ext.value }
+      })
+      payerBulkTransfer.extensionList = { extension: bulkExtensionsResponse }
+      payeeBulkTransfer.extensionList = { extension: bulkExtensionsResponse }
+    }
+    if (individualTransfers.length > 0) {
+      payerBulkTransfer.individualTransferResults = individualTransfers
+    }
+    if (payeeIndividualTransfers.length > 0) {
+      payeeBulkTransfer.individualTransferResults = payeeIndividualTransfers
+    }
+    return { payerBulkTransfer, payeeBulkTransfer }
   } catch (err) {
     throw err
   }
@@ -73,11 +139,7 @@ const BulkTransferService = {
   bulkTransferAssociationExists: BulkTransferAssociationModel.exists,
   bulkTransferAssociationUpdate: BulkTransferAssociationModel.update,
   createBulkTransferState: BulkTransferStateChangeModel.create,
-  getBulkTransferState: BulkTransferStateChangeModel.getByTransferId,
-
-  getBulkTransferExtensionsById: BulkTransferExtensionModel.getByBulkTransferId,
-  getIndividualTransfersById: IndividualTransferModel.getById,
-  getIndividualTransferExtensionsByTransferId: IndividualTransferExtensionModel.getByTransferId
+  getBulkTransferState: BulkTransferStateChangeModel.getByTransferId
 }
 
 module.exports = BulkTransferService

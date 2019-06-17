@@ -50,7 +50,7 @@ const consumerCommit = true
 const fromSwitch = true
 // const toDestination = true
 
-// const prepareHandlerMessageProtocol = {
+// const processingHandlerMessageProtocol = {
 //   value: {
 //     id: null,
 //     from: null,
@@ -123,7 +123,7 @@ const bulkProcessing = async (error, messages) => {
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
     const state = message.value.metadata.event.state
-    const transferId = payload.transferId
+    const transferId = message.value.id
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
@@ -143,7 +143,7 @@ const bulkProcessing = async (error, messages) => {
 
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
     // Logger.info(`bulkTransferInfo=${JSON.stringify(bulkTransferInfo)}`)
-    let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorMessage, exitCode
+    let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription, exitCode
     let produceNotification = false
 
     if ([Enum.BulkTransferState.RECEIVED, Enum.BulkTransferState.PENDING_PREPARE].indexOf(bulkTransferInfo.bulkTransferStateId) !== -1) {
@@ -154,6 +154,8 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.BulkProcessingState.RECEIVED_DUPLICATE
       } else if (action === TransferEventAction.BULK_PREPARE && state.status === Enum.transferEventState.ERROR) {
         processingStateId = Enum.BulkProcessingState.RECEIVED_INVALID
+        errorCode = payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation.errorDescription
       } else if (action === TransferEventAction.BULK_PREPARE && state.status === Enum.transferEventState.SUCCESS) {
         processingStateId = Enum.BulkProcessingState.ACCEPTED
       } else if ([TransferEventAction.TIMEOUT_RECEIVED, TransferEventAction.TIMEOUT_RESERVED].indexOf(action) !== -1) {
@@ -162,7 +164,8 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.BulkProcessingState.EXPIRED
       } else {
         exitCode = 2
-        errorMessage = `Invalid action for bulk in ${Enum.BulkTransferState.RECEIVED} state`
+        errorCode = 2 // TODO: Change to MLAPI spec defined error and move description text to enum
+        errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.RECEIVED} state`
       }
     } else if ([Enum.BulkTransferState.ACCEPTED].indexOf(bulkTransferInfo.bulkTransferStateId) !== -1) {
       if (action === TransferEventAction.TIMEOUT_RESERVED) {
@@ -172,7 +175,8 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.BulkProcessingState.EXPIRED
       } else {
         exitCode = 3
-        errorMessage = errorMessage = `Invalid action for bulk in ${Enum.BulkTransferState.ACCEPTED} state`
+        errorCode = 3 // TODO: Change to MLAPI spec defined error and move description text to enum
+        errorDescription = errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.ACCEPTED} state`
       }
     } else if ([Enum.BulkTransferState.PROCESSING, Enum.BulkTransferState.PENDING_FULFIL].indexOf(bulkTransferInfo.bulkTransferStateId) !== -1) {
       criteriaState = Enum.BulkTransferState.ACCEPTED
@@ -192,17 +196,19 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.BulkProcessingState.EXPIRED
       } else {
         exitCode = 4
-        errorMessage = `Invalid action for bulk in ${Enum.BulkTransferState.PROCESSING} state`
+        errorCode = 4 // TODO: Change to MLAPI spec defined error and move description text to enum
+        errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.PROCESSING} state`
       }
     } else { // ['PENDING_INVALID', 'COMPLETED', 'REJECTED', 'INVALID']
       exitCode = 1
-      errorMessage = 'Individual transfer can not be processed when bulk transfer state is final'
+      errorCode = 1 // TODO: Change to MLAPI spec defined error and move description text to enum
+      errorDescription = 'Individual transfer can not be processed when bulk transfer state is final'
     }
     await BulkTransferService.bulkTransferAssociationUpdate(
       transferId, bulkTransferInfo.bulkTransferId, {
         bulkProcessingStateId: processingStateId,
-        errorCode: exitCode, // TODO: change to errorCode
-        errorMessage
+        errorCode,
+        errorDescription
       })
     let exists = await BulkTransferService.bulkTransferAssociationExists(
       bulkTransferInfo.bulkTransferId,
@@ -222,8 +228,9 @@ const bulkProcessing = async (error, messages) => {
     if (exitCode > 0) {
       // TODO: Prepare Bulk Error Notification callback message
     } else if (produceNotification) {
-      criteriaState = null // debugging breakpoint line
-      // TODO: select from db
+      let { payerBulkTransfer, payeeBulkTransfer } =
+        await BulkTransferService.getBulkTransferById(bulkTransferInfo.bulkTransferId)
+      console.log(`payerBulkTransfer=${JSON.stringify(payerBulkTransfer)}\npayeeBulkTransfer=${JSON.stringify(payeeBulkTransfer)}`)
     } else {
       criteriaState = null // debugging breakpoint line
     }
@@ -231,6 +238,8 @@ const bulkProcessing = async (error, messages) => {
     if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
       Logger.info(Util.breadcrumb(location, { path: 'bulkPrepare' }))
 
+      // TODO: Continue here - save individualTransferResults for payer and payee to object store
+      // and produce bulkTransferId messages for payee and payee to ml-api-adapter
       Logger.info(Util.breadcrumb(location, `flowEnd--${actionLetter}1`))
       return true
       // await Util.proceed(params, { producer, fromSwitch, consumerCommit, histTimerEnd })
