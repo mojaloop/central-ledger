@@ -29,8 +29,12 @@
 
 const BulkTransferAssociationModel = require('../../models/bulkTransfer/bulkTransferAssociation')
 const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
-const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTransferStateChange')
+const BulkTransferExtensionModel = require('../../models/bulkTransfer/bulkTransferExtension')
 const BulkTransferFacade = require('../../models/bulkTransfer/facade')
+const BulkTransferModel = require('../../models/bulkTransfer/bulkTransfer')
+const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTransferStateChange')
+const IndividualTransferModel = require('../../models/bulkTransfer/individualTransfer')
+const IndividualTransferExtensionModel = require('../../models/transfer/transferExtension')
 
 const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = false) => {
   try {
@@ -51,11 +55,29 @@ const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = f
   }
 }
 
+const getBulkTransferById = async (id) => {
+  try {
+    let bulkTransfer = await BulkTransferModel.getById(id)
+    // TODO: continue here to implement full and payee bulk
+    return bulkTransfer
+  } catch (err) {
+    throw err
+  }
+}
+
 const BulkTransferService = {
   checkDuplicate,
+  getBulkTransferById,
   bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,
   bulkTransferAssociationCreate: BulkTransferAssociationModel.create,
-  getBulkTransferState: BulkTransferStateChangeModel.getByTransferId
+  bulkTransferAssociationExists: BulkTransferAssociationModel.exists,
+  bulkTransferAssociationUpdate: BulkTransferAssociationModel.update,
+  createBulkTransferState: BulkTransferStateChangeModel.create,
+  getBulkTransferState: BulkTransferStateChangeModel.getByTransferId,
+
+  getBulkTransferExtensionsById: BulkTransferExtensionModel.getByBulkTransferId,
+  getIndividualTransfersById: IndividualTransferModel.getById,
+  getIndividualTransferExtensionsByTransferId: IndividualTransferExtensionModel.getByTransferId
 }
 
 module.exports = BulkTransferService

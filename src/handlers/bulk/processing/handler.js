@@ -143,24 +143,23 @@ const bulkProcessing = async (error, messages) => {
 
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
     // Logger.info(`bulkTransferInfo=${JSON.stringify(bulkTransferInfo)}`)
-    let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingState, errorMessage
+    let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorMessage, exitCode
     let produceNotification = false
-    let exitCode = 0
 
     if ([Enum.BulkTransferState.RECEIVED, Enum.BulkTransferState.PENDING_PREPARE].indexOf(bulkTransferInfo.bulkTransferStateId) !== -1) {
       criteriaState = Enum.BulkTransferState.RECEIVED
       incompleteBulkState = Enum.BulkTransferState.PENDING_PREPARE
       completedBulkState = Enum.BulkTransferState.ACCEPTED
       if (action === TransferEventAction.PREPARE_DUPLICATE) {
-        processingState = Enum.BulkProcessingState.RECEIVED_DUPLICATE
+        processingStateId = Enum.BulkProcessingState.RECEIVED_DUPLICATE
       } else if (action === TransferEventAction.BULK_PREPARE && state.status === Enum.transferEventState.ERROR) {
-        processingState = Enum.BulkProcessingState.RECEIVED_INVALID
+        processingStateId = Enum.BulkProcessingState.RECEIVED_INVALID
       } else if (action === TransferEventAction.BULK_PREPARE && state.status === Enum.transferEventState.SUCCESS) {
-        processingState = Enum.BulkProcessingState.ACCEPTED
+        processingStateId = Enum.BulkProcessingState.ACCEPTED
       } else if ([TransferEventAction.TIMEOUT_RECEIVED, TransferEventAction.TIMEOUT_RESERVED].indexOf(action) !== -1) {
         incompleteBulkState = null
         completedBulkState = Enum.BulkTransferState.COMPLETED
-        processingState = Enum.BulkProcessingState.EXPIRED
+        processingStateId = Enum.BulkProcessingState.EXPIRED
       } else {
         exitCode = 2
         errorMessage = `Invalid action for bulk in ${Enum.BulkTransferState.RECEIVED} state`
@@ -170,7 +169,7 @@ const bulkProcessing = async (error, messages) => {
         criteriaState = Enum.BulkTransferState.ACCEPTED
         incompleteBulkState = null
         completedBulkState = Enum.BulkTransferState.COMPLETED
-        processingState = Enum.BulkProcessingState.EXPIRED
+        processingStateId = Enum.BulkProcessingState.EXPIRED
       } else {
         exitCode = 3
         errorMessage = errorMessage = `Invalid action for bulk in ${Enum.BulkTransferState.ACCEPTED} state`
@@ -180,17 +179,17 @@ const bulkProcessing = async (error, messages) => {
       incompleteBulkState = Enum.BulkTransferState.PENDING_FULFIL
       completedBulkState = Enum.BulkTransferState.COMPLETED
       if (action === TransferEventAction.FULFIL_DUPLICATE) {
-        processingState = Enum.BulkProcessingState.FULFIL_DUPLICATE
+        processingStateId = Enum.BulkProcessingState.FULFIL_DUPLICATE
       } else if (action === TransferEventAction.COMMIT && state.status === Enum.transferEventState.SUCCESS) {
-        processingState = Enum.BulkProcessingState.COMPLETED
+        processingStateId = Enum.BulkProcessingState.COMPLETED
       } else if (action === TransferEventAction.REJECT && state.status === Enum.transferEventState.SUCCESS) {
-        processingState = Enum.BulkProcessingState.REJECTED
+        processingStateId = Enum.BulkProcessingState.REJECTED
       } else if ([TransferEventAction.COMMIT, TransferEventAction.ABORT].indexOf(action) !== -1 && state.status === Enum.transferEventState.ERROR) {
-        processingState = Enum.BulkProcessingState.FULFIL_INVALID
+        processingStateId = Enum.BulkProcessingState.FULFIL_INVALID
       } else if (action === Enum.TransferEventAction.TIMEOUT_RESERVED) {
         incompleteBulkState = null
         completedBulkState = Enum.BulkTransferState.COMPLETED
-        processingState = Enum.BulkProcessingState.EXPIRED
+        processingStateId = Enum.BulkProcessingState.EXPIRED
       } else {
         exitCode = 4
         errorMessage = `Invalid action for bulk in ${Enum.BulkTransferState.PROCESSING} state`
@@ -199,9 +198,35 @@ const bulkProcessing = async (error, messages) => {
       exitCode = 1
       errorMessage = 'Individual transfer can not be processed when bulk transfer state is final'
     }
-    Logger.info(`criteriaState=${criteriaState}, incompleteBulkState=${incompleteBulkState}, completedBulkState=${completedBulkState}`)
-    Logger.info(`bulkTransferState=${bulkTransferState}, processingState=${processingState}, errorMessage=${errorMessage}, produceNotification=${produceNotification}, exitCode=${exitCode}`)
-    // TODO: continue
+    await BulkTransferService.bulkTransferAssociationUpdate(
+      transferId, bulkTransferInfo.bulkTransferId, {
+        bulkProcessingStateId: processingStateId,
+        errorCode: exitCode, // TODO: change to errorCode
+        errorMessage
+      })
+    let exists = await BulkTransferService.bulkTransferAssociationExists(
+      bulkTransferInfo.bulkTransferId,
+      Enum.BulkProcessingState[criteriaState]
+    )
+    if (exists) {
+      bulkTransferState = incompleteBulkState
+    } else {
+      bulkTransferState = completedBulkState
+      produceNotification = true
+    }
+    await BulkTransferService.createBulkTransferState({
+      bulkTransferId: bulkTransferInfo.bulkTransferId,
+      bulkTransferStateId: bulkTransferState
+    })
+
+    if (exitCode > 0) {
+      // TODO: Prepare Bulk Error Notification callback message
+    } else if (produceNotification) {
+      criteriaState = null // debugging breakpoint line
+      // TODO: select from db
+    } else {
+      criteriaState = null // debugging breakpoint line
+    }
 
     if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
       Logger.info(Util.breadcrumb(location, { path: 'bulkPrepare' }))

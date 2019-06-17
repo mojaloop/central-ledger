@@ -24,40 +24,19 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
-const create = async (stateChange) => {
-  Logger.debug('save bulkTransferStateChange' + stateChange.toString())
+const getById = async (id) => {
   try {
-    return await Db.bulkTransferStateChange.insert(stateChange)
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByBulkTransferId = async (id) => {
-  try {
-    return await Db.bulkTransferStateChange.query(async (builder) => {
+    return await Db.bulkTransfer.query(async (builder) => {
       let result = builder
-        .where({ 'bulkTransferStateChange.bulkTransferId': id })
-        .select('bulkTransferStateChange.*')
-        .orderBy('bulkTransferStateChangeId', 'desc')
-        .first()
-      return result
-    })
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferId = async (id) => {
-  try {
-    return await Db.bulkTransferStateChange.query(async (builder) => {
-      let result = builder
-        .innerJoin('bulkTransferAssociation AS bta', 'bta.bulkTransferId', 'bulkTransferStateChange.bulkTransferId')
-        .where({ 'bta.transferId': id })
-        .select('bulkTransferStateChange.*')
-        .orderBy('bulkTransferStateChangeId', 'desc')
+        .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
+        .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
+        .innerJoin('bulkTransferStateChange AS btsc', 'btsc.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .leftJoin('bulkTransferFulfilment AS btf', 'btf.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .where({ 'bulkTransfer.bulkTransferId': id })
+        .orderBy('btsc.bulkTransferStateChangeId', 'desc')
+        .select('bulkTransfer.bulkTransferId', 'btsc.bulkTransferStateId', 'btf.completedDate AS completedTimestamp',
+          'payer.name AS payerFsp', 'payee.name AS payeeFsp', 'bulkTransfer.bulkQuoteId', 'bulkTransfer.expirationDate')
         .first()
       return result
     })
@@ -67,7 +46,5 @@ const getByTransferId = async (id) => {
 }
 
 module.exports = {
-  create,
-  getByBulkTransferId,
-  getByTransferId
+  getById
 }

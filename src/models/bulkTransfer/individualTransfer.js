@@ -24,40 +24,24 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
-const create = async (stateChange) => {
-  Logger.debug('save bulkTransferStateChange' + stateChange.toString())
+const getById = async (id) => {
   try {
-    return await Db.bulkTransferStateChange.insert(stateChange)
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByBulkTransferId = async (id) => {
-  try {
-    return await Db.bulkTransferStateChange.query(async (builder) => {
+    const knex = await Db.getKnex()
+    return await Db.bulkTransferAssociation.query(async (builder) => {
       let result = builder
-        .where({ 'bulkTransferStateChange.bulkTransferId': id })
-        .select('bulkTransferStateChange.*')
-        .orderBy('bulkTransferStateChangeId', 'desc')
-        .first()
-      return result
-    })
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferId = async (id) => {
-  try {
-    return await Db.bulkTransferStateChange.query(async (builder) => {
-      let result = builder
-        .innerJoin('bulkTransferAssociation AS bta', 'bta.bulkTransferId', 'bulkTransferStateChange.bulkTransferId')
-        .where({ 'bta.transferId': id })
-        .select('bulkTransferStateChange.*')
-        .orderBy('bulkTransferStateChangeId', 'desc')
+        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'bulkTransferAssociation.transferId')
+        .innerJoin(knex('transferStateChange AS tsc1')
+          .select('tsc1.transferId')
+          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+          .innerJoin('bulkTransferAssociation AS bta1', 'bta1.transferId', 'tsc1.transferId')
+          .where('bta1.bulkTransferId', id)
+          .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'bulkTransferAssociation.transferId'
+        )
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+        .where({ 'bulkTransferAssociation.bulkTransferId': id })
+        .select('bulkTransferAssociation.transferId', 'tf.ilpFulfilment AS fulfilment',
+          'bulkTransferAssociation.errorCode', 'bulkTransferAssociation.errorDescription', 'tsc.transferStateId')
         .first()
       return result
     })
@@ -67,7 +51,5 @@ const getByTransferId = async (id) => {
 }
 
 module.exports = {
-  create,
-  getByBulkTransferId,
-  getByTransferId
+  getById
 }
