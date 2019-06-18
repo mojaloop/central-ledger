@@ -105,7 +105,8 @@ const getBulkTransferById = async (id) => {
       })
     }))
     let bulkResponse = {
-      bulkTransferStateId: bulkTransfer.bulkTransferStateId
+      bulkTransferId: bulkTransfer.bulkTransferId,
+      bulkTransferState: bulkTransfer.bulkTransferStateId
     }
     if (bulkTransfer.completedTimestamp) {
       bulkResponse.completedTimestamp = bulkTransfer.completedTimestamp

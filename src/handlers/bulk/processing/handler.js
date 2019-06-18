@@ -27,7 +27,7 @@
  ******/
 'use strict'
 
-// const Uuid = require('uuid4')
+const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('../../lib/utility')
@@ -42,7 +42,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const Mongoose = require('../../../lib/mongodb').Mongoose
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
-// const IndividualTransferModel = require('../shared/bulkModels').IndividualTransferModel
+const { BulkTransferResponseModel } = require('../../../models/mongo/bulkTransfer')
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
 
@@ -119,7 +119,7 @@ const bulkProcessing = async (error, messages) => {
       message = messages
     }
     const payload = decodePayload(message.value.content.payload)
-    // const headers = message.value.content.headers
+    const headers = message.value.content.headers
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
     const state = message.value.metadata.event.state
@@ -230,7 +230,13 @@ const bulkProcessing = async (error, messages) => {
     } else if (produceNotification) {
       let { payerBulkTransfer, payeeBulkTransfer } =
         await BulkTransferService.getBulkTransferById(bulkTransferInfo.bulkTransferId)
+
       console.log(`payerBulkTransfer=${JSON.stringify(payerBulkTransfer)}\npayeeBulkTransfer=${JSON.stringify(payeeBulkTransfer)}`)
+
+      let bulkResponse = new BulkTransferResponseModel(Object.assign({}, { metadataEventId: Uuid(), headers }, payerBulkTransfer))
+      await bulkResponse.save()
+      bulkResponse = new BulkTransferResponseModel(Object.assign({}, { metadataEventId: Uuid(), headers }, payeeBulkTransfer))
+      await bulkResponse.save()
     } else {
       criteriaState = null // debugging breakpoint line
     }
@@ -238,9 +244,10 @@ const bulkProcessing = async (error, messages) => {
     if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
       Logger.info(Util.breadcrumb(location, { path: 'bulkPrepare' }))
 
-      // TODO: Continue here - save individualTransferResults for payer and payee to object store
-      // and produce bulkTransferId messages for payee and payee to ml-api-adapter
-      Logger.info(Util.breadcrumb(location, `flowEnd--${actionLetter}1`))
+      // params = { message, bulkTransferId, kafkaTopic, consumer }
+      // const producer = { functionality: TransferEventType.PREPARE, action: TransferEventAction.BULK_PREPARE }
+      // await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
+      // Logger.info(Util.breadcrumb(location, `flowEnd--${actionLetter}1`))
       return true
       // await Util.proceed(params, { producer, fromSwitch, consumerCommit, histTimerEnd })
       // return await Util.proceed(params, { producer, toDestination })
