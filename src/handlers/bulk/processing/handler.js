@@ -48,7 +48,6 @@ const location = { module: 'BulkProcessingHandler', method: '', path: '' } // va
 
 const consumerCommit = true
 const fromSwitch = true
-// const toDestination = true
 
 // const processingHandlerMessageProtocol = {
 //   value: {

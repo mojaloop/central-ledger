@@ -61,7 +61,6 @@ const location = { module: 'PositionHandler', method: '', path: '' } // var obje
 
 const consumerCommit = true
 const fromSwitch = true
-// const toDestination = true
 
 /**
  * @function positions
@@ -102,7 +101,7 @@ const positions = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
-    const transferId = message.value.id
+    const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
@@ -121,7 +120,7 @@ const positions = async (error, messages) => {
             : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
               : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
                 : Enum.actionLetter.unknown)))))
-    let params = { message, transferId, kafkaTopic, consumer }
+    let params = { message, kafkaTopic, consumer }
     let producer = { action }
     if (action !== TransferEventAction.BULK_PREPARE) {
       producer.functionality = TransferEventType.NOTIFICATION

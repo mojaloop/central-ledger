@@ -428,17 +428,18 @@ const createGeneralTopicConf = (functionality, action, key = null, partition = n
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
-const produceGeneralMessage = async (functionality, action, message, state, key) => {
+const produceGeneralMessage = async (functionality, action, message, state/* , messageId */) => {
   let functionalityMapped = functionality
   let actionMapped = action
   if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  let result = await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
-    createGeneralTopicConf(functionalityMapped, actionMapped, key),
-    getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
-  return result
+  const messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
+  const topicConfig = createGeneralTopicConf(functionalityMapped, actionMapped/* , messageId */)
+  const kafkaConfig = getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase())
+  await Kafka.Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
+  return true
 }
 
 /**
@@ -468,10 +469,11 @@ const produceParticipantMessage = async (participantName, functionality, action,
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  let result = await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
-    createParticipantTopicConf(participantName, functionalityMapped, actionMapped),
-    getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
-  return result
+  const messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
+  const topicConfig = createParticipantTopicConf(participantName, functionalityMapped, actionMapped)
+  const kafkaConfig = getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase())
+  await Kafka.Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
+  return true
 }
 
 const commitMessageSync = async (kafkaTopic, consumer, message) => {
@@ -496,8 +498,8 @@ const breadcrumb = (location, message) => {
 }
 
 const proceed = async (params, opts) => {
-  const { message, transferId, kafkaTopic, consumer } = params
-  const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch, toDestination } = opts
+  const { message, kafkaTopic, consumer } = params
+  const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch } = opts
   let metadataState
 
   if (consumerCommit) {
@@ -517,8 +519,8 @@ const proceed = async (params, opts) => {
   }
   if (producer) {
     const p = producer
-    const key = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : transferId
-    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
+    // const messageId = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : message.id
+    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState/*, messageId */)
   }
   if (histTimerEnd && typeof histTimerEnd === 'function') {
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
