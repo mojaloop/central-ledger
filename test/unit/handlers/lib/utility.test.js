@@ -493,7 +493,7 @@ Test('Utility Test', utilityTest => {
         const result = await UtilityProxy.proceed(params, opts)
         const p = producer
         test.ok(commitMessageSyncStub.calledOnce, 'commitMessageSyncStub called once')
-        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState, message.value.content.headers['fspiop-destination']).calledOnce, 'produceGeneralMessageStub called once')
+        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState).calledOnce, 'produceGeneralMessageStub called once')
         test.equal(result, true, 'result returned')
       } catch (err) {
         test.fail(err.message)
@@ -507,7 +507,7 @@ Test('Utility Test', utilityTest => {
       try {
         const result = await UtilityProxy.proceed(params, opts)
         const p = producer
-        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState, transferId).calledOnce, 'produceGeneralMessageStub called once')
+        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState).calledTwice, 'produceGeneralMessageStub called twice')
         test.equal(message.value.to, from, 'message destination set to sender')
         test.equal(message.value.from, Enum.headers.FSPIOP.SWITCH, 'from set to switch')
         test.equal(histTimerEndStub.callCount, 0, 'timer running')
