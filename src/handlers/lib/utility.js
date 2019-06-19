@@ -510,7 +510,7 @@ const proceed = async (params, opts) => {
     const code = errorInformation.errorCode
     const desc = errorInformation.errorDescription
     if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
-      message.value.content.uriParams = decodePayload(params.message.value.content.payload).transferId
+      message.value.content.uriParams = { id: decodePayload(params.message.value.content.payload).transferId }
     }
     message.value.content.payload = createPrepareErrorStatus(code, desc, message.value.content.payload.extensionList)
     metadataState = createState(ENUMS.STATE.FAILURE.status, code, desc)

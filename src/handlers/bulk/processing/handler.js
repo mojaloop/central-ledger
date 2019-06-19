@@ -233,6 +233,7 @@ const bulkProcessing = async (error, messages) => {
     } else {
       Logger.info(Util.breadcrumb(location, { path: `awaitAllTransfers` }))
       criteriaState = null // debugging breakpoint line
+      return true
     }
 
     if (produceNotification) {
