@@ -41,7 +41,7 @@ const TransferEventAction = Enum.transferEventAction
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const Mongoose = require('../../../lib/mongodb').Mongoose
-const { IndividualTransferModel, BulkTransferModel } = require('../../../models/mongo/bulkTransfer')
+const { IndividualTransferModel, BulkTransferModel } = require('../../../schema/bulkTransfer')
 const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer

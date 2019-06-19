@@ -42,7 +42,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const Mongoose = require('../../../lib/mongodb').Mongoose
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
-const { BulkTransferResponseModel } = require('../../../models/mongo/bulkTransfer')
+const { BulkTransferResponseModel } = require('../../../schema/bulkTransfer')
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
 
