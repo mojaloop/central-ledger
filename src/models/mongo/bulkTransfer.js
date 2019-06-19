@@ -101,6 +101,26 @@ const bulkTransferSchema = new mongoose.Schema({
     }]
   }
 })
+// after the bulk object is created, before its save, single transfers are
+// created and saved in the transfers collection with the bulk reference
+bulkTransferSchema.pre('save', function () {
+  try {
+    this.individualTransfers.forEach(async transfer => {
+      try {
+        let individualTransfer = new IndividualTransferModel({
+          _id_bulkTransfers: this._id,
+          messageId: this.messageId,
+          payload: transfer._doc
+        })
+        await individualTransfer.save()
+      } catch (e) {
+        throw e
+      }
+    })
+  } catch (e) {
+    throw (e)
+  }
+})
 const BulkTransferModel = mongoose.model('bulkTransfers', bulkTransferSchema, 'bulkTransfers')
 
 // single transfer result model
@@ -162,7 +182,7 @@ const bulkTransferResponseSchema = new mongoose.Schema({
   }
 })
 bulkTransferResponseSchema.index({ messageId: 1, destination: 1 }, { unique: true })
-// after the bulk object is created, before its save, single transfers are
+// after the bulk object is created, before its save, single responses are
 // created and saved in the transfers collection with the bulk reference
 bulkTransferResponseSchema.pre('save', function () {
   try {
