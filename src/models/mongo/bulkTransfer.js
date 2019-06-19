@@ -151,7 +151,7 @@ const individualTransferResultSchema = new mongoose.Schema(Object.assign({}, { p
     bulkTransferId: { type: String, required: true },
     payload: { type: Object, required: true }
   }))
-individualTransferResultSchema.index({ messageId: 1, destination: 1 }, { unique: true })
+individualTransferResultSchema.index({ messageId: 1, destination: 1 })
 const IndividualTransferResultModel = mongoose.model('individualTransferResults', individualTransferResultSchema, 'individualTransferResults')
 
 // schema for bulk transfer responses
