@@ -105,6 +105,9 @@ const prepareTestData = async (dataObj) => {
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
+    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${dataObj.endpoint.base}/bulkTransfers`)
+    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{transferId}}`)
+    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{transferId}}/error`)
   }
 
   const transferPayload = {
@@ -175,7 +178,7 @@ const prepareTestData = async (dataObj) => {
   }
 
   const messageProtocolPrepare = {
-    id: transferPayload.transferId,
+    id: Uuid(),
     from: transferPayload.payerFsp,
     to: transferPayload.payeeFsp,
     type: 'application/json',
@@ -198,24 +201,30 @@ const prepareTestData = async (dataObj) => {
   }
 
   let messageProtocolFulfil = Util.clone(messageProtocolPrepare)
+  messageProtocolFulfil.id = Uuid()
   messageProtocolFulfil.from = transferPayload.payeeFsp
   messageProtocolFulfil.to = transferPayload.payerFsp
   messageProtocolFulfil.content.headers = fulfilAbortRejectHeaders
+  messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
   messageProtocolFulfil.content.payload = fulfilPayload
   messageProtocolFulfil.metadata.event.id = Uuid()
   messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
   messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
   const messageProtocolReject = Util.clone(messageProtocolFulfil)
+  messageProtocolReject.id = Uuid()
+  messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
   messageProtocolReject.content.payload = rejectPayload
   messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 
   let messageProtocolError = Util.clone(messageProtocolFulfil)
+  messageProtocolError.id = Uuid()
+  messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
   messageProtocolError.content.payload = errorPayload
   messageProtocolError.metadata.event.action = TransferEventAction.ABORT
 
-  const topicConfTransferPrepare = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.PREPARE, transferPayload.transferId)
-  const topicConfTransferFulfil = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.FULFIL, transferPayload.transferId)
+  const topicConfTransferPrepare = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.PREPARE)
+  const topicConfTransferFulfil = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.FULFIL)
 
   return {
     transferPayload,
@@ -266,7 +275,7 @@ Test('Handlers test', async handlersTest => {
       const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
 
       const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
         const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
         const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
@@ -280,7 +289,7 @@ Test('Handlers test', async handlersTest => {
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
@@ -304,7 +313,7 @@ Test('Handlers test', async handlersTest => {
       const producerResponse = await Producer.produceMessage(td.messageProtocolFulfil, td.topicConfTransferFulfil, config)
 
       const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         const payeeCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payee.participantCurrencyId) || {}
         const payeeInitialPosition = td.payeeLimitAndInitialPosition.participantPosition.value
         const payeeExpectedPosition = payeeInitialPosition - td.transferPayload.amount.amount
@@ -319,7 +328,7 @@ Test('Handlers test', async handlersTest => {
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
@@ -350,14 +359,14 @@ Test('Handlers test', async handlersTest => {
       const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
 
       const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
       }
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
@@ -381,7 +390,7 @@ Test('Handlers test', async handlersTest => {
       const producerResponse = await Producer.produceMessage(td.messageProtocolReject, td.topicConfTransferFulfil, config)
 
       const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
         const payerExpectedPosition = testData.amount.amount - td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
@@ -395,7 +404,7 @@ Test('Handlers test', async handlersTest => {
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
@@ -426,14 +435,14 @@ Test('Handlers test', async handlersTest => {
       const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
 
       const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.ABORTED_REJECTED, `Transfer state changed to ${TransferState.ABORTED_REJECTED}`)
       }
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
@@ -464,14 +473,14 @@ Test('Handlers test', async handlersTest => {
       const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
 
       const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
         test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
       }
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
@@ -495,7 +504,7 @@ Test('Handlers test', async handlersTest => {
       const producerResponse = await Producer.produceMessage(td.messageProtocolError, td.topicConfTransferFulfil, config)
 
       const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
         const payerExpectedPosition = testData.amount.amount - td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
@@ -516,7 +525,7 @@ Test('Handlers test', async handlersTest => {
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
