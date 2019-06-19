@@ -25,6 +25,7 @@
 
 const Db = require('../../lib/db')
 const Time = require('../../lib/time')
+const LibUtil = require('../../lib/util')
 
 exports.create = async (bulkTransferAssociation) => {
   try {
@@ -36,12 +37,12 @@ exports.create = async (bulkTransferAssociation) => {
 
 exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => {
   try {
-    let record = {
+    let record = LibUtil.omitNil({
       bulkProcessingStateId: bulkTransferAssociation.bulkProcessingStateId,
       lastProcessedDate: bulkTransferAssociation.lastProcessedDate || Time.getUTCString(new Date()),
       errorCode: bulkTransferAssociation.errorCode,
       errorDescription: bulkTransferAssociation.errorDescription
-    }
+    })
     Object.keys(record).forEach(key => (record[key] === undefined || record[key] === null) && delete record[key])
     return Db.bulkTransferAssociation.update({ transferId, bulkTransferId }, record)
   } catch (err) {

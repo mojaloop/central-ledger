@@ -112,7 +112,6 @@ const bulkPrepare = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    // Logger.error(error)
     throw error
   }
   let message = {}
@@ -173,6 +172,7 @@ const bulkPrepare = async (error, messages) => {
         // enable async/await operations for the stream
         let streamReader = AwaitifyStream.createReader(indvidualTransfersStream)
         let doc
+
         while ((doc = await streamReader.readAsync()) !== null) {
           let individualTransfer = doc.payload
           individualTransfer.payerFsp = payload.payerFsp
@@ -197,7 +197,6 @@ const bulkPrepare = async (error, messages) => {
           msg.value.metadata.event.id = message.value.metadata.event.id
           msg.value.metadata.event.createdAt = new Date()
 
-          // Logger.info(Util.breadcrumb(location, JSON.stringify(message)))
           params = { message: msg, kafkaTopic, consumer }
           const producer = { functionality: TransferEventType.PREPARE, action: TransferEventAction.BULK_PREPARE }
           await Util.proceed(params, { consumerCommit, histTimerEnd, producer })

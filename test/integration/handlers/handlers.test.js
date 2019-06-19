@@ -89,7 +89,7 @@ const prepareTestData = async (dataObj) => {
   let payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
   let payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
-  const kafkacat = `GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event`
+  const kafkacat = `GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare`
   if (debug) console.error(kafkacat)
 
   let payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {

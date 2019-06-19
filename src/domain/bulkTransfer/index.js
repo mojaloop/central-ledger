@@ -111,8 +111,8 @@ const getBulkTransferById = async (id) => {
     if (bulkTransfer.completedTimestamp) {
       bulkResponse.completedTimestamp = bulkTransfer.completedTimestamp
     }
-    let payerBulkTransfer = Object.assign({}, { destination: bulkTransfer.payerFsp }, bulkResponse)
-    let payeeBulkTransfer = Object.assign({}, { destination: bulkTransfer.payeeFsp }, bulkResponse)
+    let payerBulkTransfer = { destination: bulkTransfer.payerFsp, ...bulkResponse }
+    let payeeBulkTransfer = { destination: bulkTransfer.payeeFsp, ...bulkResponse }
     if (bulkTransferExtensions.length > 0) {
       let bulkExtensionsResponse = bulkTransferExtensions.map(ext => {
         return { key: ext.key, value: ext.value }

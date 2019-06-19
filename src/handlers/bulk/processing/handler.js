@@ -29,6 +29,7 @@
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
+const LibUtil = require('../../../lib/util')
 const Util = require('../../lib/utility')
 const Kafka = require('../../lib/kafka')
 // const Validator = require('../shared/validator')
@@ -241,13 +242,12 @@ const bulkProcessing = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}1`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
         await (new BulkTransferResponseModel(payeeBulkResponse)).save()
-        let payload = {
+        let payload = LibUtil.omitNil({
           bulkTransferId: payeeBulkResponse.bulkTransferId,
           bulkTransferState: payeeBulkResponse.bulkTransferState,
           completedTimestamp: payeeBulkResponse.completedTimestamp,
           extensionList: payeeBulkResponse.extensionList
-        }
-        Object.keys(payload).forEach(key => (payload[key] === undefined || payload[key] === null) && delete payload[key])
+        })
         params.message.value = {
           id: params.message.value.id,
           from: payeeBulkResponse.headers['fspiop-source'],
