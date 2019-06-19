@@ -64,13 +64,14 @@ const transfer = {
 // schema for individual transfer with bulkTransfers reference
 const individualTransferSchema = new mongoose.Schema(Object.assign({}, { payload: transfer },
   { _id_bulkTransfers: { type: mongoose.Schema.Types.ObjectId, ref: 'bulkTransfers' },
-    bulkTransferId: { type: mongoose.Schema.Types.String },
+    messageId: { type: String, required: true },
     payload: { type: Object, required: true }
   }))
 const IndividualTransferModel = mongoose.model('individualTransfers', individualTransferSchema, 'individualTransfers')
 
 // schema for bulk transfers
 const bulkTransferSchema = new mongoose.Schema({
+  messageId: { type: String, required: true },
   headers: {
     type: Object, required: true
   },
@@ -125,17 +126,18 @@ const transferResult = {
 // schema for individual transfer with bulkTransferResponses reference
 const individualTransferResultSchema = new mongoose.Schema(Object.assign({}, { payload: transferResult },
   { _id_bulkTransferResponses: { type: mongoose.Schema.Types.ObjectId, ref: 'bulkTransferResponses' },
-    metadataEventId: { type: String, required: true, index: true },
-    bulkTransferId: { type: mongoose.Schema.Types.String },
+    messageId: { type: String, required: true },
+    destination: { type: String, required: true },
+    bulkTransferId: { type: String, required: true },
     payload: { type: Object, required: true }
   }))
+individualTransferResultSchema.index({ messageId: 1, destination: 1 }, { unique: true })
 const IndividualTransferResultModel = mongoose.model('individualTransferResults', individualTransferResultSchema, 'individualTransferResults')
 
 // schema for bulk transfer responses
 const bulkTransferResponseSchema = new mongoose.Schema({
-  metadataEventId: {
-    type: String, required: true, unique: true, index: true
-  },
+  messageId: { type: String, required: true },
+  destination: { type: String, required: true },
   headers: {
     type: Object, required: true
   },
@@ -159,6 +161,7 @@ const bulkTransferResponseSchema = new mongoose.Schema({
     }]
   }
 })
+bulkTransferResponseSchema.index({ messageId: 1, destination: 1 }, { unique: true })
 // after the bulk object is created, before its save, single transfers are
 // created and saved in the transfers collection with the bulk reference
 bulkTransferResponseSchema.pre('save', function () {
@@ -167,7 +170,8 @@ bulkTransferResponseSchema.pre('save', function () {
       try {
         let individualTransferResult = new IndividualTransferResultModel({
           _id_bulkTransferResponses: this._id,
-          metadataEventId: this.metadataEventId,
+          messageId: this.messageId,
+          destination: this.destination,
           bulkTransferId: this.bulkTransferId,
           payload: transfer._doc
         })

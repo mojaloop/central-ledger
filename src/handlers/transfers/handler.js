@@ -98,7 +98,6 @@ const prepare = async (error, messages) => {
     } else {
       message = messages
     }
-    // decode payload
     const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action

@@ -43,6 +43,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Kafka = require('./kafka')
 const Enum = require('../../lib/enum')
+const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 
 /**
  * The Producer config required
@@ -508,6 +509,7 @@ const proceed = async (params, opts) => {
   if (errorInformation) {
     const code = errorInformation.errorCode
     const desc = errorInformation.errorDescription
+    message.value.content.uriParams = { id: decodePayload(params.message.value.content.payload).transferId }
     message.value.content.payload = createPrepareErrorStatus(code, desc, message.value.content.payload.extensionList)
     metadataState = createState(ENUMS.STATE.FAILURE.status, code, desc)
   } else {

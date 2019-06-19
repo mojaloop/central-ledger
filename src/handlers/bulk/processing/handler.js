@@ -27,7 +27,6 @@
  ******/
 'use strict'
 
-const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('../../lib/utility')
@@ -122,7 +121,7 @@ const bulkProcessing = async (error, messages) => {
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
     const state = message.value.metadata.event.state
-    const transferId = message.value.id
+    const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
@@ -137,8 +136,8 @@ const bulkProcessing = async (error, messages) => {
     const actionLetter = action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
       : (action === TransferEventAction.BULK_FULFIL ? Enum.actionLetter.bulkFulfil
         : Enum.actionLetter.unknown)
-    let params = { message, transferId, kafkaTopic, consumer }
-    // let producer = { functionality: TransferEventType.NOTIFICATION, action }
+    let params = { message, kafkaTopic, consumer }
+    let producer = { functionality: TransferEventType.NOTIFICATION, action }
 
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
     // Logger.info(`bulkTransferInfo=${JSON.stringify(bulkTransferInfo)}`)
@@ -224,45 +223,63 @@ const bulkProcessing = async (error, messages) => {
       bulkTransferStateId: bulkTransferState
     })
 
+    let getBulkTransferByIdResult
     if (exitCode > 0) {
+      Logger.info(Util.breadcrumb(location, { path: 'exitCodeGt0' }))
       // TODO: Prepare Bulk Error Notification callback message
     } else if (produceNotification) {
-      let { payerBulkTransfer, payeeBulkTransfer } =
-        await BulkTransferService.getBulkTransferById(bulkTransferInfo.bulkTransferId)
-
-      console.log(`payerBulkTransfer=${JSON.stringify(payerBulkTransfer)}\npayeeBulkTransfer=${JSON.stringify(payeeBulkTransfer)}`)
-
-      let bulkResponse = new BulkTransferResponseModel(Object.assign({}, { metadataEventId: Uuid(), headers }, payerBulkTransfer))
-      await bulkResponse.save()
-      bulkResponse = new BulkTransferResponseModel(Object.assign({}, { metadataEventId: Uuid(), headers }, payeeBulkTransfer))
-      await bulkResponse.save()
+      Logger.info(Util.breadcrumb(location, { path: 'produceNotification' }))
+      getBulkTransferByIdResult = await BulkTransferService.getBulkTransferById(bulkTransferInfo.bulkTransferId)
     } else {
+      Logger.info(Util.breadcrumb(location, { path: `awaitAllTransfers` }))
       criteriaState = null // debugging breakpoint line
     }
 
-    if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
-      Logger.info(Util.breadcrumb(location, { path: 'bulkPrepare' }))
-
-      // params = { message, bulkTransferId, kafkaTopic, consumer }
-      // const producer = { functionality: TransferEventType.PREPARE, action: TransferEventAction.BULK_PREPARE }
-      // await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
-      // Logger.info(Util.breadcrumb(location, `flowEnd--${actionLetter}1`))
-      return true
-      // await Util.proceed(params, { producer, fromSwitch, consumerCommit, histTimerEnd })
-      // return await Util.proceed(params, { producer, toDestination })
-    } else if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_FULFIL) {
-      Logger.info(Util.breadcrumb(location, { path: 'bulkFulfil' }))
-      // TODO: implement bulk-fulfil here
-      Logger.info(Util.breadcrumb(location, `flowEnd--${actionLetter}2`))
-      Logger.info(Util.breadcrumb(location, `notImplemented`))
-      return true
-    } else {
-      // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
-      // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
-      Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
-      const errorInformation = Errors.getErrorInformation(errorType.internal)
-      const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.BULK_PROCESSING }
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+    if (produceNotification) {
+      if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
+        Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}1`))
+        const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
+        await (new BulkTransferResponseModel(payeeBulkResponse)).save()
+        let payload = {
+          bulkTransferId: payeeBulkResponse.bulkTransferId,
+          bulkTransferState: payeeBulkResponse.bulkTransferState,
+          completedTimestamp: payeeBulkResponse.completedTimestamp,
+          extensionList: payeeBulkResponse.extensionList
+        }
+        Object.keys(payload).forEach(key => (payload[key] === undefined || payload[key] === null) && delete payload[key])
+        params.message.value = {
+          id: params.message.value.id,
+          from: payeeBulkResponse.headers['fspiop-source'],
+          to: payeeBulkResponse.destination,
+          content: {
+            headers: payeeBulkResponse.headers,
+            payload
+          },
+          type: 'application/json',
+          metadata: {
+            event: {
+              id: params.message.value.metadata.event.id,
+              state: { status: 'success', code: 0, description: 'action successful' },
+              createdAt: new Date()
+            }
+          }
+        }
+        await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
+        return true
+      } else if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_FULFIL) {
+        Logger.info(Util.breadcrumb(location, { path: 'bulkFulfil' }))
+        // TODO: implement bulk-fulfil here
+        Logger.info(Util.breadcrumb(location, `flowEnd--${actionLetter}2`))
+        Logger.info(Util.breadcrumb(location, `notImplemented`))
+        return true
+      } else {
+        // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
+        // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
+        Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
+        const errorInformation = Errors.getErrorInformation(errorType.internal)
+        const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.BULK_PROCESSING }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+      }
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)

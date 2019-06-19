@@ -48,7 +48,6 @@ const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var o
 
 const consumerCommit = true
 // const fromSwitch = true
-const toDestination = true
 
 const prepareHandlerMessageProtocol = {
   value: {
@@ -63,7 +62,7 @@ const prepareHandlerMessageProtocol = {
     metadata: {
       event: {
         id: Uuid(),
-        responseTo: 'dfa',
+        responseTo: null,
         type: 'transfer',
         action: 'bulk-prepare',
         createdAt: null,
@@ -123,7 +122,7 @@ const bulkPrepare = async (error, messages) => {
     } else {
       message = messages
     }
-    // decode payload
+    const messageId = message.value.id
     const payload = message.value.content.payload
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
@@ -140,7 +139,7 @@ const bulkPrepare = async (error, messages) => {
       return true
     }
     const actionLetter = action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare : Enum.actionLetter.unknown
-    let params = { message, bulkTransferId, kafkaTopic, consumer }
+    let params = { message, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { isDuplicateId, isResend } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash)
@@ -170,7 +169,7 @@ const bulkPrepare = async (error, messages) => {
       try {
         Logger.info(Util.breadcrumb(location, `individualTransfers`))
         // stream initialization
-        let indvidualTransfersStream = IndividualTransferModel.find({ bulkTransferId }).cursor()
+        let indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
         // enable async/await operations for the stream
         let streamReader = AwaitifyStream.createReader(indvidualTransfersStream)
         let doc
@@ -189,18 +188,19 @@ const bulkPrepare = async (error, messages) => {
           await BulkTransferService.bulkTransferAssociationCreate(bulkTransferAssociationRecord)
 
           let dataUri = encodePayload(JSON.stringify(individualTransfer), headers['content-type'])
-          let message = Object.assign({}, prepareHandlerMessageProtocol)
-          message.value.id = doc.payload.transferId
-          message.value.from = payload.payerFsp
-          message.value.to = payload.payeeFsp
-          message.value.content.headers = headers
-          message.value.content.payload = dataUri
-          message.value.metadata.event.createdAt = new Date()
+          let msg = Object.assign({}, prepareHandlerMessageProtocol)
+          msg.value.id = messageId
+          msg.value.from = payload.payerFsp
+          msg.value.to = payload.payeeFsp
+          msg.value.content.headers = headers
+          msg.value.content.payload = dataUri
+          msg.value.metadata.event.id = message.value.metadata.event.id
+          msg.value.metadata.event.createdAt = new Date()
 
           // Logger.info(Util.breadcrumb(location, JSON.stringify(message)))
-          params = { message, bulkTransferId, kafkaTopic, consumer }
+          params = { message: msg, kafkaTopic, consumer }
           const producer = { functionality: TransferEventType.PREPARE, action: TransferEventAction.BULK_PREPARE }
-          await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
+          await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
