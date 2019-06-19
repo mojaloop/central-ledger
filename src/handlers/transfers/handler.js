@@ -56,7 +56,7 @@ const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protoco
 
 const consumerCommit = true
 const fromSwitch = true
-/* const toDestination = true */
+const toDestination = true
 
 /**
  * @function TransferPrepareHandler
@@ -162,7 +162,7 @@ const prepare = async (error, messages) => {
       }
       Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}6`))
       const producer = { functionality: TransferEventType.POSITION, action }
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, producer }) // toDestination
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
     } else {
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
@@ -334,20 +334,20 @@ const fulfil = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
           await TransferService.fulfil(transferFulfilmentId, transferId, payload)
           const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.COMMIT }
-          return await Util.proceed(params, { consumerCommit, histTimerEnd, producer }) // toDestination
+          return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         } else {
           if (action === TransferEventAction.REJECT) {
             Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}12`))
             await TransferService.reject(transferFulfilmentId, transferId, payload)
             const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
-            return await Util.proceed(params, { consumerCommit, histTimerEnd, producer }) // toDestination
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
           } else { // action === TransferEventAction.ABORT
             Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}12`))
             const abortResult = await TransferService.abort(transferId, payload, transferErrorDuplicateCheckId)
             const TER = abortResult.transferErrorRecord
             const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
             const errorInformation = Errors.getErrorInformation(TER.errorCode, { replace: TER.errorDescription })
-            return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer }) // toDestination
+            return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, toDestination })
           }
         }
       }

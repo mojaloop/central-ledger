@@ -429,7 +429,7 @@ const createGeneralTopicConf = (functionality, action, key = null, partition = n
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
-const produceGeneralMessage = async (functionality, action, message, state/* , messageId */) => {
+const produceGeneralMessage = async (functionality, action, message, state, key) => {
   let functionalityMapped = functionality
   let actionMapped = action
   if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
@@ -437,7 +437,7 @@ const produceGeneralMessage = async (functionality, action, message, state/* , m
     actionMapped = Enum.topicMap[functionality][action].action
   }
   const messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
-  const topicConfig = createGeneralTopicConf(functionalityMapped, actionMapped/* , messageId */)
+  const topicConfig = createGeneralTopicConf(functionalityMapped, actionMapped, key)
   const kafkaConfig = getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase())
   await Kafka.Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
   return true
@@ -500,7 +500,7 @@ const breadcrumb = (location, message) => {
 
 const proceed = async (params, opts) => {
   const { message, kafkaTopic, consumer } = params
-  const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch } = opts
+  const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch, toDestination } = opts
   let metadataState
 
   if (consumerCommit) {
@@ -523,8 +523,8 @@ const proceed = async (params, opts) => {
   }
   if (producer) {
     const p = producer
-    // const messageId = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : message.id
-    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState/*, messageId */)
+    const key = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : message.id
+    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
   }
   if (histTimerEnd && typeof histTimerEnd === 'function') {
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
