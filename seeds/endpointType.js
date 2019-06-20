@@ -88,6 +88,18 @@ const endpointTypes = [
   {
     'name': 'FSPIOP_CALLBACK_URL_QUOTES',
     'description': 'Quotes callback URL to which put quotes requests can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST',
+    'description': 'Participant callback URL to which bulk transfer post can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT',
+    'description': 'Participant callback URL to which bulk transfer put can be sent'
+  },
+  {
+    'name': 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR',
+    'description': 'Participant callback URL to which bulk transfer error notifications can be sent'
   }
 ]
 

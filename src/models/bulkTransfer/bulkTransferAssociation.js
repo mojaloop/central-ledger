@@ -24,10 +24,37 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const Time = require('../../lib/time')
+const LibUtil = require('../../lib/util')
 
 exports.create = async (bulkTransferAssociation) => {
   try {
     return Db.bulkTransferAssociation.insert(bulkTransferAssociation)
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => {
+  try {
+    let record = LibUtil.omitNil({
+      bulkProcessingStateId: bulkTransferAssociation.bulkProcessingStateId,
+      lastProcessedDate: bulkTransferAssociation.lastProcessedDate || Time.getUTCString(new Date()),
+      errorCode: bulkTransferAssociation.errorCode,
+      errorDescription: bulkTransferAssociation.errorDescription
+    })
+    Object.keys(record).forEach(key => (record[key] === undefined || record[key] === null) && delete record[key])
+    return Db.bulkTransferAssociation.update({ transferId, bulkTransferId }, record)
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
+  try {
+    return Db.bulkTransferAssociation.findOne({
+      bulkTransferId, bulkProcessingStateId
+    })
   } catch (err) {
     throw new Error(err.message)
   }

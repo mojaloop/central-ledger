@@ -19,77 +19,32 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
-const saveTransferStateChange = async (stateChange) => {
-  Logger.debug('save transferStateChange' + stateChange.toString())
+const getById = async (id) => {
   try {
-    return await Db.transferStateChange.insert(stateChange)
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferId = async (id) => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
+    return await Db.bulkTransfer.query(async (builder) => {
       let result = builder
-        .where({ 'transferStateChange.transferId': id })
-        .select('transferStateChange.*')
-        .orderBy('transferStateChangeId', 'desc')
+        .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
+        .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
+        .innerJoin('bulkTransferStateChange AS btsc', 'btsc.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .leftJoin('bulkTransferFulfilment AS btf', 'btf.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .where({ 'bulkTransfer.bulkTransferId': id })
+        .orderBy('btsc.bulkTransferStateChangeId', 'desc')
+        .select('bulkTransfer.bulkTransferId', 'btsc.bulkTransferStateId', 'btf.completedDate AS completedTimestamp',
+          'payer.name AS payerFsp', 'payee.name AS payeeFsp', 'bulkTransfer.bulkQuoteId', 'bulkTransfer.expirationDate')
         .first()
       return result
     })
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferIdList = async (transfersIdList) => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
-        .whereIn('transferStateChange.transferId', transfersIdList)
-      return result
-    })
-  } catch (err) {
-    throw (err)
-  }
-}
-
-const getLatest = async () => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
-      return builder
-        .select('transferStateChangeId')
-        .orderBy('transferStateChangeId', 'desc')
-        .first()
-    })
-  } catch (err) {
-    throw err
-  }
-}
-
-const truncate = async () => {
-  try {
-    return await Db.transferStateChange.truncate()
   } catch (err) {
     throw err
   }
 }
 
 module.exports = {
-  saveTransferStateChange,
-  getByTransferId,
-  getByTransferIdList,
-  getLatest,
-  truncate
+  getById
 }

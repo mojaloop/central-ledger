@@ -21,7 +21,7 @@
     "POOL_MAX": 30
   },
   "MONGODB": {
-    "URI": "mongodb://localhost:27017/bulk_transfers"
+    "URI": "mongodb://localhost:27017/mlos"
   },
   "HANDLERS": {
     "DISABLED": false,

@@ -18,7 +18,7 @@
     "POOL_MAX": 30
   },
   "MONGODB": {
-    "URI": "mongodb://localhost:27017/bulk_transfers"
+    "URI": "mongodb://localhost:27017/mlos"
   },
   "HANDLERS": {
     "DISABLED": false,
@@ -74,7 +74,7 @@
       }
     },
     "CONSUMER": {
-      "BULK-TRANSFER": {
+      "BULK": {
         "PREPARE": {
           "config": {
             "options": {
@@ -90,6 +90,29 @@
             "rdkafkaConf": {
               "client.id": "cl-con-bulk-prepare",
               "group.id": "cl-group-bulk-prepare",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "PROCESSING": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-bulk-processing",
+              "group.id": "cl-group-bulk-processing",
               "metadata.broker.list": "localhost:9092",
               "socket.keepalive.enable": true
             },
@@ -220,6 +243,26 @@
       }
     },
     "PRODUCER": {
+      "BULK": {
+        "PROCESSING": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "cl-prod-bulk-processing",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all"
+            }
+          }
+        }
+      },
       "TRANSFER": {
         "PREPARE": {
           "config": {

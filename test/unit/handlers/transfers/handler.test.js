@@ -114,12 +114,13 @@ const fulfil = {
 }
 
 const messageProtocol = {
-  id: transfer.transferId,
+  id: Uuid(),
   from: transfer.payerFsp,
   to: transfer.payeeFsp,
   type: 'application/json',
   content: {
     headers: { 'fspiop-destination': transfer.payerFsp },
+    uriParams: { id: transfer.transferId },
     payload: transfer
   },
   metadata: {
@@ -152,6 +153,7 @@ const fulfilMessages = [
     value: Object.assign({}, messageProtocol, {
       content: {
         payload: fulfil,
+        uriParams: { id: messageProtocol.content.uriParams.id },
         headers: {
           'fspiop-source': 'dfsp1',
           'fspiop-destination': 'dfsp2'

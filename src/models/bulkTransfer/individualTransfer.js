@@ -19,77 +19,38 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
 
-const saveTransferStateChange = async (stateChange) => {
-  Logger.debug('save transferStateChange' + stateChange.toString())
+const getAllById = async (id) => {
   try {
-    return await Db.transferStateChange.insert(stateChange)
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferId = async (id) => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
+    const knex = await Db.getKnex()
+    return await Db.bulkTransferAssociation.query(async (builder) => {
       let result = builder
-        .where({ 'transferStateChange.transferId': id })
-        .select('transferStateChange.*')
-        .orderBy('transferStateChangeId', 'desc')
-        .first()
+        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'bulkTransferAssociation.transferId')
+        .innerJoin(knex('transferStateChange AS tsc1')
+          .select('tsc1.transferId')
+          .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+          .innerJoin('bulkTransferAssociation AS bta1', 'bta1.transferId', 'tsc1.transferId')
+          .where('bta1.bulkTransferId', id)
+          .groupBy('tsc1.transferId').as('ts1'), 'ts1.transferId', 'bulkTransferAssociation.transferId'
+        )
+        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts1.maxTransferStateChangeId')
+        .innerJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .where({ 'bulkTransferAssociation.bulkTransferId': id })
+        .select('bulkTransferAssociation.transferId', 'tf.ilpFulfilment AS fulfilment',
+          'bulkTransferAssociation.errorCode', 'bulkTransferAssociation.errorDescription',
+          'ts.enumeration AS transferStateEnum')
       return result
     })
-  } catch (err) {
-    throw err
-  }
-}
-
-const getByTransferIdList = async (transfersIdList) => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
-        .whereIn('transferStateChange.transferId', transfersIdList)
-      return result
-    })
-  } catch (err) {
-    throw (err)
-  }
-}
-
-const getLatest = async () => {
-  try {
-    return await Db.transferStateChange.query(async (builder) => {
-      return builder
-        .select('transferStateChangeId')
-        .orderBy('transferStateChangeId', 'desc')
-        .first()
-    })
-  } catch (err) {
-    throw err
-  }
-}
-
-const truncate = async () => {
-  try {
-    return await Db.transferStateChange.truncate()
   } catch (err) {
     throw err
   }
 }
 
 module.exports = {
-  saveTransferStateChange,
-  getByTransferId,
-  getByTransferIdList,
-  getLatest,
-  truncate
+  getAllById
 }
