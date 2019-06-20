@@ -59,6 +59,7 @@
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json"
   },
   "dependencies": {
+    "@mojaloop/central-object-store": "6.4.0-snapshot",
     "@mojaloop/central-services-auth": "5.2.1",
     "@mojaloop/central-services-database": "5.2.1",
     "@mojaloop/central-services-error-handling": "5.2.0",
@@ -93,7 +94,6 @@
     "knex": "0.16.3",
     "lodash": "4.17.11",
     "moment": "2.24.0",
-    "mongoose": "^5.5.14",
     "mustache": "3.0.1",
     "npm-run-all": "4.1.5",
     "rc": "1.2.8",

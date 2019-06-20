@@ -40,8 +40,7 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
-const Mongoose = require('../../../lib/mongodb').Mongoose
-const { IndividualTransferModel, BulkTransferModel } = require('../../../schema/bulkTransfer')
+const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
 const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
@@ -75,14 +74,8 @@ const prepareHandlerMessageProtocol = {
   }
 }
 
-const connectMongoose = async () => {
-  let db = await Mongoose.connect(Config.MONGODB_URI, {
-    promiseLibrary: global.Promise
-  })
-  return db
-}
-
 const getBulkMessage = async (bulkTransferId) => {
+  let BulkTransferModel = BulkTransferModels.getBulkTransferModel()
   let message = await BulkTransferModel.findOne({ bulkTransferId }, '-_id -individualTransfersIds')
   return message.toJSON()
 }
@@ -168,6 +161,7 @@ const bulkPrepare = async (error, messages) => {
       try {
         Logger.info(Util.breadcrumb(location, `individualTransfers`))
         // stream initialization
+        let IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
         let indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
         // enable async/await operations for the stream
         let streamReader = AwaitifyStream.createReader(indvidualTransfersStream)
@@ -237,7 +231,6 @@ const bulkPrepare = async (error, messages) => {
  */
 const registerBulkPrepareHandler = async () => {
   try {
-    await connectMongoose()
     const bulkPrepareHandler = {
       command: bulkPrepare,
       topicName: Util.transformGeneralTopicName(TransferEventType.BULK, TransferEventAction.PREPARE),

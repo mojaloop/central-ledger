@@ -40,47 +40,13 @@ const Errors = require('../../../lib/errors')
 const errorType = Errors.errorType
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
-const Mongoose = require('../../../lib/mongodb').Mongoose
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
-const { BulkTransferResponseModel } = require('../../../schema/bulkTransfer')
+const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
 
 const consumerCommit = true
 const fromSwitch = true
-
-// const processingHandlerMessageProtocol = {
-//   value: {
-//     id: null,
-//     from: null,
-//     to: null,
-//     type: 'application/json',
-//     content: {
-//       headers: null,
-//       payload: null
-//     },
-//     metadata: {
-//       event: {
-//         id: Uuid(),
-//         responseTo: 'dfa',
-//         type: 'transfer',
-//         action: 'bulk-prepare',
-//         createdAt: null,
-//         state: {
-//           status: 'success',
-//           code: 0
-//         }
-//       }
-//     }
-//   }
-// }
-
-const connectMongoose = async () => {
-  let db = await Mongoose.connect(Config.MONGODB_URI, {
-    promiseLibrary: global.Promise
-  })
-  return db
-}
 
 /**
  * @function BulkProcessingHandler
@@ -241,6 +207,7 @@ const bulkProcessing = async (error, messages) => {
       if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
         Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}1`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
+        let BulkTransferResponseModel = BulkTransferModels.getBulkTransferResponseModel()
         await (new BulkTransferResponseModel(payeeBulkResponse)).save()
         let payload = LibUtil.omitNil({
           bulkTransferId: payeeBulkResponse.bulkTransferId,
@@ -299,7 +266,6 @@ const bulkProcessing = async (error, messages) => {
  */
 const registerBulkProcessingHandler = async () => {
   try {
-    await connectMongoose()
     const bulkProcessingHandler = {
       command: bulkProcessing,
       topicName: Util.transformGeneralTopicName(TransferEventType.BULK, TransferEventAction.PROCESSING),
