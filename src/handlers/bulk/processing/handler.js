@@ -207,8 +207,8 @@ const bulkProcessing = async (error, messages) => {
       if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
         Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}1`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
-        let BulkTransferResponseModel = BulkTransferModels.getBulkTransferResponseModel()
-        await (new BulkTransferResponseModel(payeeBulkResponse)).save()
+        let BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
+        await (new BulkTransferResultModel(payeeBulkResponse)).save()
         let payload = LibUtil.omitNil({
           bulkTransferId: payeeBulkResponse.bulkTransferId,
           bulkTransferState: payeeBulkResponse.bulkTransferState,
