@@ -119,16 +119,17 @@ const positions = async (error, messages) => {
           : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
             : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
               : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
-                : Enum.actionLetter.unknown)))))
+                : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
+                  : Enum.actionLetter.unknown))))))
     let params = { message, kafkaTopic, consumer }
     let producer = { action }
-    if (action !== TransferEventAction.BULK_PREPARE) {
+    if (![TransferEventAction.BULK_PREPARE, TransferEventAction.BULK_COMMIT].includes(action)) {
       producer.functionality = TransferEventType.NOTIFICATION
     } else {
       producer.functionality = TransferEventType.BULK_PROCESSING
     }
 
-    if (eventType === TransferEventType.POSITION && (action === TransferEventAction.PREPARE || action === TransferEventAction.BULK_PREPARE)) {
+    if (eventType === TransferEventType.POSITION && [TransferEventAction.PREPARE, TransferEventAction.BULK_PREPARE].includes(action)) {
       Logger.info(Util.breadcrumb(location, { path: 'prepare' }))
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (let limit of limitAlarms) {
@@ -147,7 +148,7 @@ const positions = async (error, messages) => {
           return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
         }
       }
-    } else if (eventType === TransferEventType.POSITION && action === TransferEventAction.COMMIT) {
+    } else if (eventType === TransferEventType.POSITION && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
       Logger.info(Util.breadcrumb(location, { path: 'commit' }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {

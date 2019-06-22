@@ -98,7 +98,7 @@ const getBulkTransferById = async (id) => {
           Enum.TransferStateEnum.RESERVED,
           Enum.TransferStateEnum.COMMITTED
         ]
-        if (allowedPayeeTransfers.indexOf(transfer.transferStateEnum) !== -1) {
+        if (allowedPayeeTransfers.includes(transfer.transferStateEnum)) {
           payeeIndividualTransfers.push(result)
         }
         return resolve(result)
@@ -113,12 +113,21 @@ const getBulkTransferById = async (id) => {
     }
     let payerBulkTransfer = { destination: bulkTransfer.payerFsp, ...bulkResponse }
     let payeeBulkTransfer = { destination: bulkTransfer.payeeFsp, ...bulkResponse }
+    let bulkExtension
     if (bulkTransferExtensions.length > 0) {
-      let bulkExtensionsResponse = bulkTransferExtensions.map(ext => {
-        return { key: ext.key, value: ext.value }
-      })
-      payerBulkTransfer.extensionList = { extension: bulkExtensionsResponse }
-      payeeBulkTransfer.extensionList = { extension: bulkExtensionsResponse }
+      if (!bulkTransfer.completedTimestamp) {
+        bulkExtension = bulkTransferExtensions.map(ext => {
+          return { key: ext.key, value: ext.value }
+        })
+      } else {
+        bulkExtension = bulkTransferExtensions.filter(ext => {
+          return !!ext.bulkTransferFulfilmentId
+        }).map(ext => {
+          return { key: ext.key, value: ext.value }
+        })
+      }
+      payerBulkTransfer.extensionList = { extension: bulkExtension }
+      payeeBulkTransfer.extensionList = { extension: bulkExtension }
     }
     if (individualTransfers.length > 0) {
       payerBulkTransfer.individualTransferResults = individualTransfers

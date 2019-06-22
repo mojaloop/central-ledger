@@ -193,7 +193,7 @@ const bulkFulfil = async (error, messages) => {
           msg.value.metadata.event.createdAt = new Date()
 
           params = { message: msg, kafkaTopic, consumer }
-          const producer = { functionality: TransferEventType.FULFIL, action: TransferEventAction.COMMIT }
+          const producer = { functionality: TransferEventType.FULFIL, action: TransferEventAction.BULK_COMMIT }
           await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
         }
       } catch (err) { // TODO: handle individual transfers streaming error

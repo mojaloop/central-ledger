@@ -351,6 +351,10 @@ const transferEventStatus = {
 
 const topicMap = {
   'bulk-processing': {
+    'bulk-commit': {
+      functionality: transferEventType.BULK,
+      action: transferEventAction.PROCESSING
+    },
     'bulk-prepare': {
       functionality: transferEventType.BULK,
       action: transferEventAction.PROCESSING
@@ -362,6 +366,10 @@ const topicMap = {
       action: transferEventAction.EVENT
     },
     'abort-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'bulk-commit': {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
@@ -411,6 +419,10 @@ const topicMap = {
     }
   },
   position: {
+    'bulk-commit': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
+    },
     'bulk-prepare': {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
@@ -443,7 +455,7 @@ const topicMap = {
     }
   },
   fulfil: {
-    'commit': {
+    'bulk-commit': {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.FULFIL
     }

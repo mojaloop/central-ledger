@@ -42,6 +42,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
+const cloneDeep = require('lodash').cloneDeep
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
 
@@ -102,7 +103,8 @@ const bulkProcessing = async (error, messages) => {
     }
     const actionLetter = action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
       : (action === TransferEventAction.BULK_FULFIL ? Enum.actionLetter.bulkFulfil
-        : Enum.actionLetter.unknown)
+        : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
+          : Enum.actionLetter.unknown))
     let params = { message, kafkaTopic, consumer }
     let producer = { functionality: TransferEventType.NOTIFICATION, action }
 
@@ -111,7 +113,7 @@ const bulkProcessing = async (error, messages) => {
     let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription, exitCode
     let produceNotification = false
 
-    if ([Enum.BulkTransferState.RECEIVED, Enum.BulkTransferState.PENDING_PREPARE].indexOf(bulkTransferInfo.bulkTransferStateId) !== -1) {
+    if ([Enum.BulkTransferState.RECEIVED, Enum.BulkTransferState.PENDING_PREPARE].includes(bulkTransferInfo.bulkTransferStateId)) {
       criteriaState = Enum.BulkTransferState.RECEIVED
       incompleteBulkState = Enum.BulkTransferState.PENDING_PREPARE
       completedBulkState = Enum.BulkTransferState.ACCEPTED
@@ -123,7 +125,7 @@ const bulkProcessing = async (error, messages) => {
         errorDescription = payload.errorInformation.errorDescription
       } else if (action === TransferEventAction.BULK_PREPARE && state.status === Enum.transferEventState.SUCCESS) {
         processingStateId = Enum.BulkProcessingState.ACCEPTED
-      } else if ([TransferEventAction.TIMEOUT_RECEIVED, TransferEventAction.TIMEOUT_RESERVED].indexOf(action) !== -1) {
+      } else if ([TransferEventAction.TIMEOUT_RECEIVED, TransferEventAction.TIMEOUT_RESERVED].includes(action)) {
         incompleteBulkState = null
         completedBulkState = Enum.BulkTransferState.COMPLETED
         processingStateId = Enum.BulkProcessingState.EXPIRED
@@ -132,7 +134,7 @@ const bulkProcessing = async (error, messages) => {
         errorCode = 2 // TODO: Change to MLAPI spec defined error and move description text to enum
         errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.RECEIVED} state`
       }
-    } else if ([Enum.BulkTransferState.ACCEPTED].indexOf(bulkTransferInfo.bulkTransferStateId) !== -1) {
+    } else if ([Enum.BulkTransferState.ACCEPTED].includes(bulkTransferInfo.bulkTransferStateId)) {
       if (action === TransferEventAction.TIMEOUT_RESERVED) {
         criteriaState = Enum.BulkTransferState.ACCEPTED
         incompleteBulkState = null
@@ -143,17 +145,17 @@ const bulkProcessing = async (error, messages) => {
         errorCode = 3 // TODO: Change to MLAPI spec defined error and move description text to enum
         errorDescription = errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.ACCEPTED} state`
       }
-    } else if ([Enum.BulkTransferState.PROCESSING, Enum.BulkTransferState.PENDING_FULFIL].indexOf(bulkTransferInfo.bulkTransferStateId) !== -1) {
-      criteriaState = Enum.BulkTransferState.ACCEPTED
+    } else if ([Enum.BulkTransferState.PROCESSING, Enum.BulkTransferState.PENDING_FULFIL].includes(bulkTransferInfo.bulkTransferStateId)) {
+      criteriaState = Enum.BulkTransferState.PROCESSING
       incompleteBulkState = Enum.BulkTransferState.PENDING_FULFIL
       completedBulkState = Enum.BulkTransferState.COMPLETED
       if (action === TransferEventAction.FULFIL_DUPLICATE) {
         processingStateId = Enum.BulkProcessingState.FULFIL_DUPLICATE
-      } else if (action === TransferEventAction.COMMIT && state.status === Enum.transferEventState.SUCCESS) {
+      } else if (action === TransferEventAction.BULK_COMMIT && state.status === Enum.transferEventState.SUCCESS) {
         processingStateId = Enum.BulkProcessingState.COMPLETED
       } else if (action === TransferEventAction.REJECT && state.status === Enum.transferEventState.SUCCESS) {
         processingStateId = Enum.BulkProcessingState.REJECTED
-      } else if ([TransferEventAction.COMMIT, TransferEventAction.ABORT].indexOf(action) !== -1 && state.status === Enum.transferEventState.ERROR) {
+      } else if ([TransferEventAction.COMMIT, TransferEventAction.ABORT].includes(action) && state.status === Enum.transferEventState.ERROR) {
         processingStateId = Enum.BulkProcessingState.FULFIL_INVALID
       } else if (action === Enum.TransferEventAction.TIMEOUT_RESERVED) {
         incompleteBulkState = null
@@ -234,11 +236,70 @@ const bulkProcessing = async (error, messages) => {
         }
         await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
         return true
-      } else if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_FULFIL) {
-        Logger.info(Util.breadcrumb(location, { path: 'bulkFulfil' }))
-        // TODO: implement bulk-fulfil here
-        Logger.info(Util.breadcrumb(location, `flowEnd--${actionLetter}2`))
-        Logger.info(Util.breadcrumb(location, `notImplemented`))
+      } else if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_COMMIT) {
+        Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}2`))
+        const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
+        const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers: cloneDeep(headers) }, getBulkTransferByIdResult.payerBulkTransfer)
+        const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers: cloneDeep(headers) }, getBulkTransferByIdResult.payeeBulkTransfer)
+        payeeBulkResponse.headers['fspiop-source'] = Enum.headers.FSPIOP.SWITCH
+        payeeBulkResponse.headers['fspiop-destination'] = participants.payeeFsp
+        delete payeeBulkResponse.headers['fspiop-signature']
+        let BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
+        await (new BulkTransferResultModel(payerBulkResponse)).save()
+        await (new BulkTransferResultModel(payeeBulkResponse)).save()
+        let payerParams = cloneDeep(params)
+        let payeeParams = cloneDeep(params)
+
+        const payerPayload = LibUtil.omitNil({
+          bulkTransferId: payerBulkResponse.bulkTransferId,
+          bulkTransferState: payerBulkResponse.bulkTransferState,
+          completedTimestamp: payerBulkResponse.completedTimestamp,
+          extensionList: payerBulkResponse.extensionList
+        })
+        payerParams.message.value = {
+          id: params.message.value.id,
+          from: payerBulkResponse.headers['fspiop-source'],
+          to: participants.payerFsp,
+          content: {
+            headers: payerBulkResponse.headers,
+            payload: payerPayload
+          },
+          type: 'application/json',
+          metadata: {
+            event: {
+              id: params.message.value.metadata.event.id,
+              state: { status: 'success', code: 0, description: 'action successful' },
+              createdAt: new Date()
+            }
+          }
+        }
+
+        const payeePayload = LibUtil.omitNil({
+          bulkTransferId: payeeBulkResponse.bulkTransferId,
+          bulkTransferState: payeeBulkResponse.bulkTransferState,
+          completedTimestamp: payeeBulkResponse.completedTimestamp,
+          extensionList: payeeBulkResponse.extensionList
+        })
+        payeeParams.message.value = {
+          id: params.message.value.id,
+          from: Enum.headers.FSPIOP.SWITCH,
+          to: participants.payeeFsp,
+          content: {
+            headers: payeeBulkResponse.headers,
+            payload: payeePayload
+          },
+          type: 'application/json',
+          metadata: {
+            event: {
+              id: params.message.value.metadata.event.id,
+              state: { status: 'success', code: 0, description: 'action successful' },
+              createdAt: new Date()
+            }
+          }
+        }
+
+        await Util.proceed(payerParams, { consumerCommit, histTimerEnd, producer })
+        await Util.proceed(payeeParams, { consumerCommit, histTimerEnd, producer })
         return true
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
