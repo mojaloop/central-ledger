@@ -24,7 +24,7 @@
 'use strict'
 
 /**
- * @module src/models/bulkTransfer/bulkTransferDuplicateCheck/
+ * @module src/models/bulkTransfer/bulkTransferFulfilmentDuplicateCheck/
  */
 
 const Db = require('../../lib/db')
@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * @function CheckDuplicate
  *
  * @async
- * @description This checks if there is a matching hash for a bulkTransfer request in bulkTransferDuplicateCheck table, if it does not exist, it will be inserted
+ * @description This checks if there is a matching hash for a bulkTransfer request in bulkTransferFulfilmentDuplicateCheck table, if it does not exist, it will be inserted
  *
  * @param {string} bulkTransferId - the bulkTransfer id
  * @param {string} hash - the hash of the bulkTransfer request payload
@@ -51,22 +51,24 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  */
 
 const checkDuplicate = async (bulkTransferId, hash) => {
-  Logger.debug('check and insert hash into bulkTransferDuplicateCheck' + bulkTransferId.toString())
+  Logger.debug('check and insert hash into bulkTransferFulfilmentDuplicateCheck' + bulkTransferId.toString())
   try {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
         let isDuplicateId
         let isResend
+        let identity
 
-        const existingHash = await knex('bulkTransferDuplicateCheck').transacting(trx)
+        const existingHash = await knex('bulkTransferFulfilmentDuplicateCheck').transacting(trx)
           .where({ bulkTransferId: bulkTransferId })
           .select('*')
           .first()
 
         if (!existingHash) {
-          await knex('bulkTransferDuplicateCheck').transacting(trx)
+          const result = await knex('bulkTransferFulfilmentDuplicateCheck').transacting(trx)
             .insert({ bulkTransferId, hash })
+          identity = result[0]
           isDuplicateId = false
           isResend = false
         } else {
@@ -77,7 +79,7 @@ const checkDuplicate = async (bulkTransferId, hash) => {
         return {
           isDuplicateId,
           isResend,
-          identity: null
+          identity
         }
       } catch (err) {
         await trx.rollback

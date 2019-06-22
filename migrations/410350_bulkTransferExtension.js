@@ -31,7 +31,7 @@ exports.up = async (knex, Promise) => {
         t.bigIncrements('bulkTransferExtensionId').primary().notNullable()
         t.string('bulkTransferId', 36).notNullable()
         t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransfer')
-        t.string('bulkTransferFulfilmentId', 36).defaultTo(null).nullable()
+        t.bigInteger('bulkTransferFulfilmentId').unsigned().defaultTo(null).nullable()
         t.foreign('bulkTransferFulfilmentId').references('bulkTransferFulfilmentId').inTable('bulkTransferFulfilment')
         t.string('key', 128).notNullable()
         t.text('value').notNullable()

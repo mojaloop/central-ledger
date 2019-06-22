@@ -26,12 +26,12 @@
 
 exports.up = function (knex, Promise) {
   return knex.schema.table('bulkTransferFulfilmentDuplicateCheck', (t) => {
-    t.index('bulkTransferId')
+    t.unique('bulkTransferId')
   })
 }
 
 exports.down = function (knex, Promise) {
   return knex.schema.table('bulkTransferFulfilmentDuplicateCheck', (t) => {
-    t.dropIndex('bulkTransferId')
+    t.dropUnique('bulkTransferId')
   })
 }

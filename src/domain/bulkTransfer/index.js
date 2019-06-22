@@ -30,6 +30,7 @@
 const Enum = require('../../lib/enum')
 const BulkTransferAssociationModel = require('../../models/bulkTransfer/bulkTransferAssociation')
 const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
+const BulkTransferFulfilmentDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferFulfilmentDuplicateCheck')
 const BulkTransferExtensionModel = require('../../models/bulkTransfer/bulkTransferExtension')
 const BulkTransferFacade = require('../../models/bulkTransfer/facade')
 const BulkTransferModel = require('../../models/bulkTransfer/bulkTransfer')
@@ -37,18 +38,17 @@ const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTran
 const IndividualTransferModel = require('../../models/bulkTransfer/individualTransfer')
 const IndividualTransferExtensionModel = require('../../models/transfer/transferExtension')
 
-const checkDuplicate = async (bulkTransferId, hash, bulkTransferFulfilmentId = false) => {
+const checkDuplicate = async (bulkTransferId, hash, isFulfilment = null) => {
   try {
     let result
     if (!hash) {
       throw new Error('Invalid hash')
     }
 
-    if (!bulkTransferFulfilmentId) {
+    if (!isFulfilment) {
       result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
     } else {
-      // TODO: switch to BulkTransferFulfilmentDuplicateCheckModel
-      result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
+      result = await BulkTransferFulfilmentDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
     }
     return result
   } catch (err) {
@@ -135,10 +135,12 @@ const getBulkTransferById = async (id) => {
 const BulkTransferService = {
   checkDuplicate,
   getBulkTransferById,
+  getParticipantsById: BulkTransferModel.getParticipantsById,
   bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,
+  bulkFulfil: BulkTransferFacade.saveBulkTransferProcessing,
   bulkTransferAssociationCreate: BulkTransferAssociationModel.create,
-  bulkTransferAssociationExists: BulkTransferAssociationModel.exists,
   bulkTransferAssociationUpdate: BulkTransferAssociationModel.update,
+  bulkTransferAssociationExists: BulkTransferAssociationModel.exists,
   createBulkTransferState: BulkTransferStateChangeModel.create,
   getBulkTransferState: BulkTransferStateChangeModel.getByTransferId
 }
