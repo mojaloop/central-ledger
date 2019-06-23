@@ -91,7 +91,7 @@ const getBulkTransferById = async (id) => {
             })
           }
         }
-        if (extension.length > 0) {
+        if (extension && extension.length > 0) {
           result.extensionList = { extension }
         }
         const allowedPayeeTransfers = [
