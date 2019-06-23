@@ -52,6 +52,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
+const eventLogger = require('../../lib/grpcLogger')
 
 const errorType = Errors.errorType
 const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
@@ -104,6 +105,7 @@ const prepare = async (error, messages) => {
     const action = message.value.metadata.event.action
     const transferId = payload.transferId
     const kafkaTopic = message.topic
+    let childSpan = await eventLogger.createChildSpan(message.value, 'prepare')
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
     try {
@@ -115,7 +117,7 @@ const prepare = async (error, messages) => {
       return true
     }
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare : Enum.actionLetter.unknown
-    let params = { message, transferId, kafkaTopic, consumer }
+    let params = { message, transferId, kafkaTopic, consumer, childSpan }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
@@ -209,6 +211,7 @@ const fulfil = async (error, messages) => {
     const action = message.value.metadata.event.action
     const transferId = message.value.id
     const kafkaTopic = message.topic
+    Logger.info(message.value, kafkaTopic, false, message.value.metadata.trace.traceId)
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
     try {

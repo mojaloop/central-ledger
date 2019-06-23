@@ -43,6 +43,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Kafka = require('./kafka')
 const Enum = require('../../lib/enum')
+const eventLogger = require('../../lib/grpcLogger')
 
 /**
  * The Producer config required
@@ -496,7 +497,7 @@ const breadcrumb = (location, message) => {
 }
 
 const proceed = async (params, opts) => {
-  const { message, transferId, kafkaTopic, consumer } = params
+  const { message, transferId, kafkaTopic, consumer, childSpan } = params
   const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch, toDestination } = opts
   let metadataState
 
@@ -523,6 +524,7 @@ const proceed = async (params, opts) => {
   if (histTimerEnd && typeof histTimerEnd === 'function') {
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
   }
+  await eventLogger.closeSpan(childSpan)
   return true
 }
 

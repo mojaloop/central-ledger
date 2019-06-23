@@ -53,8 +53,11 @@ const Uuid = require('uuid4')
 const Errors = require('../../lib/errors')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 const decodeMessages = require('@mojaloop/central-services-stream').Kafka.Protocol.decodeMessages
+const eventLogger = require('../../lib/grpcLogger')
+
 const errorTransferExpCode = 3300
 const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
+
 
 const errorType = Errors.errorType
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
@@ -103,6 +106,7 @@ const positions = async (error, messages) => {
     const action = message.value.metadata.event.action
     const transferId = message.value.id
     const kafkaTopic = message.topic
+    let childSpan = await eventLogger.createChildSpan(message.value, 'positions')
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
     try {
@@ -119,7 +123,7 @@ const positions = async (error, messages) => {
           : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
             : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
               : Enum.actionLetter.unknown))))
-    let params = { message, transferId, kafkaTopic, consumer }
+    let params = { message, transferId, kafkaTopic, consumer, childSpan }
     let producer = { functionality: TransferEventType.NOTIFICATION, action }
 
     if (eventType === TransferEventType.POSITION && action === TransferEventAction.PREPARE) {
