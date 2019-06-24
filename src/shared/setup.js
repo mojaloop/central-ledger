@@ -37,6 +37,7 @@ const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const P = require('bluebird')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
+const ObjStoreDb = require('@mojaloop/central-object-store').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
 const Sidecar = require('../lib/sidecar')
@@ -44,10 +45,8 @@ const RequestLogger = require('../lib/requestLogger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Participant = require('../domain/participant')
 const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
-// const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -60,6 +59,17 @@ const getEnums = (id) => {
 const connectDatabase = async () => {
   let result = await Db.connect(Config.DATABASE_URI)
   return result
+}
+const connectMongoose = async () => {
+  try {
+    let db = await ObjStoreDb.connect(Config.MONGODB_URI, {
+      promiseLibrary: global.Promise
+    })
+    return db
+  } catch (error) {
+    Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
+    return null
+  }
 }
 
 /**
@@ -217,6 +227,7 @@ const initializeInstrumentation = () => {
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
   await migrate(runMigrations)
   await connectDatabase()
+  await connectMongoose()
   await Sidecar.connect(service)
   initializeInstrumentation()
   let server

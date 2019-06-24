@@ -32,6 +32,7 @@
  */
 
 const Participant = require('../../../domain/participant')
+const BulkTransferService = require('../../../domain/bulkTransfer')
 
 let reasons = []
 
@@ -51,14 +52,28 @@ const validateExpiration = (payload) => {
   return true
 }
 const validateFspiopSourceMatchesPayer = (payload, headers) => {
-  const matched = (headers && headers['fspiop-source'] && headers['fspiop-source'] === payload.payerFsp)
+  const matched = (headers && headers['fspiop-source'] === payload.payerFsp)
   if (!matched) {
     reasons.push(`FSPIOP-Source header should match Payer`)
     return false
   }
   return true
 }
-const validateParticipantByName = async function (participantName) {
+const validateFspiopSourceAndDestination = async (payload, headers) => {
+  const participant = await BulkTransferService.getParticipantsById(payload.bulkTransferId)
+  const matchedPayee = (headers && headers['fspiop-source'] === participant.payeeFsp)
+  const matchedPayer = (headers && headers['fspiop-destination'] === participant.payerFsp)
+  if (!matchedPayee) {
+    reasons.push(`FSPIOP-Source header should match Payee`)
+    return false
+  }
+  if (!matchedPayer) {
+    reasons.push(`FSPIOP-Destination header should match Payer`)
+    return false
+  }
+  return true
+}
+const validateParticipantByName = async (participantName) => {
   const participant = await Participant.getByName(participantName)
   let isValid = false
   let participantId
@@ -100,6 +115,19 @@ const validateBulkTransfer = async (payload, headers) => {
   return { isValid, reasons, payerParticipantId, payeeParticipantId }
 }
 
+const validateBulkTransferFulfilment = async (payload, headers) => {
+  reasons.length = 0
+  let isValid = true
+  if (!payload) {
+    reasons.push('Bulk transfer fulfilment payload must be provided')
+    isValid = false
+    return { isValid, reasons }
+  }
+  isValid = isValid && validateFspiopSourceAndDestination(payload, headers)
+  return { isValid, reasons }
+}
+
 module.exports = {
-  validateBulkTransfer
+  validateBulkTransfer,
+  validateBulkTransferFulfilment
 }

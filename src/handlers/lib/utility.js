@@ -523,7 +523,7 @@ const proceed = async (params, opts) => {
   }
   if (producer) {
     const p = producer
-    const key = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : message.id
+    const key = toDestination && message.value.content.headers[Enum.headers.FSPIOP.DESTINATION]
     await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
   }
   if (histTimerEnd && typeof histTimerEnd === 'function') {

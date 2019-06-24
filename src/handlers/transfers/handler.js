@@ -224,7 +224,8 @@ const fulfil = async (error, messages) => {
     const actionLetter = action === TransferEventAction.COMMIT ? Enum.actionLetter.commit
       : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
         : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
-          : Enum.actionLetter.unknown))
+          : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
+            : Enum.actionLetter.unknown)))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const transferFulfilmentId = Uuid()
@@ -295,7 +296,7 @@ const fulfil = async (error, messages) => {
       }
     }
 
-    if (message.value.metadata.event.type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT].includes(action)) {
+    if (message.value.metadata.event.type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
       const existingTransfer = await TransferService.getById(transferId)
       Util.breadcrumb(location, { path: 'validationFailed' })
       if (!existingTransfer) {
@@ -330,10 +331,10 @@ const fulfil = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else { // validations success
         Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-        if (action === TransferEventAction.COMMIT) {
+        if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
           Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
           await TransferService.fulfil(transferFulfilmentId, transferId, payload)
-          const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.COMMIT }
+          const producer = { functionality: TransferEventType.POSITION, action }
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         } else {
           if (action === TransferEventAction.REJECT) {

@@ -43,7 +43,6 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
       errorCode: bulkTransferAssociation.errorCode,
       errorDescription: bulkTransferAssociation.errorDescription
     })
-    Object.keys(record).forEach(key => (record[key] === undefined || record[key] === null) && delete record[key])
     return Db.bulkTransferAssociation.update({ transferId, bulkTransferId }, record)
   } catch (err) {
     throw new Error(err.message)
@@ -55,6 +54,18 @@ exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
     return Db.bulkTransferAssociation.findOne({
       bulkTransferId, bulkProcessingStateId
     })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+exports.count = async (bulkTransferId, bulkProcessingStateId) => {
+  try {
+    const knex = await Db.getKnex()
+    let result = await knex('bulkTransferAssociation').count({ count: '*' })
+      .where({ bulkTransferId, bulkProcessingStateId })
+      .first()
+    return result.count
   } catch (err) {
     throw new Error(err.message)
   }

@@ -23,7 +23,6 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -43,27 +42,27 @@ const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
 const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
 
-const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
+const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
 
 const consumerCommit = true
 // const fromSwitch = true
 
-const prepareHandlerMessageProtocol = {
+const fulfilHandlerMessageProtocol = {
   value: {
     id: null,
     from: null,
     to: null,
     type: 'application/json',
     content: {
+      uriParams: { id: null },
       headers: null,
       payload: null
     },
     metadata: {
       event: {
         id: Uuid(),
-        responseTo: null,
-        type: 'transfer',
-        action: 'bulk-prepare',
+        type: 'fulfil',
+        action: 'commit', // TODO: switch to 'bulk-fulfil' flow
         createdAt: null,
         state: {
           status: 'success',
@@ -74,14 +73,8 @@ const prepareHandlerMessageProtocol = {
   }
 }
 
-const getBulkMessage = async (bulkTransferId) => {
-  let BulkTransferModel = BulkTransferModels.getBulkTransferModel()
-  let message = await BulkTransferModel.findOne({ bulkTransferId }, '-_id -individualTransfersIds')
-  return message.toJSON()
-}
-
 /**
- * @function BulkPrepareHandler
+ * @function BulkFulfilHandler
  *
  * @async
  * @description This is the consumer callback function that gets registered to a topic. This then gets a list of messages,
@@ -98,10 +91,10 @@ const getBulkMessage = async (bulkTransferId) => {
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
-const bulkPrepare = async (error, messages) => {
+const bulkFulfil = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
-    'transfer_bulk_prepare',
-    'Consume a bulkPrepare transfer message from the kafka topic and process it accordingly',
+    'transfer_bulk_fulfil',
+    'Consume a bulkFulfil transfer message from the kafka topic and process it accordingly',
     ['success', 'fspId']
   ).startTimer()
   if (error) {
@@ -121,7 +114,7 @@ const bulkPrepare = async (error, messages) => {
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
     let consumer
-    Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
+    Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     } catch (err) {
@@ -130,11 +123,12 @@ const bulkPrepare = async (error, messages) => {
       histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
-    const actionLetter = action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare : Enum.actionLetter.unknown
+    const actionLetter = action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit : Enum.actionLetter.unknown
     let params = { message, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    const { isDuplicateId, isResend } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash)
+    const isFulfilment = true
+    const { isDuplicateId, isResend, identity } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash, isFulfilment)
     if (isDuplicateId && isResend) { // TODO: handle resend
       Logger.info(Util.breadcrumb(location, `resend`))
       Logger.info(Util.breadcrumb(location, `notImplemented`))
@@ -146,53 +140,60 @@ const bulkPrepare = async (error, messages) => {
       return true
     }
 
-    let { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
+    // TODO: move FSPIOP-Source validation before Transfer Duplicate Check to accept only Payee's first request
+    let { isValid, reasons } = await Validator.validateBulkTransferFulfilment(payload, headers)
     if (isValid) {
+      let state
       Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
         Logger.info(Util.breadcrumb(location, `saveBulkTransfer`))
-        const participants = { payerParticipantId, payeeParticipantId }
-        /* const state = */ await BulkTransferService.bulkPrepare(payload, participants)
-      } catch (err) { // TODO: handle insert error
+        state = await BulkTransferService.bulkFulfil(payload, identity)
+      } catch (err) { // TODO: handle insert errors
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.info(Util.breadcrumb(location, `notImplemented`))
         return true
       }
       try {
-        Logger.info(Util.breadcrumb(location, `individualTransfers`))
+        Logger.info(Util.breadcrumb(location, `individualTransferFulfils`))
         // stream initialization
-        let IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
-        let indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
+        let IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
+        let indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
         // enable async/await operations for the stream
-        let streamReader = AwaitifyStream.createReader(indvidualTransfersStream)
+        let streamReader = AwaitifyStream.createReader(indvidualTransfersFulfilStream)
         let doc
-
+        let transferIds = []
         while ((doc = await streamReader.readAsync()) !== null) {
-          let individualTransfer = doc.payload
-          individualTransfer.payerFsp = payload.payerFsp
-          individualTransfer.payeeFsp = payload.payeeFsp
-          individualTransfer.amount = individualTransfer.transferAmount
-          delete individualTransfer.transferAmount
-          individualTransfer.expiration = payload.expiration
+          let individualTransferFulfil = doc.payload
+          const transferId = individualTransferFulfil.transferId
+          delete individualTransferFulfil.transferId
+          transferIds.push(transferId)
           const bulkTransferAssociationRecord = {
-            transferId: individualTransfer.transferId,
+            transferId,
             bulkTransferId: payload.bulkTransferId,
-            bulkProcessingStateId: Enum.BulkProcessingState.RECEIVED
+            bulkProcessingStateId: Enum.BulkProcessingState.PROCESSING
           }
-          await BulkTransferService.bulkTransferAssociationCreate(bulkTransferAssociationRecord)
+          await BulkTransferService.bulkTransferAssociationUpdate(transferId, bulkTransferId, bulkTransferAssociationRecord)
+          if (state === Enum.BulkTransferState.INVALID ||
+            individualTransferFulfil.errorInformation ||
+            !individualTransferFulfil.fulfilment) {
+            individualTransferFulfil.transferState = Enum.TransferStateEnum.ABORTED
+          } else {
+            individualTransferFulfil.transferState = Enum.TransferStateEnum.COMMITTED
+          }
 
-          let dataUri = encodePayload(JSON.stringify(individualTransfer), headers['content-type'])
-          let msg = Object.assign({}, prepareHandlerMessageProtocol)
+          let dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers['content-type'])
+          let msg = Object.assign({}, fulfilHandlerMessageProtocol)
           msg.value.id = messageId
-          msg.value.from = payload.payerFsp
-          msg.value.to = payload.payeeFsp
+          msg.value.from = headers['fspiop-source']
+          msg.value.to = headers['fspiop-destination']
           msg.value.content.headers = headers
           msg.value.content.payload = dataUri
+          msg.value.content.uriParams.id = transferId
           msg.value.metadata.event.id = message.value.metadata.event.id
           msg.value.metadata.event.createdAt = new Date()
 
           params = { message: msg, kafkaTopic, consumer }
-          const producer = { functionality: TransferEventType.PREPARE, action: TransferEventAction.BULK_PREPARE }
+          const producer = { functionality: TransferEventType.FULFIL, action: TransferEventAction.BULK_COMMIT }
           await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
@@ -204,7 +205,7 @@ const bulkPrepare = async (error, messages) => {
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
         Logger.info(Util.breadcrumb(location, `saveInvalidRequest`))
-        await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
+        await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.info(Util.breadcrumb(location, `notImplemented`))
@@ -222,22 +223,22 @@ const bulkPrepare = async (error, messages) => {
 }
 
 /**
- * @function registerBulkPrepareHandler
+ * @function registerBulkFulfilHandler
  *
  * @async
  * @description Registers the handler for bulk-transfer topic. Gets Kafka config from default.json
  *
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
-const registerBulkPrepareHandler = async () => {
+const registerBulkFulfilHandler = async () => {
   try {
-    const bulkPrepareHandler = {
-      command: bulkPrepare,
-      topicName: Util.transformGeneralTopicName(TransferEventType.BULK, TransferEventAction.PREPARE),
-      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.BULK.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
+    const bulkFulfilHandler = {
+      command: bulkFulfil,
+      topicName: Util.transformGeneralTopicName(TransferEventType.BULK, TransferEventAction.FULFIL),
+      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.BULK.toUpperCase(), TransferEventAction.FULFIL.toUpperCase())
     }
-    bulkPrepareHandler.config.rdkafkaConf['client.id'] = bulkPrepareHandler.topicName
-    await Kafka.Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
+    bulkFulfilHandler.config.rdkafkaConf['client.id'] = bulkFulfilHandler.topicName
+    await Kafka.Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
     return true
   } catch (e) {
     Logger.error(e)
@@ -255,7 +256,7 @@ const registerBulkPrepareHandler = async () => {
  */
 const registerAllHandlers = async () => {
   try {
-    await registerBulkPrepareHandler()
+    await registerBulkFulfilHandler()
     return true
   } catch (e) {
     throw e
@@ -263,7 +264,6 @@ const registerAllHandlers = async () => {
 }
 
 module.exports = {
-  bulkPrepare,
-  getBulkMessage,
+  bulkFulfil,
   registerAllHandlers
 }

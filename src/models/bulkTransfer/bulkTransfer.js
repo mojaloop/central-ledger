@@ -45,6 +45,23 @@ const getById = async (id) => {
   }
 }
 
+const getParticipantsById = async (id) => {
+  try {
+    return await Db.bulkTransfer.query(async (builder) => {
+      let result = builder
+        .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
+        .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
+        .where({ 'bulkTransfer.bulkTransferId': id })
+        .select('payer.name AS payerFsp', 'payee.name AS payeeFsp')
+        .first()
+      return result
+    })
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
-  getById
+  getById,
+  getParticipantsById
 }

@@ -10,6 +10,7 @@ const TimeoutHandlers = require('../../../src/handlers/timeouts/handler')
 const AdminHandlers = require('../../../src/handlers/admin/handler')
 const BulkTransferHandlers = require('../../../src/handlers/bulk/prepare/handler')
 const BulkProcessingHandlers = require('../../../src/handlers/bulk/processing/handler')
+const BulkFulfilHandlers = require('../../../src/handlers/bulk/fulfil/handler')
 const Proxyquire = require('proxyquire')
 
 Test('handlers', handlersTest => {
@@ -23,6 +24,7 @@ Test('handlers', handlersTest => {
     sandbox.stub(AdminHandlers, 'registerAllHandlers').returns(P.resolve(true))
     sandbox.stub(BulkTransferHandlers, 'registerAllHandlers').returns(P.resolve(true))
     sandbox.stub(BulkProcessingHandlers, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(BulkFulfilHandlers, 'registerAllHandlers').returns(P.resolve(true))
     test.end()
   })
 

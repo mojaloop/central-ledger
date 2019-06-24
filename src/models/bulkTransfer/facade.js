@@ -30,6 +30,7 @@
 const Db = require('../../lib/db')
 const Enum = require('../../lib/enum')
 const Time = require('../../lib/time')
+// const BulkTransferAssociation = require('./BulkTransferAssociation')
 
 const saveBulkTransferReceived = async (payload, participants, stateReason = null, isValid = true) => {
   try {
@@ -61,18 +62,54 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
           })
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
-        // if (payload.individualTransfers) {
-        //   let individualTransfersRecordList = payload.individualTransfers.map(t => {
-        //     return {
-        //       transferId: t.transferId,
-        //       bulkTransferId: payload.bulkTransferId,
-        //       bulkProcessingStateId: Enum.BulkProcessingState.RECEIVED
-        //     }
-        //   })
-        //   await knex.batchInsert('bulkTransferAssociation', individualTransfersRecordList).transacting(trx)
-        // }
         await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
         await trx.commit
+        return state
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+const saveBulkTransferProcessing = async (payload, bulkTransferFulfilmentId, stateReason = null, isValid = true) => {
+  try {
+    const bulkTransferFulfilmentRecord = {
+      bulkTransferFulfilmentId,
+      bulkTransferId: payload.bulkTransferId,
+      completedDate: Time.getUTCString(new Date(payload.completedTimestamp))
+    }
+    // TODO: Remove count or decide on the strategy how to handle intdividual transfer results. Count is not sufficient criteria
+    // because even if it's matched the transferId's may not match those on record.
+    // const count = await BulkTransferAssociation.count(payload.bulkTransferId, Enum.BulkProcessingState.ACCEPTED)
+    const state = (isValid /* && payload.count === count */ ? Enum.BulkTransferState.PROCESSING : Enum.BulkTransferState.INVALID)
+    const bulkTransferStateChangeRecord = {
+      bulkTransferId: payload.bulkTransferId,
+      bulkTransferStateId: state,
+      reason: stateReason
+    }
+
+    const knex = await Db.getKnex()
+    return await knex.transaction(async (trx) => {
+      try {
+        await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
+        if (payload.extensionList && payload.extensionList.extension) {
+          let bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+            return {
+              bulkTransferId: payload.bulkTransferId,
+              bulkTransferFulfilmentId,
+              key: ext.key,
+              value: ext.value
+            }
+          })
+          await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
+        }
+        await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
+        await trx.commit
+        return state
       } catch (err) {
         await trx.rollback
         throw err
@@ -84,7 +121,8 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
 }
 
 const TransferFacade = {
-  saveBulkTransferReceived
+  saveBulkTransferReceived,
+  saveBulkTransferProcessing
 }
 
 module.exports = TransferFacade
