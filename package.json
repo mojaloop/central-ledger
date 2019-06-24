@@ -59,7 +59,7 @@
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json"
   },
   "dependencies": {
-    "@mojaloop/central-object-store": "6.4.1-snapshot",
+    "@mojaloop/central-object-store": "6.4.2-snapshot",
     "@mojaloop/central-services-auth": "5.2.1",
     "@mojaloop/central-services-database": "5.2.1",
     "@mojaloop/central-services-error-handling": "5.2.0",
