@@ -57,7 +57,7 @@ const registerAllHandlers = async () => {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))
     for (let key in modules) {
-      if(modules.hasOwnProperty(let)){
+      if (modules.hasOwnProperty(key)) {
         Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
         const handlerObject = modules[key]
         Logger.info(JSON.stringify(handlerObject.handler))

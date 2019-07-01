@@ -96,7 +96,7 @@ const disconnect = async (topicName = null) => {
 
     let tpName
     for (tpName in listOfProducers) {
-      if(listOfProducers.hasOwnProperty(tpName)){
+      if (listOfProducers.hasOwnProperty(tpName)) {
         try {
           await getProducer(tpName).disconnect()
         } catch (e) {

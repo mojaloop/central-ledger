@@ -74,7 +74,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         let initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
         for (let id in initialTransferStateChangeList) {
-          if(initialTransferStateChangeList.hasOwnProperty(let)){
+          if (initialTransferStateChangeList.hasOwnProperty(id)) {
             let transferState = initialTransferStateChangeList[id]
             let transfer = transferList[id].value.content.payload
             let rawMessage = transferList[id]
@@ -91,7 +91,6 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
               abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
             }
           }
-
         }
         let abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
         Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
@@ -115,7 +114,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         */
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
         for (let transferId in reservedTransfers) {
-          if(reservedTransfers.hasOwnProperty(let)){
+          if (reservedTransfers.hasOwnProperty(transferId)) {
             let { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
             if (availablePosition >= transferAmount) {
               availablePosition -= transferAmount
@@ -157,7 +156,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let processedTransfersKeysList = Object.keys(processedTransfers)
         let batchParticipantPositionChange = []
         for (let keyIndex in processedTransfersKeysList) {
-          if(processedTransfersKeysList.hasOwnProperty(let)){
+          if (processedTransfersKeysList.hasOwnProperty(keyIndex)) {
             let { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
             const participantPositionChange = {
               participantPositionId: initialParticipantPosition.participantPositionId,
