@@ -222,8 +222,6 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
   let server
   switch (service) {
     case 'api':
-      server = await createServer(port, modules)
-      break
     case 'admin':
       server = await createServer(port, modules)
       break
