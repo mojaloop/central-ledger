@@ -99,7 +99,7 @@
     "uuid4": "1.1.4",
     "vision": "5.4.4",
     "winston": "3.2.1",
-    "ws": "6.1.4"
+    "ws": "7.0.1"
   },
   "optionalDependencies": {
     "mysql": "2.16.0"
