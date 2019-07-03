@@ -74,22 +74,20 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         let initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
         for (let id in initialTransferStateChangeList) {
-          if (initialTransferStateChangeList.hasOwnProperty(id)) {
-            let transferState = initialTransferStateChangeList[id]
-            let transfer = transferList[id].value.content.payload
-            let rawMessage = transferList[id]
-            if (transferState.transferStateId === Enum.TransferState.RECEIVED_PREPARE) {
-              transferState.transferStateChangeId = null
-              transferState.transferStateId = Enum.TransferState.RESERVED
-              let transferAmount = parseFloat(transfer.amount.amount) /* Just do this once,so add to reservedTransfers */
-              reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
-              sumTransfersInBatch += transferAmount
-            } else {
-              transferState.transferStateChangeId = null
-              transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
-              transferState.reason = 'Transfer in incorrect state'
-              abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
-            }
+          let transferState = initialTransferStateChangeList[id]
+          let transfer = transferList[id].value.content.payload
+          let rawMessage = transferList[id]
+          if (transferState.transferStateId === Enum.TransferState.RECEIVED_PREPARE) {
+            transferState.transferStateChangeId = null
+            transferState.transferStateId = Enum.TransferState.RESERVED
+            let transferAmount = parseFloat(transfer.amount.amount) /* Just do this once,so add to reservedTransfers */
+            reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
+            sumTransfersInBatch += transferAmount
+          } else {
+            transferState.transferStateChangeId = null
+            transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
+            transferState.reason = 'Transfer in incorrect state'
+            abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
           }
         }
         let abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
@@ -114,23 +112,21 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         */
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
         for (let transferId in reservedTransfers) {
-          if (reservedTransfers.hasOwnProperty(transferId)) {
-            let { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
-            if (availablePosition >= transferAmount) {
-              availablePosition -= transferAmount
-              transferState.transferStateId = Enum.TransferState.RESERVED
-              sumReserved += transferAmount /* actually used */
-            } else {
-              transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
-              transferState.reason = Errors.getErrorDescription(4001)
-              rawMessage.value.content.payload = {
-                errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
-              }
+          let { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
+          if (availablePosition >= transferAmount) {
+            availablePosition -= transferAmount
+            transferState.transferStateId = Enum.TransferState.RESERVED
+            sumReserved += transferAmount /* actually used */
+          } else {
+            transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
+            transferState.reason = Errors.getErrorDescription(4001)
+            rawMessage.value.content.payload = {
+              errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
             }
-            let runningPosition = currentPosition + sumReserved /* effective position */
-            let runningReservedValue = sumTransfersInBatch - sumReserved
-            processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
           }
+          let runningPosition = currentPosition + sumReserved /* effective position */
+          let runningReservedValue = sumTransfersInBatch - sumReserved
+          processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
         }
         /*
           Update the participantPosition with the eventual impact of the Batch
@@ -156,17 +152,15 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let processedTransfersKeysList = Object.keys(processedTransfers)
         let batchParticipantPositionChange = []
         for (let keyIndex in processedTransfersKeysList) {
-          if (processedTransfersKeysList.hasOwnProperty(keyIndex)) {
-            let { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
-            const participantPositionChange = {
-              participantPositionId: initialParticipantPosition.participantPositionId,
-              transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
-              value: runningPosition,
-              // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
-              reservedValue: runningReservedValue
-            }
-            batchParticipantPositionChange.push(participantPositionChange)
+          let { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
+          const participantPositionChange = {
+            participantPositionId: initialParticipantPosition.participantPositionId,
+            transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
+            value: runningPosition,
+            // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
+            reservedValue: runningReservedValue
           }
+          batchParticipantPositionChange.push(participantPositionChange)
         }
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
         await trx.commit

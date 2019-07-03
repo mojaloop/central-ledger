@@ -96,13 +96,11 @@ const disconnect = async (topicName = null) => {
 
     let tpName
     for (tpName in listOfProducers) {
-      if (listOfProducers.hasOwnProperty(tpName)) {
-        try {
-          await getProducer(tpName).disconnect()
-        } catch (e) {
-          isError = true
-          errorTopicList.push({ topic: tpName, error: e.toString() })
-        }
+      try {
+        await getProducer(tpName).disconnect()
+      } catch (e) {
+        isError = true
+        errorTopicList.push({ topic: tpName, error: e.toString() })
       }
     }
     if (isError) {
