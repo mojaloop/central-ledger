@@ -74,7 +74,7 @@
     "catbox-memory": "4.0.1",
     "commander": "2.19.0",
     "cron": "1.6.0",
-    "decimal.js": "10.0.2",
+    "decimal.js": "10.2.0",
     "docdash": "1.0.3",
     "five-bells-condition": "5.0.1",
     "glob": "7.1.3",
