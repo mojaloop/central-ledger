@@ -34,17 +34,17 @@ const MigrationLockModel = require('../../models/misc/migrationLock')
 /**
  * @function getSubServiceHealthBroker
  *
- * @description 
+ * @description
  *   Gets the health for the broker, by checking that the consumer is
  *   connected for each topic
- * 
+ *
  * @returns Promise<SubServiceHealth> The SubService health object for the broker
  */
 const getSubServiceHealthBroker = async () => {
   const consumerTopics = Kafka.Consumer.getListOfTopics()
   let status = statusEnum.OK
   try {
-    await Promise.all(consumerTopics.map(t => Kafka.Consumer.isConsumerConnected(t)))
+    await Promise.all(consumerTopics.map(t => Kafka.Consumer.isConnected(t)))
   } catch (err) {
     Logger.debug(`getSubServiceHealthBroker failed with error ${err.message}.`)
     status = statusEnum.DOWN

@@ -62,7 +62,7 @@ Test('route handler', (handlerTest) => {
     healthTest.test('return status ok', async assert => {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
-      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
+      sandbox.stub(Kafka.Consumer, 'isConnected').returns(P.resolve())
       const jp = require('jsonpath')
       const healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
 

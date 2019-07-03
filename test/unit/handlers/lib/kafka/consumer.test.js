@@ -220,8 +220,8 @@ Test('Consumer', ConsumerTest => {
     isConsumerAutoCommitEnabledTest.end()
   })
 
-  ConsumerTest.test('isConsumerConnected should', isConsumerConnectedTest => {
-    isConsumerConnectedTest.test('reject with an error if client.getMetadata fails', async test => {
+  ConsumerTest.test('isConnected should', isConnectedTest => {
+    isConnectedTest.test('reject with an error if client.getMetadata fails', async test => {
       // Arrange
       let ConsumerProxy = rewire(`${src}/handlers/lib/kafka/consumer`)
       ConsumerProxy.__set__('listOfConsumers', {
@@ -229,7 +229,7 @@ Test('Consumer', ConsumerTest => {
           consumer: {
             // Callback with error
             getMetadata: (options, cb) => {
-              const error = true
+              const error = new Error('test err message')
               cb(error, null)
             }
           }
@@ -238,17 +238,17 @@ Test('Consumer', ConsumerTest => {
 
       // Act
       try {
-        await ConsumerProxy.isConsumerConnected('admin')
+        await ConsumerProxy.isConnected('admin')
         test.fail('Error not thrown!')
       } catch (err) {
         // Assert
-        test.equal(err.message, 'Error connecting to consumer', 'Error message does not match')
+        test.equal(err.message, 'Error connecting to consumer: test err message', 'Error message does not match')
         test.pass()
       }
       test.end()
     })
 
-    isConsumerConnectedTest.test('reject with an error if client.getMetadata passes, but metadata is mising topic', async test => {
+    isConnectedTest.test('reject with an error if client.getMetadata passes, but metadata is mising topic', async test => {
       // Arrange
       let ConsumerProxy = rewire(`${src}/handlers/lib/kafka/consumer`)
       const metadata = {
@@ -268,7 +268,7 @@ Test('Consumer', ConsumerTest => {
 
       // Act
       try {
-        await ConsumerProxy.isConsumerConnected('admin')
+        await ConsumerProxy.isConnected('admin')
         test.fail('Error not thrown!')
       } catch (err) {
         // Assert
@@ -278,14 +278,14 @@ Test('Consumer', ConsumerTest => {
       test.end()
     })
 
-    isConsumerConnectedTest.test('reject with an error if consumer does not exist', async test => {
+    isConnectedTest.test('reject with an error if consumer does not exist', async test => {
       // Arrange
       let ConsumerProxy = rewire(`${src}/handlers/lib/kafka/consumer`)
       ConsumerProxy.__set__('listOfConsumers', {})
 
       // Act
       try {
-        await ConsumerProxy.isConsumerConnected('admin')
+        await ConsumerProxy.isConnected('admin')
         test.fail('Error not thrown!')
       } catch (err) {
         // Assert
@@ -295,7 +295,7 @@ Test('Consumer', ConsumerTest => {
       test.end()
     })
 
-    isConsumerConnectedTest.test('pass if the topic can be found', async test => {
+    isConnectedTest.test('pass if the topic can be found', async test => {
       // Arrange
       let ConsumerProxy = rewire(`${src}/handlers/lib/kafka/consumer`)
       const metadata = {
@@ -318,17 +318,17 @@ Test('Consumer', ConsumerTest => {
       // Act
       let result
       try {
-        result = await ConsumerProxy.isConsumerConnected('admin')
+        result = await ConsumerProxy.isConnected('admin')
       } catch (err) {
         test.fail(err.message)
       }
 
       // Assert
-      test.equal(result, true, 'isConsumerConnected should return true')
+      test.equal(result, true, 'isConnected should return true')
       test.end()
     })
 
-    isConsumerConnectedTest.end()
+    isConnectedTest.end()
   })
 
   ConsumerTest.end()

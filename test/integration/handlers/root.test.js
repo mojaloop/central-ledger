@@ -33,6 +33,11 @@ const Config = require('../../../src/lib/config')
 const Consumer = require('../../../src/handlers/lib/kafka/consumer')
 const Producer = require('../../../src/handlers/lib/kafka/producer')
 const rootApiHandler = require('../../../src/api/root/handler')
+const {
+  createRequest,
+  unwrapResponse,
+  waitFor
+} = require('../../util/helpers')
 
 const Handlers = {
   index: require('../../../src/handlers/register'),
@@ -42,56 +47,6 @@ const Handlers = {
 
 const debug = false
 
-/* Test Helpers */
-
-/**
- * Create a mock request handler
- * @param {*} param0
- */
-const createRequest = ({ payload, params, query }) => {
-  const requestPayload = payload || {}
-  const requestParams = params || {}
-  const requestQuery = query || {}
-
-  return {
-    payload: requestPayload,
-    params: requestParams,
-    query: requestQuery,
-    server: {
-      log: () => { },
-      methods: {
-
-      }
-    }
-  }
-}
-
-/**
- * unwrapResponse
- *
- * Use this function to unwrap the innner response body and code from an async Handler
- */
-const unwrapResponse = async (asyncFunction) => {
-  let responseBody
-  let responseCode
-  const nestedReply = {
-    response: (response) => {
-      responseBody = response
-      return {
-        code: statusCode => {
-          responseCode = statusCode
-        }
-      }
-    }
-  }
-  await asyncFunction(nestedReply)
-
-  return {
-    responseBody,
-    responseCode
-  }
-}
-
 Test('Root handler test', async handlersTest => {
   let startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
@@ -100,6 +55,16 @@ Test('Root handler test', async handlersTest => {
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
+
+      const isReady = async () => {
+        const consumerTopics = Consumer.getListOfTopics()
+        await Promise.all(consumerTopics.map(t => Consumer.isConnected(t)))
+      }
+      try {
+        await waitFor(isReady, 'Consumers to be up', 5, 3)
+      } catch (err) {
+        test.fail('Consumers were not ready in time')
+      }
 
       test.pass('done')
       test.end()

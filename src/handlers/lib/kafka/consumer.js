@@ -113,8 +113,6 @@ const getConsumer = (topicName) => {
  * @throws {Error} - if consumer not found for topic name
  */
 const isConsumerAutoCommitEnabled = (topicName) => {
-  console.log('list if consumers is', listOfConsumers)
-
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName].autoCommitEnabled
   } else {
@@ -138,18 +136,18 @@ const getMetadataPromise = (consumer, topic) => {
   return new Promise((resolve, reject) => {
     const cb = (err, metadata) => {
       if (err) {
-        return reject(new Error(`Error connecting to consumer`))
+        return reject(new Error(`Error connecting to consumer: ${err.message}`))
       }
 
       return resolve(metadata)
     }
 
-    consumer.getMetadata({ topic, timeout: 3000 }, cb)
+    consumer.getMetadata({ topic, timeout: 6000 }, cb)
   })
 }
 
 /**
- * @function isConsumerConnected
+ * @function isConnected
  *
  * @param {string} topicName - the topic name of the consumer to check
  *
@@ -159,7 +157,7 @@ const getMetadataPromise = (consumer, topic) => {
  * @returns {true} - if connected
  * @throws {Error} - if consumer can't be found or the consumer is not connected
  */
-const isConsumerConnected = async topicName => {
+const isConnected = async topicName => {
   const consumer = getConsumer(topicName)
 
   const metadata = await getMetadataPromise(consumer, topicName)
@@ -177,5 +175,5 @@ module.exports = {
   getConsumer,
   getListOfTopics,
   isConsumerAutoCommitEnabled,
-  isConsumerConnected
+  isConnected
 }

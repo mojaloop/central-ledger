@@ -17,16 +17,16 @@
  optionally within square brackets <email>.
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
-  
+
  - Lewis Daly <lewis@vesselstech.com>
  --------------
  ******/
 
 'use strict'
 
-const { statusEnum } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
 const HealthCheck = require('@mojaloop/central-services-shared').HealthCheck.HealthCheck
-const Logger = require('@mojaloop/central-services-shared').Logger
+const { defaultHealthHandler } = require('@mojaloop/central-services-health')
+
 const packageJson = require('../../../package.json')
 const {
   getSubServiceHealthDatastore,
@@ -46,22 +46,7 @@ const healthCheck = new HealthCheck(packageJson, [
  * @param {*} request - the Hapi request object
  * @param {*} h - the Hapi handler object
  */
-const getHealth = async (request, h) => {
-  let responseBody
-  let responseCode = 200
-  try {
-    responseBody = await healthCheck.getHealth()
-  } catch (err) {
-    Logger.error(err.message)
-  }
-
-  if (!responseBody || responseBody.status !== statusEnum.OK) {
-    // Gateway Error
-    responseCode = 502
-  }
-
-  return h.response(responseBody).code(responseCode)
-}
+const getHealth = defaultHealthHandler(healthCheck)
 
 module.exports = {
   getHealth

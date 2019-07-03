@@ -57,7 +57,7 @@ Test('Root', rootHandlerTest => {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Kafka.Consumer, 'getListOfTopics').returns(['admin'])
-      sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.resolve())
+      sandbox.stub(Kafka.Consumer, 'isConnected').returns(P.resolve())
       const schema = {
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
@@ -89,7 +89,7 @@ Test('Root', rootHandlerTest => {
     //   // Arrange
     //   sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
     //   sandbox.stub(Kafka.Consumer, 'getListOfTopics').returns(['admin'])
-    //   sandbox.stub(Kafka.Consumer, 'isConsumerConnected').returns(P.reject()) // Kafka will be down
+    //   sandbox.stub(Kafka.Consumer, 'isConnected').returns(P.reject()) // Kafka will be down
     //   const schema = {
     //     status: Joi.string().valid('DOWN').required(),
     //     uptime: Joi.number().required(),
