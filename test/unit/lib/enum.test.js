@@ -419,6 +419,93 @@ Test('Enum test', async (enumTest) => {
     await transferStateEnumTest.end()
   })
 
+  await enumTest.test('bulkProcessingState should', async (bulkProcessingStateTest) => {
+    await bulkProcessingStateTest.test('return the bulkProcessingState', async (test) => {
+      try {
+        Db.bulkProcessingState.find.returns(P.resolve(allEnums.bulkProcessingState))
+        const result = await Model.bulkProcessingState()
+        test.deepEqual(result, allEnumExpected.bulkProcessingState, 'Results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`bulkProcessingState failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await bulkProcessingStateTest.test('throw error on error while getting bulkProcessingState', async (test) => {
+      try {
+        Db.bulkProcessingState.find.throws(new Error())
+        await Model.bulkProcessingState()
+        test.fail('should throw error')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
+    await bulkProcessingStateTest.end()
+  })
+
+  await enumTest.test('bulkTransferState should', async (bulkTransferStateTest) => {
+    await bulkTransferStateTest.test('return the bulkTransferState', async (test) => {
+      try {
+        Db.bulkTransferState.find.returns(P.resolve(allEnums.bulkTransferState))
+        const result = await Model.bulkTransferState()
+        test.deepEqual(result, allEnumExpected.bulkTransferState, 'Results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`bulkTransferState failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await bulkTransferStateTest.test('throw error on error while getting bulkTransferState', async (test) => {
+      try {
+        Db.bulkTransferState.find.throws(new Error())
+        await Model.bulkTransferState()
+        test.fail('should throw error')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
+    await bulkTransferStateTest.end()
+  })
+
+  await enumTest.test('bulkTransferStateEnum should', async (bulkTransferStateEnumTest) => {
+    await bulkTransferStateEnumTest.test('return the bulkTransferStateEnum', async (test) => {
+      try {
+        Db.bulkTransferState.find.returns(P.resolve(allEnums.bulkTransferState))
+        const result = await Model.bulkTransferStateEnum()
+        test.deepEqual(result, allEnumExpected.bulkTransferState, 'Results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`bulkTransferStateEnum failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await bulkTransferStateEnumTest.test('throw error on error while getting bulkTransferStateEnum', async (test) => {
+      try {
+        Db.bulkTransferState.find.throws(new Error())
+        await Model.bulkTransferStateEnum()
+        test.fail('should throw error')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
+    await bulkTransferStateEnumTest.end()
+  })
+
   await enumTest.test('all should', async (allTest) => {
     await allTest.test('return all enums', async (test) => {
       try {

@@ -43,6 +43,7 @@ const KafkaProducer = require('@mojaloop/central-services-stream').Kafka.Produce
 const Proxyquire = require('proxyquire')
 const Utility = require('../../../../src/handlers/lib/utility')
 const Enum = require('../../../../src/lib/enum')
+const MainUtil = require('../../../../src/lib/util')
 
 let participantName
 const TRANSFER = 'transfer'
@@ -529,6 +530,26 @@ Test('Utility Test', utilityTest => {
         test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')
         test.ok(createStateStub.withArgs(failureStatus, code, desc).calledOnce, 'createStateStub called once')
         test.ok(histTimerEndStub.calledOnce, 'histTimerEndStub called once')
+        test.equal(result, true, 'result returned')
+      } catch (err) {
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    proceedTest.test('create error status and end timer with uriParams', async test => {
+      const code = '1'
+      const desc = 'desc'
+      const errorInformation = { errorCode: code, errorDescription: desc }
+      const opts = { errorInformation, histTimerEnd: histTimerEndStub }
+      try {
+        let localParams = MainUtil.clone(params)
+        localParams.message.value.content.uriParams = { id: Uuid() }
+        const result = await UtilityProxy.proceed(localParams, opts)
+        test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')
+        test.ok(createStateStub.withArgs(failureStatus, code, desc).calledTwice, 'createStateStub called twice')
+        test.ok(histTimerEndStub.calledTwice, 'histTimerEndStub called twice')
         test.equal(result, true, 'result returned')
       } catch (err) {
         test.fail(err.message)

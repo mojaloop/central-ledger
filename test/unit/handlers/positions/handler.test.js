@@ -16,6 +16,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
 const transferEventAction = require('../../../../src/lib/enum').transferEventAction
 const Enum = require('../../../../src/lib/enum')
+const Clone = require('lodash').clone
 const TransferState = Enum.TransferState
 
 const transfer = {
@@ -91,12 +92,20 @@ const messageProtocol = {
   pp: ''
 }
 
+const messageProtocolPut = Clone(messageProtocol)
+messageProtocolPut.content.uriParams = { id: Uuid() }
+delete messageProtocolPut.content.payload.transferId
+
 const topicName = 'topic-test'
 
 const messages = [
   {
     topic: topicName,
     value: messageProtocol
+  },
+  {
+    topic: topicName,
+    value: messageProtocolPut
   }
 ]
 
@@ -242,7 +251,7 @@ Test('Position handler', transferHandlerTest => {
       })
       Util.proceed.returns(true)
 
-      const result = await allTransferHandlers.positions(null, Object.assign({}, messages[0]))
+      const result = await allTransferHandlers.positions(null, Object.assign({}, messages[1]))
       Logger.info(result)
       test.equal(result, true)
       test.end()
@@ -364,10 +373,10 @@ Test('Position handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
 
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.COMMIT
       Util.proceed.returns(true)
 
@@ -390,10 +399,10 @@ Test('Position handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
 
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.COMMIT
       Util.proceed.returns(true)
 
@@ -409,11 +418,11 @@ Test('Position handler', transferHandlerTest => {
         Util.transformGeneralTopicName.returns(topicName)
         Util.getKafkaConfig.returns(config)
 
-        TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+        let m = Object.assign({}, MainUtil.clone(messages[1]))
+        TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
           .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
         TransferStateChange.saveTransferStateChange.resolves(true)
 
-        let m = Object.assign({}, MainUtil.clone(messages[0]))
         m.value.metadata.event.action = transferEventAction.REJECT
         Util.proceed.returns(true)
 
@@ -432,10 +441,10 @@ Test('Position handler', transferHandlerTest => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'RECEIVED_ERROR' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.ABORT
       Util.proceed.returns(true)
 
@@ -449,10 +458,10 @@ Test('Position handler', transferHandlerTest => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'REJECT' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       Util.proceed.returns(true)
 
@@ -474,10 +483,10 @@ Test('Position handler', transferHandlerTest => {
       Util.getKafkaConfig.returns(config)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       Util.proceed.returns(true)
 
@@ -500,10 +509,10 @@ Test('Position handler', transferHandlerTest => {
       Util.getKafkaConfig.returns(config)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       Util.proceed.returns(true)
 
@@ -520,10 +529,10 @@ Test('Position handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
 
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.COMMIT
       Util.proceed.returns(true)
 
@@ -537,10 +546,10 @@ Test('Position handler', transferHandlerTest => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
       Util.getKafkaConfig.returns(config)
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: 'FAKE' }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       Util.proceed.returns(true)
 
@@ -564,10 +573,10 @@ Test('Position handler', transferHandlerTest => {
       Util.getKafkaConfig.returns(config)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
 
-      TransferService.getTransferInfoToChangePosition.withArgs(transfer.transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
         .returns(Object.assign({}, transferInfo, { transferStateId: TransferState.RECEIVED_REJECT }))
       TransferStateChange.saveTransferStateChange.resolves(true)
-      let m = Object.assign({}, MainUtil.clone(messages[0]))
       m.value.metadata.event.action = transferEventAction.REJECT
       Util.proceed.returns(true)
 
@@ -668,6 +677,52 @@ Test('Position handler', transferHandlerTest => {
         test.pass('Error thrown' + e)
         test.end()
       }
+    })
+
+    positionsTest.test('update transferStateChange for BULK_PREPARE prepare when single message', async (test) => {
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Util.transformGeneralTopicName.returns(topicName)
+      Util.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.resolves(true)
+      PositionService.calculatePreparePositionsBatch.returns({
+        preparedMessagesList: [{
+          transferState: { transferStateId: 'RESERVED' },
+          rawMessage: {}
+        }],
+        limitAlarms: []
+      })
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      m.value.metadata.event.action = transferEventAction.BULK_PREPARE
+      Util.proceed.returns(true)
+
+      const result = await allTransferHandlers.positions(null, Object.assign({}, m))
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('update transferStateChange for BULK_COMMIT received-fulfil when single', async (test) => {
+      const isIncrease = false
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId: TransferState.COMMITTED
+      }
+
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Util.transformGeneralTopicName.returns(topicName)
+      Util.getKafkaConfig.returns(config)
+
+      let m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      TransferStateChange.saveTransferStateChange.resolves(true)
+      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
+      m.value.metadata.event.action = transferEventAction.BULK_COMMIT
+      Util.proceed.returns(true)
+
+      const result = await allTransferHandlers.positions(null, m)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
     })
 
     positionsTest.test('Throw error when invalid action is received', async (test) => {

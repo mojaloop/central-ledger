@@ -29,7 +29,7 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../src/lib/time')
 
-const execDelayPerc = 1.2
+const execDelayCoef = 1.5
 
 Test('Time', async (timeTest) => {
   let sandbox
@@ -55,7 +55,7 @@ Test('Time', async (timeTest) => {
       const start = new Date()
       Model.sleep()
       const delay = new Date() - start
-      test.ok(defaultDelay <= delay && delay <= defaultDelay * execDelayPerc, `pause script execution by default delay of ${defaultDelay} ms`)
+      test.ok(defaultDelay <= delay && delay <= defaultDelay * execDelayCoef, `pa4se script execution by default delay of ${defaultDelay} ms`)
       test.end()
     } catch (err) {
       Logger.error(`sleep failed with error - ${err}`)
@@ -72,7 +72,7 @@ Test('Time', async (timeTest) => {
       const start = new Date()
       Model.sleep(testDelay, debug)
       const delay = new Date() - start
-      test.ok(testDelay <= delay && delay <= testDelay * execDelayPerc, `pause script execution with given delay of ${testDelay} ms in debug mode`)
+      test.ok(testDelay <= delay && delay <= testDelay * execDelayCoef, `pa4se script execution with given delay of ${testDelay} ms in debug mode`)
       test.end()
     } catch (err) {
       Logger.error(`sleep failed with error - ${err}`)
@@ -91,7 +91,7 @@ Test('Time', async (timeTest) => {
       const start = new Date()
       Model.sleep(testDelay, debug, caller, reason)
       const delay = new Date() - start
-      test.ok(testDelay <= delay && delay <= testDelay * execDelayPerc, `pause script execution with given delay of ${testDelay} ms in debug mode with caller and reason`)
+      test.ok(testDelay <= delay && delay <= testDelay * execDelayCoef, `pa4se script execution with given delay of ${testDelay} ms in debug mode with caller and reason`)
       test.end()
     } catch (err) {
       Logger.error(`sleep failed with error - ${err}`)

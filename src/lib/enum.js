@@ -471,9 +471,9 @@ module.exports = {
   transferParticipantRoleType,
   transferState,
   transferStateEnum,
-  BulkProcessingState,
-  BulkTransferState,
-  BulkTransferStateEnum,
+  bulkProcessingState,
+  bulkTransferState,
+  bulkTransferStateEnum,
   all,
   transpose,
 
@@ -484,6 +484,9 @@ module.exports = {
   TransferParticipantRoleType,
   TransferState,
   TransferStateEnum,
+  BulkProcessingState,
+  BulkTransferState,
+  BulkTransferStateEnum,
 
   transferEventState,
   transferEventType,
