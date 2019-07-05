@@ -85,38 +85,6 @@ Test('Root', rootHandlerTest => {
       test.end()
     })
 
-    // handlerTest.test('detailed health check fails if sub-service is DOWN', async function (test) {
-    //   // Arrange
-    //   sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
-    //   sandbox.stub(Kafka.Consumer, 'getListOfTopics').returns(['admin'])
-    //   sandbox.stub(Kafka.Consumer, 'isConnected').returns(P.reject()) // Kafka will be down
-    //   const schema = {
-    //     status: Joi.string().valid('DOWN').required(),
-    //     uptime: Joi.number().required(),
-    //     startTime: Joi.date().iso().required(),
-    //     versionNumber: Joi.string().required(),
-    //     services: Joi.array().required()
-    //   }
-    //   const expectedStatus = 502
-    //   const expectedServices = [
-    //     { name: 'datastore', status: 'OK' },
-    //     { name: 'broker', status: 'DOWN' }
-    //   ]
-
-    //   // Act
-    //   const {
-    //     responseBody,
-    //     responseCode
-    //   } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { detailed: true } }), reply))
-
-    //   // Assert
-    //   const validationResult = Joi.validate(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
-    //   test.equal(validationResult.error, null, 'The response matches the validation schema')
-    //   test.deepEqual(responseCode, expectedStatus, 'The response code matches')
-    //   test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
-    //   test.end()
-    // })
-
     handlerTest.end()
   })
 

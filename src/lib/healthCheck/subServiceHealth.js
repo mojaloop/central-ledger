@@ -24,7 +24,6 @@
  ******/
 'use strict'
 
-// const mongoose = require('mongoose')
 const { statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Kafka = require('../../handlers/lib/kafka')
