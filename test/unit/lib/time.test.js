@@ -89,7 +89,10 @@ Test('Time', async (timeTest) => {
       const start = new Date()
       await Model.sleep(testSleepTime, debug, caller, reason)
       const end = new Date()
-      test.ok(end - start - testSleepTime < 10, 'pause script execution with given testSleepTime in debug mode with caller and reason')
+      const diff = end - start - testSleepTime
+      console.log('diff is', diff)
+
+      test.ok(diff < 15, 'pause script execution with given testSleepTime in debug mode with caller and reason')
       test.end()
     } catch (err) {
       Logger.error(`sleep failed with error - ${err}`)
