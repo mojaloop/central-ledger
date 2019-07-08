@@ -114,12 +114,13 @@ const fulfil = {
 }
 
 const messageProtocol = {
-  id: transfer.transferId,
+  id: Uuid(),
   from: transfer.payerFsp,
   to: transfer.payeeFsp,
   type: 'application/json',
   content: {
     headers: { 'fspiop-destination': transfer.payerFsp },
+    uriParams: { id: transfer.transferId },
     payload: transfer
   },
   metadata: {
@@ -137,12 +138,21 @@ const messageProtocol = {
   pp: ''
 }
 
+let messageProtocolBulkPrepare = MainUtil.clone(messageProtocol)
+messageProtocolBulkPrepare.metadata.event.action = 'bulk-prepare'
+let messageProtocolBulkCommit = MainUtil.clone(messageProtocol)
+messageProtocolBulkCommit.metadata.event.action = 'bulk-commit'
+
 const topicName = 'topic-test'
 
 const messages = [
   {
     topic: topicName,
     value: messageProtocol
+  },
+  {
+    topic: topicName,
+    value: messageProtocolBulkPrepare
   }
 ]
 
@@ -152,6 +162,7 @@ const fulfilMessages = [
     value: Object.assign({}, messageProtocol, {
       content: {
         payload: fulfil,
+        uriParams: { id: messageProtocol.content.uriParams.id },
         headers: {
           'fspiop-source': 'dfsp1',
           'fspiop-destination': 'dfsp2'
@@ -161,6 +172,25 @@ const fulfilMessages = [
         event: {
           type: 'fulfil',
           action: 'commit'
+        }
+      }
+    })
+  },
+  {
+    topic: topicName,
+    value: Object.assign({}, messageProtocolBulkCommit, {
+      content: {
+        payload: fulfil,
+        uriParams: { id: messageProtocolBulkCommit.content.uriParams.id },
+        headers: {
+          'fspiop-source': 'dfsp1',
+          'fspiop-destination': 'dfsp2'
+        }
+      },
+      metadata: {
+        event: {
+          type: 'fulfil',
+          action: 'bulk-commit'
         }
       }
     })
@@ -499,6 +529,24 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    prepareTest.test('persist transfer to database when BULK_PREPARE single message sent', async (test) => {
+      let localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Util.transformAccountToTopicName.returns(topicName)
+      Util.proceed.returns(true)
+      Validator.validateByName.returns({ validationPassed: true, reasons: [] })
+      TransferService.getById.returns(P.resolve(null))
+      TransferService.prepare.returns(P.resolve(true))
+      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        existsMatching: false,
+        existsNotMatching: false
+      }))
+      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      const result = await allTransferHandlers.prepare(null, localMessages[1])
+      test.equal(result, true)
+      test.end()
+    })
+
     prepareTest.test('persist transfer to database when single message sent - autocommit is enabled', async (test) => {
       let localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
@@ -518,7 +566,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('persist transfer to database when single message sent -kafka autocommit enabled', async (test) => {
+    prepareTest.test('persist transfer to database when single message sent - kafka autocommit enabled', async (test) => {
       let localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Util.transformAccountToTopicName.returns(topicName)
@@ -554,7 +602,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('send notification when validation successful but duplicate error thrown by prepare -kafka autocommit enabled', async (test) => {
+    prepareTest.test('send notification when validation successful but duplicate error thrown by prepare - kafka autocommit enabled', async (test) => {
       let localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -630,7 +678,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('send notification when validation failed and duplicate error thrown by prepare -kafka autocommit enabled', async (test) => {
+    prepareTest.test('send notification when validation failed and duplicate error thrown by prepare - kafka autocommit enabled', async (test) => {
       let localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, configAutocommit, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -1046,6 +1094,24 @@ Test('Transfer handler', transferHandlerTest => {
       Util.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('produce message to position topic when BULK_COMMIT validations pass', async (test) => {
+      let localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Util.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RESERVED }))
+      TransferService.validateDuplicateHash.returns(P.resolve({}))
+      ilp.update.returns(P.resolve())
+      Validator.validateFulfilCondition.returns(true)
+      Util.createPrepareErrorStatus.returns(fulfilMessages[1].value.content.payload)
+      localfulfilMessages[1].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[1].value.content.payload.fulfilment = 'condition'
+      Util.proceed.returns(true)
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages[1])
       test.equal(result, true)
       test.end()
     })

@@ -43,6 +43,7 @@ const KafkaProducer = require('@mojaloop/central-services-stream').Kafka.Produce
 const Proxyquire = require('proxyquire')
 const Utility = require('../../../../src/handlers/lib/utility')
 const Enum = require('../../../../src/lib/enum')
+const MainUtil = require('../../../../src/lib/util')
 
 let participantName
 const TRANSFER = 'transfer'
@@ -493,7 +494,7 @@ Test('Utility Test', utilityTest => {
         const result = await UtilityProxy.proceed(params, opts)
         const p = producer
         test.ok(commitMessageSyncStub.calledOnce, 'commitMessageSyncStub called once')
-        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState, message.value.content.headers['fspiop-destination']).calledOnce, 'produceGeneralMessageStub called once')
+        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState).calledOnce, 'produceGeneralMessageStub called once')
         test.equal(result, true, 'result returned')
       } catch (err) {
         test.fail(err.message)
@@ -507,7 +508,7 @@ Test('Utility Test', utilityTest => {
       try {
         const result = await UtilityProxy.proceed(params, opts)
         const p = producer
-        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState, transferId).calledOnce, 'produceGeneralMessageStub called once')
+        test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState).calledTwice, 'produceGeneralMessageStub called twice')
         test.equal(message.value.to, from, 'message destination set to sender')
         test.equal(message.value.from, Enum.headers.FSPIOP.SWITCH, 'from set to switch')
         test.equal(histTimerEndStub.callCount, 0, 'timer running')
@@ -529,6 +530,26 @@ Test('Utility Test', utilityTest => {
         test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')
         test.ok(createStateStub.withArgs(failureStatus, code, desc).calledOnce, 'createStateStub called once')
         test.ok(histTimerEndStub.calledOnce, 'histTimerEndStub called once')
+        test.equal(result, true, 'result returned')
+      } catch (err) {
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    proceedTest.test('create error status and end timer with uriParams', async test => {
+      const code = '1'
+      const desc = 'desc'
+      const errorInformation = { errorCode: code, errorDescription: desc }
+      const opts = { errorInformation, histTimerEnd: histTimerEndStub }
+      try {
+        let localParams = MainUtil.clone(params)
+        localParams.message.value.content.uriParams = { id: Uuid() }
+        const result = await UtilityProxy.proceed(localParams, opts)
+        test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')
+        test.ok(createStateStub.withArgs(failureStatus, code, desc).calledTwice, 'createStateStub called twice')
+        test.ok(histTimerEndStub.calledTwice, 'histTimerEndStub called twice')
         test.equal(result, true, 'result returned')
       } catch (err) {
         test.fail(err.message)

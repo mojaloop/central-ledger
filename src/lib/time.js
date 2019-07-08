@@ -1,6 +1,6 @@
 'use strict'
 
-const sleep = (milliseconds = 1000, debug = false, caller = null, reason = null) => {
+const sleep = (milliseconds = 10, debug = false, caller = null, reason = null) => {
   let start = new Date().getTime()
   if (debug) {
     let output = caller ? `(${caller}) ` : ''

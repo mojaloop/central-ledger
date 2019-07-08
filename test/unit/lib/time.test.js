@@ -29,6 +29,8 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../src/lib/time')
 
+const execDelayCoef = 1.5
+
 Test('Time', async (timeTest) => {
   let sandbox
   let clock
@@ -46,14 +48,14 @@ Test('Time', async (timeTest) => {
     t.end()
   })
 
-  await timeTest.test('sleep should', async (test) => {
+  timeTest.test('sleep should', (test) => {
     try {
-      let defaultSleepTime = 1000
+      let defaultDelay = 10
       clock.restore()
       const start = new Date()
-      await Model.sleep()
-      const end = new Date()
-      test.ok(end - start - defaultSleepTime < 10, 'pause script execution with default (1000) milliseconds')
+      Model.sleep()
+      const delay = new Date() - start
+      test.ok(defaultDelay <= delay && delay <= defaultDelay * execDelayCoef, `pa4se script execution by default delay of ${defaultDelay} ms`)
       test.end()
     } catch (err) {
       Logger.error(`sleep failed with error - ${err}`)
@@ -62,15 +64,15 @@ Test('Time', async (timeTest) => {
     }
   })
 
-  await timeTest.test('sleep should', async (test) => {
+  timeTest.test('sleep should', (test) => {
     try {
-      let testSleepTime = 100
+      let testDelay = 20
       let debug = true
       clock.restore()
       const start = new Date()
-      await Model.sleep(testSleepTime, debug)
-      const end = new Date()
-      test.ok(end - start >= testSleepTime, 'pause script execution with given testSleepTime in debug mode')
+      Model.sleep(testDelay, debug)
+      const delay = new Date() - start
+      test.ok(testDelay <= delay && delay <= testDelay * execDelayCoef, `pa4se script execution with given delay of ${testDelay} ms in debug mode`)
       test.end()
     } catch (err) {
       Logger.error(`sleep failed with error - ${err}`)
@@ -79,17 +81,17 @@ Test('Time', async (timeTest) => {
     }
   })
 
-  await timeTest.test('sleep should', async (test) => {
+  timeTest.test('sleep should', (test) => {
     try {
-      let testSleepTime = 100
+      let testDelay = 20
       let debug = true
       let caller = 'time.test.js'
       let reason = 'testing'
       clock.restore()
       const start = new Date()
-      await Model.sleep(testSleepTime, debug, caller, reason)
-      const end = new Date()
-      test.ok(end - start - testSleepTime < 10, 'pause script execution with given testSleepTime in debug mode with caller and reason')
+      Model.sleep(testDelay, debug, caller, reason)
+      const delay = new Date() - start
+      test.ok(testDelay <= delay && delay <= testDelay * execDelayCoef, `pa4se script execution with given delay of ${testDelay} ms in debug mode with caller and reason`)
       test.end()
     } catch (err) {
       Logger.error(`sleep failed with error - ${err}`)
