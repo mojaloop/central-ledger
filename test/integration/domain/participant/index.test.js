@@ -174,9 +174,9 @@ Test('Participant service', async (participantTest) => {
       let participant = participantFixtures[0]
       let result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.endpointBase}/transfers`)
       endpointsFixtures.push(result)
-      result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.endpointBase}/transfers/{{id}}`)
+      result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.endpointBase}/transfers/{{transferId}}`)
       endpointsFixtures.push(result)
-      result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${testData.endpointBase}/transfers/{{id}}/error`)
+      result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${testData.endpointBase}/transfers/{{transferId}}/error`)
       endpointsFixtures.push(result)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${testData.endpointBase}/bulkTransfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${testData.endpointBase}/bulkTransfers/{{id}}`)
@@ -192,8 +192,8 @@ Test('Participant service', async (participantTest) => {
       })
       participant = participantFixtures[1]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.endpointBase}/transfers`)
-      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.endpointBase}/transfers/{{id}}`)
-      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${testData.endpointBase}/transfers/{{id}}/error`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.endpointBase}/transfers/{{transferId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${testData.endpointBase}/transfers/{{transferId}}/error`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${testData.endpointBase}/bulkTransfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${testData.endpointBase}/bulkTransfers/{{id}}`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${testData.endpointBase}/bulkTransfers/{{id}}/error`)

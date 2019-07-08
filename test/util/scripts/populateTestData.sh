@@ -174,7 +174,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers/{{id}}\"
+    \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -183,7 +183,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_ERROR\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers/{{id}}/error\"
+    \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}/error\"
   }'"
 
   echo

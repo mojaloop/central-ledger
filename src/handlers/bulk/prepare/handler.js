@@ -29,7 +29,6 @@
 'use strict'
 
 const AwaitifyStream = require('awaitify-stream')
-const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('../../lib/utility')
@@ -48,6 +47,7 @@ const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var o
 const consumerCommit = true
 // const fromSwitch = true
 
+// TODO: move to a factory function
 const prepareHandlerMessageProtocol = {
   value: {
     id: null,
@@ -60,7 +60,7 @@ const prepareHandlerMessageProtocol = {
     },
     metadata: {
       event: {
-        id: Uuid(),
+        id: null,
         responseTo: null,
         type: 'transfer',
         action: 'bulk-prepare',

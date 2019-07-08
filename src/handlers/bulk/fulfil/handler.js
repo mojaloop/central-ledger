@@ -28,7 +28,6 @@
 'use strict'
 
 const AwaitifyStream = require('awaitify-stream')
-const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('../../lib/utility')
@@ -47,6 +46,7 @@ const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var ob
 const consumerCommit = true
 // const fromSwitch = true
 
+// TODO: move to a factory function
 const fulfilHandlerMessageProtocol = {
   value: {
     id: null,
@@ -60,7 +60,7 @@ const fulfilHandlerMessageProtocol = {
     },
     metadata: {
       event: {
-        id: Uuid(),
+        id: null,
         type: 'fulfil',
         action: 'commit', // TODO: switch to 'bulk-fulfil' flow
         createdAt: null,
