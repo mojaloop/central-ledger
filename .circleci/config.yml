@@ -147,10 +147,10 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - run:
           <<: *defaults_environment
       - run:
@@ -174,10 +174,10 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - run:
           <<: *defaults_environment
       - restore_cache:
@@ -202,10 +202,10 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - run:
           <<: *defaults_environment
       - run:
