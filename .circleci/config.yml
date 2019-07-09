@@ -147,10 +147,10 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - run:
           <<: *defaults_environment
       - run:
@@ -174,10 +174,10 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - run:
           <<: *defaults_environment
       - restore_cache:
@@ -202,10 +202,10 @@ jobs:
     <<: *defaults_working_directory
     <<: *defaults_docker_node
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - run:
           <<: *defaults_environment
       - run:
@@ -228,7 +228,7 @@ jobs:
             if [ "${CIRCLE_BRANCH}" == "master" ];
             then
                 echo "Sending lcov.info to SonarQube..."
-                aws s3 cp coverage/lcov.info $AWS_S3_DIR_SONARQUBE/central-ledger/lcov.info
+                aws s3 cp coverage/lcov.info $AWS_S3_DIR_SONARQUBE/$CIRCLE_PROJECT_REPONAME/lcov.info
             else
                 echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube."
             fi

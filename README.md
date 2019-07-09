@@ -63,8 +63,8 @@ Tests include unit, functional, and integration.
 
 Running the tests:
 
-
+```bash
     npm run test:all
-
+```
 
 Tests include code coverage via istanbul. See the test/ folder for testing scripts.
