@@ -28,6 +28,8 @@
  --------------
  ******/
 'use strict'
+const Handler = require('./handler')
+
 const tags = ['api', 'root']
 
 module.exports = [
