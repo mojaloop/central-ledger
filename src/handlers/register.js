@@ -23,10 +23,11 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Lazola Lucas <lazola.lucas@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Lazola Lucas <lazola.lucas@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/
@@ -51,7 +52,7 @@ const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
-const BulkPrepareHandlers = require('./bulk/prepare/handler')
+const BulkHandlers = require('./bulk')
 
 const registerAllHandlers = async () => {
   try {
@@ -98,6 +99,8 @@ module.exports = {
     registerAdminHandlers: AdminHandlers.registerAllHandlers
   },
   bulk: {
-    registerBulkHandlers: BulkPrepareHandlers.registerAllHandlers
+    registerBulkPrepareHandler: BulkHandlers.registerBulkPrepareHandler,
+    registerBulkFulfilHandler: BulkHandlers.registerBulkFulfilHandler,
+    registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler
   }
 }

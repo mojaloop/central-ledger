@@ -23,9 +23,10 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/
@@ -187,6 +188,15 @@ const createHandlers = async (handlers) => {
           break
         case 'get':
           await RegisterHandlers.transfers.registerGetHandler()
+          break
+        case 'bulkprepare':
+          await RegisterHandlers.bulk.registerBulkPrepareHandler()
+          break
+        case 'bulkfulfil':
+          await RegisterHandlers.bulk.registerFulfilHandler()
+          break
+        case 'bulkprocessing':
+          await RegisterHandlers.bulk.registerBulkProcessingHandler()
           break
         default:
           let error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`

@@ -265,5 +265,6 @@ const registerAllHandlers = async () => {
 
 module.exports = {
   bulkFulfil,
+  registerBulkFulfilHandler,
   registerAllHandlers
 }

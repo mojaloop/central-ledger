@@ -360,5 +360,6 @@ const registerAllHandlers = async () => {
 
 module.exports = {
   bulkProcessing,
+  registerBulkProcessingHandler,
   registerAllHandlers
 }
