@@ -51,16 +51,16 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const Errors = require('../../lib/errors')
+const errorType = Errors.errorType
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 const decodeMessages = require('@mojaloop/central-services-stream').Kafka.Protocol.decodeMessages
 const errorTransferExpCode = 3300
 const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
 
-const errorType = Errors.errorType
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
+
 const consumerCommit = true
 const fromSwitch = true
-// const toDestination = true
 
 /**
  * @function positions
@@ -98,10 +98,10 @@ const positions = async (error, messages) => {
       prepareBatch = [Object.assign({}, MainUtil.clone(messages))]
       message = Object.assign({}, messages)
     }
-    const eventType = message.value.metadata.event.type
     const payload = decodePayload(message.value.content.payload)
+    const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
-    const transferId = message.value.id
+    const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
@@ -118,11 +118,18 @@ const positions = async (error, messages) => {
         : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
           : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
             : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
-              : Enum.actionLetter.unknown))))
-    let params = { message, transferId, kafkaTopic, consumer }
-    let producer = { functionality: TransferEventType.NOTIFICATION, action }
+              : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
+                : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
+                  : Enum.actionLetter.unknown))))))
+    let params = { message, kafkaTopic, consumer }
+    let producer = { action }
+    if (![TransferEventAction.BULK_PREPARE, TransferEventAction.BULK_COMMIT].includes(action)) {
+      producer.functionality = TransferEventType.NOTIFICATION
+    } else {
+      producer.functionality = TransferEventType.BULK_PROCESSING
+    }
 
-    if (eventType === TransferEventType.POSITION && action === TransferEventAction.PREPARE) {
+    if (eventType === TransferEventType.POSITION && [TransferEventAction.PREPARE, TransferEventAction.BULK_PREPARE].includes(action)) {
       Logger.info(Util.breadcrumb(location, { path: 'prepare' }))
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
       for (let limit of limitAlarms) {
@@ -141,7 +148,7 @@ const positions = async (error, messages) => {
           return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
         }
       }
-    } else if (eventType === TransferEventType.POSITION && action === TransferEventAction.COMMIT) {
+    } else if (eventType === TransferEventType.POSITION && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
       Logger.info(Util.breadcrumb(location, { path: 'commit' }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
@@ -200,9 +207,10 @@ const positions = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer })
       }
     } else {
-      Logger.error(Util.breadcrumb(location, { path: `invalidEventTypeOrAction--${action}8` }))
-      await Util.commitMessageSync(kafkaTopic, consumer, message)
-      throw new Error(Util.breadcrumb(location))
+      Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
+      const errorInformation = Errors.getErrorInformation(errorType.internal)
+      const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.POSITION }
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--0`)

@@ -27,10 +27,9 @@
 
  --------------
  ******/
-
 'use strict'
-const Config = require('./config')
 
+const Config = require('./config')
 const Db = require('./db')
 
 const endpointType = async function () {
@@ -117,6 +116,39 @@ const transferStateEnum = async function () {
     throw err
   }
 }
+const bulkProcessingState = async function () {
+  try {
+    let bulkProcessingState = {}
+    for (let record of await Db.bulkProcessingState.find({})) {
+      bulkProcessingState[`${record.name}`] = record.bulkProcessingStateId
+    }
+    return bulkProcessingState
+  } catch (err) {
+    throw err
+  }
+}
+const bulkTransferState = async function () {
+  try {
+    let bulkTransferState = {}
+    for (let record of await Db.bulkTransferState.find({})) {
+      bulkTransferState[`${record.bulkTransferStateId}`] = record.bulkTransferStateId
+    }
+    return bulkTransferState
+  } catch (err) {
+    throw err
+  }
+}
+const bulkTransferStateEnum = async function () {
+  try {
+    let bulkTransferStateEnum = {}
+    for (let record of await Db.bulkTransferState.find({})) {
+      bulkTransferStateEnum[`${record.bulkTransferStateId}`] = record.enumeration
+    }
+    return bulkTransferStateEnum
+  } catch (err) {
+    throw err
+  }
+}
 const all = async function () {
   try {
     return {
@@ -127,7 +159,10 @@ const all = async function () {
       participantLimitType: await participantLimitType(),
       transferParticipantRoleType: await transferParticipantRoleType(),
       transferState: await transferState(),
-      transferStateEnum: await transferStateEnum()
+      transferStateEnum: await transferStateEnum(),
+      bulkProcessingState: await bulkProcessingState(),
+      bulkTransferState: await bulkTransferState(),
+      bulkTransferStateEnum: await bulkTransferStateEnum()
     }
   } catch (err) {
     throw err
@@ -193,43 +228,91 @@ const TransferState = {
   RESERVED: 'RESERVED',
   RESERVED_TIMEOUT: 'RESERVED_TIMEOUT'
 }
-
 const TransferStateEnum = {
   RECEIVED: 'RECEIVED',
   ABORTED: 'ABORTED',
   COMMITTED: 'COMMITTED',
   RESERVED: 'RESERVED'
 }
+const BulkProcessingState = {
+  RECEIVED: 1,
+  RECEIVED_DUPLICATE: 2,
+  RECEIVED_INVALID: 3,
+  ACCEPTED: 4,
+  PROCESSING: 5,
+  FULFIL_DUPLICATE: 6,
+  FULFIL_INVALID: 7,
+  COMPLETED: 8,
+  REJECTED: 9,
+  EXPIRED: 10
+}
+const BulkTransferState = {
+  ACCEPTED: 'ACCEPTED',
+  COMPLETED: 'COMPLETED',
+  INVALID: 'INVALID',
+  PENDING_FULFIL: 'PENDING_FULFIL',
+  PENDING_INVALID: 'PENDING_INVALID',
+  PENDING_PREPARE: 'PENDING_PREPARE',
+  PROCESSING: 'PROCESSING',
+  RECEIVED: 'RECEIVED',
+  REJECTED: 'REJECTED'
+}
+const BulkTransferStateEnum = {
+  ACCEPTED: 'ACCEPTED',
+  COMPLETED: 'COMPLETED',
+  INVALID: 'REJECTED',
+  PENDING_FULFIL: 'PROCESSING',
+  PENDING_INVALID: 'PENDING',
+  PENDING_PREPARE: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  RECEIVED: 'RECEIVED',
+  REJECTED: 'REJECTED'
+}
 
 // Code specific (non-DB) enumerations sorted alphabetically
+const transferEventState = {
+  SUCCESS: 'success',
+  ERROR: 'error'
+}
 const transferEventType = {
-  PREPARE: 'prepare',
-  POSITION: 'position',
-  TRANSFER: 'transfer',
-  FULFIL: 'fulfil',
-  NOTIFICATION: 'notification',
   ADMIN: 'admin',
-  GET: 'get'
+  BULK: 'bulk',
+  BULK_TRANSFER: 'bulk-transfer',
+  BULK_PROCESSING: 'bulk-processing',
+  FULFIL: 'fulfil',
+  GET: 'get',
+  NOTIFICATION: 'notification',
+  POSITION: 'position',
+  PREPARE: 'prepare',
+  TRANSFER: 'transfer'
 }
 const transferEventAction = {
+  ABORT: 'abort',
+  ABORT_DUPLICATE: 'abort-duplicate',
+  // BULK_FULFIL: 'bulk-fulfil',
+  BULK_COMMIT: 'bulk-commit',
+  BULK_PREPARE: 'bulk-prepare',
+  BULK_PROCESSING: 'bulk-processing',
+  COMMIT: 'commit',
+  EVENT: 'event',
+  FAIL: 'fail',
+  FULFIL: 'fulfil',
+  FULFIL_DUPLICATE: 'fulfil-duplicate',
+  GET: 'get',
+  POSITION: 'position',
   PREPARE: 'prepare',
   PREPARE_DUPLICATE: 'prepare-duplicate',
-  FULFIL_DUPLICATE: 'fulfil-duplicate',
-  ABORT_DUPLICATE: 'abort-duplicate',
-  TRANSFER: 'transfer',
-  COMMIT: 'commit',
-  ABORT: 'abort',
+  PROCESSING: 'processing',
+  REJECT: 'reject',
   TIMEOUT_RECEIVED: 'timeout-received',
   TIMEOUT_RESERVED: 'timeout-reserved',
-  REJECT: 'reject',
-  FAIL: 'fail',
-  EVENT: 'event',
-  FULFIL: 'fulfil',
-  POSITION: 'position',
-  GET: 'get'
+  TRANSFER: 'transfer'
 }
 const actionLetter = {
   abort: 'A',
+  bulkPrepare: 'BP',
+  // bulkFulfil: 'BF',
+  bulkCommit: 'BC',
   commit: 'C',
   get: 'G',
   prepare: 'P',
@@ -248,15 +331,6 @@ const adminNotificationActions = {
   LIMIT_ADJUSTMENT: 'limit-adjustment'
 }
 
-const rejectionType = {
-  EXPIRED: 'expired',
-  CANCELLED: 'cancelled'
-}
-const transferEventStatus = {
-  SUCCESS: 'success',
-  FAILED: 'failed'
-}
-
 const headers = {
   FSPIOP: {
     DESTINATION: 'fspiop-destination',
@@ -265,8 +339,94 @@ const headers = {
   }
 }
 
+const rejectionType = {
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled'
+}
+
+const transferEventStatus = {
+  SUCCESS: 'success',
+  FAILED: 'failed'
+}
+
 const topicMap = {
+  'bulk-processing': {
+    'bulk-commit': {
+      functionality: transferEventType.BULK,
+      action: transferEventAction.PROCESSING
+    },
+    'bulk-prepare': {
+      functionality: transferEventType.BULK,
+      action: transferEventAction.PROCESSING
+    }
+  },
+  notification: {
+    'abort': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'abort-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'bulk-commit': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'bulk-prepare': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'bulk-processing': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'commit': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'fulfil-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'get': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'limit-adjustment': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'position': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'prepare': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'prepare-duplicate': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'reject': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    },
+    'timeout-received': {
+      functionality: transferEventType.NOTIFICATION,
+      action: transferEventAction.EVENT
+    }
+  },
   position: {
+    'bulk-commit': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
+    },
+    'bulk-prepare': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.POSITION
+    },
     'prepare': {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
@@ -288,46 +448,16 @@ const topicMap = {
       action: transferEventAction.POSITION
     }
   },
-  notification: {
-    'prepare': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'prepare-duplicate': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'fulfil-duplicate': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'abort-duplicate': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'commit': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'abort': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'timeout-received': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'reject': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'get': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
-    },
-    'limit-adjustment': {
-      functionality: transferEventType.NOTIFICATION,
-      action: transferEventAction.EVENT
+  prepare: {
+    'bulk-prepare': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.PREPARE
+    }
+  },
+  fulfil: {
+    'bulk-commit': {
+      functionality: transferEventType.TRANSFER,
+      action: transferEventAction.FULFIL
     }
   }
 }
@@ -341,6 +471,9 @@ module.exports = {
   transferParticipantRoleType,
   transferState,
   transferStateEnum,
+  bulkProcessingState,
+  bulkTransferState,
+  bulkTransferStateEnum,
   all,
   transpose,
 
@@ -351,7 +484,11 @@ module.exports = {
   TransferParticipantRoleType,
   TransferState,
   TransferStateEnum,
+  BulkProcessingState,
+  BulkTransferState,
+  BulkTransferStateEnum,
 
+  transferEventState,
   transferEventType,
   transferEventAction,
   actionLetter,

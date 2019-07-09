@@ -48,13 +48,12 @@ const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Errors = require('../../lib/errors')
+const errorType = Errors.errorType
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 
-const errorType = Errors.errorType
-const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
 const consumerCommit = true
 const fromSwitch = true
 const toDestination = true
@@ -82,6 +81,7 @@ const toDestination = true
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const prepare = async (error, messages) => {
+  const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
   const histTimerEnd = Metrics.getHistogram(
     'transfer_prepare',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',
@@ -98,7 +98,6 @@ const prepare = async (error, messages) => {
     } else {
       message = messages
     }
-    // decode payload
     const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
@@ -114,8 +113,10 @@ const prepare = async (error, messages) => {
       histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
-    const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare : Enum.actionLetter.unknown
-    let params = { message, transferId, kafkaTopic, consumer }
+    const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare
+      : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
+        : Enum.actionLetter.unknown)
+    let params = { message, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
@@ -160,7 +161,7 @@ const prepare = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       }
       Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}6`))
-      const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.PREPARE }
+      const producer = { functionality: TransferEventType.POSITION, action }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
     } else {
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
@@ -188,6 +189,7 @@ const prepare = async (error, messages) => {
 }
 
 const fulfil = async (error, messages) => {
+  const location = { module: 'FulfilHandler', method: '', path: '' } // var object used as pointer
   const histTimerEnd = Metrics.getHistogram(
     'transfer_fulfil',
     'Consume a fulfil transfer message from the kafka topic and process it accordingly',
@@ -207,7 +209,7 @@ const fulfil = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
-    const transferId = message.value.id
+    const transferId = message.value.content.uriParams.id
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
@@ -222,7 +224,8 @@ const fulfil = async (error, messages) => {
     const actionLetter = action === TransferEventAction.COMMIT ? Enum.actionLetter.commit
       : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
         : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
-          : Enum.actionLetter.unknown))
+          : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
+            : Enum.actionLetter.unknown)))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const transferFulfilmentId = Uuid()
@@ -293,7 +296,7 @@ const fulfil = async (error, messages) => {
       }
     }
 
-    if (message.value.metadata.event.type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT].includes(action)) {
+    if (message.value.metadata.event.type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
       const existingTransfer = await TransferService.getById(transferId)
       Util.breadcrumb(location, { path: 'validationFailed' })
       if (!existingTransfer) {
@@ -328,10 +331,10 @@ const fulfil = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else { // validations success
         Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-        if (action === TransferEventAction.COMMIT) {
+        if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
           Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
           await TransferService.fulfil(transferFulfilmentId, transferId, payload)
-          const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.COMMIT }
+          const producer = { functionality: TransferEventType.POSITION, action }
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         } else {
           if (action === TransferEventAction.REJECT) {
@@ -372,6 +375,7 @@ const fulfil = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const getTransfer = async (error, messages) => {
+  const location = { module: 'GetTransferHandler', method: '', path: '' } // var object used as pointer
   const histTimerEnd = Metrics.getHistogram(
     'transfer_get',
     'Consume a get transfer message from the kafka topic and process it accordingly',
@@ -390,7 +394,7 @@ const getTransfer = async (error, messages) => {
     }
     const metadata = message.value.metadata
     const action = metadata.event.action
-    const transferId = message.value.id
+    const transferId = message.value.content.uriParams.id
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `getTransfer:${action}` }))
