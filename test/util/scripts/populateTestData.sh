@@ -186,6 +186,33 @@ do
     \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}/error\"
   }'"
 
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST\",
+    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT\",
+    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}\"
+  }'"
+
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR\",
+    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}/error\"
+  }'"
+
   echo
   echo "Retrieving EndPoints for '$FSP'"
   echo "---------------------------------------------------------------------"

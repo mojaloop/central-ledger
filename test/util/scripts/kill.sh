@@ -20,3 +20,5 @@ sh $CWD/killDb.sh ;
 sh $CWD/killKafka-johnnypark.sh;
 
 sh $CWD/killMockServer.sh
+
+sh $CWD/killObjStore.sh

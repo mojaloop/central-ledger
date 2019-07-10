@@ -62,13 +62,17 @@ const connectDatabase = async () => {
   return result
 }
 const connectMongoose = async () => {
-  try {
-    let db = await ObjStoreDb.connect(Config.MONGODB_URI, {
-      promiseLibrary: global.Promise
-    })
-    return db
-  } catch (error) {
-    Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
+  if (!Config.MONGODB_DISABLED) {
+    try {
+      let db = await ObjStoreDb.connect(Config.MONGODB_URI, {
+        promiseLibrary: global.Promise
+      })
+      return db
+    } catch (error) {
+      Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
+      return null
+    }
+  } else {
     return null
   }
 }
@@ -193,7 +197,7 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.bulk.registerBulkPrepareHandler()
           break
         case 'bulkfulfil':
-          await RegisterHandlers.bulk.registerFulfilHandler()
+          await RegisterHandlers.bulk.registerBulkFulfilHandler()
           break
         case 'bulkprocessing':
           await RegisterHandlers.bulk.registerBulkProcessingHandler()

@@ -21,4 +21,6 @@ sh $CWD/restartKafka-johnnypark.sh;
 
 sh $CWD/restartMockServer.sh;
 
+sh $CWD/restartObjStore.sh;
+
 echo
