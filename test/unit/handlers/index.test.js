@@ -58,7 +58,10 @@ Test('cli', async (cliTest) => {
         '--get',
         '--fulfil',
         '--timeout',
-        '--admin'
+        '--admin',
+        '--bulkprepare',
+        '--bulkfulfil',
+        '--bulkprocessing'
       ]
 
       process.argv = argv
@@ -97,13 +100,31 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
+      const bulkprepareHandler = {
+        type: 'bulkprepare',
+        enabled: true
+      }
+
+      const bulkfulfilHandler = {
+        type: 'bulkfulfil',
+        enabled: true
+      }
+
+      const bulkprocessingHandler = {
+        type: 'bulkprocessing',
+        enabled: true
+      }
+
       const modulesList = [
         prepareHandler,
         positionHandler,
         getHandler,
         fulfilHandler,
         timeoutHandler,
-        adminHandler
+        adminHandler,
+        bulkprepareHandler,
+        bulkfulfilHandler,
+        bulkprocessingHandler
         // rejectHandler
       ]
 

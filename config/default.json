@@ -18,6 +18,7 @@
     "POOL_MAX": 30
   },
   "MONGODB": {
+    "DISABLED": false,
     "URI": "mongodb://localhost:27017/mlos"
   },
   "HANDLERS": {
