@@ -109,6 +109,7 @@ Test('setup', setupTest => {
     const ConfigStub = Config
     ConfigStub.HANDLERS_API_DISABLED = false
     ConfigStub.HANDLERS_CRON_DISABLED = false
+    ConfigStub.MONGODB_DISABLED = false
 
     Setup = Proxyquire('../../../src/shared/setup', {
       'uuid4': uuidStub,
@@ -182,12 +183,46 @@ Test('setup', setupTest => {
   })
 
   setupTest.test('initialize should', async (initializeTest) => {
-    initializeTest.test('connect to sidecar', async (test) => {
+    initializeTest.test('connect to Database, Sidecar & ObjStore', async (test) => {
       const service = 'api'
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(databaseUri))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
+        test.ok(SidecarStub.connect.calledWith(service))
+        test.notOk(MigratorStub.migrate.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('connect to Database & Sidecar, but NOT too ObjStore', async (test) => {
+      const ConfigStub = Config
+      ConfigStub.MONGODB_DISABLED = true
+
+      const service = 'api'
+
+      Setup = Proxyquire('../../../src/shared/setup', {
+        'uuid4': uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        'hapi': HapiStub,
+        '../lib/config': ConfigStub
+        // '../handlers/lib/kafka': KafkaCronStub
+      })
+
+      Setup.initialize({ service }).then(s => {
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.notOk(ObjStoreStub.Db.connect.called)
         test.ok(SidecarStub.connect.calledWith(service))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
@@ -360,7 +395,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         'hapi': HapiStub,
-        '../lib/config': Config
+        '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 

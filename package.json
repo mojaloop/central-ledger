@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "7.1.0",
+  "version": "7.1.1",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
