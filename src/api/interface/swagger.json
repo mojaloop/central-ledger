@@ -35,7 +35,7 @@
         "responses": {
           "default": {
             "schema": {
-              "type": "string"
+              "$ref": "#/definitions/health"
             },
             "description": "Successful"
           }
@@ -1449,6 +1449,62 @@
       "required": [
         "reason"
       ]
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "OK",
+            "DOWN"
+          ]
+        },
+        "uptime": {
+          "description": "How long (in seconds) the service has been alive for.",
+          "type": "number"
+        },
+        "started": {
+          "description": "When the service was started (UTC)",
+          "type": "string",
+          "format": "date-time"
+        },
+        "versionNumber": {
+          "description": "The current version of the service.",
+          "type": "string",
+          "example": "5.2.3"
+        },
+        "services": {
+          "description": "A list of services this service depends on, and their connection status",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/serviceHealth"
+          }
+        }
+      }
+    },
+    "serviceHealth": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The sub-service name.",
+          "type": "string",
+          "enum": [
+            "datastore",
+            "broker",
+            "sidecar",
+            "cache"
+          ]
+        },
+        "status": {
+          "description": "The connection status with the service.",
+          "type": "string",
+          "enum": [
+            "OK",
+            "DOWN"
+          ]
+        }
+      }
     }
   }
 }

@@ -25,71 +25,68 @@
 'use strict'
 
 const Test = require('tapes')(require('tape'))
+const Joi = require('joi')
 const Sinon = require('sinon')
 const P = require('bluebird')
 
-const Handler = require('../../../../src/handlers/api/routes')
+const Handler = require('../../../../src/api/root/handler')
 const Kafka = require('../../../../src/handlers/lib/kafka/index')
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
+const {
+  createRequest,
+  unwrapResponse
+} = require('../../../util/helpers')
 
-function createRequest (routes) {
-  let value = routes || []
-  return {
-    server: {
-      table: () => {
-        return [{ table: value }]
-      }
-    }
-  }
-}
-
-Test('route handler', (handlerTest) => {
+Test('Root', rootHandlerTest => {
   let sandbox
 
-  handlerTest.beforeEach(test => {
+  rootHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
 
     test.end()
   })
 
-  handlerTest.afterEach(test => {
+  rootHandlerTest.afterEach(test => {
     sandbox.restore()
 
     test.end()
   })
 
-  handlerTest.test('health should', healthTest => {
-    healthTest.test('return status ok', async assert => {
+  rootHandlerTest.test('Handler Test', async handlerTest => {
+    handlerTest.test('getHealth returns the detailed health check', async function (test) {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
+      sandbox.stub(Kafka.Consumer, 'getListOfTopics').returns(['admin'])
       sandbox.stub(Kafka.Consumer, 'isConnected').returns(P.resolve())
-      const jp = require('jsonpath')
-      const healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
-
-      let reply = {
-        response: (response) => {
-          assert.equal(response.status, 'OK')
-          return {
-            code: (statusCode) => {
-              // Assert
-              assert.equal(statusCode, 200)
-              assert.end()
-            }
-          }
-        }
+      const schema = {
+        status: Joi.string().valid('OK').required(),
+        uptime: Joi.number().required(),
+        startTime: Joi.date().iso().required(),
+        versionNumber: Joi.string().required(),
+        services: Joi.array().required()
       }
+      const expectedStatus = 200
+      const expectedServices = [
+        { name: 'datastore', status: 'OK' },
+        { name: 'broker', status: 'OK' }
+      ]
 
       // Act
-      if (Array.isArray(healthHandler) && healthHandler.length === 1) {
-        healthHandler[0].handler(createRequest(), reply)
-      } else {
-        assert.fail('No health status handler found')
-        assert.end()
-      }
+      const {
+        responseBody,
+        responseCode
+      } = await unwrapResponse((reply) => Handler.getHealth(createRequest({}), reply))
+
+      // Assert
+      const validationResult = Joi.validate(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
+      test.equal(validationResult.error, null, 'The response matches the validation schema')
+      test.deepEqual(responseCode, expectedStatus, 'The response code matches')
+      test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
+      test.end()
     })
 
-    healthTest.end()
+    handlerTest.end()
   })
 
-  handlerTest.end()
+  rootHandlerTest.end()
 })

@@ -23,19 +23,20 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Lewis Daly <lewis@vesselstech.com>
 
  --------------
  ******/
 'use strict'
+const Handler = require('./handler')
+
 const tags = ['api', 'root']
 
 module.exports = [
   {
     method: 'GET',
     path: '/health',
-    handler: function (request, h) {
-      return h.response({ status: 'OK' }).code(200)
-    },
+    handler: Handler.getHealth,
     options: {
       tags
     }

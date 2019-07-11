@@ -49,45 +49,38 @@ let listOfConsumers = {}
  */
 const createHandler = async (topicName, config, command) => {
   Logger.info(`CreateHandle::connect - creating Consumer for topics: [${topicName}]`)
-  let consumer = {}
+
+  let topicNameArray
   if (Array.isArray(topicName)) {
-    consumer = new Consumer(topicName, config)
+    topicNameArray = topicName
   } else {
-    consumer = new Consumer([topicName], config)
+    topicNameArray = [topicName]
   }
 
-  // consumer.on('ready', arg => {
-  //   Logger.debug(`Consumer[${topicName}]::onReady - ${JSON.stringify(arg)}`)
-  // })
-  //
-  // consumer.on('error', error => {
-  //   Logger.error(`Consumer[${topicName}]::onError - ${JSON.stringify(error)}`)
-  // })
+  const consumer = new Consumer(topicNameArray, config)
 
   let autoCommitEnabled = true
   if (config.rdkafkaConf !== undefined && config.rdkafkaConf['enable.auto.commit'] !== undefined) {
     autoCommitEnabled = config.rdkafkaConf['enable.auto.commit']
   }
 
-  await consumer.connect().then(async () => {
-    Logger.info(`CreateHandle::connect - successful connected to topics: [${topicName}]`)
+  let connectedTimeStamp = 0
+  try {
+    await consumer.connect()
+    Logger.info(`CreateHandle::connect - successfuly connected to topics: [${topicNameArray}]`)
+    connectedTimeStamp = (new Date()).valueOf()
     await consumer.consume(command)
-    if (Array.isArray(topicName)) {
-      for (let topic of topicName) { // NOT OK
-        listOfConsumers[topic] = {
-          consumer: consumer,
-          autoCommitEnabled: autoCommitEnabled
-        }
-      }
-    } else {
-      listOfConsumers[topicName] = {
-        consumer: consumer,
-        autoCommitEnabled: autoCommitEnabled
-      }
+  } catch (e) {
+    // Don't throw the error, still keep track of the topic we tried to connect to
+    Logger.warn(`CreateHandle::connect - error: ${e}`)
+  }
+
+  topicNameArray.forEach(topicName => {
+    listOfConsumers[topicName] = {
+      consumer,
+      autoCommitEnabled,
+      connectedTimeStamp
     }
-  }).catch((e) => {
-    Logger.error(`CreateHandle::connect - error: ${e}`)
-    throw e
   })
 }
 
@@ -127,8 +120,60 @@ const isConsumerAutoCommitEnabled = (topicName) => {
   }
 }
 
+/**
+ * @function getListOfTopics
+ *
+ *
+ * @description Get a list of topics that the consumer has subscribed to
+ *
+ * @returns {Array<string>} - list of topics
+ */
+const getListOfTopics = () => {
+  return Object.keys(listOfConsumers)
+}
+
+const getMetadataPromise = (consumer, topic) => {
+  return new Promise((resolve, reject) => {
+    const cb = (err, metadata) => {
+      if (err) {
+        return reject(new Error(`Error connecting to consumer: ${err.message}`))
+      }
+
+      return resolve(metadata)
+    }
+
+    consumer.getMetadata({ topic, timeout: 6000 }, cb)
+  })
+}
+
+/**
+ * @function isConnected
+ *
+ * @param {string} topicName - the topic name of the consumer to check
+ *
+ * @description Use this to determine whether or not we are connected to the broker. Internally, it calls `getMetadata` to determine
+ * if the broker client is connected.
+ *
+ * @returns {true} - if connected
+ * @throws {Error} - if consumer can't be found or the consumer is not connected
+ */
+const isConnected = async topicName => {
+  const consumer = getConsumer(topicName)
+
+  const metadata = await getMetadataPromise(consumer, topicName)
+  const foundTopics = metadata.topics.map(topic => topic.name)
+  if (foundTopics.indexOf(topicName) === -1) {
+    Logger.debug(`Connected to consumer, but ${topicName} not found.`)
+    throw new Error(`Connected to consumer, but ${topicName} not found.`)
+  }
+
+  return true
+}
+
 module.exports = {
   createHandler,
   getConsumer,
-  isConsumerAutoCommitEnabled
+  getListOfTopics,
+  isConsumerAutoCommitEnabled,
+  isConnected
 }
