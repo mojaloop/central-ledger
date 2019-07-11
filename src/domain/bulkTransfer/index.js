@@ -65,6 +65,7 @@ const getBulkTransferById = async (id) => {
     const bulkTransferExtensions = await BulkTransferExtensionModel.getByBulkTransferId(id)
     let individualTransfers = await IndividualTransferModel.getAllById(id)
     const payeeIndividualTransfers = []
+    // TODO: re-factor this to move away from Promises and use async-await
     individualTransfers = await Promise.all(individualTransfers.map(async (transfer) => {
       // eslint-disable-next-line no-async-promise-executor
       return new Promise(async (resolve, reject) => {
