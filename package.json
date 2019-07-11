@@ -1,7 +1,7 @@
 {
   "name": "@mojaloop/central-ledger",
   "version": "7.1.2",
-  "description": "Central ledger hosted by a scheme to record and settle transfers",
+  "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "author": "ModusBox",
   "contributors": [
@@ -26,6 +26,12 @@
       "/migrations/**"
     ]
   },
+  "pre-commit": {
+    "run": [
+      "standard",
+      "test"
+    ]
+  },
   "scripts": {
     "start": "run-p start:api",
     "start:api": "node src/api/index.js",
@@ -33,7 +39,6 @@
     "start:handlers": "node src/handlers/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "test": "npm run test:unit | faucet",
-    "pretest": "standard",
     "standard": "standard",
     "test:unit": "tape 'test/unit/**/*.test.js'",
     "test:int": "tape 'test/integration/**/*.test.js'",

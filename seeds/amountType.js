@@ -34,7 +34,7 @@ Contributors
 const amountType = [
   {
     'name': 'SEND',
-    'description': 'Amount the Payer would like to send; that is, the amount that should be withdrawn from the Payer account including any fees'
+    description: 'Amount the Payer would like to send; that is, the amount that should be withdrawn from the Payer account including any fees'
   },
   {
     'name': 'RECEIVE',
