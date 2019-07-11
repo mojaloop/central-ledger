@@ -25,9 +25,9 @@
 
 const transferStateENUM = require('../../../src/lib/enum').TransferState
 
-let transferStateResult = []
+const transferStateResult = []
 
-for (let transferState of Object.keys(transferStateENUM)) {
+for (const transferState of Object.keys(transferStateENUM)) {
   transferStateResult.push({
     transferStateId: transferState
   })

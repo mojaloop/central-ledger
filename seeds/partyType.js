@@ -33,12 +33,12 @@ Contributors
 
 const partyType = [
   {
-    'name': 'PAYER',
-    'description': 'Represents the entity sending money'
+    name: 'PAYER',
+    description: 'Represents the entity sending money'
   },
   {
-    'name': 'PAYEE',
-    'description': 'Represents the entity receiving money'
+    name: 'PAYEE',
+    description: 'Represents the entity receiving money'
   }
 ]
 

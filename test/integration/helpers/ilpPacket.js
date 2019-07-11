@@ -32,9 +32,9 @@ const IlpPacketModel = require('../../../src/models/transfer/ilpPacket')
 
 exports.prepareData = async () => {
   try {
-    let transferResult = await TransferPreparationModule.prepareData()
-    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
-    let ilp = await IlpPacketModel.getByTransferId(transferResult.transfer.transferId)
+    const transferResult = await TransferPreparationModule.prepareData()
+    const transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    const ilp = await IlpPacketModel.getByTransferId(transferResult.transfer.transferId)
 
     return {
       ilp,

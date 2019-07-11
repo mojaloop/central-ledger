@@ -46,7 +46,7 @@ const Enum = require('../../lib/enum')
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
-let reasons = []
+const reasons = []
 
 const validateParticipantById = async function (participantId) {
   const participant = await Participant.getById(participantId)
@@ -116,16 +116,16 @@ const validateAmount = (amount) => {
 // TODO: The following function should be moved into a re-usable common-shared-service at a later point
 // NOTE: This logic is based on v1.0 of the Mojaloop Specification as described in section 6.5.1.2
 const fulfilmentToCondition = (fulfilment) => {
-  let hashSha256 = Crypto.createHash('sha256')
-  let preimage = base64url.toBuffer(fulfilment)
+  const hashSha256 = Crypto.createHash('sha256')
+  const preimage = base64url.toBuffer(fulfilment)
 
   if (preimage.length !== 32) {
     throw new Error('Interledger preimages must be exactly 32 bytes')
   }
 
-  let calculatedConditionDigest = hashSha256.update(preimage).digest('base64')
+  const calculatedConditionDigest = hashSha256.update(preimage).digest('base64')
   Logger.debug(`calculatedConditionDigest=${calculatedConditionDigest}`)
-  let calculatedConditionUrlEncoded = base64url.fromBase64(calculatedConditionDigest)
+  const calculatedConditionUrlEncoded = base64url.fromBase64(calculatedConditionDigest)
   Logger.debug(`calculatedConditionUrlEncoded=${calculatedConditionUrlEncoded}`)
   return calculatedConditionUrlEncoded
 }
@@ -133,7 +133,7 @@ const fulfilmentToCondition = (fulfilment) => {
 // TODO: The following function should be moved into a re-usable common-shared-service at a later point
 // NOTE: This logic is based on v1.0 of the Mojaloop Specification as described in section 6.5.1.2
 const validateFulfilCondition = (fulfilment, condition) => {
-  let calculatedCondition = fulfilmentToCondition(fulfilment)
+  const calculatedCondition = fulfilmentToCondition(fulfilment)
   return calculatedCondition === condition
 }
 

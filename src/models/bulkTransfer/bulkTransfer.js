@@ -24,11 +24,12 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = async (id) => {
   try {
     return await Db.bulkTransfer.query(async (builder) => {
-      let result = builder
+      const result = builder
         .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
         .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
         .innerJoin('bulkTransferStateChange AS btsc', 'btsc.bulkTransferId', 'bulkTransfer.bulkTransferId')
@@ -41,6 +42,7 @@ const getById = async (id) => {
       return result
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -48,7 +50,7 @@ const getById = async (id) => {
 const getParticipantsById = async (id) => {
   try {
     return await Db.bulkTransfer.query(async (builder) => {
-      let result = builder
+      const result = builder
         .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
         .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
         .where({ 'bulkTransfer.bulkTransferId': id })
@@ -57,6 +59,7 @@ const getParticipantsById = async (id) => {
       return result
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

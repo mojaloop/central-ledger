@@ -119,46 +119,46 @@ Test('Enum test', async (enumTest) => {
 
   const allEnumExpected = {
     endpointType: {
-      'ALARM_NOTIFICATION_URL': 1,
-      'ALARM_NOTIFICATION_TOPIC': 2
+      ALARM_NOTIFICATION_URL: 1,
+      ALARM_NOTIFICATION_TOPIC: 2
     },
     hubParticipant: {
       participantId: 1,
       name: 'Hub'
     },
     ledgerAccountType: {
-      'POSITION': 1,
-      'SETTLEMENT': 2,
-      'HUB_SETTLEMENT': 3
+      POSITION: 1,
+      SETTLEMENT: 2,
+      HUB_SETTLEMENT: 3
     },
     ledgerEntryType: {
-      'PRINCIPLE_VALUE': 1,
-      'INTERCHANGE_FEE': 2,
-      'HUB_FEE': 3
+      PRINCIPLE_VALUE: 1,
+      INTERCHANGE_FEE: 2,
+      HUB_FEE: 3
     },
     participantLimitType: {
-      'NET_DEBIT_CAP': 1
+      NET_DEBIT_CAP: 1
     },
     transferParticipantRoleType: {
-      'PAYER_DFSP': 1,
-      'PAYEE_DFSP': 2
+      PAYER_DFSP: 1,
+      PAYEE_DFSP: 2
     },
     transferState: {
-      'ABORTED_REJECTED': 'ABORTED_REJECTED',
-      'COMMITTED': 'COMMITTED'
+      ABORTED_REJECTED: 'ABORTED_REJECTED',
+      COMMITTED: 'COMMITTED'
     },
     transferStateEnum: {
-      'ABORTED_REJECTED': 'ABORTED_REJECTED',
-      'COMMITTED': 'COMMITTED'
+      ABORTED_REJECTED: 'ABORTED_REJECTED',
+      COMMITTED: 'COMMITTED'
     },
     bulkProcessingState: {
-      'RECEIVED': 1
+      RECEIVED: 1
     },
     bulkTransferState: {
-      'RECEIVED': 'RECEIVED'
+      RECEIVED: 'RECEIVED'
     },
     bulkTransferStateEnum: {
-      'RECEIVED': 'RECEIVED'
+      RECEIVED: 'RECEIVED'
     }
   }
 

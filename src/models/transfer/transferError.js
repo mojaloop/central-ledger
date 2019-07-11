@@ -50,7 +50,8 @@ const insert = async (transferStateChangeId, errorCode, errorDescription) => {
   try {
     return Db.transferError.insert({ transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -79,7 +80,8 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
     return Db.transferError.find({ transferStateChangeId: transferStateChangeId })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -106,8 +108,8 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
 
 const getByTransferId = async (id) => {
   try {
-    let transferError = await Db.transferError.query(async (builder) => {
-      let result = builder
+    const transferError = await Db.transferError.query(async (builder) => {
+      const result = builder
         .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'transferError.transferStateChangeId')
         .where({ 'tsc.transferId': id })
         .select('transferError.*')
@@ -118,6 +120,7 @@ const getByTransferId = async (id) => {
     transferError.errorCode = transferError.errorCode.toString()
     return transferError
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

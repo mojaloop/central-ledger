@@ -48,7 +48,7 @@ const Handlers = {
 const debug = false
 
 Test('Root handler test', async handlersTest => {
-  let startTime = new Date()
+  const startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test(`setup handlers`, async (test) => {
       await Db.connect(Config.DATABASE_URI)
@@ -113,13 +113,13 @@ Test('Root handler test', async handlersTest => {
       await Db.disconnect()
       assert.pass('database connection closed')
 
-      let topics = [
+      const topics = [
         'topic-transfer-prepare',
         'topic-transfer-position',
         'topic-transfer-fulfil',
         'topic-notification-event'
       ]
-      for (let topic of topics) {
+      for (const topic of topics) {
         try {
           await Producer.getProducer(topic).disconnect()
           assert.pass(`producer to ${topic} disconnected`)
@@ -127,7 +127,7 @@ Test('Root handler test', async handlersTest => {
           assert.pass(err.message)
         }
       }
-      for (let topic of topics) {
+      for (const topic of topics) {
         try {
           await Consumer.getConsumer(topic).disconnect()
           assert.pass(`consumer to ${topic} disconnected`)
@@ -137,7 +137,7 @@ Test('Root handler test', async handlersTest => {
       }
 
       if (debug) {
-        let elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
+        const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
       assert.end()

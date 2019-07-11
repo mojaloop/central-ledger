@@ -75,8 +75,8 @@ const prepareHandlerMessageProtocol = {
 }
 
 const getBulkMessage = async (bulkTransferId) => {
-  let BulkTransferModel = BulkTransferModels.getBulkTransferModel()
-  let message = await BulkTransferModel.findOne({ bulkTransferId }, '-_id -individualTransfersIds')
+  const BulkTransferModel = BulkTransferModels.getBulkTransferModel()
+  const message = await BulkTransferModel.findOne({ bulkTransferId }, '-_id -individualTransfersIds')
   return message.toJSON()
 }
 
@@ -146,7 +146,7 @@ const bulkPrepare = async (error, messages) => {
       return true
     }
 
-    let { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
+    const { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
     if (isValid) {
       Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
@@ -161,14 +161,14 @@ const bulkPrepare = async (error, messages) => {
       try {
         Logger.info(Util.breadcrumb(location, `individualTransfers`))
         // stream initialization
-        let IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
-        let indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
+        const IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
+        const indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
         // enable async/await operations for the stream
-        let streamReader = AwaitifyStream.createReader(indvidualTransfersStream)
+        const streamReader = AwaitifyStream.createReader(indvidualTransfersStream)
         let doc
 
         while ((doc = await streamReader.readAsync()) !== null) {
-          let individualTransfer = doc.payload
+          const individualTransfer = doc.payload
           individualTransfer.payerFsp = payload.payerFsp
           individualTransfer.payeeFsp = payload.payeeFsp
           individualTransfer.amount = individualTransfer.transferAmount
@@ -181,8 +181,8 @@ const bulkPrepare = async (error, messages) => {
           }
           await BulkTransferService.bulkTransferAssociationCreate(bulkTransferAssociationRecord)
 
-          let dataUri = encodePayload(JSON.stringify(individualTransfer), headers['content-type'])
-          let msg = Object.assign({}, prepareHandlerMessageProtocol)
+          const dataUri = encodePayload(JSON.stringify(individualTransfer), headers['content-type'])
+          const msg = Object.assign({}, prepareHandlerMessageProtocol)
           msg.value.id = messageId
           msg.value.from = payload.payerFsp
           msg.value.to = payload.payeeFsp
@@ -239,9 +239,9 @@ const registerBulkPrepareHandler = async () => {
     bulkPrepareHandler.config.rdkafkaConf['client.id'] = bulkPrepareHandler.topicName
     await Kafka.Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -257,8 +257,9 @@ const registerAllHandlers = async () => {
   try {
     await registerBulkPrepareHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

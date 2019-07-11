@@ -120,7 +120,7 @@ Test('Participant service', async (participantTest) => {
     }
   ]
 
-  let participantMap = new Map()
+  const participantMap = new Map()
 
   participantTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
@@ -215,7 +215,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getById with non-existing id should', async (assert) => {
     try {
       ParticipantModel.getById.withArgs(10).returns(Promise.resolve(null))
-      let result = await Service.getById(10)
+      const result = await Service.getById(10)
       assert.equal(result, null, 'return null')
       assert.end()
     } catch (err) {
@@ -228,7 +228,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getByName with non-existing name should', async (assert) => {
     try {
       ParticipantModel.getByName.withArgs('name').returns(Promise.resolve(null))
-      let result = await Service.getByName('name')
+      const result = await Service.getByName('name')
       assert.equal(result, null, 'return null')
       assert.end()
     } catch (err) {
@@ -252,8 +252,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('create participant', async (assert) => {
     try {
-      for (let [index, participant] of participantMap) {
-        let result = await Service.create({ name: participant.name })
+      for (const [index, participant] of participantMap) {
+        const result = await Service.create({ name: participant.name })
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.equal(result, index, `returns ${result}`)
       }
@@ -280,7 +280,7 @@ Test('Participant service', async (participantTest) => {
     try {
       // assert.plan(Object.keys(participantFixtures[0]).length * participantFixtures.length)
       participantFixtures.forEach(async participant => {
-        let result = await Service.getByName(participant.name)
+        const result = await Service.getByName(participant.name)
         assert.equal(result.participantId, participant.participantId, 'participantIds are equal')
         assert.equal(result.name, participant.name, 'names are equal')
         assert.equal(result.currency, participant.currency, 'currencies match')
@@ -298,7 +298,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll', async (assert) => {
     try {
-      let result = await Service.getAll()
+      const result = await Service.getAll()
       assert.deepEqual(result, participantResult)
       assert.end()
     } catch (err) {
@@ -324,7 +324,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getById', async (assert) => {
     try {
       participantFixtures.forEach(async (participantX, index) => {
-        let participant = await Service.getById(index)
+        const participant = await Service.getById(index)
         assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(index + 1)))
       })
       assert.end()
@@ -338,7 +338,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('update', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        let updated = await Service.update(participant.name, { isActive: 1 })
+        const updated = await Service.update(participant.name, { isActive: 1 })
         assert.equal(JSON.stringify(updated), JSON.stringify(participantMap.get(index + 1)))
       })
       //  sandbox.restore()
@@ -367,7 +367,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('createParticipantCurrency should create the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        let result = await Service.createParticipantCurrency({
+        const result = await Service.createParticipantCurrency({
           participantId: participant.participantId,
           currencyId: participant.currency
         })
@@ -404,7 +404,7 @@ Test('Participant service', async (participantTest) => {
     try {
       await participantFixtures.forEach(async (participant, index) => {
         ParticipantFacade.addHubAccountAndInitPosition.returns(Promise.resolve(index + 1))
-        let result = await Service.createHubAccount({
+        const result = await Service.createHubAccount({
           participantId: participant.participantId,
           currencyId: participant.currency
         })
@@ -436,7 +436,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getParticipantCurrencyById should return the currency', async (assert) => {
     try {
       participantFixtures.forEach(async (participant, index) => {
-        let result = await Service.getParticipantCurrencyById(index)
+        const result = await Service.getParticipantCurrencyById(index)
         assert.deepEqual(result, participantCurrencyResult[index])
       })
       assert.end()
@@ -463,7 +463,7 @@ Test('Participant service', async (participantTest) => {
     try {
       ParticipantModel.destroyByName = sandbox.stub().returns(Promise.resolve(true))
       await participantFixtures.forEach(async (participant) => {
-        let result = await Service.destroyByName(participant.name)
+        const result = await Service.destroyByName(participant.name)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.equal(result, true, `equals ${result}`)
       })
@@ -1591,7 +1591,7 @@ Test('Participant service', async (participantTest) => {
       ParticipantModel.getByName.withArgs(params.name).returns(P.resolve(participant))
 
       try {
-        let account = null
+        const account = null
         ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
 
         await Service.updateAccount(payload, params, enums)
@@ -1602,7 +1602,7 @@ Test('Participant service', async (participantTest) => {
       }
 
       try {
-        let account = {
+        const account = {
           participantId: 1
         }
         ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
@@ -1615,7 +1615,7 @@ Test('Participant service', async (participantTest) => {
       }
 
       try {
-        let account = {
+        const account = {
           participantId: participant.participantId,
           ledgerAccountTypeId: 2
         }
@@ -1790,7 +1790,7 @@ Test('Participant service', async (participantTest) => {
       })
       Utility.produceGeneralMessage.returns(true)
 
-      let result = await Service.recordFundsInOut(payload, params, enums)
+      const result = await Service.recordFundsInOut(payload, params, enums)
       assert.ok(result, 'topic created')
       assert.end()
     } catch (err) {
@@ -1837,7 +1837,7 @@ Test('Participant service', async (participantTest) => {
       })
       Utility.produceGeneralMessage.returns(true)
 
-      let result = await Service.recordFundsInOut(payload, params, enums)
+      const result = await Service.recordFundsInOut(payload, params, enums)
       assert.ok(result, 'topic created')
       assert.end()
     } catch (err) {

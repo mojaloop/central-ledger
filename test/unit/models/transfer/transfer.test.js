@@ -80,9 +80,9 @@ Test('Transfer model', async (transfer) => {
 
   await transfer.test('saveTransfer test', async (assert) => {
     try {
-      let saved = { transferId: transferRecord.transferId }
+      const saved = { transferId: transferRecord.transferId }
       Db.transfer.insert.returns(Promise.resolve(saved))
-      let transferCreated = await Model.saveTransfer(transferRecord)
+      const transferCreated = await Model.saveTransfer(transferRecord)
       assert.equal(transferCreated, saved, 'transfer is inserted and id is returned')
       assert.ok(Db.transfer.insert.calledOnce, 'transfer insert is called once')
       assert.end()

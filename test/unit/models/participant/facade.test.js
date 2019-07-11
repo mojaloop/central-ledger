@@ -98,7 +98,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getByNameAndCurrency', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participant.query.callsArgWith(0, builderStub)
       builderStub.where = sandbox.stub()
 
@@ -114,7 +114,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      let result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION)
+      const result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
@@ -126,7 +126,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getByNameAndCurrency', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participant.query.callsArgWith(0, builderStub)
       builderStub.where = sandbox.stub()
 
@@ -144,7 +144,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      let result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION, true)
+      const result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION, true)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
@@ -182,9 +182,9 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getEndpoint', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
-      let whereStub = sandbox.stub()
-      let selectStub = sandbox.stub()
+      const builderStub = sandbox.stub()
+      const whereStub = sandbox.stub()
+      const selectStub = sandbox.stub()
 
       builderStub.innerJoin = sandbox.stub()
 
@@ -232,9 +232,9 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getAllEndpoints', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
-      let whereStub = sandbox.stub()
-      let selectStub = sandbox.stub()
+      const builderStub = sandbox.stub()
+      const whereStub = sandbox.stub()
+      const selectStub = sandbox.stub()
 
       builderStub.innerJoin = sandbox.stub()
 
@@ -319,7 +319,7 @@ Test('Participant facade', async (facadeTest) => {
         participantId: 1,
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
-      let result = await Model.addEndpoint(participant.participantId, endpoint)
+      const result = await Model.addEndpoint(participant.participantId, endpoint)
       assert.ok(knexStub.withArgs('participantEndpoint').calledThrice, 'knex called with participantLimit thrice')
       assert.ok(knexStub.withArgs('endpointType').calledOnce, 'knex called with endpointType once')
       assert.deepEqual(result, expected)
@@ -453,7 +453,7 @@ Test('Participant facade', async (facadeTest) => {
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
 
-      let insertStub = sandbox.stub()
+      const insertStub = sandbox.stub()
       insertStub.returns([1])
 
       knexStub.returns({
@@ -466,19 +466,19 @@ Test('Participant facade', async (facadeTest) => {
           insert: insertStub
         })
       })
-      let participantPosition = {
+      const participantPosition = {
         participantCurrencyId: 1,
         value: limitPositionObj.initialPosition,
         reservedValue: 0,
         participantPositionId: 1
       }
-      let settlementPosition = {
+      const settlementPosition = {
         participantCurrencyId: 2,
         value: 0,
         reservedValue: 0,
         participantPositionId: 1
       }
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: limitPositionObj.limit.value,
@@ -518,10 +518,10 @@ Test('Participant facade', async (facadeTest) => {
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
 
-      let insertStub = sandbox.stub()
+      const insertStub = sandbox.stub()
       insertStub.returns([1])
 
-      let whereStub = sandbox.stub()
+      const whereStub = sandbox.stub()
       insertStub.returns([1])
 
       knexStub.returns({
@@ -537,19 +537,19 @@ Test('Participant facade', async (facadeTest) => {
           })
         })
       })
-      let participantPosition = {
+      const participantPosition = {
         participantCurrencyId: 1,
         value: limitPositionObj.initialPosition,
         reservedValue: 0,
         participantPositionId: 1
       }
-      let settlementPosition = {
+      const settlementPosition = {
         participantCurrencyId: 2,
         value: 0,
         reservedValue: 0,
         participantPositionId: 1
       }
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: limitPositionObj.limit.value,
@@ -664,7 +664,7 @@ Test('Participant facade', async (facadeTest) => {
           insert: sandbox.stub().returns([1])
         })
       })
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: limit.value,
@@ -720,7 +720,7 @@ Test('Participant facade', async (facadeTest) => {
           insert: sandbox.stub().returns([1])
         })
       })
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: limit.value,
@@ -838,7 +838,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitsByCurrencyId', async (assert) => {
     try {
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: 1000000,
@@ -848,8 +848,8 @@ Test('Participant facade', async (facadeTest) => {
         name: 'NET_DEBIT_CAP'
       }
 
-      let builderStub = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const builderStub = sandbox.stub()
+      const whereStub = { where: sandbox.stub().returns() }
 
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
@@ -876,7 +876,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitsByCurrencyId called without type', async (assert) => {
     try {
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: 1000000,
@@ -886,10 +886,10 @@ Test('Participant facade', async (facadeTest) => {
         name: 'NET_DEBIT_CAP'
       }
 
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
 
       builderStub.innerJoin.returns({
         where: sandbox.stub().returns({
@@ -912,7 +912,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitsByCurrencyId should throw error', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
 
@@ -930,7 +930,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitsByParticipantId', async (assert) => {
     try {
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: 1000000,
@@ -940,10 +940,10 @@ Test('Participant facade', async (facadeTest) => {
         name: 'NET_DEBIT_CAP'
       }
 
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
 
       builderStub.innerJoin.returns({
         innerJoin: sandbox.stub().returns({
@@ -968,7 +968,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitsByParticipantId called without type', async (assert) => {
     try {
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: 1000000,
@@ -978,10 +978,10 @@ Test('Participant facade', async (facadeTest) => {
         name: 'NET_DEBIT_CAP'
       }
 
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
 
       builderStub.innerJoin.returns({
         innerJoin: sandbox.stub().returns({
@@ -1006,7 +1006,7 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitsByParticipantId should throw error', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participantLimit.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
 
@@ -1024,16 +1024,16 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit', async (assert) => {
     try {
-      let participantLimit = {
+      const participantLimit = {
         participantId: 1,
         currencyId: 1,
         participantLimitTypeId: 1,
         value: 1000000
       }
-      let ledgerAccountTypeId = 1
-      let participantLimitTypeId = 1
+      const ledgerAccountTypeId = 1
+      const participantLimitTypeId = 1
 
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       // let whereStub = { where: sandbox.stub().returns() }
 
       Db.participant.query.callsArgWith(0, builderStub)
@@ -1061,11 +1061,11 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('getParticipantLimitByParticipantCurrencyLimit should throw error', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.participant.query.callsArgWith(0, builderStub)
       builderStub.innerJoin = sandbox.stub()
-      let ledgerAccountTypeId = 1
-      let participantLimitTypeId = 1
+      const ledgerAccountTypeId = 1
+      const participantLimitTypeId = 1
 
       builderStub.innerJoin.throws(new Error())
       await Model.getParticipantLimitByParticipantCurrencyLimit(participant.participantId, participant.currency, ledgerAccountTypeId, participantLimitTypeId)
@@ -1081,14 +1081,14 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addHubAccountAndInitPosition', async (assert) => {
     try {
-      let participantPosition = {
+      const participantPosition = {
         participantCurrencyId: 1,
         value: 0,
         reservedValue: 0,
         participantPositionId: 1
       }
 
-      let participantCurrency = {
+      const participantCurrency = {
         participantCurrencyId: 1,
         participantId: 1,
         currencyId: 1,
@@ -1097,7 +1097,7 @@ Test('Participant facade', async (facadeTest) => {
         createdBy: 'unknown'
       }
 
-      let participant = {
+      const participant = {
         participantId: 1,
         currencyId: 1,
         ledgerAccountTypeId: 1
@@ -1109,7 +1109,7 @@ Test('Participant facade', async (facadeTest) => {
       trxStub.commit = sandbox.stub()
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
-      let transactingStub = sandbox.stub()
+      const transactingStub = sandbox.stub()
       knexStub.returns({
         transacting: transactingStub.returns({
           insert: sandbox.stub().returns([1])
@@ -1153,14 +1153,14 @@ Test('Participant facade', async (facadeTest) => {
 
   await facadeTest.test('addNewCurrencyAndPosition should throw an error.', async (assert) => {
     try {
-      let participantPosition = {
+      const participantPosition = {
         participantCurrencyId: 1,
         value: 0,
         reservedValue: 0,
         participantPositionId: 1
       }
 
-      let participantCurrency = {
+      const participantCurrency = {
         participantCurrencyId: 1,
         participantId: 1,
         currencyId: 1,
@@ -1168,7 +1168,7 @@ Test('Participant facade', async (facadeTest) => {
         createdBy: 'unknown'
       }
 
-      let participant = {
+      const participant = {
         participantId: 1,
         currencyId: 1,
         ledgerAccountTypeId: 1
@@ -1198,10 +1198,10 @@ Test('Participant facade', async (facadeTest) => {
     try {
       const participantName = 'fsp1'
       const currencyId = 'USD'
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
 
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
       Db.participantCurrency.query.callsArgWith(0, builderStub)
       const participantCurrency = {
         participantCurrencyId: 1,
@@ -1221,7 +1221,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      let found = await Model.getAllAccountsByNameAndCurrency(participantName, currencyId)
+      const found = await Model.getAllAccountsByNameAndCurrency(participantName, currencyId)
       test.deepEqual(found, participantCurrency, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
       test.end()
@@ -1237,10 +1237,10 @@ Test('Participant facade', async (facadeTest) => {
       const participantName = 'fsp1'
       const currency = 'USD'
       const isAccountActive = null
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
 
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
       Db.participantCurrency.query.callsArgWith(0, builderStub)
       const participantCurrency = {
         participantCurrencyId: 1,
@@ -1260,7 +1260,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      let found = await Model.getAllAccountsByNameAndCurrency(participantName, currency, isAccountActive)
+      const found = await Model.getAllAccountsByNameAndCurrency(participantName, currency, isAccountActive)
       test.deepEqual(found, participantCurrency, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
       test.end()
@@ -1274,10 +1274,10 @@ Test('Participant facade', async (facadeTest) => {
   await facadeTest.test('getAllAccountsByNameAndCurrency should return the participant accounts for any', async (test) => {
     try {
       const participantName = 'fsp1'
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
 
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
       Db.participantCurrency.query.callsArgWith(0, builderStub)
       const participantCurrency = {
         participantCurrencyId: 1,
@@ -1297,7 +1297,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      let found = await Model.getAllAccountsByNameAndCurrency(participantName)
+      const found = await Model.getAllAccountsByNameAndCurrency(participantName)
       test.deepEqual(found, participantCurrency, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId').calledOnce, 'query builder called once')
       test.end()
@@ -1330,13 +1330,13 @@ Test('Participant facade', async (facadeTest) => {
       const type = 'NET_DEBIT_CAP'
       const currencyId = 'USD'
       const ledgerAccountTypeId = 1
-      let builderStub = sandbox.stub()
-      let participantCurrencyStub = sandbox.stub()
-      let participantLimitStub = sandbox.stub()
-      let participantLimitTypeStub = sandbox.stub()
-      let selectStub = sandbox.stub()
-      let whereStub1 = { where: sandbox.stub().returns() }
-      let whereStub2 = { where: sandbox.stub().returns() }
+      const builderStub = sandbox.stub()
+      const participantCurrencyStub = sandbox.stub()
+      const participantLimitStub = sandbox.stub()
+      const participantLimitTypeStub = sandbox.stub()
+      const selectStub = sandbox.stub()
+      const whereStub1 = { where: sandbox.stub().returns() }
+      const whereStub2 = { where: sandbox.stub().returns() }
 
       builderStub.where = sandbox.stub()
       Db.participant.query.callsArgWith(0, builderStub)
@@ -1357,7 +1357,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      let found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
+      const found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
       test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'pc.ledgerAccountTypeId': ledgerAccountTypeId,
@@ -1386,13 +1386,13 @@ Test('Participant facade', async (facadeTest) => {
       const type = null
       const currencyId = null
       const ledgerAccountTypeId = 1
-      let builderStub = sandbox.stub()
-      let participantCurrencyStub = sandbox.stub()
-      let participantLimitStub = sandbox.stub()
-      let participantLimitTypeStub = sandbox.stub()
-      let selectStub = sandbox.stub()
-      let whereStub1 = { where: sandbox.stub().returns() }
-      let whereStub2 = { where: sandbox.stub().returns() }
+      const builderStub = sandbox.stub()
+      const participantCurrencyStub = sandbox.stub()
+      const participantLimitStub = sandbox.stub()
+      const participantLimitTypeStub = sandbox.stub()
+      const selectStub = sandbox.stub()
+      const whereStub1 = { where: sandbox.stub().returns() }
+      const whereStub2 = { where: sandbox.stub().returns() }
 
       builderStub.where = sandbox.stub()
       Db.participant.query.callsArgWith(0, builderStub)
@@ -1413,7 +1413,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      let found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
+      const found = await Model.getLimitsForAllParticipants(currencyId, type, ledgerAccountTypeId)
       test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'pc.ledgerAccountTypeId': ledgerAccountTypeId,

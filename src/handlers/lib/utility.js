@@ -194,8 +194,9 @@ const transformGeneralTopicName = (functionality, action) => {
       return generalTopicTemplate(Enum.topicMap[functionality][action].functionality, Enum.topicMap[functionality][action].action)
     }
     return generalTopicTemplate(functionality, action)
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -213,8 +214,9 @@ const transformGeneralTopicName = (functionality, action) => {
 const transformAccountToTopicName = (participantName, functionality, action) => {
   try {
     return participantTopicTemplate(participantName, functionality, action)
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -236,8 +238,9 @@ const getKafkaConfig = (flow, functionality, action) => {
     const actionObject = functionalityObject[action]
     actionObject.config.logger = Logger
     return actionObject.config
-  } catch (e) {
-    throw new Error(`No config found for flow='${flow}', functionality='${functionality}', action='${action}'`)
+  } catch (err) {
+    Logger.error(err)
+    throw new Error(`No config found for flow='${flow}', functionality='${functionality}', action='${action}' - ${err}`)
   }
 }
 

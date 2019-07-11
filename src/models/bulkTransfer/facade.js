@@ -27,6 +27,7 @@
  * @module src/models/transfer/facade/
  */
 
+const Logger = require('@mojaloop/central-services-shared').Logger
 const Db = require('../../lib/db')
 const Enum = require('../../lib/enum')
 const Time = require('../../lib/time')
@@ -53,7 +54,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
       try {
         await knex('bulkTransfer').transacting(trx).insert(bulkTransferRecord)
         if (payload.extensionList && payload.extensionList.extension) {
-          let bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
             return {
               bulkTransferId: payload.bulkTransferId,
               key: ext.key,
@@ -70,8 +71,9 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
         throw err
       }
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -97,7 +99,7 @@ const saveBulkTransferProcessing = async (payload, bulkTransferFulfilmentId, sta
       try {
         await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
         if (payload.extensionList && payload.extensionList.extension) {
-          let bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
             return {
               bulkTransferId: payload.bulkTransferId,
               bulkTransferFulfilmentId,
@@ -115,8 +117,9 @@ const saveBulkTransferProcessing = async (payload, bulkTransferFulfilmentId, sta
         throw err
       }
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

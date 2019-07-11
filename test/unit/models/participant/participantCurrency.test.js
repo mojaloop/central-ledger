@@ -34,9 +34,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/participant/participantCurrency')
 
 Test('Participant Currency model', async (participantCurrencyTest) => {
-  let sandbox
-
-  sandbox = Sinon.createSandbox()
+  const sandbox = Sinon.createSandbox()
   Db.participantCurrency = {
     insert: sandbox.stub(),
     findOne: sandbox.stub(),
@@ -48,7 +46,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
   await participantCurrencyTest.test('create currency for fake participant', async (assert) => {
     Db.participantCurrency.insert.withArgs({ participantId: 3, currencyId: 'FAKE', createdBy: 'unknown' }).throws(new Error('message'))
     try {
-      let r = await Model.create({ participantId: 3, currencyId: 'FAKE', createdBy: 'unknown' })
+      const r = await Model.create({ participantId: 3, currencyId: 'FAKE', createdBy: 'unknown' })
       assert.comment(r)
       assert.fail(' should throw')
     } catch (err) {
@@ -65,7 +63,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       const isActive = true
       const createdBy = 'unknown'
       Db.participantCurrency.insert.withArgs({ participantId, currencyId, ledgerAccountTypeId, isActive, createdBy }).returns(1)
-      let result = await Model.create(participantId, currencyId, ledgerAccountTypeId)
+      const result = await Model.create(participantId, currencyId, ledgerAccountTypeId)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
@@ -78,7 +76,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
   await participantCurrencyTest.test('create participant currency should throw an error', async (assert) => {
     Db.participantCurrency.insert.throws(new Error('message'))
     try {
-      let r = await Model.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
+      const r = await Model.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
       assert.comment(r)
       assert.fail(' should throw')
     } catch (err) {
@@ -103,7 +101,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
         currencyId: 'USD',
         isActive: 1
       }
-      let result = await Model.getById(1)
+      const result = await Model.getById(1)
       assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()
     } catch (err) {
@@ -129,7 +127,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
   await participantCurrencyTest.test('update', async (assert) => {
     try {
       Db.participantCurrency.update.withArgs({ participantCurrencyId: 1 }, { isActive: 1 }).returns(1)
-      let result = await Model.update(1, 1)
+      const result = await Model.update(1, 1)
       assert.equal(1, result)
       assert.end()
     } catch (err) {
@@ -181,7 +179,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
           isActive: 1
         }
       ]
-      let result = await Model.getByParticipantId(1, 1)
+      const result = await Model.getByParticipantId(1, 1)
       assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()
     } catch (err) {

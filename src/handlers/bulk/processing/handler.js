@@ -105,8 +105,8 @@ const bulkProcessing = async (error, messages) => {
       : (action === TransferEventAction.BULK_FULFIL ? Enum.actionLetter.bulkFulfil
         : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
           : Enum.actionLetter.unknown))
-    let params = { message, kafkaTopic, consumer }
-    let producer = { functionality: TransferEventType.NOTIFICATION, action }
+    const params = { message, kafkaTopic, consumer }
+    const producer = { functionality: TransferEventType.NOTIFICATION, action }
 
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
     // Logger.info(`bulkTransferInfo=${JSON.stringify(bulkTransferInfo)}`)
@@ -177,7 +177,7 @@ const bulkProcessing = async (error, messages) => {
         errorCode,
         errorDescription
       })
-    let exists = await BulkTransferService.bulkTransferAssociationExists(
+    const exists = await BulkTransferService.bulkTransferAssociationExists(
       bulkTransferInfo.bulkTransferId,
       Enum.BulkProcessingState[criteriaState]
     )
@@ -209,9 +209,9 @@ const bulkProcessing = async (error, messages) => {
       if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
         Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}1`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
-        let BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
+        const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
-        let payload = LibUtil.omitNil({
+        const payload = LibUtil.omitNil({
           bulkTransferId: payeeBulkResponse.bulkTransferId,
           bulkTransferState: payeeBulkResponse.bulkTransferState,
           completedTimestamp: payeeBulkResponse.completedTimestamp,
@@ -244,11 +244,11 @@ const bulkProcessing = async (error, messages) => {
         payeeBulkResponse.headers['fspiop-source'] = Enum.headers.FSPIOP.SWITCH
         payeeBulkResponse.headers['fspiop-destination'] = participants.payeeFsp
         delete payeeBulkResponse.headers['fspiop-signature']
-        let BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
+        const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
         await (new BulkTransferResultModel(payerBulkResponse)).save()
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
-        let payerParams = cloneDeep(params)
-        let payeeParams = cloneDeep(params)
+        const payerParams = cloneDeep(params)
+        const payeeParams = cloneDeep(params)
 
         const payerPayload = LibUtil.omitNil({
           bulkTransferId: payerBulkResponse.bulkTransferId,
@@ -335,9 +335,9 @@ const registerBulkProcessingHandler = async () => {
     bulkProcessingHandler.config.rdkafkaConf['client.id'] = bulkProcessingHandler.topicName
     await Kafka.Consumer.createHandler(bulkProcessingHandler.topicName, bulkProcessingHandler.config, bulkProcessingHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -353,8 +353,9 @@ const registerAllHandlers = async () => {
   try {
     await registerBulkProcessingHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

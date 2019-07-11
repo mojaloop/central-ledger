@@ -152,9 +152,9 @@ const transfer = async (error, messages) => {
     let consumer
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-    } catch (e) {
+    } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(e)
+      Logger.error(err)
       return true
     }
     if (!allowedActions.includes(payload.action)) {
@@ -175,9 +175,9 @@ const transfer = async (error, messages) => {
     }
     await Utility.commitMessageSync(kafkaTopic, consumer, message)
     return true
-  } catch (error) {
-    Logger.error(error)
-    throw error
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -199,9 +199,9 @@ const registerTransferHandler = async () => {
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -217,8 +217,9 @@ const registerAllHandlers = async () => {
   try {
     await registerTransferHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

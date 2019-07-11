@@ -64,7 +64,7 @@ const retryOpts = {
   maxTimeout: retryDelay
 }
 
-let testData = {
+const testData = {
   amount: {
     currency: 'USD',
     amount: 110
@@ -86,22 +86,22 @@ let testData = {
 }
 
 const prepareTestData = async (dataObj) => {
-  let payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
-  let payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
+  const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
+  const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
   const kafkacat = `GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare`
   if (debug) console.error(kafkacat)
 
-  let payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
+  const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
     currency: dataObj.amount.currency,
     limit: { value: dataObj.payer.limit }
   })
-  let payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+  const payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
     currency: dataObj.amount.currency,
     limit: { value: dataObj.payee.limit }
   })
 
-  for (let name of [payer.participant.name, payee.participant.name]) {
+  for (const name of [payer.participant.name, payee.participant.name]) {
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
@@ -200,7 +200,7 @@ const prepareTestData = async (dataObj) => {
     }
   }
 
-  let messageProtocolFulfil = Util.clone(messageProtocolPrepare)
+  const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
   messageProtocolFulfil.id = Uuid()
   messageProtocolFulfil.from = transferPayload.payeeFsp
   messageProtocolFulfil.to = transferPayload.payerFsp
@@ -217,7 +217,7 @@ const prepareTestData = async (dataObj) => {
   messageProtocolReject.content.payload = rejectPayload
   messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 
-  let messageProtocolError = Util.clone(messageProtocolFulfil)
+  const messageProtocolError = Util.clone(messageProtocolFulfil)
   messageProtocolError.id = Uuid()
   messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
   messageProtocolError.content.payload = errorPayload
@@ -245,7 +245,7 @@ const prepareTestData = async (dataObj) => {
 }
 
 Test('Handlers test', async handlersTest => {
-  let startTime = new Date()
+  const startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test(`setup handlers`, async (test) => {
       await Db.connect(Config.DATABASE_URI)
@@ -547,13 +547,13 @@ Test('Handlers test', async handlersTest => {
       await Db.disconnect()
       assert.pass('database connection closed')
 
-      let topics = [
+      const topics = [
         'topic-transfer-prepare',
         'topic-transfer-position',
         'topic-transfer-fulfil',
         'topic-notification-event'
       ]
-      for (let topic of topics) {
+      for (const topic of topics) {
         try {
           await Producer.getProducer(topic).disconnect()
           assert.pass(`producer to ${topic} disconnected`)
@@ -561,7 +561,7 @@ Test('Handlers test', async handlersTest => {
           assert.pass(err.message)
         }
       }
-      for (let topic of topics) {
+      for (const topic of topics) {
         try {
           await Consumer.getConsumer(topic).disconnect()
           assert.pass(`consumer to ${topic} disconnected`)
@@ -571,7 +571,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       if (debug) {
-        let elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
+        const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
         console.log(`handlers.test.js finished in (${elapsedTime}s)`)
       }
       assert.end()

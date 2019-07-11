@@ -58,13 +58,13 @@ const getEnums = (id) => {
   return Enums[id]()
 }
 const connectDatabase = async () => {
-  let result = await Db.connect(Config.DATABASE_URI)
+  const result = await Db.connect(Config.DATABASE_URI)
   return result
 }
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {
-      let db = await ObjStoreDb.connect(Config.MONGODB_URI, {
+      const db = await ObjStoreDb.connect(Config.MONGODB_URI, {
         promiseLibrary: global.Promise
       })
       return db
@@ -154,7 +154,7 @@ const createServer = (port, modules) => {
  * @returns {Promise<boolean>} Returns true if Handlers were registered
  */
 const createHandlers = async (handlers) => {
-  let registeredHandlers = {
+  const registeredHandlers = {
     connection: {},
     register: {},
     ext: {},
@@ -163,7 +163,7 @@ const createHandlers = async (handlers) => {
     handlers: handlers
   }
 
-  for (let handler of handlers) {
+  for (const handler of handlers) {
     if (handler.enabled) {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
@@ -203,7 +203,7 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.bulk.registerBulkProcessingHandler()
           break
         default:
-          let error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
+          const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)
       }

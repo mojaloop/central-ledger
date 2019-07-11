@@ -37,10 +37,12 @@ const BulkTransferModel = require('../../models/bulkTransfer/bulkTransfer')
 const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTransferStateChange')
 const IndividualTransferModel = require('../../models/bulkTransfer/individualTransfer')
 const IndividualTransferExtensionModel = require('../../models/transfer/transferExtension')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const checkDuplicate = async (bulkTransferId, hash, isFulfilment = null) => {
   try {
     let result
+
     if (!hash) {
       throw new Error('Invalid hash')
     }
@@ -52,21 +54,24 @@ const checkDuplicate = async (bulkTransferId, hash, isFulfilment = null) => {
     }
     return result
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 
 const getBulkTransferById = async (id) => {
   try {
-    let bulkTransfer = await BulkTransferModel.getById(id)
-    let bulkTransferExtensions = await BulkTransferExtensionModel.getByBulkTransferId(id)
+    const bulkTransfer = await BulkTransferModel.getById(id)
+    const bulkTransferExtensions = await BulkTransferExtensionModel.getByBulkTransferId(id)
     let individualTransfers = await IndividualTransferModel.getAllById(id)
-    let payeeIndividualTransfers = []
+    const payeeIndividualTransfers = []
+    // TODO: re-factor this to move away from Promises and use async-await
     individualTransfers = await Promise.all(individualTransfers.map(async (transfer) => {
+      // eslint-disable-next-line no-async-promise-executor
       return new Promise(async (resolve, reject) => {
-        let extensions = await IndividualTransferExtensionModel.getByTransferId(transfer.transferId)
+        const extensions = await IndividualTransferExtensionModel.getByTransferId(transfer.transferId)
         let extension
-        let result = {
+        const result = {
           transferId: transfer.transferId
         }
         if (transfer.fulfilment) {
@@ -104,15 +109,15 @@ const getBulkTransferById = async (id) => {
         return resolve(result)
       })
     }))
-    let bulkResponse = {
+    const bulkResponse = {
       bulkTransferId: bulkTransfer.bulkTransferId,
       bulkTransferState: bulkTransfer.bulkTransferStateId
     }
     if (bulkTransfer.completedTimestamp) {
       bulkResponse.completedTimestamp = bulkTransfer.completedTimestamp
     }
-    let payerBulkTransfer = { destination: bulkTransfer.payerFsp, ...bulkResponse }
-    let payeeBulkTransfer = { destination: bulkTransfer.payeeFsp, ...bulkResponse }
+    const payerBulkTransfer = { destination: bulkTransfer.payerFsp, ...bulkResponse }
+    const payeeBulkTransfer = { destination: bulkTransfer.payeeFsp, ...bulkResponse }
     let bulkExtension
     if (bulkTransferExtensions.length > 0) {
       if (!bulkTransfer.completedTimestamp) {
@@ -137,6 +142,7 @@ const getBulkTransferById = async (id) => {
     }
     return { payerBulkTransfer, payeeBulkTransfer }
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

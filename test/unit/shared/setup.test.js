@@ -12,9 +12,9 @@ Test('setup', setupTest => {
   let oldHostName
   let oldDatabaseUri
   let oldMongoDbUri
-  let hostName = 'http://test.com'
-  let databaseUri = 'some-database-uri'
-  let mongoDbUri = 'mongo-db-uri'
+  const hostName = 'http://test.com'
+  const databaseUri = 'some-database-uri'
+  const mongoDbUri = 'mongo-db-uri'
   let Setup
   let DbStub
   let ObjStoreStub
@@ -112,7 +112,7 @@ Test('setup', setupTest => {
     ConfigStub.MONGODB_DISABLED = false
 
     Setup = Proxyquire('../../../src/shared/setup', {
-      'uuid4': uuidStub,
+      uuid4: uuidStub,
       '../handlers/register': RegisterHandlersStub,
       '../lib/db': DbStub,
       '@mojaloop/central-object-store': ObjStoreStub,
@@ -121,7 +121,7 @@ Test('setup', setupTest => {
       '../lib/requestLogger': requestLoggerStub,
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
-      'hapi': HapiStub,
+      hapi: HapiStub,
       '../lib/config': ConfigStub
       // '../handlers/lib/kafka': KafkaCronStub
     })
@@ -157,7 +157,7 @@ Test('setup', setupTest => {
       }
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '@mojaloop/central-object-store': ObjStoreStub,
@@ -166,7 +166,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStubThrowError,
+        hapi: HapiStubThrowError,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -206,7 +206,7 @@ Test('setup', setupTest => {
       const service = 'api'
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '@mojaloop/central-object-store': ObjStoreStub,
@@ -215,7 +215,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -322,7 +322,7 @@ Test('setup', setupTest => {
 
     initializeTest.test('run Handlers if runHandlers flag enabled and cronjobs are enabled and start API and do register cronJobs', async (test) => {
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '@mojaloop/central-object-store': ObjStoreStub,
@@ -331,7 +331,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -353,7 +353,7 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_CRON_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '@mojaloop/central-object-store': ObjStoreStub,
@@ -362,7 +362,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -385,7 +385,7 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_API_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '@mojaloop/central-object-store': ObjStoreStub,
@@ -394,7 +394,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -419,7 +419,7 @@ Test('setup', setupTest => {
       ConfigStub.INSTRUMENTATION_METRICS_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '@mojaloop/central-object-store': ObjStoreStub,
@@ -428,7 +428,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -631,7 +631,7 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_API_DISABLED = false
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
         '@mojaloop/central-object-store': ObjStoreStubThrows,
@@ -640,7 +640,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })

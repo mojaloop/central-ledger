@@ -37,7 +37,7 @@ exports.create = async (bulkTransferAssociation) => {
 
 exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => {
   try {
-    let record = LibUtil.omitNil({
+    const record = LibUtil.omitNil({
       bulkProcessingStateId: bulkTransferAssociation.bulkProcessingStateId,
       lastProcessedDate: bulkTransferAssociation.lastProcessedDate || Time.getUTCString(new Date()),
       errorCode: bulkTransferAssociation.errorCode,
@@ -62,7 +62,7 @@ exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
 exports.count = async (bulkTransferId, bulkProcessingStateId) => {
   try {
     const knex = await Db.getKnex()
-    let result = await knex('bulkTransferAssociation').count({ count: '*' })
+    const result = await knex('bulkTransferAssociation').count({ count: '*' })
       .where({ bulkTransferId, bulkProcessingStateId })
       .first()
     return result.count

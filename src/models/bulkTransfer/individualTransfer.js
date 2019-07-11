@@ -24,12 +24,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getAllById = async (id) => {
   try {
     const knex = await Db.getKnex()
     return await Db.bulkTransferAssociation.query(async (builder) => {
-      let result = builder
+      const result = builder
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'bulkTransferAssociation.transferId')
         .innerJoin(knex('transferStateChange AS tsc1')
           .select('tsc1.transferId')
@@ -47,6 +48,7 @@ const getAllById = async (id) => {
       return result
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

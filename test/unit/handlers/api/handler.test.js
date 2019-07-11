@@ -33,7 +33,7 @@ const Kafka = require('../../../../src/handlers/lib/kafka/index')
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 
 function createRequest (routes) {
-  let value = routes || []
+  const value = routes || []
   return {
     server: {
       table: () => {
@@ -66,7 +66,7 @@ Test('route handler', (handlerTest) => {
       const jp = require('jsonpath')
       const healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
 
-      let reply = {
+      const reply = {
         response: (response) => {
           assert.equal(response.status, 'OK')
           return {

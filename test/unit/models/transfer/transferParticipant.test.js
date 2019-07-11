@@ -54,9 +54,9 @@ Test('TransferParticipant model', async (transferParticipant) => {
 
   await transferParticipant.test('saveTransferParticipant test', async (assert) => {
     try {
-      let saved = { transferParticipantId: transferParticipantRecord.transferParticipantId }
+      const saved = { transferParticipantId: transferParticipantRecord.transferParticipantId }
       Db.transferParticipant.insert.returns(Promise.resolve(saved))
-      let transferParticipantCreated = await Model.saveTransferParticipant(transferParticipantRecord)
+      const transferParticipantCreated = await Model.saveTransferParticipant(transferParticipantRecord)
       assert.equal(transferParticipantCreated, saved, 'transfer participant is inserted and id is returned')
       assert.ok(Db.transferParticipant.insert.calledOnce, 'transfer participant insert is called once')
       assert.end()

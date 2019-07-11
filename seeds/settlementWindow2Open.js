@@ -31,11 +31,11 @@ const settlementWindowState = 'OPEN'
 
 const initialSettlementWindowReason = 'initial window'
 
-let initialSettlementWindow = {
+const initialSettlementWindow = {
   reason: initialSettlementWindowReason
 }
 
-let initialSettlementWindowStateChange = {
+const initialSettlementWindowStateChange = {
   settlementWindowId: 1,
   settlementWindowStateId: settlementWindowState,
   reason: initialSettlementWindowReason

@@ -40,6 +40,7 @@ const ParticipantFacade = require('../participant/facade')
 const Time = require('../../lib/time')
 const Config = require('../../lib/config')
 const _ = require('lodash')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const errorPayeeGeneric = 5000
 const intervalMinPayeeError = errorPayeeGeneric
@@ -49,7 +50,7 @@ const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
     return await Db.transfer.query(async (builder) => {
-      let transferResult = await builder
+      const transferResult = await builder
         .where({
           'transfer.transferId': id,
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
@@ -101,8 +102,9 @@ const getById = async (id) => {
       }
       return transferResult
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -110,7 +112,7 @@ const getByIdLight = async (id) => {
   try {
     /** @namespace Db.transfer **/
     return await Db.transfer.query(async (builder) => {
-      let transferResult = await builder
+      const transferResult = await builder
         .where({ 'transfer.transferId': id })
         .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
@@ -142,15 +144,16 @@ const getByIdLight = async (id) => {
       }
       return transferResult
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
 const getAll = async () => {
   try {
     return await Db.transfer.query(async (builder) => {
-      let transferResultList = await builder
+      const transferResultList = await builder
         .where({
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
@@ -190,13 +193,14 @@ const getAll = async () => {
           'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
-      for (let transferResult of transferResultList) {
+      for (const transferResult of transferResultList) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(transferResult.transferId)
         transferResult.isTransferReadModel = true
       }
       return transferResultList
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -220,8 +224,9 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -260,7 +265,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
     await knex.transaction(async (trx) => {
       try {
         /** @namespace Db.settlementWindow **/
-        let result = await Db.settlementWindow.query(builder => {
+        const result = await Db.settlementWindow.query(builder => {
           return builder
             .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
             .select(
@@ -275,7 +280,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
         })
         transferFulfilmentRecord.settlementWindowId = result[0].settlementWindowId
         await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
-        for (let transferExtension of transferExtensions) {
+        for (const transferExtension of transferExtensions) {
           await knex('transferExtension').transacting(trx).insert(transferExtension)
         }
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
@@ -293,8 +298,9 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
       transferStateChangeRecord,
       transferExtensions
     }
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -312,7 +318,6 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
 
 const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
   let errorCode
-  let errorDescription
   let transferErrorRecord
 
   const transactionTimestamp = Time.getUTCString(new Date())
@@ -324,7 +329,7 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
   } else {
     errorCode = errorPayeeGeneric.toString()
   }
-  errorDescription = payload.errorInformation.errorDescription
+  const errorDescription = payload.errorInformation.errorDescription
 
   const transferStateChangeRecord = {
     transferId,
@@ -371,7 +376,7 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
           const insertedTransferError = await knex('transferError').transacting(trx)
             .where({ transferStateChangeId: insertedTransferStateChange.transferStateChangeId })
             .first().orderBy('transferErrorId', 'desc')
-          for (let transferExtension of transferExtensions) {
+          for (const transferExtension of transferExtensions) {
             transferExtension.transferErrorId = insertedTransferError.transferErrorId
             await knex('transferExtension').transacting(trx).insert(transferExtension)
           }
@@ -390,8 +395,9 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
       transferErrorRecord,
       transferExtensions
     }
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -400,7 +406,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const participants = []
     const names = [payload.payeeFsp, payload.payerFsp]
 
-    for (let name of names) {
+    for (const name of names) {
       const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.LedgerAccountType.POSITION)
       if (participant) {
         participants.push(participant)
@@ -477,8 +483,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         throw err
       }
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -519,13 +526,14 @@ const getTransferStateByTransferId = async (id) => {
         .first()
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
   try {
-    let transactionTimestamp = new Date()
+    const transactionTimestamp = new Date()
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
@@ -626,8 +634,9 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .where('tt.expirationDate', '<', transactionTimestamp)
       .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
         'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -755,6 +764,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return await knex.transaction(trxFunction)
     }
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -782,7 +792,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .transacting(trx)
 
         // Retrieve hub reconciliation account for the specified currency
-        let { reconciliationAccountId } = await knex('participantCurrency')
+        const { reconciliationAccountId } = await knex('participantCurrency')
           .select('participantCurrencyId AS reconciliationAccountId')
           .where('participantId', Config.HUB_ID)
           .andWhere('currencyId', payload.amount.currency)
@@ -851,7 +861,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
             })
           )
         }
-        for (let transferExtension of transferExtensions) {
+        for (const transferExtension of transferExtensions) {
           await knex('transferExtension').insert(transferExtension).transacting(trx)
         }
 
@@ -873,6 +883,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -883,7 +894,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
 
     const trxFunction = async (trx, doCommit = true) => {
       try {
-        let param1 = {
+        const param1 = {
           transferId: payload.transferId,
           transferStateId: enums.transferState.RESERVED,
           reason: payload.reason,
@@ -891,7 +902,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
           drUpdated: true,
           crUpdated: false
         }
-        let positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
+        const positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
 
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
           positionResult.drPositionValue > 0) {
@@ -918,6 +929,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -952,7 +964,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
 
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN ||
           payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
-          let param1 = {
+          const param1 = {
             transferId: payload.transferId,
             transferStateId: enums.transferState.COMMITTED,
             reason: payload.reason,
@@ -983,6 +995,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     }
     return 0
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -1016,7 +1029,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
           .transacting(trx)
 
         if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT) {
-          let param1 = {
+          const param1 = {
             transferId: payload.transferId,
             transferStateId: enums.transferState.ABORTED_REJECTED,
             reason: payload.reason,
@@ -1047,6 +1060,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     }
     return 0
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -1068,7 +1082,8 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 

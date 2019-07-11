@@ -60,14 +60,14 @@ Test('Timeout handler', TimeoutHandlerTest => {
   })
 
   TimeoutHandlerTest.test('timeout should', timeoutTest => {
-    let timeoutSegmentMock = {
+    const timeoutSegmentMock = {
       segmentId: 1,
       value: 10
     }
-    let latestTransferStateChangeMock = {
+    const latestTransferStateChangeMock = {
       transferStateChangeId: 20
     }
-    let resultMock = [
+    const resultMock = [
       {
         transferId: Uuid(),
         payerFsp: 'dfsp1',

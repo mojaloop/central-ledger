@@ -34,6 +34,7 @@
 const BulkPrepareHandlers = require('./prepare/handler')
 const BulkFulfilHandlers = require('./fulfil/handler')
 const BulkProcessingHandlers = require('./processing/handler')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 /**
  * @function RegisterAllHandlers
@@ -49,8 +50,9 @@ const registerAllHandlers = async () => {
     await BulkFulfilHandlers.registerAllHandlers()
     await BulkProcessingHandlers.registerAllHandlers()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

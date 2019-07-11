@@ -26,7 +26,7 @@
 
 const participantLimitTypes = [
   {
-    'name': 'NET_DEBIT_CAP'
+    name: 'NET_DEBIT_CAP'
   }
 ]
 

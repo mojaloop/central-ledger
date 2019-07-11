@@ -61,16 +61,16 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
       stateChangePrepareResult = await HelperModule.prepareNeededData('transferStateChange')
       // assert.comment('the prepared data is: ', JSON.stringify(stateChangePrepareResult, null, 4))
 
-      let state = stateChangePrepareResult.transferStateResults[1]
-      let transferStateChange = {
+      const state = stateChangePrepareResult.transferStateResults[1]
+      const transferStateChange = {
         transferId: stateChangePrepareResult.transfer.transferId,
         transferStateId: state.transferStateId,
         reason: null,
         createdDate: Time.getUTCString(new Date())
       }
 
-      let createdId = await Model.saveTransferStateChange(transferStateChange)
-      let result = await Model.getByTransferId(stateChangePrepareResult.transfer.transferId)
+      const createdId = await Model.saveTransferStateChange(transferStateChange)
+      const result = await Model.getByTransferId(stateChangePrepareResult.transfer.transferId)
       assert.equal(createdId, result.transferStateChangeId, 'transferId match')
       assert.equal(transferStateChange.transferStateId, result.transferStateId, 'key match')
       assert.equal(transferStateChange.reason, result.reason, 'value match')
@@ -83,7 +83,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
   })
 
   await stateChangeTest.test('create stateChange without transferId should throw error', async (assert) => {
-    let state = stateChangePrepareResult.transferStateResults[0]
+    const state = stateChangePrepareResult.transferStateResults[0]
     try {
       await Model.saveTransferStateChange({
         transferStateId: state.transferStateId,

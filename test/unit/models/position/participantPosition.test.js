@@ -31,7 +31,6 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/position/participantPosition')
 
 Test('Participant Limit model', async (participantPositionTest) => {
-  let sandbox
   const participantPosition1 = {
     participantCurrencyId: 1,
     value: 100,
@@ -39,7 +38,7 @@ Test('Participant Limit model', async (participantPositionTest) => {
     changedDate: new Date()
   }
 
-  sandbox = Sinon.createSandbox()
+  const sandbox = Sinon.createSandbox()
   Db.participantPosition = {
     insert: sandbox.stub(),
     update: sandbox.stub(),
@@ -49,7 +48,7 @@ Test('Participant Limit model', async (participantPositionTest) => {
   await participantPositionTest.test('insert participant position', async (assert) => {
     try {
       Db.participantPosition.insert.withArgs(participantPosition1).returns(1)
-      let result = await Model.insert(participantPosition1)
+      const result = await Model.insert(participantPosition1)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
@@ -76,7 +75,7 @@ Test('Participant Limit model', async (participantPositionTest) => {
   await participantPositionTest.test('update participant position', async (assert) => {
     try {
       Db.participantPosition.update.returns(1)
-      let result = await Model.update(participantPosition1)
+      const result = await Model.update(participantPosition1)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
@@ -103,7 +102,7 @@ Test('Participant Limit model', async (participantPositionTest) => {
   await participantPositionTest.test('getPositionByCurrencyId participant position', async (assert) => {
     try {
       Db.participantPosition.findOne.withArgs({ participantCurrencyId: participantPosition1.participantCurrencyId }).returns(1)
-      let result = await Model.getPositionByCurrencyId(participantPosition1.participantCurrencyId)
+      const result = await Model.getPositionByCurrencyId(participantPosition1.participantCurrencyId)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {

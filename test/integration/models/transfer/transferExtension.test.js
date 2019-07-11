@@ -38,7 +38,7 @@ const HelperModule = require('../../helpers')
 Test('Extension model test', async (extensionTest) => {
   let transferId
 
-  let extensionTestValues = [
+  const extensionTestValues = [
     {
       transferId: '1',
       key: 'extTestKey1',
@@ -47,7 +47,7 @@ Test('Extension model test', async (extensionTest) => {
     }
   ]
 
-  let extensionMap = new Map()
+  const extensionMap = new Map()
 
   await extensionTest.test('setup', async (assert) => {
     try {
@@ -70,8 +70,8 @@ Test('Extension model test', async (extensionTest) => {
     try {
       extensionTestValues.forEach(async (extension) => {
         try {
-          let extensionResult = await HelperModule.prepareNeededData('transferExtension')
-          let result = extensionResult.extension[0]
+          const extensionResult = await HelperModule.prepareNeededData('transferExtension')
+          const result = extensionResult.extension[0]
           transferId = result.transferId
 
           let read = await Model.getByTransferId(extensionResult.transfer.transferId)
@@ -151,9 +151,9 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('getByTransferId', async (assert) => {
     try {
-      for (let extensionObj of extensionMap.values()) {
-        let extension = extensionObj.extension
-        let result = await Model.getByTransferId(extension.transferId)
+      for (const extensionObj of extensionMap.values()) {
+        const extension = extensionObj.extension
+        const result = await Model.getByTransferId(extension.transferId)
         assert.equal(JSON.stringify(extension), JSON.stringify(result[0]))
         // assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
         assert.equal(result[0].transferId, extension.transferId, 'transferId match')
@@ -171,9 +171,9 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('getByTransferExtensionId', async (assert) => {
     try {
-      for (let [extensionId, extensionObj] of extensionMap.entries()) {
-        let extension = extensionObj.extension
-        let result = await Model.getByTransferExtensionId(extension.transferExtensionId)
+      for (const [extensionId, extensionObj] of extensionMap.entries()) {
+        const extension = extensionObj.extension
+        const result = await Model.getByTransferExtensionId(extension.transferExtensionId)
         assert.equal(JSON.stringify(extension), JSON.stringify(result))
         // assert.comment(`Testing with extension \n ${JSON.stringify(extension, null, 2)}`)
         assert.equal(result.extensionId, extensionId, 'extensionId match')

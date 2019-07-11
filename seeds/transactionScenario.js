@@ -33,24 +33,24 @@ Contributors
 
 const transactionScenario = [
   {
-    'name': 'TRANSFER',
-    'description': 'Used for performing a P2P (Peer to Peer, or Consumer to Consumer) transaction'
+    name: 'TRANSFER',
+    description: 'Used for performing a P2P (Peer to Peer, or Consumer to Consumer) transaction'
   },
   {
-    'name': 'DEPOSIT',
-    'description': 'Used for performing a Cash-In (deposit) transaction. In a normal scenario, electronic funds are transferred from a Business account to a Consumer account, and physical cash is given from the Consumer to the Business User'
+    name: 'DEPOSIT',
+    description: 'Used for performing a Cash-In (deposit) transaction. In a normal scenario, electronic funds are transferred from a Business account to a Consumer account, and physical cash is given from the Consumer to the Business User'
   },
   {
-    'name': 'WITHDRAWAL',
-    'description': 'Used for performing a Cash-Out (withdrawal) transaction. In a normal scenario, electronic funds are transferred from a Consumer’s account to a Business account, and physical cash is given from the Business User to the Consumer'
+    name: 'WITHDRAWAL',
+    description: 'Used for performing a Cash-Out (withdrawal) transaction. In a normal scenario, electronic funds are transferred from a Consumer’s account to a Business account, and physical cash is given from the Business User to the Consumer'
   },
   {
-    'name': 'PAYMENT',
-    'description': 'Usually used for performing a transaction from a Consumer to a Merchant or Organization, but could also be for a B2B (Business to Business) payment. The transaction could be online for a purchase in an Internet store, in a physical store where both the Consumer and Business User are present, a bill payment, a donation, and so on'
+    name: 'PAYMENT',
+    description: 'Usually used for performing a transaction from a Consumer to a Merchant or Organization, but could also be for a B2B (Business to Business) payment. The transaction could be online for a purchase in an Internet store, in a physical store where both the Consumer and Business User are present, a bill payment, a donation, and so on'
   },
   {
-    'name': 'REFUND',
-    'description': 'Used for performing a refund of transaction'
+    name: 'REFUND',
+    description: 'Used for performing a refund of transaction'
   }
 ]
 

@@ -29,6 +29,7 @@
 'use strict'
 
 const mongoose = require('mongoose')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 // single transfer model
 const transfer = {
@@ -107,18 +108,20 @@ bulkTransferSchema.pre('save', function () {
   try {
     this.individualTransfers.forEach(async transfer => {
       try {
-        let individualTransfer = new IndividualTransferModel({
+        const individualTransfer = new IndividualTransferModel({
           _id_bulkTransfers: this._id,
           messageId: this.messageId,
           payload: transfer._doc
         })
         await individualTransfer.save()
-      } catch (e) {
-        throw e
+      } catch (err) {
+        Logger.error(err)
+        throw err
       }
     })
-  } catch (e) {
-    throw (e)
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 })
 const BulkTransferModel = mongoose.model('bulkTransfers', bulkTransferSchema, 'bulkTransfers')
@@ -188,7 +191,7 @@ bulkTransferResponseSchema.pre('save', function () {
   try {
     this.individualTransferResults.forEach(async transfer => {
       try {
-        let individualTransferResult = new IndividualTransferResultModel({
+        const individualTransferResult = new IndividualTransferResultModel({
           _id_bulkTransferResponses: this._id,
           messageId: this.messageId,
           destination: this.destination,
@@ -196,12 +199,14 @@ bulkTransferResponseSchema.pre('save', function () {
           payload: transfer._doc
         })
         await individualTransferResult.save()
-      } catch (e) {
-        throw e
+      } catch (err) {
+        Logger.error(err)
+        throw err
       }
     })
-  } catch (e) {
-    throw (e)
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 })
 const BulkTransferResponseModel = mongoose.model('bulkTransferResponses', bulkTransferResponseSchema, 'bulkTransferResponses')

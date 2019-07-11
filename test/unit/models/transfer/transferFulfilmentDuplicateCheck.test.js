@@ -76,7 +76,7 @@ Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicat
           isValid: false
         }
 
-        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, newHash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, newHash)
         test.ok(knexStub.withArgs('transferFulfilmentDuplicateCheck').calledTwice, 'knex called with transferFulfilmentDuplicateCheck twice')
         test.deepEqual(result, expected, 'result matched')
         test.end()
@@ -110,7 +110,7 @@ Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicat
           isValid: false
         }
 
-        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
         test.ok(knexStub.withArgs('transferFulfilmentDuplicateCheck').calledOnce, 'knex called with transferFulfilmentDuplicateCheck once')
         test.deepEqual(result, expected, 'result matched')
         test.end()

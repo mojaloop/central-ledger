@@ -27,9 +27,9 @@ const Config = require('../src/lib/config')
 
 const participant = [
   {
-    'name': Config.HUB_NAME,
-    'description': 'Hub Operator',
-    'createdBy': 'seeds'
+    name: Config.HUB_NAME,
+    description: 'Hub Operator',
+    createdBy: 'seeds'
   }
 ]
 

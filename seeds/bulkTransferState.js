@@ -26,49 +26,49 @@
 
 const bulkTransferStates = [
   {
-    'bulkTransferStateId': 'RECEIVED',
-    'enumeration': 'RECEIVED',
-    'description': 'The switch has received the bulk transfer'
+    bulkTransferStateId: 'RECEIVED',
+    enumeration: 'RECEIVED',
+    description: 'The switch has received the bulk transfer'
   },
   {
-    'bulkTransferStateId': 'PENDING_PREPARE',
-    'enumeration': 'PENDING',
-    'description': 'Validation of received bulk transfer is successful'
+    bulkTransferStateId: 'PENDING_PREPARE',
+    enumeration: 'PENDING',
+    description: 'Validation of received bulk transfer is successful'
   },
   {
-    'bulkTransferStateId': 'PENDING_INVALID',
-    'enumeration': 'PENDING',
-    'description': 'Validation of received bulk transfer is not successful'
+    bulkTransferStateId: 'PENDING_INVALID',
+    enumeration: 'PENDING',
+    description: 'Validation of received bulk transfer is not successful'
   },
   {
-    'bulkTransferStateId': 'ACCEPTED',
-    'enumeration': 'ACCEPTED',
-    'description': 'The switch has reserved the funds for the transfers in the bulk'
+    bulkTransferStateId: 'ACCEPTED',
+    enumeration: 'ACCEPTED',
+    description: 'The switch has reserved the funds for the transfers in the bulk'
   },
   {
-    'bulkTransferStateId': 'PROCESSING',
-    'enumeration': 'PROCESSING',
-    'description': 'Fulfilment request has been received by the switch'
+    bulkTransferStateId: 'PROCESSING',
+    enumeration: 'PROCESSING',
+    description: 'Fulfilment request has been received by the switch'
   },
   {
-    'bulkTransferStateId': 'PENDING_FULFIL',
-    'enumeration': 'PROCESSING',
-    'description': 'Fulfilment request has been received by the switch'
+    bulkTransferStateId: 'PENDING_FULFIL',
+    enumeration: 'PROCESSING',
+    description: 'Fulfilment request has been received by the switch'
   },
   {
-    'bulkTransferStateId': 'COMPLETED',
-    'enumeration': 'COMPLETED',
-    'description': 'Final state when transfers in the bulk are committed'
+    bulkTransferStateId: 'COMPLETED',
+    enumeration: 'COMPLETED',
+    description: 'Final state when transfers in the bulk are committed'
   },
   {
-    'bulkTransferStateId': 'REJECTED',
-    'enumeration': 'REJECTED',
-    'description': 'Final state when the switch has completed rejection request by the payee'
+    bulkTransferStateId: 'REJECTED',
+    enumeration: 'REJECTED',
+    description: 'Final state when the switch has completed rejection request by the payee'
   },
   {
-    'bulkTransferStateId': 'INVALID',
-    'enumeration': 'REJECTED',
-    'description': 'Final state when the switch has completed processing of pending invalid bulk transfer'
+    bulkTransferStateId: 'INVALID',
+    enumeration: 'REJECTED',
+    description: 'Final state when the switch has completed processing of pending invalid bulk transfer'
   }
 ]
 

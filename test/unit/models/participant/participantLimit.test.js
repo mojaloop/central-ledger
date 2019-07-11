@@ -78,7 +78,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
         createdDate: '2018-07-19',
         createdBy: 'unknown'
       }
-      let result = await Model.getByParticipantCurrencyId(1)
+      const result = await Model.getByParticipantCurrencyId(1)
       assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()
     } catch (err) {
@@ -104,7 +104,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
   await participantLimitTest.test('destroyByParticipantCurrencyId', async (assert) => {
     try {
       Db.participantLimit.destroy.withArgs({ participantCurrencyId: 1 }).returns(1)
-      let result = await Model.destroyByParticipantCurrencyId(1)
+      const result = await Model.destroyByParticipantCurrencyId(1)
       assert.equal(result, 1, 'Results match')
       assert.end()
     } catch (err) {
@@ -140,7 +140,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
         })
       })
 
-      let result = await Model.destroyByParticipantId(1)
+      const result = await Model.destroyByParticipantId(1)
       test.ok(result)
       test.end()
     } catch (err) {

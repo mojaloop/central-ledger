@@ -35,7 +35,7 @@ const cleanup = async () => {
     const knex = await Db.getKnex()
 
     const ttIdList = await Db.transferTimeout.query(async (builder) => {
-      let b = await builder
+      const b = await builder
         .whereIn('tsc.transferStateId', [`${TS.RECEIVED_FULFIL}`, `${TS.COMMITTED}`, `${TS.FAILED}`, `${TS.RESERVED_TIMEOUT}`,
           `${TS.RECEIVED_REJECT}`, `${TS.EXPIRED_PREPARED}`, `${TS.EXPIRED_RESERVED}`, `${TS.ABORTED_REJECTED}`])
         .innerJoin(
@@ -51,13 +51,14 @@ const cleanup = async () => {
     })
 
     await Db.transferTimeout.query(async (builder) => {
-      let b = await builder
+      const b = await builder
         .whereIn('transferTimeout.transferTimeoutId', ttIdList.map(elem => elem.transferTimeoutId))
         .del()
       return b
     })
     return ttIdList
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

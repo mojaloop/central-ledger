@@ -24,16 +24,18 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getByBulkTransferId = async (id) => {
   try {
     return await Db.bulkTransferExtension.query(async (builder) => {
-      let result = builder
-        .where({ 'bulkTransferId': id })
+      const result = builder
+        .where({ bulkTransferId: id })
         .select('key', 'value', 'bulkTransferFulfilmentId')
       return result
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

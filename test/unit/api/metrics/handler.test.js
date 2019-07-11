@@ -30,7 +30,7 @@ const Handler = require('../../../../src/api/metrics/handler')
 const Metrics = require('@mojaloop/central-services-metrics')
 
 function createRequest (routes) {
-  let value = routes || []
+  const value = routes || []
   return {
     server: {
       table: () => {
@@ -55,7 +55,7 @@ Test('metrics handler', (handlerTest) => {
 
   handlerTest.test('metrics should', (healthTest) => {
     healthTest.test('return thr metrics ok', async function (assert) {
-      let reply = {
+      const reply = {
         response: (response) => {
           // assert.equal(response.status, 'OK')
           return {

@@ -34,7 +34,7 @@
 const Participant = require('../../../domain/participant')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 
-let reasons = []
+const reasons = []
 
 const validateDifferentFsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())

@@ -31,15 +31,17 @@
 
 const Config = require('./config')
 const Db = require('./db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const endpointType = async function () {
   try {
-    let endpointType = {}
-    for (let record of await Db.endpointType.find({})) {
+    const endpointType = {}
+    for (const record of await Db.endpointType.find({})) {
       endpointType[`${record.name}`] = record.endpointTypeId
     }
     return endpointType
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -47,105 +49,115 @@ const hubParticipant = async function () {
   try {
     return (await Db.participant.find({ participantId: Config.HUB_ID }))[0]
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const ledgerAccountType = async function () {
   try {
-    let ledgerAccountType = {}
-    for (let record of await Db.ledgerAccountType.find({})) {
+    const ledgerAccountType = {}
+    for (const record of await Db.ledgerAccountType.find({})) {
       ledgerAccountType[`${record.name}`] = record.ledgerAccountTypeId
     }
     return ledgerAccountType
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const ledgerEntryType = async function () {
   try {
-    let ledgerEntryType = {}
-    for (let record of await Db.ledgerEntryType.find({})) {
+    const ledgerEntryType = {}
+    for (const record of await Db.ledgerEntryType.find({})) {
       ledgerEntryType[`${record.name}`] = record.ledgerEntryTypeId
     }
     return ledgerEntryType
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const participantLimitType = async function () {
   try {
-    let participantLimitType = {}
-    for (let record of await Db.participantLimitType.find({})) {
+    const participantLimitType = {}
+    for (const record of await Db.participantLimitType.find({})) {
       participantLimitType[`${record.name}`] = record.participantLimitTypeId
     }
     return participantLimitType
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const transferParticipantRoleType = async function () {
   try {
-    let transferParticipantRoleType = {}
-    for (let record of await Db.transferParticipantRoleType.find({})) {
+    const transferParticipantRoleType = {}
+    for (const record of await Db.transferParticipantRoleType.find({})) {
       transferParticipantRoleType[`${record.name}`] = record.transferParticipantRoleTypeId
     }
     return transferParticipantRoleType
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const transferState = async function () {
   try {
-    let transferState = {}
-    for (let record of await Db.transferState.find({})) {
+    const transferState = {}
+    for (const record of await Db.transferState.find({})) {
       transferState[`${record.transferStateId}`] = record.transferStateId
     }
     return transferState
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const transferStateEnum = async function () {
   try {
-    let transferStateEnum = {}
-    for (let record of await Db.transferState.find({})) {
+    const transferStateEnum = {}
+    for (const record of await Db.transferState.find({})) {
       transferStateEnum[`${record.transferStateId}`] = record.enumeration
     }
     return transferStateEnum
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const bulkProcessingState = async function () {
   try {
-    let bulkProcessingState = {}
-    for (let record of await Db.bulkProcessingState.find({})) {
+    const bulkProcessingState = {}
+    for (const record of await Db.bulkProcessingState.find({})) {
       bulkProcessingState[`${record.name}`] = record.bulkProcessingStateId
     }
     return bulkProcessingState
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const bulkTransferState = async function () {
   try {
-    let bulkTransferState = {}
-    for (let record of await Db.bulkTransferState.find({})) {
+    const bulkTransferState = {}
+    for (const record of await Db.bulkTransferState.find({})) {
       bulkTransferState[`${record.bulkTransferStateId}`] = record.bulkTransferStateId
     }
     return bulkTransferState
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 const bulkTransferStateEnum = async function () {
   try {
-    let bulkTransferStateEnum = {}
-    for (let record of await Db.bulkTransferState.find({})) {
+    const bulkTransferStateEnum = {}
+    for (const record of await Db.bulkTransferState.find({})) {
       bulkTransferStateEnum[`${record.bulkTransferStateId}`] = record.enumeration
     }
     return bulkTransferStateEnum
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -165,13 +177,14 @@ const all = async function () {
       bulkTransferStateEnum: await bulkTransferStateEnum()
     }
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
 
 const transpose = function (obj) {
-  let transposed = new Map()
-  for (let prop in obj) {
+  const transposed = new Map()
+  for (const prop in obj) {
     transposed[obj[prop]] = prop
   }
   return transposed
@@ -361,7 +374,7 @@ const topicMap = {
     }
   },
   notification: {
-    'abort': {
+    abort: {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
@@ -381,7 +394,7 @@ const topicMap = {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'commit': {
+    commit: {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
@@ -389,7 +402,7 @@ const topicMap = {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'get': {
+    get: {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
@@ -397,11 +410,11 @@ const topicMap = {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'position': {
+    position: {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'prepare': {
+    prepare: {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
@@ -409,7 +422,7 @@ const topicMap = {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
-    'reject': {
+    reject: {
       functionality: transferEventType.NOTIFICATION,
       action: transferEventAction.EVENT
     },
@@ -427,11 +440,11 @@ const topicMap = {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
     },
-    'prepare': {
+    prepare: {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
     },
-    'commit': {
+    commit: {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
     },
@@ -439,11 +452,11 @@ const topicMap = {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
     },
-    'reject': {
+    reject: {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
     },
-    'abort': {
+    abort: {
       functionality: transferEventType.TRANSFER,
       action: transferEventAction.POSITION
     }

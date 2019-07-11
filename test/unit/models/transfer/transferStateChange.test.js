@@ -82,7 +82,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
   await transferStateChangeModel.test('save transferStateChange', async (assert) => {
     Db.transferStateChange.insert.withArgs(transferStateChangeModelFixtures[0]).returns(1)
     try {
-      let result = await Model.saveTransferStateChange(transferStateChangeModelFixtures[0])
+      const result = await Model.saveTransferStateChange(transferStateChangeModelFixtures[0])
       assert.equal(result, 1, ` returns ${result}`)
       assert.end()
     } catch (err) {
@@ -94,10 +94,10 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
 
   await transferStateChangeModel.test('get by transferId', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
-      let selectStub = sandbox.stub()
-      let orderStub = sandbox.stub()
-      let firstStub = sandbox.stub()
+      const builderStub = sandbox.stub()
+      const selectStub = sandbox.stub()
+      const orderStub = sandbox.stub()
+      const firstStub = sandbox.stub()
       builderStub.where = sandbox.stub()
 
       Db.transferStateChange.query.callsArgWith(0, builderStub)
@@ -110,7 +110,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
         })
       })
 
-      let result = await Model.getByTransferId(1)
+      const result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferStateChangeModelFixtures[0])
       assert.end()
       sandbox.restore()
@@ -136,9 +136,9 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
 
   await transferStateChangeModel.test('get latest', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
-      let orderStub = sandbox.stub()
-      let firstStub = sandbox.stub()
+      const builderStub = sandbox.stub()
+      const orderStub = sandbox.stub()
+      const firstStub = sandbox.stub()
 
       Db.transferStateChange.query.callsArgWith(0, builderStub)
       Db.transferStateChange.query.returns(transferStateChangeModelFixtures[0])
@@ -148,7 +148,7 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
         })
       })
 
-      let result = await Model.getLatest()
+      const result = await Model.getLatest()
       assert.deepEqual(result, transferStateChangeModelFixtures[0])
       assert.end()
       sandbox.restore()
@@ -220,11 +220,11 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
         }
       ]
 
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
       Db.transferStateChange.query.callsArgWith(0, builderStub)
       builderStub.whereIn = sandbox.stub().returns(transferStateChangeList)
 
-      let result = await Model.getByTransferIdList('9136780b-37e2-457c-8c05-f15dbb033b10')
+      const result = await Model.getByTransferIdList('9136780b-37e2-457c-8c05-f15dbb033b10')
       test.deepEqual(result, transferStateChangeList)
       test.end()
     } catch (err) {
