@@ -2,19 +2,10 @@
 
 const sleep = (milliseconds = 10, debug = false, caller = null, reason = null) => {
   let start = new Date().getTime()
-  if (debug) {
-    let output = caller ? `(${caller}) ` : ''
-    output += reason ? `${reason}: ` : ''
-    output += `sleep ${milliseconds / 1000}s..`
-    console.log(output)
-  }
   while (1) {
     if ((new Date().getTime() - start) > milliseconds) {
       break
     }
-  }
-  if (debug) {
-    console.log(`sleep end`)
   }
 }
 

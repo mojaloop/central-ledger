@@ -23,9 +23,10 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/
@@ -61,13 +62,17 @@ const connectDatabase = async () => {
   return result
 }
 const connectMongoose = async () => {
-  try {
-    let db = await ObjStoreDb.connect(Config.MONGODB_URI, {
-      promiseLibrary: global.Promise
-    })
-    return db
-  } catch (error) {
-    Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
+  if (!Config.MONGODB_DISABLED) {
+    try {
+      let db = await ObjStoreDb.connect(Config.MONGODB_URI, {
+        promiseLibrary: global.Promise
+      })
+      return db
+    } catch (error) {
+      Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
+      return null
+    }
+  } else {
     return null
   }
 }
@@ -188,6 +193,15 @@ const createHandlers = async (handlers) => {
         case 'get':
           await RegisterHandlers.transfers.registerGetHandler()
           break
+        case 'bulkprepare':
+          await RegisterHandlers.bulk.registerBulkPrepareHandler()
+          break
+        case 'bulkfulfil':
+          await RegisterHandlers.bulk.registerBulkFulfilHandler()
+          break
+        case 'bulkprocessing':
+          await RegisterHandlers.bulk.registerBulkProcessingHandler()
+          break
         default:
           let error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
@@ -233,8 +247,6 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
   let server
   switch (service) {
     case 'api':
-      server = await createServer(port, modules)
-      break
     case 'admin':
       server = await createServer(port, modules)
       break

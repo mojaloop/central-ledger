@@ -56,6 +56,9 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--fulfil', 'Start the Fulfil Handler')
   .option('--timeout', 'Start the Timeout Handler')
   .option('--admin', 'Start the Admin Handler')
+  .option('--bulkprepare', 'Start the Bulk Prepare Handler')
+  .option('--bulkfulfil', 'Start the Bulk Fulfil Handler')
+  .option('--bulkprocessing', 'Start the Bulk Processing Handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
@@ -105,6 +108,30 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       Logger.debug(`CLI: Executing --admin`)
       let handler = {
         type: 'admin',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkprepare) {
+      Logger.debug(`CLI: Executing --bulkprepare`)
+      let handler = {
+        type: 'bulkprepare',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkfulfil) {
+      Logger.debug(`CLI: Executing --bulkfulfil`)
+      let handler = {
+        type: 'bulkfulfil',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkprocessing) {
+      Logger.debug(`CLI: Executing --bulkprocessing`)
+      let handler = {
+        type: 'bulkprocessing',
         enabled: true
       }
       handlerList.push(handler)
