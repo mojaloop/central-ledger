@@ -29,7 +29,7 @@ const Base = require('../../base')
 const AdminRoutes = require('../../../../src/api/routes')
 
 Test('test participant routes', async function (assert) {
-  let req = Base.buildRequest({ url: '/participants/{name}', method: 'GET' })
+  const req = Base.buildRequest({ url: '/participants/{name}', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)

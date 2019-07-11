@@ -45,7 +45,7 @@ module.exports = [
     method: 'GET',
     path: '/enums',
     handler: async function (request, h) {
-      let enums = await request.server.methods.enums('all')
+      const enums = await request.server.methods.enums('all')
       return h.response(enums).code(200)
     },
     options: {

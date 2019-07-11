@@ -33,14 +33,14 @@ const Model = require('../../../src/models/transfer/transferStateChange')
 
 exports.prepareData = async () => {
   try {
-    let transferResult = await TransferPreparationModule.prepareData()
-    let transferStateResults = TransferStatePreparationHelper.prepareData()
-    let saveResult = await Model.saveTransferStateChange({
+    const transferResult = await TransferPreparationModule.prepareData()
+    const transferStateResults = TransferStatePreparationHelper.prepareData()
+    const saveResult = await Model.saveTransferStateChange({
       transferId: transferResult.transfer.transferId,
       transferStateId: transferStateResults[0].transferStateId
     })
-    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
-    let transferStateChangeResult = await Model.getByTransferId(transferResult.transfer.transferId)
+    const transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    const transferStateChangeResult = await Model.getByTransferId(transferResult.transfer.transferId)
 
     return {
       success: !!(saveResult),

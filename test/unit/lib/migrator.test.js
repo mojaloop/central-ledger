@@ -32,7 +32,7 @@ Test('migrator', migratorTest => {
     migrateTest.test('override migrations directory path and run migrations', test => {
       Migrations.migrate.returns(P.resolve())
 
-      let updatedMigrationsPath = Path.join(process.cwd(), configuredMigrationsFolder)
+      const updatedMigrationsPath = Path.join(process.cwd(), configuredMigrationsFolder)
 
       Migrator.migrate()
         .then(() => {

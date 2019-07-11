@@ -43,9 +43,9 @@ const debug = false
 
 Test('Participant service', async (participantTest) => {
   let sandbox
-  let participantFixtures = []
-  let endpointsFixtures = []
-  let participantMap = new Map()
+  const participantFixtures = []
+  const endpointsFixtures = []
+  const participantMap = new Map()
 
   const testData = {
     currency: 'USD',
@@ -110,7 +110,7 @@ Test('Participant service', async (participantTest) => {
       result = await ParticipantHelper.prepareData(testData.fsp2Name, testData.currency, !!getByNameResult)
       participantFixtures.push(result.participant)
       participantFixtures.forEach(async participant => {
-        let read = await ParticipantService.getById(participant.participantId)
+        const read = await ParticipantService.getById(participant.participantId)
         participantMap.set(participant.participantId, read)
         if (debug) assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
         assert.equal(read.name, participant.name, 'names are equal')
@@ -129,7 +129,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getByName', async (assert) => {
     try {
       participantFixtures.forEach(async participant => {
-        let result = await ParticipantService.getByName(participant.name)
+        const result = await ParticipantService.getByName(participant.name)
         assert.equal(result.name, participant.name, 'names are equal')
         assert.deepEqual(result.currencyList, participant.currencyList, 'currencies match')
         assert.equal(result.isActive, participant.isActive, 'isActive flag matches')
@@ -145,7 +145,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll', async (assert) => {
     try {
-      let result = await ParticipantService.getAll()
+      const result = await ParticipantService.getAll()
       assert.ok(result, 'returns result')
       assert.end()
     } catch (err) {
@@ -157,8 +157,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getById', async (assert) => {
     try {
-      for (let participantId of participantMap.keys()) {
-        let participant = await ParticipantService.getById(participantId)
+      for (const participantId of participantMap.keys()) {
+        const participant = await ParticipantService.getById(participantId)
         assert.equal(JSON.stringify(participant), JSON.stringify(participantMap.get(participantId)))
       }
       assert.end()
@@ -186,7 +186,7 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
       endpointsFixtures.forEach(async endpoint => {
-        let read = await ParticipantService.getEndpoint(participant.name, endpoint.type)
+        const read = await ParticipantService.getEndpoint(participant.name, endpoint.type)
         assert.equal(read[0].name, endpoint.type, `endpoint type ${endpoint.type} equal`)
         assert.equal(read[0].value, endpoint.value, 'endpoint values match')
       })
@@ -212,7 +212,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('getEndpoint', async (assert) => {
     try {
       endpointsFixtures.forEach(async endpoint => {
-        let result = await ParticipantService.getEndpoint(participantFixtures[0].name, endpoint.type)
+        const result = await ParticipantService.getEndpoint(participantFixtures[0].name, endpoint.type)
         assert.equal(result[0].name, endpoint.type, `endpoint type ${endpoint.type} equal`)
         assert.equal(result[0].value, endpoint.value, 'endpoint values match')
         assert.equal(result[0].isActive, 1, 'isActive flag match')
@@ -285,7 +285,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('update limits', async (assert) => {
     try {
-      let result = await ParticipantLimitHelper.adjustLimits(participantFixtures[0].name, { limit: { value: 1000 } })
+      const result = await ParticipantLimitHelper.adjustLimits(participantFixtures[0].name, { limit: { value: 1000 } })
       assert.ok(result, `adjustLimits successful for Participant: ${participantFixtures[0].name}`)
       assert.equal(result.participantLimit.value, 1000, 'The limits updated successfully')
       assert.end()
@@ -344,8 +344,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('update', async (assert) => {
     try {
-      for (let participantId of participantMap.keys()) {
-        let participant = await ParticipantService.update(participantMap.get(participantId).name, { isActive: 0 })
+      for (const participantId of participantMap.keys()) {
+        const participant = await ParticipantService.update(participantMap.get(participantId).name, { isActive: 0 })
         let p = await ParticipantService.getById(participant.participantId)
         assert.equal(participant.participantId, p.participantId, 'ids match')
         assert.equal(p.isActive, 0, 'update works')
@@ -363,7 +363,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('teardown', async (assert) => {
     try {
-      for (let participant of participantFixtures) {
+      for (const participant of participantFixtures) {
         if (participant.name === testData.fsp1Name || participant.name === testData.fsp2Name) {
           assert.pass(`participant ${participant.name} preserved`)
         } else {

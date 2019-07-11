@@ -42,14 +42,16 @@ const Errors = require('../../errors')
 const Crypto = require('crypto')
 const TransferError = require('../../models/transfer/transferError')
 const ErrorText = require('../../../src/lib/errors')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const PayeeRejectedTransactionError = 5104
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
     return await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -76,11 +78,13 @@ const expire = (id) => {
 }
 
 const fulfil = async (transferFulfilmentId, transferId, payload) => {
+  // eslint-disable-next-line no-useless-catch
   try {
     const isCommit = true
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -92,6 +96,7 @@ const reject = async (transferFulfilmentId, transferId, payload) => {
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -100,6 +105,7 @@ const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
   try {
     return TransferFacade.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -145,6 +151,7 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
     }
     return result
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -169,8 +176,9 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
   try {
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
     return TransferError.insert(transferStateChange.transferStateChangeId, errorCode, errorDescription)
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

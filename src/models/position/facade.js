@@ -43,16 +43,16 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.LedgerAccountType.POSITION)
-    let processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
-    let reservedTransfers = []
-    let abortedTransfers = []
-    let initialTransferStateChangePromises = []
-    let transferIdList = []
-    let limitAlarms = []
+    const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
+    const reservedTransfers = []
+    const abortedTransfers = []
+    const initialTransferStateChangePromises = []
+    const transferIdList = []
+    const limitAlarms = []
     let sumTransfersInBatch = 0
     await knex.transaction(async (trx) => {
       try {
-        for (let transfer of transferList) {
+        for (const transfer of transferList) {
           // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
           // ^^^^^ this is how we want to get this later to reduce the DB queries into one.
 
@@ -72,15 +72,15 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           transferIdList.push(id)
           initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
         }
-        let initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
-        for (let id in initialTransferStateChangeList) {
-          let transferState = initialTransferStateChangeList[id]
-          let transfer = transferList[id].value.content.payload
-          let rawMessage = transferList[id]
+        const initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
+        for (const id in initialTransferStateChangeList) {
+          const transferState = initialTransferStateChangeList[id]
+          const transfer = transferList[id].value.content.payload
+          const rawMessage = transferList[id]
           if (transferState.transferStateId === Enum.TransferState.RECEIVED_PREPARE) {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.TransferState.RESERVED
-            let transferAmount = parseFloat(transfer.amount.amount) /* Just do this once,so add to reservedTransfers */
+            const transferAmount = parseFloat(transfer.amount.amount) /* Just do this once,so add to reservedTransfers */
             reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
             sumTransfersInBatch += transferAmount
           } else {
@@ -90,14 +90,14 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
           }
         }
-        let abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
+        const abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
         Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
         // Get the effective position for this participantCurrency at the start of processing the Batch
         // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
         const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId: participantCurrency.participantCurrencyId }).forUpdate().select('*').first()
-        let currentPosition = parseFloat(initialParticipantPosition.value)
-        let reservedPosition = parseFloat(initialParticipantPosition.reservedValue)
-        let effectivePosition = currentPosition + reservedPosition
+        const currentPosition = parseFloat(initialParticipantPosition.value)
+        const reservedPosition = parseFloat(initialParticipantPosition.reservedValue)
+        const effectivePosition = currentPosition + reservedPosition
         initialParticipantPosition.reservedValue += sumTransfersInBatch
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
         // Get the actual position limit and calculate the available position for the transfers to use in this batch
@@ -111,8 +111,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
            This means that they should not be removed from the list, and the participantPosition
         */
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
-        for (let transferId in reservedTransfers) {
-          let { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
+        for (const transferId in reservedTransfers) {
+          const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
           if (availablePosition >= transferAmount) {
             availablePosition -= transferAmount
             transferState.transferStateId = Enum.TransferState.RESERVED
@@ -124,8 +124,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
               errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
             }
           }
-          let runningPosition = currentPosition + sumReserved /* effective position */
-          let runningReservedValue = sumTransfersInBatch - sumReserved
+          const runningPosition = currentPosition + sumReserved /* effective position */
+          const runningReservedValue = sumTransfersInBatch - sumReserved
           processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
         }
         /*
@@ -133,7 +133,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           So the position moves forward by the sum of the transfers actually reserved (sumReserved)
           and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
         */
-        let processedPositionValue = initialParticipantPosition.value + sumReserved
+        const processedPositionValue = initialParticipantPosition.value + sumReserved
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
           value: processedPositionValue,
           reservedValue: initialParticipantPosition.reservedValue - sumTransfersInBatch
@@ -147,12 +147,12 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           The transferStateChanges need to be persisted first (by INSERTing) to have the PK reference
         */
         await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
-        let processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
-        let processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
-        let processedTransfersKeysList = Object.keys(processedTransfers)
-        let batchParticipantPositionChange = []
-        for (let keyIndex in processedTransfersKeysList) {
-          let { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
+        const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
+        const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
+        const processedTransfersKeysList = Object.keys(processedTransfers)
+        const batchParticipantPositionChange = []
+        for (const keyIndex in processedTransfersKeysList) {
+          const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
           const participantPositionChange = {
             participantPositionId: initialParticipantPosition.participantPositionId,
             transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
@@ -170,15 +170,15 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         throw e
       }
     })
-    let preparedMessagesList = Array.from(transferIdList.map(transferId =>
+    const preparedMessagesList = Array.from(transferIdList.map(transferId =>
       transferId in processedTransfers
         ? reservedTransfers[transferId]
         : abortedTransfers[transferId]
     ))
     return { preparedMessagesList, limitAlarms }
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -219,8 +219,9 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
     }).catch((err) => {
       throw err
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -258,7 +259,8 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
           'pc.currencyId')
     })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -283,7 +285,8 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         )
     })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 

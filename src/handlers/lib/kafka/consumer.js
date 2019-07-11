@@ -33,7 +33,7 @@
 const Consumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Logger = require('@mojaloop/central-services-shared').Logger
 
-let listOfConsumers = {}
+const listOfConsumers = {}
 
 /**
  * @function CreateHandler

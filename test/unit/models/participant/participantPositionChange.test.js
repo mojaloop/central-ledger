@@ -52,10 +52,10 @@ Test('Participant Position model', async (participantPositionChangeTest) => {
 
   await participantPositionChangeTest.test('getByParticipantPositionId', async (assert) => {
     try {
-      let builderStub = sandbox.stub()
-      let selectStub = sandbox.stub()
-      let orderByStub = sandbox.stub()
-      let firstStub = sandbox.stub()
+      const builderStub = sandbox.stub()
+      const selectStub = sandbox.stub()
+      const orderByStub = sandbox.stub()
+      const firstStub = sandbox.stub()
 
       builderStub.where = sandbox.stub()
       const participantPositionChange = {
@@ -77,7 +77,7 @@ Test('Participant Position model', async (participantPositionChangeTest) => {
         })
       })
 
-      let result = await Model.getByParticipantPositionId(1)
+      const result = await Model.getByParticipantPositionId(1)
       assert.equal(JSON.stringify(result), JSON.stringify(participantPositionChange))
       assert.end()
     } catch (err) {

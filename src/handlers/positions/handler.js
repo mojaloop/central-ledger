@@ -121,8 +121,8 @@ const positions = async (error, messages) => {
               : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
                 : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
                   : Enum.actionLetter.unknown))))))
-    let params = { message, kafkaTopic, consumer }
-    let producer = { action }
+    const params = { message, kafkaTopic, consumer }
+    const producer = { action }
     if (![TransferEventAction.BULK_PREPARE, TransferEventAction.BULK_COMMIT].includes(action)) {
       producer.functionality = TransferEventType.NOTIFICATION
     } else {
@@ -132,12 +132,12 @@ const positions = async (error, messages) => {
     if (eventType === TransferEventType.POSITION && [TransferEventAction.PREPARE, TransferEventAction.BULK_PREPARE].includes(action)) {
       Logger.info(Util.breadcrumb(location, { path: 'prepare' }))
       const { preparedMessagesList, limitAlarms } = await PositionService.calculatePreparePositionsBatch(decodeMessages(prepareBatch))
-      for (let limit of limitAlarms) {
+      for (const limit of limitAlarms) {
         // Publish alarm message to KafkaTopic for the Hub to consume as it is the Hub
         // rather than the switch to manage this (the topic is an participantEndpoint)
         Logger.info(`Limit alarm should be sent with ${limit}`)
       }
-      for (let prepareMessage of preparedMessagesList) {
+      for (const prepareMessage of preparedMessagesList) {
         const { transferState } = prepareMessage
         if (transferState.transferStateId === Enum.TransferState.RESERVED) {
           Logger.info(Util.breadcrumb(location, `payer--${actionLetter}1`))
@@ -202,7 +202,7 @@ const positions = async (error, messages) => {
           reason: errorTransferExpDescription
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-        let errorInformation = Errors.getErrorInformation(errorType.transferExpired)
+        const errorInformation = Errors.getErrorInformation(errorType.transferExpired)
         errorInformation.extensionList = payload.extensionList
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer })
       }
@@ -237,9 +237,9 @@ const registerPositionHandler = async () => {
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${Uuid()}`
     await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -254,8 +254,9 @@ const registerPositionHandler = async () => {
 const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
-  } catch (error) {
-    throw error
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

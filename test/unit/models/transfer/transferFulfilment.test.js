@@ -57,7 +57,7 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
   await transferFulfilment.test('getByTransferId test', async (assert) => {
     try {
       Db.transferFulfilment.find.returns(Promise.resolve(transferFulfilmentRecord))
-      let response = await Model.getByTransferId(transferFulfilmentRecord.transferId)
+      const response = await Model.getByTransferId(transferFulfilmentRecord.transferId)
       assert.equal(response, transferFulfilmentRecord, 'transfer fulfilment is returned')
       assert.ok(Db.transferFulfilment.find.calledOnce, 'find is called once')
       assert.end()
@@ -83,9 +83,9 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
 
   await transferFulfilment.test('saveTransferFulfilment test', async (assert) => {
     try {
-      let saved = { transferFulfilmentId: transferFulfilmentRecord.transferFulfilmentId }
+      const saved = { transferFulfilmentId: transferFulfilmentRecord.transferFulfilmentId }
       Db.transferFulfilment.insert.returns(Promise.resolve(saved))
-      let transferFulfilmentCreated = await Model.saveTransferFulfilment(transferFulfilmentRecord)
+      const transferFulfilmentCreated = await Model.saveTransferFulfilment(transferFulfilmentRecord)
       assert.equal(transferFulfilmentCreated, saved, 'transfer fulfilment is inserted and id is returned')
       assert.ok(Db.transferFulfilment.insert.calledOnce, 'transfer fulfilment insert is called once')
       assert.end()

@@ -77,7 +77,7 @@ Test('Participant model', async (participantTest) => {
     const falseParticipant = { name: 'fsp3' }
     Db.participant.insert.withArgs({ name: falseParticipant.name }).throws(new Error('message'))
     try {
-      let r = await Model.create(falseParticipant)
+      const r = await Model.create(falseParticipant)
       assert.comment(r)
       assert.fail('should throw')
     } catch (err) {
@@ -92,7 +92,7 @@ Test('Participant model', async (participantTest) => {
         name: participantFixtures[0].name,
         createdBy: 'unknown'
       }).returns(1)
-      let result = await Model.create(participantFixtures[0])
+      const result = await Model.create(participantFixtures[0])
       assert.equal(result, 1, ` returns ${result}`)
       assert.end()
     } catch (err) {
@@ -108,7 +108,7 @@ Test('Participant model', async (participantTest) => {
         name: participantFixtures[0].name,
         createdBy: 'unknown'
       }).throws(new Error())
-      let result = await Model.create(participantFixtures[0])
+      const result = await Model.create(participantFixtures[0])
       test.equal(result, 1, ` returns ${result}`)
       test.fail('Error not thrown')
       test.end()
@@ -133,7 +133,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('getByName', async (assert) => {
     try {
       Db.participant.findOne.withArgs({ name: participant.name }).returns(participantFixtures[0])
-      let result = await Model.getByName(participant.name)
+      const result = await Model.getByName(participant.name)
       assert.equal(result.name, participant.name, ' names are equal')
       assert.equal(result.currency, participant.currency, ' currencies match')
       assert.equal(result.isActive, participant.isActive, ' isActive flag match')
@@ -149,7 +149,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('getAll', async (assert) => {
     Db.participant.find.returns(participantFixtures)
     try {
-      let result = await Model.getAll()
+      const result = await Model.getAll()
       assert.deepEqual(result, participantFixtures)
       assert.end()
     } catch (err) {
@@ -162,7 +162,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('getAll should throw an error', async (test) => {
     try {
       Db.participant.find.throws(new Error())
-      let result = await Model.getAll()
+      const result = await Model.getAll()
       test.deepEqual(result, participantFixtures)
       test.fail('Error not thrown')
       test.end()
@@ -176,7 +176,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('getById', async (assert) => {
     try {
       Db.participant.findOne.withArgs({ participantId: 1 }).returns(participantFixtures[0])
-      let participant = await Model.getById(1)
+      const participant = await Model.getById(1)
       assert.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       assert.end()
     } catch (err) {
@@ -189,7 +189,7 @@ Test('Participant model', async (participantTest) => {
   await participantTest.test('getById should fail', async (test) => {
     try {
       Db.participant.findOne.withArgs({ participantId: 1 }).throws(new Error())
-      let participant = await Model.getById(1)
+      const participant = await Model.getById(1)
       test.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       test.fail('Error not thrown')
       test.end()
@@ -205,7 +205,7 @@ Test('Participant model', async (participantTest) => {
       Db.participant.update.withArgs(
         { participantId: 1 }, { isActive: 1 }
       ).returns(participantId)
-      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
+      const updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
       assert.equal(updatedId, participantId)
       sandbox.restore()
       assert.end()
@@ -222,7 +222,7 @@ Test('Participant model', async (participantTest) => {
       Db.participant.update.withArgs(
         { participantId: 1 }, { isActive: 1 }
       ).throws(new Error())
-      let updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
+      const updatedId = await Model.update(Object.assign(participant, { participantId: 1 }), 1)
       test.equal(updatedId, participantId)
       test.fail('Error not thrown')
       sandbox.restore()

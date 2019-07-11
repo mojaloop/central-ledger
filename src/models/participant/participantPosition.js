@@ -34,6 +34,7 @@
 
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrency')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 /**
  * @function GetByParticipantCurrencyId
@@ -50,8 +51,9 @@ const ParticipantCurrencyModel = require('./participantCurrency')
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.participantPosition.findOne({ participantCurrencyId })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -70,8 +72,9 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
 const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.participantPosition.destroy({ participantCurrencyId })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -94,8 +97,9 @@ const destroyByParticipantId = async (participantId) => {
     return knex('participantPosition')
       .whereIn('participantCurrencyId', participantCurrencyIdList)
       .del()
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

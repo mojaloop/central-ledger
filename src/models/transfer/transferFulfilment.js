@@ -32,7 +32,8 @@ const getByTransferId = async (transferId) => {
   try {
     return await Db.transferFulfilment.find({ transferId: transferId })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -41,6 +42,7 @@ const saveTransferFulfilment = async (record) => {
   try {
     return await Db.transferFulfilment.insert(record)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

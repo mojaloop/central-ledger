@@ -60,12 +60,12 @@ const errorDescriptionInternal = Errors.getErrorDescription(errorCodeInternal)
 const timeout = async () => {
   try {
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
-    let intervalMin = timeoutSegment ? timeoutSegment.value : 0
-    let segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
+    const intervalMin = timeoutSegment ? timeoutSegment.value : 0
+    const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
     const cleanup = await TimeoutService.cleanupTransferTimeout()
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
-    let intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
-    let result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+    const intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
+    const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
 
     if (!Array.isArray(result)) {
       result[0] = result
@@ -80,7 +80,7 @@ const timeout = async () => {
         content: {
           headers: {
             'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
-            'Date': new Date().toISOString(),
+            Date: new Date().toISOString(),
             'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
             'FSPIOP-Destination': result[i].payerFsp
           },
@@ -106,9 +106,9 @@ const timeout = async () => {
       intervalMax,
       result
     }
-  } catch (error) {
-    Logger.error(error)
-    throw error
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -160,9 +160,9 @@ const registerTimeoutHandler = async () => {
 
     await timeoutJob.start()
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -180,8 +180,9 @@ const registerAllHandlers = async () => {
       await registerTimeoutHandler()
     }
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

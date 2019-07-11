@@ -40,6 +40,7 @@ const saveTransfer = async (record) => {
   try {
     return await Db.transfer.insert(record)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -48,7 +49,8 @@ const destroyById = async (id) => {
   try {
     await Db.transfer.destroy({ transferId: id })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -56,6 +58,7 @@ const truncateTransfer = async () => {
   try {
     return await Db.transfer.truncate()
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

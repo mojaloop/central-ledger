@@ -34,6 +34,7 @@ const saveTransferStateChange = async (stateChange) => {
   try {
     return await Db.transferStateChange.insert(stateChange)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -41,7 +42,7 @@ const saveTransferStateChange = async (stateChange) => {
 const getByTransferId = async (id) => {
   try {
     return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
+      const result = builder
         .where({ 'transferStateChange.transferId': id })
         .select('transferStateChange.*')
         .orderBy('transferStateChangeId', 'desc')
@@ -49,6 +50,7 @@ const getByTransferId = async (id) => {
       return result
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -56,12 +58,13 @@ const getByTransferId = async (id) => {
 const getByTransferIdList = async (transfersIdList) => {
   try {
     return await Db.transferStateChange.query(async (builder) => {
-      let result = builder
+      const result = builder
         .whereIn('transferStateChange.transferId', transfersIdList)
       return result
     })
   } catch (err) {
-    throw (err)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -74,6 +77,7 @@ const getLatest = async () => {
         .first()
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -82,6 +86,7 @@ const truncate = async () => {
   try {
     return await Db.transferStateChange.truncate()
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

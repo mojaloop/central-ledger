@@ -33,20 +33,20 @@ Contributors
 
 const transactionInitiatorType = [
   {
-    'name': 'CONSUMER',
-    'description': 'Consumer is the initiator of the transaction'
+    name: 'CONSUMER',
+    description: 'Consumer is the initiator of the transaction'
   },
   {
-    'name': 'AGENT',
-    'description': 'Agent is the initiator of the transaction'
+    name: 'AGENT',
+    description: 'Agent is the initiator of the transaction'
   },
   {
-    'name': 'BUSINESS',
-    'description': 'Business is the initiator of the transaction'
+    name: 'BUSINESS',
+    description: 'Business is the initiator of the transaction'
   },
   {
-    'name': 'DEVICE',
-    'description': 'Device is the initiator of the transaction'
+    name: 'DEVICE',
+    description: 'Device is the initiator of the transaction'
   }
 ]
 

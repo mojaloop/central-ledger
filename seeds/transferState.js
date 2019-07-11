@@ -26,69 +26,69 @@
 
 const transferStates = [
   {
-    'transferStateId': 'RECEIVED_PREPARE',
-    'enumeration': 'RECEIVED',
-    'description': 'The switch has received the transfer.'
+    transferStateId: 'RECEIVED_PREPARE',
+    enumeration: 'RECEIVED',
+    description: 'The switch has received the transfer.'
   },
   {
-    'transferStateId': 'RESERVED',
-    'enumeration': 'RESERVED',
-    'description': 'The switch has reserved the transfer.'
+    transferStateId: 'RESERVED',
+    enumeration: 'RESERVED',
+    description: 'The switch has reserved the transfer.'
   },
   {
-    'transferStateId': 'RECEIVED_FULFIL',
-    'enumeration': 'RESERVED',
-    'description': 'The switch has reserved the transfer, and has been assigned to a settlement window.'
+    transferStateId: 'RECEIVED_FULFIL',
+    enumeration: 'RESERVED',
+    description: 'The switch has reserved the transfer, and has been assigned to a settlement window.'
   },
   {
-    'transferStateId': 'COMMITTED',
-    'enumeration': 'COMMITTED',
-    'description': 'The switch has successfully performed the transfer.'
+    transferStateId: 'COMMITTED',
+    enumeration: 'COMMITTED',
+    description: 'The switch has successfully performed the transfer.'
   },
   {
-    'transferStateId': 'FAILED',
-    'enumeration': 'ABORTED',
-    'description': 'Aborted the transfer due to failure to perform the transfer.'
+    transferStateId: 'FAILED',
+    enumeration: 'ABORTED',
+    description: 'Aborted the transfer due to failure to perform the transfer.'
   },
   {
-    'transferStateId': 'RESERVED_TIMEOUT',
-    'enumeration': 'RESERVED',
-    'description': 'Expiring the transfer and returning funds to payer fsp.'
+    transferStateId: 'RESERVED_TIMEOUT',
+    enumeration: 'RESERVED',
+    description: 'Expiring the transfer and returning funds to payer fsp.'
   },
   {
-    'transferStateId': 'RECEIVED_REJECT',
-    'enumeration': 'RESERVED',
-    'description': 'The switch has received a transfer abort from payee fsp.'
+    transferStateId: 'RECEIVED_REJECT',
+    enumeration: 'RESERVED',
+    description: 'The switch has received a transfer abort from payee fsp.'
   },
   {
-    'transferStateId': 'ABORTED_REJECTED',
-    'enumeration': 'ABORTED',
-    'description': 'The switch has aborted a transfer due to being RECEIVED_REJECT.'
+    transferStateId: 'ABORTED_REJECTED',
+    enumeration: 'ABORTED',
+    description: 'The switch has aborted a transfer due to being RECEIVED_REJECT.'
   },
   {
-    'transferStateId': 'RECEIVED_ERROR',
-    'enumeration': 'RESERVED',
-    'description': 'The switch has received a transfer error callback'
+    transferStateId: 'RECEIVED_ERROR',
+    enumeration: 'RESERVED',
+    description: 'The switch has received a transfer error callback'
   },
   {
-    'transferStateId': 'ABORTED_ERROR',
-    'enumeration': 'ABORTED',
-    'description': 'The switch has aborted a transfer due to being RECEIVED_ERROR'
+    transferStateId: 'ABORTED_ERROR',
+    enumeration: 'ABORTED',
+    description: 'The switch has aborted a transfer due to being RECEIVED_ERROR'
   },
   {
-    'transferStateId': 'EXPIRED_PREPARED',
-    'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to being EXPIRED transfer from RECEIVED_PREPARE.'
+    transferStateId: 'EXPIRED_PREPARED',
+    enumeration: 'ABORTED',
+    description: 'The switch has aborted the transfer due to being EXPIRED transfer from RECEIVED_PREPARE.'
   },
   {
-    'transferStateId': 'EXPIRED_RESERVED',
-    'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to being EXPIRED transfer from RESERVED.'
+    transferStateId: 'EXPIRED_RESERVED',
+    enumeration: 'ABORTED',
+    description: 'The switch has aborted the transfer due to being EXPIRED transfer from RESERVED.'
   },
   {
-    'transferStateId': 'INVALID',
-    'enumeration': 'ABORTED',
-    'description': 'The switch has aborted the transfer due to validation failure.'
+    transferStateId: 'INVALID',
+    enumeration: 'ABORTED',
+    description: 'The switch has aborted the transfer due to validation failure.'
   }
 ]
 

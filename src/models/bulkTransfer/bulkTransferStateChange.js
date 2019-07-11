@@ -31,6 +31,7 @@ const create = async (stateChange) => {
   try {
     return await Db.bulkTransferStateChange.insert(stateChange)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -38,7 +39,7 @@ const create = async (stateChange) => {
 const getByBulkTransferId = async (id) => {
   try {
     return await Db.bulkTransferStateChange.query(async (builder) => {
-      let result = builder
+      const result = builder
         .where({ 'bulkTransferStateChange.bulkTransferId': id })
         .select('bulkTransferStateChange.*')
         .orderBy('bulkTransferStateChangeId', 'desc')
@@ -46,6 +47,7 @@ const getByBulkTransferId = async (id) => {
       return result
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -53,7 +55,7 @@ const getByBulkTransferId = async (id) => {
 const getByTransferId = async (id) => {
   try {
     return await Db.bulkTransferStateChange.query(async (builder) => {
-      let result = builder
+      const result = builder
         .innerJoin('bulkTransferAssociation AS bta', 'bta.bulkTransferId', 'bulkTransferStateChange.bulkTransferId')
         .where({ 'bta.transferId': id })
         .select('bulkTransferStateChange.*')
@@ -62,6 +64,7 @@ const getByTransferId = async (id) => {
       return result
     })
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

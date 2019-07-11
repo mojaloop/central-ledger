@@ -29,7 +29,7 @@ const Base = require('../base')
 const ApiRoutes = require('../../../src/api/routes')
 
 Test('test health', async function (assert) {
-  let req = Base.buildRequest({ url: '/health', method: 'GET' })
+  const req = Base.buildRequest({ url: '/health', method: 'GET' })
   const server = await Base.setup(ApiRoutes)
   const res = await server.inject(req)
   assert.ok(res)

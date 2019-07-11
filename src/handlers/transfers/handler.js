@@ -117,7 +117,7 @@ const prepare = async (error, messages) => {
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare
       : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
         : Enum.actionLetter.unknown)
-    let params = { message, kafkaTopic, consumer }
+    const params = { message, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
@@ -132,7 +132,7 @@ const prepare = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}2`))
-        let record = await TransferService.getById(transferId)
+        const record = await TransferService.getById(transferId)
         message.value.content.payload = TransferObjectTransform.toFulfil(record)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
@@ -148,7 +148,7 @@ const prepare = async (error, messages) => {
       return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
     }
 
-    let { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+    const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
     if (validationPassed) {
       Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
       try {
@@ -230,7 +230,7 @@ const fulfil = async (error, messages) => {
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const transferFulfilmentId = Uuid()
-    let params = { message, transferId, kafkaTopic, consumer }
+    const params = { message, transferId, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching, isValid, transferErrorDuplicateCheckId } =
@@ -248,7 +248,7 @@ const fulfil = async (error, messages) => {
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         if (!isTransferError) {
           if (isValid) {
-            let record = await TransferService.getById(transferId)
+            const record = await TransferService.getById(transferId)
             if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== record.payeeFsp.toLowerCase()) {
               Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee1--${actionLetter}7`))
               const errorInformation = Errors.getErrorInformation(errorType.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
@@ -408,7 +408,7 @@ const getTransfer = async (error, messages) => {
       return true
     }
     const actionLetter = Enum.actionLetter.get
-    let params = { message, transferId, kafkaTopic, consumer }
+    const params = { message, transferId, kafkaTopic, consumer }
     const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.GET }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
@@ -458,9 +458,9 @@ const registerPrepareHandler = async () => {
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -482,9 +482,9 @@ const registerFulfilHandler = async () => {
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -506,9 +506,9 @@ const registerGetTransferHandler = async () => {
     getHandler.config.rdkafkaConf['client.id'] = getHandler.topicName
     await Kafka.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -526,8 +526,9 @@ const registerAllHandlers = async () => {
     await registerFulfilHandler()
     await registerGetTransferHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

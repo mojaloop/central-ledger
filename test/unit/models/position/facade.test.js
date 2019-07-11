@@ -35,7 +35,7 @@ const Enum = require('../../../../src/lib/enum')
 Test('Position facade', async (positionFacadeTest) => {
   let sandbox
   let clock
-  let now = new Date()
+  const now = new Date()
 
   positionFacadeTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
@@ -61,10 +61,10 @@ Test('Position facade', async (positionFacadeTest) => {
       const participantId = 1
       const currencyId = 'USD'
       const ledgerAccountTypeId = 1
-      let builderStub = sandbox.stub()
-      let participantCurrencyStub = sandbox.stub()
-      let participantPositionStub = sandbox.stub()
-      let selectStub = sandbox.stub()
+      const builderStub = sandbox.stub()
+      const participantCurrencyStub = sandbox.stub()
+      const participantPositionStub = sandbox.stub()
+      const selectStub = sandbox.stub()
 
       builderStub.where = sandbox.stub()
       Db.participant.query.callsArgWith(0, builderStub)
@@ -77,7 +77,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
+      const found = await ModelParticipant.getParticipantPositionByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
       test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
@@ -121,10 +121,10 @@ Test('Position facade', async (positionFacadeTest) => {
       const participantId = 1
       const currencyId = 'USD'
       const ledgerAccountTypeId = 1
-      let builderStub = sandbox.stub()
-      let participantCurrencyStub = sandbox.stub()
-      let participantLimitStub = sandbox.stub()
-      let selectStub = sandbox.stub()
+      const builderStub = sandbox.stub()
+      const participantCurrencyStub = sandbox.stub()
+      const participantLimitStub = sandbox.stub()
+      const selectStub = sandbox.stub()
 
       builderStub.where = sandbox.stub()
       Db.participant.query.callsArgWith(0, builderStub)
@@ -137,7 +137,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
+      const found = await ModelParticipant.getParticipantLimitByParticipantIdAndCurrencyId(participantId, currencyId, ledgerAccountTypeId)
       test.equal(found, 1, 'retrieve the record')
       test.ok(builderStub.where.withArgs({
         'participant.participantId': participantId,
@@ -240,7 +240,7 @@ Test('Position facade', async (positionFacadeTest) => {
         createdDate: now
       }
 
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: 10000,
@@ -305,7 +305,7 @@ Test('Position facade', async (positionFacadeTest) => {
             currencyId: 'USD',
             isActive: 1
           })
-          let { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
+          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
@@ -364,7 +364,7 @@ Test('Position facade', async (positionFacadeTest) => {
             currencyId: 'USD',
             isActive: 1
           })
-          let { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
+          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
@@ -445,7 +445,7 @@ Test('Position facade', async (positionFacadeTest) => {
             currencyId: 'USD',
             isActive: 1
           })
-          let { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
+          const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
           test.ok(Array.isArray(limitAlarms), 'array of limit alarms is returned')
           test.ok(knexStub.withArgs('participantPosition').calledThrice, 'knex called with participantPosition twice')
@@ -604,7 +604,7 @@ Test('Position facade', async (positionFacadeTest) => {
       const participantName = 'fsp1'
       const currencyId = 'USD'
       const ledgerAccountTypeId = 1
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
 
       const participantPosition = [
         {
@@ -617,7 +617,7 @@ Test('Position facade', async (positionFacadeTest) => {
       ]
 
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
       Db.participantPosition.query.callsArgWith(0, builderStub)
 
       builderStub.innerJoin.returns({
@@ -630,7 +630,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId, currencyId)
+      const found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId, currencyId)
       test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
@@ -646,7 +646,7 @@ Test('Position facade', async (positionFacadeTest) => {
     try {
       const participantName = 'fsp1'
       const ledgerAccountTypeId = 1
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
 
       const participantPosition = [
         {
@@ -666,7 +666,7 @@ Test('Position facade', async (positionFacadeTest) => {
       ]
 
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
       Db.participantPosition.query.callsArgWith(0, builderStub)
 
       builderStub.innerJoin.returns({
@@ -679,7 +679,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId)
+      const found = await ModelPosition.getByNameAndCurrency(participantName, ledgerAccountTypeId)
       test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
@@ -715,7 +715,7 @@ Test('Position facade', async (positionFacadeTest) => {
       const participantName = 'fsp1'
       const currencyId = 'USD'
       const ledgerAccountTypeId = 1
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
 
       const participantPosition = [
         {
@@ -728,7 +728,7 @@ Test('Position facade', async (positionFacadeTest) => {
       ]
 
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
       Db.participantPosition.query.callsArgWith(0, builderStub)
 
       builderStub.innerJoin.returns({
@@ -743,7 +743,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getAllByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
+      const found = await ModelPosition.getAllByNameAndCurrency(participantName, currencyId, ledgerAccountTypeId)
       test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 
@@ -758,7 +758,7 @@ Test('Position facade', async (positionFacadeTest) => {
   await positionFacadeTest.test('getAllByNameAndCurrency should return the participant positions for all currencies', async (test) => {
     try {
       const participantName = 'fsp1'
-      let builderStub = sandbox.stub()
+      const builderStub = sandbox.stub()
 
       const participantPosition = [
         {
@@ -778,7 +778,7 @@ Test('Position facade', async (positionFacadeTest) => {
       ]
 
       builderStub.innerJoin = sandbox.stub()
-      let whereStub = { where: sandbox.stub().returns() }
+      const whereStub = { where: sandbox.stub().returns() }
       Db.participantPosition.query.callsArgWith(0, builderStub)
 
       builderStub.innerJoin.returns({
@@ -793,7 +793,7 @@ Test('Position facade', async (positionFacadeTest) => {
         })
       })
 
-      let found = await ModelPosition.getAllByNameAndCurrency(participantName)
+      const found = await ModelPosition.getAllByNameAndCurrency(participantName)
       test.deepEqual(found, participantPosition, 'retrieve the record')
       test.ok(builderStub.innerJoin.withArgs('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId').calledOnce, 'query builder called once')
 

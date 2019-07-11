@@ -45,11 +45,11 @@ const Uuid = require('uuid4')
 
 exports.prepareData = async () => {
   try {
-    let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
+    const transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
 
-    let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
+    const transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
 
-    let transferStateResults = TransferStatePreparationHelper.prepareData() // transfer seed
+    const transferStateResults = TransferStatePreparationHelper.prepareData() // transfer seed
 
     await TransferExtensionModel.saveTransferExtension({
       transferId: transferResult.transfer.transferId,
@@ -70,9 +70,9 @@ exports.prepareData = async () => {
       transferStateId: transferStateResults[0].transferStateId
     })
 
-    let transferStateChangeResult = await StateChangeModel.getByTransferId(transferResult.transfer.transferId)
-    let ilp = await IlpModel.getByTransferId(transferResult.transfer.transferId)
-    let extension = await TransferExtensionModel.getByTransferId(transferResult.transfer.transferId)
+    const transferStateChangeResult = await StateChangeModel.getByTransferId(transferResult.transfer.transferId)
+    const ilp = await IlpModel.getByTransferId(transferResult.transfer.transferId)
+    const extension = await TransferExtensionModel.getByTransferId(transferResult.transfer.transferId)
     // let transfer = await TransferFacade.getById(transferResult.transfer.transferId)
 
     const transferId = transferResult.transfer.transferId

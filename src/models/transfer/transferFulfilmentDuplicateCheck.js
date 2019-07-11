@@ -90,7 +90,8 @@ const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentI
       }
     })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 

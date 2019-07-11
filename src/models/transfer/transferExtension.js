@@ -28,12 +28,14 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const saveTransferExtension = async (extension) => {
   try {
     return await Db.transferExtension.insert(extension)
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -41,7 +43,8 @@ const getByTransferId = async (transferId) => {
   try {
     return await Db.transferExtension.find({ transferId })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -49,7 +52,8 @@ const getByTransferFulfilmentId = async (transferFulfilmentId) => {
   try {
     return await Db.transferExtension.find({ transferFulfilmentId })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -57,7 +61,8 @@ const getByTransferErrorId = async (transferErrorId) => {
   try {
     return await Db.transferExtension.find({ transferErrorId })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -65,7 +70,8 @@ const getByTransferExtensionId = async (transferExtensionId) => {
   try {
     return await Db.transferExtension.findOne({ transferExtensionId })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -73,7 +79,8 @@ const destroyByTransferId = async (transferId) => {
   try {
     return await Db.transferExtension.destroy({ transferId })
   } catch (err) {
-    throw new Error(err.message)
+    Logger.error(err)
+    throw err
   }
 }
 

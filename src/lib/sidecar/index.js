@@ -12,7 +12,7 @@ function createClient () {
     return NullClient.create()
   }
 
-  let sc = Client.create({
+  const sc = Client.create({
     host: Config.SIDECAR.HOST,
     port: Config.SIDECAR.PORT,
     connectTimeout: Config.SIDECAR.CONNECT_TIMEOUT,

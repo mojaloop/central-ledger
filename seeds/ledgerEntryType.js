@@ -26,44 +26,44 @@
 
 const ledgerEntryTypes = [
   {
-    'name': 'PRINCIPLE_VALUE',
-    'description': 'The principle amount to be settled between parties, derived on quotes between DFSPs'
+    name: 'PRINCIPLE_VALUE',
+    description: 'The principle amount to be settled between parties, derived on quotes between DFSPs'
   },
   {
-    'name': 'INTERCHANGE_FEE',
-    'description': 'Fees to be paid between DFSP'
+    name: 'INTERCHANGE_FEE',
+    description: 'Fees to be paid between DFSP'
   },
   {
-    'name': 'HUB_FEE',
-    'description': 'Fees to be paid from the DFSPs to the Hub Operator'
+    name: 'HUB_FEE',
+    description: 'Fees to be paid from the DFSPs to the Hub Operator'
   },
   {
-    'name': 'POSITION_DEPOSIT',
-    'description': 'Used when increasing Net Debit Cap'
+    name: 'POSITION_DEPOSIT',
+    description: 'Used when increasing Net Debit Cap'
   },
   {
-    'name': 'POSITION_WITHDRAWAL',
-    'description': 'Used when decreasing Net Debit Cap'
+    name: 'POSITION_WITHDRAWAL',
+    description: 'Used when decreasing Net Debit Cap'
   },
   {
-    'name': 'SETTLEMENT_NET_RECIPIENT',
-    'description': 'Participant is settlement net recipient'
+    name: 'SETTLEMENT_NET_RECIPIENT',
+    description: 'Participant is settlement net recipient'
   },
   {
-    'name': 'SETTLEMENT_NET_SENDER',
-    'description': 'Participant is settlement net sender'
+    name: 'SETTLEMENT_NET_SENDER',
+    description: 'Participant is settlement net sender'
   },
   {
-    'name': 'SETTLEMENT_NET_ZERO',
-    'description': 'Participant is settlement net sender'
+    name: 'SETTLEMENT_NET_ZERO',
+    description: 'Participant is settlement net sender'
   },
   {
-    'name': 'RECORD_FUNDS_IN',
-    'description': 'Settlement account funds in'
+    name: 'RECORD_FUNDS_IN',
+    description: 'Settlement account funds in'
   },
   {
-    'name': 'RECORD_FUNDS_OUT',
-    'description': 'Settlement account funds out'
+    name: 'RECORD_FUNDS_OUT',
+    description: 'Settlement account funds out'
   }
 ]
 

@@ -373,7 +373,7 @@ Test('Utility Test', utilityTest => {
           isConsumerAutoCommitEnabled: sandbox.stub().withArgs(kafkaTopic).returns(false)
         }
       }
-      let UtilityProxy = rewire(`${src}/handlers/lib/utility`)
+      const UtilityProxy = rewire(`${src}/handlers/lib/utility`)
       UtilityProxy.__set__('Kafka', KakfaStub)
 
       await UtilityProxy.commitMessageSync(kafkaTopic, consumerStub, message)
@@ -394,7 +394,7 @@ Test('Utility Test', utilityTest => {
           isConsumerAutoCommitEnabled: sandbox.stub().withArgs(kafkaTopic).returns(true)
         }
       }
-      let UtilityProxy = rewire(`${src}/handlers/lib/utility`)
+      const UtilityProxy = rewire(`${src}/handlers/lib/utility`)
       UtilityProxy.__set__('Kafka', KakfaStub)
 
       await UtilityProxy.commitMessageSync(kafkaTopic, consumerStub, message)
@@ -482,7 +482,7 @@ Test('Utility Test', utilityTest => {
     const consumer = 'consumer'
     const params = { message, transferId, kafkaTopic, consumer }
     const producer = { functionality: 'functionality', action: 'action' }
-    let UtilityProxy = rewire(`${src}/handlers/lib/utility`)
+    const UtilityProxy = rewire(`${src}/handlers/lib/utility`)
     UtilityProxy.__set__('commitMessageSync', commitMessageSyncStub)
     UtilityProxy.__set__('createPrepareErrorStatus', createPrepareErrorStatusStub)
     UtilityProxy.__set__('createState', createStateStub)
@@ -544,7 +544,7 @@ Test('Utility Test', utilityTest => {
       const errorInformation = { errorCode: code, errorDescription: desc }
       const opts = { errorInformation, histTimerEnd: histTimerEndStub }
       try {
-        let localParams = MainUtil.clone(params)
+        const localParams = MainUtil.clone(params)
         localParams.message.value.content.uriParams = { id: Uuid() }
         const result = await UtilityProxy.proceed(localParams, opts)
         test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')

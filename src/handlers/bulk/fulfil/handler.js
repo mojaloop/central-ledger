@@ -141,7 +141,7 @@ const bulkFulfil = async (error, messages) => {
     }
 
     // TODO: move FSPIOP-Source validation before Transfer Duplicate Check to accept only Payee's first request
-    let { isValid, reasons } = await Validator.validateBulkTransferFulfilment(payload, headers)
+    const { isValid, reasons } = await Validator.validateBulkTransferFulfilment(payload, headers)
     if (isValid) {
       let state
       Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
@@ -156,14 +156,14 @@ const bulkFulfil = async (error, messages) => {
       try {
         Logger.info(Util.breadcrumb(location, `individualTransferFulfils`))
         // stream initialization
-        let IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
-        let indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
+        const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
+        const indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
         // enable async/await operations for the stream
-        let streamReader = AwaitifyStream.createReader(indvidualTransfersFulfilStream)
+        const streamReader = AwaitifyStream.createReader(indvidualTransfersFulfilStream)
         let doc
-        let transferIds = []
+        const transferIds = []
         while ((doc = await streamReader.readAsync()) !== null) {
-          let individualTransferFulfil = doc.payload
+          const individualTransferFulfil = doc.payload
           const transferId = individualTransferFulfil.transferId
           delete individualTransferFulfil.transferId
           transferIds.push(transferId)
@@ -181,8 +181,8 @@ const bulkFulfil = async (error, messages) => {
             individualTransferFulfil.transferState = Enum.TransferStateEnum.COMMITTED
           }
 
-          let dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers['content-type'])
-          let msg = Object.assign({}, fulfilHandlerMessageProtocol)
+          const dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers['content-type'])
+          const msg = Object.assign({}, fulfilHandlerMessageProtocol)
           msg.value.id = messageId
           msg.value.from = headers['fspiop-source']
           msg.value.to = headers['fspiop-destination']
@@ -240,9 +240,9 @@ const registerBulkFulfilHandler = async () => {
     bulkFulfilHandler.config.rdkafkaConf['client.id'] = bulkFulfilHandler.topicName
     await Kafka.Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -258,8 +258,9 @@ const registerAllHandlers = async () => {
   try {
     await registerBulkFulfilHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 

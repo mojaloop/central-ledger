@@ -41,8 +41,8 @@ Test('handlers', handlersTest => {
     })
 
     registerAllTest.test('throw error on Handlers.registerAllHandlers', async (test) => {
-      let errorMessage = 'require-glob Stub ERROR'
-      let HandlersStub = Proxyquire('../../../src/handlers/register', {
+      const errorMessage = 'require-glob Stub ERROR'
+      const HandlersStub = Proxyquire('../../../src/handlers/register', {
         'require-glob': sandbox.stub().throws(new Error(errorMessage))
       })
       try {

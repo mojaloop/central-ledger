@@ -26,44 +26,44 @@
 
 const bulkProcessingStates = [
   {
-    'name': 'RECEIVED',
-    'description': 'The switch has received the individual transfer ids part of the bulk transfer'
+    name: 'RECEIVED',
+    description: 'The switch has received the individual transfer ids part of the bulk transfer'
   },
   {
-    'name': 'RECEIVED_DUPLICATE',
-    'description': 'The switch has matched individual transfer as duplicate'
+    name: 'RECEIVED_DUPLICATE',
+    description: 'The switch has matched individual transfer as duplicate'
   },
   {
-    'name': 'RECEIVED_INVALID',
-    'description': 'The switch has matched individual transfer as invalid within Prepare or Position Handler'
+    name: 'RECEIVED_INVALID',
+    description: 'The switch has matched individual transfer as invalid within Prepare or Position Handler'
   },
   {
-    'name': 'ACCEPTED',
-    'description': 'The switch has reserved the funds for the transfers in the bulk'
+    name: 'ACCEPTED',
+    description: 'The switch has reserved the funds for the transfers in the bulk'
   },
   {
-    'name': 'PROCESSING',
-    'description': 'Fulfilment request has been received for the individual transfer'
+    name: 'PROCESSING',
+    description: 'Fulfilment request has been received for the individual transfer'
   },
   {
-    'name': 'FULFIL_DUPLICATE',
-    'description': 'The switch has matched individual transfer fulfil as duplicate'
+    name: 'FULFIL_DUPLICATE',
+    description: 'The switch has matched individual transfer fulfil as duplicate'
   },
   {
-    'name': 'FULFIL_INVALID',
-    'description': 'The switch has matched individual transfer fulfilment as invalid within Fulfil or Position Handler'
+    name: 'FULFIL_INVALID',
+    description: 'The switch has matched individual transfer fulfilment as invalid within Fulfil or Position Handler'
   },
   {
-    'name': 'COMPLETED',
-    'description': 'The switch has marked the individual transfer as committed'
+    name: 'COMPLETED',
+    description: 'The switch has marked the individual transfer as committed'
   },
   {
-    'name': 'REJECTED',
-    'description': 'The switch has marked the individual transfer as rejected'
+    name: 'REJECTED',
+    description: 'The switch has marked the individual transfer as rejected'
   },
   {
-    'name': 'EXPIRED',
-    'description': 'The switch has marked the individual transfer as timed out'
+    name: 'EXPIRED',
+    description: 'The switch has marked the individual transfer as timed out'
   }
 ]
 

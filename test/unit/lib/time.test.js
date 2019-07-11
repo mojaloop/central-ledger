@@ -34,7 +34,7 @@ const execDelayCoef = 1.5
 Test('Time', async (timeTest) => {
   let sandbox
   let clock
-  let now = new Date()
+  const now = new Date()
 
   timeTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
@@ -50,7 +50,7 @@ Test('Time', async (timeTest) => {
 
   timeTest.test('sleep should', (test) => {
     try {
-      let defaultDelay = 10
+      const defaultDelay = 10
       clock.restore()
       const start = new Date()
       Model.sleep()
@@ -66,8 +66,8 @@ Test('Time', async (timeTest) => {
 
   timeTest.test('sleep should', (test) => {
     try {
-      let testDelay = 20
-      let debug = true
+      const testDelay = 20
+      const debug = true
       clock.restore()
       const start = new Date()
       Model.sleep(testDelay, debug)
@@ -83,10 +83,10 @@ Test('Time', async (timeTest) => {
 
   timeTest.test('sleep should', (test) => {
     try {
-      let testDelay = 20
-      let debug = true
-      let caller = 'time.test.js'
-      let reason = 'testing'
+      const testDelay = 20
+      const debug = true
+      const caller = 'time.test.js'
+      const reason = 'testing'
       clock.restore()
       const start = new Date()
       Model.sleep(testDelay, debug, caller, reason)
