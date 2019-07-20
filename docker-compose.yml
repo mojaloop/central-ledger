@@ -71,10 +71,13 @@ services:
     image: johnnypark/kafka-zookeeper
     container_name: cl_kafka
     # Disable kafka logging as it is far too verbose for debugging locally
-    logging:
-      driver: none
+    # logging:
+      # driver: none
+    volumes:
+      - ./docker/kafka/server.properties:/opt/kafka_2.12-2.2.0/config/server.properties
     ports:
       - "2181:2181"
       - "9092:9092"
-    environment:
-      - ADVERTISED_HOST=kafka
+    # environment:
+      # - ADVERTISED_HOST=kafka
+      # - ADVERTISED_LISTENERS=kafka,localhost
