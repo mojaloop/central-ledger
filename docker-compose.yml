@@ -68,10 +68,11 @@ services:
       - MOCK_HOST=mockserver
   
   kafka:
-    image: johnnypark/kafka-zookeeper
+    # image: johnnypark/kafka-zookeeper:2.3.0
+    image: johnnypark/kafka-zookeeper:2.3.0
     container_name: cl_kafka
     volumes:
-      - ./docker/kafka/:/opt/kafka_2.12-2.2.0/config/
+      - ./docker/kafka/:/opt/kafka_2.12-2.3.0/config/
     ports:
       - "2181:2181"
       - "9092:9092"
