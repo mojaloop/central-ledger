@@ -68,7 +68,6 @@ services:
       - MOCK_HOST=mockserver
   
   kafka:
-    # image: johnnypark/kafka-zookeeper:2.3.0
     image: johnnypark/kafka-zookeeper:2.3.0
     container_name: cl_kafka
     volumes:
