@@ -52,6 +52,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const errorType = Errors.errorType
 const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
@@ -89,7 +90,8 @@ const prepare = async (error, messages) => {
   ).startTimer()
   if (error) {
     // Logger.error(error)
-    throw error
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+    throw fspiopError
   }
   let message = {}
   try {
@@ -183,7 +185,8 @@ const prepare = async (error, messages) => {
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -195,7 +198,8 @@ const fulfil = async (error, messages) => {
   ).startTimer()
   if (error) {
     // Logger.error(error)
-    throw error
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+    throw fspiopError
   }
   let message = {}
   try {
@@ -358,7 +362,8 @@ const fulfil = async (error, messages) => {
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -379,7 +384,8 @@ const getTransfer = async (error, messages) => {
   ).startTimer()
   if (error) {
     // Logger.error(error)
-    throw error
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+    throw fspiopError
   }
   let message = {}
   try {
@@ -431,7 +437,8 @@ const getTransfer = async (error, messages) => {
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -453,9 +460,10 @@ const registerPrepareHandler = async () => {
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -477,9 +485,10 @@ const registerFulfilHandler = async () => {
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -521,8 +530,9 @@ const registerAllHandlers = async () => {
     await registerFulfilHandler()
     await registerGetTransferHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 

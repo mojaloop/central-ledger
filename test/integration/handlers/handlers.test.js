@@ -42,6 +42,7 @@ const TransferService = require('../../../src/domain/transfer')
 const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('../../../src/lib/util')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const Handlers = {
   index: require('../../../src/handlers/register'),
@@ -283,7 +284,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -322,7 +323,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
           if (transfer.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -360,7 +361,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -398,7 +399,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
           if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -436,7 +437,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
           if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -474,7 +475,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -519,7 +520,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.id) || {}
           if (transfer.transferState !== TransferState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)

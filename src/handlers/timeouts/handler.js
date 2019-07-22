@@ -39,6 +39,7 @@ const TimeoutService = require('../../domain/timeout')
 const Enum = require('../../lib/enum')
 const Utility = require('../lib/utility')
 const Errors = require('../../lib/errors')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 let timeoutJob
 let isRegistered
@@ -108,7 +109,8 @@ const timeout = async () => {
     }
   } catch (error) {
     Logger.error(error)
-    throw error
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+    throw fspiopError
   }
 }
 
@@ -160,9 +162,10 @@ const registerTimeoutHandler = async () => {
 
     await timeoutJob.start()
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -180,8 +183,9 @@ const registerAllHandlers = async () => {
       await registerTimeoutHandler()
     }
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 

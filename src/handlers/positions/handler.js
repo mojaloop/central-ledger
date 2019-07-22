@@ -55,6 +55,7 @@ const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protoco
 const decodeMessages = require('@mojaloop/central-services-stream').Kafka.Protocol.decodeMessages
 const errorTransferExpCode = 3300
 const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const errorType = Errors.errorType
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
@@ -86,7 +87,8 @@ const positions = async (error, messages) => {
 
   if (error) {
     // Logger.error(error)
-    throw error
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+    throw fspiopError
   }
   let message = {}
   let prepareBatch = []
@@ -185,7 +187,7 @@ const positions = async (error, messages) => {
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
         const errorInformation = Errors.getErrorInformation(errorType.internal)
-        throw new Error(errorInformation.errorDescription)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, errorInformation.errorDescription)
       } else {
         Logger.info(Util.breadcrumb(location, `validationPassed2--${actionLetter}7`))
         const isReversal = true
@@ -202,12 +204,13 @@ const positions = async (error, messages) => {
     } else {
       Logger.error(Util.breadcrumb(location, { path: `invalidEventTypeOrAction--${action}8` }))
       await Util.commitMessageSync(kafkaTopic, consumer, message)
-      throw new Error(Util.breadcrumb(location))
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, Util.breadcrumb(location))
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -229,9 +232,10 @@ const registerPositionHandler = async () => {
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${Uuid()}`
     await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -246,8 +250,9 @@ const registerPositionHandler = async () => {
 const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
-  } catch (error) {
-    throw error
+  } catch (err) {
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 

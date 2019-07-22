@@ -51,6 +51,7 @@ const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const registerAllHandlers = async () => {
   try {
@@ -63,9 +64,10 @@ const registerAllHandlers = async () => {
       await handlerObject.handler.registerAllHandlers()
     }
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 

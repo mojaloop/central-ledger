@@ -28,12 +28,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const saveTransferExtension = async (extension) => {
   try {
     return await Db.transferExtension.insert(extension)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -41,7 +42,7 @@ const getByTransferId = async (transferId) => {
   try {
     return await Db.transferExtension.find({ transferId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -49,7 +50,7 @@ const getByTransferFulfilmentId = async (transferFulfilmentId) => {
   try {
     return await Db.transferExtension.find({ transferFulfilmentId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -57,7 +58,7 @@ const getByTransferErrorId = async (transferErrorId) => {
   try {
     return await Db.transferExtension.find({ transferErrorId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -65,7 +66,7 @@ const getByTransferExtensionId = async (transferExtensionId) => {
   try {
     return await Db.transferExtension.findOne({ transferExtensionId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -73,7 +74,7 @@ const destroyByTransferId = async (transferId) => {
   try {
     return await Db.transferExtension.destroy({ transferId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 

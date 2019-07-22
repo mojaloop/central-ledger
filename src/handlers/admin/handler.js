@@ -45,6 +45,7 @@ const Db = require('../../lib/db')
 const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE]
 const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   /** @namespace Db.getKnex **/
@@ -62,7 +63,8 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+        throw fspiopError
       }
     })
   } else {
@@ -74,7 +76,8 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+        throw fspiopError
       }
     })
   }
@@ -125,7 +128,7 @@ const transferExists = async (payload, transferId) => {
 const transfer = async (error, messages) => {
   if (error) {
     Logger.error(error)
-    throw new Error()
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `error`)
   }
   let message = {}
   try {
@@ -175,9 +178,10 @@ const transfer = async (error, messages) => {
     }
     await Utility.commitMessageSync(kafkaTopic, consumer, message)
     return true
-  } catch (error) {
-    Logger.error(error)
-    throw error
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -199,9 +203,10 @@ const registerTransferHandler = async () => {
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -217,8 +222,9 @@ const registerAllHandlers = async () => {
   try {
     await registerTransferHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 

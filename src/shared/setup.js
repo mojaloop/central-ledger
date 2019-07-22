@@ -45,11 +45,11 @@ const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
-const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
 // const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -90,7 +90,8 @@ const createServer = (port, modules) => {
         validate: {
           options: ErrorHandling.validateRoutes(),
           failAction: async (request, h, err) => {
-            throw Boom.boomify(err)
+            const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+            throw fspiopError
           }
         }
       }
@@ -232,7 +233,8 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       break
     default:
       Logger.error(`No valid service type ${service} found!`)
-      throw new Error(`No valid service type ${service} found!`)
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
+      throw fspiopError
   }
 
   if (runHandlers) {

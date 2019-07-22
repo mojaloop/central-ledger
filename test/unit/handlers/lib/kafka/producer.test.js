@@ -177,7 +177,7 @@ Test('Producer', producerTest => {
         test.ok(Producer.getProducer('undefined'))
         test.fail('Error not thrown!')
       } catch (e) {
-        test.ok(e.toString() === 'Error: No producer found for topic undefined')
+        test.equal(e.message, 'No producer found for topic undefined')
       }
       test.end()
     })
@@ -258,7 +258,7 @@ Test('Producer', producerTest => {
         test.end()
       } catch (e) {
         test.ok(e instanceof Error)
-        test.ok(e.toString() === `Error: The following Producers could not be disconnected: [{"topic":"${topicNameFailure}","error":"No producer found for topic ${topicNameFailure}"}]`)
+        test.equal(e.message, `The following Producers could not be disconnected: [{"topic":"${topicNameFailure}","error":"No producer found for topic ${topicNameFailure}"}]`)
         test.end()
       }
       getProducerStub.restore()

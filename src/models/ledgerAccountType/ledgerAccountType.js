@@ -30,10 +30,6 @@
 const Db = require('../../lib/db')
 
 exports.getLedgerAccountByName = async (name) => {
-  try {
-    const ledgerAccountType = await Db.ledgerAccountType.findOne({ name })
-    return ledgerAccountType
-  } catch (err) {
-    throw new Error(err.message)
-  }
+  const ledgerAccountType = await Db.ledgerAccountType.findOne({ name })
+  return ledgerAccountType
 }

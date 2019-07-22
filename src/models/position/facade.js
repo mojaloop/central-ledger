@@ -36,6 +36,7 @@ const participantFacade = require('../participant/facade')
 const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Time = require('../../lib/time')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
@@ -258,7 +259,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
           'pc.currencyId')
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -283,7 +284,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         )
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 

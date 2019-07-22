@@ -40,6 +40,7 @@ const ParticipantFacade = require('../participant/facade')
 const Time = require('../../lib/time')
 const Config = require('../../lib/config')
 const _ = require('lodash')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const errorPayeeGeneric = 5000
 const intervalMinPayeeError = errorPayeeGeneric
@@ -405,7 +406,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       if (participant) {
         participants.push(participant)
       } else {
-        throw new Error('Invalid FSP name or currency')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid FSP name or currency')
       }
     }
 
@@ -797,7 +798,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_OUT
           amount = -payload.amount.amount
         } else {
-          throw new Error('Action not allowed for reconciliationTransferPrepare')
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Action not allowed for reconciliationTransferPrepare')
         }
 
         // Insert transferParticipant records
@@ -1068,7 +1069,7 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 

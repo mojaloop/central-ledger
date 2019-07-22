@@ -30,6 +30,7 @@
 
 const Db = require('../../lib/db')
 const Time = require('../../lib/time')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   try {
@@ -155,7 +156,7 @@ const getEndpoint = async (participantId, endpointType) => {
           'et.name')
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -182,7 +183,7 @@ const getAllEndpoints = async (participantId) => {
           'et.name')
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -241,7 +242,7 @@ const addEndpoint = async (participantId, endpoint) => {
       }
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -363,7 +364,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
       }
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -404,7 +405,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         if (Array.isArray(existingLimit) && existingLimit.length > 0) {
           await knex('participantLimit').transacting(trx).update({ isActive: 0 }).where('participantLimitId', existingLimit[0].participantLimitId)
         } else {
-          throw new Error('Participant Limit does not exist')
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Participant Limit does not exist')
         }
         let newLimit = {
           participantCurrencyId: participantCurrencyId,
@@ -437,7 +438,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -473,7 +474,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
         ).orderBy('lt.name')
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -513,7 +514,7 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
         ).orderBy('pc.currencyId', 'lt.name')
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -551,7 +552,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
       }
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -578,7 +579,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
         .select('*', 'lap.name AS ledgerAccountType', 'participantCurrency.isActive AS accountIsActive')
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 

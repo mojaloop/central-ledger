@@ -43,6 +43,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Kafka = require('./kafka')
 const Enum = require('../../lib/enum')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  * The Producer config required
@@ -152,9 +153,10 @@ const participantTopicTemplate = (participantName, functionality, action) => {
       functionality,
       action
     })
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -171,9 +173,10 @@ const participantTopicTemplate = (participantName, functionality, action) => {
 const generalTopicTemplate = (functionality, action) => {
   try {
     return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, { functionality, action })
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -193,8 +196,9 @@ const transformGeneralTopicName = (functionality, action) => {
       return generalTopicTemplate(Enum.topicMap[functionality][action].functionality, Enum.topicMap[functionality][action].action)
     }
     return generalTopicTemplate(functionality, action)
-  } catch (e) {
-    throw e
+  } catch (err) {
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -212,8 +216,9 @@ const transformGeneralTopicName = (functionality, action) => {
 const transformAccountToTopicName = (participantName, functionality, action) => {
   try {
     return participantTopicTemplate(participantName, functionality, action)
-  } catch (e) {
-    throw e
+  } catch (err) {
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw fspiopError
   }
 }
 
@@ -235,8 +240,8 @@ const getKafkaConfig = (flow, functionality, action) => {
     const actionObject = functionalityObject[action]
     actionObject.config.logger = Logger
     return actionObject.config
-  } catch (e) {
-    throw new Error(`No config found for those parameters flow='${flow}', functionality='${functionality}', action='${action}'`)
+  } catch (err) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `No config found for those parameters flow='${flow}', functionality='${functionality}', action='${action}'`)
   }
 }
 

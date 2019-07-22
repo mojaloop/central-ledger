@@ -43,6 +43,7 @@ const TransferErrorDuplicateCheckModel = require('../../../../src/models/transfe
 const TransferState = require('../../../../src/lib/enum').TransferState
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Crypto = require('crypto')
+const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -174,7 +175,7 @@ Test('Transfer Service', transferIndexTest => {
       }
     })
 
-    getFulfilmentTest.test('throw TransferNotFoundError', async (test) => {
+    getFulfilmentTest.test('throw FSPIOPError', async (test) => {
       try {
         TransferFacade.getById.returns(Promise.resolve(null))
         TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
@@ -183,12 +184,13 @@ Test('Transfer Service', transferIndexTest => {
         test.end()
       } catch (err) {
         Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'TransferNotFoundError')
+        test.ok(err instanceof FSPIOPError)
+        test.equal(err.name, 'FSPIOPError')
         test.end()
       }
     })
 
-    getFulfilmentTest.test('throw TransferNotConditionalError', async (test) => {
+    getFulfilmentTest.test('throw FSPIOPError', async (test) => {
       try {
         const transfer = Object.assign({}, transferRecord, { ilpCondition: null })
         TransferFacade.getById.returns(Promise.resolve(transfer))
@@ -198,7 +200,8 @@ Test('Transfer Service', transferIndexTest => {
         test.end()
       } catch (err) {
         Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'TransferNotConditionalError')
+        test.ok(err instanceof FSPIOPError)
+        test.equal(err.name, 'FSPIOPError')
         test.end()
       }
     })
@@ -213,7 +216,8 @@ Test('Transfer Service', transferIndexTest => {
         test.end()
       } catch (err) {
         Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'TransferNotFoundError')
+        test.ok(err instanceof FSPIOPError)
+        test.equal(err.name, 'FSPIOPError')
         test.end()
       }
     })
@@ -228,7 +232,8 @@ Test('Transfer Service', transferIndexTest => {
         test.end()
       } catch (err) {
         Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'MissingFulfilmentError')
+        test.ok(err instanceof FSPIOPError)
+        test.equal(err.name, 'FSPIOPError')
         test.end()
       }
     })

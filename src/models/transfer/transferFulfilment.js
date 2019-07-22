@@ -26,13 +26,14 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByTransferId = async (transferId) => {
   Logger.debug('getByTransferId ' + transferId.toString())
   try {
     return await Db.transferFulfilment.find({ transferId: transferId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 

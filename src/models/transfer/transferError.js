@@ -31,6 +31,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  * @function Insert
@@ -50,7 +51,7 @@ const insert = async (transferStateChangeId, errorCode, errorDescription) => {
   try {
     return Db.transferError.insert({ transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
@@ -79,7 +80,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
     return Db.transferError.find({ transferStateChangeId: transferStateChangeId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
   }
 }
 
