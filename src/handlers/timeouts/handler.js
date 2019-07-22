@@ -84,7 +84,11 @@ const timeout = async () => {
             'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
             'FSPIOP-Destination': result[i].payerFsp
           },
-          payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal)
+          payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal),
+          //TODO: this is maybe where uriParams.id should be set?
+          uriParams: {
+            id: result[i].transferId,
+          }
         },
         metadata: {
           event: {}

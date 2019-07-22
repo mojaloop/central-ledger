@@ -101,6 +101,7 @@ const positions = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
     console.log('payload is', payload)
     console.log('message is', message)
+    console.log('message.value.content.payload is', message.value.content.payload)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
     //This transferId is resolving to undefined
@@ -132,8 +133,9 @@ const positions = async (error, messages) => {
         }
     */
 
-    // const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
-    const transferId = payload.transferId || message.value.id
+    const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
+    //Hmm, it doesn't look like we can always rely on the message.value.id to be the transferId
+    // const transferId = payload.transferId || message.value.id
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
