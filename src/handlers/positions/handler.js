@@ -99,9 +99,41 @@ const positions = async (error, messages) => {
       message = Object.assign({}, messages)
     }
     const payload = decodePayload(message.value.content.payload)
+    console.log('payload is', payload)
+    console.log('message is', message)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
-    const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
+    //This transferId is resolving to undefined
+
+    /*
+      example when expired is called:
+        payload is { errorInformation: { errorCode: '3300', errorDescription: 'Transfer expired' } }
+        message is {
+          value:
+          {
+            from: 'payerfsp',
+            to: 'payeefsp',
+            id: 'f999c714-7665-4390-a0ea-4a6767bbb982',
+            content: { headers: [Object], payload: [Object] },
+            type:
+            'application/vnd.interoperability.transfers+json;version=1.0',
+              metadata: { event: [Object], 'protocol.createdAt': 1563807600033 }
+          },
+          size: 650,
+            key:
+          {
+            type: 'Buffer',
+              data: [112, 97, 121, 101, 114, 102, 115, 112]
+          },
+          topic: 'topic-transfer-position',
+            offset: 10,
+              partition: 0,
+                timestamp: 1563807600033
+        }
+    */
+
+    // const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
+    const transferId = payload.transferId || message.value.id
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
@@ -188,7 +220,14 @@ const positions = async (error, messages) => {
     } else if (eventType === TransferEventType.POSITION && action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info(Util.breadcrumb(location, { path: 'timeout' }))
       producer.action = TransferEventAction.ABORT
+      //TODO: Error might be here
+      
+      //Looks like transferId
+
+      console.log('transferId is', transferId)
+      // const tmpTransferId = "f999c714-7665-4390-a0ea-4a6767bbb981"
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
+      // const transferInfo = await TransferService.getTransferInfoToChangePosition(tmpTransferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
         const errorInformation = Errors.getErrorInformation(errorType.internal)
