@@ -84,7 +84,7 @@ const positions = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
 
-  console.log("Hitting the positions handler!")
+  console.log('Hitting the positions handler!')
 
   if (error) {
     // Logger.error(error)
@@ -123,12 +123,12 @@ const positions = async (error, messages) => {
     }
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare
       : (action === TransferEventAction.COMMIT ? Enum.actionLetter.commit
-      : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
-      : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
-      : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
-      : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
-      : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
-      : Enum.actionLetter.unknown))))))
+        : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
+          : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
+            : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
+              : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
+                : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
+                  : Enum.actionLetter.unknown))))))
     const params = { message, kafkaTopic, consumer }
     const producer = { action }
     if (![TransferEventAction.BULK_PREPARE, TransferEventAction.BULK_COMMIT].includes(action)) {
@@ -196,6 +196,7 @@ const positions = async (error, messages) => {
     } else if (eventType === TransferEventType.POSITION && action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info(Util.breadcrumb(location, { path: 'timeout' }))
       producer.action = TransferEventAction.ABORT
+      // HERE!!
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
