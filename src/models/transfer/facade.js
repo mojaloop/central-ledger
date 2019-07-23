@@ -225,7 +225,6 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .first()
     })
   } catch (err) {
-    console.log('getTransferInfoToChangePosition err')
     Logger.error(err)
     throw err
   }

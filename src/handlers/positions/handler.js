@@ -84,8 +84,6 @@ const positions = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
 
-  console.log('Hitting the positions handler!')
-
   if (error) {
     // Logger.error(error)
     throw error
@@ -196,7 +194,6 @@ const positions = async (error, messages) => {
     } else if (eventType === TransferEventType.POSITION && action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info(Util.breadcrumb(location, { path: 'timeout' }))
       producer.action = TransferEventAction.ABORT
-      // HERE!!
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))

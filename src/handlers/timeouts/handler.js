@@ -85,7 +85,6 @@ const timeout = async () => {
             'FSPIOP-Destination': result[i].payerFsp
           },
           payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal),
-          // TODO: tests!
           uriParams: {
             id: result[i].transferId
           }
