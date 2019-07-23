@@ -23,9 +23,10 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/
@@ -37,6 +38,7 @@ const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const P = require('bluebird')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
+const ObjStoreDb = require('@mojaloop/central-object-store').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
 const Sidecar = require('../lib/sidecar')
@@ -45,8 +47,8 @@ const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
+const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
-// const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -58,8 +60,23 @@ const getEnums = (id) => {
   return Enums[id]()
 }
 const connectDatabase = async () => {
-  let result = await Db.connect(Config.DATABASE_URI)
+  const result = await Db.connect(Config.DATABASE_URI)
   return result
+}
+const connectMongoose = async () => {
+  if (!Config.MONGODB_DISABLED) {
+    try {
+      const db = await ObjStoreDb.connect(Config.MONGODB_URI, {
+        promiseLibrary: global.Promise
+      })
+      return db
+    } catch (error) {
+      Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
+      return null
+    }
+  } else {
+    return null
+  }
 }
 
 /**
@@ -140,7 +157,7 @@ const createServer = (port, modules) => {
  * @returns {Promise<boolean>} Returns true if Handlers were registered
  */
 const createHandlers = async (handlers) => {
-  let registeredHandlers = {
+  const registeredHandlers = {
     connection: {},
     register: {},
     ext: {},
@@ -149,7 +166,7 @@ const createHandlers = async (handlers) => {
     handlers: handlers
   }
 
-  for (let handler of handlers) {
+  for (const handler of handlers) {
     if (handler.enabled) {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
@@ -179,8 +196,17 @@ const createHandlers = async (handlers) => {
         case 'get':
           await RegisterHandlers.transfers.registerGetHandler()
           break
+        case 'bulkprepare':
+          await RegisterHandlers.bulk.registerBulkPrepareHandler()
+          break
+        case 'bulkfulfil':
+          await RegisterHandlers.bulk.registerBulkFulfilHandler()
+          break
+        case 'bulkprocessing':
+          await RegisterHandlers.bulk.registerBulkProcessingHandler()
+          break
         default:
-          let error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
+          const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)
       }
@@ -218,6 +244,7 @@ const initializeInstrumentation = () => {
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
   await migrate(runMigrations)
   await connectDatabase()
+  await connectMongoose()
   await Sidecar.connect(service)
   initializeInstrumentation()
   let server

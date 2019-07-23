@@ -36,8 +36,7 @@ const changeParticipantPosition = (participantCurrencyId, isReversal, amount, tr
 }
 
 const calculatePreparePositionsBatch = async (transferList) => {
-  let result = await PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
-  return result
+  return PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
 }
 
 module.exports = {

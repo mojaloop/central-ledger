@@ -28,6 +28,7 @@
  * @module src/domain/participant/
  */
 
+const Logger = require('@mojaloop/central-services-shared').Logger
 const ParticipantModel = require('../../models/participant/participant')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
@@ -68,7 +69,7 @@ const create = async (payload) => {
 
 const getAll = async () => {
   try {
-    let all = await ParticipantModel.getAll()
+    const all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
       participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     }))
@@ -80,7 +81,7 @@ const getAll = async () => {
 }
 
 const getById = async (id) => {
-  let participant = await ParticipantModel.getById(id)
+  const participant = await ParticipantModel.getById(id)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
@@ -88,7 +89,7 @@ const getById = async (id) => {
 }
 
 const getByName = async (name) => {
-  let participant = await ParticipantModel.getByName(name)
+  const participant = await ParticipantModel.getByName(name)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
@@ -150,7 +151,7 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
 
 const destroyByName = async (name) => {
   try {
-    let participant = await ParticipantModel.getByName(name)
+    const participant = await ParticipantModel.getByName(name)
     await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
     await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
@@ -300,11 +301,11 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     if (existingLimit || existingPosition || existingSettlementPosition) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInitialPositionExistsText)
     }
-    let limitAndInitialPosition = limitAndInitialPositionObj
+    const limitAndInitialPosition = limitAndInitialPositionObj
     if (!limitAndInitialPosition.initialPosition) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSITION
     }
-    let payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
+    const payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
     await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
@@ -485,10 +486,10 @@ const getLimitsForAllParticipants = async ({ currency = null, type = null }) => 
 
 const adjustLimits = async (name, payload) => {
   try {
-    let { limit, currency } = payload
+    const { limit, currency } = payload
     const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
     participantExists(participant)
-    let result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
+    const result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
     payload.name = name
     await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
     return result
@@ -584,7 +585,7 @@ const getPositions = async (name, query) => {
       const participant = await ParticipantModel.getByName(name)
       participantExists(participant)
       const result = await await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION)
-      let positions = []
+      const positions = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
           positions.push({
@@ -607,7 +608,7 @@ const getAccounts = async (name, query) => {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     const result = await PositionFacade.getAllByNameAndCurrency(name, query.currency)
-    let positions = []
+    const positions = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {
         positions.push({
@@ -630,7 +631,7 @@ const getAccounts = async (name, query) => {
 
 const updateAccount = async (payload, params, enums) => {
   try {
-    let { name, id } = params
+    const { name, id } = params
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     const account = await ParticipantCurrencyModel.getById(id)
@@ -691,21 +692,21 @@ const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp =
 }
 
 const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
-  let { action } = payload
+  const { action } = payload
   const actions = {
-    'recordFundsIn': {
+    recordFundsIn: {
       payer: fspName,
       payee: enums.hubParticipant.name
     },
-    'recordFundsOutPrepareReserve': {
+    recordFundsOutPrepareReserve: {
       payer: enums.hubParticipant.name,
       payee: fspName
     },
-    'recordFundsOutCommit': {
+    recordFundsOutCommit: {
       payer: enums.hubParticipant.name,
       payee: fspName
     },
-    'recordFundsOutAbort': {
+    recordFundsOutAbort: {
       payer: enums.hubParticipant.name,
       payee: fspName
     }
@@ -716,14 +717,14 @@ const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
 
 const recordFundsInOut = async (payload, params, enums) => {
   try {
-    let { name, id, transferId } = params
+    const { name, id, transferId } = params
     const participant = await ParticipantModel.getByName(name)
     const currency = (payload.amount && payload.amount.currency) || null
     const isAccountActive = null
     const checkIsActive = true
     participantExists(participant, checkIsActive)
     const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency, isAccountActive)
-    let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
+    const accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
     if (!accountMatched) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountCurrencyMismatchText)
     } else if (!accountMatched.accountIsActive) {
@@ -732,7 +733,7 @@ const recordFundsInOut = async (payload, params, enums) => {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotSettlementTypeErrorText)
     }
     transferId && (payload.transferId = transferId)
-    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
+    const messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
     messageProtocol.metadata.request = {
       params: params,
       enums: enums

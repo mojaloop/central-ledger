@@ -111,20 +111,20 @@ const createHubAccount = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     // start - To Do move to domain
-    let participant = await ParticipantService.getByName(request.params.name)
+    const participant = await ParticipantService.getByName(request.params.name)
     if (participant) {
       const ledgerAccountType = await ParticipantService.getLedgerAccountTypeName(request.payload.type)
       if (!ledgerAccountType) {
         // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found.')
       }
-      let accountParams = {
+      const accountParams = {
         participantId: participant.participantId,
         currencyId: request.payload.currency,
         ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
         isActive: 1
       }
-      let participantAccount = await ParticipantService.getParticipantAccount(accountParams)
+      const participantAccount = await ParticipantService.getParticipantAccount(accountParams)
       if (participantAccount) {
         // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub account has already been registered.')
@@ -218,7 +218,7 @@ const getEndpoint = async function (request) {
       return endpoint
     } else {
       const result = await ParticipantService.getAllEndpoints(request.params.name)
-      let endpoints = []
+      const endpoints = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
           endpoints.push({
@@ -250,7 +250,7 @@ const getLimits = async function (request) {
   Sidecar.logRequest(request)
   try {
     const result = await ParticipantService.getLimits(request.params.name, request.query)
-    let limits = []
+    const limits = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {
         limits.push({
@@ -274,7 +274,7 @@ const getLimitsForAllParticipants = async function (request) {
   Sidecar.logRequest(request)
   try {
     const result = await ParticipantService.getLimitsForAllParticipants(request.query)
-    let limits = []
+    const limits = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {
         limits.push({

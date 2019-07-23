@@ -33,12 +33,12 @@ Contributors
 
 const transactionInitiator = [
   {
-    'name': 'PAYER',
-    'description': 'Sender of funds is initiating the transaction. The account to send from is either owned by the Payer or is connected to the Payer in some way'
+    name: 'PAYER',
+    description: 'Sender of funds is initiating the transaction. The account to send from is either owned by the Payer or is connected to the Payer in some way'
   },
   {
-    'name': 'PAYEE',
-    'description': 'Recipient of the funds is initiating the transaction by sending a transaction request. The Payer must approve the transaction, either automatically by a pre-generated OTP or by pre-approval of the Payee, or manually by approving on their own Device'
+    name: 'PAYEE',
+    description: 'Recipient of the funds is initiating the transaction by sending a transaction request. The Payer must approve the transaction, either automatically by a pre-generated OTP or by pre-approval of the Payee, or manually by approving on their own Device'
   }
 ]
 

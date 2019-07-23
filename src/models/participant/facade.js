@@ -54,8 +54,9 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
 
       return b
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -76,8 +77,9 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
           'pl.*'
         )
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -126,8 +128,9 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
           'lt.name as limitType'
         )
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -213,26 +216,26 @@ const addEndpoint = async (participantId, endpoint) => {
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
-        let endpointType = await knex('endpointType').where({ 'name': endpoint.type, 'isActive': 1 }).select('endpointTypeId').first()
+        const endpointType = await knex('endpointType').where({ name: endpoint.type, isActive: 1 }).select('endpointTypeId').first()
         // let endpointType = await trx.first('endpointTypeId').from('endpointType').where({ 'name': endpoint.type, 'isActive': 1 })
 
         const existingEndpoint = await knex('participantEndpoint').transacting(trx).forUpdate().select('*')
           .where({
-            'participantId': participantId,
-            'endpointTypeId': endpointType.endpointTypeId,
-            'isActive': 1
+            participantId: participantId,
+            endpointTypeId: endpointType.endpointTypeId,
+            isActive: 1
           })
         if (Array.isArray(existingEndpoint) && existingEndpoint.length > 0) {
           await knex('participantEndpoint').transacting(trx).update({ isActive: 0 }).where('participantEndpointId', existingEndpoint[0].participantEndpointId)
         }
-        let newEndpoint = {
+        const newEndpoint = {
           participantId: participantId,
           endpointTypeId: endpointType.endpointTypeId,
           value: endpoint.value,
           isActive: 1,
           createdBy: 'unknown'
         }
-        let result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
+        const result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
         newEndpoint.participantEndpointId = result[0]
         await trx.commit
         return newEndpoint
@@ -268,8 +271,9 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
           'pl.value AS value'
         ).first()
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 
@@ -290,8 +294,9 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
           'pp.*'
         )
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 /**
@@ -323,9 +328,9 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
     return knex.transaction(async trx => {
       try {
         let result
-        let limitType = await knex('participantLimitType').where({ 'name': limitPositionObj.limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
+        const limitType = await knex('participantLimitType').where({ name: limitPositionObj.limit.type, isActive: 1 }).select('participantLimitTypeId').first()
         //  let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPositionObj.limit.type, 'isActive': 1 })
-        let participantLimit = {
+        const participantLimit = {
           participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
           value: limitPositionObj.limit.value,
@@ -334,14 +339,14 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         }
         result = await knex('participantLimit').transacting(trx).insert(participantLimit)
         participantLimit.participantLimitId = result[0]
-        let participantPosition = {
+        const participantPosition = {
           participantCurrencyId,
           value: limitPositionObj.initialPosition,
           reservedValue: 0
         }
         result = await knex('participantPosition').transacting(trx).insert(participantPosition)
         participantPosition.participantPositionId = result[0]
-        let settlementPosition = {
+        const settlementPosition = {
           participantCurrencyId: settlementAccountId,
           value: 0,
           reservedValue: 0
@@ -394,20 +399,20 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
   try {
     const trxFunction = async (trx, doCommit = true) => {
       try {
-        const limitType = await knex('participantLimitType').where({ 'name': limit.type, 'isActive': 1 }).select('participantLimitTypeId').first()
+        const limitType = await knex('participantLimitType').where({ name: limit.type, isActive: 1 }).select('participantLimitTypeId').first()
         // const limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limit.type, 'isActive': 1 })
         const existingLimit = await knex('participantLimit').transacting(trx).forUpdate().select('*')
           .where({
-            'participantCurrencyId': participantCurrencyId,
-            'participantLimitTypeId': limitType.participantLimitTypeId,
-            'isActive': 1
+            participantCurrencyId: participantCurrencyId,
+            participantLimitTypeId: limitType.participantLimitTypeId,
+            isActive: 1
           })
         if (Array.isArray(existingLimit) && existingLimit.length > 0) {
           await knex('participantLimit').transacting(trx).update({ isActive: 0 }).where('participantLimitId', existingLimit[0].participantLimitId)
         } else {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Participant Limit does not exist')
         }
-        let newLimit = {
+        const newLimit = {
           participantCurrencyId: participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
           value: limit.value,
@@ -524,7 +529,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
     return knex.transaction(async trx => {
       try {
         let result
-        let participantCurrency = {
+        const participantCurrency = {
           participantId,
           currencyId,
           ledgerAccountTypeId,
@@ -534,7 +539,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
         }
         result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
         participantCurrency.participantCurrencyId = result[0]
-        let participantPosition = {
+        const participantPosition = {
           participantCurrencyId: participantCurrency.participantCurrencyId,
           value: 0,
           reservedValue: 0

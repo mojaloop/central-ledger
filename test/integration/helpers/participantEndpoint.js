@@ -29,7 +29,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async (name, endpointType, endpointValue) => {
   try {
-    let endpoint = { type: endpointType, value: endpointValue }
+    const endpoint = { type: endpointType, value: endpointValue }
     await Model.addEndpoint(name, endpoint)
     return endpoint
   } catch (err) {

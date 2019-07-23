@@ -34,8 +34,6 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/transferExtension')
 
 Test('Extension model', async (extensionModelTest) => {
-  let sandbox
-
   const transferExtensionModelFixtures = [
     {
       transferId: 1,
@@ -51,7 +49,7 @@ Test('Extension model', async (extensionModelTest) => {
     }
   ]
 
-  sandbox = Sinon.createSandbox()
+  const sandbox = Sinon.createSandbox()
   Db.transferExtension = {
     insert: sandbox.stub(),
     update: sandbox.stub(),
@@ -84,7 +82,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('save extension', async (assert) => {
     Db.transferExtension.insert.withArgs(transferExtensionModelFixtures[0]).returns(1)
     try {
-      let result = await Model.saveTransferExtension(transferExtensionModelFixtures[0])
+      const result = await Model.saveTransferExtension(transferExtensionModelFixtures[0])
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
@@ -108,7 +106,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('get extension by transferId', async (assert) => {
     Db.transferExtension.find.withArgs({ transferId: 1 }).returns(transferExtensionModelFixtures[0])
     try {
-      let result = await Model.getByTransferId(1)
+      const result = await Model.getByTransferId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
@@ -132,7 +130,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('get extension by fulfilmentId', async (assert) => {
     Db.transferExtension.find.withArgs({ transferFulfilmentId: 1 }).returns(transferExtensionModelFixtures[0])
     try {
-      let result = await Model.getByTransferFulfilmentId(1)
+      const result = await Model.getByTransferFulfilmentId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
@@ -156,7 +154,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('get extension by transferErrorId', async (assert) => {
     Db.transferExtension.find.withArgs({ transferErrorId: 1 }).returns(transferExtensionModelFixtures[0])
     try {
-      let result = await Model.getByTransferErrorId(1)
+      const result = await Model.getByTransferErrorId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
@@ -180,7 +178,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('get by transferExtensionId', async (assert) => {
     Db.transferExtension.findOne.withArgs({ transferExtensionId: 1 }).returns(transferExtensionModelFixtures[0])
     try {
-      let result = await Model.getByTransferExtensionId(1)
+      const result = await Model.getByTransferExtensionId(1)
       assert.deepEqual(result, transferExtensionModelFixtures[0])
       assert.end()
     } catch (err) {
@@ -193,7 +191,7 @@ Test('Extension model', async (extensionModelTest) => {
   await extensionModelTest.test('destroy extension', async (assert) => {
     Db.transferExtension.destroy.withArgs({ transferId: 1 }).returns(1)
     try {
-      let result = await Model.destroyByTransferId(transferExtensionModelFixtures[0].transferId)
+      const result = await Model.destroyByTransferId(transferExtensionModelFixtures[0].transferId)
       assert.equal(result, 1)
       assert.end()
     } catch (err) {

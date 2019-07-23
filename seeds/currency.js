@@ -26,712 +26,712 @@
 
 const currencies = [
   {
-    'name': 'Afghanistan afghani (obsolete)',
-    'currencyId': 'AFA'
+    name: 'Afghanistan afghani (obsolete)',
+    currencyId: 'AFA'
   },
   {
-    'name': 'Afghanistan afghani',
-    'currencyId': 'AFN'
+    name: 'Afghanistan afghani',
+    currencyId: 'AFN'
   },
   {
-    'name': 'Algerian dinar',
-    'currencyId': 'DZD'
+    name: 'Algerian dinar',
+    currencyId: 'DZD'
   },
   {
-    'name': 'Albanian lek',
-    'currencyId': 'ALL'
+    name: 'Albanian lek',
+    currencyId: 'ALL'
   },
   {
-    'name': 'Angolan kwanza',
-    'currencyId': 'AOA'
+    name: 'Angolan kwanza',
+    currencyId: 'AOA'
   },
   {
-    'name': 'Angolan kwanza reajustado',
-    'currencyId': 'AOR'
+    name: 'Angolan kwanza reajustado',
+    currencyId: 'AOR'
   },
   {
-    'name': 'Argentine peso',
-    'currencyId': 'ARS'
+    name: 'Argentine peso',
+    currencyId: 'ARS'
   },
   {
-    'name': 'Armenian dram',
-    'currencyId': 'AMD'
+    name: 'Armenian dram',
+    currencyId: 'AMD'
   },
   {
-    'name': 'Aruban guilder',
-    'currencyId': 'AWG'
+    name: 'Aruban guilder',
+    currencyId: 'AWG'
   },
   {
-    'name': 'Australian dollar',
-    'currencyId': 'AUD'
+    name: 'Australian dollar',
+    currencyId: 'AUD'
   },
   {
-    'name': 'Azerbaijanian new manat',
-    'currencyId': 'AZN'
+    name: 'Azerbaijanian new manat',
+    currencyId: 'AZN'
   },
   {
-    'name': 'Bahamian dollar',
-    'currencyId': 'BSD'
+    name: 'Bahamian dollar',
+    currencyId: 'BSD'
   },
   {
-    'name': 'Bahraini dinar',
-    'currencyId': 'BHD'
+    name: 'Bahraini dinar',
+    currencyId: 'BHD'
   },
   {
-    'name': 'Bangladeshi taka',
-    'currencyId': 'BDT'
+    name: 'Bangladeshi taka',
+    currencyId: 'BDT'
   },
   {
-    'name': 'Barbados dollar',
-    'currencyId': 'BBD'
+    name: 'Barbados dollar',
+    currencyId: 'BBD'
   },
   {
-    'name': 'Belarusian ruble',
-    'currencyId': 'BYN'
+    name: 'Belarusian ruble',
+    currencyId: 'BYN'
   },
   {
-    'name': 'Belize dollar',
-    'currencyId': 'BZD'
+    name: 'Belize dollar',
+    currencyId: 'BZD'
   },
   {
-    'name': 'Bermudian dollar',
-    'currencyId': 'BMD'
+    name: 'Bermudian dollar',
+    currencyId: 'BMD'
   },
   {
-    'name': 'Bhutan ngultrum',
-    'currencyId': 'BTN'
+    name: 'Bhutan ngultrum',
+    currencyId: 'BTN'
   },
   {
-    'name': 'Bolivian boliviano',
-    'currencyId': 'BOB'
+    name: 'Bolivian boliviano',
+    currencyId: 'BOB'
   },
   {
-    'name': 'Bosnia-Herzegovina convertible mark',
-    'currencyId': 'BAM'
+    name: 'Bosnia-Herzegovina convertible mark',
+    currencyId: 'BAM'
   },
   {
-    'name': 'Botswana pula',
-    'currencyId': 'BWP'
+    name: 'Botswana pula',
+    currencyId: 'BWP'
   },
   {
-    'name': 'Brazilian real',
-    'currencyId': 'BRL'
+    name: 'Brazilian real',
+    currencyId: 'BRL'
   },
   {
-    'name': 'British pound',
-    'currencyId': 'GBP'
+    name: 'British pound',
+    currencyId: 'GBP'
   },
   {
-    'name': 'Brunei dollar',
-    'currencyId': 'BND'
+    name: 'Brunei dollar',
+    currencyId: 'BND'
   },
   {
-    'name': 'Bulgarian lev',
-    'currencyId': 'BGN'
+    name: 'Bulgarian lev',
+    currencyId: 'BGN'
   },
   {
-    'name': 'Burundi franc',
-    'currencyId': 'BIF'
+    name: 'Burundi franc',
+    currencyId: 'BIF'
   },
   {
-    'name': 'Cambodian riel',
-    'currencyId': 'KHR'
+    name: 'Cambodian riel',
+    currencyId: 'KHR'
   },
   {
-    'name': 'Canadian dollar',
-    'currencyId': 'CAD'
+    name: 'Canadian dollar',
+    currencyId: 'CAD'
   },
   {
-    'name': 'Cape Verde escudo',
-    'currencyId': 'CVE'
+    name: 'Cape Verde escudo',
+    currencyId: 'CVE'
   },
   {
-    'name': 'Cayman Islands dollar',
-    'currencyId': 'KYD'
+    name: 'Cayman Islands dollar',
+    currencyId: 'KYD'
   },
   {
-    'name': 'CFA franc BCEAO',
-    'currencyId': 'XOF'
+    name: 'CFA franc BCEAO',
+    currencyId: 'XOF'
   },
   {
-    'name': 'CFA franc BEAC',
-    'currencyId': 'XAF'
+    name: 'CFA franc BEAC',
+    currencyId: 'XAF'
   },
   {
-    'name': 'CFP franc',
-    'currencyId': 'XPF'
+    name: 'CFP franc',
+    currencyId: 'XPF'
   },
   {
-    'name': 'Chilean peso',
-    'currencyId': 'CLP'
+    name: 'Chilean peso',
+    currencyId: 'CLP'
   },
   {
-    'name': 'Chinese yuan renminbi',
-    'currencyId': 'CNY'
+    name: 'Chinese yuan renminbi',
+    currencyId: 'CNY'
   },
   {
-    'name': 'Colombian peso',
-    'currencyId': 'COP'
+    name: 'Colombian peso',
+    currencyId: 'COP'
   },
   {
-    'name': 'Comoros franc',
-    'currencyId': 'KMF'
+    name: 'Comoros franc',
+    currencyId: 'KMF'
   },
   {
-    'name': 'Congolese franc',
-    'currencyId': 'CDF'
+    name: 'Congolese franc',
+    currencyId: 'CDF'
   },
   {
-    'name': 'Costa Rican colon',
-    'currencyId': 'CRC'
+    name: 'Costa Rican colon',
+    currencyId: 'CRC'
   },
   {
-    'name': 'Croatian kuna',
-    'currencyId': 'HRK'
+    name: 'Croatian kuna',
+    currencyId: 'HRK'
   },
   {
-    'name': 'Cuban convertible peso',
-    'currencyId': 'CUC'
+    name: 'Cuban convertible peso',
+    currencyId: 'CUC'
   },
   {
-    'name': 'Cuban peso',
-    'currencyId': 'CUP'
+    name: 'Cuban peso',
+    currencyId: 'CUP'
   },
   {
-    'name': 'Czech koruna',
-    'currencyId': 'CZK'
+    name: 'Czech koruna',
+    currencyId: 'CZK'
   },
   {
-    'name': 'Danish krone',
-    'currencyId': 'DKK'
+    name: 'Danish krone',
+    currencyId: 'DKK'
   },
   {
-    'name': 'Djibouti franc',
-    'currencyId': 'DJF'
+    name: 'Djibouti franc',
+    currencyId: 'DJF'
   },
   {
-    'name': 'Dominican peso',
-    'currencyId': 'DOP'
+    name: 'Dominican peso',
+    currencyId: 'DOP'
   },
   {
-    'name': 'East Caribbean dollar',
-    'currencyId': 'XCD'
+    name: 'East Caribbean dollar',
+    currencyId: 'XCD'
   },
   {
-    'name': 'Egyptian pound',
-    'currencyId': 'EGP'
+    name: 'Egyptian pound',
+    currencyId: 'EGP'
   },
   {
-    'name': 'El Salvador colon',
-    'currencyId': 'SVC'
+    name: 'El Salvador colon',
+    currencyId: 'SVC'
   },
   {
-    'name': 'Eritrean nakfa',
-    'currencyId': 'ERN'
+    name: 'Eritrean nakfa',
+    currencyId: 'ERN'
   },
   {
-    'name': 'Estonian kroon',
-    'currencyId': 'EEK'
+    name: 'Estonian kroon',
+    currencyId: 'EEK'
   },
   {
-    'name': 'Ethiopian birr',
-    'currencyId': 'ETB'
+    name: 'Ethiopian birr',
+    currencyId: 'ETB'
   },
   {
-    'name': 'EU euro',
-    'currencyId': 'EUR'
+    name: 'EU euro',
+    currencyId: 'EUR'
   },
   {
-    'name': 'Falkland Islands pound',
-    'currencyId': 'FKP'
+    name: 'Falkland Islands pound',
+    currencyId: 'FKP'
   },
   {
-    'name': 'Fiji dollar',
-    'currencyId': 'FJD'
+    name: 'Fiji dollar',
+    currencyId: 'FJD'
   },
   {
-    'name': 'Gambian dalasi',
-    'currencyId': 'GMD'
+    name: 'Gambian dalasi',
+    currencyId: 'GMD'
   },
   {
-    'name': 'Georgian lari',
-    'currencyId': 'GEL'
+    name: 'Georgian lari',
+    currencyId: 'GEL'
   },
   {
-    'name': 'Ghanaian new cedi',
-    'currencyId': 'GHS'
+    name: 'Ghanaian new cedi',
+    currencyId: 'GHS'
   },
   {
-    'name': 'Gibraltar pound',
-    'currencyId': 'GIP'
+    name: 'Gibraltar pound',
+    currencyId: 'GIP'
   },
   {
-    'name': 'Gold (ounce)',
-    'currencyId': 'XAU'
+    name: 'Gold (ounce)',
+    currencyId: 'XAU'
   },
   {
-    'name': 'Gold franc',
-    'currencyId': 'XFO'
+    name: 'Gold franc',
+    currencyId: 'XFO'
   },
   {
-    'name': 'Guatemalan quetzal',
-    'currencyId': 'GTQ'
+    name: 'Guatemalan quetzal',
+    currencyId: 'GTQ'
   },
   {
-    'name': 'Guernsey pound',
-    'currencyId': 'GGP'
+    name: 'Guernsey pound',
+    currencyId: 'GGP'
   },
   {
-    'name': 'Guinean franc',
-    'currencyId': 'GNF'
+    name: 'Guinean franc',
+    currencyId: 'GNF'
   },
   {
-    'name': 'Guyana dollar',
-    'currencyId': 'GYD'
+    name: 'Guyana dollar',
+    currencyId: 'GYD'
   },
   {
-    'name': 'Haitian gourde',
-    'currencyId': 'HTG'
+    name: 'Haitian gourde',
+    currencyId: 'HTG'
   },
   {
-    'name': 'Honduran lempira',
-    'currencyId': 'HNL'
+    name: 'Honduran lempira',
+    currencyId: 'HNL'
   },
   {
-    'name': 'Hong Kong SAR dollar',
-    'currencyId': 'HKD'
+    name: 'Hong Kong SAR dollar',
+    currencyId: 'HKD'
   },
   {
-    'name': 'Hungarian forint',
-    'currencyId': 'HUF'
+    name: 'Hungarian forint',
+    currencyId: 'HUF'
   },
   {
-    'name': 'Icelandic krona',
-    'currencyId': 'ISK'
+    name: 'Icelandic krona',
+    currencyId: 'ISK'
   },
   {
-    'name': 'IMF special drawing right',
-    'currencyId': 'XDR'
+    name: 'IMF special drawing right',
+    currencyId: 'XDR'
   },
   {
-    'name': 'Indian rupee',
-    'currencyId': 'INR'
+    name: 'Indian rupee',
+    currencyId: 'INR'
   },
   {
-    'name': 'Indonesian rupiah',
-    'currencyId': 'IDR'
+    name: 'Indonesian rupiah',
+    currencyId: 'IDR'
   },
   {
-    'name': 'Iranian rial',
-    'currencyId': 'IRR'
+    name: 'Iranian rial',
+    currencyId: 'IRR'
   },
   {
-    'name': 'Iraqi dinar',
-    'currencyId': 'IQD'
+    name: 'Iraqi dinar',
+    currencyId: 'IQD'
   },
   {
-    'name': 'Isle of Man pound',
-    'currencyId': 'IMP'
+    name: 'Isle of Man pound',
+    currencyId: 'IMP'
   },
   {
-    'name': 'Israeli new shekel',
-    'currencyId': 'ILS'
+    name: 'Israeli new shekel',
+    currencyId: 'ILS'
   },
   {
-    'name': 'Jamaican dollar',
-    'currencyId': 'JMD'
+    name: 'Jamaican dollar',
+    currencyId: 'JMD'
   },
   {
-    'name': 'Japanese yen',
-    'currencyId': 'JPY'
+    name: 'Japanese yen',
+    currencyId: 'JPY'
   },
   {
-    'name': 'Jersey pound',
-    'currencyId': 'JEP'
+    name: 'Jersey pound',
+    currencyId: 'JEP'
   },
   {
-    'name': 'Jordanian dinar',
-    'currencyId': 'JOD'
+    name: 'Jordanian dinar',
+    currencyId: 'JOD'
   },
   {
-    'name': 'Kazakh tenge',
-    'currencyId': 'KZT'
+    name: 'Kazakh tenge',
+    currencyId: 'KZT'
   },
   {
-    'name': 'Kenyan shilling',
-    'currencyId': 'KES'
+    name: 'Kenyan shilling',
+    currencyId: 'KES'
   },
   {
-    'name': 'Kuwaiti dinar',
-    'currencyId': 'KWD'
+    name: 'Kuwaiti dinar',
+    currencyId: 'KWD'
   },
   {
-    'name': 'Kyrgyz som',
-    'currencyId': 'KGS'
+    name: 'Kyrgyz som',
+    currencyId: 'KGS'
   },
   {
-    'name': 'Lao kip',
-    'currencyId': 'LAK'
+    name: 'Lao kip',
+    currencyId: 'LAK'
   },
   {
-    'name': 'Latvian lats',
-    'currencyId': 'LVL'
+    name: 'Latvian lats',
+    currencyId: 'LVL'
   },
   {
-    'name': 'Lebanese pound',
-    'currencyId': 'LBP'
+    name: 'Lebanese pound',
+    currencyId: 'LBP'
   },
   {
-    'name': 'Lesotho loti',
-    'currencyId': 'LSL'
+    name: 'Lesotho loti',
+    currencyId: 'LSL'
   },
   {
-    'name': 'Liberian dollar',
-    'currencyId': 'LRD'
+    name: 'Liberian dollar',
+    currencyId: 'LRD'
   },
   {
-    'name': 'Libyan dinar',
-    'currencyId': 'LYD'
+    name: 'Libyan dinar',
+    currencyId: 'LYD'
   },
   {
-    'name': 'Lithuanian litas',
-    'currencyId': 'LTL'
+    name: 'Lithuanian litas',
+    currencyId: 'LTL'
   },
   {
-    'name': 'Macao SAR pataca',
-    'currencyId': 'MOP'
+    name: 'Macao SAR pataca',
+    currencyId: 'MOP'
   },
   {
-    'name': 'Macedonian denar',
-    'currencyId': 'MKD'
+    name: 'Macedonian denar',
+    currencyId: 'MKD'
   },
   {
-    'name': 'Malagasy ariary',
-    'currencyId': 'MGA'
+    name: 'Malagasy ariary',
+    currencyId: 'MGA'
   },
   {
-    'name': 'Malawi kwacha',
-    'currencyId': 'MWK'
+    name: 'Malawi kwacha',
+    currencyId: 'MWK'
   },
   {
-    'name': 'Malaysian ringgit',
-    'currencyId': 'MYR'
+    name: 'Malaysian ringgit',
+    currencyId: 'MYR'
   },
   {
-    'name': 'Maldivian rufiyaa',
-    'currencyId': 'MVR'
+    name: 'Maldivian rufiyaa',
+    currencyId: 'MVR'
   },
   {
-    'name': 'Mauritanian ouguiya',
-    'currencyId': 'MRO'
+    name: 'Mauritanian ouguiya',
+    currencyId: 'MRO'
   },
   {
-    'name': 'Mauritius rupee',
-    'currencyId': 'MUR'
+    name: 'Mauritius rupee',
+    currencyId: 'MUR'
   },
   {
-    'name': 'Mexican peso',
-    'currencyId': 'MXN'
+    name: 'Mexican peso',
+    currencyId: 'MXN'
   },
   {
-    'name': 'Moldovan leu',
-    'currencyId': 'MDL'
+    name: 'Moldovan leu',
+    currencyId: 'MDL'
   },
   {
-    'name': 'Mongolian tugrik',
-    'currencyId': 'MNT'
+    name: 'Mongolian tugrik',
+    currencyId: 'MNT'
   },
   {
-    'name': 'Moroccan dirham',
-    'currencyId': 'MAD'
+    name: 'Moroccan dirham',
+    currencyId: 'MAD'
   },
   {
-    'name': 'Mozambique new metical',
-    'currencyId': 'MZN'
+    name: 'Mozambique new metical',
+    currencyId: 'MZN'
   },
   {
-    'name': 'Myanmar kyat',
-    'currencyId': 'MMK'
+    name: 'Myanmar kyat',
+    currencyId: 'MMK'
   },
   {
-    'name': 'Namibian dollar',
-    'currencyId': 'NAD'
+    name: 'Namibian dollar',
+    currencyId: 'NAD'
   },
   {
-    'name': 'Nepalese rupee',
-    'currencyId': 'NPR'
+    name: 'Nepalese rupee',
+    currencyId: 'NPR'
   },
   {
-    'name': 'Netherlands Antillian guilder',
-    'currencyId': 'ANG'
+    name: 'Netherlands Antillian guilder',
+    currencyId: 'ANG'
   },
   {
-    'name': 'New Zealand dollar',
-    'currencyId': 'NZD'
+    name: 'New Zealand dollar',
+    currencyId: 'NZD'
   },
   {
-    'name': 'Nicaraguan cordoba oro',
-    'currencyId': 'NIO'
+    name: 'Nicaraguan cordoba oro',
+    currencyId: 'NIO'
   },
   {
-    'name': 'Nigerian naira',
-    'currencyId': 'NGN'
+    name: 'Nigerian naira',
+    currencyId: 'NGN'
   },
   {
-    'name': 'North Korean won',
-    'currencyId': 'KPW'
+    name: 'North Korean won',
+    currencyId: 'KPW'
   },
   {
-    'name': 'Norwegian krone',
-    'currencyId': 'NOK'
+    name: 'Norwegian krone',
+    currencyId: 'NOK'
   },
   {
-    'name': 'Omani rial',
-    'currencyId': 'OMR'
+    name: 'Omani rial',
+    currencyId: 'OMR'
   },
   {
-    'name': 'Pakistani rupee',
-    'currencyId': 'PKR'
+    name: 'Pakistani rupee',
+    currencyId: 'PKR'
   },
   {
-    'name': 'Palladium (ounce)',
-    'currencyId': 'XPD'
+    name: 'Palladium (ounce)',
+    currencyId: 'XPD'
   },
   {
-    'name': 'Panamanian balboa',
-    'currencyId': 'PAB'
+    name: 'Panamanian balboa',
+    currencyId: 'PAB'
   },
   {
-    'name': 'Papua New Guinea kina',
-    'currencyId': 'PGK'
+    name: 'Papua New Guinea kina',
+    currencyId: 'PGK'
   },
   {
-    'name': 'Paraguayan guarani',
-    'currencyId': 'PYG'
+    name: 'Paraguayan guarani',
+    currencyId: 'PYG'
   },
   {
-    'name': 'Peruvian nuevo sol',
-    'currencyId': 'PEN'
+    name: 'Peruvian nuevo sol',
+    currencyId: 'PEN'
   },
   {
-    'name': 'Philippine peso',
-    'currencyId': 'PHP'
+    name: 'Philippine peso',
+    currencyId: 'PHP'
   },
   {
-    'name': 'Platinum (ounce)',
-    'currencyId': 'XPT'
+    name: 'Platinum (ounce)',
+    currencyId: 'XPT'
   },
   {
-    'name': 'Polish zloty',
-    'currencyId': 'PLN'
+    name: 'Polish zloty',
+    currencyId: 'PLN'
   },
   {
-    'name': 'Qatari rial',
-    'currencyId': 'QAR'
+    name: 'Qatari rial',
+    currencyId: 'QAR'
   },
   {
-    'name': 'Romanian new leu',
-    'currencyId': 'RON'
+    name: 'Romanian new leu',
+    currencyId: 'RON'
   },
   {
-    'name': 'Russian ruble',
-    'currencyId': 'RUB'
+    name: 'Russian ruble',
+    currencyId: 'RUB'
   },
   {
-    'name': 'Rwandan franc',
-    'currencyId': 'RWF'
+    name: 'Rwandan franc',
+    currencyId: 'RWF'
   },
   {
-    'name': 'Saint Helena pound',
-    'currencyId': 'SHP'
+    name: 'Saint Helena pound',
+    currencyId: 'SHP'
   },
   {
-    'name': 'Samoan tala',
-    'currencyId': 'WST'
+    name: 'Samoan tala',
+    currencyId: 'WST'
   },
   {
-    'name': 'Sao Tome and Principe dobra',
-    'currencyId': 'STD'
+    name: 'Sao Tome and Principe dobra',
+    currencyId: 'STD'
   },
   {
-    'name': 'Saudi riyal',
-    'currencyId': 'SAR'
+    name: 'Saudi riyal',
+    currencyId: 'SAR'
   },
   {
-    'name': 'Seborgan luigino',
-    'currencyId': 'SPL'
+    name: 'Seborgan luigino',
+    currencyId: 'SPL'
   },
   {
-    'name': 'Serbian dinar',
-    'currencyId': 'RSD'
+    name: 'Serbian dinar',
+    currencyId: 'RSD'
   },
   {
-    'name': 'Seychelles rupee',
-    'currencyId': 'SCR'
+    name: 'Seychelles rupee',
+    currencyId: 'SCR'
   },
   {
-    'name': 'Sierra Leone leone',
-    'currencyId': 'SLL'
+    name: 'Sierra Leone leone',
+    currencyId: 'SLL'
   },
   {
-    'name': 'Silver (ounce)',
-    'currencyId': 'XAG'
+    name: 'Silver (ounce)',
+    currencyId: 'XAG'
   },
   {
-    'name': 'Singapore dollar',
-    'currencyId': 'SGD'
+    name: 'Singapore dollar',
+    currencyId: 'SGD'
   },
   {
-    'name': 'Solomon Islands dollar',
-    'currencyId': 'SBD'
+    name: 'Solomon Islands dollar',
+    currencyId: 'SBD'
   },
   {
-    'name': 'Somali shilling',
-    'currencyId': 'SOS'
+    name: 'Somali shilling',
+    currencyId: 'SOS'
   },
   {
-    'name': 'South African rand',
-    'currencyId': 'ZAR'
+    name: 'South African rand',
+    currencyId: 'ZAR'
   },
   {
-    'name': 'South Korean won',
-    'currencyId': 'KRW'
+    name: 'South Korean won',
+    currencyId: 'KRW'
   },
   {
-    'name': 'Sri Lanka rupee',
-    'currencyId': 'LKR'
+    name: 'Sri Lanka rupee',
+    currencyId: 'LKR'
   },
   {
-    'name': 'Sudanese pound',
-    'currencyId': 'SDG'
+    name: 'Sudanese pound',
+    currencyId: 'SDG'
   },
   {
-    'name': 'Suriname dollar',
-    'currencyId': 'SRD'
+    name: 'Suriname dollar',
+    currencyId: 'SRD'
   },
   {
-    'name': 'Swaziland lilangeni',
-    'currencyId': 'SZL'
+    name: 'Swaziland lilangeni',
+    currencyId: 'SZL'
   },
   {
-    'name': 'Swedish krona',
-    'currencyId': 'SEK'
+    name: 'Swedish krona',
+    currencyId: 'SEK'
   },
   {
-    'name': 'Swiss franc',
-    'currencyId': 'CHF'
+    name: 'Swiss franc',
+    currencyId: 'CHF'
   },
   {
-    'name': 'Syrian pound',
-    'currencyId': 'SYP'
+    name: 'Syrian pound',
+    currencyId: 'SYP'
   },
   {
-    'name': 'Taiwan New dollar',
-    'currencyId': 'TWD'
+    name: 'Taiwan New dollar',
+    currencyId: 'TWD'
   },
   {
-    'name': 'Tajik somoni',
-    'currencyId': 'TJS'
+    name: 'Tajik somoni',
+    currencyId: 'TJS'
   },
   {
-    'name': 'Tanzanian shilling',
-    'currencyId': 'TZS'
+    name: 'Tanzanian shilling',
+    currencyId: 'TZS'
   },
   {
-    'name': 'Thai baht',
-    'currencyId': 'THB'
+    name: 'Thai baht',
+    currencyId: 'THB'
   },
   {
-    'name': 'Tongan pa\'anga',
-    'currencyId': 'TOP'
+    name: 'Tongan pa\'anga',
+    currencyId: 'TOP'
   },
   {
-    'name': 'Trinidad and Tobago dollar',
-    'currencyId': 'TTD'
+    name: 'Trinidad and Tobago dollar',
+    currencyId: 'TTD'
   },
   {
-    'name': 'Tunisian dinar',
-    'currencyId': 'TND'
+    name: 'Tunisian dinar',
+    currencyId: 'TND'
   },
   {
-    'name': 'Turkish lira',
-    'currencyId': 'TRY'
+    name: 'Turkish lira',
+    currencyId: 'TRY'
   },
   {
-    'name': 'Turkmen new manat',
-    'currencyId': 'TMT'
+    name: 'Turkmen new manat',
+    currencyId: 'TMT'
   },
   {
-    'name': 'Tuvaluan dollar',
-    'currencyId': 'TVD'
+    name: 'Tuvaluan dollar',
+    currencyId: 'TVD'
   },
   {
-    'name': 'UAE dirham',
-    'currencyId': 'AED'
+    name: 'UAE dirham',
+    currencyId: 'AED'
   },
   {
-    'name': 'Uganda new shilling',
-    'currencyId': 'UGX'
+    name: 'Uganda new shilling',
+    currencyId: 'UGX'
   },
   {
-    'name': 'UIC franc',
-    'currencyId': 'XFU'
+    name: 'UIC franc',
+    currencyId: 'XFU'
   },
   {
-    'name': 'Ukrainian hryvnia',
-    'currencyId': 'UAH'
+    name: 'Ukrainian hryvnia',
+    currencyId: 'UAH'
   },
   {
-    'name': 'Uruguayan peso uruguayo',
-    'currencyId': 'UYU'
+    name: 'Uruguayan peso uruguayo',
+    currencyId: 'UYU'
   },
   {
-    'name': 'US dollar',
-    'currencyId': 'USD'
+    name: 'US dollar',
+    currencyId: 'USD'
   },
   {
-    'name': 'Uzbekistani sum',
-    'currencyId': 'UZS'
+    name: 'Uzbekistani sum',
+    currencyId: 'UZS'
   },
   {
-    'name': 'Vanuatu vatu',
-    'currencyId': 'VUV'
+    name: 'Vanuatu vatu',
+    currencyId: 'VUV'
   },
   {
-    'name': 'Venezuelan bolivar fuerte',
-    'currencyId': 'VEF'
+    name: 'Venezuelan bolivar fuerte',
+    currencyId: 'VEF'
   },
   {
-    'name': 'Vietnamese dong',
-    'currencyId': 'VND'
+    name: 'Vietnamese dong',
+    currencyId: 'VND'
   },
   {
-    'name': 'Yemeni rial',
-    'currencyId': 'YER'
+    name: 'Yemeni rial',
+    currencyId: 'YER'
   },
   {
-    'name': 'Zambian kwacha (obsolete)',
-    'currencyId': 'ZMK'
+    name: 'Zambian kwacha (obsolete)',
+    currencyId: 'ZMK'
   },
   {
-    'name': 'Zambian kwacha',
-    'currencyId': 'ZMW'
+    name: 'Zambian kwacha',
+    currencyId: 'ZMW'
   },
   {
-    'name': 'Zimbabwe dollar (initial)',
-    'currencyId': 'ZWD'
+    name: 'Zimbabwe dollar (initial)',
+    currencyId: 'ZWD'
   },
   {
-    'name': 'Zimbabwe dollar (1st denomination)',
-    'currencyId': 'ZWN'
+    name: 'Zimbabwe dollar (1st denomination)',
+    currencyId: 'ZWN'
   },
   {
-    'name': 'Zimbabwe dollar (2nd denomination)',
-    'currencyId': 'ZWR'
+    name: 'Zimbabwe dollar (2nd denomination)',
+    currencyId: 'ZWR'
   },
   {
-    'name': 'Zimbabwe dollar (3rd denomination)',
-    'currencyId': 'ZWL'
+    name: 'Zimbabwe dollar (3rd denomination)',
+    currencyId: 'ZWL'
   }
 ]
 

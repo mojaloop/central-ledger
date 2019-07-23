@@ -11,10 +11,14 @@ Test('setup', setupTest => {
   let uuidStub
   let oldHostName
   let oldDatabaseUri
-  let hostName = 'http://test.com'
-  let databaseUri = 'some-database-uri'
+  let oldMongoDbUri
+  const hostName = 'http://test.com'
+  const databaseUri = 'some-database-uri'
+  const mongoDbUri = 'mongo-db-uri'
   let Setup
   let DbStub
+  let ObjStoreStub
+  let ObjStoreStubThrows
   let SidecarStub
   let MigratorStub
   let RegisterHandlersStub
@@ -65,6 +69,17 @@ Test('setup', setupTest => {
       disconnect: sandbox.stub().returns(P.resolve())
     }
 
+    ObjStoreStub = {
+      Db: {
+        connect: sandbox.stub().returns(P.resolve())
+      }
+    }
+    ObjStoreStubThrows = {
+      Db: {
+        connect: sandbox.stub().throws(new Error('MongoDB unavailable'))
+      }
+    }
+
     uuidStub = sandbox.stub()
 
     MigratorStub = {
@@ -91,36 +106,32 @@ Test('setup', setupTest => {
       }
     }
 
-    // KafkaCronStub = {
-    //   Cron: {
-    //     start: sandbox.stub().returns(P.resolve()),
-    //     stop: sandbox.stub().returns(P.resolve()),
-    //     isRunning: sandbox.stub().returns(P.resolve())
-    //   }
-    // }
-
     const ConfigStub = Config
     ConfigStub.HANDLERS_API_DISABLED = false
     ConfigStub.HANDLERS_CRON_DISABLED = false
+    ConfigStub.MONGODB_DISABLED = false
 
     Setup = Proxyquire('../../../src/shared/setup', {
-      'uuid4': uuidStub,
+      uuid4: uuidStub,
       '../handlers/register': RegisterHandlersStub,
       '../lib/db': DbStub,
+      '@mojaloop/central-object-store': ObjStoreStub,
       '../lib/migrator': MigratorStub,
       '../lib/sidecar': SidecarStub,
       '../lib/requestLogger': requestLoggerStub,
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
-      'hapi': HapiStub,
+      hapi: HapiStub,
       '../lib/config': ConfigStub
       // '../handlers/lib/kafka': KafkaCronStub
     })
 
     oldHostName = Config.HOSTNAME
     oldDatabaseUri = Config.DATABASE_URI
-    Config.DATABASE_URI = databaseUri
+    oldMongoDbUri = Config.MONGODB_URI
     Config.HOSTNAME = hostName
+    Config.DATABASE_URI = databaseUri
+    Config.MONGODB_URI = mongoDbUri
 
     test.end()
   })
@@ -130,6 +141,7 @@ Test('setup', setupTest => {
 
     Config.HOSTNAME = oldHostName
     Config.DATABASE_URI = oldDatabaseUri
+    Config.MONGODB_URI = oldMongoDbUri
 
     test.end()
   })
@@ -145,15 +157,16 @@ Test('setup', setupTest => {
       }
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStubThrowError,
+        hapi: HapiStubThrowError,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -170,11 +183,46 @@ Test('setup', setupTest => {
   })
 
   setupTest.test('initialize should', async (initializeTest) => {
-    initializeTest.test('connect to sidecar', async (test) => {
+    initializeTest.test('connect to Database, Sidecar & ObjStore', async (test) => {
       const service = 'api'
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
+        test.ok(SidecarStub.connect.calledWith(service))
+        test.notOk(MigratorStub.migrate.called)
+        test.equal(s, serverStub)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
+
+    initializeTest.test('connect to Database & Sidecar, but NOT too ObjStore', async (test) => {
+      const ConfigStub = Config
+      ConfigStub.MONGODB_DISABLED = true
+
+      const service = 'api'
+
+      Setup = Proxyquire('../../../src/shared/setup', {
+        uuid4: uuidStub,
+        '../handlers/register': RegisterHandlersStub,
+        '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStub,
+        '../lib/migrator': MigratorStub,
+        '../lib/sidecar': SidecarStub,
+        '../lib/requestLogger': requestLoggerStub,
+        './plugins': PluginsStub,
+        '../lib/urlParser': UrlParserStub,
+        hapi: HapiStub,
+        '../lib/config': ConfigStub
+        // '../handlers/lib/kafka': KafkaCronStub
+      })
+
+      Setup.initialize({ service }).then(s => {
+        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.notOk(ObjStoreStub.Db.connect.called)
         test.ok(SidecarStub.connect.calledWith(service))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
@@ -190,6 +238,7 @@ Test('setup', setupTest => {
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
         test.end()
@@ -204,6 +253,7 @@ Test('setup', setupTest => {
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
         test.end()
@@ -218,6 +268,7 @@ Test('setup', setupTest => {
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
         test.end()
@@ -232,6 +283,7 @@ Test('setup', setupTest => {
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
         test.end()
@@ -246,6 +298,7 @@ Test('setup', setupTest => {
 
       Setup.initialize({ service, runMigrations: true }).then(() => {
         test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.ok(MigratorStub.migrate.called)
         test.end()
       }).catch(err => {
@@ -269,15 +322,16 @@ Test('setup', setupTest => {
 
     initializeTest.test('run Handlers if runHandlers flag enabled and cronjobs are enabled and start API and do register cronJobs', async (test) => {
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -286,7 +340,6 @@ Test('setup', setupTest => {
 
       Setup.initialize({ service, runHandlers: true }).then((s) => {
         test.ok(RegisterHandlersStub.registerAllHandlers.called)
-        // test.ok(KafkaCronStub.Cron.start.called)
         test.equal(s, serverStub)
         test.end()
       }).catch(err => {
@@ -300,15 +353,16 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_CRON_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -317,7 +371,6 @@ Test('setup', setupTest => {
 
       Setup.initialize({ service, runHandlers: true }).then((s) => {
         test.ok(RegisterHandlersStub.registerAllHandlers.called)
-        // test.ok(!KafkaCronStub.Cron.start.called)
         test.equal(s, serverStub)
         test.end()
       }).catch(err => {
@@ -332,16 +385,17 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_API_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
-        '../lib/config': Config
+        hapi: HapiStub,
+        '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -365,15 +419,16 @@ Test('setup', setupTest => {
       ConfigStub.INSTRUMENTATION_METRICS_DISABLED = true
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -576,15 +631,16 @@ Test('setup', setupTest => {
       ConfigStub.HANDLERS_API_DISABLED = false
 
       Setup = Proxyquire('../../../src/shared/setup', {
-        'uuid4': uuidStub,
+        uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '@mojaloop/central-object-store': ObjStoreStubThrows,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        'hapi': HapiStub,
+        hapi: HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })

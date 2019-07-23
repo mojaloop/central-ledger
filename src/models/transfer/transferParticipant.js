@@ -32,6 +32,7 @@ const saveTransferParticipant = async (record) => {
   try {
     return await Db.transferParticipant.insert(record)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

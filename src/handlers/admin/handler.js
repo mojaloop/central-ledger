@@ -155,9 +155,9 @@ const transfer = async (error, messages) => {
     let consumer
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-    } catch (e) {
+    } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(e)
+      Logger.error(err)
       return true
     }
     if (!allowedActions.includes(payload.action)) {

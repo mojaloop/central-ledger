@@ -33,11 +33,11 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
   try {
-    let participantPayerResult = await ParticipantPreparationModule.prepareData('payerFsp')
-    let participantPayeeResult = await ParticipantPreparationModule.prepareData('payeeFsp')
+    const participantPayerResult = await ParticipantPreparationModule.prepareData('payerFsp')
+    const participantPayeeResult = await ParticipantPreparationModule.prepareData('payeeFsp')
 
-    let transferId = Uuid()
-    let payload = {
+    const transferId = Uuid()
+    const payload = {
       payerFsp: participantPayerResult.name,
       payeeFsp: participantPayeeResult.name,
       amount: {
@@ -49,7 +49,7 @@ exports.prepareData = async () => {
       expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 
     }
-    let transfer = {
+    const transfer = {
       transferId: transferId,
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,

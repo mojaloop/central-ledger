@@ -30,7 +30,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
-    let result = await Db.participantCurrency.insert({
+    const result = await Db.participantCurrency.insert({
       participantId,
       currencyId,
       ledgerAccountTypeId,
@@ -61,7 +61,7 @@ exports.update = async (participantCurrencyId, isActive) => {
 
 exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
   try {
-    let params = { participantId: id }
+    const params = { participantId: id }
     if (ledgerAccountTypeId) {
       params.ledgerAccountTypeId = ledgerAccountTypeId
     }

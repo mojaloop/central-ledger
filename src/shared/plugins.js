@@ -13,8 +13,8 @@ const registerPlugins = async (server) => {
     plugin: require('hapi-swagger'),
     options: {
       info: {
-        'title': 'Central Ledger API Documentation',
-        'version': Package.version
+        title: 'Central Ledger API Documentation',
+        version: Package.version
       }
     }
   })

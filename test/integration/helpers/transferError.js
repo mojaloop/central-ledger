@@ -32,18 +32,18 @@ const TransferStatePreparationHelper = require('./transferState')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 exports.prepareData = async () => {
   try {
-    let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
-    let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
+    const transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
+    const transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
     TransferStatePreparationHelper.prepareData() // transfer seed
 
     await TransferStateChangeModel.saveTransferStateChange({
       transferId: transferResult.transfer.transferId,
       transferStateId: 'INVALID'
     })
-    let transferStateChange = await TransferStateChangeModel.getByTransferId(transferResult.transfer.transferId)
+    const transferStateChange = await TransferStateChangeModel.getByTransferId(transferResult.transfer.transferId)
     await TransferErrorModel.insert(transferStateChange.transferStateChangeId, 3100, 'Invalid Request')
 
-    let transferError = await TransferErrorModel.getByTransferStateChangeId(transferStateChange.transferStateChangeId)
+    const transferError = await TransferErrorModel.getByTransferStateChangeId(transferStateChange.transferStateChangeId)
 
     return {
       transferError,

@@ -75,7 +75,7 @@ Test('transfer validator', validatorTest => {
     })
 
     validateByNameTest.test('fail validation when FSPIOP-Source doesnt match Payer', async (test) => {
-      let headersModified = { 'fspiop-source': 'dfsp2' }
+      const headersModified = { 'fspiop-source': 'dfsp2' }
       const { validationPassed, reasons } = await Validator.validateByName(payload, headersModified)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['FSPIOP-Source header should match Payer'])
@@ -252,7 +252,7 @@ Test('transfer validator', validatorTest => {
     validateFulfilConditionTest.test('validated fulfilment against condition', async (test) => {
       const fulfilment = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEF-'
       const condition = 'aAGyvOxOr4yvZo3TalJwvhdWelZp5JNC0MRqwK4DXQI'
-      let result = Validator.validateFulfilCondition(fulfilment, condition)
+      const result = Validator.validateFulfilCondition(fulfilment, condition)
       test.ok(result)
       test.end()
     })

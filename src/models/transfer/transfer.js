@@ -41,6 +41,7 @@ const saveTransfer = async (record) => {
   try {
     return await Db.transfer.insert(record)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -57,6 +58,7 @@ const truncateTransfer = async () => {
   try {
     return await Db.transfer.truncate()
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

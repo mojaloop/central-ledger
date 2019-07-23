@@ -81,6 +81,7 @@ const expire = (id) => {
 }
 
 const fulfil = async (transferFulfilmentId, transferId, payload) => {
+  // eslint-disable-next-line no-useless-catch
   try {
     const isCommit = true
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit)

@@ -76,7 +76,7 @@ Test('TransferErrorDuplicateCheck model', async (TransferErrorDuplicateCheckTest
           transferErrorDuplicateCheckId
         }
 
-        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, newHash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, newHash)
         test.ok(knexStub.withArgs('transferErrorDuplicateCheck').calledTwice, 'knex called with transferErrorDuplicateCheck twice')
         test.deepEqual(result, expected, 'result matched')
         test.end()
@@ -113,7 +113,7 @@ Test('TransferErrorDuplicateCheck model', async (TransferErrorDuplicateCheckTest
           transferErrorDuplicateCheckId
         }
 
-        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
         test.ok(knexStub.withArgs('transferErrorDuplicateCheck').calledOnce, 'knex called with transferErrorDuplicateCheck once')
         test.deepEqual(result, expected, 'result matched')
         test.end()

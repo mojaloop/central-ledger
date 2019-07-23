@@ -23,10 +23,11 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Lazola Lucas <lazola.lucas@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Lazola Lucas <lazola.lucas@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/
@@ -51,17 +52,26 @@ const TransferHandlers = require('./transfers/handler')
 const PositionHandlers = require('./positions/handler')
 const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
+const BulkHandlers = require('./bulk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const registerAllHandlers = async () => {
   try {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))
-    for (let key in modules) {
+    for (const key in modules) {
       Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
-      const handlerObject = modules[key]
-      Logger.info(JSON.stringify(handlerObject.handler))
-      await handlerObject.handler.registerAllHandlers()
+      if (Object.prototype.hasOwnProperty.call(modules[key], 'handler')) {
+        const handlerObject = modules[key]
+        Logger.info(JSON.stringify(handlerObject.handler))
+        await handlerObject.handler.registerAllHandlers()
+      } else {
+        for (const i in modules[key]) {
+          const handlerObject = modules[key][i]
+          Logger.info(JSON.stringify(handlerObject.handler))
+          await handlerObject.handler.registerAllHandlers()
+        }
+      }
     }
     return true
   } catch (err) {
@@ -89,5 +99,10 @@ module.exports = {
   },
   admin: {
     registerAdminHandlers: AdminHandlers.registerAllHandlers
+  },
+  bulk: {
+    registerBulkPrepareHandler: BulkHandlers.registerBulkPrepareHandler,
+    registerBulkFulfilHandler: BulkHandlers.registerBulkFulfilHandler,
+    registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler
   }
 }

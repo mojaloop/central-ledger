@@ -56,14 +56,17 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--fulfil', 'Start the Fulfil Handler')
   .option('--timeout', 'Start the Timeout Handler')
   .option('--admin', 'Start the Admin Handler')
+  .option('--bulkprepare', 'Start the Bulk Prepare Handler')
+  .option('--bulkfulfil', 'Start the Bulk Fulfil Handler')
+  .option('--bulkprocessing', 'Start the Bulk Processing Handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
   .action(async (args) => {
-    let handlerList = []
+    const handlerList = []
     if (args.prepare) {
       Logger.debug(`CLI: Executing --prepare`)
-      let handler = {
+      const handler = {
         type: 'prepare',
         enabled: true
       }
@@ -71,7 +74,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     }
     if (args.position) {
       Logger.debug(`CLI: Executing --position`)
-      let handler = {
+      const handler = {
         type: 'position',
         enabled: true
       }
@@ -79,7 +82,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     }
     if (args.get) {
       Logger.debug(`CLI: Executing --get`)
-      let handler = {
+      const handler = {
         type: 'get',
         enabled: true
       }
@@ -87,7 +90,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     }
     if (args.fulfil) {
       Logger.debug(`CLI: Executing --fulfil`)
-      let handler = {
+      const handler = {
         type: 'fulfil',
         enabled: true
       }
@@ -95,7 +98,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     }
     if (args.timeout) {
       Logger.debug(`CLI: Executing --timeout`)
-      let handler = {
+      const handler = {
         type: 'timeout',
         enabled: true
       }
@@ -103,8 +106,32 @@ Program.command('handler') // sub-command name, coffeeType = type, required
     }
     if (args.admin) {
       Logger.debug(`CLI: Executing --admin`)
-      let handler = {
+      const handler = {
         type: 'admin',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkprepare) {
+      Logger.debug(`CLI: Executing --bulkprepare`)
+      const handler = {
+        type: 'bulkprepare',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkfulfil) {
+      Logger.debug(`CLI: Executing --bulkfulfil`)
+      const handler = {
+        type: 'bulkfulfil',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkprocessing) {
+      Logger.debug(`CLI: Executing --bulkprocessing`)
+      const handler = {
+        type: 'bulkprocessing',
         enabled: true
       }
       handlerList.push(handler)

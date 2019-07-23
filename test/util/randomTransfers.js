@@ -64,7 +64,7 @@ const randTransferStateChanges = (transferId, transferCreatedDate, isExpired) =>
     randStateNum = Math.ceil(Math.random() * 9) // all states
   }
   const state = Object.values(TS)[randStateNum]
-  let states = [{
+  const states = [{
     transferId,
     transferStateId: TS.RECEIVED_PREPARE,
     createdDate: new Date(transferCreatedDate)
@@ -137,9 +137,9 @@ const generateTransfer = (cfg, isExpired) => {
 const insert = async (cfg) => {
   let isExpired
   let countExpired = 0
-  let targetTransfersPerExpired = Math.floor(cfg.totalCount / cfg.expiredCount)
+  const targetTransfersPerExpired = Math.floor(cfg.totalCount / cfg.expiredCount)
   let now = new Date()
-  let startTime = now
+  const startTime = now
   let currentTime = now
   let elapsedTime
 
@@ -147,15 +147,15 @@ const insert = async (cfg) => {
     await Db.connect(Config.DATABASE_URI)
 
     // prepare participants and participant limits
-    let str = Uuid()
+    const str = Uuid()
     let name = 'dfsp1-' + str.substr(0, 5)
     let participantId = await Db.participant.insert({ name, createdBy: 'randomTransfers' })
-    let payerAccountId = await Db.participantCurrency.insert({ participantId, currencyId: 'USD', createdBy: 'randomTransfers' })
+    const payerAccountId = await Db.participantCurrency.insert({ participantId, currencyId: 'USD', createdBy: 'randomTransfers' })
     await Db.participantLimit.insert({ participantCurrencyId: payerAccountId, participantLimitTypeId: Enum.ParticipantLimitType.NET_DEBIT_CAP, value: 1000, createdBy: 'randomTransfers' })
     await Db.participantPosition.insert({ participantCurrencyId: payerAccountId, value: 0, reservedValue: 0 })
     name = 'dfsp2-' + str.substr(0, 5)
     participantId = await Db.participant.insert({ name, createdBy: 'randomTransfers' })
-    let payeeAccountId = await Db.participantCurrency.insert({ participantId, currencyId: 'USD', createdBy: 'randomTransfers' })
+    const payeeAccountId = await Db.participantCurrency.insert({ participantId, currencyId: 'USD', createdBy: 'randomTransfers' })
     await Db.participantLimit.insert({ participantCurrencyId: payeeAccountId, participantLimitTypeId: Enum.ParticipantLimitType.NET_DEBIT_CAP, value: 500, createdBy: 'randomTransfers' })
     await Db.participantPosition.insert({ participantCurrencyId: payeeAccountId, value: 0, reservedValue: 0 })
 
@@ -169,7 +169,7 @@ const insert = async (cfg) => {
         countExpired += isExpired ? 1 : 0
       }
 
-      let t = generateTransfer(cfg, isExpired)
+      const t = generateTransfer(cfg, isExpired)
       await Db.transferDuplicateCheck.insert({ transferId: t.transfer.transferId, hash: t.transfer.transferId })
       await Db.transfer.insert(t.transfer)
       await Db.transferParticipant.insert({

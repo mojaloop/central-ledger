@@ -44,6 +44,7 @@ const Uuid = require('uuid4')
 const Kafka = require('./kafka')
 const Enum = require('../../lib/enum')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 
 /**
  * The Producer config required
@@ -440,10 +441,11 @@ const produceGeneralMessage = async (functionality, action, message, state, key)
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  let result = await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
-    createGeneralTopicConf(functionalityMapped, actionMapped, key),
-    getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
-  return result
+  const messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
+  const topicConfig = createGeneralTopicConf(functionalityMapped, actionMapped, key)
+  const kafkaConfig = getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase())
+  await Kafka.Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
+  return true
 }
 
 /**
@@ -473,10 +475,11 @@ const produceParticipantMessage = async (participantName, functionality, action,
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  let result = await Kafka.Producer.produceMessage(updateMessageProtocolMetadata(message, functionality, action, state),
-    createParticipantTopicConf(participantName, functionalityMapped, actionMapped),
-    getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase()))
-  return result
+  const messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
+  const topicConfig = createParticipantTopicConf(participantName, functionalityMapped, actionMapped)
+  const kafkaConfig = getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase())
+  await Kafka.Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
+  return true
 }
 
 const commitMessageSync = async (kafkaTopic, consumer, message) => {
@@ -501,7 +504,7 @@ const breadcrumb = (location, message) => {
 }
 
 const proceed = async (params, opts) => {
-  const { message, transferId, kafkaTopic, consumer } = params
+  const { message, kafkaTopic, consumer } = params
   const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch, toDestination } = opts
   let metadataState
 
@@ -511,6 +514,9 @@ const proceed = async (params, opts) => {
   if (errorInformation) {
     const code = errorInformation.errorCode
     const desc = errorInformation.errorDescription
+    if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
+      message.value.content.uriParams = { id: decodePayload(params.message.value.content.payload).transferId }
+    }
     message.value.content.payload = createPrepareErrorStatus(code, desc, message.value.content.payload.extensionList)
     metadataState = createState(ENUMS.STATE.FAILURE.status, code, desc)
   } else {
@@ -522,7 +528,7 @@ const proceed = async (params, opts) => {
   }
   if (producer) {
     const p = producer
-    const key = toDestination ? message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] : transferId
+    const key = toDestination && message.value.content.headers[Enum.headers.FSPIOP.DESTINATION]
     await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
   }
   if (histTimerEnd && typeof histTimerEnd === 'function') {

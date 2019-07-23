@@ -5,6 +5,7 @@ services:
       context: .
       cache_from: 
         - mojaloop/central-ledger
+        - central-ledger
     container_name: cl_central-ledger
     links:
       - mysql

@@ -36,14 +36,14 @@ const Service = require('../../../../src/models/transfer/ilpPacket')
 const HelperModule = require('../../helpers')
 
 Test('Ilp service tests', async (ilpTest) => {
-  let ilpTestValues = [
+  const ilpTestValues = [
     {
       transferId: '1',
       value: 'test packet'
     }
   ]
 
-  let ilpMap = new Map()
+  const ilpMap = new Map()
 
   await ilpTest.test('setup', async (assert) => {
     try {
@@ -66,8 +66,8 @@ Test('Ilp service tests', async (ilpTest) => {
     try {
       ilpTestValues.forEach(async ilp => {
         try {
-          let ilpResult = await HelperModule.prepareNeededData('ilpPacket')
-          let result = ilpResult.ilp
+          const ilpResult = await HelperModule.prepareNeededData('ilpPacket')
+          const result = ilpResult.ilp
 
           let read = await Service.getByTransferId(ilpResult.transfer.transferId)
 
@@ -127,8 +127,8 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('getByTransferId', async (assert) => {
     try {
-      for (let ilp of ilpMap.values()) {
-        let result = await Service.getByTransferId(ilpMap.get(ilp.transferId).transferId)
+      for (const ilp of ilpMap.values()) {
+        const result = await Service.getByTransferId(ilpMap.get(ilp.transferId).transferId)
         assert.equal(JSON.stringify(Object.assign({},
           result,
           {
@@ -157,9 +157,9 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('update', async (assert) => {
     try {
-      for (let ilp of ilpMap.values()) {
-        let result = await Service.update({ transferId: ilp.transferId, value: 'new test packet' })
-        let ilpDb = await Service.getByTransferId(ilp.transferId)
+      for (const ilp of ilpMap.values()) {
+        const result = await Service.update({ transferId: ilp.transferId, value: 'new test packet' })
+        const ilpDb = await Service.getByTransferId(ilp.transferId)
         assert.equal(result, 1, ' ilp is updated')
         assert.equal(ilp.transferId, ilpDb.transferId, ' ids match')
         assert.equal(ilpDb.value, 'new test packet', 'update is real')

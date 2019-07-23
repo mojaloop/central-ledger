@@ -37,7 +37,7 @@ const Producer = require('@mojaloop/central-services-stream').Kafka.Producer
 const Logger = require('@mojaloop/central-services-shared').Logger
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-let listOfProducers = {}
+const listOfProducers = {}
 
 /**
  * @function ProduceMessage
@@ -93,9 +93,9 @@ const disconnect = async (topicName = null) => {
       const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
       throw fspiopError
     }
-  } else if (topicName === null) {
+  } else if (!topicName) {
     let isError = false
-    let errorTopicList = []
+    const errorTopicList = []
 
     let tpName
     for (tpName in listOfProducers) {

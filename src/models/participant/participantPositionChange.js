@@ -29,6 +29,7 @@
  */
 
 const Db = require('../../lib/db')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 /**
  * @function getByParticipantPositionId
@@ -45,15 +46,16 @@ const Db = require('../../lib/db')
 const getByParticipantPositionId = async (participantPositionId) => {
   try {
     return await Db.participantPositionChange.query(async (builder) => {
-      let result = builder
+      const result = builder
         .where({ 'participantPositionChange.participantPositionId': participantPositionId })
         .select('participantPositionChange.*')
         .orderBy('participantPositionChangeId', 'desc')
         .first()
       return result
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw err
   }
 }
 module.exports = {

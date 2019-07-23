@@ -12,11 +12,11 @@ const Enum = require('../../../../src/lib/enum')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const createRequest = ({ payload, params, query }) => {
-  let sandbox = Sinon.createSandbox()
+  const sandbox = Sinon.createSandbox()
   const requestPayload = payload || {}
   const requestParams = params || {}
   const requestQuery = query || {}
-  let enums = sandbox.stub()
+  const enums = sandbox.stub()
   enums.withArgs('ledgerAccountType').returns({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 })
   return {
     payload: requestPayload,
@@ -865,7 +865,7 @@ Test('Participant', participantHandlerTest => {
           alarmPercentage: 5
         }
       }
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: payload.limit.value,
@@ -1345,7 +1345,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      let enums = sandbox.stub()
+      const enums = sandbox.stub()
       enums.withArgs('all').returns({})
       Participant.recordFundsInOut.withArgs(payload, params, {}).resolves()
       try {

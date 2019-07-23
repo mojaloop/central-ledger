@@ -58,7 +58,7 @@ exports.getAll = async () => {
 
 exports.create = async (participant) => {
   try {
-    let result = await Db.participant.insert({
+    const result = await Db.participant.insert({
       name: participant.name,
       createdBy: 'unknown'
     })
