@@ -68,13 +68,12 @@ services:
       - MOCK_HOST=mockserver
   
   kafka:
-    image: johnnypark/kafka-zookeeper
+    image: johnnypark/kafka-zookeeper:2.3.0
     container_name: cl_kafka
-    # Disable kafka logging as it is far too verbose for debugging locally
-    logging:
-      driver: none
+    volumes:
+      - ./docker/kafka/:/opt/kafka_2.12-2.3.0/config/
     ports:
       - "2181:2181"
       - "9092:9092"
     environment:
-      - ADVERTISED_HOST=kafka
+      - ZOO_LOG4J_PROP=DEBUG
