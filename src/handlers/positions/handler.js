@@ -106,33 +106,6 @@ const positions = async (error, messages) => {
     const action = message.value.metadata.event.action
     //This transferId is resolving to undefined
 
-    /*
-      example when expired is called:
-        payload is { errorInformation: { errorCode: '3300', errorDescription: 'Transfer expired' } }
-        message is {
-          value:
-          {
-            from: 'payerfsp',
-            to: 'payeefsp',
-            id: 'f999c714-7665-4390-a0ea-4a6767bbb982',
-            content: { headers: [Object], payload: [Object] },
-            type:
-            'application/vnd.interoperability.transfers+json;version=1.0',
-              metadata: { event: [Object], 'protocol.createdAt': 1563807600033 }
-          },
-          size: 650,
-            key:
-          {
-            type: 'Buffer',
-              data: [112, 97, 121, 101, 114, 102, 115, 112]
-          },
-          topic: 'topic-transfer-position',
-            offset: 10,
-              partition: 0,
-                timestamp: 1563807600033
-        }
-    */
-
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     //Hmm, it doesn't look like we can always rely on the message.value.id to be the transferId
     // const transferId = payload.transferId || message.value.id

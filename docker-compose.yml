@@ -79,7 +79,7 @@ services:
       - "2181:2181"
       - "9092:9092"
     environment:
-      - ZOO_LOG4J_PROP=DEBUG
+      - ZOO_LOG4J_PROP=WARN
 
   simulator:
     image: mojaloop/simulator:latest
