@@ -105,7 +105,9 @@ const positions = async (error, messages) => {
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     if (!transferId) {
       const errorInformation = Errors.getErrorInformation(errorType.internal, `transferId is null or undefined`)
-      throw new Error(errorInformation.errorDescription)
+      const error = new Error(errorInformation.errorDescription)
+      Logger.error(error)
+      throw error
     }
 
     const kafkaTopic = message.topic

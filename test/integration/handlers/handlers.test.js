@@ -606,7 +606,7 @@ Test('Handlers test', async handlersTest => {
 
   await handlersTest.test('teardown', async (assert) => {
     try {
-      Handlers.timeouts.stop()
+      await Handlers.timeouts.stop()
       await Db.disconnect()
       assert.pass('database connection closed')
 
