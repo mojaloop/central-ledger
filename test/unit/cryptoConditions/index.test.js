@@ -3,8 +3,8 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Conditions = require('../../../src/cryptoConditions')
-const Errors = require('../../../src/errors')
 const FiveBellsConditions = require('five-bells-condition')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 Test('crypto conditions', conditionsTest => {
   let sandbox
@@ -32,7 +32,8 @@ Test('crypto conditions', conditionsTest => {
         test.fail('Should have thrown')
         test.end()
       } catch (error) {
-        test.assert(error instanceof Errors.ValidationError)
+        test.assert(error instanceof ErrorHandler.Factory.FSPIOPError)
+        test.equal(error.apiErrorCode.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
         test.equal(error.message, 'message')
         test.end()
       }

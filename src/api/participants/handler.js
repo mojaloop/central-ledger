@@ -25,7 +25,6 @@
 'use strict'
 
 const ParticipantService = require('../../domain/participant')
-const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Enum = require('../../lib/enum')
@@ -64,7 +63,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccount
 
 const handleMissingRecord = (entity) => {
   if (!entity) {
-    throw new Errors.NotFoundError('The requested resource could not be found.')
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
   }
   return entity
 }

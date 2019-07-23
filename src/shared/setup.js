@@ -34,7 +34,6 @@
 'use strict'
 
 const Hapi = require('hapi')
-const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const P = require('bluebird')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
@@ -104,7 +103,7 @@ const createServer = (port, modules) => {
       ],
       routes: {
         validate: {
-          options: ErrorHandling.validateRoutes(),
+          options: ErrorHandler.validateRoutes(),
           failAction: async (request, h, err) => {
             const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
             throw fspiopError
