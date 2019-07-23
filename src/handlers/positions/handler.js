@@ -104,10 +104,15 @@ const positions = async (error, messages) => {
     console.log('message.value.content.payload is', message.value.content.payload)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
-    //This transferId is resolving to undefined
+    // This transferId is resolving to undefined
 
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
-    //Hmm, it doesn't look like we can always rely on the message.value.id to be the transferId
+    if (!transferId) {
+      const errorInformation = Errors.getErrorInformation(errorType.internal, `transferId is null or undefined`)
+      throw new Error(errorInformation.errorDescription)
+    }
+
+    // Hmm, it doesn't look like we can always rely on the message.value.id to be the transferId
     // const transferId = payload.transferId || message.value.id
     const kafkaTopic = message.topic
     let consumer
@@ -195,9 +200,9 @@ const positions = async (error, messages) => {
     } else if (eventType === TransferEventType.POSITION && action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info(Util.breadcrumb(location, { path: 'timeout' }))
       producer.action = TransferEventAction.ABORT
-      //TODO: Error might be here
-      
-      //Looks like transferId
+      // TODO: Error might be here
+
+      // Looks like transferId
 
       console.log('transferId is', transferId)
       // const tmpTransferId = "f999c714-7665-4390-a0ea-4a6767bbb981"

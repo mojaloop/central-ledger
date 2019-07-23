@@ -206,8 +206,6 @@ const getAll = async () => {
 }
 
 const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
-  console.log('getTransferInfoToChangePosition', id, transferParticipantRoleTypeId, ledgerEntryTypeId)
-
   try {
     /** @namespace Db.transferParticipant **/
     return await Db.transferParticipant.query(async builder => {
@@ -227,7 +225,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .first()
     })
   } catch (err) {
-    console.log("getTransferInfoToChangePosition err")
+    console.log('getTransferInfoToChangePosition err')
     Logger.error(err)
     throw err
   }

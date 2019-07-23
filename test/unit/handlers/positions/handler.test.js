@@ -236,6 +236,20 @@ Test('Position handler', transferHandlerTest => {
     registerHandlersTest.end()
   })
 
+  // transferHandlerTest.test('positions should', positionsTest => {
+
+  //   positionsTest.test('throws when the transferId could not be found', test => {
+  //     // Arrange
+
+  //     // Act
+
+  //     // Assert
+
+  //   })
+
+  //   positionsTest.end()
+  // })
+
   transferHandlerTest.test('positions should', positionsTest => {
     positionsTest.test('update transferStateChange for prepare when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
@@ -797,7 +811,9 @@ Test('Position handler', transferHandlerTest => {
         test.end()
       }
     })
+
     positionsTest.end()
   })
+
   transferHandlerTest.end()
 })
