@@ -10,7 +10,6 @@ services:
     links:
       - mysql
       - kafka
-      - simulator
     ports:
       - "3001:3001"
     volumes:
@@ -18,13 +17,13 @@ services:
     environment:
       - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
       - CLEDG_SIDECAR__DISABLED=true
+      - CLEDG_MONGODB__DISABLED=true
 
   ml-api-adapter:
     image: mojaloop/ml-api-adapter:latest
     container_name: cl_ml-api-adapter
     links:
       - kafka
-      - simulator
     ports:
       - "3000:3000"
     volumes:
@@ -79,4 +78,4 @@ services:
       - "2181:2181"
       - "9092:9092"
     environment:
-      - ZOO_LOG4J_PROP=DEBUG
+      - ZOO_LOG4J_PROP=WARN

@@ -84,6 +84,8 @@ const positions = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
 
+  console.log("Hitting the positions handler!")
+
   if (error) {
     // Logger.error(error)
     throw error
@@ -99,12 +101,8 @@ const positions = async (error, messages) => {
       message = Object.assign({}, messages)
     }
     const payload = decodePayload(message.value.content.payload)
-    console.log('payload is', payload)
-    console.log('message is', message)
-    console.log('message.value.content.payload is', message.value.content.payload)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
-    // This transferId is resolving to undefined
 
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     if (!transferId) {
@@ -112,8 +110,6 @@ const positions = async (error, messages) => {
       throw new Error(errorInformation.errorDescription)
     }
 
-    // Hmm, it doesn't look like we can always rely on the message.value.id to be the transferId
-    // const transferId = payload.transferId || message.value.id
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
@@ -127,12 +123,12 @@ const positions = async (error, messages) => {
     }
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare
       : (action === TransferEventAction.COMMIT ? Enum.actionLetter.commit
-        : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
-          : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
-            : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
-              : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
-                : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
-                  : Enum.actionLetter.unknown))))))
+      : (action === TransferEventAction.REJECT ? Enum.actionLetter.reject
+      : (action === TransferEventAction.ABORT ? Enum.actionLetter.abort
+      : (action === TransferEventAction.TIMEOUT_RESERVED ? Enum.actionLetter.timeout
+      : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
+      : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
+      : Enum.actionLetter.unknown))))))
     const params = { message, kafkaTopic, consumer }
     const producer = { action }
     if (![TransferEventAction.BULK_PREPARE, TransferEventAction.BULK_COMMIT].includes(action)) {
@@ -200,14 +196,7 @@ const positions = async (error, messages) => {
     } else if (eventType === TransferEventType.POSITION && action === TransferEventAction.TIMEOUT_RESERVED) {
       Logger.info(Util.breadcrumb(location, { path: 'timeout' }))
       producer.action = TransferEventAction.ABORT
-      // TODO: Error might be here
-
-      // Looks like transferId
-
-      console.log('transferId is', transferId)
-      // const tmpTransferId = "f999c714-7665-4390-a0ea-4a6767bbb981"
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
-      // const transferInfo = await TransferService.getTransferInfoToChangePosition(tmpTransferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
         const errorInformation = Errors.getErrorInformation(errorType.internal)
