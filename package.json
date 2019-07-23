@@ -127,7 +127,7 @@
     "proxyquire": "2.1.1",
     "rewire": "4.0.1",
     "sinon": "7.3.2",
-    "standard": "13.0.2",
+    "standard": "13.1.0",
     "tap-xunit": "2.4.1",
     "tape": "4.11.0",
     "tapes": "4.1.0"
