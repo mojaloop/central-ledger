@@ -128,7 +128,7 @@ const transferExists = async (payload, transferId) => {
 const transfer = async (error, messages) => {
   if (error) {
     Logger.error(error)
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `error`)
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   try {

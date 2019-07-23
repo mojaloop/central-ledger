@@ -260,7 +260,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
           'pc.currencyId')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -285,7 +285,7 @@ const getAllByNameAndCurrency = async (name, currencyId = null) => {
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

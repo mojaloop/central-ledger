@@ -209,8 +209,8 @@ const positions = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer })
       }
     } else {
-// TODO: #838
-// ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, Util.breadcrumb(location))
+      // TODO: #838
+      // ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, Util.breadcrumb(location))
       Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
       const errorInformation = Errors.getErrorInformation(errorType.internal)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.POSITION }

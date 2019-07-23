@@ -103,8 +103,7 @@ const getById = async (id) => {
       return transferResult
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -145,8 +144,7 @@ const getByIdLight = async (id) => {
       return transferResult
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -200,8 +198,7 @@ const getAll = async () => {
       return transferResultList
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -225,8 +222,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .first()
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -299,8 +295,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
       transferExtensions
     }
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -396,8 +391,7 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
       transferExtensions
     }
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -484,8 +478,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -526,8 +519,7 @@ const getTransferStateByTransferId = async (id) => {
         .first()
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -601,10 +593,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
 
     return knex('transferTimeout AS tt')
@@ -635,8 +627,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
         'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -764,8 +755,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return await knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -883,8 +873,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -929,8 +918,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -995,8 +983,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -1060,8 +1047,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -1082,7 +1068,7 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

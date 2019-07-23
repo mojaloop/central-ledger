@@ -49,7 +49,7 @@ exports.prepareLimitAndInitialPosition = async (participantName, limitAndInitial
     }
     return await Model.addLimitAndInitialPosition(participantName, limitAndInitialPosition)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -64,7 +64,7 @@ exports.adjustLimits = async (participantName, limitObj = {}) => {
     }
     return Model.adjustLimits(participantName, limit)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -76,7 +76,7 @@ exports.deleteInitialPositionData = async (participantName) => {
   try {
     return await Model.destroyParticipantPositionByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -88,6 +88,6 @@ exports.deleteInitialLimitData = async (participantName) => {
   try {
     return await Model.destroyParticipantLimitByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

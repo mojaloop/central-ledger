@@ -34,7 +34,7 @@ const saveTransferExtension = async (extension) => {
   try {
     return await Db.transferExtension.insert(extension)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -42,7 +42,7 @@ const getByTransferId = async (transferId) => {
   try {
     return await Db.transferExtension.find({ transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -50,7 +50,7 @@ const getByTransferFulfilmentId = async (transferFulfilmentId) => {
   try {
     return await Db.transferExtension.find({ transferFulfilmentId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -58,7 +58,7 @@ const getByTransferErrorId = async (transferErrorId) => {
   try {
     return await Db.transferExtension.find({ transferErrorId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -66,7 +66,7 @@ const getByTransferExtensionId = async (transferExtensionId) => {
   try {
     return await Db.transferExtension.findOne({ transferExtensionId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -74,7 +74,7 @@ const destroyByTransferId = async (transferId) => {
   try {
     return await Db.transferExtension.destroy({ transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

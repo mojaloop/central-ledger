@@ -32,7 +32,7 @@ const getByParams = async (params) => {
   try {
     return await Db.segment.findOne(params)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

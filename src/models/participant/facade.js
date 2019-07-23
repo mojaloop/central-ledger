@@ -55,8 +55,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
       return b
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -78,8 +77,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
         )
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -129,8 +127,7 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
         )
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -159,7 +156,7 @@ const getEndpoint = async (participantId, endpointType) => {
           'et.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -186,7 +183,7 @@ const getAllEndpoints = async (participantId) => {
           'et.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -245,7 +242,7 @@ const addEndpoint = async (participantId, endpoint) => {
       }
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -272,8 +269,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
         ).first()
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -295,8 +291,7 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
         )
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 /**
@@ -369,7 +364,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
       }
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -432,7 +427,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         if (doCommit) {
           await trx.rollback
         }
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
 
@@ -443,7 +438,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -479,7 +474,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
         ).orderBy('lt.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -519,7 +514,7 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
         ).orderBy('pc.currencyId', 'lt.name')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -557,7 +552,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
       }
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -584,7 +579,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
         .select('*', 'lap.name AS ledgerAccountType', 'participantCurrency.isActive AS accountIsActive')
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

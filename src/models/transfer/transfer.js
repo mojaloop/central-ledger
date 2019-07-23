@@ -32,7 +32,7 @@ const getById = async (transferId) => {
   try {
     return await Db.transfer.findOne({ transferId: transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -50,7 +50,7 @@ const destroyById = async (id) => {
   try {
     await Db.transfer.destroy({ transferId: id })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

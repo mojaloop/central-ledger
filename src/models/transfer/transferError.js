@@ -51,7 +51,7 @@ const insert = async (transferStateChangeId, errorCode, errorDescription) => {
   try {
     return Db.transferError.insert({ transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -80,7 +80,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
     return Db.transferError.find({ transferStateChangeId: transferStateChangeId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

@@ -44,7 +44,7 @@ exports.prepareData = async () => {
       participantPayee: transferResult.participantPayeeResult
     }
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -56,6 +56,6 @@ exports.deletePreparedData = async (ilpId, transferId, payerName, payeeName) => 
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

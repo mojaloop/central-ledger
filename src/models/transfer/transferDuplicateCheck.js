@@ -55,7 +55,7 @@ const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
   try {
     return Db.transferDuplicateCheck.insert(transferDuplicateCheck)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -111,7 +111,7 @@ const checkAndInsertDuplicateHash = async (transferId, hash) => {
       }
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

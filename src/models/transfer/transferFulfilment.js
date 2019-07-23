@@ -33,7 +33,7 @@ const getByTransferId = async (transferId) => {
   try {
     return await Db.transferFulfilment.find({ transferId: transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -43,7 +43,7 @@ const saveTransferFulfilment = async (record) => {
     return await Db.transferFulfilment.insert(record)
   } catch (err) {
     Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

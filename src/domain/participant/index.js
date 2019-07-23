@@ -28,7 +28,6 @@
  * @module src/domain/participant/
  */
 
-const Logger = require('@mojaloop/central-services-shared').Logger
 const ParticipantModel = require('../../models/participant/participant')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')

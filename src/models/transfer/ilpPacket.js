@@ -38,7 +38,7 @@ exports.saveIlpPacket = async (record) => {
       value: record.value
     })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -46,7 +46,7 @@ exports.getByTransferId = async (transferId) => {
   try {
     return await Db.ilpPacket.findOne({ transferId: transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -58,7 +58,7 @@ exports.update = async (record) => {
   try {
     return await Db.ilpPacket.update({ transferId: record.transferId }, Util.omitNil(fields))
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -66,6 +66,6 @@ exports.destroyByTransferId = async (record) => {
   try {
     return await Db.ilpPacket.destroy({ transferId: record.transferId })
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

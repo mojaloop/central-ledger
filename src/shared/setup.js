@@ -47,7 +47,6 @@ const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
 // const Participant = require('../domain/participant')
-const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')

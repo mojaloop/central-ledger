@@ -58,7 +58,7 @@ exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
       participantCurrencyId2
     }
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -70,6 +70,6 @@ exports.deletePreparedData = async (participantName) => {
   try {
     return await Model.destroyByName(participantName)
   } catch (err) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
