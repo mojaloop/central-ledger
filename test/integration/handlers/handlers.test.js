@@ -42,11 +42,13 @@ const TransferService = require('../../../src/domain/transfer')
 const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('../../../src/lib/util')
+const { sleepPromise } = require('../../util/helpers')
 
 const Handlers = {
   index: require('../../../src/handlers/register'),
   positions: require('../../../src/handlers/positions/handler'),
-  transfers: require('../../../src/handlers/transfers/handler')
+  transfers: require('../../../src/handlers/transfers/handler'),
+  timeouts: require('../../../src/handlers/timeouts/handler')
 }
 
 const Enum = require('../../../src/lib/enum')
@@ -252,6 +254,7 @@ Test('Handlers test', async handlersTest => {
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
+      await Handlers.timeouts.registerTimeoutHandler()
 
       sleep(rebalanceDelay, debug, 'registerAllHandlers', 'awaiting registration of common handlers')
 
@@ -542,8 +545,68 @@ Test('Handlers test', async handlersTest => {
     transferAbort.end()
   })
 
+  await handlersTest.test('timeout should', async timeoutTest => {
+    testData.expiration = new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
+    const td = await prepareTestData(testData)
+
+    await timeoutTest.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
+      const config = Utility.getKafkaConfig(
+        Utility.ENUMS.PRODUCER,
+        TransferEventType.TRANSFER.toUpperCase(),
+        TransferEventType.PREPARE.toUpperCase())
+      config.logger = Logger
+
+      const producerResponse = await Producer.produceMessage(td.messageProtocolPrepare, td.topicConfTransferPrepare, config)
+
+      const tests = async () => {
+        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+        const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+        const payerExpectedPosition = payerInitialPosition + td.transferPayload.amount.amount
+        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+        test.equal(producerResponse, true, 'Producer for prepare published message')
+        test.equal(transfer.transferState, TransferState.RESERVED, `Transfer state changed to ${TransferState.RESERVED}`)
+        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position incremented by transfer amount and updated in participantPosition')
+        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+      }
+
+      try {
+        await retry(async bail => { // use bail(new Error('to break before max retries'))
+          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+          if (transfer.transferState !== TransferState.RESERVED) {
+            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+          }
+          return tests()
+        }, retryOpts)
+      } catch (err) {
+        Logger.error(err)
+        test.fail(err.message)
+      }
+
+      test.end()
+    })
+
+    await timeoutTest.test(`position resets after a timeout`, async (test) => {
+      // Arrange
+      const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
+
+      // Act
+      await sleepPromise(15) // give the timeout handler some time to expire the request
+      const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+
+      // Assert
+      test.equal(payerInitialPosition, payerCurrentPosition.value, 'Position resets after a timeout')
+      test.end()
+    })
+
+    timeoutTest.end()
+  })
+
   await handlersTest.test('teardown', async (assert) => {
     try {
+      await Handlers.timeouts.stop()
       await Db.disconnect()
       assert.pass('database connection closed')
 

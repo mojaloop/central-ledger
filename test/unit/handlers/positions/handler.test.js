@@ -237,6 +237,60 @@ Test('Position handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('positions should', positionsTest => {
+    positionsTest.test('throws when the message contains no uriParams', async test => {
+      // Arrange
+      await Kafka.Consumer.createHandler(topicName, config, command)
+      Util.transformGeneralTopicName.returns(topicName)
+      Util.createPrepareErrorStatus.returns(topicName)
+      Util.getKafkaConfig.returns(config)
+      TransferStateChange.saveTransferStateChange.resolves(true)
+      TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
+
+      // Create the broken message
+      const message = { ...MainUtil.clone(messages[0]) }
+      message.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
+      delete message.value.content.uriParams
+      Util.proceed.returns(true)
+
+      // Act
+      try {
+        await allTransferHandlers.positions(null, [message])
+        test.fail('Error should have thrown')
+      } catch (err) {
+        // Assert
+        test.equal(err.message, 'Internal server error: transferId is null or undefined', 'Error messages should match.')
+      }
+
+      test.end()
+    })
+
+    positionsTest.test('update transferStateChange for timeout-reserved when messages is an array', async (test) => {
+      try {
+        await Kafka.Consumer.createHandler(topicName, config, command)
+        Util.transformGeneralTopicName.returns(topicName)
+        Util.createPrepareErrorStatus.returns(topicName)
+        Util.getKafkaConfig.returns(config)
+        TransferStateChange.saveTransferStateChange.resolves(true)
+        TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
+        const m = Object.assign({}, MainUtil.clone(messages[0]))
+        m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
+        Util.proceed.returns(true)
+
+        const result = await allTransferHandlers.positions(null, [m])
+        Logger.info(result)
+        test.equal(result, true)
+        test.end()
+      } catch (e) {
+        console.log('error thrown' + e)
+        test.fail('Error thrown' + e)
+        test.end()
+      }
+    })
+
+    positionsTest.end()
+  })
+
+  transferHandlerTest.test('positions should', positionsTest => {
     positionsTest.test('update transferStateChange for prepare when single message', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
@@ -797,7 +851,9 @@ Test('Position handler', transferHandlerTest => {
         test.end()
       }
     })
+
     positionsTest.end()
   })
+
   transferHandlerTest.end()
 })

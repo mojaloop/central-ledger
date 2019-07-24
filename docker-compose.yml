@@ -17,6 +17,7 @@ services:
     environment:
       - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
       - CLEDG_SIDECAR__DISABLED=true
+      - CLEDG_MONGODB__DISABLED=true
 
   ml-api-adapter:
     image: mojaloop/ml-api-adapter:latest
@@ -26,8 +27,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # override the default values with our own - this is because the KAFKA_HOST env variable is ignored for some reason
       - ./docker/ml-api-adapter/default.json:/opt/ml-api-adapter/config/default.json
+    environment:
+      - LOG_LEVEL=debug
     
     # TODO: we should be able to remove this - I think the image command is broken
     command:
@@ -76,4 +78,4 @@ services:
       - "2181:2181"
       - "9092:9092"
     environment:
-      - ZOO_LOG4J_PROP=DEBUG
+      - ZOO_LOG4J_PROP=WARN

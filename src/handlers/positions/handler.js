@@ -101,7 +101,15 @@ const positions = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
+
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
+    if (!transferId) {
+      const errorInformation = Errors.getErrorInformation(errorType.internal, `transferId is null or undefined`)
+      const error = new Error(errorInformation.errorDescription)
+      Logger.error(error)
+      throw error
+    }
+
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
