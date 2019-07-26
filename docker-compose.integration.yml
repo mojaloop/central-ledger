@@ -22,6 +22,7 @@ services:
     environment:
       - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
       - CLEDG_SIDECAR__DISABLED=true
+      - CLEDG_MONGODB__DISABLED=true
     command:
       - tail 
       - -f 

@@ -84,6 +84,9 @@ const timeout = async () => {
             'FSPIOP-Destination': result[i].payerFsp
           },
           payload: fspiopExpiredError
+          uriParams: {
+            id: result[i].transferId
+          }
         },
         metadata: {
           event: {}
