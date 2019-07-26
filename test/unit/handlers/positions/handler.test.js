@@ -241,7 +241,7 @@ Test('Position handler', transferHandlerTest => {
       // Arrange
       await Kafka.Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
-      Util.createPrepareErrorStatus.returns(topicName)
+      // Util.createPrepareErrorStatus.returns(topicName)
       Util.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
       TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
@@ -258,7 +258,7 @@ Test('Position handler', transferHandlerTest => {
         test.fail('Error should have thrown')
       } catch (err) {
         // Assert
-        test.equal(err.message, 'Internal server error: transferId is null or undefined', 'Error messages should match.')
+        test.equal(err.message, 'transferId is null or undefined', 'Error messages should match.')
       }
 
       test.end()
@@ -268,7 +268,7 @@ Test('Position handler', transferHandlerTest => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
-        Util.createPrepareErrorStatus.returns(topicName)
+        // Util.createPrepareErrorStatus.returns(topicName)
         Util.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })

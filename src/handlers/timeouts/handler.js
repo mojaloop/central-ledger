@@ -83,7 +83,7 @@ const timeout = async () => {
             'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
             'FSPIOP-Destination': result[i].payerFsp
           },
-          payload: fspiopExpiredError
+          payload: fspiopExpiredError,
           uriParams: {
             id: result[i].transferId
           }
