@@ -42,10 +42,6 @@ const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const errorPayeeGeneric = 5000
-const intervalMinPayeeError = errorPayeeGeneric
-const intervalMaxPayeeError = 5500
-
 const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
@@ -312,18 +308,11 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
  */
 
 const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
-  let errorCode
   let transferErrorRecord
 
   const transactionTimestamp = Time.getUTCString(new Date())
 
-  if (payload.errorInformation.errorCode &&
-    payload.errorInformation.errorCode > intervalMinPayeeError &&
-    payload.errorInformation.errorCode < intervalMaxPayeeError) {
-    errorCode = payload.errorInformation.errorCode.toString()
-  } else {
-    errorCode = errorPayeeGeneric.toString()
-  }
+  const errorCode = payload.errorInformation.errorCode
   const errorDescription = payload.errorInformation.errorDescription
 
   const transferStateChangeRecord = {
@@ -379,10 +368,10 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
     return {
       saveTransferAbortedExecuted: true,

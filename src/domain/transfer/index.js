@@ -40,10 +40,7 @@ const TransferErrorDuplicateCheckModel = require('../../models/transfer/transfer
 const TransferObjectTransform = require('./transform')
 const Crypto = require('crypto')
 const TransferError = require('../../models/transfer/transferError')
-const ErrorText = require('../../../src/lib/errors')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
-const PayeeRejectedTransactionError = 5104
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
@@ -95,7 +92,8 @@ const fulfil = async (transferFulfilmentId, transferId, payload) => {
 const reject = async (transferFulfilmentId, transferId, payload) => {
   try {
     const isCommit = false
-    const stateReason = ErrorText.getErrorDescription(PayeeRejectedTransactionError)
+    // TODO - gibaros - Confirm, why we are not retrieving the stateReason from payload?
+    const stateReason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTED_TXN
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {

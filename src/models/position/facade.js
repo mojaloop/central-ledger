@@ -33,7 +33,6 @@
 const Db = require('../../lib/db')
 const Enum = require('../../lib/enum')
 const participantFacade = require('../participant/facade')
-const Errors = require('../../lib/errors')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Time = require('../../lib/time')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -120,9 +119,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             sumReserved += transferAmount /* actually used */
           } else {
             transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
-            transferState.reason = Errors.getErrorDescription(4001)
+            // TODO: - gibaros - review error description as 4001 error description is different from new API
+            transferState.reason = 'Payer FSP has insufficient liquidity to perform the transfer'
             rawMessage.value.content.payload = {
-              errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
+              // TODO: - gibaros - review errorInformation creation...where is errorInformation being used at?
+              // errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
+              errorInformation: (ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code, rawMessage.value.content.payload.extensionList)
+              // errorInformation: (ErrorHandler.Enums.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code, ErrorHandler.Enums.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message)
             }
           }
           const runningPosition = currentPosition + sumReserved /* effective position */
@@ -165,10 +168,10 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
         await trx.commit
-      } catch (e) {
-        Logger.error(e)
+      } catch (err) {
+        Logger.error(err)
         await trx.rollback
-        throw e
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
     const preparedMessagesList = Array.from(transferIdList.map(transferId =>
@@ -179,7 +182,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     return { preparedMessagesList, limitAlarms }
   } catch (err) {
     Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -215,14 +218,14 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
   } catch (err) {
     Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

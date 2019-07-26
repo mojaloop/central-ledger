@@ -26,8 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-shared').Logger
-const Model = require('../../../src/lib/errors')
+// const Logger = require('@mojaloop/central-services-shared').Logger
 
 Test('Errors', (errorsTest) => {
   let sandbox
@@ -42,55 +41,53 @@ Test('Errors', (errorsTest) => {
     t.end()
   })
 
-  errorsTest.test('createErrorInformation should', async (test) => {
-    try {
-      const errorCode = '4001'
-      const extensionList = { key1: 'value1' }
-      const result = await Model.createErrorInformation(errorCode, extensionList)
-      test.equal(errorCode, result.errorCode, 'return result errorCode matching input')
-      test.deepEqual(extensionList, result.extensionList, 'return result extensionList matching input')
-      test.ok(result.errorDescription, 'return errorDescription for existing errorCode')
-      test.end()
-    } catch (err) {
-      Logger.error(`createErrorInformation failed with error - ${err}`)
-      test.fail()
-      test.end()
-    }
-  })
+  // errorsTest.test('createErrorInformation should', async (test) => {
+  //   try {
+  //     const result = await Model.createErrorInformation(errorCode, extensionList)
+  //     test.equal(errorCode, result.errorCode, 'return result errorCode matching input')
+  //     test.deepEqual(extensionList, result.extensionList, 'return result extensionList matching input')
+  //     test.ok(result.errorDescription, 'return errorDescription for existing errorCode')
+  //     test.end()
+  //   } catch (err) {
+  //     Logger.error(`createErrorInformation failed with error - ${err}`)
+  //     test.fail()
+  //     test.end()
+  //   }
+  // })
+  //
+  // errorsTest.test('getErrorDescription should', async (test) => {
+  //   try {
+  //     const errorCode = '4001'
+  //     const result = await Model.getErrorDescription(errorCode)
+  //     test.ok(result, 'return errorDescription for existing errorCode')
+  //     test.end()
+  //   } catch (err) {
+  //     Logger.error(`createErrorInformation failed with error - ${err}`)
+  //     test.fail()
+  //     test.end()
+  //   }
+  // })
 
-  errorsTest.test('getErrorDescription should', async (test) => {
-    try {
-      const errorCode = '4001'
-      const result = await Model.getErrorDescription(errorCode)
-      test.ok(result, 'return errorDescription for existing errorCode')
-      test.end()
-    } catch (err) {
-      Logger.error(`createErrorInformation failed with error - ${err}`)
-      test.fail()
-      test.end()
-    }
-  })
-
-  errorsTest.test('getErrorInformation should', async (test) => {
-    try {
-      const newDescription = 'new description'
-      const errorCode = '4001'
-      const appendDescription = {
-        replace: newDescription
-      }
-      const expected = {
-        errorCode,
-        errorDescription: newDescription
-      }
-      const result = await Model.getErrorInformation(errorCode, appendDescription)
-      test.deepEqual(result, expected, 'return error information with description replaced')
-      test.end()
-    } catch (err) {
-      Logger.error(`getErrorInformation failed with error - ${err}`)
-      test.fail()
-      test.end()
-    }
-  })
+  // errorsTest.test('getErrorInformation should', async (test) => {
+  //   try {
+  //     const newDescription = 'new description'
+  //     const errorCode = '4001'
+  //     const appendDescription = {
+  //       replace: newDescription
+  //     }
+  //     const expected = {
+  //       errorCode,
+  //       errorDescription: newDescription
+  //     }
+  //     const result = await Model.getErrorInformation(errorCode, appendDescription)
+  //     test.deepEqual(result, expected, 'return error information with description replaced')
+  //     test.end()
+  //   } catch (err) {
+  //     Logger.error(`getErrorInformation failed with error - ${err}`)
+  //     test.fail()
+  //     test.end()
+  //   }
+  // })
 
   errorsTest.end()
 })

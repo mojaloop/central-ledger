@@ -302,16 +302,16 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, metadataAc
  *
  * @returns {object} - Returns errorInformation object
  */
-const createPrepareErrorStatus = (errorCode, errorDescription, extensionList) => {
-  errorCode = errorCode.toString()
-  return {
-    errorInformation: {
-      errorCode,
-      errorDescription,
-      extensionList
-    }
-  }
-}
+// const createPrepareErrorStatus = (errorCode, errorDescription, extensionList) => {
+//   errorCode = errorCode.toString()
+//   return {
+//     errorInformation: {
+//       errorCode,
+//       errorDescription,
+//       extensionList
+//     }
+//   }
+// }
 
 /**
  * @function createState
@@ -505,20 +505,19 @@ const breadcrumb = (location, message) => {
 
 const proceed = async (params, opts) => {
   const { message, kafkaTopic, consumer } = params
-  const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch, toDestination } = opts
+  const { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch, toDestination } = opts
   let metadataState
 
   if (consumerCommit) {
     await commitMessageSync(kafkaTopic, consumer, message)
   }
-  if (errorInformation) {
-    const code = errorInformation.errorCode
-    const desc = errorInformation.errorDescription
+  if (fspiopError) {
     if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
       message.value.content.uriParams = { id: decodePayload(params.message.value.content.payload).transferId }
     }
-    message.value.content.payload = createPrepareErrorStatus(code, desc, message.value.content.payload.extensionList)
-    metadataState = createState(ENUMS.STATE.FAILURE.status, code, desc)
+
+    message.value.content.payload = fspiopError
+    metadataState = createState(ENUMS.STATE.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
   } else {
     metadataState = ENUMS.STATE.SUCCESS
   }
@@ -543,7 +542,7 @@ module.exports = {
   transformGeneralTopicName,
   getKafkaConfig,
   updateMessageProtocolMetadata,
-  createPrepareErrorStatus,
+  // createPrepareErrorStatus,
   createState,
   createTransferMessageProtocol,
   createParticipantTopicConf,

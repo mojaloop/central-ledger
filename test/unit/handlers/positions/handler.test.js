@@ -590,7 +590,7 @@ Test('Position handler', transferHandlerTest => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
-        Util.createPrepareErrorStatus.returns(topicName)
+        // Util.createPrepareErrorStatus.returns(topicName)
         Util.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
@@ -615,7 +615,7 @@ Test('Position handler', transferHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         config.rdkafkaConf['enable.auto.commit'] = false
         Util.transformGeneralTopicName.returns(topicName)
-        Util.createPrepareErrorStatus.returns(topicName)
+        // Util.createPrepareErrorStatus.returns(topicName)
         Util.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })
@@ -639,7 +639,7 @@ Test('Position handler', transferHandlerTest => {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Kafka.Consumer.getConsumer.throws(new Error())
         Util.transformGeneralTopicName.returns(topicName)
-        Util.createPrepareErrorStatus.returns(topicName)
+        // Util.createPrepareErrorStatus.returns(topicName)
         Util.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
         TransferService.getTransferInfoToChangePosition.resolves({ transferStateId: 'RESERVED_TIMEOUT' })

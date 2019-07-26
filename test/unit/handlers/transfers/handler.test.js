@@ -326,7 +326,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -346,7 +346,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -365,7 +365,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -383,7 +383,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'COMMITTED' }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       TransferObjectTransform.toTransfer.withArgs(transferReturn).returns(transfer)
 
@@ -404,7 +404,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED' }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
 
       TransferObjectTransform.toFulfil.withArgs(transferReturn).returns(fulfil)
@@ -426,7 +426,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'RECEIVED' }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -445,7 +445,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'unknown' }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       localMessages[0].value.metadata.event.action = 'unknown'
 
       const result = await allTransferHandlers.prepare(null, localMessages)
@@ -465,7 +465,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsNotMatching: false
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'RESERVED' }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -484,7 +484,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: true
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -504,7 +504,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: true
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
 
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -523,7 +523,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
       test.end()
@@ -541,7 +541,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages[1])
       test.equal(result, true)
       test.end()
@@ -560,7 +560,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
       test.end()
@@ -578,7 +578,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
       test.end()
@@ -596,7 +596,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -615,7 +615,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -626,7 +626,7 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
@@ -645,7 +645,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
         existsMatching: false,
         existsNotMatching: false
@@ -672,7 +672,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -691,7 +691,7 @@ Test('Transfer handler', transferHandlerTest => {
         existsMatching: false,
         existsNotMatching: false
       }))
-      Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+      // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
@@ -703,7 +703,7 @@ Test('Transfer handler', transferHandlerTest => {
         await Consumer.createHandler(topicName, config, command)
         Util.transformAccountToTopicName.returns(topicName)
         Util.proceed.returns(true)
-        Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
+        // Util.createPrepareErrorStatus.returns(messageProtocol.content.payload)
         Util.createState.returns(messageProtocol.metadata.event.state)
         Validator.validateByName.returns({ validationPassed: true, reasons: [] })
         TransferService.getById.returns(P.resolve(null))
@@ -927,7 +927,7 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -941,7 +941,7 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.getConsumer.throws(new Error())
       Util.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -956,7 +956,7 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve(null))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -970,7 +970,7 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
       Util.proceed.returns(true)
 
@@ -986,7 +986,7 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ payeeFsp: 'dfsp2' }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
       Util.proceed.returns(true)
 
@@ -1001,7 +1001,7 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2' }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Util.proceed.returns(true)
@@ -1018,7 +1018,7 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2' }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Util.proceed.returns(true)
@@ -1035,7 +1035,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.COMMITTED }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
@@ -1053,7 +1053,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.COMMITTED }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
@@ -1070,7 +1070,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RECEIVED_PREPARE }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
@@ -1088,7 +1088,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
@@ -1106,7 +1106,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[1].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[1].value.content.payload)
       localfulfilMessages[1].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[1].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
@@ -1125,7 +1125,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RESERVED }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1149,7 +1149,7 @@ Test('Transfer handler', transferHandlerTest => {
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
@@ -1172,7 +1172,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1190,7 +1190,7 @@ Test('Transfer handler', transferHandlerTest => {
         TransferService.getById.throws(new Error())
         FiveBellsCondition.fulfillmentToCondition.returns('condition')
         ilp.update.returns(P.resolve())
-        Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+        // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
 
         await allTransferHandlers.fulfil(null, localfulfilMessages)
         test.fail('No Error Thrown')
@@ -1218,7 +1218,7 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1247,7 +1247,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.COMMITTED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1276,7 +1276,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.COMMITTED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1305,7 +1305,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.COMMITTED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1334,7 +1334,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RECEIVED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1363,7 +1363,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RESERVED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1392,7 +1392,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RECEIVED_PREPARE })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1421,7 +1421,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RESERVED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1451,7 +1451,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.ABORTED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1482,7 +1482,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.ABORTED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1513,7 +1513,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.ABORTED })
       ilp.update.returns(P.resolve())
       Validator.validateFulfilCondition.returns(true)
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1535,7 +1535,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.RESERVED
       }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.metadata.event.action = 'reject'
       Util.proceed.returns(true)
@@ -1557,7 +1557,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.RESERVED
       }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.metadata.event.action = 'reject'
       Util.proceed.returns(true)
@@ -1578,7 +1578,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.RESERVED
       }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.metadata.event.action = 'reject'
       delete fulfilMessages[0].value.content.payload.fulfilment
       TransferService.abort.returns({
@@ -1607,7 +1607,7 @@ Test('Transfer handler', transferHandlerTest => {
       }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       TransferService.abort.returns(P.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
-      Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
+      // Util.createPrepareErrorStatus.returns(fulfilMessages[0].value.content.payload)
       invalidEventMessage.value.metadata.event.action = 'abort'
       delete fulfilMessages[0].value.content.payload.fulfilment
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
