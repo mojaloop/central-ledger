@@ -74,12 +74,10 @@ const create = async function (request, h) {
     const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
     const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
     if (!hubReconciliationAccountExists) {
-      // TODO: Verify this is the correct error code
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub reconciliation account for the specified currency does not exist')
     }
     const hubMlnsAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
     if (!hubMlnsAccountExists) {
-      // TODO: Verify this is the correct error code
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub multilateral net settlement account for the specified currency does not exist')
     }
     let participant = await ParticipantService.getByName(request.payload.name)
@@ -88,7 +86,6 @@ const create = async function (request, h) {
         return currency.currencyId === request.payload.currency
       })
       if (currencyExists) {
-        // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant currency has already been registered')
       }
     } else {
@@ -114,7 +111,6 @@ const createHubAccount = async function (request, h) {
     if (participant) {
       const ledgerAccountType = await ParticipantService.getLedgerAccountTypeName(request.payload.type)
       if (!ledgerAccountType) {
-        // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found.')
       }
       const accountParams = {
@@ -125,27 +121,22 @@ const createHubAccount = async function (request, h) {
       }
       const participantAccount = await ParticipantService.getParticipantAccount(accountParams)
       if (participantAccount) {
-        // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub account has already been registered.')
       }
 
       if (participant.participantId !== Config.HUB_ID) {
-        // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Endpoint is reserved for creation of Hub account types only.')
       }
       const isPermittedHubAccountType = Config.HUB_ACCOUNTS.indexOf(request.payload.type) >= 0
       if (!isPermittedHubAccountType) {
-        // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'The requested hub operator account type is not allowed.')
       }
       const newCurrencyAccount = await ParticipantService.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
       if (!newCurrencyAccount) {
-        // TODO: Verify this is the correct error code
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant account and Position create have failed.')
       }
       participant.currencyList.push(newCurrencyAccount.participantCurrency)
     } else {
-      // TODO: Verify this is the correct error code
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant was not found.')
     }
     // end here : move to domain

@@ -101,8 +101,6 @@ const positions = async (error, messages) => {
     const action = message.value.metadata.event.action
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     if (!transferId) {
-      // const errorInformation = Errors.getErrorInformation(errorType.internal, `transferId is null or undefined`)
-      // const error = new Error(errorInformation.errorDescription)
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
       Logger.error(fspiopError)
       throw fspiopError
@@ -149,8 +147,6 @@ const positions = async (error, messages) => {
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
         } else {
           Logger.info(Util.breadcrumb(location, `resetPayer--${actionLetter}2`))
-          // TODO: - gibaros - review errorInformation creation
-          // const errorInformation = Errors.getErrorInformation(errorType.payerFspInsufficientLiquidity)
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code).toApiErrorObject()
           return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
         }
@@ -160,9 +156,6 @@ const positions = async (error, messages) => {
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else {
@@ -201,33 +194,22 @@ const positions = async (error, messages) => {
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
         throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       } else {
         Logger.info(Util.breadcrumb(location, `validationPassed2--${actionLetter}7`))
         const isReversal = true
-        // TODO: - gibaros - reason set to TRANSFER_EXPIRED to match previous message, but 3300 code is EXPIRED_ERROR with message Entity expired
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.EXPIRED_RESERVED,
           reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.transferExpired)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR.message)
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR.code).toApiErrorObject()
         fspiopError.extensionList = payload.extensionList
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer })
       }
     } else {
-      // TODO: #838
-      // ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, Util.breadcrumb(location))
       Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
-      // TODO: - gibaros - review errorInformation creation
-      // const errorInformation = Errors.getErrorInformation(errorType.internal)
-      // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.POSITION }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })

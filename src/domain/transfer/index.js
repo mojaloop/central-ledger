@@ -54,20 +54,16 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
 const getFulfilment = async (id) => {
   const transfer = await TransferFacade.getById(id)
   if (!transfer) {
-    // TODO: Verify this is the correct error code
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'This transfer does not exist')
   }
   if (!transfer.ilpCondition) {
-    // TODO: Verify this is the correct error code
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Transfer is not conditional')
   }
   const transferFulfilment = await TransferFulfilmentModel.getByTransferId(id)
   if (!transferFulfilment) {
-    // TODO: Verify this is the correct error code
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'This transfer does not exist')
   }
   if (!transferFulfilment.ilpFulfilment) {
-    // TODO: Verify this is the correct error code
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'This transfer has not yet been fulfilled')
   }
   return transferFulfilment.ilpFulfilment
@@ -92,8 +88,7 @@ const fulfil = async (transferFulfilmentId, transferId, payload) => {
 const reject = async (transferFulfilmentId, transferId, payload) => {
   try {
     const isCommit = false
-    // TODO - gibaros - Confirm, why we are not retrieving the stateReason from payload?
-    const stateReason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTED_TXN
+    const stateReason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTED_TXN.errorDescription
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {

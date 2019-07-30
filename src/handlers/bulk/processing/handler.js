@@ -304,9 +304,6 @@ const bulkProcessing = async (error, messages) => {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
         Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.BULK_PROCESSING }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })

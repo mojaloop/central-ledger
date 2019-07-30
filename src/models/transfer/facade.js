@@ -514,7 +514,7 @@ const getTransferStateByTransferId = async (id) => {
 
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
   try {
-    const transactionTimestamp = new Date()
+    const transactionTimestamp = Time.getUTCString(new Date())
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {

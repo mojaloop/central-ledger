@@ -127,10 +127,6 @@ const prepare = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound1--${actionLetter}1`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.internal, 'transfer/state not found')
-        // const errorInformation = (ErrorHandler.Enums.INTERNAL_SERVER_ERROR.code, 'transfer/state not found')
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
@@ -147,9 +143,6 @@ const prepare = async (error, messages) => {
     }
     if (existsNotMatching) {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
-      // TODO: - gibaros - review errorInformation creation
-      // const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
-      // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.message)
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code).toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
