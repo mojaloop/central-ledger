@@ -177,7 +177,6 @@ const prepare = async (error, messages) => {
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      // TODO: - gibaros - review errorInformation creation
       await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR).toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
