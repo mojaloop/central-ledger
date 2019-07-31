@@ -121,12 +121,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
             // TODO: - gibaros - review error description as 4001 error description is different from new API
             transferState.reason = 'Payer FSP has insufficient liquidity to perform the transfer'
-            rawMessage.value.content.payload = {
-              // TODO: - gibaros - review errorInformation creation...where is errorInformation being used at?
-              // errorInformation: Errors.createErrorInformation(4001, rawMessage.value.content.payload.extensionList)
-              errorInformation: (ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code, rawMessage.value.content.payload.extensionList)
-              // errorInformation: (ErrorHandler.Enums.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code, ErrorHandler.Enums.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message)
-            }
+            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject()
           }
           const runningPosition = currentPosition + sumReserved /* effective position */
           const runningReservedValue = sumTransfersInBatch - sumReserved

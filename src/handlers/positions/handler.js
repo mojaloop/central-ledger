@@ -147,7 +147,7 @@ const positions = async (error, messages) => {
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
         } else {
           Logger.info(Util.breadcrumb(location, `resetPayer--${actionLetter}2`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.code).toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY).toApiErrorObject()
           return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
         }
       }
@@ -204,7 +204,7 @@ const positions = async (error, messages) => {
           reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR.code).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR).toApiErrorObject()
         fspiopError.extensionList = payload.extensionList
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer })
       }

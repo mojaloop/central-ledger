@@ -143,7 +143,7 @@ const prepare = async (error, messages) => {
     }
     if (existsNotMatching) {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code).toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
@@ -157,9 +157,6 @@ const prepare = async (error, messages) => {
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
@@ -175,9 +172,6 @@ const prepare = async (error, messages) => {
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.internal)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
@@ -185,11 +179,7 @@ const prepare = async (error, messages) => {
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
       // TODO: - gibaros - review errorInformation creation
       await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
-      // await TransferService.logTransferError(transferId, ErrorHandler.Enums.VALIDATION_ERROR.code, ErrorHandler.Enums.VALIDATION_ERROR.message)
-      // const errorInformation = Errors.getErrorInformation(errorType.generic, reasons.toString())
-      // const errorInformation = (ErrorHandler.Enums.VALIDATION_ERROR.code, 'Generic validation error')
-      // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code)
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code).toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR).toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
@@ -255,10 +245,6 @@ const fulfil = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound2--${actionLetter}1`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.internal, 'transfer/state not found')
-        // const errorInformation = (ErrorHandler.Enums.INTERNAL_SERVER_ERROR.code, 'transfer/state not found')
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
@@ -268,11 +254,7 @@ const fulfil = async (error, messages) => {
             const record = await TransferService.getById(transferId)
             if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== record.payeeFsp.toLowerCase()) {
               Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee1--${actionLetter}7`))
-              // TODO: - gibaros - review errorInformation creation
-              // const errorInformation = Errors.getErrorInformation(errorType.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
-              // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
-              // const errorInformation = (ErrorHandler.Enums.VALIDATION_ERROR.code, ErrorHandler.Enums.VALIDATION_ERROR.message)
-              const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code).toApiErrorObject()
+              const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR).toApiErrorObject()
               const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
               return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
             } else {
@@ -283,10 +265,7 @@ const fulfil = async (error, messages) => {
             }
           } else {
             Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}3`))
-            // TODO: - gibaros - review errorInformation creation
-            // const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
-            // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.message)
-            const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code).toApiErrorObject()
+            const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
             const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
           }
@@ -299,10 +278,7 @@ const fulfil = async (error, messages) => {
             return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
           } else {
             Logger.info(Util.breadcrumb(location, `breakModified1--${actionLetter}3`))
-            // TODO: - gibaros - review errorInformation creation
-            // const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
-            // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.message)
-            const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code).toApiErrorObject()
+            const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
             const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
           }
@@ -318,10 +294,7 @@ const fulfil = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `inProgress3--${actionLetter}5`))
       } else {
         Logger.info(Util.breadcrumb(location, `breakModified2--${actionLetter}5`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.message)
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       }
@@ -332,51 +305,33 @@ const fulfil = async (error, messages) => {
       Util.breadcrumb(location, { path: 'validationFailed' })
       if (!existingTransfer) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNotFound--${actionLetter}6`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.generic, 'transfer not found')
-        // ErrorHandler.Enums.FSPIOPErrorCodes.toApiErrorObject()
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, 'transfer not found')
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, 'transfer not found').toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'transfer not found').toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else if (headers[Enum.headers.FSPIOP.SOURCE].toLowerCase() !== existingTransfer.payeeFsp.toLowerCase()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorSourceDoesntMatchPayee2--${actionLetter}7`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.generic, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`)
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.headers.FSPIOP.SOURCE} does not match payee fsp`).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, existingTransfer.condition)) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}8`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.generic, 'invalid fulfilment')
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, 'invalid fulfilment')
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, 'invalid fulfilment').toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment').toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else if (existingTransfer.transferState === TransferState.COMMITTED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorModifiedRequest--${actionLetter}9`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.modifiedRequest)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code, ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.message)
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else if (existingTransfer.transferState !== TransferState.RESERVED) {
         Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
-        // TODO: - gibaros - review errorInformation creation
-        // const errorInformation = Errors.getErrorInformation(errorType.generic, 'transfer state not reserved')
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, 'transfer state not reserved')
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, 'transfer state not reserved').toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'transfer state not reserved').toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else if (existingTransfer.expirationDate <= new Date()) {
         Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
-        // TODO: - gibaros - review errorInformation creation - previously code thrown was 3300, now is throwing 3303
-        // const errorInformation = Errors.getErrorInformation(errorType.transferExpired)
-        // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code)
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.code).toApiErrorObject()
+        // TODO: - previously code thrown was 3300, now is throwing 3303
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else { // validations success
@@ -397,10 +352,6 @@ const fulfil = async (error, messages) => {
             const abortResult = await TransferService.abort(transferId, payload, transferErrorDuplicateCheckId)
             const TER = abortResult.transferErrorRecord
             const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
-            // TODO: - gibaros - review errorInformation creation, error comes from TransferService.abort call
-            // const errorInformation = Errors.getErrorInformation(TER.errorCode, { replace: TER.errorDescription })
-            // const errorInformation = (TER.errorCode, { replace: TER.errorDescription })
-            // const errorInformation = (ErrorHandler.Enums.PAYEE_ERROR.code, ErrorHandler.Enums.PAYEE_ERROR.code)
             const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.FindFSPIOPErrorCode(TER.errorCode), TER.errorDescription).toApiErrorObject()
             return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, toDestination })
           }
@@ -408,9 +359,6 @@ const fulfil = async (error, messages) => {
       }
     } else {
       Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}13`))
-      // TODO: - gibaros - review errorInformation creation
-      // const errorInformation = Errors.getErrorInformation(errorType.internal)
-      // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
@@ -478,18 +426,12 @@ const getTransfer = async (error, messages) => {
     const transfer = await TransferService.getByIdLight(transferId)
     if (!transfer) {
       Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
-      // TODO: - gibaros - review errorInformation creation
-      // const errorInformation = Errors.getErrorInformation(errorType.transferNotFound)
-      // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND.code, 'Provided Transfer ID was not found on the server.')
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND.code, 'Provided Transfer ID was not found on the server.').toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.').toApiErrorObject()
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
     if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
       Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
-      // TODO: - gibaros - review errorInformation creation
-      // const errorInformation = Errors.getErrorInformation(errorType.genericClient)
-      // const errorInformation = (ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR.code, 'Generic client error')
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR.code).toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR).toApiErrorObject()
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
     // ============================================================================================
