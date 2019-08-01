@@ -119,8 +119,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
             sumReserved += transferAmount /* actually used */
           } else {
             transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
-            // TODO: - review error description as 4001 error description is 'Payer FSP has insufficient liquidity to perform the transfer' which is different from new API 'Payer FSP insufficient liquidity'
-            transferState.reason = 'Payer FSP has insufficient liquidity to perform the transfer'
+            transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject()
           }
           const runningPosition = currentPosition + sumReserved /* effective position */

@@ -28,8 +28,12 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.getLedgerAccountByName = async (name) => {
-  const ledgerAccountType = await Db.ledgerAccountType.findOne({ name })
-  return ledgerAccountType
+  try {
+    return await Db.ledgerAccountType.findOne({ name })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
 }
