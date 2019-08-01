@@ -155,9 +155,7 @@ const participantTopicTemplate = (participantName, functionality, action) => {
       action
     })
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -175,9 +173,7 @@ const generalTopicTemplate = (functionality, action) => {
   try {
     return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, { functionality, action })
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -198,8 +194,7 @@ const transformGeneralTopicName = (functionality, action) => {
     }
     return generalTopicTemplate(functionality, action)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -218,8 +213,7 @@ const transformAccountToTopicName = (participantName, functionality, action) => 
   try {
     return participantTopicTemplate(participantName, functionality, action)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -281,37 +275,6 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, metadataAc
   }
   return messageProtocol
 }
-
-/**
- * @function createPrepareErrorStatus
- *
- * @param {number} errorCode - error code for error occurred
- * @param {string} errorDescription - error description for error occurred
- * @param {object} extensionList - list of extensions
- * Example:
- * errorInformation: {
- *   errorCode: '3001',
- *   errorDescription: 'A failure has occurred',
- *   extensionList: [{
- *      extension: {
- *        key: 'key',
- *        value: 'value'
- *      }
- *   }]
- * }
- *
- * @returns {object} - Returns errorInformation object
- */
-// const createPrepareErrorStatus = (errorCode, errorDescription, extensionList) => {
-//   errorCode = errorCode.toString()
-//   return {
-//     errorInformation: {
-//       errorCode,
-//       errorDescription,
-//       extensionList
-//     }
-//   }
-// }
 
 /**
  * @function createState
@@ -542,7 +505,6 @@ module.exports = {
   transformGeneralTopicName,
   getKafkaConfig,
   updateMessageProtocolMetadata,
-  // createPrepareErrorStatus,
   createState,
   createTransferMessageProtocol,
   createParticipantTopicConf,

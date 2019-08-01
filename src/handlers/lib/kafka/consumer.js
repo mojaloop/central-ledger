@@ -99,8 +99,7 @@ const getConsumer = (topicName) => {
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName].consumer
   } else {
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`No consumer found for topic ${topicName}`)
-    throw fspiopError
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No consumer found for topic ${topicName}`)
   }
 }
 
@@ -118,8 +117,7 @@ const isConsumerAutoCommitEnabled = (topicName) => {
   if (listOfConsumers[topicName]) {
     return listOfConsumers[topicName].autoCommitEnabled
   } else {
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`No consumer found for topic ${topicName}`)
-    throw fspiopError
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No consumer found for topic ${topicName}`)
   }
 }
 

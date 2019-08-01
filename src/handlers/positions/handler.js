@@ -82,9 +82,7 @@ const positions = async (error, messages) => {
   ).startTimer()
 
   if (error) {
-    // Logger.error(error)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   let prepareBatch = []
@@ -204,8 +202,7 @@ const positions = async (error, messages) => {
           reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR).toApiErrorObject()
-        fspiopError.extensionList = payload.extensionList
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, null, null, null, payload.extensionList).toApiErrorObject()
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer })
       }
     } else {
@@ -240,9 +237,7 @@ const registerPositionHandler = async () => {
     await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -258,8 +253,7 @@ const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

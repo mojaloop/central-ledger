@@ -70,9 +70,9 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
     return true
   } catch (err) {
     Logger.error(err)
+    // TODO - gibaros - review if the message inside the logger info can be added to error message and/or should be logged as error
     Logger.info(`Producer error has occurred for ${topicConf.topicName}`)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -90,8 +90,7 @@ const disconnect = async (topicName = null) => {
     try {
       await getProducer(topicName).disconnect()
     } catch (err) {
-      const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-      throw fspiopError
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   } else if (!topicName) {
     let isError = false
@@ -107,12 +106,10 @@ const disconnect = async (topicName = null) => {
       }
     }
     if (isError) {
-      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`The following Producers could not be disconnected: ${JSON.stringify(errorTopicList)}`)
-      throw fspiopError
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(`The following Producers could not be disconnected: ${JSON.stringify(errorTopicList)}`)
     }
   } else {
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Unable to disconnect Producer: ${topicName}`)
-    throw fspiopError
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Unable to disconnect Producer: ${topicName}`)
   }
 }
 
@@ -130,8 +127,7 @@ const getProducer = (topicName) => {
   if (listOfProducers[topicName]) {
     return listOfProducers[topicName]
   } else {
-    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`No producer found for topic ${topicName}`)
-    throw fspiopError
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No producer found for topic ${topicName}`)
   }
 }
 

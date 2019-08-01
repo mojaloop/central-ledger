@@ -46,8 +46,7 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   try {
     return await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -80,8 +79,7 @@ const fulfil = async (transferFulfilmentId, transferId, payload) => {
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -92,8 +90,7 @@ const reject = async (transferFulfilmentId, transferId, payload) => {
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -101,8 +98,7 @@ const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
   try {
     return TransferFacade.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -147,8 +143,7 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
     }
     return result
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -173,8 +168,7 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
     return TransferError.insert(transferStateChange.transferStateChangeId, errorCode, errorDescription)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

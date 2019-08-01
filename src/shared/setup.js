@@ -45,7 +45,6 @@ const RequestLogger = require('../lib/requestLogger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
-// const Participant = require('../domain/participant')
 const RegisterHandlers = require('../handlers/register')
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -105,8 +104,7 @@ const createServer = (port, modules) => {
         validate: {
           options: ErrorHandler.validateRoutes(),
           failAction: async (request, h, err) => {
-            const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-            throw fspiopError
+            throw ErrorHandler.Factory.reformatFSPIOPError(err)
           }
         }
       }
@@ -258,8 +256,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       break
     default:
       Logger.error(`No valid service type ${service} found!`)
-      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
-      throw fspiopError
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
   }
 
   if (runHandlers) {

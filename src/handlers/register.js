@@ -75,9 +75,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

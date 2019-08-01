@@ -7,8 +7,7 @@ const validateCondition = (conditionUri) => {
   try {
     return FiveBellsCondition.validateCondition(conditionUri)
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

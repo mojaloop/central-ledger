@@ -88,9 +88,7 @@ const prepare = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    // Logger.error(error)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   try {
@@ -127,7 +125,7 @@ const prepare = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound1--${actionLetter}1`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer/state not found').toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
@@ -185,8 +183,7 @@ const prepare = async (error, messages) => {
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -198,9 +195,7 @@ const fulfil = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    // Logger.error(error)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   try {
@@ -244,7 +239,7 @@ const fulfil = async (error, messages) => {
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
         Logger.error(Util.breadcrumb(location, `callbackErrorNotFound2--${actionLetter}1`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer/state not found').toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
@@ -351,7 +346,7 @@ const fulfil = async (error, messages) => {
             const abortResult = await TransferService.abort(transferId, payload, transferErrorDuplicateCheckId)
             const TER = abortResult.transferErrorRecord
             const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
-            const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.FindFSPIOPErrorCode(TER.errorCode), TER.errorDescription).toApiErrorObject()
+            const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorCode(TER.errorCode, TER.errorDescription).toApiErrorObject()
             return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, toDestination })
           }
         }
@@ -365,8 +360,7 @@ const fulfil = async (error, messages) => {
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -387,9 +381,7 @@ const getTransfer = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    // Logger.error(error)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   try {
@@ -441,8 +433,7 @@ const getTransfer = async (error, messages) => {
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -465,9 +456,7 @@ const registerPrepareHandler = async () => {
     await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
     return true
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -490,9 +479,7 @@ const registerFulfilHandler = async () => {
     await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -515,8 +502,7 @@ const registerGetTransferHandler = async () => {
     await Kafka.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
     return true
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -535,8 +521,7 @@ const registerAllHandlers = async () => {
     await registerGetTransferHandler()
     return true
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

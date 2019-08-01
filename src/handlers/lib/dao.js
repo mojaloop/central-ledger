@@ -34,7 +34,6 @@
  * @module src/handlers/lib
  */
 
-const Logger = require('@mojaloop/central-services-shared').Logger
 const Participants = require('../../domain/participant')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -50,9 +49,7 @@ const retrieveAllParticipants = async () => {
     const participants = await Participants.getAll()
     return participants.map(participant => participant.name)
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

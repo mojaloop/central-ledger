@@ -33,7 +33,6 @@
  */
 
 const CronJob = require('cron').CronJob
-const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const Enum = require('../../lib/enum')
@@ -109,9 +108,7 @@ const timeout = async () => {
       result
     }
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -164,9 +161,7 @@ const registerTimeoutHandler = async () => {
     await timeoutJob.start()
     return true
   } catch (err) {
-    Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -185,8 +180,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

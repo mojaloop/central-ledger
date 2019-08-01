@@ -78,16 +78,3 @@ exports.prepareData = async () => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
-// exports.deletePreparedData = async (transferId, payerName, payeeName) => {
-//   try {
-//     return await Model.truncate({
-//       transferId: transferId
-//     }).then(async () => {
-//       await TransferDuplicateCheckPreparationHelper.deletePreparedData()
-//       await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
-//     })
-//   } catch (err) {
-//     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
-//   }
-// }

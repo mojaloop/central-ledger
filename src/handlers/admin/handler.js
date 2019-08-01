@@ -63,8 +63,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-        throw fspiopError
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
   } else {
@@ -76,8 +75,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-        throw fspiopError
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
   }
@@ -180,8 +178,7 @@ const transfer = async (error, messages) => {
     return true
   } catch (err) {
     Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -205,8 +202,7 @@ const registerTransferHandler = async () => {
     return true
   } catch (err) {
     Logger.error(err)
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -223,8 +219,7 @@ const registerAllHandlers = async () => {
     await registerTransferHandler()
     return true
   } catch (err) {
-    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    throw fspiopError
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
