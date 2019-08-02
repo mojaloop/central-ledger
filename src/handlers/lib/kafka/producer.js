@@ -70,7 +70,7 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
     return true
   } catch (err) {
     Logger.error(err)
-    throw ErrorHandler.Factory.createInternalServerFSPIOPError = (`Producer error has occurred for ${topicConf.topicName}`, err)
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Producer error has occurred for ${topicConf.topicName}`, err)
   }
 }
 
