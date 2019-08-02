@@ -181,9 +181,8 @@ const prepare = async (error, messages) => {
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
   } catch (err) {
-    Logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--P0`, err)
   }
 }
 
@@ -358,9 +357,8 @@ const fulfil = async (error, messages) => {
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
   } catch (err) {
-    Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--F0`, err)
   }
 }
 
@@ -431,9 +429,8 @@ const getTransfer = async (error, messages) => {
     message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
     return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
   } catch (err) {
-    Logger.error(`${Util.breadcrumb(location)}::${err.message}--G0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--G0`, err)
   }
 }
 

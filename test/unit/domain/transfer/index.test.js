@@ -43,7 +43,6 @@ const TransferErrorDuplicateCheckModel = require('../../../../src/models/transfe
 const TransferState = require('../../../../src/lib/enum').TransferState
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Crypto = require('crypto')
-const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -84,15 +83,6 @@ const transferRecord = {
   currencyId: payload.amount.currency,
   ilpCondition: payload.condition,
   expirationDate: new Date(payload.expiration),
-  createdDate: new Date()
-}
-
-const transferFulfilmentRecord = {
-  transferId: payload.transferId,
-  ilpFulfilment: 'oAKAAA',
-  completedDate: new Date() - 60000,
-  isValid: true,
-  settlementWindowId: null,
   createdDate: new Date()
 }
 
@@ -158,102 +148,6 @@ Test('Transfer Service', transferIndexTest => {
       }
     })
     preparedTest.end()
-  })
-
-  transferIndexTest.test('getFulfilment should', getFulfilmentTest => {
-    getFulfilmentTest.test('return ilpFulfilment', async (test) => {
-      try {
-        TransferFacade.getById.returns(Promise.resolve(transferRecord))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
-        const response = await TransferService.getFulfilment(payload.transferId)
-        test.equal(response, transferFulfilmentRecord.ilpFulfilment)
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw FSPIOPError', async (test) => {
-      try {
-        TransferFacade.getById.returns(Promise.resolve(null))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.ok(err instanceof FSPIOPError)
-        test.equal(err.name, 'FSPIOPError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw FSPIOPError', async (test) => {
-      try {
-        const transfer = Object.assign({}, transferRecord, { ilpCondition: null })
-        TransferFacade.getById.returns(Promise.resolve(transfer))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.ok(err instanceof FSPIOPError)
-        test.equal(err.name, 'FSPIOPError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw TransferNotFoundError when looking up transfer fulfilment', async (test) => {
-      try {
-        // const transfer = Object.assign({}, transferRecord, {ilpCondition: null})
-        TransferFacade.getById.returns(Promise.resolve(transferRecord))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(null))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.ok(err instanceof FSPIOPError)
-        test.equal(err.name, 'FSPIOPError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw MissingFulfilmentError when looking up transfer fulfilment', async (test) => {
-      try {
-        const transferFulfilment = Object.assign({}, transferFulfilmentRecord, { ilpFulfilment: null })
-        TransferFacade.getById.returns(Promise.resolve(transferRecord))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilment))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.ok(err instanceof FSPIOPError)
-        test.equal(err.name, 'FSPIOPError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.end()
-  })
-
-  transferIndexTest.test('expire should', expireTest => {
-    expireTest.test('be called', async (test) => {
-      try {
-        await TransferService.expire()
-        test.ok(true)
-        test.end()
-      } catch (err) {
-        Logger.error(`expire failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-    expireTest.end()
   })
 
   transferIndexTest.test('fulfil should', fulfilTest => {

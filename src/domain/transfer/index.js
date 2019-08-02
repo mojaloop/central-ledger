@@ -33,7 +33,6 @@ const TransferFacade = require('../../models/transfer/facade')
 const TransferModel = require('../../models/transfer/transfer')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
 const TransferErrorModel = require('../../models/transfer/transferError')
-const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../models/transfer/transferErrorDuplicateCheck')
@@ -48,28 +47,6 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
-}
-
-const getFulfilment = async (id) => {
-  const transfer = await TransferFacade.getById(id)
-  if (!transfer) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'This transfer does not exist')
-  }
-  if (!transfer.ilpCondition) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Transfer is not conditional')
-  }
-  const transferFulfilment = await TransferFulfilmentModel.getByTransferId(id)
-  if (!transferFulfilment) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'This transfer does not exist')
-  }
-  if (!transferFulfilment.ilpFulfilment) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'This transfer has not yet been fulfilled')
-  }
-  return transferFulfilment.ilpFulfilment
-}
-
-const expire = (id) => {
-  // return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
 }
 
 const fulfil = async (transferFulfilmentId, transferId, payload) => {
@@ -173,12 +150,10 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
 }
 
 const TransferService = {
-  getFulfilment,
   prepare,
   fulfil,
   reject,
   abort,
-  expire,
   validateDuplicateHash,
   logTransferError,
   getTransferErrorByTransferId: TransferErrorModel.getByTransferId,

@@ -70,9 +70,7 @@ const produceMessage = async (messageProtocol, topicConf, config) => {
     return true
   } catch (err) {
     Logger.error(err)
-    // TODO - gibaros - review if the message inside the logger info can be added to error message and/or should be logged as error
-    Logger.info(`Producer error has occurred for ${topicConf.topicName}`)
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError = (`Producer error has occurred for ${topicConf.topicName}`, err)
   }
 }
 
