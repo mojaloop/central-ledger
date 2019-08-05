@@ -40,11 +40,7 @@ const ParticipantFacade = require('../participant/facade')
 const Time = require('../../lib/time')
 const Config = require('../../lib/config')
 const _ = require('lodash')
-const Logger = require('@mojaloop/central-services-shared').Logger
-
-const errorPayeeGeneric = 5000
-const intervalMinPayeeError = errorPayeeGeneric
-const intervalMaxPayeeError = 5500
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getById = async (id) => {
   try {
@@ -103,8 +99,7 @@ const getById = async (id) => {
       return transferResult
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -145,8 +140,7 @@ const getByIdLight = async (id) => {
       return transferResult
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -200,8 +194,7 @@ const getAll = async () => {
       return transferResultList
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -225,8 +218,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .first()
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -299,8 +291,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
       transferExtensions
     }
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -317,18 +308,11 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
  */
 
 const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
-  let errorCode
   let transferErrorRecord
 
   const transactionTimestamp = Time.getUTCString(new Date())
 
-  if (payload.errorInformation.errorCode &&
-    payload.errorInformation.errorCode > intervalMinPayeeError &&
-    payload.errorInformation.errorCode < intervalMaxPayeeError) {
-    errorCode = payload.errorInformation.errorCode.toString()
-  } else {
-    errorCode = errorPayeeGeneric.toString()
-  }
+  const errorCode = payload.errorInformation.errorCode
   const errorDescription = payload.errorInformation.errorDescription
 
   const transferStateChangeRecord = {
@@ -384,10 +368,10 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
     return {
       saveTransferAbortedExecuted: true,
@@ -396,8 +380,7 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
       transferExtensions
     }
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -411,7 +394,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       if (participant) {
         participants.push(participant)
       } else {
-        throw new Error('Invalid FSP name or currency')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid FSP name or currency')
       }
     }
 
@@ -484,8 +467,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       }
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -526,14 +508,13 @@ const getTransferStateByTransferId = async (id) => {
         .first()
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
   try {
-    const transactionTimestamp = new Date()
+    const transactionTimestamp = Time.getUTCString(new Date())
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
@@ -601,10 +582,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
 
     return knex('transferTimeout AS tt')
@@ -635,8 +616,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
         'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -764,8 +744,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return await knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -807,7 +786,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_OUT
           amount = -payload.amount.amount
         } else {
-          throw new Error('Action not allowed for reconciliationTransferPrepare')
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Action not allowed for reconciliationTransferPrepare')
         }
 
         // Insert transferParticipant records
@@ -883,8 +862,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -929,8 +907,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -995,8 +972,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -1060,8 +1036,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     }
     return 0
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -1082,8 +1057,7 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

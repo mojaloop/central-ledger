@@ -29,6 +29,7 @@ const TransferDuplicateCheckPreparationModule = require('./transferDuplicateChec
 const TransferErrorModel = require('../../../src/models/transfer/transferError')
 const TransferStateChangeModel = require('../../../src/models/transfer/transferStateChange')
 const TransferStatePreparationHelper = require('./transferState')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 exports.prepareData = async () => {
   try {
     const transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
@@ -53,7 +54,7 @@ exports.prepareData = async () => {
       }
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -61,6 +62,6 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
     return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

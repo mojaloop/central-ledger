@@ -9,6 +9,7 @@ const Handler = require('../../../../src/api/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
 const Enum = require('../../../../src/lib/enum')
+const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const createRequest = ({ payload, params, query }) => {
   const sandbox = Sinon.createSandbox()
@@ -197,12 +198,12 @@ Test('Participant', participantHandlerTest => {
     })
 
     handlerTest.test('update should throw error', async function (test) {
-      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).throws(new Error())
+      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).throws(new Error('Test error'))
       try {
         await Handler.update(createRequest({ params: { name: participantFixtures[0].name }, payload: { isActive: 1 } }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -437,13 +438,13 @@ Test('Participant', participantHandlerTest => {
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
-      Participant.addEndpoint.withArgs(params.name, payload).throws(new Error())
+      Participant.addEndpoint.withArgs(params.name, payload).throws(new Error('Test error'))
 
       try {
         await Handler.addEndpoint(createRequest({ params, payload }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -535,13 +536,13 @@ Test('Participant', participantHandlerTest => {
       const query = {
         type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
       }
-      Participant.getEndpoint.withArgs(params.name, query.type).throws(new Error())
+      Participant.getEndpoint.withArgs(params.name, query.type).throws(new Error('Test error'))
 
       try {
         await Handler.getEndpoint(createRequest({ params, query }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -612,13 +613,13 @@ Test('Participant', participantHandlerTest => {
         initialPosition: 0
       }
 
-      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).throws(new Error())
+      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).throws(new Error('Test error'))
 
       try {
         await Handler.addLimitAndInitialPosition(createRequest({ params, payload }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -768,13 +769,13 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         type: 'NET_DEBIT_CAP'
       }
-      Participant.getLimits.withArgs(params.name, query).throws(new Error())
+      Participant.getLimits.withArgs(params.name, query).throws(new Error('Test error'))
 
       try {
         await Handler.getLimits(createRequest({ params, query }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -841,13 +842,13 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         type: 'NET_DEBIT_CAP'
       }
-      Participant.getLimitsForAllParticipants.withArgs(query).throws(new Error())
+      Participant.getLimitsForAllParticipants.withArgs(query).throws(new Error('Test error'))
 
       try {
         await Handler.getLimitsForAllParticipants(createRequest({ query }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -910,13 +911,13 @@ Test('Participant', participantHandlerTest => {
         }
       }
 
-      Participant.adjustLimits.withArgs(params.name, payload).throws(new Error())
+      Participant.adjustLimits.withArgs(params.name, payload).throws(new Error('Test error'))
 
       try {
         await Handler.adjustLimits(createRequest({ params, payload }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -1008,15 +1009,15 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD'
       }
 
-      Participant.getPositions.withArgs(params.name, query).throws(new Error())
+      Participant.getPositions.withArgs(params.name, query).throws(new Error('Test error'))
 
       try {
         await Handler.getPositions(createRequest({ params, query }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -1043,15 +1044,15 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD'
       }
 
-      Participant.getAccounts.withArgs(params.name, query).throws(new Error())
+      Participant.getAccounts.withArgs(params.name, query).throws(new Error('Test error'))
 
       try {
         await Handler.getAccounts(createRequest({ params, query }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -1158,15 +1159,15 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      Participant.updateAccount.throws(new Error())
+      Participant.updateAccount.throws(new Error('Test error'))
 
       try {
         await Handler.updateAccount(createRequest({ payload, params }), h)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })

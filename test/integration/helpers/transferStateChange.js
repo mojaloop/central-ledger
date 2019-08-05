@@ -30,6 +30,7 @@ const TransferPreparationModule = require('./transferTestHelper')
 const TransferModel = require('../../../src/models/transfer/facade')
 const TransferStatePreparationHelper = require('./transferState')
 const Model = require('../../../src/models/transfer/transferStateChange')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
   try {
@@ -53,7 +54,7 @@ exports.prepareData = async () => {
       }
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -66,6 +67,6 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
       await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

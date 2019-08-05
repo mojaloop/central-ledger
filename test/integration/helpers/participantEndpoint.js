@@ -25,6 +25,7 @@
 'use strict'
 
 const Model = require('../../../src/domain/participant')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async (name, endpointType, endpointValue) => {
   try {
@@ -32,7 +33,7 @@ exports.prepareData = async (name, endpointType, endpointValue) => {
     await Model.addEndpoint(name, endpoint)
     return endpoint
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -44,6 +45,6 @@ exports.deletePreparedData = async (participantName) => {
   try {
     return await Model.destroyParticipantEndpointByName(participantName)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

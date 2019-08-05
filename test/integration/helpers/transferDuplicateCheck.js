@@ -29,6 +29,7 @@ const ParticipantPreparationModule = require('./participant')
 const Time = require('../../../src/lib/time')
 const Crypto = require('crypto')
 const Uuid = require('uuid4')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
   try {
@@ -74,7 +75,7 @@ exports.prepareData = async () => {
       participantPayeeResult
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -87,6 +88,6 @@ exports.prepareData = async () => {
 //       await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
 //     })
 //   } catch (err) {
-//     throw new Error(err.message)
+//     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
 //   }
 // }

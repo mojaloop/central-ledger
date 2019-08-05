@@ -25,13 +25,14 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 // const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getByParams = async (params) => {
   try {
     return await Db.segment.findOne(params)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

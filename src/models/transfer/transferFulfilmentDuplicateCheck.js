@@ -30,6 +30,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  * @function CheckAndInsertDuplicateHash
@@ -90,8 +91,7 @@ const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentI
       }
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

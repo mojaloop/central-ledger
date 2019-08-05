@@ -30,7 +30,7 @@
 
 const Db = require('../../lib/db')
 const Time = require('../../lib/time')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   try {
@@ -55,8 +55,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
       return b
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -78,8 +77,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
         )
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -129,8 +127,7 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
         )
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -159,8 +156,7 @@ const getEndpoint = async (participantId, endpointType) => {
           'et.name')
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -187,8 +183,7 @@ const getAllEndpoints = async (participantId) => {
           'et.name')
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -247,8 +242,7 @@ const addEndpoint = async (participantId, endpoint) => {
       }
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -275,8 +269,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
         ).first()
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -298,8 +291,7 @@ const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId,
         )
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 /**
@@ -372,8 +364,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
       }
     })
   } catch (err) {
-    Logger.error(err)
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -414,7 +405,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         if (Array.isArray(existingLimit) && existingLimit.length > 0) {
           await knex('participantLimit').transacting(trx).update({ isActive: 0 }).where('participantLimitId', existingLimit[0].participantLimitId)
         } else {
-          throw new Error('Participant Limit does not exist')
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Participant Limit does not exist')
         }
         const newLimit = {
           participantCurrencyId: participantCurrencyId,
@@ -436,7 +427,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         if (doCommit) {
           await trx.rollback
         }
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }
 
@@ -447,8 +438,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
       return knex.transaction(trxFunction)
     }
   } catch (err) {
-    Logger.error(err)
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -484,8 +474,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
         ).orderBy('lt.name')
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -525,8 +514,7 @@ const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAc
         ).orderBy('pc.currencyId', 'lt.name')
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -564,8 +552,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
       }
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -592,8 +579,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
         .select('*', 'lap.name AS ledgerAccountType', 'participantCurrency.isActive AS accountIsActive')
     })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

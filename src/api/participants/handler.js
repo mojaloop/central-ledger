@@ -25,13 +25,12 @@
 'use strict'
 
 const ParticipantService = require('../../domain/participant')
-const Errors = require('../../errors')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Enum = require('../../lib/enum')
 const Sidecar = require('../../lib/sidecar')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Boom = require('boom')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const LocalEnum = {
   activated: 'activated',
@@ -64,7 +63,7 @@ const entityItem = ({ name, createdDate, isActive, currencyList }, ledgerAccount
 
 const handleMissingRecord = (entity) => {
   if (!entity) {
-    throw new Errors.NotFoundError('The requested resource could not be found.')
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'The requested resource could not be found.')
   }
   return entity
 }
@@ -75,11 +74,11 @@ const create = async function (request, h) {
     const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
     const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
     if (!hubReconciliationAccountExists) {
-      throw new Errors.HubReconciliationAccountNotFound()
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub reconciliation account for the specified currency does not exist')
     }
     const hubMlnsAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
     if (!hubMlnsAccountExists) {
-      throw new Errors.HubMlnsAccountNotFound()
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub multilateral net settlement account for the specified currency does not exist')
     }
     let participant = await ParticipantService.getByName(request.payload.name)
     if (participant) {
@@ -87,7 +86,7 @@ const create = async function (request, h) {
         return currency.currencyId === request.payload.currency
       })
       if (currencyExists) {
-        throw new Errors.RecordExistsError()
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant currency has already been registered')
       }
     } else {
       const participantId = await ParticipantService.create(request.payload)
@@ -99,7 +98,7 @@ const create = async function (request, h) {
     participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -111,7 +110,7 @@ const createHubAccount = async function (request, h) {
     if (participant) {
       const ledgerAccountType = await ParticipantService.getLedgerAccountTypeName(request.payload.type)
       if (!ledgerAccountType) {
-        throw new Errors.LedgerAccountTypeNotFoundError()
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found.')
       }
       const accountParams = {
         participantId: participant.participantId,
@@ -121,30 +120,30 @@ const createHubAccount = async function (request, h) {
       }
       const participantAccount = await ParticipantService.getParticipantAccount(accountParams)
       if (participantAccount) {
-        throw new Errors.HubAccountExistsError()
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub account has already been registered.')
       }
 
       if (participant.participantId !== Config.HUB_ID) {
-        throw new Errors.EndpointReservedForHubAccountsError()
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Endpoint is reserved for creation of Hub account types only.')
       }
       const isPermittedHubAccountType = Config.HUB_ACCOUNTS.indexOf(request.payload.type) >= 0
       if (!isPermittedHubAccountType) {
-        throw new Errors.HubAccountTypeError()
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'The requested hub operator account type is not allowed.')
       }
       const newCurrencyAccount = await ParticipantService.createHubAccount(participant.participantId, request.payload.currency, ledgerAccountType.ledgerAccountTypeId)
       if (!newCurrencyAccount) {
-        throw new Errors.ParticipantAccountCreateError()
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant account and Position create have failed.')
       }
       participant.currencyList.push(newCurrencyAccount.participantCurrency)
     } else {
-      throw new Errors.ParticipantNotFoundError()
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant was not found.')
     }
     // end here : move to domain
     const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
     const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -176,7 +175,7 @@ const update = async function (request) {
     const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -186,7 +185,7 @@ const addEndpoint = async function (request, h) {
     await ParticipantService.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -217,7 +216,7 @@ const getEndpoint = async function (request) {
       return endpoints
     }
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -227,7 +226,7 @@ const addLimitAndInitialPosition = async function (request, h) {
     await ParticipantService.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -250,7 +249,7 @@ const getLimits = async function (request) {
     }
     return limits
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -274,7 +273,7 @@ const getLimitsForAllParticipants = async function (request) {
     }
     return limits
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -294,7 +293,7 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -303,7 +302,7 @@ const getPositions = async function (request) {
   try {
     return await ParticipantService.getPositions(request.params.name, request.query)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -312,7 +311,7 @@ const getAccounts = async function (request) {
   try {
     return await ParticipantService.getAccounts(request.params.name, request.query)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -330,7 +329,7 @@ const updateAccount = async function (request, h) {
     }
     return h.response().code(200)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -341,7 +340,7 @@ const recordFunds = async function (request, h) {
     await ParticipantService.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
-    throw Boom.badRequest(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

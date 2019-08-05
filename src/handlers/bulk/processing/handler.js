@@ -36,12 +36,11 @@ const Kafka = require('../../lib/kafka')
 const Enum = require('../../../lib/enum')
 const TransferEventType = Enum.transferEventType
 const TransferEventAction = Enum.transferEventAction
-const Errors = require('../../../lib/errors')
-const errorType = Errors.errorType
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const cloneDeep = require('lodash').cloneDeep
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
@@ -305,15 +304,15 @@ const bulkProcessing = async (error, messages) => {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
         Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
-        const errorInformation = Errors.getErrorInformation(errorType.internal)
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.BULK_PROCESSING }
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       }
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -336,8 +335,7 @@ const registerBulkProcessingHandler = async () => {
     await Kafka.Consumer.createHandler(bulkProcessingHandler.topicName, bulkProcessingHandler.config, bulkProcessingHandler.command)
     return true
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -354,8 +352,7 @@ const registerAllHandlers = async () => {
     await registerBulkProcessingHandler()
     return true
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

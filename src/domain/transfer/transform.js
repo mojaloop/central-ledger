@@ -2,6 +2,7 @@
 
 const Util = require('../../lib/util')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const transferProperties = [
   'transferId',
@@ -122,7 +123,7 @@ const transformTransferToFulfil = (transfer) => {
     }
     return Util.omitNil(result)
   } catch (err) {
-    throw new Error(`Unable to transform to fulfil response: ${err}`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to fulfil response: ${err}`)
   }
 }
 
@@ -137,7 +138,7 @@ const toTransfer = (t) => {
   } else if (t.saveTransferFulfilledExecuted) {
     Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
     return Util.omitNil(fromSaveTransferExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
-  } else throw new Error(`Unable to transform to transfer: ${t}`)
+  } else throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to transfer: ${t}`)
 }
 
 // const fromPayload = (payload) => Util.merge(payload, { id: UrlParser.idFromTransferUri(payload.id) })

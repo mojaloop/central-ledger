@@ -43,6 +43,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Uuid = require('uuid4')
 const Kafka = require('./kafka')
 const Enum = require('../../lib/enum')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 
 /**
@@ -153,9 +154,8 @@ const participantTopicTemplate = (participantName, functionality, action) => {
       functionality,
       action
     })
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -172,9 +172,8 @@ const participantTopicTemplate = (participantName, functionality, action) => {
 const generalTopicTemplate = (functionality, action) => {
   try {
     return Mustache.render(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, { functionality, action })
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -195,8 +194,7 @@ const transformGeneralTopicName = (functionality, action) => {
     }
     return generalTopicTemplate(functionality, action)
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -215,8 +213,7 @@ const transformAccountToTopicName = (participantName, functionality, action) => 
   try {
     return participantTopicTemplate(participantName, functionality, action)
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -239,8 +236,7 @@ const getKafkaConfig = (flow, functionality, action) => {
     actionObject.config.logger = Logger
     return actionObject.config
   } catch (err) {
-    Logger.error(err)
-    throw new Error(`No config found for flow='${flow}', functionality='${functionality}', action='${action}' - ${err}`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `No config found for those parameters flow='${flow}', functionality='${functionality}', action='${action}'`)
   }
 }
 
@@ -278,37 +274,6 @@ const updateMessageProtocolMetadata = (messageProtocol, metadataType, metadataAc
     messageProtocol.metadata.event.state = state
   }
   return messageProtocol
-}
-
-/**
- * @function createPrepareErrorStatus
- *
- * @param {number} errorCode - error code for error occurred
- * @param {string} errorDescription - error description for error occurred
- * @param {object} extensionList - list of extensions
- * Example:
- * errorInformation: {
- *   errorCode: '3001',
- *   errorDescription: 'A failure has occurred',
- *   extensionList: [{
- *      extension: {
- *        key: 'key',
- *        value: 'value'
- *      }
- *   }]
- * }
- *
- * @returns {object} - Returns errorInformation object
- */
-const createPrepareErrorStatus = (errorCode, errorDescription, extensionList) => {
-  errorCode = errorCode.toString()
-  return {
-    errorInformation: {
-      errorCode,
-      errorDescription,
-      extensionList
-    }
-  }
 }
 
 /**
@@ -503,20 +468,19 @@ const breadcrumb = (location, message) => {
 
 const proceed = async (params, opts) => {
   const { message, kafkaTopic, consumer } = params
-  const { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch, toDestination } = opts
+  const { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch, toDestination } = opts
   let metadataState
 
   if (consumerCommit) {
     await commitMessageSync(kafkaTopic, consumer, message)
   }
-  if (errorInformation) {
-    const code = errorInformation.errorCode
-    const desc = errorInformation.errorDescription
+  if (fspiopError) {
     if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
       message.value.content.uriParams = { id: decodePayload(params.message.value.content.payload).transferId }
     }
-    message.value.content.payload = createPrepareErrorStatus(code, desc, message.value.content.payload.extensionList)
-    metadataState = createState(ENUMS.STATE.FAILURE.status, code, desc)
+
+    message.value.content.payload = fspiopError
+    metadataState = createState(ENUMS.STATE.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
   } else {
     metadataState = ENUMS.STATE.SUCCESS
   }
@@ -541,7 +505,6 @@ module.exports = {
   transformGeneralTopicName,
   getKafkaConfig,
   updateMessageProtocolMetadata,
-  createPrepareErrorStatus,
   createState,
   createTransferMessageProtocol,
   createParticipantTopicConf,

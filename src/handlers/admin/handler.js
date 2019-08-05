@@ -45,6 +45,7 @@ const Db = require('../../lib/db')
 const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE]
 const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   /** @namespace Db.getKnex **/
@@ -62,7 +63,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
   } else {
@@ -74,7 +75,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
   }
@@ -125,7 +126,7 @@ const transferExists = async (payload, transferId) => {
 const transfer = async (error, messages) => {
   if (error) {
     Logger.error(error)
-    throw new Error()
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   try {
@@ -177,7 +178,7 @@ const transfer = async (error, messages) => {
     return true
   } catch (err) {
     Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -201,7 +202,7 @@ const registerTransferHandler = async () => {
     return true
   } catch (err) {
     Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -218,8 +219,7 @@ const registerAllHandlers = async () => {
     await registerTransferHandler()
     return true
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

@@ -31,6 +31,7 @@ const Model = require('../../../src/domain/participant')
 const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrency')
 const time = require('../../../src/lib/time')
 const Enum = require('../../../src/lib/enum')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const testParticipant = {
   name: 'fsp',
@@ -57,7 +58,7 @@ exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
       participantCurrencyId2
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -69,6 +70,6 @@ exports.deletePreparedData = async (participantName) => {
   try {
     return await Model.destroyByName(participantName)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

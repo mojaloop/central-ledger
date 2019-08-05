@@ -42,6 +42,7 @@ const TransferService = require('../../../src/domain/transfer')
 const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('../../../src/lib/util')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { sleepPromise } = require('../../util/helpers')
 
 const Handlers = {
@@ -295,7 +296,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -334,7 +335,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -372,7 +373,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -410,7 +411,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -448,7 +449,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -486,7 +487,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -531,7 +532,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -591,13 +592,12 @@ Test('Handlers test', async handlersTest => {
     await timeoutTest.test(`position resets after a timeout`, async (test) => {
       // Arrange
       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
-
       // Act
       await sleepPromise(15) // give the timeout handler some time to expire the request
       const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
 
       // Assert
-      test.equal(payerInitialPosition, payerCurrentPosition.value, 'Position resets after a timeout')
+      test.equal(payerCurrentPosition.value, payerInitialPosition, 'Position resets after a timeout')
       test.end()
     })
 

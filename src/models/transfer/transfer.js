@@ -26,12 +26,13 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getById = async (transferId) => {
   try {
     return await Db.transfer.findOne({ transferId: transferId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -49,8 +50,7 @@ const destroyById = async (id) => {
   try {
     await Db.transfer.destroy({ transferId: id })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

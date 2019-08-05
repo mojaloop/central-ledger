@@ -44,6 +44,7 @@ const Proxyquire = require('proxyquire')
 const Utility = require('../../../../src/handlers/lib/utility')
 const Enum = require('../../../../src/lib/enum')
 const MainUtil = require('../../../../src/lib/util')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 let participantName
 const TRANSFER = 'transfer'
@@ -345,21 +346,6 @@ Test('Utility Test', utilityTest => {
     createStateTest.end()
   })
 
-  utilityTest.test('createPrepareErrorStatus should', createPrepareErrorStatusTest => {
-    createPrepareErrorStatusTest.test('create Prepare Error Status', async (test) => {
-      const errorInformation = {
-        errorCode: '3000',
-        errorDescription: 'description',
-        extensionList: []
-      }
-      const result = await Utility.createPrepareErrorStatus(errorInformation.errorCode, errorInformation.errorDescription, errorInformation.extensionList)
-      test.deepEqual(result.errorInformation, errorInformation)
-      test.end()
-    })
-
-    createPrepareErrorStatusTest.end()
-  })
-
   utilityTest.test('commitMessageSync should', commitMessageSyncTest => {
     commitMessageSyncTest.test('commit message when auto commit is disabled', async (test) => {
       const kafkaTopic = 'test-topic'
@@ -456,8 +442,8 @@ Test('Utility Test', utilityTest => {
 
   utilityTest.test('proceed should', async proceedTest => {
     const commitMessageSyncStub = sandbox.stub().returns(Promise.resolve())
-    const createPrepareErrorStatusStub = sandbox.stub().returns('PrepareErrorStatus')
-    const createStateStub = sandbox.stub().returns('metadataState')
+    // const createPrepareErrorStatusStub = sandbox.stub().returns('PrepareErrorStatus')
+    const createStateSpy = sandbox.spy(Utility.createState) // tub().returns('metadataState')
     const produceGeneralMessageStub = sandbox.stub().returns(Promise.resolve())
     const histTimerEndStub = sandbox.stub()
     const successState = Utility.ENUMS.STATE.SUCCESS
@@ -484,8 +470,8 @@ Test('Utility Test', utilityTest => {
     const producer = { functionality: 'functionality', action: 'action' }
     const UtilityProxy = rewire(`${src}/handlers/lib/utility`)
     UtilityProxy.__set__('commitMessageSync', commitMessageSyncStub)
-    UtilityProxy.__set__('createPrepareErrorStatus', createPrepareErrorStatusStub)
-    UtilityProxy.__set__('createState', createStateStub)
+    // UtilityProxy.__set__('createPrepareErrorStatus', createPrepareErrorStatusStub)
+    UtilityProxy.__set__('createState', createStateSpy)
     UtilityProxy.__set__('produceGeneralMessage', produceGeneralMessageStub)
 
     proceedTest.test('commitMessageSync when consumerCommit and produce toDestination', async test => {
@@ -521,14 +507,12 @@ Test('Utility Test', utilityTest => {
     })
 
     proceedTest.test('create error status and end timer', async test => {
-      const code = '1'
       const desc = 'desc'
-      const errorInformation = { errorCode: code, errorDescription: desc }
-      const opts = { errorInformation, histTimerEnd: histTimerEndStub }
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(desc).toApiErrorObject()
+      const opts = { fspiopError, histTimerEnd: histTimerEndStub }
       try {
         const result = await UtilityProxy.proceed(params, opts)
-        test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')
-        test.ok(createStateStub.withArgs(failureStatus, code, desc).calledOnce, 'createStateStub called once')
+        test.ok(createStateSpy.withArgs(failureStatus, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription).calledOnce, 'createStateStub called once')
         test.ok(histTimerEndStub.calledOnce, 'histTimerEndStub called once')
         test.equal(result, true, 'result returned')
       } catch (err) {
@@ -539,16 +523,14 @@ Test('Utility Test', utilityTest => {
     })
 
     proceedTest.test('create error status and end timer with uriParams', async test => {
-      const code = '1'
       const desc = 'desc'
-      const errorInformation = { errorCode: code, errorDescription: desc }
-      const opts = { errorInformation, histTimerEnd: histTimerEndStub }
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(desc).toApiErrorObject()
+      const opts = { fspiopError, histTimerEnd: histTimerEndStub }
       try {
         const localParams = MainUtil.clone(params)
         localParams.message.value.content.uriParams = { id: Uuid() }
         const result = await UtilityProxy.proceed(localParams, opts)
-        test.ok(createPrepareErrorStatusStub.withArgs(code, desc, extList).calledOnce, 'createPrepareErrorStatusStub called once')
-        test.ok(createStateStub.withArgs(failureStatus, code, desc).calledTwice, 'createStateStub called twice')
+        test.ok(createStateSpy.withArgs(failureStatus, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription).calledTwice, 'createStateStub called twice')
         test.ok(histTimerEndStub.calledTwice, 'histTimerEndStub called twice')
         test.equal(result, true, 'result returned')
       } catch (err) {

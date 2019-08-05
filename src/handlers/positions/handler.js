@@ -50,12 +50,9 @@ const TransferEventAction = Enum.transferEventAction
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
-const Errors = require('../../lib/errors')
-const errorType = Errors.errorType
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 const decodeMessages = require('@mojaloop/central-services-stream').Kafka.Protocol.decodeMessages
-const errorTransferExpCode = 3300
-const errorTransferExpDescription = Errors.getErrorDescription(errorTransferExpCode)
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
 
@@ -85,8 +82,7 @@ const positions = async (error, messages) => {
   ).startTimer()
 
   if (error) {
-    // Logger.error(error)
-    throw error
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   let prepareBatch = []
@@ -101,15 +97,12 @@ const positions = async (error, messages) => {
     const payload = decodePayload(message.value.content.payload)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
-
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     if (!transferId) {
-      const errorInformation = Errors.getErrorInformation(errorType.internal, `transferId is null or undefined`)
-      const error = new Error(errorInformation.errorDescription)
-      Logger.error(error)
-      throw error
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
+      Logger.error(fspiopError)
+      throw fspiopError
     }
-
     const kafkaTopic = message.topic
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'positions' }))
@@ -152,8 +145,8 @@ const positions = async (error, messages) => {
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
         } else {
           Logger.info(Util.breadcrumb(location, `resetPayer--${actionLetter}2`))
-          const errorInformation = Errors.getErrorInformation(errorType.payerFspInsufficientLiquidity)
-          return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY).toApiErrorObject()
+          return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
         }
       }
     } else if (eventType === TransferEventType.POSITION && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
@@ -161,8 +154,8 @@ const positions = async (error, messages) => {
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYEE_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RECEIVED_FULFIL) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
-        const errorInformation = Errors.getErrorInformation(errorType.internal)
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       } else {
         Logger.info(Util.breadcrumb(location, `payee--${actionLetter}4`))
         const isReversal = false
@@ -199,31 +192,29 @@ const positions = async (error, messages) => {
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.TransferParticipantRoleType.PAYER_DFSP, Enum.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== TransferState.RESERVED_TIMEOUT) {
         Logger.info(Util.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
-        const errorInformation = Errors.getErrorInformation(errorType.internal)
-        throw new Error(errorInformation.errorDescription)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
       } else {
         Logger.info(Util.breadcrumb(location, `validationPassed2--${actionLetter}7`))
         const isReversal = true
         const transferStateChange = {
           transferId: transferInfo.transferId,
           transferStateId: TransferState.EXPIRED_RESERVED,
-          reason: errorTransferExpDescription
+          reason: ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED.message
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-        const errorInformation = Errors.getErrorInformation(errorType.transferExpired)
-        errorInformation.extensionList = payload.extensionList
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer })
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, null, null, null, payload.extensionList).toApiErrorObject()
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer })
       }
     } else {
       Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
-      const errorInformation = Errors.getErrorInformation(errorType.internal)
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.POSITION }
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, errorInformation, producer, fromSwitch })
+      return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -246,8 +237,7 @@ const registerPositionHandler = async () => {
     await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -263,8 +253,7 @@ const registerAllHandlers = async () => {
   try {
     return await registerPositionHandler()
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

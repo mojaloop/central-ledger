@@ -28,14 +28,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.getById = async (id) => {
   try {
     return await Db.participant.findOne({ participantId: id })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -44,8 +43,7 @@ exports.getByName = async (name) => {
     const named = await Db.participant.findOne({ name })
     return named
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -54,8 +52,7 @@ exports.getAll = async () => {
     const participants = await Db.participant.find({}, { order: 'name asc' })
     return participants
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -67,8 +64,7 @@ exports.create = async (participant) => {
     })
     return result
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -76,8 +72,7 @@ exports.update = async (participant, isActive) => {
   try {
     return await Db.participant.update({ participantId: participant.participantId }, { isActive })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -85,8 +80,7 @@ exports.destroyByName = async (name) => {
   try {
     return await Db.participant.destroy({ name: name })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -94,7 +88,6 @@ exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
   try {
     return Db.participantEndpoint.destroy({ participantId: participantId })
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

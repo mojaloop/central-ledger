@@ -26,6 +26,7 @@
 
 const Db = require('../../lib/db')
 const Config = require('../../../src/lib/config')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
@@ -38,7 +39,7 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
     })
     return result
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -46,7 +47,7 @@ exports.getById = async (id) => {
   try {
     return await Db.participantCurrency.findOne({ participantCurrencyId: id })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -54,7 +55,7 @@ exports.update = async (participantCurrencyId, isActive) => {
   try {
     return await Db.participantCurrency.update({ participantCurrencyId }, { isActive })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -66,7 +67,7 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
     }
     return await Db.participantCurrency.find(params)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -74,7 +75,7 @@ exports.destroyByParticipantId = async (id) => {
   try {
     return await Db.participantCurrency.destroy({ participantId: id })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -83,7 +84,7 @@ exports.getByName = async (accountParams) => {
     const participantCurrency = await Db.participantCurrency.findOne(accountParams)
     return participantCurrency
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -97,6 +98,6 @@ exports.hubAccountExists = async (currencyId, ledgerAccountTypeId) => {
     const participantCurrency = await Db.participantCurrency.findOne(params)
     return !!participantCurrency
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

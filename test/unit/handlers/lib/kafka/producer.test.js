@@ -37,6 +37,7 @@ const KafkaProducer = require('@mojaloop/central-services-stream').Kafka.Produce
 const Producer = require(`${src}/handlers/lib/kafka/producer`)
 const P = require('bluebird')
 const Uuid = require('uuid4')
+const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -177,7 +178,8 @@ Test('Producer', producerTest => {
         test.ok(Producer.getProducer('undefined'))
         test.fail('Error not thrown!')
       } catch (e) {
-        test.ok(e.toString() === 'Error: No producer found for topic undefined')
+        test.assert(e instanceof FSPIOPError)
+        test.equal(e.message, 'No producer found for topic undefined')
       }
       test.end()
     })
@@ -258,7 +260,8 @@ Test('Producer', producerTest => {
         test.end()
       } catch (e) {
         test.ok(e instanceof Error)
-        test.ok(e.toString() === `Error: The following Producers could not be disconnected: [{"topic":"${topicNameFailure}","error":"No producer found for topic ${topicNameFailure}"}]`)
+        test.assert(e instanceof FSPIOPError)
+        test.equal(e.message, `The following Producers could not be disconnected: [{"topic":"${topicNameFailure}","error":"No producer found for topic ${topicNameFailure}"}]`)
         test.end()
       }
       getProducerStub.restore()

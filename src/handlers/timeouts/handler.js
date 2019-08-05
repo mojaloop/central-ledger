@@ -33,17 +33,14 @@
  */
 
 const CronJob = require('cron').CronJob
-const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const Enum = require('../../lib/enum')
 const Utility = require('../lib/utility')
-const Errors = require('../../lib/errors')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 let timeoutJob
 let isRegistered
-const errorCodeInternal = 3300
-const errorDescriptionInternal = Errors.getErrorDescription(errorCodeInternal)
 
 /**
  * @function TransferTimeoutHandler
@@ -67,6 +64,7 @@ const timeout = async () => {
     const intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
     const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
 
+    const fspiopExpiredError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, 'Transfer has expired at the switch').toApiErrorObject()
     if (!Array.isArray(result)) {
       result[0] = result
     }
@@ -84,7 +82,7 @@ const timeout = async () => {
             'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
             'FSPIOP-Destination': result[i].payerFsp
           },
-          payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal),
+          payload: fspiopExpiredError,
           uriParams: {
             id: result[i].transferId
           }
@@ -97,10 +95,10 @@ const timeout = async () => {
         message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RECEIVED
         message.to = message.from
         message.from = Enum.headers.FSPIOP.SWITCH
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
+        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription))
       } else if (result[i].transferStateId === Enum.TransferState.RESERVED_TIMEOUT) {
         message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RESERVED
-        await Utility.produceGeneralMessage(Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal), result[i].payerFsp)
+        await Utility.produceGeneralMessage(Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription), result[i].payerFsp)
       }
     }
     return {
@@ -110,8 +108,7 @@ const timeout = async () => {
       result
     }
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -164,8 +161,7 @@ const registerTimeoutHandler = async () => {
     await timeoutJob.start()
     return true
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -184,8 +180,7 @@ const registerAllHandlers = async () => {
     }
     return true
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

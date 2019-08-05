@@ -40,6 +40,7 @@ const TransferParticipantModel = require('../../../src/models/transfer/transferP
 const Enum = require('../../../src/lib/enum')
 const Time = require('../../../src/lib/time')
 const Uuid = require('uuid4')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 // TODO: add data to transferParticipant, transferParticipantRoleType, transferFulfilment
 
@@ -117,7 +118,7 @@ exports.prepareData = async () => {
       }
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -140,6 +141,6 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
       })
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -2,6 +2,7 @@
 
 const Crypto = require('crypto')
 const base64url = require('base64url')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  *
@@ -45,7 +46,7 @@ const calculateConditionFromFulfil = (fulfilment) => {
   const preimage = base64url.toBuffer(fulfilment)
 
   if (preimage.length !== 32) {
-    throw new Error('Interledger preimages must be exactly 32 bytes.')
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Interledger preimages must be exactly 32 bytes.')
   }
 
   const calculatedConditionDigest = hashSha256.update(preimage).digest('base64')

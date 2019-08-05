@@ -33,48 +33,20 @@ const TransferFacade = require('../../models/transfer/facade')
 const TransferModel = require('../../models/transfer/transfer')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
 const TransferErrorModel = require('../../models/transfer/transferError')
-const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../models/transfer/transferErrorDuplicateCheck')
 const TransferObjectTransform = require('./transform')
-const Errors = require('../../errors')
 const Crypto = require('crypto')
 const TransferError = require('../../models/transfer/transferError')
-const ErrorText = require('../../../src/lib/errors')
-const Logger = require('@mojaloop/central-services-shared').Logger
-
-const PayeeRejectedTransactionError = 5104
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
     return await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
-}
-
-const getFulfilment = async (id) => {
-  const transfer = await TransferFacade.getById(id)
-  if (!transfer) {
-    throw new Errors.TransferNotFoundError()
-  }
-  if (!transfer.ilpCondition) {
-    throw new Errors.TransferNotConditionalError()
-  }
-  const transferFulfilment = await TransferFulfilmentModel.getByTransferId(id)
-  if (!transferFulfilment) {
-    throw new Errors.TransferNotFoundError()
-  }
-  if (!transferFulfilment.ilpFulfilment) {
-    throw new Errors.MissingFulfilmentError()
-  }
-  return transferFulfilment.ilpFulfilment
-}
-
-const expire = (id) => {
-  // return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
 }
 
 const fulfil = async (transferFulfilmentId, transferId, payload) => {
@@ -84,20 +56,18 @@ const fulfil = async (transferFulfilmentId, transferId, payload) => {
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const reject = async (transferFulfilmentId, transferId, payload) => {
   try {
     const isCommit = false
-    const stateReason = ErrorText.getErrorDescription(PayeeRejectedTransactionError)
+    const stateReason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTED_TXN.errorDescription
     const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -105,8 +75,7 @@ const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
   try {
     return TransferFacade.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -134,7 +103,7 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
   try {
     let result
     if (!payload) {
-      throw new Error('Invalid payload')
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid payload')
     }
     const hashSha256 = Crypto.createHash('sha256')
     let hash = JSON.stringify(payload)
@@ -151,8 +120,7 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
     }
     return result
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -177,18 +145,15 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
     return TransferError.insert(transferStateChange.transferStateChangeId, errorCode, errorDescription)
   } catch (err) {
-    Logger.error(err)
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const TransferService = {
-  getFulfilment,
   prepare,
   fulfil,
   reject,
   abort,
-  expire,
   validateDuplicateHash,
   logTransferError,
   getTransferErrorByTransferId: TransferErrorModel.getByTransferId,

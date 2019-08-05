@@ -34,7 +34,6 @@
 'use strict'
 
 const Hapi = require('hapi')
-const ErrorHandling = require('@mojaloop/central-services-error-handling')
 const P = require('bluebird')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
@@ -46,10 +45,10 @@ const RequestLogger = require('../lib/requestLogger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Boom = require('boom')
 const RegisterHandlers = require('../handlers/register')
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : P.resolve()
@@ -103,9 +102,9 @@ const createServer = (port, modules) => {
       ],
       routes: {
         validate: {
-          options: ErrorHandling.validateRoutes(),
+          options: ErrorHandler.validateRoutes(),
           failAction: async (request, h, err) => {
-            throw Boom.boomify(err)
+            throw ErrorHandler.Factory.reformatFSPIOPError(err)
           }
         }
       }
@@ -257,7 +256,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       break
     default:
       Logger.error(`No valid service type ${service} found!`)
-      throw new Error(`No valid service type ${service} found!`)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
   }
 
   if (runHandlers) {

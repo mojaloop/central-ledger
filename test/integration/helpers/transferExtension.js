@@ -32,6 +32,7 @@ const TransferModel = require('../../../src/models/transfer/transfer')
 const Model = require('../../../src/models/transfer/transferExtension')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
 const Time = require('../../../src/lib/time')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
   try {
@@ -57,7 +58,7 @@ exports.prepareData = async () => {
       }
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -67,6 +68,6 @@ exports.deletePreparedData = async (extensionId, transferId, payerName, payeeNam
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
