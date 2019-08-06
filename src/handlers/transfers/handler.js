@@ -52,6 +52,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
+const Comparators = require('@mojaloop/central-services-shared').Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const consumerCommit = true
@@ -118,67 +119,63 @@ const prepare = async (error, messages) => {
     const params = { message, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
-    if (existsMatching) {
-      Logger.info(Util.breadcrumb(location, `existsMatching`))
-      const transferState = await TransferService.getTransferStateChange(transferId)
-      const transferStateEnum = transferState && transferState.enumeration
-      if (!transferState) {
-        Logger.error(Util.breadcrumb(location, `callbackErrorNotFound1--${actionLetter}1`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer/state not found').toApiErrorObject()
-        const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
-      } else if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
-        Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}2`))
-        const record = await TransferService.getById(transferId)
-        message.value.content.payload = TransferObjectTransform.toFulfil(record)
+    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+
+    if (hasDuplicateId && hasDuplicateHash) {
+      Logger.info(Util.breadcrumb(location, `handleResend`))
+      const transfer = await TransferService.getByIdLight(transferId)
+      const transferStateEnum = transfer && transfer.transferStateEnumeration
+      if ([TransferStateEnum.COMMITTED, TransferStateEnum.ABORTED].includes(transferStateEnum)) {
+        Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
+        message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+        message.value.content.uriParams = { id: transferId }
+
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
-      } else if (transferStateEnum === TransferStateEnum.RECEIVED || transferStateEnum === TransferStateEnum.RESERVED) {
-        Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}3`))
+      } else {
+        Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
         return await Util.proceed(params, { consumerCommit, histTimerEnd })
       }
-    }
-    if (existsNotMatching) {
-      Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
+    } else if (hasDuplicateId && !hasDuplicateHash) {
+      Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
-    }
-
-    const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
-    if (validationPassed) {
-      Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-      try {
-        Logger.info(Util.breadcrumb(location, `saveTransfer`))
-        await TransferService.prepare(payload)
-      } catch (err) {
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+    } else { // !hasDuplicateId
+      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      if (validationPassed) {
+        Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
+        try {
+          Logger.info(Util.breadcrumb(location, `saveTransfer`))
+          await TransferService.prepare(payload)
+        } catch (err) {
+          Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
+          Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+          const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
+          return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
+        }
+        Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
+        const producer = { functionality: TransferEventType.POSITION, action }
+        return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
+      } else {
+        Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+        try {
+          Logger.info(Util.breadcrumb(location, `saveInvalidRequest`))
+          await TransferService.prepare(payload, reasons.toString(), false)
+        } catch (err) {
+          Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+          Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+          const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
+          return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
+        }
+        Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
+        await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       }
-      Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}6`))
-      const producer = { functionality: TransferEventType.POSITION, action }
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
-    } else {
-      Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
-      try {
-        Logger.info(Util.breadcrumb(location, `saveInvalidRequest`))
-        await TransferService.prepare(payload, reasons.toString(), false)
-      } catch (err) {
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
-        const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
-      }
-      Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR).toApiErrorObject()
-      const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-      return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     }
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
