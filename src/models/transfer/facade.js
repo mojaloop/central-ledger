@@ -41,6 +41,7 @@ const Time = require('../../lib/time')
 const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+// TODO: @ggrg Address Logger.info commented out entries below
 
 const getById = async (id) => {
   try {
@@ -394,7 +395,11 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       if (participant) {
         participants.push(participant)
       } else {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid FSP name or currency')
+        if (hasPassedValidation) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid FSP name or currency')
+        } else {
+          // Logger.info(`Invalid FSP name or currency`)
+        }
       }
     }
 
@@ -440,32 +445,73 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     const knex = await Db.getKnex()
-    return await knex.transaction(async (trx) => {
-      try {
-        await knex('transfer').transacting(trx).insert(transferRecord)
-        await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
-        await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
-        payerTransferParticipantRecord.name = payload.payerFsp
-        payeeTransferParticipantRecord.name = payload.payeeFsp
-        let transferExtensionsRecordList = []
-        if (payload.extensionList && payload.extensionList.extension) {
-          transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-            return {
-              transferId: payload.transferId,
-              key: ext.key,
-              value: ext.value
-            }
-          })
-          await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+    if (hasPassedValidation) {
+      return await knex.transaction(async (trx) => {
+        try {
+          await knex('transfer').transacting(trx).insert(transferRecord)
+          await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+          await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+          payerTransferParticipantRecord.name = payload.payerFsp
+          payeeTransferParticipantRecord.name = payload.payeeFsp
+          let transferExtensionsRecordList = []
+          if (payload.extensionList && payload.extensionList.extension) {
+            transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+              return {
+                transferId: payload.transferId,
+                key: ext.key,
+                value: ext.value
+              }
+            })
+            await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+          }
+          await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
+          await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+          await trx.commit
+        } catch (err) {
+          await trx.rollback
+          throw err
         }
-        await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
-        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-        await trx.commit
+      })
+    } else {
+      await knex('transfer').insert(transferRecord)
+      try {
+        await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        await trx.rollback
-        throw err
+        // Logger.info(`Payer transferParticipant insert error: ${err.message}`)
       }
-    })
+      try {
+        await knex('transferParticipant').insert(payeeTransferParticipantRecord)
+      } catch (err) {
+        // Logger.info(`Payee transferParticipant insert error: ${err.message}`)
+      }
+      payerTransferParticipantRecord.name = payload.payerFsp
+      payeeTransferParticipantRecord.name = payload.payeeFsp
+      let transferExtensionsRecordList = []
+      if (payload.extensionList && payload.extensionList.extension) {
+        transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          return {
+            transferId: payload.transferId,
+            key: ext.key,
+            value: ext.value
+          }
+        })
+        try {
+          await knex.batchInsert('transferExtension', transferExtensionsRecordList)
+        } catch (err) {
+          // Logger.info(`batchInsert transferExtension error: ${err.message}`)
+        }
+      }
+      try {
+        await knex('ilpPacket').insert(ilpPacketRecord)
+      } catch (err) {
+        // Logger.info(`ilpPacket insert error: ${err.message}`)
+      }
+      try {
+        await knex('transferStateChange').insert(transferStateChangeRecord)
+      } catch (err) {
+        // Logger.info(`transferStateChange insert error: ${err.message}`)
+      }
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -1269,9 +1269,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Db.getKnex.returns(knexStub)
 
       knexStub.returns({
-        transacting: sandbox.stub().returns({
-          insert: sandbox.stub().returns(1)
-        })
+        insert: sandbox.stub().returns(1)
       })
 
       const result = await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)

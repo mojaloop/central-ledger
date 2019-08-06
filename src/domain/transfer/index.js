@@ -169,7 +169,9 @@ const TransferService = {
   reconciliationTransferReserve: TransferFacade.reconciliationTransferReserve,
   reconciliationTransferCommit: TransferFacade.reconciliationTransferCommit,
   reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort,
-  getTransferParticipant: TransferFacade.getTransferParticipant
+  getTransferParticipant: TransferFacade.getTransferParticipant,
+  getTransferDuplicateCheck: TransferDuplicateCheckModel.getTransferDuplicateCheck,
+  saveTransferDuplicateCheck: TransferDuplicateCheckModel.saveTransferDuplicateCheck
 }
 
 module.exports = TransferService

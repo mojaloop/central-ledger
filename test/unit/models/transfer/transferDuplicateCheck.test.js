@@ -54,7 +54,8 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
     await saveTransferDuplicateCheckTest.test('save the transfer duplicate check hash', async test => {
       try {
         Db.transferDuplicateCheck.insert.returns(1)
-        const result = await Model.saveTransferDuplicateCheck(existingHash)
+        const { transferId, hash } = existingHash
+        const result = await Model.saveTransferDuplicateCheck(transferId, hash)
         test.equal(result, 1)
         test.end()
       } catch (err) {
@@ -67,7 +68,8 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
     await saveTransferDuplicateCheckTest.test('throw error', async test => {
       try {
         Db.transferDuplicateCheck.insert.throws(new Error('message'))
-        await Model.saveTransferDuplicateCheck(existingHash)
+        const { transferId, hash } = existingHash
+        await Model.saveTransferDuplicateCheck(transferId, hash)
         test.fail(' should throw')
         test.end()
         test.end()
