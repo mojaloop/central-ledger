@@ -34,7 +34,10 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
 defaults_license_scanner: &defaults_license_scanner
   name: Install and set up license-scanner
   command: |
-    git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
+    # git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
+    # Tmp test the new license scanner
+    git clone https://github.com/vessels-tech/license-scanner-1 /tmp/license-scanner
+    cd /tmp/license-scanner && git fetch && git checkout feature/improve-excel-report
     cd /tmp/license-scanner && make build default-files set-up
 
 defaults_Environment: &defaults_environment
