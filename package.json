@@ -84,7 +84,7 @@
     "boom": "7.3.0",
     "byline": "5.0.0",
     "catbox-memory": "4.0.1",
-    "commander": "2.20.0",
+    "commander": "3.0.0",
     "cron": "1.7.1",
     "decimal.js": "10.2.0",
     "docdash": "1.1.1",
