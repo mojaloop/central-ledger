@@ -108,9 +108,7 @@ const update = async (name, payload) => {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     await ParticipantModel.update(participant, payload.isActive)
-    participant.isActive = +payload.isActive
-    participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
-    return participant
+    return await getByName(name)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
