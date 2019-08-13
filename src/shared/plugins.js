@@ -4,8 +4,6 @@ const Package = require('../../package')
 const Inert = require('inert')
 const Vision = require('vision')
 const Blipp = require('blipp')
-// const GoodWinston = require('good-winston')
-// const goodWinstonStream = new GoodWinston({winston: require('winston')})
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
 
 const registerPlugins = async (server) => {

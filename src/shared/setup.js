@@ -57,16 +57,14 @@ const getEnums = (id) => {
   return Enums[id]()
 }
 const connectDatabase = async () => {
-  const result = await Db.connect(Config.DATABASE_URI)
-  return result
+  return Db.connect(Config.DATABASE_URI)
 }
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {
-      const db = await ObjStoreDb.connect(Config.MONGODB_URI, {
+      return ObjStoreDb.connect(Config.MONGODB_URI, {
         promiseLibrary: global.Promise
       })
-      return db
     } catch (error) {
       Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
       return null
