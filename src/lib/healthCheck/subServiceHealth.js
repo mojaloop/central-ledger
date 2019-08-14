@@ -26,7 +26,7 @@
 
 const { statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Kafka = require('../../handlers/lib/kafka')
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 
 const MigrationLockModel = require('../../models/misc/migrationLock')
 

@@ -34,10 +34,10 @@
 
 const Db = require('../../lib/db')
 const Uuid = require('uuid4')
-const Enum = require('../../lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
-const Time = require('../../lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -223,7 +223,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
 }
 
 const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
-  const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.RECEIVED_REJECT) : Enum.TransferState.ABORTED_REJECTED)
+  const state = (hasPassedValidation ? (isCommit ? Enum.Transfers.TransferInternalState.RECEIVED_FULFIL : Enum.Transfers.TransferInternalState.RECEIVED_REJECT) : Enum.Transfers.TransferInternalState.ABORTED_REJECTED)
   const completedTimestamp = (payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date()
   const transferFulfilmentRecord = {
     transferFulfilmentId,
@@ -317,7 +317,7 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
 
   const transferStateChangeRecord = {
     transferId,
-    transferStateId: Enum.TransferState.RECEIVED_ERROR,
+    transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_ERROR,
     createdDate: transactionTimestamp,
     reason: errorDescription
   }
@@ -390,7 +390,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const names = [payload.payeeFsp, payload.payerFsp]
 
     for (const name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.LedgerAccountType.POSITION)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
       if (participant) {
         participants.push(participant)
       } else {
@@ -414,7 +414,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.INVALID)
+    const state = ((hasPassedValidation) ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE : Enum.Transfers.TransferInternalState.INVALID)
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
@@ -426,16 +426,16 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const payerTransferParticipantRecord = {
       transferId: payload.transferId,
       participantCurrencyId: participantCurrencyIds[payload.payerFsp],
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
-      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: payload.amount.amount
     }
 
     const payeeTransferParticipantRecord = {
       transferId: payload.transferId,
       participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
-      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: -payload.amount.amount
     }
 
@@ -531,7 +531,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
               .whereNull('tt.transferId')
-              .whereIn('tsc.transferStateId', [`${Enum.TransferState.RECEIVED_PREPARE}`, `${Enum.TransferState.RESERVED}`])
+              .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`])
               .select('t.transferId', 't.expirationDate')
           })// .toSQL().sql
         // console.log('SQL: ' + q)
@@ -547,8 +547,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               )
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.TransferState.RECEIVED_PREPARE}`)
-              .select('tt.transferId', knex.raw('?', Enum.TransferState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
+              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
@@ -563,8 +563,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               )
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.TransferState.RESERVED}`)
-              .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
+              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
+              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
@@ -598,13 +598,13 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
       .innerJoin('transferParticipant AS tp1', function () {
         this.on('tp1.transferId', 'tt.transferId')
-          .andOn('tp1.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYER_DFSP)
-          .andOn('tp1.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+          .andOn('tp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP)
+          .andOn('tp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       })
       .innerJoin('transferParticipant AS tp2', function () {
         this.on('tp2.transferId', 'tt.transferId')
-          .andOn('tp2.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYEE_DFSP)
-          .andOn('tp2.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+          .andOn('tp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP)
+          .andOn('tp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       })
       .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
       .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
@@ -779,10 +779,10 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .transacting(trx)
 
         let ledgerEntryTypeId, amount
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN) {
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_IN
           amount = payload.amount.amount
-        } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE) {
+        } else if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_OUT
           amount = -payload.amount.amount
         } else {
@@ -882,10 +882,10 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
         }
         const positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
           positionResult.drPositionValue > 0) {
           payload.reason = 'Aborted due to insufficient funds'
-          payload.action = Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT
+          payload.action = Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
           await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
         }
 
@@ -939,8 +939,8 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
           })
           .transacting(trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN ||
-          payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN ||
+          payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
           const param1 = {
             transferId: payload.transferId,
             transferStateId: enums.transferState.COMMITTED,
@@ -1004,7 +1004,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
           })
           .transacting(trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT) {
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
           const param1 = {
             transferId: payload.transferId,
             transferStateId: enums.transferState.ABORTED_REJECTED,

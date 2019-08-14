@@ -27,7 +27,7 @@
  * @module src/domain/transfer/
  */
 
-const Enum = require('../../lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 const BulkTransferAssociationModel = require('../../models/bulkTransfer/bulkTransferAssociation')
 const BulkTransferDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferDuplicateCheck')
 const BulkTransferFulfilmentDuplicateCheckModel = require('../../models/bulkTransfer/bulkTransferFulfilmentDuplicateCheck')
@@ -100,8 +100,8 @@ const getBulkTransferById = async (id) => {
           result.extensionList = { extension }
         }
         const allowedPayeeTransfers = [
-          Enum.TransferStateEnum.RESERVED,
-          Enum.TransferStateEnum.COMMITTED
+          Enum.Transfers.TransferState.RESERVED,
+          Enum.Transfers.TransferState.COMMITTED
         ]
         if (allowedPayeeTransfers.includes(transfer.transferStateEnum)) {
           payeeIndividualTransfers.push(result)

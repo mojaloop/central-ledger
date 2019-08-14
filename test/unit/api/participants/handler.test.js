@@ -8,7 +8,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Handler = require('../../../../src/api/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const createRequest = ({ payload, params, query }) => {
@@ -354,8 +354,8 @@ Test('Participant', participantHandlerTest => {
         currencyList: []
       }
 
-      Participant.hubAccountExists.withArgs(participant.currency, Enum.LedgerAccountType.HUB_RECONCILIATION).returns(P.resolve(true))
-      Participant.hubAccountExists.withArgs(participant.currency, Enum.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT).returns(P.resolve(false))
+      Participant.hubAccountExists.withArgs(participant.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION).returns(P.resolve(true))
+      Participant.hubAccountExists.withArgs(participant.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT).returns(P.resolve(false))
       try {
         await Handler.create(createRequest({ payload }))
         test.fail('Error not thrown')

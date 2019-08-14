@@ -36,7 +36,7 @@ const transferExtensionModel = require('../../../../src/models/transfer/transfer
 const Enum = require('../../../../src/lib/enum')
 const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
-const Time = require('../../../../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const Uuid = require('uuid4')
 
 Test('Transfer facade', async (transferFacadeTest) => {

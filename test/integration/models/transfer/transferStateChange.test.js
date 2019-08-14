@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferStateChange')
 const HelperModule = require('../../helpers')
-const Time = require('../../../../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 
 Test('Transfer State Change model test', async (stateChangeTest) => {
   let stateChangePrepareResult = {}

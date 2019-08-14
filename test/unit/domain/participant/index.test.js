@@ -39,8 +39,7 @@ const PositionFacade = require('../../../../src/models/position/facade')
 const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
-const Utility = require('../../../../src/handlers/lib/utility')
-const Enum = require('../../../../src/lib/enum')
+const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 const Service = require('../../../../src/domain/participant/index')
@@ -1235,7 +1234,7 @@ Test('Participant service', async (participantTest) => {
         }
       ]
       ParticipantFacade.getLimitsForAllParticipants.returns(P.resolve(limits))
-      const result = await Service.getLimitsForAllParticipants(currencyId, type, Enum.LedgerAccountType.POSITION)
+      const result = await Service.getLimitsForAllParticipants({ currency: currencyId, type })
       assert.deepEqual(result, limits, 'Results matched')
       assert.end()
     } catch (err) {
@@ -1251,7 +1250,7 @@ Test('Participant service', async (participantTest) => {
 
     ParticipantFacade.getLimitsForAllParticipants.throws(new Error())
     try {
-      await Service.getLimitsForAllParticipants(currencyId, type, Enum.LedgerAccountType.POSITION)
+      await Service.getLimitsForAllParticipants({ currency: currencyId, type })
       assert.fail('should throw')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err} `)

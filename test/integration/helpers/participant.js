@@ -18,10 +18,12 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Nikolay Anastasov <nikolay.anastasov@modusbox.com>
- * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Valentin Genev <valentin.genev@modusbox.com>
+ - Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
 
@@ -29,8 +31,8 @@
 
 const Model = require('../../../src/domain/participant')
 const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrency')
-const time = require('../../../src/lib/time')
-const Enum = require('../../../src/lib/enum')
+const time = require('@mojaloop/central-services-shared').Util.Time
+const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const testParticipant = {
@@ -49,8 +51,8 @@ exports.prepareData = async (name, currencyId = 'USD', isUnique = true) => {
         name: (name || testParticipant.name) + (isUnique ? time.msToday().toString() : '')
       }
     ))
-    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.POSITION, false)
-    const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.LedgerAccountType.SETTLEMENT, false)
+    const participantCurrencyId = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.POSITION, false)
+    const participantCurrencyId2 = await ParticipantCurrencyModel.create(participantId, currencyId, Enum.Accounts.LedgerAccountType.SETTLEMENT, false)
     const participant = await Model.getById(participantId)
     return {
       participant,
