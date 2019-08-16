@@ -37,8 +37,8 @@ const CronJob = require('cron').CronJob
 const TimeoutService = require('../../../../src/domain/timeout')
 const Config = require('../../../../src/lib/config')
 const Uuid = require('uuid4')
-const Enum = require('../../../../src/lib/enum')
-const Utility = require('../../../../src/handlers/lib/utility')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 
 Test('Timeout handler', TimeoutHandlerTest => {
   let sandbox
@@ -72,19 +72,19 @@ Test('Timeout handler', TimeoutHandlerTest => {
         transferId: Uuid(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.TransferState.EXPIRED_PREPARED
+        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED
       },
       {
         transferId: Uuid(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.TransferState.RESERVED_TIMEOUT
+        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
       },
       {
         transferId: Uuid(),
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
-        transferStateId: Enum.TransferState.COMMITTED
+        transferStateId: Enum.Transfers.TransferState.COMMITTED
       }
     ]
     let expected = {

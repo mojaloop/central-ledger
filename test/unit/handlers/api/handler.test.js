@@ -29,7 +29,7 @@ const Sinon = require('sinon')
 const P = require('bluebird')
 
 const Handler = require('../../../../src/handlers/api/routes')
-const Kafka = require('../../../../src/handlers/lib/kafka/index')
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 
 function createRequest (routes) {

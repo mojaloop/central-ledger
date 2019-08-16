@@ -70,18 +70,18 @@ const timeout = async () => {
     if (!Array.isArray(result)) {
       result[0] = result
     }
-    for (const res of result) {
+    for (let i = 0; i < result.length; i++) {
       const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription)
-      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(res.transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
-      const headers = Utility.Http.SwitchDefaultHeaders(res.payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value)
-      const message = Utility.StreamingProtocol.createMessage(res.transferId, res.payeeFsp, res.payerFsp, metadata, headers, fspiopExpiredError, { id: res.transferId }, 'application/vnd.interoperability.transfers+json;version=1.0')
-      if (res.transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(result[i].transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
+      const headers = Utility.Http.SwitchDefaultHeaders(result[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value)
+      const message = Utility.StreamingProtocol.createMessage(result[i].transferId, result[i].payeeFsp, result[i].payerFsp, metadata, headers, fspiopExpiredError, { id: result[i].transferId }, 'application/vnd.interoperability.transfers+json;version=1.0')
+      if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
         message.to = message.from
-        message.from = Enum.headers.FSPIOP.SWITCH
+        message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
         await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
-      } else if (res.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+      } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
-        await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, res.payerFsp)
+        await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
       }
     }
     return {

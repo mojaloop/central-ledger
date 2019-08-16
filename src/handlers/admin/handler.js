@@ -46,7 +46,6 @@ const httpPostRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_IN, Enum.E
 const httpPutRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT, Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
 
-
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
   /** @namespace Db.getKnex **/
   const knex = Db.getKnex()
@@ -194,8 +193,8 @@ const registerTransferHandler = async () => {
   try {
     const transferHandler = {
       command: transfer,
-      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Type.TRANSFER),
-      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.ADMIN.toUpperCase(), Enum.Events.Event.Type.TRANSFER.toUpperCase())
+      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER),
+      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.ADMIN.toUpperCase(), Enum.Events.Event.Action.TRANSFER.toUpperCase())
     }
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)

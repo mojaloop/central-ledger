@@ -118,7 +118,7 @@ const positions = async (error, messages) => {
             : (action === Enum.Events.Event.Action.TIMEOUT_RESERVED ? Enum.Events.ActionLetter.timeout
               : (action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
                 : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-                  : Enum.actionLetter.unknown))))))
+                  : Enum.Events.ActionLetter.unknown))))))
     const params = { message, kafkaTopic, consumer }
     const producer = { action }
     if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
