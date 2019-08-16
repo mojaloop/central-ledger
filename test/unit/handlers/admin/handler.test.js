@@ -4,7 +4,7 @@ const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const AdminHandler = require('../../../../src/handlers/admin/handler')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
+const KafkaConsumer = Kafka.Consumer.Consumer
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../../../src/domain/transfer')
@@ -296,7 +296,6 @@ Test('Admin handler', adminHandlerTest => {
 
   adminHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(Kafka)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'consume').resolves()
@@ -305,7 +304,6 @@ Test('Admin handler', adminHandlerTest => {
       commitMessageSync: async function () { return Promise.resolve(true) }
     })
     sandbox.stub(Kafka.Consumer, 'isConsumerAutoCommitEnabled')
-
     sandbox.stub(TransferService, 'validateDuplicateHash')
     sandbox.stub(TransferService, 'reconciliationTransferPrepare')
     sandbox.stub(TransferService, 'reconciliationTransferReserve')
@@ -314,6 +312,7 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(TransferService, 'getTransferStateChange')
     sandbox.stub(TransferService, 'getTransferState')
     sandbox.stub(TransferService, 'getTransferById')
+    sandbox.stub(Kafka)
     Kafka.transformAccountToTopicName.returns(topicName)
     Kafka.produceGeneralMessage.resolves()
     test.end()
