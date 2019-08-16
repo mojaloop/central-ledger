@@ -35,7 +35,7 @@ const Sinon = require('sinon')
 const { statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
 
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
-const Consumer = require('../../../../src/handlers/lib/kafka').Consumer
+const Consumer = require('@mojaloop/central-services-shared').Util.Kafka.Consumer
 
 const {
   getSubServiceHealthBroker,
