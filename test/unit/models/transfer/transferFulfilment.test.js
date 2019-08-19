@@ -35,7 +35,6 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
   let sandbox
 
   const transferFulfilmentRecord = {
-    transferFulfilmentId: 'fd97a6b8-2bc1-49a3-8e0e-726d21562367',
     transferId: 'ca61ead2-f7d0-4605-b86e-c23f3eff1d04',
     ilpFulfilment: 'oAKAAA',
     completedDate: new Date() - 60000,
@@ -83,7 +82,7 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
 
   await transferFulfilment.test('saveTransferFulfilment test', async (assert) => {
     try {
-      const saved = { transferFulfilmentId: transferFulfilmentRecord.transferFulfilmentId }
+      const saved = { transferId: transferFulfilmentRecord.transferId }
       Db.transferFulfilment.insert.returns(Promise.resolve(saved))
       const transferFulfilmentCreated = await Model.saveTransferFulfilment(transferFulfilmentRecord)
       assert.equal(transferFulfilmentCreated, saved, 'transfer fulfilment is inserted and id is returned')

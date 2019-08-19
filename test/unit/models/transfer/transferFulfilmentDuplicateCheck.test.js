@@ -29,17 +29,14 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const Db = require('../../../../src/lib/db')
-const Uuid = require('uuid4')
 
 Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicateCheckTest) => {
   let sandbox
-  const transferFulfilmentId = Uuid()
   const newHash = 'EE1H9SMsUlHDMOm0H4OfI4D57MHOVTYwwXBK+BWHr/1'
   const existingHashes = [{
     transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
     hash: 'EE1H9SMsUlHDMOm0H4OfI4D57MHOVTYwwXBK+BWHr/4',
-    createdDate: '2018-08-15 13:41:28',
-    transferFulfilmentId
+    createdDate: '2018-08-15 13:41:28'
   }]
   TransferFulfilmentDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()

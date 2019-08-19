@@ -29,7 +29,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Uuid = require('uuid4')
 const TransferService = require('../../../../src/domain/transfer')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const TransferModel = require('../../../../src/models/transfer/transfer')
@@ -302,8 +301,7 @@ Test('Transfer Service', transferIndexTest => {
 
     validateDuplicateHashTest.test('validate against transfer fulfilment model', async (test) => {
       try {
-        const transferFulfilmentId = Uuid()
-        TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture, transferFulfilmentId).returns({
+        TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns({
           existsMatching: true,
           existsNotMatching: false,
           isValid: true
@@ -314,7 +312,8 @@ Test('Transfer Service', transferIndexTest => {
           isValid: true
         }
 
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, transferFulfilmentId)
+        const isFulfilment = true
+        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, isFulfilment)
         test.deepEqual(result, expected, 'results match')
         test.ok(TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
         test.end()
@@ -327,7 +326,7 @@ Test('Transfer Service', transferIndexTest => {
 
     validateDuplicateHashTest.test('validate against transfer error model', async (test) => {
       try {
-        const transferFulfilmentId = Uuid()
+        const isFulfilment = false
         const isTransferError = true
         TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns({
           existsMatching: true,
@@ -340,7 +339,7 @@ Test('Transfer Service', transferIndexTest => {
           isValid: true
         }
 
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, transferFulfilmentId, isTransferError)
+        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, isFulfilment, isTransferError)
         test.deepEqual(result, expected, 'results match')
         test.ok(TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
         test.end()

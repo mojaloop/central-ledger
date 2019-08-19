@@ -33,7 +33,6 @@
  */
 
 const Db = require('../../lib/db')
-const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
@@ -125,8 +124,7 @@ const getByIdLight = async (id) => {
           'tsc.createdDate AS completedTimestamp',
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
-          'tf.ilpFulfilment AS fulfilment',
-          'tf.transferFulfilmentId'
+          'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
@@ -134,7 +132,8 @@ const getByIdLight = async (id) => {
         if (!transferResult.fulfilment) {
           transferResult.extensionList = await TransferExtensionModel.getByTransferId(id)
         } else {
-          transferResult.extensionList = await TransferExtensionModel.getByTransferFulfilmentId(transferResult.transferFulfilmentId)
+          const isFulfilment = true
+          transferResult.extensionList = await TransferExtensionModel.getByTransferId(id, isFulfilment)
         }
         transferResult.isTransferReadModel = true
       }
@@ -223,11 +222,10 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
   }
 }
 
-const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
+const saveTransferFulfilled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
   const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.RECEIVED_REJECT) : Enum.TransferState.ABORTED_REJECTED)
   const completedTimestamp = (payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date()
   const transferFulfilmentRecord = {
-    transferFulfilmentId,
     transferId,
     ilpFulfilment: payload.fulfilment,
     completedDate: Time.getUTCString(completedTimestamp),
@@ -239,7 +237,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
     transferExtensions = payload.extensionList.extension.map(ext => {
       return {
         transferId,
-        transferFulfilmentId,
+        isFulfilment: true,
         key: ext.key,
         value: ext.value
       }
@@ -964,18 +962,15 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferFulfilmentId = Uuid()
         const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
-            transferFulfilmentId,
             transferId
           })
           .transacting(trx)
 
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId,
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
@@ -1029,18 +1024,15 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferFulfilmentId = Uuid()
         const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
-            transferFulfilmentId,
             transferId
           })
           .transacting(trx)
 
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId,
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,

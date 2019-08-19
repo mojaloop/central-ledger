@@ -193,8 +193,7 @@ Test('Transform Service', transformTest => {
           transferFulfilmentRecord: {
             transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
             ilpFulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-            completedDate: '2016-06-24T09:38:08.699-04:00',
-            transferFulfilmentId: 1
+            completedDate: '2016-06-24T09:38:08.699-04:00'
           },
           transferStateChangeRecord: {
             transferStateId: 'COMMIT'
@@ -212,7 +211,6 @@ Test('Transform Service', transformTest => {
           completedTimestamp: '2016-06-24T09:38:08.699-04:00',
           extensionList: [{ key: 'key1', value: 'value1' }],
           fulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-          transferFulfilmentId: 1,
           transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
           transferState: 'COMMIT'
         }

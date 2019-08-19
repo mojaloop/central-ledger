@@ -50,7 +50,6 @@ const TransferEventAction = Enum.transferEventAction
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
-const Uuid = require('uuid4')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 const Comparators = require('@mojaloop/central-services-shared').Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -222,12 +221,12 @@ const fulfil = async (error, messages) => {
             : Enum.actionLetter.unknown)))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
-    const transferFulfilmentId = Uuid()
     const params = { message, transferId, kafkaTopic, consumer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    const isFulfilment = true
     const { existsMatching, existsNotMatching, isValid, transferErrorDuplicateCheckId } =
-      await TransferService.validateDuplicateHash(transferId, payload, transferFulfilmentId, isTransferError)
+      await TransferService.validateDuplicateHash(transferId, payload, isFulfilment, isTransferError)
 
     if (existsMatching) {
       Logger.info(Util.breadcrumb(location, `existsMatching`))
@@ -328,13 +327,13 @@ const fulfil = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
           Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
-          await TransferService.fulfil(transferFulfilmentId, transferId, payload)
+          await TransferService.fulfil(transferId, payload)
           const producer = { functionality: TransferEventType.POSITION, action }
           return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
         } else {
           if (action === TransferEventAction.REJECT) {
             Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}12`))
-            await TransferService.reject(transferFulfilmentId, transferId, payload)
+            await TransferService.reject(transferId, payload)
             const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
             return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, toDestination })
           } else { // action === TransferEventAction.ABORT

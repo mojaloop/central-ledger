@@ -49,22 +49,22 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
   }
 }
 
-const fulfil = async (transferFulfilmentId, transferId, payload) => {
+const fulfil = async (transferId, payload) => {
   // eslint-disable-next-line no-useless-catch
   try {
     const isCommit = true
-    const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit)
+    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-const reject = async (transferFulfilmentId, transferId, payload) => {
+const reject = async (transferId, payload) => {
   try {
     const isCommit = false
     const stateReason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTED_TXN.errorDescription
-    const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
+    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -99,7 +99,7 @@ const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
  * ```
  */
 
-const validateDuplicateHash = async (transferId, payload, transferFulfilmentId = false, isTransferError = false) => {
+const validateDuplicateHash = async (transferId, payload, isFulfilment = false, isTransferError = false) => {
   try {
     let result
     if (!payload) {
@@ -111,10 +111,10 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
     // remove trailing '=' as per specification
     hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
 
-    if (!transferFulfilmentId) {
+    if (!isFulfilment && !isTransferError) {
       result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
     } else if (!isTransferError) {
-      result = await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash, transferFulfilmentId)
+      result = await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
     } else {
       result = await TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
     }
