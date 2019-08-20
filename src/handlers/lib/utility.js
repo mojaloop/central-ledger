@@ -485,8 +485,8 @@ const proceed = async (params, opts) => {
     metadataState = ENUMS.STATE.SUCCESS
   }
   if (fromSwitch) {
-    message.value.from = Enum.headers.FSPIOP.SWITCH
     message.value.to = message.value.from
+    message.value.from = Enum.headers.FSPIOP.SWITCH
     message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] = message.value.to
   }
   let key

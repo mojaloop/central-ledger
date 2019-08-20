@@ -204,7 +204,6 @@ const fulfil = async (error, messages) => {
     const action = message.value.metadata.event.action
     const transferId = message.value.content.uriParams.id
     const kafkaTopic = message.topic
-    const isFulfilment = true
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
     try {
