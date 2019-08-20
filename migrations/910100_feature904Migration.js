@@ -40,6 +40,16 @@ const transferFulfilmentRecordCount = async (knex, nameSuffix) => {
   return result.count
 }
 
+const transferErrorDuplicateCheckRecordCount = async (knex, nameSuffix) => {
+  const result = await knex(`transferErrorDuplicateCheck${nameSuffix}`).count({ count: '*' }).first()
+  return result.count
+}
+
+const transferErrorRecordCount = async (knex, nameSuffix) => {
+  const result = await knex(`transferError${nameSuffix}`).count({ count: '*' }).first()
+  return result.count
+}
+
 const migrate = async (knex) => {
   const tableNameSuffix = Time.getYMDString(new Date())
 
@@ -55,20 +65,31 @@ const migrate = async (knex) => {
     t.dropForeign('settlementwindowid')
     t.dropForeign('transferfulfilmentid')
   })
-  // rename current tables to preserve currently stored data
+  // drop foreign keys to make names available to replacing table
+  await knex.schema.table(`transferError`, (t) => {
+      t.dropForeign('transferstatechangeid')
+      t.dropForeign('transfererrorduplicatecheckid')
+  })
+  // drop foreign keys to make names available to replacing table
+  await knex.schema.table(`transferErrorDuplicateCheck`, (t) => {
+      t.dropForeign('transferid')
+  })
+  // rename   current tables to preserve currently stored data
   await knex.schema.renameTable('transferExtension', `transferExtension${tableNameSuffix}`)
   await knex.schema.renameTable('transferFulfilmentDuplicateCheck', `transferFulfilmentDuplicateCheck${tableNameSuffix}`)
   await knex.schema.renameTable('transferFulfilment', `transferFulfilment${tableNameSuffix}`)
+  await knex.schema.renameTable('transferErrorDuplicateCheck', `transferErrorDuplicateCheck${tableNameSuffix}`)
+  await knex.schema.renameTable('transferError', `transferError${tableNameSuffix}`)
 
-  // create new table for storing transferExtension, with isFulfilment column in place of transferFulfilmentId
+  // create new table for storing transferExtension - isFulfilment, isError boolean columns
   await knex.schema.createTable('transferExtension', (t) => {
     t.bigIncrements('transferExtensionId').primary().notNullable()
     t.string('transferId', 36).notNullable()
     t.foreign('transferId').references('transferId').inTable('transfer')
-    t.bigInteger('transferErrorId').unsigned().defaultTo(null).nullable().references('transferErrorId').inTable('transferError')
-    t.boolean('isFulfilment').defaultTo(false).notNullable()
     t.string('key', 128).notNullable()
     t.text('value').notNullable()
+    t.boolean('isFulfilment').defaultTo(false).notNullable()
+    t.boolean('isError').defaultTo(false).notNullable()
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })
   // create new table for storing transferFulfilment hashes with new primary key - transferId
@@ -89,14 +110,33 @@ const migrate = async (knex) => {
     t.foreign('settlementWindowId').references('settlementWindowId').inTable('settlementWindow')
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })
-
+  // create new table for storing transferError hashes with new primary key - transferId
+  await knex.schema.createTable('transferErrorDuplicateCheck', (t) => {
+    t.string('transferId', 36).primary().notNullable()
+    t.foreign('transferId').references('transferId').inTable('transfer')
+    t.string('hash', 256).nullable()
+    t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+  })
+  // create new table for storing transferError records with new primary key - transferId
+  return knex.schema.createTable('transferError', (t) => {
+    t.string('transferId', 36).primary().notNullable()
+    t.foreign('transferId').references('transferId').inTable('transferErrorDuplicateCheck')
+    t.bigInteger('transferStateChangeId').unsigned().notNullable()
+    t.foreign('transferStateChangeId').references('transferStateChangeId').inTable('transferStateChange')
+    t.integer('errorCode').unsigned().notNullable()
+    t.string('errorDescription', 128).notNullable()
+    t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+  })
   let count = 0
 
   count = await transferExtensionRecordCount(knex, tableNameSuffix)
   if (count) { // copy transferExtension data
     await knex.raw(`
-    insert into transferExtension (transferExtensionId, transferId, transferErrorId, isFulfilment, \`key\`, \`value\`, createdDate)
-    select te.transferExtensionId, te.transferId, te.transferErrorId, case when te.transferFulfilmentId is null then 0 else 1 end, te.\`key\`, te.\`value\`, te.createdDate
+    insert into transferExtension (transferExtensionId, transferId, \`key\`, \`value\`, isFulfilment, isError, createdDate)
+    select te.transferExtensionId, te.transferId, te.\`key\`, te.\`value\`,
+      case when te.transferFulfilmentId is null then 0 else 1 end,
+      case when te.transferErrorId is null then 0 else 1 end,
+      te.createdDate
     from transferExtension${tableNameSuffix} as te`)
   } else {
     await knex.schema.dropTableIfExists(`transferExtension${tableNameSuffix}`)
@@ -119,7 +159,7 @@ const migrate = async (knex) => {
   }
 
   count = await transferFulfilmentRecordCount(knex, tableNameSuffix)
-  if (count) { // copy transferFulfilment data and skip duplicates (which were possible before current feature)
+  if (count) { // copy transferFulfilment data and skip duplicates, that were possible before current feature
     await knex.raw(`
     insert into transferFulfilment (transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate)
     select t.transferId, t.ilpFulfilment, t.completedDate, t.isValid, t.settlementWindowId, t.createdDate
@@ -130,6 +170,27 @@ const migrate = async (knex) => {
     where t.rowNumber = 1`)
   } else {
     await knex.schema.dropTableIfExists(`transferFulfilment${tableNameSuffix}`)
+  }
+
+  count = await transferErrorDuplicateCheckRecordCount(knex, tableNameSuffix)
+  if (count) { // copy transferErrorDuplicateCheck data (to match copied data by the next statement)
+    await knex.raw(`
+    insert into transferErrorDuplicateCheck (transferId, \`hash\`, createdDate)
+    select transferId, \`hash\`, createdDate
+    from transferErrorDuplicateCheck${tableNameSuffix}`)
+  } else {
+    await knex.schema.dropTableIfExists(`transferErrorDuplicateCheck${tableNameSuffix}`)
+  }
+
+  count = await transferErrorDuplicateCheckRecordCount(knex, tableNameSuffix)
+  if (count) { // copy transferError data
+    await knex.raw(`
+    insert into transferError (transferId, transferStateChangeId, errorCode, errorDescription, createdDate)
+    select tsc.transferId, te.transferStateChangeId, te.errorCode, te.errorDescription, te.createdDate
+    from transferError${tableNameSuffix} te
+    join transferStateChange tsc on tsc.transferStateChangeId = te.transferStateChangeId`)
+  } else {
+    await knex.schema.dropTableIfExists(`transferErrorDuplicateCheck${tableNameSuffix}`)
   }
 
   return 0

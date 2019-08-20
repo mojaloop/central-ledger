@@ -485,13 +485,19 @@ const proceed = async (params, opts) => {
     metadataState = ENUMS.STATE.SUCCESS
   }
   if (fromSwitch) {
-    message.value.to = message.value.from
     message.value.from = Enum.headers.FSPIOP.SWITCH
+    message.value.to = message.value.from
+    message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] = message.value.to
+  }
+  let key
+  if (typeof toDestination === 'string') {
+    message.value.to = toDestination
+    message.value.content.headers[Enum.headers.FSPIOP.DESTINATION] = toDestination
+  } else if (toDestination === true) {
+    key = message.value.content.headers[Enum.headers.FSPIOP.DESTINATION]
   }
   if (producer) {
-    const p = producer
-    const key = toDestination && message.value.content.headers[Enum.headers.FSPIOP.DESTINATION]
-    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
+    await produceGeneralMessage(producer.functionality, producer.action, message.value, metadataState, key)
   }
   if (histTimerEnd && typeof histTimerEnd === 'function') {
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

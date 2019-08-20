@@ -970,21 +970,17 @@ Test('Transfer facade', async (transferFacadeTest) => {
               }
             }
           }
-          const transferErrorDuplicateCheckId = 1
           const errorPayeeCustom = payload.errorInformation.errorCode.toString()
           const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           const transferErrorRecord = {
+            transferId,
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
             errorCode: errorPayeeCustom,
             errorDescription: errorPayeeCustomDescription,
-            createdDate: transactionTimestamp,
-            transferErrorDuplicateCheckId
-          }
-          const insertedTransferError = {
-            transferErrorId: 1
+            createdDate: transactionTimestamp
           }
           transferExtensions[0].transferId = transferId
-          transferExtensions[0].transferErrorId = insertedTransferError.transferErrorId
+          transferExtensions[0].isError = true
           transferStateChangeRecord.reason = payload.errorInformation.errorDescription
           const expectedResult = {
             saveTransferAbortedExecuted: true,
@@ -1010,15 +1006,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
-                }),
-                first: sandbox.stub().returns({
-                  orderBy: sandbox.stub().returns(insertedTransferError)
                 })
               })
             })
           })
 
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
+          const response = await ModuleProxy.saveTransferAborted(transferId, payload)
           test.deepEqual(expectedResult, response, 'response matches expected result')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
@@ -1045,18 +1038,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
               }
             }
           }
-          const transferErrorDuplicateCheckId = 1
           const errorPayeeCustom = payload.errorInformation.errorCode.toString()
           const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           const transferErrorRecord = {
+            transferId,
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
             errorCode: errorPayeeCustom,
             errorDescription: errorPayeeCustomDescription,
-            createdDate: transactionTimestamp,
-            transferErrorDuplicateCheckId
-          }
-          const insertedTransferError = {
-            transferErrorId: 1
+            createdDate: transactionTimestamp
           }
           transferStateChangeRecord.reason = payload.errorInformation.errorDescription
           const expectedResult = {
@@ -1083,15 +1072,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
-                }),
-                first: sandbox.stub().returns({
-                  orderBy: sandbox.stub().returns(insertedTransferError)
                 })
               })
             })
           })
 
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
+          const response = await ModuleProxy.saveTransferAborted(transferId, payload)
           test.deepEqual(expectedResult, response, 'response matches expected result')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')

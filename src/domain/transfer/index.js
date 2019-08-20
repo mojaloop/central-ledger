@@ -71,9 +71,9 @@ const reject = async (transferId, payload) => {
   }
 }
 
-const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
+const abort = async (transferId, payload) => {
   try {
-    return TransferFacade.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
+    return TransferFacade.saveTransferAborted(transferId, payload)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -171,7 +171,11 @@ const TransferService = {
   reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort,
   getTransferParticipant: TransferFacade.getTransferParticipant,
   getTransferDuplicateCheck: TransferDuplicateCheckModel.getTransferDuplicateCheck,
-  saveTransferDuplicateCheck: TransferDuplicateCheckModel.saveTransferDuplicateCheck
+  saveTransferDuplicateCheck: TransferDuplicateCheckModel.saveTransferDuplicateCheck,
+  getTransferFulfilmentDuplicateCheck: TransferFulfilmentDuplicateCheckModel.getTransferFulfilmentDuplicateCheck,
+  saveTransferFulfilmentDuplicateCheck: TransferFulfilmentDuplicateCheckModel.saveTransferFulfilmentDuplicateCheck,
+  getTransferErrorDuplicateCheck: TransferErrorDuplicateCheckModel.getTransferErrorDuplicateCheck,
+  saveTransferErrorDuplicateCheck: TransferErrorDuplicateCheckModel.saveTransferErrorDuplicateCheck
 }
 
 module.exports = TransferService

@@ -306,7 +306,7 @@ const saveTransferFulfilled = async (transferId, payload, isCommit = true, state
  * @returns {Object} - Returns details for the affected db records
  */
 
-const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
+const saveTransferAborted = async (transferId, payload) => {
   let transferErrorRecord
 
   const transactionTimestamp = Time.getUTCString(new Date())
@@ -327,7 +327,8 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
       return {
         transferId,
         key: ext.key,
-        value: ext.value
+        value: ext.value,
+        isError: true
       }
     })
   }
@@ -340,27 +341,23 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
         // insert transfer state change record and retrieve inserted identity
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
-          .where({ transferId: transferStateChangeRecord.transferId })
+          .where({ transferId })
           .forUpdate().first().orderBy('transferStateChangeId', 'desc')
         transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
 
         // insert transfer error
         transferErrorRecord = {
+          transferId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           errorCode,
           errorDescription,
-          createdDate: transactionTimestamp,
-          transferErrorDuplicateCheckId
+          createdDate: transactionTimestamp
         }
         await knex('transferError').transacting(trx).insert(transferErrorRecord)
 
         // insert transfer extensions if provided
         if (transferExtensions.length > 0) {
-          const insertedTransferError = await knex('transferError').transacting(trx)
-            .where({ transferStateChangeId: insertedTransferStateChange.transferStateChangeId })
-            .first().orderBy('transferErrorId', 'desc')
           for (const transferExtension of transferExtensions) {
-            transferExtension.transferErrorId = insertedTransferError.transferErrorId
             await knex('transferExtension').transacting(trx).insert(transferExtension)
           }
         }

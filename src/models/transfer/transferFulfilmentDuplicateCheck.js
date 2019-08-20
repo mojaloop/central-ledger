@@ -33,6 +33,47 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
+ * @function GetTransferFulfilmentDuplicateCheck
+ *
+ * @async
+ * @description This retrieves the transferFulfilmentDuplicateCheck table record if present
+ *
+ * @param {string} transferId - the transfer id
+ *
+ * @returns {object} - Returns the record from transferFulfilmentDuplicateCheck table, or throws an error if failed
+ */
+
+const getTransferFulfilmentDuplicateCheck = async (transferId) => {
+  Logger.debug(`get transferFulfilmentDuplicateCheck (transferId=${transferId})`)
+  try {
+    return Db.transferFulfilmentDuplicateCheck.findOne({ transferId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+/**
+ * @function SaveTransferFulfilmentDuplicateCheck
+ *
+ * @async
+ * @description This inserts a record into transferFulfilmentDuplicateCheck table
+ *
+ * @param {string} transferId - the transfer id
+ * @param {string} hash - the hash of the transfer fulfilment request payload
+ *
+ * @returns {integer} - Returns the database id of the inserted row, or throws an error if failed
+ */
+
+const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
+  Logger.debug(`save transferFulfilmentDuplicateCheck (transferId=${transferId}, hash=${hash})`)
+  try {
+    return Db.transferFulfilmentDuplicateCheck.insert({ transferId, hash })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+/**
  * @function CheckAndInsertDuplicateHash
  *
  * @async
@@ -94,5 +135,7 @@ const checkAndInsertDuplicateHash = async (transferId, hash) => {
 }
 
 module.exports = {
+  getTransferFulfilmentDuplicateCheck,
+  saveTransferFulfilmentDuplicateCheck,
   checkAndInsertDuplicateHash
 }
