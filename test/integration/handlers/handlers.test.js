@@ -513,7 +513,7 @@ Test('Handlers test', async handlersTest => {
         const payerExpectedPosition = testData.amount.amount - td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         const transferError = await TransferService.getTransferErrorByTransferId(transfer.transferId)
-        const transferExtension = await TransferExtensionModel.getByTransferErrorId(transferError.transferErrorId)
+        const transferExtension = await TransferExtensionModel.getByTransferId(transfer.transferId, false, true)
         test.equal(producerResponse, true, 'Producer for fulfil published message')
         test.equal(transfer.transferState, TransferState.ABORTED_ERROR, `Transfer state changed to ${TransferState.ABORTED_ERROR}`)
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')

@@ -26,6 +26,7 @@
 
 const TransferPreparationModule = require('./transfer')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
+const TransferErrorDuplicateCheckModel = require('../../../src/models/transfer/transferErrorDuplicateCheck')
 const TransferErrorModel = require('../../../src/models/transfer/transferError')
 const TransferStateChangeModel = require('../../../src/models/transfer/transferStateChange')
 const TransferStatePreparationHelper = require('./transferState')
@@ -41,7 +42,8 @@ exports.prepareData = async () => {
       transferStateId: 'INVALID'
     })
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferResult.transfer.transferId)
-    await TransferErrorModel.insert(transferStateChange.transferStateChangeId, 3100, 'Invalid Request')
+    await TransferErrorDuplicateCheckModel.saveTransferErrorDuplicateCheck(transferResult.transfer.transferId, 'helper.hash')
+    await TransferErrorModel.insert(transferResult.transfer.transferId, transferStateChange.transferStateChangeId, 3100, 'Invalid Request')
 
     const transferError = await TransferErrorModel.getByTransferStateChangeId(transferStateChange.transferStateChangeId)
 
