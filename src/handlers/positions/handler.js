@@ -119,7 +119,7 @@ const positions = async (error, messages) => {
               : (action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
                 : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
                   : Enum.Events.ActionLetter.unknown))))))
-    const params = { message, kafkaTopic, consumer }
+    const params = { message, kafkaTopic, consumer, decodedPayload: payload }
     const producer = { action }
     if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       producer.functionality = Enum.Events.Event.Type.NOTIFICATION
@@ -153,7 +153,7 @@ const positions = async (error, messages) => {
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
-      if (transferInfo.transferStateId !== Enum.Transfers.TransferState.RECEIVED_FULFIL) {
+      if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
         Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
@@ -178,7 +178,7 @@ const positions = async (error, messages) => {
 
       if (transferInfo.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_REJECT) {
         Logger.info(Utility.breadcrumb(location, `receivedReject--${actionLetter}5`))
-        transferStateId = Enum.Transfers.TransferState.ABORTED_REJECTED
+        transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
       } else if (transferInfo.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
         Logger.info(Utility.breadcrumb(location, `receivedError--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_ERROR

@@ -101,7 +101,7 @@ const bulkProcessing = async (error, messages) => {
       : (action === Enum.Events.Event.Action.BULK_FULFIL ? Enum.Events.ActionLetter.bulkFulfil
         : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
           : Enum.Events.ActionLetter.unknown))
-    const params = { message, kafkaTopic, consumer }
+    const params = { message, kafkaTopic, consumer, decodedPayload: payload }
     const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
@@ -282,8 +282,8 @@ const registerBulkProcessingHandler = async () => {
   try {
     const bulkProcessingHandler = {
       command: bulkProcessing,
-      topicName: Util.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.PROCESSING),
-      config: Util.getKafkaConfig(Config.KAFKA_CONFIG, Util.ENUMS.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.PROCESSING.toUpperCase())
+      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.PROCESSING),
+      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.PROCESSING.toUpperCase())
     }
     bulkProcessingHandler.config.rdkafkaConf['client.id'] = bulkProcessingHandler.topicName
     await Kafka.Consumer.createHandler(bulkProcessingHandler.topicName, bulkProcessingHandler.config, bulkProcessingHandler.command)

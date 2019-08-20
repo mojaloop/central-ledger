@@ -95,7 +95,7 @@ const bulkFulfil = async (error, messages) => {
       return true
     }
     const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit : Enum.Events.ActionLetter.unknown
-    let params = { message, kafkaTopic, consumer }
+    let params = { message, kafkaTopic, consumer, decodedPayload: payload }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const isFulfilment = true
@@ -197,8 +197,8 @@ const registerBulkFulfilHandler = async () => {
   try {
     const bulkFulfilHandler = {
       command: bulkFulfil,
-      topicName: Util.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.FULFIL),
-      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Util.ENUMS.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.FULFIL.toUpperCase())
+      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.FULFIL),
+      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.FULFIL.toUpperCase())
     }
     bulkFulfilHandler.config.rdkafkaConf['client.id'] = bulkFulfilHandler.topicName
     await Kafka.Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)

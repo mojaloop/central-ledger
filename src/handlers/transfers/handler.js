@@ -111,7 +111,7 @@ const prepare = async (error, messages) => {
     const actionLetter = action === Enum.Events.Event.Action.PREPARE ? Enum.Events.ActionLetter.prepare
       : (action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
         : Enum.Events.ActionLetter.unknown)
-    const params = { message, kafkaTopic, consumer }
+    const params = { message, kafkaTopic, consumer, decodedPayload: payload }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
@@ -238,7 +238,7 @@ const fulfil = async (error, messages) => {
     // fulfil-specific declarations
     const isTransferError = action === Enum.Events.Event.Action.ABORT
     const transferFulfilmentId = Uuid()
-    const params = { message, transferId, kafkaTopic, consumer }
+    const params = { message, transferId, kafkaTopic, consumer, decodedPayload: payload }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching, isValid, transferErrorDuplicateCheckId } =
@@ -450,7 +450,7 @@ const getTransfer = async (error, messages) => {
       return true
     }
     const actionLetter = Enum.Events.ActionLetter.get
-    const params = { message, transferId, kafkaTopic, consumer }
+    const params = { message, transferId, kafkaTopic, consumer, decodedPayload: {} }
     const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.GET }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
