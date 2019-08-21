@@ -287,7 +287,17 @@ const fulfil = async (error, messages) => {
       if (message.value.metadata.event.type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
         Util.breadcrumb(location, { path: 'validationFailed' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
-          // TODO: Finalizing a transfer on receiving an incorrect Fulfilment value #703
+          /**
+           * TODO: Story "Finalizing a transfer on receiving an incorrect Fulfilment value #703"
+           * Currently, the story "Refactoring for duplicate checking on 'prepare transfers' & 'fulfil transfer' - part2 #904",
+           * does not move forward the transfer to a "final" state and also does not accept subsequent fulfilment requests.
+           * This results in a transfer in an unfinished state, that can not be currently resolved by the API.
+           * It raises the priority of story #703 to Highest.
+           * WHAT NEEDS TO BE CONFIRMED by the team/DA for #703 is:
+           *   - the need of storing the provided invalid fulfilment;
+           *   - sending a callback to the /{transferId}/error endpoints of payer and payee;
+           *   - subsequent resend and get requests shall report the transfer as ABORTED at the normal /{transferId} endpoint.
+           */
           Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}8`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment').toApiErrorObject()
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }

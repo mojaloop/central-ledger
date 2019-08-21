@@ -69,7 +69,7 @@
   "dependencies": {
     "@mojaloop/central-object-store": "7.1.0",
     "@mojaloop/central-services-auth": "5.2.1",
-    "@mojaloop/central-services-database": "5.2.1",
+    "@mojaloop/central-services-database": "7.3.0",
     "@mojaloop/central-services-error-handling": "7.3.0",
     "@mojaloop/central-services-health": "7.0.0",
     "@mojaloop/central-services-metrics": "5.2.0",

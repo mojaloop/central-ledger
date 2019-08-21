@@ -222,14 +222,14 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
   }
 }
 
-const saveTransferFulfilled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
+const saveTransferFulfilled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true, isValid = true) => {
   const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.RECEIVED_REJECT) : Enum.TransferState.ABORTED_REJECTED)
   const completedTimestamp = (payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date()
   const transferFulfilmentRecord = {
     transferId,
     ilpFulfilment: payload.fulfilment,
     completedDate: Time.getUTCString(completedTimestamp),
-    isValid: true,
+    isValid, // this change is to be utilized by the implementation of #703
     createdDate: Time.getUTCString(new Date())
   }
   let transferExtensions = []
