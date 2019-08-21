@@ -50,7 +50,7 @@ const transferErrorRecordCount = async (knex, nameSuffix) => {
   return result.count
 }
 
-const migrate = async (knex) => {
+const migrateDDL = async (knex) => {
   const tableNameSuffix = Time.getYMDString(new Date())
 
   // drop foreign keys to make names available to replacing table
@@ -128,76 +128,31 @@ const migrate = async (knex) => {
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })
   let count = 0
-
   count = await transferExtensionRecordCount(knex, tableNameSuffix)
-  if (count) { // copy transferExtension data
-    await knex.raw(`
-    insert into transferExtension (transferExtensionId, transferId, \`key\`, \`value\`, isFulfilment, isError, createdDate)
-    select te.transferExtensionId, te.transferId, te.\`key\`, te.\`value\`,
-      case when te.transferFulfilmentId is null then 0 else 1 end,
-      case when te.transferErrorId is null then 0 else 1 end,
-      te.createdDate
-    from transferExtension${tableNameSuffix} as te`)
-  } else {
+  if (!count) {
     await knex.schema.dropTableIfExists(`transferExtension${tableNameSuffix}`)
   }
-
   count = await transferFulfilmentDuplicateCheckRecordCount(knex, tableNameSuffix)
-  if (count) { // copy transferFulfilmentDuplicateCheck data (to match copied data by the next statement)
-    await knex.raw(`
-    insert into transferFulfilmentDuplicateCheck (transferId, \`hash\`, createdDate)
-    select transferId, \`hash\`, createdDate from transferFulfilmentDuplicateCheck${tableNameSuffix}
-    where transferFulfilmentId in(
-      select transferFulfilmentId
-      from (
-        select transferFulfilmentId, transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate,
-          row_number() over(partition by transferId order by isValid desc, createdDate) rowNumber
-        from transferFulfilment${tableNameSuffix}) t
-      where t.rowNumber = 1)`)
-  } else {
+  if (!count) {
     await knex.schema.dropTableIfExists(`transferFulfilmentDuplicateCheck${tableNameSuffix}`)
   }
-
   count = await transferFulfilmentRecordCount(knex, tableNameSuffix)
-  if (count) { // copy transferFulfilment data and skip duplicates, that were possible before current feature
-    await knex.raw(`
-    insert into transferFulfilment (transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate)
-    select t.transferId, t.ilpFulfilment, t.completedDate, t.isValid, t.settlementWindowId, t.createdDate
-    from (
-      select transferFulfilmentId, transferId, ilpFulfilment, completedDate, isValid, settlementWindowId, createdDate,
-        row_number() over(partition by transferId order by isValid desc, createdDate) rowNumber
-      from transferFulfilment${tableNameSuffix}) t
-    where t.rowNumber = 1`)
-  } else {
+  if (!count) {
     await knex.schema.dropTableIfExists(`transferFulfilment${tableNameSuffix}`)
   }
-
   count = await transferErrorDuplicateCheckRecordCount(knex, tableNameSuffix)
-  if (count) { // copy transferErrorDuplicateCheck data (to match copied data by the next statement)
-    await knex.raw(`
-    insert into transferErrorDuplicateCheck (transferId, \`hash\`, createdDate)
-    select transferId, \`hash\`, createdDate
-    from transferErrorDuplicateCheck${tableNameSuffix}`)
-  } else {
+  if (!count) {
     await knex.schema.dropTableIfExists(`transferErrorDuplicateCheck${tableNameSuffix}`)
   }
-
-  count = await transferErrorDuplicateCheckRecordCount(knex, tableNameSuffix)
-  if (count) { // copy transferError data
-    await knex.raw(`
-    insert into transferError (transferId, transferStateChangeId, errorCode, errorDescription, createdDate)
-    select tsc.transferId, te.transferStateChangeId, te.errorCode, te.errorDescription, te.createdDate
-    from transferError${tableNameSuffix} te
-    join transferStateChange tsc on tsc.transferStateChangeId = te.transferStateChangeId`)
-  } else {
-    await knex.schema.dropTableIfExists(`transferErrorDuplicateCheck${tableNameSuffix}`)
+  count = await transferErrorRecordCount(knex, tableNameSuffix)
+  if (!count) {
+    await knex.schema.dropTableIfExists(`transferError${tableNameSuffix}`)
   }
-
   return 0
 }
 
 exports.up = async (knex, Promise) => {
-  return await migrate(knex)
+  return await migrateDDL(knex)
 }
 
 exports.down = function (knex, Promise) {
