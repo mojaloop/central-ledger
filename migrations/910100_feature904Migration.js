@@ -118,7 +118,7 @@ const migrate = async (knex) => {
     t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
   })
   // create new table for storing transferError records with new primary key - transferId
-  return knex.schema.createTable('transferError', (t) => {
+  await knex.schema.createTable('transferError', (t) => {
     t.string('transferId', 36).primary().notNullable()
     t.foreign('transferId').references('transferId').inTable('transferErrorDuplicateCheck')
     t.bigInteger('transferStateChangeId').unsigned().notNullable()
