@@ -34,7 +34,6 @@
 'use strict'
 
 const Hapi = require('hapi')
-const P = require('bluebird')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
 const ObjStoreDb = require('@mojaloop/central-object-store').Db
@@ -51,7 +50,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const migrate = (runMigrations) => {
-  return runMigrations ? Migrator.migrate() : P.resolve()
+  return runMigrations ? Migrator.migrate() : true
 }
 const getEnums = (id) => {
   return Enums[id]()
@@ -200,9 +199,8 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.bulk.registerBulkProcessingHandler()
           break
         default:
-          const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
-          Logger.error(error)
-          throw new Error(error)
+          Logger.error(`Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`)
+          throw new Error(`Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`)
       }
     }
   }

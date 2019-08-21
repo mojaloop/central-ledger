@@ -93,7 +93,7 @@ const prepareTestData = async (dataObj) => {
   const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
   const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
-  const kafkacat = `GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare`
+  const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
   if (debug) console.error(kafkacat)
 
   const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
@@ -251,7 +251,7 @@ const prepareTestData = async (dataObj) => {
 Test('Handlers test', async handlersTest => {
   const startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
-    await registerAllHandlers.test(`setup handlers`, async (test) => {
+    await registerAllHandlers.test('setup handlers', async (test) => {
       await Db.connect(Config.DATABASE_URI)
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
@@ -270,7 +270,7 @@ Test('Handlers test', async handlersTest => {
   await handlersTest.test('transferFulfilCommit should', async transferFulfilCommit => {
     const td = await prepareTestData(testData)
 
-    await transferFulfilCommit.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
+    await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -309,7 +309,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferFulfilCommit.test(`update transfer state to COMMITTED by FULFIL request`, async (test) => {
+    await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -356,7 +356,7 @@ Test('Handlers test', async handlersTest => {
     testData.amount.amount = 15
     const td = await prepareTestData(testData)
 
-    await transferFulfilReject.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
+    await transferFulfilReject.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -388,7 +388,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferFulfilReject.test(`update transfer state to ABORTED_REJECTED by ABORT request`, async (test) => {
+    await transferFulfilReject.test('update transfer state to ABORTED_REJECTED by ABORT request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -434,7 +434,7 @@ Test('Handlers test', async handlersTest => {
     testData.amount.amount = 1100
     const td = await prepareTestData(testData)
 
-    await transferPrepareExceedLimit.test(`fail the transfer if the amount is higher than the remaining participant limit`, async (test) => {
+    await transferPrepareExceedLimit.test('fail the transfer if the amount is higher than the remaining participant limit', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -473,7 +473,7 @@ Test('Handlers test', async handlersTest => {
     testData.amount.amount = 5
     const td = await prepareTestData(testData)
 
-    await transferAbort.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
+    await transferAbort.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -505,7 +505,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferAbort.test(`update transfer state to ABORTED_ERROR by PUT /transfers/{id}/error endpoint`, async (test) => {
+    await transferAbort.test('update transfer state to ABORTED_ERROR by PUT /transfers/{id}/error endpoint', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -558,7 +558,7 @@ Test('Handlers test', async handlersTest => {
     testData.expiration = new Date((new Date()).getTime() + (2 * 1000)) // 2 seconds
     const td = await prepareTestData(testData)
 
-    await timeoutTest.test(`update transfer state to RESERVED by PREPARE request`, async (test) => {
+    await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -598,7 +598,7 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await timeoutTest.test(`position resets after a timeout`, async (test) => {
+    await timeoutTest.test('position resets after a timeout', async (test) => {
       // Arrange
       const payerInitialPosition = td.payerLimitAndInitialPosition.participantPosition.value
       // Act
