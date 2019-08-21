@@ -121,7 +121,7 @@ Test('setup', setupTest => {
       '../lib/requestLogger': requestLoggerStub,
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
-      hapi: HapiStub,
+      '@hapi/hapi': HapiStub,
       '../lib/config': ConfigStub
       // '../handlers/lib/kafka': KafkaCronStub
     })
@@ -166,7 +166,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStubThrowError,
+        '@hapi/hapi': HapiStubThrowError,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -215,7 +215,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -331,7 +331,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -362,7 +362,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -394,7 +394,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -428,7 +428,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -640,7 +640,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })

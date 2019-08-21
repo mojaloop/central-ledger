@@ -25,7 +25,7 @@
 'use strict'
 
 const Test = require('tape')
-const Joi = require('joi')
+const Joi = require('@hapi/joi')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Db = require('@mojaloop/central-services-database').Db
 

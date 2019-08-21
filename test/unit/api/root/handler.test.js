@@ -25,7 +25,7 @@
 'use strict'
 
 const Test = require('tapes')(require('tape'))
-const Joi = require('joi')
+const Joi = require('@hapi/joi')
 const Sinon = require('sinon')
 const P = require('bluebird')
 

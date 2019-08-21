@@ -33,7 +33,7 @@
 
 'use strict'
 
-const Hapi = require('hapi')
+const Hapi = require('@hapi/hapi')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
 const ObjStoreDb = require('@mojaloop/central-object-store').Db
