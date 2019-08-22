@@ -29,10 +29,13 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const tableNameSuffix = Time.getYMDString(new Date())
 
 /**
- * This migration script is provided with no warranties! Use at your own risk!
+ * This migration script is provided with no warranties! It is given as a reference
+ * to help implementers, as well as used by maintainers for QA and other enabling tasks.
+ * Use at your own risk!
+ * 
  * Make sure you have fresh DB backup before initializing it and also set 
  * `tableNameSuffix` to match the suffix of the tables you want to migrate data from.
- * If you need to execute this script multiple times after failure/modifications,
+ * If you need to execute this script multiple times after failure or modifications,
  * please delete the corresponding record from central_ledger.migration table.
  * After migrating data to the new data structures, drop suffixed tables at your
  * consideration.
