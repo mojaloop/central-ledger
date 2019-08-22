@@ -201,10 +201,11 @@ const createHandlers = async (handlers) => {
         case 'bulkprocessing':
           await RegisterHandlers.bulk.registerBulkProcessingHandler()
           break
-        default:
+        default: {
           const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)
+        }
       }
     }
   }

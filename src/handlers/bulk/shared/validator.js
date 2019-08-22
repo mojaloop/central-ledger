@@ -39,7 +39,7 @@ const reasons = []
 const validateDifferentFsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
   if (!isPayerAndPayeeDifferent) {
-    reasons.push(`Payer and Payee should differ`)
+    reasons.push('Payer and Payee should differ')
     return false
   }
   return true
@@ -54,7 +54,7 @@ const validateExpiration = (payload) => {
 const validateFspiopSourceMatchesPayer = (payload, headers) => {
   const matched = (headers && headers['fspiop-source'] === payload.payerFsp)
   if (!matched) {
-    reasons.push(`FSPIOP-Source header should match Payer`)
+    reasons.push('FSPIOP-Source header should match Payer')
     return false
   }
   return true
@@ -64,11 +64,11 @@ const validateFspiopSourceAndDestination = async (payload, headers) => {
   const matchedPayee = (headers && headers['fspiop-source'] === participant.payeeFsp)
   const matchedPayer = (headers && headers['fspiop-destination'] === participant.payerFsp)
   if (!matchedPayee) {
-    reasons.push(`FSPIOP-Source header should match Payee`)
+    reasons.push('FSPIOP-Source header should match Payee')
     return false
   }
   if (!matchedPayer) {
-    reasons.push(`FSPIOP-Destination header should match Payer`)
+    reasons.push('FSPIOP-Destination header should match Payer')
     return false
   }
   return true

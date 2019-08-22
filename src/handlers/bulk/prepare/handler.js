@@ -136,13 +136,13 @@ const bulkPrepare = async (error, messages) => {
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { isDuplicateId, isResend } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash)
     if (isDuplicateId && isResend) { // TODO: handle resend
-      Logger.info(Util.breadcrumb(location, `resend`))
-      Logger.info(Util.breadcrumb(location, `notImplemented`))
+      Logger.info(Util.breadcrumb(location, 'resend'))
+      Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (isDuplicateId && !isResend) { // TODO: handle modified request
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
-      Logger.info(Util.breadcrumb(location, `notImplemented`))
+      Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
 
@@ -150,16 +150,16 @@ const bulkPrepare = async (error, messages) => {
     if (isValid) {
       Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
-        Logger.info(Util.breadcrumb(location, `saveBulkTransfer`))
+        Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
         const participants = { payerParticipantId, payeeParticipantId }
         /* const state = */ await BulkTransferService.bulkPrepare(payload, participants)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.info(Util.breadcrumb(location, `notImplemented`))
+        Logger.info(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       try {
-        Logger.info(Util.breadcrumb(location, `individualTransfers`))
+        Logger.info(Util.breadcrumb(location, 'individualTransfers'))
         // stream initialization
         const IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
         const indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
@@ -197,21 +197,21 @@ const bulkPrepare = async (error, messages) => {
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.info(Util.breadcrumb(location, `notImplemented`))
+        Logger.info(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
     } else { // TODO: handle validation failure
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
-        Logger.info(Util.breadcrumb(location, `saveInvalidRequest`))
+        Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.info(Util.breadcrumb(location, `notImplemented`))
+        Logger.info(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.info(Util.breadcrumb(location, `notImplemented`))
+      Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
     }
   } catch (err) {

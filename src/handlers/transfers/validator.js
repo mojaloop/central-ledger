@@ -86,7 +86,7 @@ const validatePositionAccountByNameAndCurrency = async function (participantName
 const validateDifferentDfsp = (payload) => {
   const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
   if (!isPayerAndPayeeDifferent) {
-    reasons.push(`Payer and Payee should be different`)
+    reasons.push('Payer and Payee should be different')
     return false
   }
   return true
@@ -95,7 +95,7 @@ const validateDifferentDfsp = (payload) => {
 const validateFspiopSourceMatchesPayer = (payload, headers) => {
   const matched = (headers && headers['fspiop-source'] && headers['fspiop-source'] === payload.payerFsp)
   if (!matched) {
-    reasons.push(`FSPIOP-Source header should match Payer`)
+    reasons.push('FSPIOP-Source header should match Payer')
     return false
   }
   return true

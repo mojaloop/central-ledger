@@ -211,7 +211,7 @@ const cleanAll = async () => {
     await Db.connect(Config.DATABASE_URI)
     await Db.transferStateChange.destroy()
     await Db.transfer.destroy()
-    console.log(`Transfer data cleaned!`)
+    console.log('Transfer data cleaned!')
   } catch (err) {
     console.error(err)
   }

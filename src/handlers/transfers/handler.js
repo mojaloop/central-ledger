@@ -120,7 +120,7 @@ const prepare = async (error, messages) => {
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
 
     if (hasDuplicateId && hasDuplicateHash) {
-      Logger.info(Util.breadcrumb(location, `handleResend`))
+      Logger.info(Util.breadcrumb(location, 'handleResend'))
       const transfer = await TransferService.getByIdLight(transferId)
       const transferStateEnum = transfer && transfer.transferStateEnumeration
       if ([TransferStateEnum.COMMITTED, TransferStateEnum.ABORTED].includes(transferStateEnum)) {
@@ -144,7 +144,7 @@ const prepare = async (error, messages) => {
       if (validationPassed) {
         Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
-          Logger.info(Util.breadcrumb(location, `saveTransfer`))
+          Logger.info(Util.breadcrumb(location, 'saveTransfer'))
           await TransferService.prepare(payload)
         } catch (err) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
@@ -159,7 +159,7 @@ const prepare = async (error, messages) => {
       } else {
         Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
         try {
-          Logger.info(Util.breadcrumb(location, `saveInvalidRequest`))
+          Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
           await TransferService.prepare(payload, reasons.toString(), false)
         } catch (err) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
@@ -255,7 +255,7 @@ const fulfil = async (error, messages) => {
     const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
 
     if (hasDuplicateId && hasDuplicateHash) {
-      Logger.info(Util.breadcrumb(location, `handleResend`))
+      Logger.info(Util.breadcrumb(location, 'handleResend'))
       if (transferStateEnum === TransferStateEnum.COMMITTED || transferStateEnum === TransferStateEnum.ABORTED) {
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         if (!isTransferError) {
