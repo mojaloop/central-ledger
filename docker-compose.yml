@@ -26,13 +26,6 @@ services:
       - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
       - CLEDG_SIDECAR__DISABLED=true
       - CLEDG_MONGODB__DISABLED=false
-      - WAIT_FOR_DB_HOST=mysql
-      - WAIT_FOR_DB_PORT=3306
-      - WAIT_FOR_DB_USER=central_ledger
-      - WAIT_FOR_DB_PASSWORD=password
-      - WAIT_FOR_DB_DATABASE=central_ledger
-      - WAIT_FOR_DB_OBJSTORE_URI=mongodb://objstore:27017/mlos'
-      - WAIT_FOR_DB_KAFKA_BROKER=kafka:29092'
     networks:
       - cl-mojaloop-net
     depends_on:
@@ -59,7 +52,6 @@ services:
       - ./docker/wait-for:/opt/wait-for
     environment:
       - LOG_LEVEL=info
-      - WAIT_FOR_DB_KAFKA_BROKER=kafka:29092'
     networks:
       - cl-mojaloop-net
     depends_on:
@@ -110,9 +102,7 @@ services:
     entrypoint: [ "sh", "-c" ]
     command:
       - /opt/wait-for-mockserver.sh
-    environment:
-      - WAIT_FOR_MOCK_HOST=mockserver
-      - WAIT_FOR_MOCK_PORT=1080
+    environment: []
     networks:
       - cl-mojaloop-net
     depends_on:

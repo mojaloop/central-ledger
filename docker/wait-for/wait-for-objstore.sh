@@ -2,6 +2,8 @@
 
 echo "** STARTUP - Checking for Object Store connection..."
 
+source /opt/wait-for/wait-for.env
+
 apk add --no-cache mongodb
 
 #sh /opt/wait-for/wait-for.sh objstore:1080 -- echo "** STARTUP - Object Store connection successful!"

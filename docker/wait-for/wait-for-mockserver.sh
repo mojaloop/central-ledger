@@ -1,6 +1,8 @@
 #!/bin/sh
 # wait-for-mockserver.sh
 
+source /opt/wait-for/wait-for.env
+
 function healthCheck() {  
   curl -s -X GET "http://$WAIT_FOR_MOCK_HOST:$WAIT_FOR_MOCK_PORT"
 }
