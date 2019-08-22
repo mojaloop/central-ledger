@@ -113,10 +113,6 @@ const validateDuplicateHash = async (transferId, payload, isFulfilment = false, 
 
     if (!isFulfilment && !isTransferError) {
       result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
-    } else if (!isTransferError) {
-      result = await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
-    } else {
-      result = await TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
     }
     return result
   } catch (err) {

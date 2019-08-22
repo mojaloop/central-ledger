@@ -24,7 +24,7 @@
 
 'use strict'
 
-const Time = require('../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 
 const transferExtensionRecordCount = async (knex, nameSuffix) => {
   const result = await knex(`transferExtension${nameSuffix}`).count({ count: '*' }).first()

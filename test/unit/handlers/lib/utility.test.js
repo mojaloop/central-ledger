@@ -489,13 +489,14 @@ Test('Utility Test', utilityTest => {
       test.end()
     })
 
-    proceedTest.test('produce fromSwitch and do not stop timer', async test => {
-      const opts = { fromSwitch: true, producer, histTimerEnd: true }
+    proceedTest.test('produce fromSwitch to replaced destination and do not stop timer', async test => {
+      const newDestination = 'dfsp'
+      const opts = { fromSwitch: true, producer, toDestination: newDestination, histTimerEnd: true }
       try {
         const result = await UtilityProxy.proceed(params, opts)
         const p = producer
         test.ok(produceGeneralMessageStub.withArgs(p.functionality, p.action, message.value, successState).calledTwice, 'produceGeneralMessageStub called twice')
-        test.equal(message.value.to, from, 'message destination set to sender')
+        test.equal(message.value.to, newDestination, 'new message destination set')
         test.equal(message.value.from, Enum.headers.FSPIOP.SWITCH, 'from set to switch')
         test.equal(histTimerEndStub.callCount, 0, 'timer running')
         test.equal(result, true, 'result returned')

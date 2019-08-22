@@ -51,7 +51,7 @@ const TransferObjectTransform = require('../../domain/transfer/transform')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
-const Comparators = require('@mojaloop/central-services-shared').Comparators
+const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const consumerCommit = true
@@ -68,7 +68,6 @@ const toDestination = true
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
  * INVALID status. For any duplicate requests we will send appropriate callback based on the transfer state and the hash validation
  *
- * TransferService.validateDuplicateHash called to validate/insert the hash of the payload of the message
  * Validator.validateByName called to validate the payload of the message
  * TransferService.getById called to get the details of the existing transfer
  * TransferObjectTransform.toTransfer called to transform the transfer object

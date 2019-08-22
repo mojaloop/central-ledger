@@ -25,7 +25,7 @@
 'use strict'
 const EXECUTE_SUGGESTED_DATA_MIGRATION = true
 
-const Time = require('../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const tableNameSuffix = Time.getYMDString(new Date())
 
 /**

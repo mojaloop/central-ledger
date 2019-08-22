@@ -299,57 +299,6 @@ Test('Transfer Service', transferIndexTest => {
       }
     })
 
-    validateDuplicateHashTest.test('validate against transfer fulfilment model', async (test) => {
-      try {
-        TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns({
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        })
-        const expected = {
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        }
-
-        const isFulfilment = true
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, isFulfilment)
-        test.deepEqual(result, expected, 'results match')
-        test.ok(TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('validate against transfer error model', async (test) => {
-      try {
-        const isFulfilment = false
-        const isTransferError = true
-        TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns({
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        })
-        const expected = {
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        }
-
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, isFulfilment, isTransferError)
-        test.deepEqual(result, expected, 'results match')
-        test.ok(TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
     validateDuplicateHashTest.test('hash exists and not matches', async (test) => {
       try {
         TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({

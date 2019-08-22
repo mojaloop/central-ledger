@@ -40,6 +40,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
   TransferDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     Db.transferDuplicateCheck = {
+      findOne: sandbox.stub(),
       insert: sandbox.stub()
     }
     test.end()
@@ -48,6 +49,38 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
   TransferDuplicateCheckTest.afterEach(test => {
     sandbox.restore()
     test.end()
+  })
+
+  await TransferDuplicateCheckTest.test('getTransferDuplicateCheck should', async (getTransferDuplicateCheckTest) => {
+    await getTransferDuplicateCheckTest.test('get the transfer duplicate check hash', async test => {
+      try {
+        const { transferId } = existingHash
+        Db.transferDuplicateCheck.findOne.withArgs({ transferId }).returns(existingHash)
+        const result = await Model.getTransferDuplicateCheck(transferId)
+        test.deepEqual(result, existingHash)
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferDuplicateCheck failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await getTransferDuplicateCheckTest.test('throw error', async test => {
+      try {
+        const { transferId } = existingHash
+        Db.transferDuplicateCheck.findOne.throws(new Error('message'))
+        await Model.getTransferDuplicateCheck(transferId)
+        test.fail(' should throw')
+        test.end()
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await getTransferDuplicateCheckTest.end()
   })
 
   await TransferDuplicateCheckTest.test('saveTransferDuplicateCheck should', async (saveTransferDuplicateCheckTest) => {

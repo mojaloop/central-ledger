@@ -35,16 +35,11 @@ const getUTCString = (d) => {
   return d.toISOString().replace(/[TZ]/g, ' ').trim()
 }
 
-const getYMDString = (d) => {
-  return d.toISOString().replace(/-/g, '').substr(0, 8)
-}
-
 module.exports = {
   sleep,
   msCurrentYear,
   msCurrentMonth,
   msToday,
   getCurrentUTCTimeInMilliseconds,
-  getUTCString,
-  getYMDString
+  getUTCString
 }
