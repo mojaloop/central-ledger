@@ -64,12 +64,14 @@
     "docker:clean": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.functional.yml down --rmi local",
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json",
     "audit:resolve": "SHELL=sh resolve-audit",
-    "audit:check": "SHELL=sh check-audit"
+    "audit:check": "SHELL=sh check-audit",
+    "dep:check": "npx ncu",
+    "dep:update": "npx ncu -u"
   },
   "dependencies": {
     "@mojaloop/central-object-store": "7.1.0",
     "@mojaloop/central-services-auth": "5.2.1",
-    "@mojaloop/central-services-database": "7.3.0",
+    "@mojaloop/central-services-database": "7.4.0",
     "@mojaloop/central-services-error-handling": "7.3.0",
     "@mojaloop/central-services-health": "7.0.0",
     "@mojaloop/central-services-metrics": "5.2.0",
@@ -104,6 +106,7 @@
     "lodash": "4.17.15",
     "moment": "2.24.0",
     "mustache": "3.0.2",
+    "npm-check-updates": "3.1.21",
     "npm-run-all": "4.1.5",
     "rc": "1.2.8",
     "require-glob": "3.2.0",
