@@ -120,7 +120,7 @@ const prepare = async (error, messages) => {
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
     if (existsMatching) {
-      Logger.info(Util.breadcrumb(location, `existsMatching`))
+      Logger.info(Util.breadcrumb(location, 'existsMatching'))
       const transferState = await TransferService.getTransferStateChange(transferId)
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
@@ -150,7 +150,7 @@ const prepare = async (error, messages) => {
     if (validationPassed) {
       Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
       try {
-        Logger.info(Util.breadcrumb(location, `saveTransfer`))
+        Logger.info(Util.breadcrumb(location, 'saveTransfer'))
         await TransferService.prepare(payload)
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
@@ -165,7 +165,7 @@ const prepare = async (error, messages) => {
     } else {
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
-        Logger.info(Util.breadcrumb(location, `saveInvalidRequest`))
+        Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await TransferService.prepare(payload, reasons.toString(), false)
       } catch (err) {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
@@ -233,7 +233,7 @@ const fulfil = async (error, messages) => {
       await TransferService.validateDuplicateHash(transferId, payload, transferFulfilmentId, isTransferError)
 
     if (existsMatching) {
-      Logger.info(Util.breadcrumb(location, `existsMatching`))
+      Logger.info(Util.breadcrumb(location, 'existsMatching'))
       const transferState = await TransferService.getTransferStateChange(transferId)
       const transferStateEnum = transferState && transferState.enumeration
       if (!transferState) {
@@ -282,7 +282,7 @@ const fulfil = async (error, messages) => {
       }
     }
     if (existsNotMatching) {
-      Logger.info(Util.breadcrumb(location, `existsNotMatching`))
+      Logger.info(Util.breadcrumb(location, 'existsNotMatching'))
       if (!isTransferError) {
         Logger.info(Util.breadcrumb(location, `inProgress3--${actionLetter}5`))
       } else {

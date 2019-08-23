@@ -140,7 +140,7 @@ const transfer = async (error, messages) => {
     const transferId = message.value.id
 
     if (!payload) {
-      Logger.info(`AdminTransferHandler::validationFailed`)
+      Logger.info('AdminTransferHandler::validationFailed')
       // TODO: Cannot be saved because no payload has been provided. What action should be taken?
       return false
     }

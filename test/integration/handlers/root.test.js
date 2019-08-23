@@ -50,7 +50,7 @@ const debug = false
 Test('Root handler test', async handlersTest => {
   const startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
-    await registerAllHandlers.test(`setup handlers`, async (test) => {
+    await registerAllHandlers.test('setup handlers', async (test) => {
       await Db.connect(Config.DATABASE_URI)
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
