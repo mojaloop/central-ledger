@@ -65,7 +65,7 @@ In this method, we will run all of the core dependencies (`kafka`, `mysql` and `
 
 > Alternatively, you can run the `central-ledger` inside of `docker-compose` with the rest of the dependencies to make the setup a little easier: [Running Inside Docker](#RunningInsideDocker).
 
-### **1. Run all back-end dependencies as part of the Docker Compose**
+### 3.1 Run all back-end dependencies as part of the Docker Compose
 
 > Note: You can remove the `objstore` from the below command if you disable MongoDB (`MONGODB.DISABLED=true` is disabled in the `./config/default.json` or set environment var `export CLEDG_MONGODB__DISABLED=true`).
 
@@ -74,7 +74,12 @@ In this method, we will run all of the core dependencies (`kafka`, `mysql` and `
 docker-compose up -d mysql kafka temp_curl objstore simulator mockserver ml-api-adapter
 ```
 
-### **2. Configure the DB environment variable and run the server**
+This will do the following:
+* `docker pull` down any dependencies defined in the `docker-compose.yml` file, and the services (mysql, kafka, etc) specified in the above command
+* run all of the containers together
+* ensure that all dependencies (i.e. mysql, kafka) have started for each services.
+
+### 3.2 Configure the DB environment variable and run the server
 
 > Note: Ensure that the `sidecar` has been disabled (`SIDECAR.DISABLED=true` is disabled in the `./config/default.json`) or set environment var `export CLEDG_SIDECAR__DISABLED=true`).
 
@@ -123,7 +128,7 @@ http://hostname.local:4000
 2019-02-01T13:30:30.458Z - info: Notification::startConsumer - starting Consumer for topicNames: [topic-notification-event]
 ```
 
-### **3. Follow logs of the back-end dependencies**
+### 3.3 Follow logs of the back-end dependencies
 ```bash
 docker-compose logs -f
 ```
@@ -133,7 +138,7 @@ docker-compose logs -f
 
 We use `docker-compose` to manage and run the `central-ledger` along with its dependencies with one command.
 
-### **1. Run Central-Ledger and all dependencies as part of the Docker Compose**
+### 4.1 Run Central-Ledger and all dependencies as part of the Docker Compose
 ```bash
 # start all services in Docker
 docker-compose up -d
@@ -143,14 +148,15 @@ This will do the following:
 * `docker pull` down any dependencies defined in the `docker-compose.yml` file
 * `docker build` the `central-ledger` image based on the `Dockerfile` defined in this repo
 * run all of the containers together
+* ensure that all dependencies (i.e. mysql, kafka) have started for each services.
 
-### **2. Follow the logs**
+### 4.2 Follow the logs
 ```bash
 docker-compose logs -f
 ```
 
 
-### 4.1 Handy Docker Compose Tips
+## 5. Handy Docker Compose Tips
 
 You can run `docker-compose` in 'detached' mode as follows:
 
@@ -174,7 +180,7 @@ If you need to clean up everything in your docker environment:
 docker-compose down -v 
 ```
 
-### 4.2 (Optional) Connecting MySQLWorkbench to MySQL inside Docker
+## 6. (Optional) Connecting MySQLWorkbench to MySQL inside Docker
 
 If you installed MySQLWorkbench from the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#5-mysqlworkbench-optional), follow these instructions to get MySQLWorkbench connected to the `mysql` container running in docker.
 
@@ -214,7 +220,7 @@ Please follow the below instructions:
     <img src="images/MySQL_Help_6.png" width="400">
 
 
-##  5. <a name='Testing'></a>Testing
+##  7. <a name='Testing'></a>Testing
 
 We use `npm` scripts as a common entrypoint for running the tests.
 
@@ -231,13 +237,13 @@ npm run test:coverage
 npm run test:integration
 ```
 
-### 5.1 Testing the `central-ledger` API with Postman
+### 8. Testing the `central-ledger` API with Postman
 
 <!-- TODO: Verify if this link is still useful and applicable.
 >Note: Check the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#2-postman) for additional information.
 -->
 
-#### Prerequisites:
+#### 8.1 Prerequisites:
 
 1. Follow the steps as described in [`5.2. Verifying Mojaloop Deployment` from the Deployment Guide](https://github.com/mojaloop/documentation/tree/master/deployment-guide#52-verifying-mojaloop-deployment).
 2. Clone the [Postman Collection repo](https://github.com/mojaloop/postman): 
@@ -255,7 +261,7 @@ npm run test:integration
     npm install -g newman
     ```
 
-#### Pre-loading Test Data
+#### 8.2 Pre-loading Test Data
 
 >Note: Ensure that you execute the following commands in your project folder after running `npm install`.
 
@@ -303,7 +309,7 @@ OSS-New-Deployment-FSP-Setup
   ...continued...
 ```
 
-#### Running Example Requests
+#### 8.3 Running Example Requests
 1. Import the [Golden Path](https://github.com/mojaloop/postman/blob/master/Golden_Path.postman_collection.json) Collection and [Docker-compose Environment](https://github.com/mojaloop/postman/blob/master/environments/Mojaloop-Local-Docker-Compose.postman_environment.json) File.
     - Postman Environment: `./environments/Mojaloop-Local-Docker-Compose.postman_environment.json`
     - Postman Collection: `./Golden_Path.postman_collection.json`
@@ -313,19 +319,19 @@ OSS-New-Deployment-FSP-Setup
 5. You can check the database to see the transfer state, status changes, positions and other such information.
 
 
-##  6. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs
+## 9. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs
 
-#### 6.1 `sodium v1.2.3` can't compile during npm install
+### 9.1 `sodium v1.2.3` can't compile during npm install
 
 Resolved by installing v2.0.3 `npm install sodium@2.0.3`
 
 
-#### 6.2 `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
+### 9.2 `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
 
 Resolved by running `CXX='clang++ -std=c++11 -stdlib=libc++' npm rebuild`
 
 
-#### 6.3 On macOS, `npm install` fails with the following error
+### 9.3 On macOS, `npm install` fails with the following error
 ```
 Undefined symbols for architecture x86_64:
   "_CRYPTO_cleanup_all_ex_data", referenced from:
@@ -342,3 +348,32 @@ Resolved by installing openssl `brew install openssl` and then running:
   export LDFLAGS=-L/usr/local/opt/openssl/lib 
   npm install
   ```  
+
+### 9.4 Docker-Compose Issues
+
+#### 9.4.1 On Linux, ML-API-Adapter is unable to retrieve the callback end-points from Central-Ledger
+
+Shutdown all docker images, and modify the following project configuration: `docker/ml-api-adapter/default.json`
+```json
+{
+  "PORT": 3000,
+  "HOSTNAME": "http://ml-api-adapter",
+  "ENDPOINT_SOURCE_URL": "http://host.docker.internal:3001",
+  "ENDPOINT_HEALTH_URL": "http://host.docker.internal:3001/health",
+  ...
+```
+
+Replace `host.docker.internal` with `172.17.0.1` as per the following example:
+
+```json
+{
+  "PORT": 3000,
+  "HOSTNAME": "http://ml-api-adapter",
+  "ENDPOINT_SOURCE_URL": "http://172.17.0.1:3001",
+  "ENDPOINT_HEALTH_URL": "http://172.17.0.1:3001/health",
+  ...
+```
+
+> Note: This will ensure that ml-api-adapter can send requests to the host machine. Refer to the following issue for more information or if the above ip-address is not working for you: https://github.com/docker/for-linux/issues/264.
+
+Restart all docker images.
