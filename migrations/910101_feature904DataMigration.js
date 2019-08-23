@@ -23,9 +23,10 @@
  ******/
 
 'use strict'
-const EXECUTE_SUGGESTED_DATA_MIGRATION = false
-
 const Time = require('@mojaloop/central-services-shared').Util.Time
+const Config = require('../src/lib/config')
+const RUN_DATA_MIGRATION_TO_UPGRADE = Config.DB_RUN_DATA_MIGRATION_TO_UPGRADE
+
 const tableNameSuffix = Time.getYMDString(new Date())
 
 /**
@@ -103,7 +104,7 @@ const migrateData = async (knex) => {
 }
 
 exports.up = async (knex, Promise) => {
-  if (EXECUTE_SUGGESTED_DATA_MIGRATION) {
+  if (RUN_DATA_MIGRATION_TO_UPGRADE) {
     return await migrateData(knex)
   }
 }

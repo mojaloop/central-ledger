@@ -15,7 +15,8 @@
   },
   "DB_CONNECTION": {
     "POOL_MIN": 10,
-    "POOL_MAX": 30
+    "POOL_MAX": 30,
+    "RUN_DATA_MIGRATION_TO_UPGRADE": false
   },
   "MONGODB": {
     "DISABLED": false,
