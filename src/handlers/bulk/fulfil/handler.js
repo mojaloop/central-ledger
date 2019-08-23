@@ -130,13 +130,13 @@ const bulkFulfil = async (error, messages) => {
     const isFulfilment = true
     const { isDuplicateId, isResend, identity } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash, isFulfilment)
     if (isDuplicateId && isResend) { // TODO: handle resend
-      Logger.info(Util.breadcrumb(location, `resend`))
-      Logger.info(Util.breadcrumb(location, `notImplemented`))
+      Logger.info(Util.breadcrumb(location, 'resend'))
+      Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (isDuplicateId && !isResend) { // TODO: handle modified request
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
-      Logger.info(Util.breadcrumb(location, `notImplemented`))
+      Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
 
@@ -146,15 +146,15 @@ const bulkFulfil = async (error, messages) => {
       let state
       Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
-        Logger.info(Util.breadcrumb(location, `saveBulkTransfer`))
+        Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
         state = await BulkTransferService.bulkFulfil(payload, identity)
       } catch (err) { // TODO: handle insert errors
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.info(Util.breadcrumb(location, `notImplemented`))
+        Logger.info(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       try {
-        Logger.info(Util.breadcrumb(location, `individualTransferFulfils`))
+        Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
         // stream initialization
         const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
         const indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
@@ -198,21 +198,21 @@ const bulkFulfil = async (error, messages) => {
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.info(Util.breadcrumb(location, `notImplemented`))
+        Logger.info(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
     } else { // TODO: handle validation failure
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
-        Logger.info(Util.breadcrumb(location, `saveInvalidRequest`))
+        Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.info(Util.breadcrumb(location, `notImplemented`))
+        Logger.info(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.info(Util.breadcrumb(location, `notImplemented`))
+      Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
     }
   } catch (err) {

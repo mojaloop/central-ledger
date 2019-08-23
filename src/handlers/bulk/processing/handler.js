@@ -199,7 +199,7 @@ const bulkProcessing = async (error, messages) => {
       Logger.info(Util.breadcrumb(location, { path: 'produceNotification' }))
       getBulkTransferByIdResult = await BulkTransferService.getBulkTransferById(bulkTransferInfo.bulkTransferId)
     } else {
-      Logger.info(Util.breadcrumb(location, { path: `awaitAllTransfers` }))
+      Logger.info(Util.breadcrumb(location, { path: 'awaitAllTransfers' }))
       criteriaState = null // debugging breakpoint line
       return true
     }

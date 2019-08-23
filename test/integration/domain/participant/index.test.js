@@ -79,7 +79,7 @@ Test('Participant service', async (participantTest) => {
       if (!hubReconciliationAccountExists) {
         const newCurrencyAccount = await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.LedgerAccountType.HUB_RECONCILIATION)
         assert.ok(newCurrencyAccount, `${testData.currency} HUB_RECONCILIATION created`)
-        assert.equal(newCurrencyAccount.participantCurrency.currencyId, testData.currency, `HUB_RECONCILIATION currency matched`)
+        assert.equal(newCurrencyAccount.participantCurrency.currencyId, testData.currency, 'HUB_RECONCILIATION currency matched')
       } else {
         assert.pass(`${testData.currency} HUB_RECONCILIATION found`)
       }
@@ -87,7 +87,7 @@ Test('Participant service', async (participantTest) => {
       if (!hubMlnsAccountExists) {
         const newCurrencyAccount = await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
         assert.ok(newCurrencyAccount, `${testData.currency} HUB_MULTILATERAL_SETTLEMENT created`)
-        assert.equal(newCurrencyAccount.participantCurrency.currencyId, testData.currency, `HUB_MULTILATERAL_SETTLEMENT currency matched`)
+        assert.equal(newCurrencyAccount.participantCurrency.currencyId, testData.currency, 'HUB_MULTILATERAL_SETTLEMENT currency matched')
       } else {
         assert.pass(`${testData.currency} HUB_MULTILATERAL_SETTLEMENT found`)
       }
