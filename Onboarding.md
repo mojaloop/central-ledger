@@ -88,7 +88,7 @@ export CLEDG_SIDECAR__DISABLED=true
 # Disable the MongoDB (optional)
 export CLEDG_MONGODB__DISABLED=true
 
-# set the CLEDG_DATABASE_URI* environment variable:
+# set the CLEDG_DATABASE_URI* environment variable (required):
 export CLEDG_DATABASE_URI=mysql://central_ledger:password@localhost:3306/central_ledger
 
 # start the server
