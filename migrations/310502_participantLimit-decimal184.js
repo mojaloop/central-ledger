@@ -22,25 +22,18 @@
  --------------
  ******/
 
- 'use strict'
+'use strict'
 
 exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('transfer').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('transfer', (t) => {
-        t.string('transferId', 36).primary().notNullable()
-        t.foreign('transferId').references('transferId').inTable('transferDuplicateCheck')
-        t.decimal('amount', 18, 2).notNullable()
-        t.string('currencyId', 3).notNullable()
-        t.foreign('currencyId').references('currencyId').inTable('currency')
-        t.string('ilpCondition', 256).notNullable()
-        t.dateTime('expirationDate').notNullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+  return await knex.schema.hasTable('participantLimit').then(function(exists) {
+    if (exists) {
+      return knex.schema.alterTable('participantLimit', (t) => {
+        t.decimal('value', 18, 4).defaultTo(0).notNullable().alter()
       })
     }
   })
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('transfer')
+  return knex.schema.dropTableIfExists('participantLimit')
 }
