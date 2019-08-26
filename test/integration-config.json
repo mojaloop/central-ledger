@@ -1,6 +1,10 @@
 {
   "PORT": 3001,
   "HOSTNAME": "http://central-ledger",
+  "MIGRATIONS": {
+    "DISABLED": false,
+    "RUN_DATA_MIGRATIONS": true
+  },
   "ENABLE_TOKEN_AUTH": false,
   "ENABLE_BASIC_AUTH": false,
   "LEDGER_ACCOUNT_NAME": "LedgerName",

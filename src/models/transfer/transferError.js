@@ -46,10 +46,10 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
  * @returns {integer} - Returns the id of the transferError record if successful, or throws an error if failed
  */
 
-const insert = async (transferStateChangeId, errorCode, errorDescription) => {
+const insert = async (transferId, transferStateChangeId, errorCode, errorDescription) => {
   Logger.debug('insert transferError - ', errorCode, errorDescription)
   try {
-    return Db.transferError.insert({ transferStateChangeId, errorCode, errorDescription })
+    return Db.transferError.insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -109,10 +109,8 @@ const getByTransferId = async (id) => {
   try {
     const transferError = await Db.transferError.query(async (builder) => {
       const result = builder
-        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'transferError.transferStateChangeId')
-        .where({ 'tsc.transferId': id })
-        .select('transferError.*')
-        .orderBy('transferErrorId', 'desc')
+        .where({ transferId: id })
+        .select('*')
         .first()
       return result
     })

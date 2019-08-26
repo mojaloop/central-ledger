@@ -33,7 +33,6 @@
  */
 
 const Db = require('../../lib/db')
-const Uuid = require('uuid4')
 const Enum = require('../../lib/enum')
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
@@ -41,6 +40,7 @@ const Time = require('../../lib/time')
 const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = async (id) => {
   try {
@@ -124,8 +124,7 @@ const getByIdLight = async (id) => {
           'tsc.createdDate AS completedTimestamp',
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
-          'tf.ilpFulfilment AS fulfilment',
-          'tf.transferFulfilmentId'
+          'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
@@ -133,7 +132,8 @@ const getByIdLight = async (id) => {
         if (!transferResult.fulfilment) {
           transferResult.extensionList = await TransferExtensionModel.getByTransferId(id)
         } else {
-          transferResult.extensionList = await TransferExtensionModel.getByTransferFulfilmentId(transferResult.transferFulfilmentId)
+          const isFulfilment = true
+          transferResult.extensionList = await TransferExtensionModel.getByTransferId(id, isFulfilment)
         }
         transferResult.isTransferReadModel = true
       }
@@ -222,15 +222,14 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
   }
 }
 
-const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
+const saveTransferFulfilled = async (transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true, isValid = true) => {
   const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.RECEIVED_REJECT) : Enum.TransferState.ABORTED_REJECTED)
   const completedTimestamp = (payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date()
   const transferFulfilmentRecord = {
-    transferFulfilmentId,
     transferId,
     ilpFulfilment: payload.fulfilment,
     completedDate: Time.getUTCString(completedTimestamp),
-    isValid: true,
+    isValid, // this change is to be utilized by the implementation of #703
     createdDate: Time.getUTCString(new Date())
   }
   let transferExtensions = []
@@ -238,7 +237,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
     transferExtensions = payload.extensionList.extension.map(ext => {
       return {
         transferId,
-        transferFulfilmentId,
+        isFulfilment: true,
         key: ext.key,
         value: ext.value
       }
@@ -307,7 +306,7 @@ const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, 
  * @returns {Object} - Returns details for the affected db records
  */
 
-const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
+const saveTransferAborted = async (transferId, payload) => {
   let transferErrorRecord
 
   const transactionTimestamp = Time.getUTCString(new Date())
@@ -328,7 +327,8 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
       return {
         transferId,
         key: ext.key,
-        value: ext.value
+        value: ext.value,
+        isError: true
       }
     })
   }
@@ -341,27 +341,23 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
         // insert transfer state change record and retrieve inserted identity
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
-          .where({ transferId: transferStateChangeRecord.transferId })
+          .where({ transferId })
           .forUpdate().first().orderBy('transferStateChangeId', 'desc')
         transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
 
         // insert transfer error
         transferErrorRecord = {
+          transferId,
           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
           errorCode,
           errorDescription,
-          createdDate: transactionTimestamp,
-          transferErrorDuplicateCheckId
+          createdDate: transactionTimestamp
         }
         await knex('transferError').transacting(trx).insert(transferErrorRecord)
 
         // insert transfer extensions if provided
         if (transferExtensions.length > 0) {
-          const insertedTransferError = await knex('transferError').transacting(trx)
-            .where({ transferStateChangeId: insertedTransferStateChange.transferStateChangeId })
-            .first().orderBy('transferErrorId', 'desc')
           for (const transferExtension of transferExtensions) {
-            transferExtension.transferErrorId = insertedTransferError.transferErrorId
             await knex('transferExtension').transacting(trx).insert(transferExtension)
           }
         }
@@ -440,32 +436,73 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     }
 
     const knex = await Db.getKnex()
-    return await knex.transaction(async (trx) => {
-      try {
-        await knex('transfer').transacting(trx).insert(transferRecord)
-        await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
-        await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
-        payerTransferParticipantRecord.name = payload.payerFsp
-        payeeTransferParticipantRecord.name = payload.payeeFsp
-        let transferExtensionsRecordList = []
-        if (payload.extensionList && payload.extensionList.extension) {
-          transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-            return {
-              transferId: payload.transferId,
-              key: ext.key,
-              value: ext.value
-            }
-          })
-          await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+    if (hasPassedValidation) {
+      return await knex.transaction(async (trx) => {
+        try {
+          await knex('transfer').transacting(trx).insert(transferRecord)
+          await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+          await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+          payerTransferParticipantRecord.name = payload.payerFsp
+          payeeTransferParticipantRecord.name = payload.payeeFsp
+          let transferExtensionsRecordList = []
+          if (payload.extensionList && payload.extensionList.extension) {
+            transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+              return {
+                transferId: payload.transferId,
+                key: ext.key,
+                value: ext.value
+              }
+            })
+            await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+          }
+          await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
+          await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+          await trx.commit
+        } catch (err) {
+          await trx.rollback
+          throw err
         }
-        await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
-        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-        await trx.commit
+      })
+    } else {
+      await knex('transfer').insert(transferRecord)
+      try {
+        await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        await trx.rollback
-        throw err
+        Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
       }
-    })
+      try {
+        await knex('transferParticipant').insert(payeeTransferParticipantRecord)
+      } catch (err) {
+        Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
+      }
+      payerTransferParticipantRecord.name = payload.payerFsp
+      payeeTransferParticipantRecord.name = payload.payeeFsp
+      let transferExtensionsRecordList = []
+      if (payload.extensionList && payload.extensionList.extension) {
+        transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          return {
+            transferId: payload.transferId,
+            key: ext.key,
+            value: ext.value
+          }
+        })
+        try {
+          await knex.batchInsert('transferExtension', transferExtensionsRecordList)
+        } catch (err) {
+          Logger.warn(`batchInsert transferExtension error: ${err.message}`)
+        }
+      }
+      try {
+        await knex('ilpPacket').insert(ilpPacketRecord)
+      } catch (err) {
+        Logger.warn(`ilpPacket insert error: ${err.message}`)
+      }
+      try {
+        await knex('transferStateChange').insert(transferStateChangeRecord)
+      } catch (err) {
+        Logger.warn(`transferStateChange insert error: ${err.message}`)
+      }
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -918,18 +955,15 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferFulfilmentId = Uuid()
         const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
-            transferFulfilmentId,
             transferId
           })
           .transacting(trx)
 
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId,
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
@@ -983,18 +1017,15 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferFulfilmentId = Uuid()
         const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
-            transferFulfilmentId,
             transferId
           })
           .transacting(trx)
 
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId,
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
