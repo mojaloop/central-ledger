@@ -40,7 +40,7 @@ const Time = require('../../lib/time')
 const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-// TODO: @ggrg Address Logger.info commented out entries below
+const Logger = require('@mojaloop/central-services-shared').Logger
 
 const getById = async (id) => {
   try {
@@ -468,12 +468,12 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        // Logger.info(`Payer transferParticipant insert error: ${err.message}`)
+        Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
       }
       try {
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
-        // Logger.info(`Payee transferParticipant insert error: ${err.message}`)
+        Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
       }
       payerTransferParticipantRecord.name = payload.payerFsp
       payeeTransferParticipantRecord.name = payload.payeeFsp
@@ -489,18 +489,18 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         try {
           await knex.batchInsert('transferExtension', transferExtensionsRecordList)
         } catch (err) {
-          // Logger.info(`batchInsert transferExtension error: ${err.message}`)
+          Logger.warn(`batchInsert transferExtension error: ${err.message}`)
         }
       }
       try {
         await knex('ilpPacket').insert(ilpPacketRecord)
       } catch (err) {
-        // Logger.info(`ilpPacket insert error: ${err.message}`)
+        Logger.warn(`ilpPacket insert error: ${err.message}`)
       }
       try {
         await knex('transferStateChange').insert(transferStateChangeRecord)
       } catch (err) {
-        // Logger.info(`transferStateChange insert error: ${err.message}`)
+        Logger.warn(`transferStateChange insert error: ${err.message}`)
       }
     }
   } catch (err) {
