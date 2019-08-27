@@ -68,6 +68,7 @@ In this method, we will run all of the core dependencies (`kafka`, `mysql` and `
 ### 3.1 Run all back-end dependencies as part of the Docker Compose
 
 > Note: You can remove the `objstore` from the below command if you disable MongoDB (`MONGODB.DISABLED=true` is disabled in the `./config/default.json` or set environment var `export CLEDG_MONGODB__DISABLED=true`).
+> Note: mockserver below is optional. Include it if you require its use.
 
 ```bash
 # start all back-end dependencies in Docker
@@ -82,6 +83,7 @@ This will do the following:
 ### 3.2 Configure the DB environment variable and run the server
 
 > Note: Ensure that the `sidecar` has been disabled (`SIDECAR.DISABLED=true` is disabled in the `./config/default.json`) or set environment var `export CLEDG_SIDECAR__DISABLED=true`).
+> Note: If you do disable Mongodb (i.e. `CLEDG_MONGODB__DISABLED=true`), please ensure that you comment out the following line `sh /opt/wait-for/wait-for-objstore.sh` from the following file: `docker/wait-for/wait-for-central-ledger.sh`.
 
 ```bash
 # disable SIDECAR in config/default.json temporary by setting 
@@ -377,3 +379,8 @@ Replace `host.docker.internal` with `172.17.0.1` as per the following example:
 > Note: This will ensure that ml-api-adapter can send requests to the host machine. Refer to the following issue for more information or if the above ip-address is not working for you: https://github.com/docker/for-linux/issues/264.
 
 Restart all docker images.
+
+#### 9.4.2 When running all services, central-ledger is unable to connect to MongoDB on startup
+
+If you do disable Mongodb (i.e. `CLEDG_MONGODB__DISABLED=true`), please ensure that you comment out the following line `sh /opt/wait-for/wait-for-objstore.sh` from the following file: `docker/wait-for/wait-for-central-ledger.sh`.
+Alternatively make sure that it is uncommented if you do NOT wish to disable the object store.
