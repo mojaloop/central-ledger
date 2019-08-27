@@ -39,7 +39,6 @@ const TransferFulfilmentModel = require('../../../src/models/transfer/transferFu
 const TransferParticipantModel = require('../../../src/models/transfer/transferParticipant')
 const Enum = require('../../../src/lib/enum')
 const Time = require('../../../src/lib/time')
-const Uuid = require('uuid4')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 // TODO: add data to transferParticipant, transferParticipantRoleType, transferFulfilment
@@ -77,10 +76,8 @@ exports.prepareData = async () => {
     // let transfer = await TransferFacade.getById(transferResult.transfer.transferId)
 
     const transferId = transferResult.transfer.transferId
-    const transferFulfilmentId = Uuid()
-    await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, 'helper.hash', transferFulfilmentId)
+    await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, 'helper.hash')
     await TransferFulfilmentModel.saveTransferFulfilment({
-      transferFulfilmentId,
       transferId,
       ilpFulfilment: 'helper.oAKAAA',
       completedDate: Time.getUTCString(new Date()),

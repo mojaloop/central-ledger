@@ -41,12 +41,80 @@ Test('TransferErrorDuplicateCheck model', async (TransferErrorDuplicateCheckTest
   }]
   TransferErrorDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    Db.transferErrorDuplicateCheck = {
+      findOne: sandbox.stub(),
+      insert: sandbox.stub()
+    }
     test.end()
   })
 
   TransferErrorDuplicateCheckTest.afterEach(test => {
     sandbox.restore()
     test.end()
+  })
+
+  await TransferErrorDuplicateCheckTest.test('getTransferErrorDuplicateCheck should', async (getTransferErrorDuplicateCheckTest) => {
+    await getTransferErrorDuplicateCheckTest.test('get the transfer duplicate check hash', async test => {
+      try {
+        const { transferId } = existingHashes[0]
+        Db.transferErrorDuplicateCheck.findOne.withArgs({ transferId }).returns(existingHashes[0])
+        const result = await Model.getTransferErrorDuplicateCheck(transferId)
+        test.deepEqual(result, existingHashes[0])
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferErrorDuplicateCheck failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await getTransferErrorDuplicateCheckTest.test('throw error', async test => {
+      try {
+        const { transferId } = existingHashes[0]
+        Db.transferErrorDuplicateCheck.findOne.throws(new Error('message'))
+        await Model.getTransferErrorDuplicateCheck(transferId)
+        test.fail(' should throw')
+        test.end()
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await getTransferErrorDuplicateCheckTest.end()
+  })
+
+  await TransferErrorDuplicateCheckTest.test('saveTransferErrorDuplicateCheck should', async (saveTransferErrorDuplicateCheckTest) => {
+    await saveTransferErrorDuplicateCheckTest.test('save the transfer duplicate check hash', async test => {
+      try {
+        Db.transferErrorDuplicateCheck.insert.returns(1)
+        const { transferId, hash } = existingHashes[0]
+        const result = await Model.saveTransferErrorDuplicateCheck(transferId, hash)
+        test.equal(result, 1)
+        test.end()
+      } catch (err) {
+        Logger.error(`saveTransferErrorDuplicateCheck failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await saveTransferErrorDuplicateCheckTest.test('throw error', async test => {
+      try {
+        Db.transferErrorDuplicateCheck.insert.throws(new Error('message'))
+        const { transferId, hash } = existingHashes[0]
+        await Model.saveTransferErrorDuplicateCheck(transferId, hash)
+        test.fail(' should throw')
+        test.end()
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await saveTransferErrorDuplicateCheckTest.end()
   })
 
   await TransferErrorDuplicateCheckTest.test('checkAndInsertDuplicateHash should', async (checkAndInsertDuplicateHashTest) => {

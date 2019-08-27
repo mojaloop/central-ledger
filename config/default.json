@@ -1,7 +1,10 @@
 {
   "PORT": 3001,
   "HOSTNAME": "http://central-ledger",
-  "RUN_MIGRATIONS": true,
+  "MIGRATIONS": {
+    "DISABLED": false,
+    "RUN_DATA_MIGRATIONS": true
+  },
   "AMOUNT": {
     "PRECISION": 10,
     "SCALE": 2

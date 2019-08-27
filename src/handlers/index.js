@@ -48,7 +48,7 @@ Program
   .description('CLI to manage Handlers')
 
 Program.command('handler') // sub-command name, coffeeType = type, required
-  .alias('h') // alternative sub-command is `o`
+  .alias('h') // alternative sub-command is 'o'
   .description('Start a specified Handler') // command description
   .option('--prepare', 'Start the Prepare Handler')
   .option('--position', 'Start the Position Handler')

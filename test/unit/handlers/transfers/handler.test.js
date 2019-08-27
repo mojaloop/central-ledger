@@ -40,7 +40,6 @@ const Kafka = require('../../../../src/handlers/lib/kafka')
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
-const FiveBellsCondition = require('five-bells-condition')
 const MainUtil = require('../../../../src/lib/util')
 const Util = require('../../../../src/handlers/lib/utility')
 const ilp = require('../../../../src/models/transfer/ilpPacket')
@@ -51,6 +50,7 @@ const DAO = require('../../../../src/handlers/lib/dao')
 const Enum = require('../../../../src/lib/enum')
 const TransferState = Enum.TransferState
 const TransferStateEnum = Enum.TransferStateEnum
+const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -84,6 +84,7 @@ const transferReturn = {
     amount: '433.88'
   },
   transferState: 'COMMITTED',
+  transferStateEnumeration: 'COMMITTED',
   completedTimestamp: '2016-05-15T18:44:38.000Z',
   ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
   condition: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
@@ -256,6 +257,7 @@ Test('Transfer handler', transferHandlerTest => {
     sandbox.stub(KafkaConsumer.prototype, 'connect').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'consume').returns(P.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'commitMessageSync').returns(P.resolve())
+    sandbox.stub(Comparators)
     sandbox.stub(Validator)
     sandbox.stub(TransferService)
     sandbox.stub(Kafka.Consumer, 'getConsumer').returns({
@@ -285,11 +287,11 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
-      TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -302,11 +304,12 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.getConsumer.throws(new Error())
       Util.transformAccountToTopicName.returns(topicName)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -319,11 +322,13 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
+      TransferService.getByIdLight.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       const result = await allTransferHandlers.prepare(null, localMessages)
@@ -338,11 +343,13 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
+      TransferService.getByIdLight.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       const result = await allTransferHandlers.prepare(null, localMessages)
@@ -356,11 +363,13 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
+      TransferService.getByIdLight.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve(null))
       const result = await allTransferHandlers.prepare(null, localMessages)
@@ -375,12 +384,13 @@ Test('Transfer handler', transferHandlerTest => {
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
-      TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'COMMITTED' }))
-      TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
       TransferObjectTransform.toTransfer.withArgs(transferReturn).returns(transfer)
 
       const result = await allTransferHandlers.prepare(null, localMessages)
@@ -395,9 +405,11 @@ Test('Transfer handler', transferHandlerTest => {
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'ABORTED' }))
       TransferService.getById.withArgs(transfer.transferId).returns(P.resolve(transferReturn))
@@ -416,9 +428,11 @@ Test('Transfer handler', transferHandlerTest => {
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'RECEIVED' }))
 
@@ -434,9 +448,11 @@ Test('Transfer handler', transferHandlerTest => {
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'unknown' }))
       localMessages[0].value.metadata.event.action = 'unknown'
@@ -453,9 +469,11 @@ Test('Transfer handler', transferHandlerTest => {
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
       TransferService.getTransferStateChange.withArgs(transfer.transferId).returns(P.resolve({ enumeration: 'RESERVED' }))
 
@@ -470,11 +488,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: true
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
       }))
 
       const result = await allTransferHandlers.prepare(null, localMessages)
@@ -489,11 +508,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: true
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: false
       }))
 
       const result = await allTransferHandlers.prepare(null, localMessages)
@@ -507,11 +527,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
@@ -524,11 +545,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages[1])
       test.equal(result, true)
@@ -542,11 +564,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
@@ -559,11 +582,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages[0])
       test.equal(result, true)
@@ -576,11 +600,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -594,11 +619,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -610,9 +636,11 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       Util.createState.returns(messageProtocol.metadata.event.state)
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
@@ -628,13 +656,14 @@ Test('Transfer handler', transferHandlerTest => {
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       Util.createState.returns(messageProtocol.metadata.event.state)
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.returns(P.resolve(true))
 
       const result = await allTransferHandlers.prepare(null, messages)
@@ -648,11 +677,12 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
@@ -666,34 +696,16 @@ Test('Transfer handler', transferHandlerTest => {
       Util.transformAccountToTopicName.returns(topicName)
       Util.proceed.returns(true)
       Validator.validateByName.returns({ validationPassed: false, reasons: [] })
-      TransferService.getById.returns(P.resolve(null))
       TransferService.prepare.throws(new Error())
-      TransferService.validateDuplicateHash.withArgs(transfer.transferId, transfer).returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: false
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, transfer).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
       }))
       const result = await allTransferHandlers.prepare(null, localMessages)
       test.equal(result, true)
       test.end()
-    })
-
-    prepareTest.test('throw an error when an error is thrown by prepare', async (test) => {
-      try {
-        const localMessages = MainUtil.clone(messages)
-        await Consumer.createHandler(topicName, config, command)
-        Util.transformAccountToTopicName.returns(topicName)
-        Util.proceed.returns(true)
-        Util.createState.returns(messageProtocol.metadata.event.state)
-        Validator.validateByName.returns({ validationPassed: true, reasons: [] })
-        TransferService.getById.returns(P.resolve(null))
-        TransferService.prepare.throws(new Error())
-        await allTransferHandlers.prepare(null, localMessages)
-        test.fail('No Error Thrown')
-        test.end()
-      } catch (e) {
-        test.pass('Error Thrown')
-        test.end()
-      }
     })
 
     prepareTest.test('throw an error when consumer not found', async (test) => {
@@ -979,6 +991,13 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Util.proceed.returns(true)
 
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -995,38 +1014,12 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Util.proceed.returns(true)
 
-      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      test.equal(result, true)
-      test.end()
-    })
-
-    fulfilTest.test('fail validation when transfer already committed ', async (test) => {
-      const localfulfilMessages = MainUtil.clone(fulfilMessages)
-      await Consumer.createHandler(topicName, config, command)
-      Util.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.COMMITTED }))
-      TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
-      Util.proceed.returns(true)
-
-      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      test.equal(result, true)
-      test.end()
-    })
-
-    fulfilTest.test('fail validation when transfer already committed - autocommit is enabled', async (test) => {
-      const localfulfilMessages = MainUtil.clone(fulfilMessages)
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-      Util.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.COMMITTED }))
-      TransferService.validateDuplicateHash.returns(P.resolve({}))
-      Validator.validateFulfilCondition.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
-      Util.proceed.returns(true)
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1043,6 +1036,13 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1061,6 +1061,13 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
 
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -1077,6 +1084,13 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[1].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[1].value.content.payload.fulfilment = 'condition'
       Util.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[1].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages[1])
       test.equal(result, true)
@@ -1095,6 +1109,13 @@ Test('Transfer handler', transferHandlerTest => {
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1117,6 +1138,13 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1141,6 +1169,13 @@ Test('Transfer handler', transferHandlerTest => {
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
@@ -1152,7 +1187,6 @@ Test('Transfer handler', transferHandlerTest => {
         await Consumer.createHandler(topicName, config, command)
         Util.transformGeneralTopicName.returns(topicName)
         TransferService.getById.throws(new Error())
-        FiveBellsCondition.fulfillmentToCondition.returns('condition')
         ilp.update.returns(P.resolve())
 
         await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -1164,31 +1198,38 @@ Test('Transfer handler', transferHandlerTest => {
       }
     })
 
-    fulfilTest.test('produce notification when hash exists and state not found', async (test) => {
-      const localfulfilMessages = MainUtil.clone(fulfilMessages)
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
-      Util.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(P.resolve({
-        condition: 'condition',
-        payeeFsp: 'dfsp2',
-        expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
-      }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false
-      }))
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
-      Util.proceed.returns(true)
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+    // fulfilTest.test('produce notification when hash exists and state not found', async (test) => {
+    //   const localfulfilMessages = MainUtil.clone(fulfilMessages)
+    //   await Consumer.createHandler(topicName, config, command)
+    //   Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
+    //   Util.transformGeneralTopicName.returns(topicName)
+    //   TransferService.getById.returns(P.resolve({
+    //     condition: 'condition',
+    //     payeeFsp: 'dfsp2',
+    //     expirationDate: new Date('1900-01-01'),
+    //     transferState: TransferState.RESERVED
+    //   }))
+    //   TransferService.validateDuplicateHash.returns(P.resolve({
+    //     existsMatching: true,
+    //     existsNotMatching: false
+    //   }))
+    //   ilp.update.returns(P.resolve())
+    //   Validator.validateFulfilCondition.returns(true)
+    //   Util.proceed.returns(true)
+    //   localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+    //   localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
 
-      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      test.equal(result, true)
-      test.end()
-    })
+    //   TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+    //   TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+    //   Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+    //     hasDuplicateId: true,
+    //     hasDuplicateHash: false
+    //   }))
+
+    //   const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+    //   test.equal(result, true)
+    //   test.end()
+    // })
 
     fulfilTest.test('produce notification when hash exists, state is committed and source does not match payee', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
@@ -1200,11 +1241,6 @@ Test('Transfer handler', transferHandlerTest => {
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
-      }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: true
       }))
       TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.COMMITTED })
       ilp.update.returns(P.resolve())
@@ -1218,7 +1254,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.test('produce notification when hash exists, state is committed and source matches payee', async (test) => {
+    fulfilTest.test('produce notification when hash matched, state is committed and source matches payee', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -1227,26 +1263,26 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.COMMITTED,
+        transferStateEnumeration: TransferStateEnum.COMMITTED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: true
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.COMMITTED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
-    fulfilTest.test('produce notification when hash exists, state is committed but hash is invalid', async (test) => {
+    fulfilTest.test('produce notification when hash matched, state is committed but hash is invalid', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -1255,26 +1291,26 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.COMMITTED,
+        transferStateEnumeration: TransferStateEnum.COMMITTED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: false
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.COMMITTED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
-    fulfilTest.test('produce notification when hash exists, state is received', async (test) => {
+    fulfilTest.test('produce notification when hash matched, state is received', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -1283,26 +1319,26 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.RECEIVED_FULFIL,
+        transferStateEnumeration: TransferStateEnum.RECEIVED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: true
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RECEIVED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
-    fulfilTest.test('produce notification when hash exists, state is reserved', async (test) => {
+    fulfilTest.test('produce notification when hash matched, state is reserved', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -1311,26 +1347,26 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.RESERVED,
+        transferStateEnumeration: TransferStateEnum.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: true
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RESERVED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
-    fulfilTest.test('produce notification when hash exists, state is aborted', async (test) => {
+    fulfilTest.test('produce notification when hash matched, state is aborted', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -1339,19 +1375,19 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.ABORTED_REJECTED,
+        transferStateEnumeration: TransferStateEnum.ABORTED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: true
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RECEIVED_PREPARE })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1367,26 +1403,26 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.RESERVED,
+        transferStateEnumeration: TransferStateEnum.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: true,
-        isValid: true
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.RESERVED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
       test.end()
     })
 
-    fulfilTest.test('produce notification for abort when hash exists and is valid', async (test) => {
+    fulfilTest.test('produce notification for abort when hash matched and is valid', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.Consumer.isConsumerAutoCommitEnabled.returns(true)
@@ -1395,21 +1431,20 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.ABORTED_ERROR,
+        transferStateEnumeration: TransferStateEnum.ABORTED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: true,
-        transferErrorDuplicateCheckId: 1
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.ABORTED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       localfulfilMessages[0].value.metadata.event.action = 'abort'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1425,21 +1460,20 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.ABORTED_ERROR,
+        transferStateEnumeration: TransferStateEnum.ABORTED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: true,
-        existsNotMatching: false,
-        isValid: false,
-        transferErrorDuplicateCheckId: 1
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.ABORTED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       localfulfilMessages[0].value.metadata.event.action = 'abort'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1455,21 +1489,20 @@ Test('Transfer handler', transferHandlerTest => {
         condition: 'condition',
         payeeFsp: 'dfsp2',
         expirationDate: new Date('1900-01-01'),
-        transferState: TransferState.RESERVED
+        transferState: TransferState.ABORTED_ERROR,
+        transferStateEnumeration: TransferStateEnum.ABORTED
       }))
-      TransferService.validateDuplicateHash.returns(P.resolve({
-        existsMatching: false,
-        existsNotMatching: true,
-        isValid: false,
-        transferErrorDuplicateCheckId: 1
-      }))
-      TransferService.getTransferStateChange.returns({ enumeration: TransferStateEnum.ABORTED })
-      ilp.update.returns(P.resolve())
-      Validator.validateFulfilCondition.returns(true)
       Util.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
       localfulfilMessages[0].value.metadata.event.action = 'abort'
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(P.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
       test.equal(result, true)
@@ -1484,12 +1517,20 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({
         condition: 'condition',
         payeeFsp: 'dfsp2',
-        transferState: TransferState.RESERVED
+        transferState: TransferState.RESERVED,
+        transferStateEnumeration: TransferStateEnum.RESERVED
       }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.metadata.event.action = 'reject'
       Util.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1505,12 +1546,20 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({
         condition: 'condition',
         payeeFsp: 'dfsp2',
-        transferState: TransferState.RESERVED
+        transferState: TransferState.RESERVED,
+        transferStateEnumeration: TransferStateEnum.RESERVED
       }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.metadata.event.action = 'reject'
       Util.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1525,7 +1574,8 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.getById.returns(P.resolve({
         condition: 'condition',
         payeeFsp: 'dfsp2',
-        transferState: TransferState.RESERVED
+        transferState: TransferState.RESERVED,
+        transferStateEnumeration: TransferState.RESERVED
       }))
       TransferService.validateDuplicateHash.returns(P.resolve({}))
       invalidEventMessage.value.metadata.event.action = 'reject'
@@ -1538,6 +1588,13 @@ Test('Transfer handler', transferHandlerTest => {
       })
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       Util.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1560,6 +1617,13 @@ Test('Transfer handler', transferHandlerTest => {
       delete fulfilMessages[0].value.content.payload.fulfilment
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       Util.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
       test.equal(result, true)
@@ -1588,9 +1652,21 @@ Test('Transfer handler', transferHandlerTest => {
       const invalidEventMessage = MainUtil.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       Util.transformGeneralTopicName.returns(topicName)
-      TransferService.validateDuplicateHash.returns(P.resolve({}))
       invalidEventMessage.value.metadata.event.action = 'invalid event'
       Util.proceed.returns(true)
+      TransferService.getById.returns(P.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp1',
+        transferState: TransferState.RESERVED,
+        transferStateEnumeration: TransferState.RESERVED
+      }))
+
+      TransferService.getTransferDuplicateCheck.returns(P.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(P.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(P.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
 
       const result = await allTransferHandlers.fulfil(null, [invalidEventMessage])
       test.equal(result, true)

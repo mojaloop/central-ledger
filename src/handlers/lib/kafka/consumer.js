@@ -152,7 +152,7 @@ const getMetadataPromise = (consumer, topic) => {
  *
  * @param {string} topicName - the topic name of the consumer to check
  *
- * @description Use this to determine whether or not we are connected to the broker. Internally, it calls `getMetadata` to determine
+ * @description Use this to determine whether or not we are connected to the broker. Internally, it calls 'getMetadata' to determine
  * if the broker client is connected.
  *
  * @returns {true} - if connected
