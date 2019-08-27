@@ -394,19 +394,21 @@ const createGeneralTopicConf = (functionality, action, key = null, partition = n
  * @param {string} action - the action that applies to the flow. Example: 'prepare' ie: note the case of text
  * @param {object} message - a list of messages to consume for the relevant topic
  * @param {object} state - state of the message being produced
+ * @param {object} span - the span for event logging
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
-const produceGeneralMessage = async (functionality, action, message, state, key) => {
+const produceGeneralMessage = async (functionality, action, message, state, key, span) => {
   let functionalityMapped = functionality
   let actionMapped = action
   if (Enum.topicMap[functionality] && Enum.topicMap[functionality][action]) {
     functionalityMapped = Enum.topicMap[functionality][action].functionality
     actionMapped = Enum.topicMap[functionality][action].action
   }
-  const messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
+  let messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
   const topicConfig = createGeneralTopicConf(functionalityMapped, actionMapped, key)
   const kafkaConfig = getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase())
+  messageProtocol = await span.injectContextToMessage(messageProtocol)
   await Kafka.Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
   return true
 }
@@ -467,7 +469,7 @@ const breadcrumb = (location, message) => {
 }
 
 const proceed = async (params, opts) => {
-  const { message, kafkaTopic, consumer } = params
+  const { message, kafkaTopic, consumer, span } = params
   const { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch, toDestination } = opts
   let metadataState
 
@@ -491,7 +493,7 @@ const proceed = async (params, opts) => {
   if (producer) {
     const p = producer
     const key = toDestination && message.value.content.headers[Enum.headers.FSPIOP.DESTINATION]
-    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key)
+    await produceGeneralMessage(p.functionality, p.action, message.value, metadataState, key, span)
   }
   if (histTimerEnd && typeof histTimerEnd === 'function') {
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

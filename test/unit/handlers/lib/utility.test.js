@@ -32,6 +32,7 @@
 
 'use strict'
 
+const EventSdk = require('@mojaloop/event-sdk')
 const src = '../../../../src'
 const rewire = require('rewire')
 const Sinon = require('sinon')
@@ -259,7 +260,8 @@ Test('Utility Test', utilityTest => {
 
   utilityTest.test('produceGeneralMessage should', produceGeneralMessageTest => {
     produceGeneralMessageTest.test('produce a general message', async (test) => {
-      const result = await Utility.produceGeneralMessage(TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+      const span = EventSdk.Tracer.createSpan('test_span')
+      const result = await Utility.produceGeneralMessage(TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS, undefined, span)
       test.equal(result, true)
       test.end()
     })
@@ -277,7 +279,8 @@ Test('Utility Test', utilityTest => {
           }
         }
       })
-      const result = await ModuleProxy.produceGeneralMessage(TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+      const span = EventSdk.Tracer.createSpan('test_span')
+      const result = await ModuleProxy.produceGeneralMessage(TRANSFER, PREPARE, messageProtocol, Utility.ENUMS.STATE.SUCCESS, undefined, span)
       test.equal(result, true)
       test.end()
     })

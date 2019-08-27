@@ -38,6 +38,7 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
+const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const Util = require('../lib/utility')
 const Kafka = require('../lib/kafka')
@@ -88,15 +89,19 @@ const prepare = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
+  if (Array.isArray(messages)) {
+    message = messages[0]
+  } else {
+    message = messages
+  }
+  const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
+  const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_prepare', contextFromMessage)
   try {
-    if (Array.isArray(messages)) {
-      message = messages[0]
-    } else {
-      message = messages
-    }
+    await span.audit(message, EventSdk.AuditEventAction.start)
     const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
@@ -115,7 +120,7 @@ const prepare = async (error, messages) => {
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.actionLetter.prepare
       : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
         : Enum.actionLetter.unknown)
-    const params = { message, kafkaTopic, consumer }
+    const params = { message, kafkaTopic, consumer, span }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(transferId, payload)
@@ -182,7 +187,12 @@ const prepare = async (error, messages) => {
     }
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--P0`, err)
+    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--P0`, err)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    await span.error(fspiopError, state)
+    throw fspiopError
+  } finally {
+    await span.finish()
   }
 }
 
@@ -197,12 +207,15 @@ const fulfil = async (error, messages) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
+  if (Array.isArray(messages)) {
+    message = messages[0]
+  } else {
+    message = messages
+  }
+  const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
+  const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_fulfil', contextFromMessage)
   try {
-    if (Array.isArray(messages)) {
-      message = messages[0]
-    } else {
-      message = messages
-    }
+    await span.audit(message, EventSdk.AuditEventAction.start)
     const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
@@ -226,7 +239,7 @@ const fulfil = async (error, messages) => {
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const transferFulfilmentId = Uuid()
-    const params = { message, transferId, kafkaTopic, consumer }
+    const params = { message, transferId, kafkaTopic, consumer, span }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const { existsMatching, existsNotMatching, isValid, transferErrorDuplicateCheckId } =
@@ -358,7 +371,12 @@ const fulfil = async (error, messages) => {
     }
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--F0`, err)
+    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--F0`, err)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    await span.error(fspiopError, state)
+    throw fspiopError
+  } finally {
+    await span.finish()
   }
 }
 
@@ -382,12 +400,15 @@ const getTransfer = async (error, messages) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
+  if (Array.isArray(messages)) {
+    message = messages[0]
+  } else {
+    message = messages
+  }
+  const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
+  const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_get', contextFromMessage)
   try {
-    if (Array.isArray(messages)) {
-      message = messages[0]
-    } else {
-      message = messages
-    }
+    await span.audit(message, EventSdk.AuditEventAction.start)
     const metadata = message.value.metadata
     const action = metadata.event.action
     const transferId = message.value.content.uriParams.id
@@ -403,7 +424,7 @@ const getTransfer = async (error, messages) => {
       return true
     }
     const actionLetter = Enum.actionLetter.get
-    const params = { message, transferId, kafkaTopic, consumer }
+    const params = { message, transferId, kafkaTopic, consumer, span }
     const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.GET }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
@@ -430,7 +451,12 @@ const getTransfer = async (error, messages) => {
     return await Util.proceed(params, { consumerCommit, histTimerEnd, producer, fromSwitch })
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--G0`, err)
+    const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--G0`, err)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    await span.error(fspiopError, state)
+    throw fspiopError
+  } finally {
+    await span.finish()
   }
 }
 

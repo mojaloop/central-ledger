@@ -38,6 +38,7 @@
  */
 
 const Logger = require('@mojaloop/central-services-shared').Logger
+const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
 const MainUtil = require('../../lib/util')
@@ -82,10 +83,13 @@ const positions = async (error, messages) => {
   ).startTimer()
 
   if (error) {
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   let prepareBatch = []
+  let contextFromMessage
+  let span
   try {
     if (Array.isArray(messages)) {
       prepareBatch = Array.from(messages)
@@ -94,6 +98,9 @@ const positions = async (error, messages) => {
       prepareBatch = [Object.assign({}, MainUtil.clone(messages))]
       message = Object.assign({}, messages)
     }
+    contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
+    span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_position', contextFromMessage)
+    await span.audit(message, EventSdk.AuditEventAction.start)
     const payload = decodePayload(message.value.content.payload)
     const eventType = message.value.metadata.event.type
     const action = message.value.metadata.event.action
@@ -122,7 +129,7 @@ const positions = async (error, messages) => {
               : (action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
                 : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
                   : Enum.actionLetter.unknown))))))
-    const params = { message, kafkaTopic, consumer }
+    const params = { message, kafkaTopic, consumer, span }
     const producer = { action }
     if (![TransferEventAction.BULK_PREPARE, TransferEventAction.BULK_COMMIT].includes(action)) {
       producer.functionality = TransferEventType.NOTIFICATION
@@ -214,7 +221,12 @@ const positions = async (error, messages) => {
   } catch (err) {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    await span.error(fspiopError, state)
+    throw fspiopError
+  } finally {
+    await span.finish()
   }
 }
 
