@@ -90,7 +90,7 @@ const getBulkTransferById = async (id) => {
             })
           } else {
             extension = extensions.filter(ext => {
-              return !!ext.transferFulfilmentId
+              return ext.isFulfilment
             }).map(ext => {
               return { key: ext.key, value: ext.value }
             })

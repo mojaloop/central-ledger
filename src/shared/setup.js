@@ -166,45 +166,55 @@ const createHandlers = async (handlers) => {
     if (handler.enabled) {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
-        case 'prepare':
+        case 'prepare': {
           await RegisterHandlers.transfers.registerPrepareHandler()
           // if (!Config.HANDLERS_CRON_DISABLED) {
           //   Logger.info('Starting Kafka Cron Jobs...')
           //   await KafkaCron.start('prepare')
           // }
           break
-        case 'position':
+        }
+        case 'position': {
           await RegisterHandlers.positions.registerPositionHandler()
           // if (!Config.HANDLERS_CRON_DISABLED) {
           //   Logger.info('Starting Kafka Cron Jobs...')
           //   await KafkaCron.start('position')
           // }
           break
-        case 'fulfil':
+        }
+        case 'fulfil': {
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
-        case 'timeout':
+        }
+        case 'timeout': {
           await RegisterHandlers.timeouts.registerTimeoutHandler()
           break
-        case 'admin':
+        }
+        case 'admin': {
           await RegisterHandlers.admin.registerAdminHandlers()
           break
-        case 'get':
+        }
+        case 'get': {
           await RegisterHandlers.transfers.registerGetHandler()
           break
-        case 'bulkprepare':
+        }
+        case 'bulkprepare': {
           await RegisterHandlers.bulk.registerBulkPrepareHandler()
           break
-        case 'bulkfulfil':
+        }
+        case 'bulkfulfil': {
           await RegisterHandlers.bulk.registerBulkFulfilHandler()
           break
-        case 'bulkprocessing':
+        }
+        case 'bulkprocessing': {
           await RegisterHandlers.bulk.registerBulkProcessingHandler()
           break
-        default:
+        }
+        default: {
           const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)
+        }
       }
     }
   }
@@ -246,17 +256,20 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
   let server
   switch (service) {
     case 'api':
-    case 'admin':
+    case 'admin': {
       server = await createServer(port, modules)
       break
-    case 'handler':
+    }
+    case 'handler': {
       if (!Config.HANDLERS_API_DISABLED) {
         server = await createServer(port, modules)
       }
       break
-    default:
+    }
+    default: {
       Logger.error(`No valid service type ${service} found!`)
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
+    }
   }
 
   if (runHandlers) {

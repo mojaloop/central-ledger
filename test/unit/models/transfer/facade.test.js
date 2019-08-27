@@ -345,9 +345,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
 
       sandbox.stub(transferExtensionModel, 'getByTransferId')
-      sandbox.stub(transferExtensionModel, 'getByTransferFulfilmentId')
       transferExtensionModel.getByTransferId.returns(transferExtensions)
-      transferExtensionModel.getByTransferFulfilmentId.returns(transferExtensions)
 
       const found = await TransferFacade.getByIdLight(transferId1)
       test.equal(found, transfer)
@@ -366,8 +364,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tsc.createdDate AS completedTimestamp',
         'ilpp.value AS ilpPacket',
         'transfer.ilpCondition AS condition',
-        'tf.ilpFulfilment AS fulfilment',
-        'tf.transferFulfilmentId'
+        'tf.ilpFulfilment AS fulfilment'
       ).calledOnce)
       test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       test.ok(firstStub.withArgs().calledOnce)
@@ -382,9 +379,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
   await transferFacadeTest.test('getByIdLight should return transfer by id for COMMITTED', async (test) => {
     try {
       const transferId = 't1'
-      const transferFulfilmentId = 'tf1'
       const fulfilment = 'ff1'
-      const transfer = { transferId, fulfilment, transferFulfilmentId, extensionList: transferExtensions }
+      const transfer = { transferId, fulfilment, extensionList: transferExtensions }
 
       const builderStub = sandbox.stub()
       const ilpPacketStub = sandbox.stub()
@@ -418,9 +414,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       })
 
       sandbox.stub(transferExtensionModel, 'getByTransferId')
-      sandbox.stub(transferExtensionModel, 'getByTransferFulfilmentId')
       transferExtensionModel.getByTransferId.returns(transferExtensions)
-      transferExtensionModel.getByTransferFulfilmentId.returns(transferExtensions)
 
       const found = await TransferFacade.getByIdLight(transferId)
       test.equal(found, transfer)
@@ -439,8 +433,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tsc.createdDate AS completedTimestamp',
         'ilpp.value AS ilpPacket',
         'transfer.ilpCondition AS condition',
-        'tf.ilpFulfilment AS fulfilment',
-        'tf.transferFulfilmentId'
+        'tf.ilpFulfilment AS fulfilment'
       ).calledOnce)
       test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       test.ok(firstStub.withArgs().calledOnce)
@@ -688,7 +681,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
   await transferFacadeTest.test('saveTransferFulfilled should', async saveTransferFulfilled => {
     try {
       const transferId = 't1'
-      const transferFulfilmentId = 'tf1'
       const payload = {
         fulfilment: 'f1',
         completedTimestamp: now,
@@ -700,12 +692,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const stateReason = null
       let hasPassedValidation = null
       const saveTransferFulfilledExecuted = true
-      const transferFulfilmentRecord = { transferFulfilmentId, transferId, ilpFulfilment: 'f1', completedDate: Time.getUTCString(now), isValid: true, createdDate: Time.getUTCString(now), settlementWindowId: 1 }
+      const transferFulfilmentRecord = { transferId, ilpFulfilment: 'f1', completedDate: Time.getUTCString(now), isValid: true, createdDate: Time.getUTCString(now), settlementWindowId: 1 }
       const transferStateChangeRecord = { transferId, transferStateId: 'state', reason: stateReason, createdDate: Time.getUTCString(now) }
       const transferExtensionRecords = transferExtensions.map(ext => {
         return {
           transferId: transferFulfilmentRecord.transferId,
-          transferFulfilmentId: transferFulfilmentRecord.transferFulfilmentId,
+          isFulfilment: true,
           key: ext.key,
           value: ext.value
         }
@@ -754,7 +746,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
+          const response = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
@@ -815,7 +807,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
+          const response = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
@@ -875,7 +867,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          const response = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
+          const response = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.deepEqual(response, saveTransferFulfilledResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
@@ -916,7 +908,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             })
           })
 
-          await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason, hasPassedValidation)
+          await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason, hasPassedValidation)
           test.fail('Error not thrown!')
           test.end()
         } catch (err) {
@@ -978,21 +970,17 @@ Test('Transfer facade', async (transferFacadeTest) => {
               }
             }
           }
-          const transferErrorDuplicateCheckId = 1
           const errorPayeeCustom = payload.errorInformation.errorCode.toString()
           const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           const transferErrorRecord = {
+            transferId,
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
             errorCode: errorPayeeCustom,
             errorDescription: errorPayeeCustomDescription,
-            createdDate: transactionTimestamp,
-            transferErrorDuplicateCheckId
-          }
-          const insertedTransferError = {
-            transferErrorId: 1
+            createdDate: transactionTimestamp
           }
           transferExtensions[0].transferId = transferId
-          transferExtensions[0].transferErrorId = insertedTransferError.transferErrorId
+          transferExtensions[0].isError = true
           transferStateChangeRecord.reason = payload.errorInformation.errorDescription
           const expectedResult = {
             saveTransferAbortedExecuted: true,
@@ -1018,15 +1006,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
-                }),
-                first: sandbox.stub().returns({
-                  orderBy: sandbox.stub().returns(insertedTransferError)
                 })
               })
             })
           })
 
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
+          const response = await ModuleProxy.saveTransferAborted(transferId, payload)
           test.deepEqual(expectedResult, response, 'response matches expected result')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
@@ -1053,18 +1038,14 @@ Test('Transfer facade', async (transferFacadeTest) => {
               }
             }
           }
-          const transferErrorDuplicateCheckId = 1
           const errorPayeeCustom = payload.errorInformation.errorCode.toString()
           const errorPayeeCustomDescription = payload.errorInformation.errorDescription
           const transferErrorRecord = {
+            transferId,
             transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
             errorCode: errorPayeeCustom,
             errorDescription: errorPayeeCustomDescription,
-            createdDate: transactionTimestamp,
-            transferErrorDuplicateCheckId
-          }
-          const insertedTransferError = {
-            transferErrorId: 1
+            createdDate: transactionTimestamp
           }
           transferStateChangeRecord.reason = payload.errorInformation.errorDescription
           const expectedResult = {
@@ -1091,15 +1072,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
-                }),
-                first: sandbox.stub().returns({
-                  orderBy: sandbox.stub().returns(insertedTransferError)
                 })
               })
             })
           })
 
-          const response = await ModuleProxy.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
+          const response = await ModuleProxy.saveTransferAborted(transferId, payload)
           test.deepEqual(expectedResult, response, 'response matches expected result')
           test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
@@ -1255,6 +1233,34 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
+  await transferFacadeTest.test('saveTransferPrepared rollback after validation passed but commit failed', async (test) => {
+    try {
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
+
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      knexStub.batchInsert = sandbox.stub().returns({ transacting: sandbox.stub().returns(1) })
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        transacting: sandbox.stub().returns({
+          insert: sandbox.stub().throws(new Error())
+        })
+      })
+
+      await TransferFacade.saveTransferPrepared(payloadFixture, null, true)
+      test.fail(' should throw')
+      test.end()
+      test.end()
+    } catch (err) {
+      test.pass('Error thrown')
+      test.end()
+    }
+  })
+
   await transferFacadeTest.test('saveTransferPrepared save invalid prepared transfer', async (test) => {
     try {
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
@@ -1269,9 +1275,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       Db.getKnex.returns(knexStub)
 
       knexStub.returns({
-        transacting: sandbox.stub().returns({
-          insert: sandbox.stub().returns(1)
-        })
+        insert: sandbox.stub().returns(1)
       })
 
       const result = await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
@@ -1280,6 +1284,38 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
       test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
       test.ok(knexStub.batchInsert.withArgs('transferExtension').calledOnce, 'knex called with transferExtension once')
+      test.end()
+    } catch (err) {
+      Logger.error(`saveTransferPrepared failed with error - ${err}`)
+      test.fail()
+      test.end()
+    }
+  })
+
+  await transferFacadeTest.test('saveTransferPrepared save invalid prepared transfer without extensions', async (test) => {
+    try {
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
+      ParticipantFacade.getByNameAndCurrency.withArgs('dfsp2', 'USD', 1).returns('dfsp2', 2)
+
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      knexStub.batchInsert = sandbox.stub().returns({ transacting: sandbox.stub().returns(1) })
+      Db.getKnex.returns(knexStub)
+
+      knexStub.returns({
+        insert: sandbox.stub().returns(1)
+      })
+
+      delete payloadFixture.extensionList
+      const result = await TransferFacade.saveTransferPrepared(payloadFixture, 'Invalid Payee', false)
+      test.equal(result, undefined, 'result matches expected result')
+      test.ok(knexStub.withArgs('transfer').calledOnce, 'knex called with transfer once')
+      test.ok(knexStub.withArgs('transferParticipant').calledTwice, 'knex called with transferParticipant twice')
+      test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+      test.ok(knexStub.batchInsert.withArgs('transferExtension').notCalled, 'knex was not called with transferExtension')
       test.end()
     } catch (err) {
       Logger.error(`saveTransferPrepared failed with error - ${err}`)

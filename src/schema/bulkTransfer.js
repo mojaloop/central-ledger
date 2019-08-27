@@ -64,7 +64,8 @@ const transfer = {
 }
 // schema for individual transfer with bulkTransfers reference
 const individualTransferSchema = new mongoose.Schema(Object.assign({}, { payload: transfer },
-  { _id_bulkTransfers: { type: mongoose.Schema.Types.ObjectId, ref: 'bulkTransfers' },
+  {
+    _id_bulkTransfers: { type: mongoose.Schema.Types.ObjectId, ref: 'bulkTransfers' },
     messageId: { type: String, required: true },
     payload: { type: Object, required: true }
   }))
@@ -148,7 +149,8 @@ const transferResult = {
 }
 // schema for individual transfer with bulkTransferResponses reference
 const individualTransferResultSchema = new mongoose.Schema(Object.assign({}, { payload: transferResult },
-  { _id_bulkTransferResponses: { type: mongoose.Schema.Types.ObjectId, ref: 'bulkTransferResponses' },
+  {
+    _id_bulkTransferResponses: { type: mongoose.Schema.Types.ObjectId, ref: 'bulkTransferResponses' },
     messageId: { type: String, required: true },
     destination: { type: String, required: true },
     bulkTransferId: { type: String, required: true },

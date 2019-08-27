@@ -62,10 +62,7 @@ exports.prepareData = async () => {
     hash = hashSha256.update(hash)
     hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
 
-    const saveResult = await Model.saveTransferDuplicateCheck({
-      transferId,
-      hash
-    })
+    const saveResult = await Model.saveTransferDuplicateCheck(transferId, hash)
 
     return {
       success: !!(saveResult),

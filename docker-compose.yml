@@ -1,4 +1,9 @@
 version: "3.7"
+
+networks:
+  cl-mojaloop-net:
+    name: cl-mojaloop-net
+
 services:
   central-ledger:
     build:
@@ -7,54 +12,87 @@ services:
         - mojaloop/central-ledger
         - central-ledger
     container_name: cl_central-ledger
-    links:
-      - mysql
-      - kafka
+    command:
+      - "sh"
+      - "-c"
+      - "sh /opt/wait-for/wait-for-central-ledger.sh && node src/api/index.js"
     ports:
       - "3001:3001"
     volumes:
        - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
+       - ./docker/wait-for:/opt/wait-for
     environment:
+      - LOG_LEVEL=info
       - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
       - CLEDG_SIDECAR__DISABLED=true
-      - CLEDG_MONGODB__DISABLED=true
+      - CLEDG_MONGODB__DISABLED=false
+    networks:
+      - cl-mojaloop-net
+    depends_on:
+      - mysql
+      - kafka
+    healthcheck:
+      test: ["CMD", "bash", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3001/health"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
 
   ml-api-adapter:
     image: mojaloop/ml-api-adapter:latest
     container_name: cl_ml-api-adapter
-    links:
-      - kafka
+    command:
+      - "sh"
+      - "-c"
+      - "sh /opt/wait-for/wait-for-ml-api-adapter.sh && node src/api/index.js"
     ports:
       - "3000:3000"
     volumes:
       - ./docker/ml-api-adapter/default.json:/opt/ml-api-adapter/config/default.json
+      - ./docker/wait-for:/opt/wait-for
     environment:
-      - LOG_LEVEL=debug
-    
-    # TODO: we should be able to remove this - I think the image command is broken
-    command:
-      - "node"
-      - "src/api/index.js"
+      - LOG_LEVEL=info
+    networks:
+      - cl-mojaloop-net
+    depends_on:
+      - kafka
+    healthcheck:
+      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3000/health"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
 
   mysql:
     image: mysql/mysql-server
     container_name: cl_mysql
+    # Disable logging as it is far too verbose for debugging locally
+    logging:
+      driver: none
     ports:
       - "3306:3306"
     volumes:
-      #this fixes the permissions issue, but docker-compose up will fail on first attempt
+      # Note: this fixes the permissions issue, but docker-compose up will fail on first attempt
       - ./docker/sql-init/:/docker-entrypoint-initdb.d/
     environment:
       - MYSQL_USER=${DBUSER:-central_ledger}
       - MYSQL_PASSWORD=${DBPASS:-password}
       - MYSQL_DATABASE=${DBUSER:-central_ledger}
       - MYSQL_ALLOW_EMPTY_PASSWORD=true
+    networks:
+      - cl-mojaloop-net
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "mysql"]
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
 
   mockserver:
     image: jamesdbloom/mockserver
     container_name: mockserver
     ports:
       - "1080:1080"
+    networks:
+      - cl-mojaloop-net
 
   temp_curl:
     image: byrnedo/alpine-curl
@@ -62,16 +100,22 @@ services:
     links:
       - mockserver
     volumes:
-      - ./docker/wait-for-mockserver.sh:/opt/wait-for-mockserver.sh
+      - ./docker/wait-for/wait-for-mockserver.sh:/opt/wait-for/wait-for-mockserver.sh
     entrypoint: [ "sh", "-c" ]
     command:
       - /opt/wait-for-mockserver.sh
-    environment:
-      - MOCK_HOST=mockserver
+    environment: []
+    networks:
+      - cl-mojaloop-net
+    depends_on:
+      - mockserver
   
   kafka:
     image: johnnypark/kafka-zookeeper:2.3.0
     container_name: cl_kafka
+    # Disable logging as it is far too verbose for debugging locally
+    logging:
+      driver: none
     volumes:
       - ./docker/kafka/:/opt/kafka_2.12-2.3.0/config/
     ports:
@@ -79,3 +123,45 @@ services:
       - "9092:9092"
     environment:
       - ZOO_LOG4J_PROP=WARN
+    networks:
+      - cl-mojaloop-net
+    healthcheck:
+      test: ["CMD" ,"/opt/kafka_2.12-2.3.0/bin/kafka-broker-api-versions.sh","--bootstrap-server","localhost:9092"]
+      timeout: 20s
+      retries: 10
+      start_period: 40s
+      interval: 30s
+
+  objstore:
+    image: mongo:latest
+    container_name: cl_objstore
+    # Disable logging as it is far too verbose for debugging locally
+    logging:
+      driver: none
+    ports:
+      - "27017:27017"
+    networks:
+      - cl-mojaloop-net
+    healthcheck:
+      test: mongo localhost:27017/test --quiet 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  simulator:
+    image: mojaloop/simulator:latest
+    container_name: cl_simulator
+    ports:
+      - "8444:8444"
+    environment:
+      - LOG_LEVEL=info
+      - TRANSFERS_ENDPOINT=http://ml-api-adapter:3000
+      - TRANSFERS_FULFIL_RESPONSE_DISABLED=false
+    networks:
+      - cl-mojaloop-net
+    healthcheck:
+      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:8444/health"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
