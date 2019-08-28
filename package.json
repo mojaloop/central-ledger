@@ -116,7 +116,6 @@
   },
   "devDependencies": {
     "async-retry": "1.2.3",
-    "bluebird": "3.5.5",
     "faucet": "0.0.1",
     "jsonpath": "1.0.2",
     "nodemon": "1.19.1",

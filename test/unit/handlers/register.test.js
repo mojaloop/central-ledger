@@ -2,7 +2,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 const Handlers = require('../../../src/handlers/register')
 const TransferHandlers = require('../../../src/handlers/transfers/handler')
 const PositionHandlers = require('../../../src/handlers/positions/handler')
@@ -18,13 +17,13 @@ Test('handlers', handlersTest => {
 
   handlersTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(PositionHandlers, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(TransferHandlers, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(TimeoutHandlers, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(AdminHandlers, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(BulkTransferHandlers, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(BulkProcessingHandlers, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(BulkFulfilHandlers, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(PositionHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(TransferHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(TimeoutHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(AdminHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(BulkTransferHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(BulkProcessingHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(BulkFulfilHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
     test.end()
   })
 

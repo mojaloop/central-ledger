@@ -2,7 +2,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
@@ -32,7 +31,7 @@ Test('cli', async (cliTest) => {
       sandbox = Sinon.createSandbox()
 
       SetupStub = {
-        initialize: sandbox.stub().returns(P.resolve())
+        initialize: sandbox.stub().returns(Promise.resolve())
       }
 
       process.argv = []

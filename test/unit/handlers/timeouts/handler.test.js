@@ -31,7 +31,6 @@
 
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
-const P = require('bluebird')
 const TimeoutHandler = require('../../../../src/handlers/timeouts/handler')
 const CronJob = require('cron').CronJob
 const TimeoutService = require('../../../../src/domain/timeout')
@@ -47,9 +46,9 @@ Test('Timeout handler', TimeoutHandlerTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(TimeoutService)
     sandbox.stub(Utility)
-    sandbox.stub(CronJob.prototype, 'constructor').returns(P.resolve())
-    sandbox.stub(CronJob.prototype, 'start').returns(P.resolve(true))
-    sandbox.stub(CronJob.prototype, 'stop').returns(P.resolve(true))
+    sandbox.stub(CronJob.prototype, 'constructor').returns(Promise.resolve())
+    sandbox.stub(CronJob.prototype, 'start').returns(Promise.resolve(true))
+    sandbox.stub(CronJob.prototype, 'stop').returns(Promise.resolve(true))
     Config.HANDLERS_TIMEOUT_DISABLED = false
     test.end()
   })
