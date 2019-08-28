@@ -26,8 +26,8 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Enum = require('../../lib/enum')
-const TS = Enum.TransferState
+const Enum = require('@mojaloop/central-services-shared').Enum
+const TS = Enum.Transfers.TransferInternalState
 
 const cleanup = async () => {
   Logger.debug('cleanup transferTimeout')

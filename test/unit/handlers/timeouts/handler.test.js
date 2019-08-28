@@ -31,14 +31,13 @@
 
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
-const P = require('bluebird')
 const TimeoutHandler = require('../../../../src/handlers/timeouts/handler')
 const CronJob = require('cron').CronJob
 const TimeoutService = require('../../../../src/domain/timeout')
 const Config = require('../../../../src/lib/config')
 const Uuid = require('uuid4')
-const Enum = require('../../../../src/lib/enum')
-const Utility = require('../../../../src/handlers/lib/utility')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 
 Test('Timeout handler', TimeoutHandlerTest => {
   let sandbox
@@ -47,9 +46,9 @@ Test('Timeout handler', TimeoutHandlerTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(TimeoutService)
     sandbox.stub(Utility)
-    sandbox.stub(CronJob.prototype, 'constructor').returns(P.resolve())
-    sandbox.stub(CronJob.prototype, 'start').returns(P.resolve(true))
-    sandbox.stub(CronJob.prototype, 'stop').returns(P.resolve(true))
+    sandbox.stub(CronJob.prototype, 'constructor').returns(Promise.resolve())
+    sandbox.stub(CronJob.prototype, 'start').returns(Promise.resolve(true))
+    sandbox.stub(CronJob.prototype, 'stop').returns(Promise.resolve(true))
     Config.HANDLERS_TIMEOUT_DISABLED = false
     test.end()
   })
@@ -72,19 +71,19 @@ Test('Timeout handler', TimeoutHandlerTest => {
         transferId: Uuid(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.TransferState.EXPIRED_PREPARED
+        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED
       },
       {
         transferId: Uuid(),
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
-        transferStateId: Enum.TransferState.RESERVED_TIMEOUT
+        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
       },
       {
         transferId: Uuid(),
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
-        transferStateId: Enum.TransferState.COMMITTED
+        transferStateId: Enum.Transfers.TransferState.COMMITTED
       }
     ]
     let expected = {

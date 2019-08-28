@@ -22,7 +22,8 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/

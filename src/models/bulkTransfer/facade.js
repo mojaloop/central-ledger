@@ -29,8 +29,8 @@
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Db = require('../../lib/db')
-const Enum = require('../../lib/enum')
-const Time = require('../../lib/time')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Time = require('@mojaloop/central-services-shared').Util.Time
 // const BulkTransferAssociation = require('./BulkTransferAssociation')
 
 const saveBulkTransferReceived = async (payload, participants, stateReason = null, isValid = true) => {
@@ -42,7 +42,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
       payeeParticipantId: participants.payeeParticipantId,
       expirationDate: Time.getUTCString(new Date(payload.expiration))
     }
-    const state = (isValid ? Enum.BulkTransferState.RECEIVED : Enum.BulkTransferState.INVALID)
+    const state = (isValid ? Enum.Transfers.BulkTransferState.RECEIVED : Enum.Transfers.BulkTransferState.INVALID)
     const bulkTransferStateChangeRecord = {
       bulkTransferId: payload.bulkTransferId,
       bulkTransferStateId: state,
@@ -87,7 +87,7 @@ const saveBulkTransferProcessing = async (payload, bulkTransferFulfilmentId, sta
     // TODO: Remove count or decide on the strategy how to handle intdividual transfer results. Count is not sufficient criteria
     // because even if it's matched the transferId's may not match those on record.
     // const count = await BulkTransferAssociation.count(payload.bulkTransferId, Enum.BulkProcessingState.ACCEPTED)
-    const state = (isValid /* && payload.count === count */ ? Enum.BulkTransferState.PROCESSING : Enum.BulkTransferState.INVALID)
+    const state = (isValid /* && payload.count === count */ ? Enum.Transfers.BulkTransferState.PROCESSING : Enum.Transfers.BulkTransferState.INVALID)
     const bulkTransferStateChangeRecord = {
       bulkTransferId: payload.bulkTransferId,
       bulkTransferStateId: state,

@@ -37,8 +37,8 @@ const TransferFacade = require('../../../src/models/transfer/facade')
 const TransferFulfilmentDuplicateCheckModel = require('../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const TransferFulfilmentModel = require('../../../src/models/transfer/transferFulfilment')
 const TransferParticipantModel = require('../../../src/models/transfer/transferParticipant')
-const Enum = require('../../../src/lib/enum')
-const Time = require('../../../src/lib/time')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 // TODO: add data to transferParticipant, transferParticipantRoleType, transferFulfilment
@@ -89,8 +89,8 @@ exports.prepareData = async () => {
       transferParticipantId: transferDuplicateCheckResult.participantPayerResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayerResult.participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
-      ledgerEntryTypeId: Enum.LedgerAccountType.POSITION,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerAccountType.POSITION,
       amount: transferResult.transfer.amount
     })
 
@@ -98,8 +98,8 @@ exports.prepareData = async () => {
       transferParticipantId: transferDuplicateCheckResult.participantPayeeResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayeeResult.participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
-      ledgerEntryTypeId: Enum.LedgerAccountType.POSITION,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerAccountType.POSITION,
       amount: -transferResult.transfer.amount
     })
 

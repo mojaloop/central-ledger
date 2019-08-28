@@ -31,10 +31,10 @@
  */
 
 const Db = require('../../lib/db')
-const Enum = require('../../lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 const participantFacade = require('../participant/facade')
 const Logger = require('@mojaloop/central-services-shared').Logger
-const Time = require('../../lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 
@@ -43,7 +43,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
-    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.LedgerAccountType.POSITION)
+    const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     const reservedTransfers = []
     const abortedTransfers = []
@@ -79,15 +79,15 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           const transferState = initialTransferStateChangeList[id]
           const transfer = transferList[id].value.content.payload
           const rawMessage = transferList[id]
-          if (transferState.transferStateId === Enum.TransferState.RECEIVED_PREPARE) {
+          if (transferState.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
             transferState.transferStateChangeId = null
-            transferState.transferStateId = Enum.TransferState.RESERVED
+            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
             const transferAmount = parseFloat(transfer.amount.amount) /* Just do this once,so add to reservedTransfers */
             reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
             sumTransfersInBatch = parseFloat((sumTransfersInBatch + transferAmount).toFixed(Config.AMOUNT.SCALE))
           } else {
             transferState.transferStateChangeId = null
-            transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
+            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = 'Transfer in incorrect state'
             abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
           }
@@ -105,7 +105,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
         // Get the actual position limit and calculate the available position for the transfers to use in this batch
         // Note: see optimisation decision notes to understand the justification for the algorithm
-        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.LedgerAccountType.POSITION, Enum.ParticipantLimitType.NET_DEBIT_CAP)
+        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
         let availablePosition = parseFloat((participantLimit.value - effectivePosition).toFixed(Config.AMOUNT.SCALE))
         /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
            since further rules are expected we do not do this at this point
@@ -118,10 +118,10 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
           if (availablePosition >= transferAmount) {
             availablePosition = parseFloat((availablePosition - transferAmount).toFixed(Config.AMOUNT.SCALE))
-            transferState.transferStateId = Enum.TransferState.RESERVED
+            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
             sumReserved = parseFloat((sumReserved + transferAmount).toFixed(Config.AMOUNT.SCALE)) /* actually used */
           } else {
-            transferState.transferStateId = Enum.TransferState.ABORTED_REJECTED
+            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject()
           }
@@ -164,7 +164,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           }
           batchParticipantPositionChange.push(participantPositionChange)
         }
-        batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange ', batchParticipantPositionChange).transacting(trx)
+        batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
         await trx.commit
       } catch (err) {
         Logger.error(err)

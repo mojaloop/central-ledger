@@ -36,11 +36,9 @@ const ParticipantPositionModel = require('../../../../src/models/participant/par
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
 const PositionFacade = require('../../../../src/models/position/facade')
-const P = require('bluebird')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
-const Utility = require('../../../../src/handlers/lib/utility')
-const Enum = require('../../../../src/lib/enum')
+const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 const Service = require('../../../../src/domain/participant/index')
@@ -1087,7 +1085,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
 
-      ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId, limit[0].name).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId, limit[0].name).returns(Promise.resolve(limit))
       const result = await Service.getLimits(participant.name, { currency: participant.currency, type: limit[0].name })
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1115,7 +1113,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, participant.currency, 1).returns(participant)
 
-      ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByCurrencyId.withArgs(participant.participantCurrencyId).returns(Promise.resolve(limit))
       const result = await Service.getLimits(participant.name, { currency: participant.currency })
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1150,7 +1148,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
-      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP', 1).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP', 1).returns(Promise.resolve(limit))
       const result = await Service.getLimits(participant.name, { type: 'NET_DEBIT_CAP' })
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1185,7 +1183,7 @@ Test('Participant service', async (participantTest) => {
       }
       ParticipantModel.getByName.withArgs(participant.name).returns(participant)
 
-      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).returns(P.resolve(limit))
+      ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).returns(Promise.resolve(limit))
       const result = await Service.getLimits(participant.name, {})
       assert.deepEqual(result, limit, 'Results matched')
       assert.end()
@@ -1234,8 +1232,8 @@ Test('Participant service', async (participantTest) => {
           value: 2000000
         }
       ]
-      ParticipantFacade.getLimitsForAllParticipants.returns(P.resolve(limits))
-      const result = await Service.getLimitsForAllParticipants(currencyId, type, Enum.LedgerAccountType.POSITION)
+      ParticipantFacade.getLimitsForAllParticipants.returns(Promise.resolve(limits))
+      const result = await Service.getLimitsForAllParticipants({ currency: currencyId, type })
       assert.deepEqual(result, limits, 'Results matched')
       assert.end()
     } catch (err) {
@@ -1251,7 +1249,7 @@ Test('Participant service', async (participantTest) => {
 
     ParticipantFacade.getLimitsForAllParticipants.throws(new Error())
     try {
-      await Service.getLimitsForAllParticipants(currencyId, type, Enum.LedgerAccountType.POSITION)
+      await Service.getLimitsForAllParticipants({ currency: currencyId, type })
       assert.fail('should throw')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err} `)
@@ -1285,7 +1283,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName, 1, query.currency).returns(P.resolve(positionReturn))
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, 1, query.currency).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
       assert.deepEqual(result, expected, 'Results matched')
@@ -1313,7 +1311,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
       ParticipantFacade.getByNameAndCurrency.withArgs(participantName, query.currency, 1).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName, 1, query.currency).returns(P.resolve(positionReturn))
+      PositionFacade.getByNameAndCurrency.withArgs(participantName, 1, query.currency).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, query)
       assert.deepEqual(result, expected, 'Results matched')
@@ -1362,7 +1360,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
       ParticipantModel.getByName.withArgs(participantName).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
+      PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, {})
       assert.deepEqual(result, expected, 'Results matched')
@@ -1389,7 +1387,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
       ParticipantModel.getByName.withArgs(participantName).returns(participant)
-      PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
+      PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, {})
       assert.deepEqual(result, expected, 'Results matched')
@@ -1469,7 +1467,7 @@ Test('Participant service', async (participantTest) => {
       }
 
       ParticipantModel.getByName.withArgs(participantName).returns(participant)
-      PositionFacade.getAllByNameAndCurrency.withArgs(participantName, query.currency).returns(P.resolve(accountsMock))
+      PositionFacade.getAllByNameAndCurrency.withArgs(participantName, query.currency).returns(Promise.resolve(accountsMock))
 
       const result = await Service.getAccounts(participantName, query)
       assert.deepEqual(result, expected, 'Results matched')
@@ -1496,7 +1494,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
       ParticipantModel.getByName.withArgs(participantName).returns(participant)
-      PositionFacade.getAllByNameAndCurrency.withArgs(participantName).returns(P.resolve(positionReturn))
+      PositionFacade.getAllByNameAndCurrency.withArgs(participantName).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getAccounts(participantName, {})
       assert.deepEqual(result, expected, 'Results matched')
@@ -1553,8 +1551,8 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         createdBy: 'unknown'
       }
-      ParticipantModel.getByName.withArgs(params.name).returns(P.resolve(participant))
-      ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+      ParticipantModel.getByName.withArgs(params.name).returns(Promise.resolve(participant))
+      ParticipantCurrencyModel.getById.withArgs(params.id).returns(Promise.resolve(account))
 
       await Service.updateAccount(payload, params, enums)
       assert.pass('Account updated')
@@ -1588,11 +1586,11 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantModel.getByName.withArgs(params.name).returns(P.resolve(participant))
+      ParticipantModel.getByName.withArgs(params.name).returns(Promise.resolve(participant))
 
       try {
         const account = null
-        ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+        ParticipantCurrencyModel.getById.withArgs(params.id).returns(Promise.resolve(account))
 
         await Service.updateAccount(payload, params, enums)
         assert.fail('Error not thrown')
@@ -1605,7 +1603,7 @@ Test('Participant service', async (participantTest) => {
         const account = {
           participantId: 1
         }
-        ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+        ParticipantCurrencyModel.getById.withArgs(params.id).returns(Promise.resolve(account))
 
         await Service.updateAccount(payload, params, enums)
         assert.fail('Error not thrown')
@@ -1619,7 +1617,7 @@ Test('Participant service', async (participantTest) => {
           participantId: participant.participantId,
           ledgerAccountTypeId: 2
         }
-        ParticipantCurrencyModel.getById.withArgs(params.id).returns(P.resolve(account))
+        ParticipantCurrencyModel.getById.withArgs(params.id).returns(Promise.resolve(account))
 
         await Service.updateAccount(payload, params, enums)
         assert.fail('Error not thrown')

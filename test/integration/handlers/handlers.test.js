@@ -30,18 +30,19 @@ const Uuid = require('uuid4')
 const retry = require('async-retry')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../../src/lib/config')
-const sleep = require('../../../src/lib/time').sleep
+const sleep = require('@mojaloop/central-services-shared').Util.Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
-const Consumer = require('../../../src/handlers/lib/kafka/consumer')
-const Producer = require('../../../src/handlers/lib/kafka/producer')
-const Utility = require('../../../src/handlers/lib/utility')
+const Consumer = require('@mojaloop/central-services-shared').Util.Kafka.Consumer
+const Producer = require('@mojaloop/central-services-shared').Util.Kafka.Producer
+const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantHelper = require('../helpers/participant')
 const ParticipantLimitHelper = require('../helpers/participantLimit')
 const ParticipantEndpointHelper = require('../helpers/participantEndpoint')
 const TransferService = require('../../../src/domain/transfer')
 const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
-const Util = require('../../../src/lib/util')
+const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { sleepPromise } = require('../../util/helpers')
 
@@ -52,10 +53,10 @@ const Handlers = {
   timeouts: require('../../../src/handlers/timeouts/handler')
 }
 
-const Enum = require('../../../src/lib/enum')
-const TransferState = Enum.TransferState
-const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
+const TransferState = Enum.Transfers.TransferState
+const TransferInternalState = Enum.Transfers.TransferInternalState
+const TransferEventType = Enum.Events.Event.Type
+const TransferEventAction = Enum.Events.Event.Action
 
 const debug = false
 const rebalanceDelay = 10000
@@ -165,7 +166,7 @@ const prepareTestData = async (dataObj) => {
     }
   }
 
-  const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferState.ABORTED_REJECTED })
+  const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
 
   const errorPayload = {
     errorInformation: {
@@ -226,8 +227,8 @@ const prepareTestData = async (dataObj) => {
   messageProtocolError.content.payload = errorPayload
   messageProtocolError.metadata.event.action = TransferEventAction.ABORT
 
-  const topicConfTransferPrepare = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.PREPARE)
-  const topicConfTransferFulfil = Utility.createGeneralTopicConf(TransferEventType.TRANSFER, TransferEventType.FULFIL)
+  const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
+  const topicConfTransferFulfil = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL)
 
   return {
     transferPayload,
@@ -271,7 +272,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       config.logger = Logger
@@ -309,7 +311,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       config.logger = Logger
@@ -355,7 +358,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilReject.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       config.logger = Logger
@@ -386,7 +390,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferFulfilReject.test('update transfer state to ABORTED_REJECTED by ABORT request', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       config.logger = Logger
@@ -399,7 +404,7 @@ Test('Handlers test', async handlersTest => {
         const payerExpectedPosition = testData.amount.amount - td.transferPayload.amount.amount
         const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
         test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferState.ABORTED_REJECTED, `Transfer state changed to ${TransferState.ABORTED_REJECTED}`)
+        test.equal(transfer.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
         test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Reject ilpFulfilment saved')
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
         test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
@@ -409,7 +414,7 @@ Test('Handlers test', async handlersTest => {
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
+          if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -431,7 +436,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferPrepareExceedLimit.test('fail the transfer if the amount is higher than the remaining participant limit', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       config.logger = Logger
@@ -441,13 +447,13 @@ Test('Handlers test', async handlersTest => {
       const tests = async () => {
         const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
         test.equal(producerResponse, true, 'Producer for prepare published message')
-        test.equal(transfer.transferState, TransferState.ABORTED_REJECTED, `Transfer state changed to ${TransferState.ABORTED_REJECTED}`)
+        test.equal(transfer.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
       }
 
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.ABORTED_REJECTED) {
+          if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -469,7 +475,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferAbort.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       config.logger = Logger
@@ -500,7 +507,8 @@ Test('Handlers test', async handlersTest => {
 
     await transferAbort.test('update transfer state to ABORTED_ERROR by PUT /transfers/{id}/error endpoint', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.FULFIL.toUpperCase())
       config.logger = Logger
@@ -515,7 +523,7 @@ Test('Handlers test', async handlersTest => {
         const transferError = await TransferService.getTransferErrorByTransferId(transfer.transferId)
         const transferExtension = await TransferExtensionModel.getByTransferId(transfer.transferId, false, true)
         test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferState.ABORTED_ERROR, `Transfer state changed to ${TransferState.ABORTED_ERROR}`)
+        test.equal(transfer.transferState, TransferInternalState.ABORTED_ERROR, `Transfer state changed to ${TransferInternalState.ABORTED_ERROR}`)
         test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
         test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
         test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
@@ -530,7 +538,7 @@ Test('Handlers test', async handlersTest => {
       try {
         await retry(async bail => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferState.ABORTED_ERROR) {
+          if (transfer.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
             throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
@@ -552,7 +560,8 @@ Test('Handlers test', async handlersTest => {
 
     await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
       const config = Utility.getKafkaConfig(
-        Utility.ENUMS.PRODUCER,
+        Config.KAFKA_CONFIG,
+        Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
         TransferEventType.PREPARE.toUpperCase())
       config.logger = Logger

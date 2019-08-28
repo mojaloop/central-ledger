@@ -32,7 +32,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/participant/facade')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 Test('Participant facade', async (facadeTest) => {
   let sandbox
@@ -114,7 +114,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      const result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION)
+      const result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {
@@ -144,7 +144,7 @@ Test('Participant facade', async (facadeTest) => {
         })
       })
 
-      const result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.LedgerAccountType.POSITION, true)
+      const result = await Model.getByNameAndCurrency('fsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION, true)
       assert.deepEqual(result, participant)
       assert.end()
     } catch (err) {

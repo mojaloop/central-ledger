@@ -39,7 +39,7 @@ const getById = async (transferId) => {
 const saveTransfer = async (record) => {
   Logger.debug('save transfer' + record.toString())
   try {
-    return await Db.transfer.insert(record)
+    return Db.transfer.insert(record)
   } catch (err) {
     Logger.error(err)
     throw err

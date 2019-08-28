@@ -23,7 +23,7 @@
  ******/
 'use strict'
 
-const transferStateENUM = require('../../../src/lib/enum').TransferState
+const transferStateENUM = require('@mojaloop/central-services-shared').Enum.Transfers.TransferInternalState
 
 const transferStateResult = []
 

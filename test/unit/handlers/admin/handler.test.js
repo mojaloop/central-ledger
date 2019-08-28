@@ -3,16 +3,15 @@
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
 const AdminHandler = require('../../../../src/handlers/admin/handler')
-const Kafka = require('../../../../src/handlers/lib/kafka')
-const Utility = require('../../../../src/handlers/lib/utility')
-const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
-const DAO = require('../../../../src/handlers/lib/dao')
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaConsumer = Kafka.Consumer.Consumer
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferService = require('../../../../src/domain/transfer')
 const Db = require('../../../../src/lib/db')
-const Enum = require('../../../../src/lib/enum')
-const TransferState = Enum.TransferState
+const Enum = require('@mojaloop/central-services-shared').Enum
+const TransferState = Enum.Transfers.TransferState
+const TransferInternalState = Enum.Transfers.TransferInternalState
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -292,14 +291,11 @@ const config = {
 const command = () => {
 }
 
-const participants = ['dfsp1', 'dfsp2']
-
 Test('Admin handler', adminHandlerTest => {
   let sandbox
 
   adminHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(DAO)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'consume').resolves()
@@ -308,8 +304,6 @@ Test('Admin handler', adminHandlerTest => {
       commitMessageSync: async function () { return Promise.resolve(true) }
     })
     sandbox.stub(Kafka.Consumer, 'isConsumerAutoCommitEnabled')
-
-    sandbox.stub(Utility)
     sandbox.stub(TransferService, 'validateDuplicateHash')
     sandbox.stub(TransferService, 'reconciliationTransferPrepare')
     sandbox.stub(TransferService, 'reconciliationTransferReserve')
@@ -318,8 +312,9 @@ Test('Admin handler', adminHandlerTest => {
     sandbox.stub(TransferService, 'getTransferStateChange')
     sandbox.stub(TransferService, 'getTransferState')
     sandbox.stub(TransferService, 'getTransferById')
-    Utility.transformAccountToTopicName.returns(topicName)
-    Utility.produceGeneralMessage.resolves()
+    sandbox.stub(Kafka)
+    Kafka.transformAccountToTopicName.returns(topicName)
+    Kafka.produceGeneralMessage.resolves()
     test.end()
   })
 
@@ -331,18 +326,8 @@ Test('Admin handler', adminHandlerTest => {
   adminHandlerTest.test('createPrepareHandler should', async registerHandlersTest => {
     await registerHandlersTest.test('register all consumers on Kafka', async (test) => {
       await Kafka.Consumer.createHandler(topicName, config, command)
-      DAO.retrieveAllParticipants.resolves(participants)
-      Utility.transformGeneralTopicName.returns(topicName)
-      Utility.getKafkaConfig.returns(config)
-      const result = await AdminHandler.registerAllHandlers()
-      test.equal(result, true)
-      test.end()
-    })
-    await registerHandlersTest.test('register all consumers on Kafka', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
-      DAO.retrieveAllParticipants.resolves(participants)
-      Utility.transformGeneralTopicName.returns(topicName)
-      Utility.getKafkaConfig.returns(config)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
       const result = await AdminHandler.registerAllHandlers()
       test.equal(result, true)
       test.end()
@@ -351,11 +336,10 @@ Test('Admin handler', adminHandlerTest => {
     await registerHandlersTest.test('register all consumers on Kafka', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        DAO.retrieveAllParticipants.resolves(participants)
-        Utility.transformGeneralTopicName.throws(new Error())
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.throws(new Error())
+        Kafka.getKafkaConfig.returns(config)
         await AdminHandler.registerAllHandlers()
-        test.fails('should throw')
+        test.fail('should throw')
         test.end()
       } catch (e) {
         test.ok('Error is thrown')
@@ -370,8 +354,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('create new transfer for record funds in', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
@@ -401,8 +385,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('throw error with wrong topic 2', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         const result = await AdminHandler.transfer(null, messageProtocolWrongAction)
         test.ok(result, 'exits without error')
         test.end()
@@ -415,8 +399,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('exit without error when topic is not found', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         Kafka.Consumer.getConsumer.withArgs(topicName).throws(new Error())
         const result = await AdminHandler.transfer(null, Object.assign({}, messages[0]))
         test.ok(result, 'exits')
@@ -430,8 +414,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('catch error and rollback', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
@@ -458,8 +442,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('catch error and rollback', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
@@ -486,8 +470,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('create new transfer for record funds if array of messages is consumed', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
@@ -515,8 +499,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('create erroneous msg', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
@@ -542,8 +526,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('throw error if payload is missing', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         Kafka.Consumer.isConsumerAutoCommitEnabled.withArgs(topicName).returns(true)
         const payload = messages[0].value.content.payload
         TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
@@ -562,8 +546,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('create new transfer for record funds', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         sandbox.stub(Db, 'getKnex')
         const knexStub = sandbox.stub()
         const trxStub = sandbox.stub()
@@ -589,8 +573,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         const payload = messages[1].value.content.payload
         TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
@@ -609,8 +593,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -635,8 +619,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -646,7 +630,7 @@ Test('Admin handler', adminHandlerTest => {
           existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
-          enumeration: TransferState.ABORTED_REJECTED
+          enumeration: TransferInternalState.ABORTED_REJECTED
         })
         const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
@@ -661,8 +645,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -687,8 +671,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -713,8 +697,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -724,7 +708,7 @@ Test('Admin handler', adminHandlerTest => {
           existsNotMatching: 0
         })
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
-          enumeration: TransferState.FAILED
+          enumeration: TransferInternalState.FAILED
         })
         const result = await AdminHandler.transfer(null, Object.assign({}, messages[1]))
         Logger.info(result)
@@ -739,8 +723,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferStateChange.withArgs(messages[1].value.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -763,8 +747,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferState.withArgs(messages[2].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -793,8 +777,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferState.withArgs(messages[2].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -823,8 +807,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferState.withArgs(messages[3].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -852,8 +836,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferState.withArgs(messageProtocolWrongAction.value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -881,8 +865,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         TransferService.getTransferState.withArgs(messages[3].value.content.id).returns({
           enumeration: TransferState.COMMITTED
         })
@@ -911,8 +895,8 @@ Test('Admin handler', adminHandlerTest => {
     await transferTest.test('Do not create new transfer for record funds if transfer already exists', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
-        Utility.transformGeneralTopicName.returns(topicName)
-        Utility.getKafkaConfig.returns(config)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
         const payload = messages[3].value.content.payload
         TransferService.validateDuplicateHash.withArgs(payload.transferId, payload).returns({
           existsMatching: 0,
