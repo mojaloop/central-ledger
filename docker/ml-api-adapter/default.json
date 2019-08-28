@@ -1,7 +1,7 @@
 {
   "PORT": 3000,
   "HOSTNAME": "http://ml-api-adapter",
-  "ENDPOINT_SOURCE_URL": "http://host.docker.internal:3001/participants/{{fsp}}/endpoints",
+  "ENDPOINT_SOURCE_URL": "http://host.docker.internal:3001",
   "ENDPOINT_HEALTH_URL": "http://host.docker.internal:3001/health",
   "ENDPOINT_CACHE_CONFIG": {
     "expiresIn": 180000,
@@ -12,6 +12,7 @@
       "rejectUnauthorized": true
     }
   },
+  "MAX_CALLBACK_TIME_LAG_DILATION_MILLISECONDS": 200,
   "MAX_FULFIL_TIMEOUT_DURATION_SECONDS": 300,
   "AMOUNT": {
     "PRECISION": 10,

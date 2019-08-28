@@ -103,6 +103,11 @@ Test('setup', setupTest => {
       },
       admin: {
         registerAdminHandlers: sandbox.stub().returns(P.resolve())
+      },
+      bulk: {
+        registerBulkPrepareHandler: sandbox.stub().returns(P.resolve()),
+        registerBulkFulfilHandler: sandbox.stub().returns(P.resolve()),
+        registerBulkProcessingHandler: sandbox.stub().returns(P.resolve())
       }
     }
 
@@ -484,6 +489,21 @@ Test('setup', setupTest => {
         enabled: true
       }
 
+      const bulkBrepareHandler = {
+        type: 'bulkprepare',
+        enabled: true
+      }
+
+      const bulkFulfilHandler = {
+        type: 'bulkfulfil',
+        enabled: true
+      }
+
+      const bulkProcessingHandler = {
+        type: 'bulkprocessing',
+        enabled: true
+      }
+
       const unknownHandler = {
         type: 'undefined',
         enabled: true
@@ -496,6 +516,9 @@ Test('setup', setupTest => {
         timeoutHandler,
         adminHandler,
         getHandler,
+        bulkBrepareHandler,
+        bulkFulfilHandler,
+        bulkProcessingHandler,
         unknownHandler
         // rejectHandler
       ]
@@ -511,6 +534,9 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(RegisterHandlersStub.admin.registerAdminHandlers.called)
         test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
+        test.ok(RegisterHandlersStub.bulk.registerBulkPrepareHandler.called)
+        test.ok(RegisterHandlersStub.bulk.registerBulkFulfilHandler.called)
+        test.ok(RegisterHandlersStub.bulk.registerBulkProcessingHandler.called)
         test.ok(err.message === `Handler Setup - ${JSON.stringify(unknownHandler)} is not a valid handler to register!`)
         test.end()
       })

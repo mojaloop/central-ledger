@@ -93,7 +93,6 @@ const fromSaveTransferPrepared = (t) => fromTransferAggregate({
 const fromSaveTransferExecuted = (t) => {
   return {
     transferId: t.transferFulfilmentRecord.transferId,
-    transferFulfilmentId: t.transferFulfilmentRecord.transferFulfilmentId,
     transferState: t.transferStateChangeRecord.transferStateId,
     completedTimestamp: t.transferFulfilmentRecord.completedDate,
     fulfilment: t.transferFulfilmentRecord.ilpFulfilment,

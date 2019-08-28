@@ -29,7 +29,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Uuid = require('uuid4')
 const TransferService = require('../../../../src/domain/transfer')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const TransferModel = require('../../../../src/models/transfer/transfer')
@@ -94,9 +93,9 @@ const saveTransferAbortedResult = {
     createdDate: '2019-03-07 18:40:25.026'
   },
   transferErrorRecord: {
-    transferStateChangeId: 200,
     errorCode: '5100',
     errorDescription: 'Payer aborted transfer without fulfilment',
+    isError: true,
     createdDate: '2019-03-07 18:40:25.026'
   }
 }
@@ -292,57 +291,6 @@ Test('Transfer Service', transferIndexTest => {
         const result = await TransferService.validateDuplicateHash(payload.transferId, payload)
         test.deepEqual(result, expected, 'results match')
         test.ok(TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('validate against transfer fulfilment model', async (test) => {
-      try {
-        const transferFulfilmentId = Uuid()
-        TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture, transferFulfilmentId).returns({
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        })
-        const expected = {
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        }
-
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, transferFulfilmentId)
-        test.deepEqual(result, expected, 'results match')
-        test.ok(TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('validate against transfer error model', async (test) => {
-      try {
-        const transferFulfilmentId = Uuid()
-        const isTransferError = true
-        TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns({
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        })
-        const expected = {
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        }
-
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, transferFulfilmentId, isTransferError)
-        test.deepEqual(result, expected, 'results match')
-        test.ok(TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
         test.end()
       } catch (err) {
         Logger.error(`validateDuplicateHash failed with error - ${err}`)
