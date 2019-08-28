@@ -662,6 +662,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
     const knex = await Db.getKnex()
 
     const trxFunction = async (trx, doCommit = true) => {
+      const transactionTimestamp = Time.getUTCString(new Date())
       let info, transferStateChangeId
       try {
         info = await knex('transfer AS t')
@@ -724,7 +725,10 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             info.drAmount = -info.drAmount
           }
           await knex('participantPosition')
-            .update('value', info.drPositionValue + info.drAmount)
+            .update({
+              value: parseFloat((info.drPositionValue + info.drAmount).toFixed(Config.AMOUNT.SCALE)),
+              changedDate: transactionTimestamp
+            })
             .where('participantPositionId', info.drPositionId)
             .transacting(trx)
 
@@ -732,7 +736,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             .insert({
               participantPositionId: info.drPositionId,
               transferStateChangeId: transferStateChangeId,
-              value: info.drPositionValue + info.drAmount,
+              value: parseFloat((info.drPositionValue + info.drAmount).toFixed(Config.AMOUNT.SCALE)),
               reservedValue: info.drReservedValue,
               createdDate: param1.createdDate
             })
@@ -744,7 +748,10 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             info.crAmount = -info.crAmount
           }
           await knex('participantPosition')
-            .update('value', info.crPositionValue + info.crAmount)
+            .update({
+              value: parseFloat((info.crPositionValue + info.crAmount).toFixed(Config.AMOUNT.SCALE)),
+              changedDate: transactionTimestamp
+            })
             .where('participantPositionId', info.crPositionId)
             .transacting(trx)
 
@@ -752,7 +759,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             .insert({
               participantPositionId: info.crPositionId,
               transferStateChangeId: transferStateChangeId,
-              value: info.crPositionValue + info.crAmount,
+              value: parseFloat((info.crPositionValue + info.crAmount).toFixed(Config.AMOUNT.SCALE)),
               reservedValue: info.crReservedValue,
               createdDate: param1.createdDate
             })
@@ -770,8 +777,8 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       }
       return {
         transferStateChangeId,
-        drPositionValue: info.drPositionValue + info.drAmount,
-        crPositionValue: info.crPositionValue + info.crAmount
+        drPositionValue: parseFloat((info.drPositionValue + info.drAmount).toFixed(Config.AMOUNT.SCALE)),
+        crPositionValue: parseFloat((info.crPositionValue + info.crAmount).toFixed(Config.AMOUNT.SCALE))
       }
     }
 

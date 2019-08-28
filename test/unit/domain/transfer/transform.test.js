@@ -69,7 +69,7 @@ Test('Transform Service', transformTest => {
 
         const expected = {
           amount: {
-            amount: '433.88',
+            amount: '433.8800',
             currency: 'USD'
           },
           completedTimestamp:
@@ -116,7 +116,7 @@ Test('Transform Service', transformTest => {
 
         const expected = {
           amount: {
-            amount: '433.88',
+            amount: '433.8800',
             currency: 'USD'
           },
           completedTimestamp:
@@ -167,7 +167,7 @@ Test('Transform Service', transformTest => {
         }
         const expected = {
           amount: {
-            amount: '100.00',
+            amount: '100.0000',
             currency: 'USD'
           },
           completedTimestamp: '2016-06-24T09:38:08.699-04:00',
