@@ -18,6 +18,7 @@
 	/vscode-markdown-toc-config -->
 <!-- /vscode-markdown-toc -->
 
+
 #  1. <a name='Prerequisites'></a>Prerequisites
 
 If you have followed the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#mojaloop-onboarding), you should already have the following cli tools installed:
@@ -43,6 +44,7 @@ In addition to the above cli tools, you will need to install the following to bu
 
 [todo]
 -->
+
 
 ##  2. <a name='InstallingandBuilding'></a>Installing and Building
 
@@ -256,69 +258,15 @@ npm run test:integration
     # Switch to postman directory
     cd ./postman
     ```
-3. Install [Postman CLI Newman](https://learning.getpostman.com/docs/postman/collection_runs/command_line_integration_with_newman):
-    > Note: Ensure that you have NPM installed. 
-    ```bash
-    # Install newman
-    npm install -g newman
-    ```
+3. Refer to [4. Support Scripts for Docker-compose](https://github.com/mojaloop/postman#4-support-scripts-for-docker-compose) of the readme for additional prerequisites.
 
 #### 8.2 Pre-loading Test Data
 
->Note: Ensure that you execute the following commands in your project folder after running `npm install`.
-
-```bash
-# Newman command to pre-load the default Hub Account
-newman run --delay-request=2000 --folder='Hub Account' --environment=environments/Mojaloop-Local-Docker-Compose.postman_environment.json OSS-New-Deployment-FSP-Setup.postman_collection.json
-
-# Expected output:
-OSS-New-Deployment-FSP-Setup
-
-❏ Hub Account
-↳ Add Hub Account-HUB_MULTILATERAL_SETTLEMENT
-  POST http://central-ledger.local:3001/participants/Hub/accounts [201 Created, 511B, 5.4s]
-  
-  ...continued...
-```
-
-```bash
-# Newman command to pre-load payerfsp data
-newman run --delay-request=2000 --folder='payerfsp (p2p transfers)' --environment=environments/Mojaloop-Local-Docker-Compose.postman_environment.json OSS-New-Deployment-FSP-Setup.postman_collection.json
-
-# Expected output:
-OSS-New-Deployment-FSP-Setup
-
-❏ FSP Onboarding / payerfsp (p2p transfers)
-↳ Add payerfsp - TRANSFERS
-  POST http://central-ledger.local:3001/participants [201 Created, 642B, 5.1s]
-  ✓  Status code is 201
-  
-  ...continued...
-```
-
-```bash
-# Newman command to pre-load payeefsp data
-newman run --delay-request=2000 --folder='payeefsp (p2p transfers)' --environment=environments/Mojaloop-Local-Docker-Compose.postman_environment.json OSS-New-Deployment-FSP-Setup.postman_collection.json
-
-# Expected output:
-OSS-New-Deployment-FSP-Setup
-
-❏ FSP Onboarding / payeefsp (p2p transfers)
-↳ Add payeefsp - TRANSFERS
-  POST http://central-ledger.local:3001/participants [201 Created, 642B, 5s]
-  ✓  Status code is 201
-  
-  ...continued...
-```
+Refer to section [4. Support Scripts for Docker-compose](https://github.com/mojaloop/postman#42-pre-loading-test-data) of the readme.
 
 #### 8.3 Running Example Requests
-1. Import the [Golden Path](https://github.com/mojaloop/postman/blob/master/Golden_Path.postman_collection.json) Collection and [Docker-compose Environment](https://github.com/mojaloop/postman/blob/master/environments/Mojaloop-Local-Docker-Compose.postman_environment.json) File.
-    - Postman Environment: `./environments/Mojaloop-Local-Docker-Compose.postman_environment.json`
-    - Postman Collection: `./Golden_Path.postman_collection.json`
-2. Ensure you select `Mojaloop-Local-Docker-Compose` from the environment drop-down
-3. Navigate to `Golden_Path` > `p2p_money_transfer` > `p2p_happy_path` > `Send Transfer`
-4. Click **Send** 
-5. You can check the database to see the transfer state, status changes, positions and other such information.
+
+Refer to section [4. Support Scripts for Docker-compose](https://github.com/mojaloop/postman43-running-example-requests) of the readme.
 
 
 ## 9. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs
@@ -327,11 +275,9 @@ OSS-New-Deployment-FSP-Setup
 
 Resolved by installing v2.0.3 `npm install sodium@2.0.3`
 
-
 ### 9.2 `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
 
 Resolved by running `CXX='clang++ -std=c++11 -stdlib=libc++' npm rebuild`
-
 
 ### 9.3 On macOS, `npm install` fails with the following error
 ```
