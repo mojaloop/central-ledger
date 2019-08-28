@@ -39,7 +39,7 @@ const TransferFulfilmentModel = require('../../../../src/models/transfer/transfe
 const TransferDuplicateCheckModel = require('../../../../src/models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../../../src/models/transfer/transferErrorDuplicateCheck')
-const TransferState = require('../../../../src/lib/enum').TransferState
+const TransferInternalState = require('@mojaloop/central-services-shared').Enum.Transfers.TransferInternalState
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Crypto = require('crypto')
 
@@ -71,7 +71,7 @@ hashFixture = hashSha256.digest(hashFixture).toString('base64').slice(0, -1) // 
 
 const transferStateChangeRecord = {
   transferId: payload.transferId,
-  transferStateId: TransferState.RECEIVED_PREPARE,
+  transferStateId: TransferInternalState.RECEIVED_PREPARE,
   reason: null,
   createdDate: new Date()
 }

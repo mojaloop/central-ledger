@@ -25,13 +25,13 @@
 'use strict'
 
 const Test = require('tape')
-const Joi = require('joi')
+const Joi = require('@hapi/joi')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Db = require('@mojaloop/central-services-database').Db
 
 const Config = require('../../../src/lib/config')
-const Consumer = require('../../../src/handlers/lib/kafka/consumer')
-const Producer = require('../../../src/handlers/lib/kafka/producer')
+const Consumer = require('@mojaloop/central-services-shared').Util.Kafka.Consumer
+const Producer = require('@mojaloop/central-services-shared').Util.Kafka.Producer
 const rootApiHandler = require('../../../src/api/root/handler')
 const {
   createRequest,

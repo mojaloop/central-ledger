@@ -30,14 +30,13 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
-    const result = await Db.participantCurrency.insert({
+    return await Db.participantCurrency.insert({
       participantId,
       currencyId,
       ledgerAccountTypeId,
       isActive,
       createdBy: 'unknown'
     })
-    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -26,7 +26,6 @@
 
 'use strict'
 
-const P = require('bluebird')
 const Config = require('./config')
 
 const participantRegex = new RegExp(`${Config.HOSTNAME}/participants/([A-Za-z0-9_]*)/?`, 'i')
@@ -44,7 +43,7 @@ const nameFromParticipantUri = (uri, done) => {
 }
 
 const participantNameFromTransfersRoute = (url) => {
-  return new P((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const matches = url.match(participantTransfersRouteRegex)
     if (matches) {
       resolve(matches[1])

@@ -22,26 +22,23 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
 'use strict'
 
 const Logger = require('@mojaloop/central-services-shared').Logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
-const LibUtil = require('../../../lib/util')
-const Util = require('../../lib/utility')
-const Kafka = require('../../lib/kafka')
-// const Validator = require('../shared/validator')
-const Enum = require('../../../lib/enum')
-const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
+const Util = require('@mojaloop/central-services-shared').Util
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const cloneDeep = require('lodash').cloneDeep
 
 const location = { module: 'BulkProcessingHandler', method: '', path: '' } // var object used as pointer
 
@@ -59,7 +56,7 @@ const fromSwitch = true
  * INVALID status. For any duplicate requests we will send appropriate callback based on the transfer state and the hash
  * validation.
  *
- * Module.method called to [TODO add description here]
+ * Module.method called to consume a bulkProcessing transfer message from the kafka topic and process it accordingly
  *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
@@ -100,70 +97,69 @@ const bulkProcessing = async (error, messages) => {
       histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
-    const actionLetter = action === TransferEventAction.BULK_PREPARE ? Enum.actionLetter.bulkPrepare
-      : (action === TransferEventAction.BULK_FULFIL ? Enum.actionLetter.bulkFulfil
-        : (action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit
-          : Enum.actionLetter.unknown))
-    const params = { message, kafkaTopic, consumer }
-    const producer = { functionality: TransferEventType.NOTIFICATION, action }
+    const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
+      : (action === Enum.Events.Event.Action.BULK_FULFIL ? Enum.Events.ActionLetter.bulkFulfil
+        : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
+          : Enum.Events.ActionLetter.unknown))
+    const params = { message, kafkaTopic, consumer, decodedPayload: payload }
+    const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
-    // Logger.info(`bulkTransferInfo=${JSON.stringify(bulkTransferInfo)}`)
     let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription, exitCode
     let produceNotification = false
 
-    if ([Enum.BulkTransferState.RECEIVED, Enum.BulkTransferState.PENDING_PREPARE].includes(bulkTransferInfo.bulkTransferStateId)) {
-      criteriaState = Enum.BulkTransferState.RECEIVED
-      incompleteBulkState = Enum.BulkTransferState.PENDING_PREPARE
-      completedBulkState = Enum.BulkTransferState.ACCEPTED
-      if (action === TransferEventAction.PREPARE_DUPLICATE) {
-        processingStateId = Enum.BulkProcessingState.RECEIVED_DUPLICATE
-      } else if (action === TransferEventAction.BULK_PREPARE && state.status === Enum.transferEventState.ERROR) {
-        processingStateId = Enum.BulkProcessingState.RECEIVED_INVALID
+    if ([Enum.Transfers.BulkTransferState.RECEIVED, Enum.Transfers.BulkTransferStateEnum.PENDING_PREPARE].includes(bulkTransferInfo.bulkTransferStateId)) {
+      criteriaState = Enum.Transfers.BulkTransferState.RECEIVED
+      incompleteBulkState = Enum.Transfers.BulkTransferStateEnum.PENDING_PREPARE
+      completedBulkState = Enum.Transfers.BulkTransferState.ACCEPTED
+      if (action === Enum.Events.Event.Action.PREPARE_DUPLICATE) {
+        processingStateId = Enum.Transfers.BulkProcessingState.RECEIVED_DUPLICATE
+      } else if (action === Enum.Events.Event.Action.BULK_PREPARE && state.status === Enum.Events.EventState.ERROR) {
+        processingStateId = Enum.Transfers.BulkProcessingState.RECEIVED_INVALID
         errorCode = payload.errorInformation.errorCode
         errorDescription = payload.errorInformation.errorDescription
-      } else if (action === TransferEventAction.BULK_PREPARE && state.status === Enum.transferEventState.SUCCESS) {
-        processingStateId = Enum.BulkProcessingState.ACCEPTED
-      } else if ([TransferEventAction.TIMEOUT_RECEIVED, TransferEventAction.TIMEOUT_RESERVED].includes(action)) {
+      } else if (action === Enum.Events.Event.Action.BULK_PREPARE && state.status === Enum.Events.EventState.SUCCESS) {
+        processingStateId = Enum.Transfers.BulkProcessingState.ACCEPTED
+      } else if ([Enum.Events.Event.Action.TIMEOUT_RECEIVED, Enum.Events.Event.Action.TIMEOUT_RESERVED].includes(action)) {
         incompleteBulkState = null
-        completedBulkState = Enum.BulkTransferState.COMPLETED
-        processingStateId = Enum.BulkProcessingState.EXPIRED
+        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
+        processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 2
         errorCode = 2 // TODO: Change to MLAPI spec defined error and move description text to enum
-        errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.RECEIVED} state`
+        errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.RECEIVED} state`
       }
-    } else if ([Enum.BulkTransferState.ACCEPTED].includes(bulkTransferInfo.bulkTransferStateId)) {
-      if (action === TransferEventAction.TIMEOUT_RESERVED) {
-        criteriaState = Enum.BulkTransferState.ACCEPTED
+    } else if ([Enum.Transfers.BulkTransferState.ACCEPTED].includes(bulkTransferInfo.bulkTransferStateId)) {
+      if (action === Enum.Events.Event.Action.TIMEOUT_RESERVED) {
+        criteriaState = Enum.Transfers.BulkTransferState.ACCEPTED
         incompleteBulkState = null
-        completedBulkState = Enum.BulkTransferState.COMPLETED
-        processingStateId = Enum.BulkProcessingState.EXPIRED
+        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
+        processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 3
         errorCode = 3 // TODO: Change to MLAPI spec defined error and move description text to enum
-        errorDescription = errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.ACCEPTED} state`
+        errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`
       }
-    } else if ([Enum.BulkTransferState.PROCESSING, Enum.BulkTransferState.PENDING_FULFIL].includes(bulkTransferInfo.bulkTransferStateId)) {
-      criteriaState = Enum.BulkTransferState.PROCESSING
-      incompleteBulkState = Enum.BulkTransferState.PENDING_FULFIL
-      completedBulkState = Enum.BulkTransferState.COMPLETED
-      if (action === TransferEventAction.FULFIL_DUPLICATE) {
-        processingStateId = Enum.BulkProcessingState.FULFIL_DUPLICATE
-      } else if (action === TransferEventAction.BULK_COMMIT && state.status === Enum.transferEventState.SUCCESS) {
-        processingStateId = Enum.BulkProcessingState.COMPLETED
-      } else if (action === TransferEventAction.REJECT && state.status === Enum.transferEventState.SUCCESS) {
-        processingStateId = Enum.BulkProcessingState.REJECTED
-      } else if ([TransferEventAction.COMMIT, TransferEventAction.ABORT].includes(action) && state.status === Enum.transferEventState.ERROR) {
-        processingStateId = Enum.BulkProcessingState.FULFIL_INVALID
-      } else if (action === Enum.TransferEventAction.TIMEOUT_RESERVED) {
+    } else if ([Enum.Transfers.BulkTransferState.PROCESSING, Enum.Transfers.BulkTransferState.PENDING_FULFIL].includes(bulkTransferInfo.bulkTransferStateId)) {
+      criteriaState = Enum.Transfers.BulkTransferState.PROCESSING
+      incompleteBulkState = Enum.Transfers.BulkTransferState.PENDING_FULFIL
+      completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
+      if (action === Enum.Events.Event.Action.FULFIL_DUPLICATE) {
+        processingStateId = Enum.Transfers.BulkProcessingState.FULFIL_DUPLICATE
+      } else if (action === Enum.Events.Event.Action.BULK_COMMIT && state.status === Enum.Events.EventState.SUCCESS) {
+        processingStateId = Enum.Transfers.BulkProcessingState.COMPLETED
+      } else if (action === Enum.Events.Event.Action.REJECT && state.status === Enum.Events.EventState.SUCCESS) {
+        processingStateId = Enum.Transfers.BulkProcessingState.REJECTED
+      } else if ([Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.ABORT].includes(action) && state.status === Enum.Events.EventState.ERROR) {
+        processingStateId = Enum.Transfers.BulkProcessingState.FULFIL_INVALID
+      } else if (action === Enum.Events.Event.Action.TIMEOUT_RESERVED) {
         incompleteBulkState = null
-        completedBulkState = Enum.BulkTransferState.COMPLETED
-        processingStateId = Enum.BulkProcessingState.EXPIRED
+        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
+        processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 4
         errorCode = 4 // TODO: Change to MLAPI spec defined error and move description text to enum
-        errorDescription = `Invalid action for bulk in ${Enum.BulkTransferState.PROCESSING} state`
+        errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`
       }
     } else { // ['PENDING_INVALID', 'COMPLETED', 'REJECTED', 'INVALID']
       exitCode = 1
@@ -178,7 +174,7 @@ const bulkProcessing = async (error, messages) => {
       })
     const exists = await BulkTransferService.bulkTransferAssociationExists(
       bulkTransferInfo.bulkTransferId,
-      Enum.BulkProcessingState[criteriaState]
+      Enum.Transfers.BulkProcessingState[criteriaState]
     )
     if (exists) {
       bulkTransferState = incompleteBulkState
@@ -205,108 +201,66 @@ const bulkProcessing = async (error, messages) => {
     }
 
     if (produceNotification) {
-      if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_PREPARE) {
+      if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && action === Enum.Events.Event.Action.BULK_PREPARE) {
         Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}1`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
         const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
-        const payload = LibUtil.omitNil({
+        const payload = Util.omitNil({
           bulkTransferId: payeeBulkResponse.bulkTransferId,
           bulkTransferState: payeeBulkResponse.bulkTransferState,
           completedTimestamp: payeeBulkResponse.completedTimestamp,
           extensionList: payeeBulkResponse.extensionList
         })
-        params.message.value = {
-          id: params.message.value.id,
-          from: payeeBulkResponse.headers['fspiop-source'],
-          to: payeeBulkResponse.destination,
-          content: {
-            headers: payeeBulkResponse.headers,
-            payload
-          },
-          type: 'application/json',
-          metadata: {
-            event: {
-              id: params.message.value.metadata.event.id,
-              state: { status: 'success', code: 0, description: 'action successful' },
-              createdAt: new Date()
-            }
-          }
-        }
-        await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
+        const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, params.message.value.metadata.type, params.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
+        params.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, payeeBulkResponse.destination, payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, payeeBulkResponse.headers, payload)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
-      } else if (eventType === TransferEventType.BULK_PROCESSING && action === TransferEventAction.BULK_COMMIT) {
+      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && action === Enum.Events.Event.Action.BULK_COMMIT) {
         Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}2`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
-        const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers: cloneDeep(headers) }, getBulkTransferByIdResult.payerBulkTransfer)
-        const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers: cloneDeep(headers) }, getBulkTransferByIdResult.payeeBulkTransfer)
-        payeeBulkResponse.headers['fspiop-source'] = Enum.headers.FSPIOP.SWITCH
-        payeeBulkResponse.headers['fspiop-destination'] = participants.payeeFsp
-        delete payeeBulkResponse.headers['fspiop-signature']
+        const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers: Util.clone(headers) }, getBulkTransferByIdResult.payerBulkTransfer)
+        const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers: Util.clone(headers) }, getBulkTransferByIdResult.payeeBulkTransfer)
+        payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.headers.FSPIOP.SWITCH
+        payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.DESTINATION] = participants.payeeFsp
+        delete payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SIGNATURE]
         const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
         await (new BulkTransferResultModel(payerBulkResponse)).save()
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
-        const payerParams = cloneDeep(params)
-        const payeeParams = cloneDeep(params)
+        const payerParams = Util.clone(params)
+        const payeeParams = Util.clone(params)
 
-        const payerPayload = LibUtil.omitNil({
+        const payerPayload = Util.omitNil({
           bulkTransferId: payerBulkResponse.bulkTransferId,
           bulkTransferState: payerBulkResponse.bulkTransferState,
           completedTimestamp: payerBulkResponse.completedTimestamp,
           extensionList: payerBulkResponse.extensionList
         })
-        payerParams.message.value = {
-          id: params.message.value.id,
-          from: payerBulkResponse.headers['fspiop-source'],
-          to: participants.payerFsp,
-          content: {
-            headers: payerBulkResponse.headers,
-            payload: payerPayload
-          },
-          type: 'application/json',
-          metadata: {
-            event: {
-              id: params.message.value.metadata.event.id,
-              state: { status: 'success', code: 0, description: 'action successful' },
-              createdAt: new Date()
-            }
-          }
-        }
-
-        const payeePayload = LibUtil.omitNil({
+        const payerMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payerParams.message.value.metadata.type, payerParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
+        payerParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payerFsp, payerBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE], payerMetadata, payerBulkResponse.headers, payerPayload)
+        const payeePayload = Util.omitNil({
           bulkTransferId: payeeBulkResponse.bulkTransferId,
           bulkTransferState: payeeBulkResponse.bulkTransferState,
           completedTimestamp: payeeBulkResponse.completedTimestamp,
           extensionList: payeeBulkResponse.extensionList
         })
-        payeeParams.message.value = {
-          id: params.message.value.id,
-          from: Enum.headers.FSPIOP.SWITCH,
-          to: participants.payeeFsp,
-          content: {
-            headers: payeeBulkResponse.headers,
-            payload: payeePayload
-          },
-          type: 'application/json',
-          metadata: {
-            event: {
-              id: params.message.value.metadata.event.id,
-              state: { status: 'success', code: 0, description: 'action successful' },
-              createdAt: new Date()
-            }
-          }
-        }
-
-        await Util.proceed(payerParams, { consumerCommit, histTimerEnd, producer })
-        await Util.proceed(payeeParams, { consumerCommit, histTimerEnd, producer })
+        const payeeMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payeeParams.message.value.metadata.type, payeeParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
+        payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
+        await Kafka.proceed(payerParams, { consumerCommit, producer })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        await Kafka.proceed(payeeParams, { consumerCommit, producer })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
         Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
-        const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.BULK_PROCESSING }
-        return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
+        const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
+        await Kafka.proceed(params, { consumerCommit, fspiopError, producer, fromSwitch })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
       }
     }
   } catch (err) {
@@ -328,8 +282,8 @@ const registerBulkProcessingHandler = async () => {
   try {
     const bulkProcessingHandler = {
       command: bulkProcessing,
-      topicName: Util.transformGeneralTopicName(TransferEventType.BULK, TransferEventAction.PROCESSING),
-      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.BULK.toUpperCase(), TransferEventAction.PROCESSING.toUpperCase())
+      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.PROCESSING),
+      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.PROCESSING.toUpperCase())
     }
     bulkProcessingHandler.config.rdkafkaConf['client.id'] = bulkProcessingHandler.topicName
     await Kafka.Consumer.createHandler(bulkProcessingHandler.topicName, bulkProcessingHandler.config, bulkProcessingHandler.command)

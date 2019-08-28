@@ -33,10 +33,10 @@ const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 const Proxyquire = require('proxyquire')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
-const Time = require('../../../../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const Uuid = require('uuid4')
 
 Test('Transfer facade', async (transferFacadeTest) => {
@@ -618,8 +618,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
     try {
       const transferId = 't1'
       const transfer = { transferId, extensionList: transferExtensions }
-      const transferParticipantRoleType = Enum.TransferParticipantRoleType.PAYER_DFSP
-      const ledgerEntryType = Enum.LedgerEntryType.PRINCIPLE_VALUE
+      const transferParticipantRoleType = Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP
+      const ledgerEntryType = Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE
 
       const builderStub = sandbox.stub()
       const transferStateChange = sandbox.stub()
@@ -709,7 +709,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           isCommit = true
           hasPassedValidation = true
           const record = [{ settlementWindowId: 1 }]
-          transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_FULFIL
+          transferStateChangeRecord.transferStateId = Enum.Transfers.TransferInternalState.RECEIVED_FULFIL
 
           sandbox.stub(Db, 'getKnex')
           const trxStub = sandbox.stub()
@@ -770,7 +770,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           isCommit = false
           hasPassedValidation = true
           const record = [{ settlementWindowId: 1 }]
-          transferStateChangeRecord.transferStateId = Enum.TransferState.RECEIVED_REJECT
+          transferStateChangeRecord.transferStateId = Enum.Transfers.TransferInternalState.RECEIVED_REJECT
 
           sandbox.stub(Db, 'getKnex')
           const trxStub = sandbox.stub()
@@ -830,7 +830,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           hasPassedValidation = false
           const record = [{ settlementWindowId: 1 }]
-          transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED_REJECTED
+          transferStateChangeRecord.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
 
           sandbox.stub(Db, 'getKnex')
           const trxStub = sandbox.stub()
@@ -889,7 +889,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await saveTransferFulfilled.test('rollback and throw error', async (test) => {
         try {
           hasPassedValidation = false
-          transferStateChangeRecord.transferStateId = Enum.TransferState.ABORTED_REJECTED
+          transferStateChangeRecord.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
           payload.extensionList = null
           delete payload.completedTimestamp
 
@@ -949,7 +949,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           getUTCString: sandbox.stub().returns(transactionTimestamp)
         }
       })
-      const state = Enum.TransferState.RECEIVED_ERROR
+      const state = Enum.Transfers.TransferInternalState.RECEIVED_ERROR
       const transferStateChangeRecord = {
         transferId,
         transferStateId: state,
@@ -1586,7 +1586,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const param1 = {
             transferId: Uuid(),
-            transferStateId: Enum.TransferState.COMMITTED,
+            transferStateId: Enum.Transfers.TransferState.COMMITTED,
             reason: 'text',
             createdDate: Time.getUTCString(now),
             drUpdated: true,
@@ -1603,7 +1603,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             crPositionId: 1,
             crPositionValue: 0,
             crReservedValue: 0,
-            transferStateId: Enum.TransferState.COMMITTED,
+            transferStateId: Enum.Transfers.TransferState.COMMITTED,
             ledgerAccountTypeId: 2
           }
           const trxStub = sandbox.stub()
@@ -1691,7 +1691,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const param1 = {
             transferId: Uuid(),
-            transferStateId: Enum.TransferState.ABORTED_REJECTED,
+            transferStateId: Enum.Transfers.TransferInternalState.ABORTED_REJECTED,
             reason: 'text',
             createdDate: Time.getUTCString(now),
             drUpdated: true,
@@ -1708,7 +1708,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
             crPositionId: 1,
             crPositionValue: 0,
             crReservedValue: 0,
-            transferStateId: Enum.TransferState.ABORTED_REJECTED,
+            transferStateId: Enum.Transfers.TransferInternalState.ABORTED_REJECTED,
             ledgerAccountTypeId: 2
           }
           const trxStub = sandbox.stub()
@@ -1789,7 +1789,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const param1 = {
             transferId: Uuid(),
-            transferStateId: Enum.TransferState.RECEIVED_PREPARE,
+            transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
             reason: 'text',
             createdDate: Time.getUTCString(now),
             drUpdated: true,
@@ -1905,7 +1905,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('make reconciliation transfer prepare when called from within a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -1970,7 +1970,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('throw error if insert fails', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -2031,7 +2031,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('make reconciliation transfer commit in a new transaction and commit it when called outside of a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -2082,7 +2082,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferPrepareTest.test('throw error and rollback when called outside of a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE,
             participantCurrencyId: 2,
             amount: {
               amount: 10,
@@ -2160,7 +2160,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferReserveTest.test('reserve funds and abort when drPositionValue is gt 0', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE
           }
           const transactionTimestamp = Time.getUTCString(now)
 
@@ -2183,7 +2183,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferReserveTest.test('reserve funds and commit when called outside of a transaction', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_IN
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN
           }
           const transactionTimestamp = Time.getUTCString(now)
 
@@ -2207,7 +2207,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       await reconciliationTransferReserveTest.test('rollback when called outside of a transaction and error occurs', async test => {
         try {
           const payload = {
-            action: Enum.adminTransferAction.RECORD_FUNDS_IN
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN
           }
           const transactionTimestamp = Time.getUTCString(now)
 
@@ -2260,7 +2260,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2291,7 +2291,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2320,7 +2320,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2353,7 +2353,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2413,7 +2413,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2444,7 +2444,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2472,7 +2472,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)
@@ -2505,7 +2505,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
         try {
           const payload = {
             transferId: 1,
-            action: Enum.adminTransferAction.RECORD_FUNDS_IN,
+            action: Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN,
             participantCurrencyId: 2
           }
           const transactionTimestamp = Time.getUTCString(now)

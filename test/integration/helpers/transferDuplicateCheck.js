@@ -26,7 +26,7 @@
 
 const Model = require('../../../src/models/transfer/transferDuplicateCheck')
 const ParticipantPreparationModule = require('./participant')
-const Time = require('../../../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const Crypto = require('crypto')
 const Uuid = require('uuid4')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')

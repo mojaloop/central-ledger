@@ -37,11 +37,9 @@ const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAcc
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
-const Utility = require('../../handlers/lib/utility')
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Uuid = require('uuid4')
-const Enum = require('../../lib/enum')
-const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 // Alphabetically ordered list of error texts used below
 const AccountInactiveErrorText = 'Account is currently set inactive'
@@ -58,8 +56,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const create = async (payload) => {
   try {
-    const participant = await ParticipantModel.create({ name: payload.name })
-    return participant
+    return ParticipantModel.create({ name: payload.name })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -201,8 +198,7 @@ const getEndpoint = async (name, type) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    const participantEndpoint = await ParticipantFacade.getEndpoint(participant.participantId, type)
-    return participantEndpoint
+    return ParticipantFacade.getEndpoint(participant.participantId, type)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -226,8 +222,7 @@ const getAllEndpoints = async (name) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant.participantId)
-    return participantEndpoints
+    return ParticipantFacade.getAllEndpoints(participant.participantId)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -280,9 +275,9 @@ const destroyParticipantEndpointByName = async (name) => {
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
-    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT)
+    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.SETTLEMENT)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
@@ -294,7 +289,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSITION
     }
     const payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
-    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
+    await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -355,7 +350,7 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
 
 const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
     return ParticipantPositionModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
@@ -378,7 +373,7 @@ const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => 
 
 const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
     return ParticipantLimitModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
@@ -407,13 +402,13 @@ const getLimits = async (name, { currency = null, type = null }) => {
   try {
     let participant
     if (currency != null) {
-      participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
+      participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
       participantExists(participant)
       return ParticipantFacade.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, type)
     } else {
       participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.LedgerAccountType.POSITION)
+      return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.Accounts.LedgerAccountType.POSITION)
     }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -436,7 +431,7 @@ const getLimits = async (name, { currency = null, type = null }) => {
 
 const getLimitsForAllParticipants = async ({ currency = null, type = null }) => {
   try {
-    return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.LedgerAccountType.POSITION)
+    return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.Accounts.LedgerAccountType.POSITION)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -468,18 +463,18 @@ const getLimitsForAllParticipants = async ({ currency = null, type = null }) => 
 const adjustLimits = async (name, payload) => {
   try {
     const { limit, currency } = payload
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
     const result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
     payload.name = name
-    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
+    await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-const createLimitAdjustmentMessageProtocol = (payload, action = Enum.adminNotificationActions.LIMIT_ADJUSTMENT, state = '', pp = '') => {
+const createLimitAdjustmentMessageProtocol = (payload, action = Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, state = '', pp = '') => {
   return {
     id: Uuid(),
     from: payload.name,
@@ -549,9 +544,9 @@ const createLimitAdjustmentMessageProtocol = (payload, action = Enum.adminNotifi
 const getPositions = async (name, query) => {
   try {
     if (query.currency) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.Accounts.LedgerAccountType.POSITION)
       participantExists(participant)
-      const result = await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION, query.currency, Enum.LedgerAccountType.POSITION)
+      const result = await PositionFacade.getByNameAndCurrency(name, Enum.Accounts.LedgerAccountType.POSITION, query.currency) // TODO this function only takes a max of 3 params, this has 4
       let position = {}
       if (Array.isArray(result) && result.length > 0) {
         position = {
@@ -564,7 +559,7 @@ const getPositions = async (name, query) => {
     } else {
       const participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      const result = await await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION)
+      const result = await await PositionFacade.getByNameAndCurrency(name, Enum.Accounts.LedgerAccountType.POSITION)
       const positions = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
@@ -713,7 +708,7 @@ const recordFundsInOut = async (payload, params, enums) => {
       params: params,
       enums: enums
     }
-    return await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+    return await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER, messageProtocol, Enum.Events.EventStatus.SUCCESS)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

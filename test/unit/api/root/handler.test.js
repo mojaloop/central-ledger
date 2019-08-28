@@ -25,12 +25,11 @@
 'use strict'
 
 const Test = require('tapes')(require('tape'))
-const Joi = require('joi')
+const Joi = require('@hapi/joi')
 const Sinon = require('sinon')
-const P = require('bluebird')
 
 const Handler = require('../../../../src/api/root/handler')
-const Kafka = require('../../../../src/handlers/lib/kafka/index')
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const {
   createRequest,
@@ -57,7 +56,7 @@ Test('Root', rootHandlerTest => {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Kafka.Consumer, 'getListOfTopics').returns(['admin'])
-      sandbox.stub(Kafka.Consumer, 'isConnected').returns(P.resolve())
+      sandbox.stub(Kafka.Consumer, 'isConnected').returns(Promise.resolve())
       const schema = {
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),

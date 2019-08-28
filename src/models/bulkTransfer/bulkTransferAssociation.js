@@ -24,8 +24,8 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Time = require('../../lib/time')
-const LibUtil = require('../../lib/util')
+const Time = require('@mojaloop/central-services-shared').Util.Time
+const LibUtil = require('@mojaloop/central-services-shared').Util
 
 exports.create = async (bulkTransferAssociation) => {
   try {

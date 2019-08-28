@@ -2,7 +2,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 
@@ -33,7 +32,7 @@ Test('setup', setupTest => {
     sandbox = Sinon.createSandbox()
 
     PluginsStub = {
-      registerPlugins: sandbox.stub().returns(P.resolve())
+      registerPlugins: sandbox.stub().returns(Promise.resolve())
     }
 
     serverStub = {
@@ -56,22 +55,22 @@ Test('setup', setupTest => {
     }
 
     requestLoggerStub = {
-      logRequest: sandbox.stub().returns(P.resolve()),
-      logResponse: sandbox.stub().returns(P.resolve())
+      logRequest: sandbox.stub().returns(Promise.resolve()),
+      logResponse: sandbox.stub().returns(Promise.resolve())
     }
 
     SidecarStub = {
-      connect: sandbox.stub().returns(P.resolve())
+      connect: sandbox.stub().returns(Promise.resolve())
     }
 
     DbStub = {
-      connect: sandbox.stub().returns(P.resolve()),
-      disconnect: sandbox.stub().returns(P.resolve())
+      connect: sandbox.stub().returns(Promise.resolve()),
+      disconnect: sandbox.stub().returns(Promise.resolve())
     }
 
     ObjStoreStub = {
       Db: {
-        connect: sandbox.stub().returns(P.resolve())
+        connect: sandbox.stub().returns(Promise.resolve())
       }
     }
     ObjStoreStubThrows = {
@@ -83,31 +82,31 @@ Test('setup', setupTest => {
     uuidStub = sandbox.stub()
 
     MigratorStub = {
-      migrate: sandbox.stub().returns(P.resolve())
+      migrate: sandbox.stub().returns(Promise.resolve())
     }
 
     RegisterHandlersStub = {
-      registerAllHandlers: sandbox.stub().returns(P.resolve()),
+      registerAllHandlers: sandbox.stub().returns(Promise.resolve()),
       transfers: {
-        registerPrepareHandler: sandbox.stub().returns(P.resolve()),
-        registerGetHandler: sandbox.stub().returns(P.resolve()),
-        registerFulfilHandler: sandbox.stub().returns(P.resolve())
-        // registerRejectHandler: sandbox.stub().returns(P.resolve())
+        registerPrepareHandler: sandbox.stub().returns(Promise.resolve()),
+        registerGetHandler: sandbox.stub().returns(Promise.resolve()),
+        registerFulfilHandler: sandbox.stub().returns(Promise.resolve())
+        // registerRejectHandler: sandbox.stub().returns(Promise.resolve())
       },
       positions: {
-        registerPositionHandler: sandbox.stub().returns(P.resolve())
+        registerPositionHandler: sandbox.stub().returns(Promise.resolve())
       },
       timeouts: {
-        registerAllHandlers: sandbox.stub().returns(P.resolve()),
-        registerTimeoutHandler: sandbox.stub().returns(P.resolve())
+        registerAllHandlers: sandbox.stub().returns(Promise.resolve()),
+        registerTimeoutHandler: sandbox.stub().returns(Promise.resolve())
       },
       admin: {
-        registerAdminHandlers: sandbox.stub().returns(P.resolve())
+        registerAdminHandlers: sandbox.stub().returns(Promise.resolve())
       },
       bulk: {
-        registerBulkPrepareHandler: sandbox.stub().returns(P.resolve()),
-        registerBulkFulfilHandler: sandbox.stub().returns(P.resolve()),
-        registerBulkProcessingHandler: sandbox.stub().returns(P.resolve())
+        registerBulkPrepareHandler: sandbox.stub().returns(Promise.resolve()),
+        registerBulkFulfilHandler: sandbox.stub().returns(Promise.resolve()),
+        registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve())
       }
     }
 
@@ -126,7 +125,7 @@ Test('setup', setupTest => {
       '../lib/requestLogger': requestLoggerStub,
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
-      hapi: HapiStub,
+      '@hapi/hapi': HapiStub,
       '../lib/config': ConfigStub
       // '../handlers/lib/kafka': KafkaCronStub
     })
@@ -171,7 +170,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStubThrowError,
+        '@hapi/hapi': HapiStubThrowError,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -220,7 +219,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -336,7 +335,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -367,7 +366,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -399,7 +398,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -433,7 +432,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -666,7 +665,7 @@ Test('setup', setupTest => {
         '../lib/requestLogger': requestLoggerStub,
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
-        hapi: HapiStub,
+        '@hapi/hapi': HapiStub,
         '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })

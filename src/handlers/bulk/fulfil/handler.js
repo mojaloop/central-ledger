@@ -22,7 +22,9 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -30,12 +32,10 @@
 const AwaitifyStream = require('awaitify-stream')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const BulkTransferService = require('../../../domain/bulkTransfer')
-const Util = require('../../lib/utility')
-const Kafka = require('../../lib/kafka')
+const Util = require('@mojaloop/central-services-shared').Util
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Validator = require('../shared/validator')
-const Enum = require('../../../lib/enum')
-const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
+const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
@@ -44,35 +44,6 @@ const encodePayload = require('@mojaloop/central-services-stream/src/kafka/proto
 const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
 
 const consumerCommit = true
-// const fromSwitch = true
-
-// TODO: move to a factory function
-const fulfilHandlerMessageProtocol = {
-  value: {
-    id: null,
-    from: null,
-    to: null,
-    type: 'application/json',
-    content: {
-      uriParams: { id: null },
-      headers: null,
-      payload: null
-    },
-    metadata: {
-      event: {
-        id: null,
-        type: 'fulfil',
-        action: 'commit', // TODO: switch to 'bulk-fulfil' flow
-        createdAt: null,
-        state: {
-          status: 'success',
-          code: 0
-        }
-      }
-    }
-  }
-}
-
 /**
  * @function BulkFulfilHandler
  *
@@ -123,8 +94,8 @@ const bulkFulfil = async (error, messages) => {
       histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
-    const actionLetter = action === TransferEventAction.BULK_COMMIT ? Enum.actionLetter.bulkCommit : Enum.actionLetter.unknown
-    let params = { message, kafkaTopic, consumer }
+    const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit : Enum.Events.ActionLetter.unknown
+    let params = { message, kafkaTopic, consumer, decodedPayload: payload }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const isFulfilment = true
@@ -161,12 +132,10 @@ const bulkFulfil = async (error, messages) => {
         // enable async/await operations for the stream
         const streamReader = AwaitifyStream.createReader(indvidualTransfersFulfilStream)
         let doc
-        const transferIds = []
         while ((doc = await streamReader.readAsync()) !== null) {
           const individualTransferFulfil = doc.payload
           const transferId = individualTransferFulfil.transferId
           delete individualTransferFulfil.transferId
-          transferIds.push(transferId)
           const bulkTransferAssociationRecord = {
             transferId,
             bulkTransferId: payload.bulkTransferId,
@@ -180,21 +149,15 @@ const bulkFulfil = async (error, messages) => {
           } else {
             individualTransferFulfil.transferState = Enum.TransferStateEnum.COMMITTED
           }
-
-          const dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers['content-type'])
-          const msg = Object.assign({}, fulfilHandlerMessageProtocol)
-          msg.value.id = messageId
-          msg.value.from = headers['fspiop-source']
-          msg.value.to = headers['fspiop-destination']
-          msg.value.content.headers = headers
-          msg.value.content.payload = dataUri
-          msg.value.content.uriParams.id = transferId
-          msg.value.metadata.event.id = message.value.metadata.event.id
-          msg.value.metadata.event.createdAt = new Date()
-
+          const dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers[Enum.Http.Headers.GENERAL.CONTENT_TYPE.value])
+          const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEventState(message.value.metadata.event.id, Enum.Events.Event.Type.FULFIL, Enum.Events.Event.Action.COMMIT, Enum.Events.EventStatus.SUCCESS.status, Enum.Events.EventStatus.SUCCESS.code, Enum.Events.EventStatus.SUCCESS.description) // TODO: switch action to 'bulk-fulfil' flow
+          const msg = {
+            value: Util.StreamingProtocol.createMessage(messageId, headers[Enum.Http.Headers.FSPIOP.DESTINATION], headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, headers, dataUri, { id: transferId })
+          }
           params = { message: msg, kafkaTopic, consumer }
-          const producer = { functionality: TransferEventType.FULFIL, action: TransferEventAction.BULK_COMMIT }
-          await Util.proceed(params, { consumerCommit, histTimerEnd, producer })
+          const producer = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_COMMIT }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, producer })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
@@ -234,8 +197,8 @@ const registerBulkFulfilHandler = async () => {
   try {
     const bulkFulfilHandler = {
       command: bulkFulfil,
-      topicName: Util.transformGeneralTopicName(TransferEventType.BULK, TransferEventAction.FULFIL),
-      config: Util.getKafkaConfig(Util.ENUMS.CONSUMER, TransferEventType.BULK.toUpperCase(), TransferEventAction.FULFIL.toUpperCase())
+      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.BULK, Enum.Events.Event.Action.FULFIL),
+      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.FULFIL.toUpperCase())
     }
     bulkFulfilHandler.config.rdkafkaConf['client.id'] = bulkFulfilHandler.topicName
     await Kafka.Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)

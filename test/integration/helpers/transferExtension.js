@@ -31,7 +31,7 @@ const TransferPreparationModule = require('./transfer')
 const TransferModel = require('../../../src/models/transfer/transfer')
 const Model = require('../../../src/models/transfer/transferExtension')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
-const Time = require('../../../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
