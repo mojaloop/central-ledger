@@ -12,6 +12,7 @@
       "rejectUnauthorized": true
     }
   },
+  "MAX_CALLBACK_TIME_LAG_DILATION_MILLISECONDS": 200,
   "MAX_FULFIL_TIMEOUT_DURATION_SECONDS": 300,
   "AMOUNT": {
     "PRECISION": 10,
