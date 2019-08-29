@@ -362,10 +362,26 @@ const fulfil = async (error, messages) => {
               return true
             } else { // action === TransferEventAction.ABORT // error-callback request to be processed
               Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}13`))
-              const abortResult = await TransferService.abort(transferId, payload)
-              const TER = abortResult.transferErrorRecord
-              const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
-              const fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorCode(TER.errorCode, TER.errorDescription).toApiErrorObject()
+              let producer, fspiopError
+              const eInfo = payload.errorInformation
+              try { // handle only valid errorCodes provided by the payee
+                fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorCode(eInfo.errorCode, eInfo.errorDescription).toApiErrorObject()
+              } catch (err) {
+                /**
+                 * This code branch would leave the transfer in an unfinished transfer state, awaiting transfer expiry by the TimeoutHandler.
+                 * Subsequent request on the /transfers/{transferId}/error endpoint would either resolve at:
+                 *    - FulfilHandler::fulfil:abort::dupCheck::handleResend::inProgress2--A5, with no callback to client, or
+                 *    - FulfilHandler::fulfil:abort::dupCheck::callbackErrorModified3--A7, with the corresponding callback.
+                 * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter so that such requests are rejected right away
+                 */
+                fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'out-of-range errorCode').toApiErrorObject()
+                producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
+                await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
+                histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+                return true
+              }
+              await TransferService.abort(transferId, payload)
+              producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
