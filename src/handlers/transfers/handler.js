@@ -199,6 +199,7 @@ const fulfil = async (error, messages) => {
     }
     const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
+    const type = message.value.metadata.event.type
     const action = message.value.metadata.event.action
     const transferId = message.value.content.uriParams.id
     const kafkaTopic = message.topic
@@ -282,7 +283,7 @@ const fulfil = async (error, messages) => {
       }
       return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
     } else { // !hasDuplicateId
-      if (message.value.metadata.event.type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
+      if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
         Util.breadcrumb(location, { path: 'validationFailed' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           /**
@@ -336,7 +337,7 @@ const fulfil = async (error, messages) => {
         }
       } else {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}14`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject() // TODO: Thrown an exception with no message?
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) or type:(${type})`).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       }
