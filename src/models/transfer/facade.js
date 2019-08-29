@@ -34,6 +34,8 @@
 
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const TransferEventAction = Enum.Events.Event.Action
+const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
@@ -280,8 +282,6 @@ const saveTransferFulfilled = async (transferId, payload, isCommit = true, state
         await trx.rollback
         throw err
       }
-    }).catch((err) => {
-      throw err
     })
     return {
       saveTransferFulfilledExecuted: true,
@@ -364,10 +364,8 @@ const saveTransferAborted = async (transferId, payload) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        throw err
       }
-    }).catch((err) => {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
     return {
       saveTransferAbortedExecuted: true,
@@ -375,6 +373,131 @@ const saveTransferAborted = async (transferId, payload) => {
       transferErrorRecord,
       transferExtensions
     }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const savePayeeTransferResponse = async (transferId, payload, action, fspiopError) => {
+  let state
+  let isFulfilment = false
+  let isError = false
+  const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
+  const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
+  switch (action) {
+    case TransferEventAction.COMMIT:
+      state = TransferInternalState.RECEIVED_FULFIL
+      isFulfilment = true
+      break
+    case TransferEventAction.REJECT:
+      state = TransferInternalState.RECEIVED_REJECT
+      isFulfilment = true
+      break
+    case TransferEventAction.ABORT:
+      state = TransferInternalState.RECEIVED_ERROR
+      isError = true
+      break
+    default:
+      state = TransferInternalState.ABORTED_REJECTED
+      isError = true
+  }
+  const completedTimestamp = Time.getUTCString((payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date())
+  const transactionTimestamp = Time.getUTCString(new Date())
+  const result = {
+    savePayeeTransferResponseExecuted: false
+  }
+
+  const transferFulfilmentRecord = {
+    transferId,
+    ilpFulfilment: payload.fulfilment,
+    completedDate: completedTimestamp,
+    isValid: !!fspiopError,
+    settlementWindowId: null,
+    createdDate: transactionTimestamp
+  }
+  let transferExtensions = []
+  if (payload.extensionList && payload.extensionList.extension) {
+    transferExtensions = payload.extensionList.extension.map(ext => {
+      return {
+        transferId,
+        key: ext.key,
+        value: ext.value,
+        isFulfilment,
+        isError
+      }
+    })
+  }
+  const transferStateChangeRecord = {
+    transferId,
+    transferStateId: state,
+    reason: errorDescription,
+    createdDate: transactionTimestamp
+  }
+  const transferErrorRecord = {
+    transferId,
+    transferStateChangeId: null,
+    errorCode,
+    errorDescription,
+    createdDate: transactionTimestamp
+  }
+
+  try {
+    /** @namespace Db.getKnex **/
+    const knex = await Db.getKnex()
+    await knex.transaction(async (trx) => {
+      try {
+        if ([TransferEventAction.COMMIT].includes(action)) {
+          const res = await Db.settlementWindow.query(builder => {
+            return builder
+              .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
+              .select(
+                'settlementWindow.settlementWindowId',
+                'swsc.settlementWindowStateId as state',
+                'swsc.reason as reason',
+                'settlementWindow.createdDate as createdDate',
+                'swsc.createdDate as changedDate'
+              )
+              .where('swsc.settlementWindowStateId', 'OPEN')
+              .orderBy('changedDate', 'desc')
+          })
+          transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
+          Logger.debug('savePayeeTransferResponse::settlementWindowId')
+        }
+        if (payload.fulfilment) {
+          await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
+          result.transferFulfilmentRecord = transferFulfilmentRecord
+          Logger.debug('savePayeeTransferResponse::transferFulfilment')
+        }
+        if (transferExtensions.length > 0) {
+          for (const transferExtension of transferExtensions) {
+            await knex('transferExtension').transacting(trx).insert(transferExtension)
+          }
+          result.transferExtensions = transferExtensions
+          Logger.debug('savePayeeTransferResponse::transferExtensions')
+        }
+        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+        result.transferStateChangeRecord = transferStateChangeRecord
+        Logger.debug('savePayeeTransferResponse::transferStateChange')
+        if (fspiopError) {
+          const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
+            .where({ transferId })
+            .forUpdate().first().orderBy('transferStateChangeId', 'desc')
+          transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+          transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+          await knex('transferError').transacting(trx).insert(transferErrorRecord)
+          result.transferErrorRecord = transferErrorRecord
+          Logger.debug('savePayeeTransferResponse::transferError')
+        }
+        await trx.commit
+        result.savePayeeTransferResponseExecuted = true
+        Logger.debug('savePayeeTransferResponse::success')
+      } catch (err) {
+        await trx.rollback
+        Logger.error('savePayeeTransferResponse::failure')
+        throw err
+      }
+    })
+    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -1104,8 +1227,9 @@ const TransferFacade = {
   getByIdLight,
   getAll,
   getTransferInfoToChangePosition,
-  saveTransferFulfilled: saveTransferFulfilled,
+  saveTransferFulfilled,
   saveTransferAborted,
+  savePayeeTransferResponse,
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,
