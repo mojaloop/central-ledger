@@ -183,11 +183,14 @@ const prepare = async (error, messages) => {
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--P0`, err)
-    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
+    await span.finish(fspiopError.message, state)
     throw fspiopError
   } finally {
-    await span.finish()
+    if (!span.isFinished) {
+      await span.finish()
+    }
   }
 }
 
@@ -358,11 +361,14 @@ const fulfil = async (error, messages) => {
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--F0`, err)
-    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
+    await span.finish(fspiopError.message, state)
     throw fspiopError
   } finally {
-    await span.finish()
+    if (!span.isFinished) {
+      await span.finish()
+    }
   }
 }
 
@@ -438,11 +444,14 @@ const getTransfer = async (error, messages) => {
   } catch (err) {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`${Util.breadcrumb(location)}::${err.message}--G0`, err)
-    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
+    await span.finish(fspiopError.message, state)
     throw fspiopError
   } finally {
-    await span.finish()
+    if (!span.isFinished) {
+      await span.finish()
+    }
   }
 }
 

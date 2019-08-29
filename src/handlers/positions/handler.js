@@ -222,11 +222,14 @@ const positions = async (error, messages) => {
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
-    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed)
+    const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
+    await span.finish(fspiopError.message, state)
     throw fspiopError
   } finally {
-    await span.finish()
+    if (!span.isFinished) {
+      await span.finish()
+    }
   }
 }
 

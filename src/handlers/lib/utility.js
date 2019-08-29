@@ -408,7 +408,9 @@ const produceGeneralMessage = async (functionality, action, message, state, key,
   let messageProtocol = updateMessageProtocolMetadata(message, functionality, action, state)
   const topicConfig = createGeneralTopicConf(functionalityMapped, actionMapped, key)
   const kafkaConfig = getKafkaConfig(ENUMS.PRODUCER, functionalityMapped.toUpperCase(), actionMapped.toUpperCase())
-  messageProtocol = await span.injectContextToMessage(messageProtocol)
+  if (span) {
+    messageProtocol = await span.injectContextToMessage(messageProtocol)
+  }
   await Kafka.Producer.produceMessage(messageProtocol, topicConfig, kafkaConfig)
   return true
 }
