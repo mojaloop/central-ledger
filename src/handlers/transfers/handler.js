@@ -169,7 +169,6 @@ const prepare = async (error, messages) => {
           return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
         }
         Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
-        await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
@@ -337,7 +336,7 @@ const fulfil = async (error, messages) => {
         }
       } else {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}14`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject() // TODO: Thrown an exception with no message?
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         return await Util.proceed(params, { consumerCommit, histTimerEnd, fspiopError, producer, fromSwitch })
       }
