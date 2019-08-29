@@ -22,7 +22,9 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -33,6 +35,7 @@
 
 const Participant = require('../../../domain/participant')
 const BulkTransferService = require('../../../domain/bulkTransfer')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 const reasons = []
 
@@ -52,7 +55,7 @@ const validateExpiration = (payload) => {
   return true
 }
 const validateFspiopSourceMatchesPayer = (payload, headers) => {
-  const matched = (headers && headers['fspiop-source'] === payload.payerFsp)
+  const matched = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === payload.payerFsp)
   if (!matched) {
     reasons.push('FSPIOP-Source header should match Payer')
     return false
@@ -61,8 +64,8 @@ const validateFspiopSourceMatchesPayer = (payload, headers) => {
 }
 const validateFspiopSourceAndDestination = async (payload, headers) => {
   const participant = await BulkTransferService.getParticipantsById(payload.bulkTransferId)
-  const matchedPayee = (headers && headers['fspiop-source'] === participant.payeeFsp)
-  const matchedPayer = (headers && headers['fspiop-destination'] === participant.payerFsp)
+  const matchedPayee = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === participant.payeeFsp)
+  const matchedPayer = (headers && headers[Enum.Http.Headers.FSPIOP.DESTINATION] === participant.payerFsp)
   if (!matchedPayee) {
     reasons.push('FSPIOP-Source header should match Payee')
     return false

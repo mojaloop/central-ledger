@@ -27,7 +27,7 @@
 const ParticipantService = require('../../domain/participant')
 const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
-const Enum = require('../../lib/enum')
+const Util = require('@mojaloop/central-services-shared').Util
 const Sidecar = require('../../lib/sidecar')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -92,7 +92,7 @@ const create = async function (request, h) {
       const participantId = await ParticipantService.create(request.payload)
       participant = await ParticipantService.getById(participantId)
     }
-    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
     const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
     participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
@@ -140,7 +140,7 @@ const createHubAccount = async function (request, h) {
     }
     // end here : move to domain
     const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
-    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -150,7 +150,7 @@ const createHubAccount = async function (request, h) {
 const getAll = async function (request) {
   const results = await ParticipantService.getAll()
   const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
-  const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+  const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
   return results.map(record => entityItem(record, ledgerAccountIds))
 }
 
@@ -158,7 +158,7 @@ const getByName = async function (request) {
   const entity = await ParticipantService.getByName(request.params.name)
   handleMissingRecord(entity)
   const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
-  const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+  const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
   return entityItem(entity, ledgerAccountIds)
 }
 
@@ -172,7 +172,7 @@ const update = async function (request) {
       Logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
     }
     const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
-    const ledgerAccountIds = Enum.transpose(ledgerAccountTypes)
+    const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

@@ -139,7 +139,7 @@ const validateDuplicateHash = async (transferId, payload, isFulfilment = false, 
 const logTransferError = async (transferId, errorCode, errorDescription) => {
   try {
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
-    return TransferError.insert(transferStateChange.transferStateChangeId, errorCode, errorDescription)
+    return TransferError.insert(transferId, transferStateChange.transferStateChangeId, errorCode, errorDescription)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

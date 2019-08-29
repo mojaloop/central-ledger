@@ -30,7 +30,7 @@ const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const ModelParticipant = require('../../../../src/models/participant/facade')
 const ModelPosition = require('../../../../src/models/position/facade')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 Test('Position facade', async (positionFacadeTest) => {
   let sandbox
@@ -228,14 +228,14 @@ Test('Position facade', async (positionFacadeTest) => {
       }
       const transferStateChange = {
         transferId: 't1',
-        transferStateId: Enum.TransferState.RECEIVED_PREPARE,
+        transferStateId: Enum.Transfers.TransferInternalState.RECEIVED_PREPARE,
         reason: null,
         createdDate: now
       }
 
       const incorrectTransferStateChange = {
         transferId: 't1',
-        transferStateId: Enum.TransferState.EXPIRED,
+        transferStateId: 'EXPIRED',
         reason: null,
         createdDate: now
       }

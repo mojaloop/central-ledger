@@ -37,7 +37,7 @@ const ParticipantService = require('../../../../src/domain/participant')
 const ParticipantHelper = require('../../helpers/participant')
 const ParticipantEndpointHelper = require('../../helpers/participantEndpoint')
 const ParticipantLimitHelper = require('../../helpers/participantLimit')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 const debug = false
 
@@ -75,17 +75,17 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('check if Hub accounts exist and create them if not', async (assert) => {
     try {
-      const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(testData.currency, Enum.LedgerAccountType.HUB_RECONCILIATION)
+      const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(testData.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
       if (!hubReconciliationAccountExists) {
-        const newCurrencyAccount = await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.LedgerAccountType.HUB_RECONCILIATION)
+        const newCurrencyAccount = await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
         assert.ok(newCurrencyAccount, `${testData.currency} HUB_RECONCILIATION created`)
         assert.equal(newCurrencyAccount.participantCurrency.currencyId, testData.currency, 'HUB_RECONCILIATION currency matched')
       } else {
         assert.pass(`${testData.currency} HUB_RECONCILIATION found`)
       }
-      const hubMlnsAccountExists = await ParticipantService.hubAccountExists(testData.currency, Enum.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+      const hubMlnsAccountExists = await ParticipantService.hubAccountExists(testData.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
       if (!hubMlnsAccountExists) {
-        const newCurrencyAccount = await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+        const newCurrencyAccount = await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
         assert.ok(newCurrencyAccount, `${testData.currency} HUB_MULTILATERAL_SETTLEMENT created`)
         assert.equal(newCurrencyAccount.participantCurrency.currencyId, testData.currency, 'HUB_MULTILATERAL_SETTLEMENT currency matched')
       } else {

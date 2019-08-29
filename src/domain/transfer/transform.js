@@ -1,6 +1,6 @@
 'use strict'
 
-const Util = require('../../lib/util')
+const Util = require('@mojaloop/central-services-shared').Util
 const Logger = require('@mojaloop/central-services-shared').Logger
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 

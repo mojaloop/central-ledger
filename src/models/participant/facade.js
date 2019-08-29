@@ -29,7 +29,7 @@
  */
 
 const Db = require('../../lib/db')
-const Time = require('../../lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {

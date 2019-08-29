@@ -2,9 +2,9 @@
 
 const Test = require('tape')
 const Plugins = require('../../../src/shared/plugins')
-const Inert = require('inert')
+const Inert = require('@hapi/inert')
 const Blipp = require('blipp')
-const Vision = require('vision')
+const Vision = require('@hapi/vision')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
 
 class Server {

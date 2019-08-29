@@ -32,7 +32,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
 const saveTransferStateChange = async (stateChange) => {
   Logger.debug('save transferStateChange' + stateChange.toString())
   try {
-    return await Db.transferStateChange.insert(stateChange)
+    return Db.transferStateChange.insert(stateChange)
   } catch (err) {
     Logger.error(err)
     throw err

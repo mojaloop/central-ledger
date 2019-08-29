@@ -42,7 +42,7 @@ const Transfer = require('../../domain/transfer')
 const CryptoConditions = require('../../cryptoConditions')
 const Crypto = require('crypto')
 const base64url = require('base64url')
-const Enum = require('../../lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const allowedScale = Config.AMOUNT.SCALE
@@ -71,7 +71,7 @@ const validateParticipantByName = async function (participantName) {
 }
 
 const validatePositionAccountByNameAndCurrency = async function (participantName, currency) {
-  const account = await Participant.getAccountByNameAndCurrency(participantName, currency, Enum.LedgerAccountType.POSITION)
+  const account = await Participant.getAccountByNameAndCurrency(participantName, currency, Enum.Accounts.LedgerAccountType.POSITION)
   let validationPassed = false
   if (!account) {
     reasons.push(`Participant ${participantName} ${currency} account not found`)

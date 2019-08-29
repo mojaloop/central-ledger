@@ -28,7 +28,7 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Util = require('../../lib/util')
+const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.saveIlpPacket = async (record) => {

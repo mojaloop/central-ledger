@@ -6,8 +6,8 @@
     "RUN_DATA_MIGRATIONS": true
   },
   "AMOUNT": {
-    "PRECISION": 10,
-    "SCALE": 2
+    "PRECISION": 18,
+    "SCALE": 4
   },
   "SIDECAR": {
     "DISABLED": false,

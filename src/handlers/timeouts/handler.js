@@ -22,7 +22,9 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
 
  --------------
  ******/
@@ -35,8 +37,9 @@
 const CronJob = require('cron').CronJob
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
-const Enum = require('../../lib/enum')
-const Utility = require('../lib/utility')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Utility = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 let timeoutJob
@@ -63,42 +66,22 @@ const timeout = async () => {
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
     const intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
     const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-
     const fspiopExpiredError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, 'Transfer has expired at the switch').toApiErrorObject()
     if (!Array.isArray(result)) {
       result[0] = result
     }
-    let message
     for (let i = 0; i < result.length; i++) {
-      message = {
-        id: result[i].transferId,
-        from: result[i].payerFsp,
-        to: result[i].payeeFsp,
-        type: 'application/vnd.interoperability.transfers+json;version=1.0',
-        content: {
-          headers: {
-            'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
-            Date: new Date().toISOString(),
-            'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
-            'FSPIOP-Destination': result[i].payerFsp
-          },
-          payload: fspiopExpiredError,
-          uriParams: {
-            id: result[i].transferId
-          }
-        },
-        metadata: {
-          event: {}
-        }
-      }
-      if (result[i].transferStateId === Enum.TransferState.EXPIRED_PREPARED) {
-        message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RECEIVED
+      const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription)
+      const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(result[i].transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
+      const headers = Utility.Http.SwitchDefaultHeaders(result[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value)
+      const message = Utility.StreamingProtocol.createMessage(result[i].transferId, result[i].payeeFsp, result[i].payerFsp, metadata, headers, fspiopExpiredError, { id: result[i].transferId }, 'application/vnd.interoperability.transfers+json;version=1.0')
+      if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
         message.to = message.from
-        message.from = Enum.headers.FSPIOP.SWITCH
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription))
-      } else if (result[i].transferStateId === Enum.TransferState.RESERVED_TIMEOUT) {
-        message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RESERVED
-        await Utility.produceGeneralMessage(Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription), result[i].payerFsp)
+        message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+        await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
+      } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+        message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
+        await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
       }
     }
     return {

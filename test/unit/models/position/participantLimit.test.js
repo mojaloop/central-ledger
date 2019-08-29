@@ -29,12 +29,12 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-shared').Logger
 const Model = require('../../../../src/models/participant/participantLimit')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 Test('Participant Limit model', async (participantLimitTest) => {
   const participantLimit1 = {
     participantCurrencyId: 1,
-    participantLimitTypeId: Enum.ParticipantLimitType.NET_DEBIT_CAP,
+    participantLimitTypeId: Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP,
     value: 1000,
     thresholdAlarmPercentage: 10,
     startAfterParticipantPositionChangeId: null,
