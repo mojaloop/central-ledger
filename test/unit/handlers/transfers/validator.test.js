@@ -181,11 +181,11 @@ Test('transfer validator', validatorTest => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
-      payload.amount.amount = '123.123'
+      payload.amount.amount = '123.12345'
 
       const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Amount 123.123 exceeds allowed scale of 2'])
+      test.deepEqual(reasons, ['Amount 123.12345 exceeds allowed scale of 4'])
       test.end()
     })
 
@@ -205,11 +205,11 @@ Test('transfer validator', validatorTest => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
-      payload.amount.amount = '12345678901.13'
+      payload.amount.amount = '123456789012345.6789'
 
       const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Amount 12345678901.13 exceeds allowed precision of 10'])
+      test.deepEqual(reasons, ['Amount 123456789012345.6789 exceeds allowed precision of 18'])
       test.end()
     })
 
