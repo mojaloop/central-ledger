@@ -127,7 +127,7 @@ const prepare = async (error, messages) => {
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         message.value.content.uriParams = { id: transferId }
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
-        await Kafka.proceed(Config.KAFKA_CONFIG, Config.KAFKA_CONFIG, params, { consumerCommit, producer, fromSwitch })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
@@ -153,7 +153,7 @@ const prepare = async (error, messages) => {
         } catch (err) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
           Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR).toApiErrorObject()
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -172,14 +172,15 @@ const prepare = async (error, messages) => {
         } catch (err) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
           Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError().toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR).toApiErrorObject()
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
         Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString()).toApiErrorObject()
+        await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -359,7 +360,7 @@ const fulfil = async (error, messages) => {
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
-            } else { // action === TransferEventAction.ABORT
+            } else { // action === TransferEventAction.ABORT // error-callback request to be processed
               Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}13`))
               const abortResult = await TransferService.abort(transferId, payload)
               const TER = abortResult.transferErrorRecord
@@ -373,7 +374,7 @@ const fulfil = async (error, messages) => {
         }
       } else {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}14`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) or type:(${type})`).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${type})`).toApiErrorObject()
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
