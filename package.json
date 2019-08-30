@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "7.4.3",
+  "version": "7.4.4",
   "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -76,7 +76,7 @@
     "@mojaloop/central-services-error-handling": "7.4.0",
     "@mojaloop/central-services-health": "7.0.0",
     "@mojaloop/central-services-metrics": "5.2.0",
-    "@mojaloop/central-services-shared": "7.4.6",
+    "@mojaloop/central-services-shared": "7.4.7",
     "@mojaloop/central-services-stream": "6.2.2",
     "@mojaloop/event-sdk": "7.4.0",
     "@mojaloop/forensic-logging-client": "5.2.0",
