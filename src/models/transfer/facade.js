@@ -44,6 +44,9 @@ const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-shared').Logger
 
+// Alphabetically ordered list of error texts used below
+const UnsupportedActionText = 'Unsupported action'
+
 const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
@@ -229,7 +232,7 @@ const saveTransferFulfilled = async (transferId, payload, isCommit = true, state
   const completedTimestamp = (payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date()
   const transferFulfilmentRecord = {
     transferId,
-    ilpFulfilment: payload.fulfilment,
+    ilpFulfilment: payload.fulfilment || null,
     completedDate: Time.getUTCString(completedTimestamp),
     isValid, // this change is to be utilized by the implementation of #703
     createdDate: Time.getUTCString(new Date())
@@ -384,22 +387,26 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   let isError = false
   const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
+  let extensionList
   switch (action) {
     case TransferEventAction.COMMIT:
+    case TransferEventAction.BULK_COMMIT:
       state = TransferInternalState.RECEIVED_FULFIL
+      extensionList = payload.extensionList
       isFulfilment = true
       break
     case TransferEventAction.REJECT:
       state = TransferInternalState.RECEIVED_REJECT
+      extensionList = payload.extensionList
       isFulfilment = true
       break
     case TransferEventAction.ABORT:
       state = TransferInternalState.RECEIVED_ERROR
+      extensionList = payload.errorInformation.extensionList
       isError = true
       break
     default:
-      state = TransferInternalState.ABORTED_REJECTED
-      isError = true
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(UnsupportedActionText)
   }
   const completedTimestamp = Time.getUTCString((payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date())
   const transactionTimestamp = Time.getUTCString(new Date())
@@ -409,15 +416,15 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 
   const transferFulfilmentRecord = {
     transferId,
-    ilpFulfilment: payload.fulfilment,
+    ilpFulfilment: payload.fulfilment || null,
     completedDate: completedTimestamp,
-    isValid: !!fspiopError,
+    isValid: !fspiopError,
     settlementWindowId: null,
     createdDate: transactionTimestamp
   }
-  let transferExtensions = []
-  if (payload.extensionList && payload.extensionList.extension) {
-    transferExtensions = payload.extensionList.extension.map(ext => {
+  let transferExtensionRecordsList = []
+  if (extensionList && extensionList.extension) {
+    transferExtensionRecordsList = extensionList.extension.map(ext => {
       return {
         transferId,
         key: ext.key,
@@ -446,7 +453,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
-        if ([TransferEventAction.COMMIT].includes(action)) {
+        if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
           const res = await Db.settlementWindow.query(builder => {
             return builder
               .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
@@ -463,17 +470,17 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
           Logger.debug('savePayeeTransferResponse::settlementWindowId')
         }
-        if (payload.fulfilment) {
+        if (isFulfilment) {
           await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
           result.transferFulfilmentRecord = transferFulfilmentRecord
           Logger.debug('savePayeeTransferResponse::transferFulfilment')
         }
-        if (transferExtensions.length > 0) {
-          for (const transferExtension of transferExtensions) {
+        if (transferExtensionRecordsList.length > 0) {
+          for (const transferExtension of transferExtensionRecordsList) {
             await knex('transferExtension').transacting(trx).insert(transferExtension)
           }
-          result.transferExtensions = transferExtensions
-          Logger.debug('savePayeeTransferResponse::transferExtensions')
+          result.transferExtensionRecordsList = transferExtensionRecordsList
+          Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
         }
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         result.transferStateChangeRecord = transferStateChangeRecord

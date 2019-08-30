@@ -311,21 +311,11 @@ const fulfil = async (error, messages) => {
       if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
         Util.breadcrumb(location, { path: 'validationFailed' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
-          /**
-           * TODO: Story "Finalizing a transfer on receiving an incorrect Fulfilment value #703"
-           * Currently, the story "Refactoring for duplicate checking on 'prepare transfers' & 'fulfil transfer' - part2 #904",
-           * does not move forward the transfer to a "final" state and also does not accept subsequent fulfilment requests.
-           * This results in a transfer in an unfinished state, that can not be currently resolved by the API.
-           * It raises the priority of story #703 to Highest.
-           * WHAT NEEDS TO BE CONFIRMED by the team/DA for #703 is:
-           *   - the need of storing the provided invalid fulfilment;
-           *   - sending a callback to the /{transferId}/error endpoints of payer and payee;
-           *   - subsequent resend and get requests shall report the transfer as ABORTED at the normal /{transferId} endpoint.
-           */
           Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}8`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment').toApiErrorObject()
-          const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
+          await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
+          const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         } else if (transfer.transferState !== TransferState.RESERVED) {
@@ -347,7 +337,7 @@ const fulfil = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
           if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
             Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}11`))
-            await TransferService.fulfil(transferId, payload)
+            await TransferService.handlePayeeResponse(transferId, payload, action)
             const producer = { functionality: TransferEventType.POSITION, action }
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
             histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -355,14 +345,15 @@ const fulfil = async (error, messages) => {
           } else {
             if (action === TransferEventAction.REJECT) {
               Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}12`))
-              await TransferService.reject(transferId, payload)
+              await TransferService.handlePayeeResponse(transferId, payload, action)
+              // await TransferService.reject(transferId, payload)
               const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
             } else { // action === TransferEventAction.ABORT // error-callback request to be processed
               Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}13`))
-              let producer, fspiopError
+              let fspiopError
               const eInfo = payload.errorInformation
               try { // handle only valid errorCodes provided by the payee
                 fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorCode(eInfo.errorCode, eInfo.errorDescription).toApiErrorObject()
@@ -375,13 +366,20 @@ const fulfil = async (error, messages) => {
                  * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter so that such requests are rejected right away
                  */
                 fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'out-of-range errorCode').toApiErrorObject()
-                producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
-                await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
+
+                await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
+                const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+                await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
                 histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+
+                // const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
+                // await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
+                // histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
                 return true
               }
-              await TransferService.abort(transferId, payload)
-              producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+              await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
+              // await TransferService.abort(transferId, payload)
+              const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true

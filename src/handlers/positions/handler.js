@@ -176,10 +176,10 @@ const positions = async (error, messages) => {
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       let transferStateId
 
-      if (transferInfo.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_REJECT) {
+      if (action === Enum.Events.Event.Action.REJECT) {
         Logger.info(Utility.breadcrumb(location, `receivedReject--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-      } else if (transferInfo.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
+      } else { // action === Enum.Events.Event.Action.ABORT
         Logger.info(Utility.breadcrumb(location, `receivedError--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_ERROR
       }

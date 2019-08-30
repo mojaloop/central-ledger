@@ -48,7 +48,14 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
+const handlePayeeResponse = async (transferId, payload, action, fspiopError) => {
+  try {
+    const transfer = await TransferFacade.savePayeeTransferResponse(transferId, payload, action, fspiopError)
+    return TransferObjectTransform.toTransfer(transfer)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 const fulfil = async (transferId, payload) => {
   // eslint-disable-next-line no-useless-catch
   try {
@@ -147,6 +154,7 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
 
 const TransferService = {
   prepare,
+  handlePayeeResponse,
   fulfil,
   reject,
   abort,
