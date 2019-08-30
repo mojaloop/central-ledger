@@ -34,7 +34,6 @@
 
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
-const allTransferHandlers = require('../../../../src/handlers/transfers/handler')
 const KafkaUtil = require('@mojaloop/central-services-shared').Util.Kafka
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
@@ -45,9 +44,11 @@ const Uuid = require('uuid4')
 const KafkaConsumer = require('@mojaloop/central-services-stream').Kafka.Consumer
 const Consumer = KafkaUtil.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
+const EventSdk = require('@mojaloop/event-sdk')
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
+const Proxyquire = require('proxyquire')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -242,6 +243,9 @@ const error = () => {
   throw new Error()
 }
 
+let SpanStub
+let allTransferHandlers
+
 const participants = ['testName1', 'testName2']
 
 Test('Transfer handler', transferHandlerTest => {
@@ -249,6 +253,29 @@ Test('Transfer handler', transferHandlerTest => {
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    SpanStub = {
+      audit: sandbox.stub().callsFake(),
+      error: sandbox.stub().callsFake(),
+      finish: sandbox.stub().callsFake()
+    }
+
+    const TracerStub = {
+      extractContextFromMessage: sandbox.stub().callsFake(() => {
+        return {}
+      }),
+      createChildSpanFromContext: sandbox.stub().callsFake(() => {
+        return SpanStub
+      })
+    }
+
+    const EventSdkStub = {
+      Tracer: TracerStub
+    }
+
+    allTransferHandlers = Proxyquire('../../../../src/handlers/transfers/handler', {
+      '@mojaloop/event-sdk': EventSdkStub
+    })
+
     sandbox.stub(KafkaConsumer.prototype, 'constructor').returns(Promise.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'connect').returns(Promise.resolve())
     sandbox.stub(KafkaConsumer.prototype, 'consume').returns(Promise.resolve())
@@ -705,16 +732,17 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    prepareTest.test('throw an error when consumer not found', async (test) => {
+    prepareTest.test('log an error when consumer not found', async (test) => {
       try {
         const localMessages = MainUtil.clone(messages)
         await Consumer.createHandler(topicName, config, command)
         KafkaUtil.transformAccountToTopicName.returns('invalid-topic')
         await allTransferHandlers.prepare(null, localMessages)
-        test.fail('No Error Thrown')
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        test.ok(SpanStub.finish.calledWith('Cannot destructure property `hasDuplicateId` of \'undefined\' or \'null\'.', expectedState))
         test.end()
       } catch (e) {
-        test.pass('Error Thrown')
+        test.fail('Error Thrown')
         test.end()
       }
     })
@@ -884,7 +912,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    transformTransfer.test('return an error when general message cannot be produced', async (test) => {
+    transformTransfer.test('log an error when general message cannot be produced', async (test) => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)
       KafkaUtil.proceed.throws(new Error())
@@ -897,10 +925,11 @@ Test('Transfer handler', transferHandlerTest => {
 
       try {
         await allTransferHandlers.getTransfer(null, localMessages)
-        test.fail('Error not thrown')
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        test.ok(SpanStub.finish.calledWith('', expectedState))
         test.end()
       } catch (e) {
-        test.pass('Error thrown')
+        test.fail('Error thrown')
         test.end()
       }
     })
@@ -1178,7 +1207,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.test('throw an error when something goes wrong', async (test) => {
+    fulfilTest.test('log an error when something goes wrong', async (test) => {
       try {
         const localfulfilMessages = MainUtil.clone(fulfilMessages)
         await Consumer.createHandler(topicName, config, command)
@@ -1187,10 +1216,11 @@ Test('Transfer handler', transferHandlerTest => {
         ilp.update.returns(Promise.resolve())
 
         await allTransferHandlers.fulfil(null, localfulfilMessages)
-        test.fail('No Error Thrown')
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        test.ok(SpanStub.finish.calledWith('', expectedState))
         test.end()
       } catch (e) {
-        test.pass('Error Thrown')
+        test.fail('Error Thrown')
         test.end()
       }
     })
@@ -1627,7 +1657,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.test('throw error', async (test) => { // TODO: extend and enable unit test
+    fulfilTest.test('log error', async (test) => { // TODO: extend and enable unit test
       const invalidEventMessage = MainUtil.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       KafkaUtil.transformGeneralTopicName.returns(topicName)
@@ -1637,10 +1667,11 @@ Test('Transfer handler', transferHandlerTest => {
 
       try {
         await allTransferHandlers.fulfil(null, invalidEventMessage)
-        test.fail('should throw error')
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        test.ok(SpanStub.finish.calledWith('', expectedState))
         test.end()
       } catch (e) {
-        test.pass('Error thrown')
+        test.fail('Error thrown')
         test.end()
       }
     })
