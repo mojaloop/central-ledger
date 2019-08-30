@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "7.4.3",
+  "version": "7.4.4",
   "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -26,12 +26,11 @@
       "/migrations/**"
     ]
   },
-  "pre-commit": {
-    "run": [
-      "standard",
-      "test"
-    ]
-  },
+  "pre-commit": [
+    "standard",
+    "dep:check",
+    "test"
+  ],
   "scripts": {
     "start": "run-p start:api",
     "start:api": "node src/api/index.js",
@@ -66,7 +65,7 @@
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json",
     "audit:resolve": "SHELL=sh resolve-audit",
     "audit:check": "SHELL=sh check-audit",
-    "dep:check": "npx ncu",
+    "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u"
   },
   "dependencies": {
