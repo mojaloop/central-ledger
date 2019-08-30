@@ -187,42 +187,44 @@ Test('Transform Service', transformTest => {
       }
     })
 
-    toTransferTest.test('return result for saveTransferFulfilledExecuted', async (test) => {
-      try {
-        const executedTransfer = {
-          transferFulfilmentRecord: {
-            transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-            ilpFulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-            completedDate: '2016-06-24T09:38:08.699-04:00'
-          },
-          transferStateChangeRecord: {
-            transferStateId: 'COMMIT'
-          },
-          transferExtensionsRecordList: [
-            {
-              key: 'key1',
-              value: 'value1'
-            }
-          ],
-          saveTransferFulfilledExecuted: true
-        }
+    // TODO @ggrg: improve coverage for replaced methods
 
-        const expected = {
-          completedTimestamp: '2016-06-24T09:38:08.699-04:00',
-          extensionList: [{ key: 'key1', value: 'value1' }],
-          fulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-          transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-          transferState: 'COMMIT'
-        }
+    // toTransferTest.test('return result for saveTransferFulfilledExecuted', async (test) => {
+    //   try {
+    //     const executedTransfer = {
+    //       transferFulfilmentRecord: {
+    //         transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+    //         ilpFulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+    //         completedDate: '2016-06-24T09:38:08.699-04:00'
+    //       },
+    //       transferStateChangeRecord: {
+    //         transferStateId: 'COMMIT'
+    //       },
+    //       transferExtensionsRecordList: [
+    //         {
+    //           key: 'key1',
+    //           value: 'value1'
+    //         }
+    //       ],
+    //       saveTransferFulfilledExecuted: true
+    //     }
 
-        const result = TransformService.toTransfer(executedTransfer)
-        test.deepEqual(result, expected, 'Results Match')
-        test.end()
-      } catch (e) {
-        test.fail('Error Thrown')
-        test.end()
-      }
-    })
+    //     const expected = {
+    //       completedTimestamp: '2016-06-24T09:38:08.699-04:00',
+    //       extensionList: [{ key: 'key1', value: 'value1' }],
+    //       fulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+    //       transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+    //       transferState: 'COMMIT'
+    //     }
+
+    //     const result = TransformService.toTransfer(executedTransfer)
+    //     test.deepEqual(result, expected, 'Results Match')
+    //     test.end()
+    //   } catch (e) {
+    //     test.fail('Error Thrown')
+    //     test.end()
+    //   }
+    // })
 
     toTransferTest.test('throw error', async (test) => {
       try {

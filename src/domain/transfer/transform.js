@@ -90,16 +90,6 @@ const fromSaveTransferPrepared = (t) => fromTransferAggregate({
   extensionList: t.transferExtensionsRecordList
 })
 
-const fromSaveTransferExecuted = (t) => {
-  return {
-    transferId: t.transferFulfilmentRecord.transferId,
-    transferState: t.transferStateChangeRecord.transferStateId,
-    completedTimestamp: t.transferFulfilmentRecord.completedDate,
-    fulfilment: t.transferFulfilmentRecord.ilpFulfilment,
-    extensionList: t.transferExtensionsRecordList
-  }
-}
-
 const fromSavePayeeTransferResponseExecuted = (t) => {
   return {
     transferId: t.transferStateChangeRecord.transferId,
@@ -145,9 +135,6 @@ const toTransfer = (t) => {
   } else if (t.isSaveTransferPrepared) {
     Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
     return Util.omitNil(fromSaveTransferPrepared(t)) // TODO: Remove this once the DB validation is done for 't'
-  } else if (t.saveTransferFulfilledExecuted) {
-    Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
-    return Util.omitNil(fromSaveTransferExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
   } else if (t.savePayeeTransferResponseExecuted) {
     Logger.debug('In aggregate transfer transform for isSavePayeeTransferResponseExecuted')
     return Util.omitNil(fromSavePayeeTransferResponseExecuted(t)) // TODO: Remove this once the DB validation is done for 't'

@@ -346,7 +346,6 @@ const fulfil = async (error, messages) => {
             if (action === TransferEventAction.REJECT) {
               Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}12`))
               await TransferService.handlePayeeResponse(transferId, payload, action)
-              // await TransferService.reject(transferId, payload)
               const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -359,26 +358,17 @@ const fulfil = async (error, messages) => {
                 fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorCode(eInfo.errorCode, eInfo.errorDescription).toApiErrorObject()
               } catch (err) {
                 /**
-                 * This code branch would leave the transfer in an unfinished transfer state, awaiting transfer expiry by the TimeoutHandler.
-                 * Subsequent request on the /transfers/{transferId}/error endpoint would either resolve at:
-                 *    - FulfilHandler::fulfil:abort::dupCheck::handleResend::inProgress2--A5, with no callback to client, or
-                 *    - FulfilHandler::fulfil:abort::dupCheck::callbackErrorModified3--A7, with the corresponding callback.
-                 * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter so that such requests are rejected right away
+                 * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
+                 * so that such requests are rejected right away, instead of aborting the transfer here.
                  */
-                fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'out-of-range errorCode').toApiErrorObject()
-
+                fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode').toApiErrorObject()
                 await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
                 const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
                 await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
                 histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-
-                // const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
-                // await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
-                // histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
                 return true
               }
               await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
-              // await TransferService.abort(transferId, payload)
               const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

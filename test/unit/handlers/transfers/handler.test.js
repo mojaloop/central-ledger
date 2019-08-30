@@ -1577,7 +1577,7 @@ Test('Transfer handler', transferHandlerTest => {
       TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       invalidEventMessage.value.metadata.event.action = 'reject'
       delete fulfilMessages[0].value.content.payload.fulfilment
-      TransferService.abort.returns({
+      TransferService.handlePayeeResponse.returns({
         transferErrorRecord: {
           errorCode: '5000',
           errorDescription: 'generic'
@@ -1609,7 +1609,7 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferState.RESERVED
       }))
       TransferService.validateDuplicateHash.returns(Promise.resolve({}))
-      TransferService.abort.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
+      TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       invalidEventMessage.value.metadata.event.action = 'abort'
       delete fulfilMessages[0].value.content.payload.fulfilment
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'

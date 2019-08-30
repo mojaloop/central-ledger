@@ -56,35 +56,6 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-const fulfil = async (transferId, payload) => {
-  // eslint-disable-next-line no-useless-catch
-  try {
-    const isCommit = true
-    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit)
-    return TransferObjectTransform.toTransfer(transfer)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-const reject = async (transferId, payload) => {
-  try {
-    const isCommit = false
-    const stateReason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_REJECTED_TXN.errorDescription
-    const transfer = await TransferFacade.saveTransferFulfilled(transferId, payload, isCommit, stateReason)
-    return TransferObjectTransform.toTransfer(transfer)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-const abort = async (transferId, payload) => {
-  try {
-    return TransferFacade.saveTransferAborted(transferId, payload)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
 
 /**
  * @function ValidateDuplicateHash
@@ -155,9 +126,6 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
 const TransferService = {
   prepare,
   handlePayeeResponse,
-  fulfil,
-  reject,
-  abort,
   validateDuplicateHash,
   logTransferError,
   getTransferErrorByTransferId: TransferErrorModel.getByTransferId,
