@@ -168,18 +168,9 @@ const prepareTestData = async (dataObj) => {
 
   const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
 
-  const errorPayload = {
-    errorInformation: {
-      errorCode: '5101',
-      errorDescription: 'Payee transaction limit reached',
-      extensionList: {
-        extension: [{
-          key: 'errorDetail',
-          value: 'This is an abort extension'
-        }]
-      }
-    }
-  }
+  const errorPayload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject()
+  errorPayload.errorInformation.extensionList.extension.push({ key: 'errorDetail', value: 'This is an abort extension' })
+  delete errorPayload.errorInformation.errorDescription
 
   const messageProtocolPrepare = {
     id: Uuid(),
@@ -506,6 +497,7 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferAbort.test('update transfer state to ABORTED_ERROR by PUT /transfers/{id}/error endpoint', async (test) => {
+      const expectedErrorDescription = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject().errorInformation.errorDescription
       const config = Utility.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
@@ -529,7 +521,7 @@ Test('Handlers test', async handlersTest => {
         test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
         test.ok(transferError, 'A transfer error has been recorded')
         test.equal(transferError.errorCode, td.errorPayload.errorInformation.errorCode, 'Transfer error code matches')
-        test.equal(transferError.errorDescription, td.errorPayload.errorInformation.errorDescription, 'Transfer error description matches')
+        test.equal(transferError.errorDescription, expectedErrorDescription, 'Transfer error description matches')
         test.notEqual(transferError.transferStateChangeId, transfer.transferStateChangeId, 'Transfer error record is bound to previous state of transfer')
         test.ok(transferExtension, 'A transfer extension has been recorded')
         test.equal(transferExtension[0].transferId, transfer.transferId, 'Transfer extension recorded with transferErrorId key')
