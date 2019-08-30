@@ -74,6 +74,7 @@ const getById = async (id) => {
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
+        .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
         .select(
           'transfer.*',
           'transfer.currencyId AS currency',
@@ -93,12 +94,21 @@ const getById = async (id) => {
           'ts.description as transferStateDescription',
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
-          'tf.ilpFulfilment AS fulfilment'
+          'tf.ilpFulfilment AS fulfilment',
+          'te.errorCode',
+          'te.errorDescription'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
       if (transferResult) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
+        if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transferResult.extensionList) transferResult.extensionList = []
+          transferResult.extensionList.push({
+            key: 'cause',
+            value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
+          })
+        }
         transferResult.isTransferReadModel = true
       }
       return transferResult
@@ -118,6 +128,7 @@ const getByIdLight = async (id) => {
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
+        .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
         .select(
           'transfer.*',
           'transfer.currencyId AS currency',
@@ -129,7 +140,9 @@ const getByIdLight = async (id) => {
           'tsc.createdDate AS completedTimestamp',
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
-          'tf.ilpFulfilment AS fulfilment'
+          'tf.ilpFulfilment AS fulfilment',
+          'te.errorCode',
+          'te.errorDescription'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
@@ -139,6 +152,14 @@ const getByIdLight = async (id) => {
         } else {
           const isFulfilment = true
           transferResult.extensionList = await TransferExtensionModel.getByTransferId(id, isFulfilment)
+        }
+        if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transferResult.extensionList) transferResult.extensionList = []
+          transferResult.extensionList.push({
+            key: 'cause',
+            value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128),
+            isError: true
+          })
         }
         transferResult.isTransferReadModel = true
       }

@@ -142,6 +142,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const stateChangeStub = sandbox.stub()
       const stateStub = sandbox.stub()
       const transferFulfilmentStub = sandbox.stub()
+      const transferErrorStub = sandbox.stub()
 
       const selectStub = sandbox.stub()
       const orderByStub = sandbox.stub()
@@ -167,9 +168,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
                               leftJoin: stateChangeStub.returns({
                                 leftJoin: stateStub.returns({
                                   leftJoin: transferFulfilmentStub.returns({
-                                    select: selectStub.returns({
-                                      orderBy: orderByStub.returns({
-                                        first: firstStub.returns(transfers)
+                                    leftJoin: transferErrorStub.returns({
+                                      select: selectStub.returns({
+                                        orderBy: orderByStub.returns({
+                                          first: firstStub.returns(transfers)
+                                        })
                                       })
                                     })
                                   })
@@ -212,6 +215,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateStub.withArgs('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId').calledOnce)
       test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
+      test.ok(transferErrorStub.withArgs('transferError as te', 'te.transferId', 'transfer.transferId').calledOnce)
       test.ok(selectStub.withArgs(
         'transfer.*',
         'transfer.currencyId AS currency',
@@ -264,9 +268,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
                               leftJoin: sandbox.stub().returns({
                                 leftJoin: sandbox.stub().returns({
                                   leftJoin: sandbox.stub().returns({
-                                    select: sandbox.stub().returns({
-                                      orderBy: sandbox.stub().returns({
-                                        first: sandbox.stub().returns(null)
+                                    leftJoin: sandbox.stub().returns({
+                                      select: sandbox.stub().returns({
+                                        orderBy: sandbox.stub().returns({
+                                          first: sandbox.stub().returns(null)
+                                        })
                                       })
                                     })
                                   })
@@ -318,6 +324,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const stateChangeStub = sandbox.stub()
       const transferStateStub = sandbox.stub()
       const transferFulfilmentStub = sandbox.stub()
+      const transferErrorStub = sandbox.stub()
 
       const selectStub = sandbox.stub()
       const orderByStub = sandbox.stub()
@@ -333,9 +340,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
           leftJoin: stateChangeStub.returns({
             leftJoin: transferStateStub.returns({
               leftJoin: transferFulfilmentStub.returns({
-                select: selectStub.returns({
-                  orderBy: orderByStub.returns({
-                    first: firstStub.returns(transfer)
+                leftJoin: transferErrorStub.returns({
+                  select: selectStub.returns({
+                    orderBy: orderByStub.returns({
+                      first: firstStub.returns(transfer)
+                    })
                   })
                 })
               })
@@ -353,6 +362,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
       test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
+      test.ok(transferErrorStub.withArgs('transferError as te', 'te.transferId', 'transfer.transferId').calledOnce)
       test.ok(selectStub.withArgs(
         'transfer.*',
         'transfer.currencyId AS currency',
@@ -387,6 +397,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       const stateChangeStub = sandbox.stub()
       const transferStateStub = sandbox.stub()
       const transferFulfilmentStub = sandbox.stub()
+      const transferErrorStub = sandbox.stub()
 
       const selectStub = sandbox.stub()
       const orderByStub = sandbox.stub()
@@ -402,9 +413,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
           leftJoin: stateChangeStub.returns({
             leftJoin: transferStateStub.returns({
               leftJoin: transferFulfilmentStub.returns({
-                select: selectStub.returns({
-                  orderBy: orderByStub.returns({
-                    first: firstStub.returns(transfer)
+                leftJoin: transferErrorStub.returns({
+                  select: selectStub.returns({
+                    orderBy: orderByStub.returns({
+                      first: firstStub.returns(transfer)
+                    })
                   })
                 })
               })
@@ -422,6 +435,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
       test.ok(ilpPacketStub.withArgs('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId').calledOnce)
       test.ok(stateChangeStub.withArgs('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId').calledOnce)
       test.ok(transferFulfilmentStub.withArgs('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId').calledOnce)
+      test.ok(transferErrorStub.withArgs('transferError as te', 'te.transferId', 'transfer.transferId').calledOnce)
       test.ok(selectStub.withArgs(
         'transfer.*',
         'transfer.currencyId AS currency',
@@ -433,7 +447,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
         'tsc.createdDate AS completedTimestamp',
         'ilpp.value AS ilpPacket',
         'transfer.ilpCondition AS condition',
-        'tf.ilpFulfilment AS fulfilment'
+        'tf.ilpFulfilment AS fulfilment',
+        'te.errorCode',
+        'te.errorDescription'
       ).calledOnce)
       test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       test.ok(firstStub.withArgs().calledOnce)
@@ -456,9 +472,11 @@ Test('Transfer facade', async (transferFacadeTest) => {
           leftJoin: sandbox.stub().returns({
             leftJoin: sandbox.stub().returns({
               leftJoin: sandbox.stub().returns({
-                select: sandbox.stub().returns({
-                  orderBy: sandbox.stub().returns({
-                    first: sandbox.stub().returns(null)
+                leftJoin: sandbox.stub().returns({
+                  select: sandbox.stub().returns({
+                    orderBy: sandbox.stub().returns({
+                      first: sandbox.stub().returns(null)
+                    })
                   })
                 })
               })
