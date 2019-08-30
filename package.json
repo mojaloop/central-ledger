@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "7.4.3",
+  "version": "7.4.4",
   "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -26,12 +26,11 @@
       "/migrations/**"
     ]
   },
-  "pre-commit": {
-    "run": [
-      "standard",
-      "test"
-    ]
-  },
+  "pre-commit": [
+    "standard",
+    "dep:check",
+    "test"
+  ],
   "scripts": {
     "start": "run-p start:api",
     "start:api": "node src/api/index.js",
@@ -66,7 +65,7 @@
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json",
     "audit:resolve": "SHELL=sh resolve-audit",
     "audit:check": "SHELL=sh check-audit",
-    "dep:check": "npx ncu",
+    "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u"
   },
   "dependencies": {
@@ -76,7 +75,7 @@
     "@mojaloop/central-services-error-handling": "7.4.0",
     "@mojaloop/central-services-health": "7.0.0",
     "@mojaloop/central-services-metrics": "5.2.0",
-    "@mojaloop/central-services-shared": "7.4.5",
+    "@mojaloop/central-services-shared": "7.4.7",
     "@mojaloop/central-services-stream": "6.2.2",
     "@mojaloop/forensic-logging-client": "5.2.0",
     "@now-ims/hapi-now-auth": "2.0.0",
@@ -84,7 +83,7 @@
     "base64url": "3.0.1",
     "blipp": "4.0.0",
     "catbox-memory": "4.0.1",
-    "commander": "3.0.0",
+    "commander": "3.0.1",
     "cron": "1.7.1",
     "decimal.js": "10.2.0",
     "docdash": "1.1.1",
