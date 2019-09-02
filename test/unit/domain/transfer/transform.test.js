@@ -26,7 +26,9 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
+const Uuid = require('uuid4')
 const TransformService = require('../../../../src/domain/transfer/transform')
+const Util = require('@mojaloop/central-services-shared').Util
 
 Test('Transform Service', transformTest => {
   let sandbox
@@ -187,36 +189,46 @@ Test('Transform Service', transformTest => {
       }
     })
 
-    toTransferTest.test('return result for saveTransferFulfilledExecuted', async (test) => {
+    toTransferTest.test('return result for savePayeeTransferResponseExecuted', async (test) => {
       try {
+        const transferId = Uuid()
         const executedTransfer = {
           transferFulfilmentRecord: {
-            transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
+            transferId,
             ilpFulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
             completedDate: '2016-06-24T09:38:08.699-04:00'
           },
           transferStateChangeRecord: {
-            transferStateId: 'COMMIT'
+            transferId,
+            transferStateId: 'COMMITTED',
+            createdDate: '2016-06-24T09:38:08.699-04:00'
           },
-          transferExtensionsRecordList: [
+          transferExtensionRecordsList: [
             {
               key: 'key1',
               value: 'value1'
             }
           ],
-          saveTransferFulfilledExecuted: true
+          savePayeeTransferResponseExecuted: true
         }
 
         const expected = {
+          transferId,
+          transferState: 'COMMITTED',
           completedTimestamp: '2016-06-24T09:38:08.699-04:00',
-          extensionList: [{ key: 'key1', value: 'value1' }],
           fulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-          transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-          transferState: 'COMMIT'
+          extensionList: [{ key: 'key1', value: 'value1' }]
         }
 
         const result = TransformService.toTransfer(executedTransfer)
-        test.deepEqual(result, expected, 'Results Match')
+        test.deepEqual(result, expected, 'Results match after first call')
+
+        const executedTransfer2 = Util.clone(executedTransfer)
+
+        delete executedTransfer2.transferFulfilmentRecord.completedDate
+        const result2 = TransformService.toTransfer(executedTransfer2)
+        test.deepEqual(result2, expected, 'Results match after second call')
+
         test.end()
       } catch (e) {
         test.fail('Error Thrown')

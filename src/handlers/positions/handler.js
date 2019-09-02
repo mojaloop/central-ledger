@@ -145,6 +145,7 @@ const positions = async (error, messages) => {
         } else {
           Logger.info(Utility.breadcrumb(location, `resetPayer--${actionLetter}2`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY).toApiErrorObject()
+          await TransferService.logTransferError(transferId, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
@@ -176,10 +177,10 @@ const positions = async (error, messages) => {
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       let transferStateId
 
-      if (transferInfo.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_REJECT) {
+      if (action === Enum.Events.Event.Action.REJECT) {
         Logger.info(Utility.breadcrumb(location, `receivedReject--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-      } else if (transferInfo.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_ERROR) {
+      } else { // action === Enum.Events.Event.Action.ABORT
         Logger.info(Utility.breadcrumb(location, `receivedError--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_ERROR
       }
