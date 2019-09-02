@@ -125,7 +125,10 @@ Test('Transfer facade', async (transferFacadeTest) => {
     try {
       const transferId1 = 't1'
       const transferId2 = 't2'
-      const transfers = [{ transferId: transferId1, extensionList: transferExtensions }, { transferId: transferId2 }]
+      const transfers = [
+        { transferId: transferId1, extensionList: transferExtensions },
+        { transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED }
+      ]
 
       const builderStub = sandbox.stub()
       const whereRawPc1 = sandbox.stub()
@@ -171,7 +174,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
                                     leftJoin: transferErrorStub.returns({
                                       select: selectStub.returns({
                                         orderBy: orderByStub.returns({
-                                          first: firstStub.returns(transfers)
+                                          first: firstStub.returns(transfers[0])
                                         })
                                       })
                                     })
@@ -239,6 +242,53 @@ Test('Transfer facade', async (transferFacadeTest) => {
       ).calledOnce)
       test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       test.ok(firstStub.withArgs().calledOnce)
+
+      Db.transfer.query.returns(transfers[1])
+      builderStub.where.returns({
+        whereRaw: whereRawPc1.returns({
+          whereRaw: whereRawPc2.returns({
+            innerJoin: payerTransferStub.returns({
+              innerJoin: payerRoleTypeStub.returns({
+                innerJoin: payerCurrencyStub.returns({
+                  innerJoin: payerParticipantStub.returns({
+                    innerJoin: payeeTransferStub.returns({
+                      innerJoin: payeeRoleTypeStub.returns({
+                        innerJoin: payeeCurrencyStub.returns({
+                          innerJoin: payeeParticipantStub.returns({
+                            innerJoin: ilpPacketStub.returns({
+                              leftJoin: stateChangeStub.returns({
+                                leftJoin: stateStub.returns({
+                                  leftJoin: transferFulfilmentStub.returns({
+                                    leftJoin: transferErrorStub.returns({
+                                      select: selectStub.returns({
+                                        orderBy: orderByStub.returns({
+                                          first: firstStub.returns(transfers[1])
+                                        })
+                                      })
+                                    })
+                                  })
+                                })
+                              })
+                            })
+                          })
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+      const found2 = await TransferFacade.getById(transferId2)
+      // TODO: extend testing for the current code branch
+      test.equal(found2, transfers[1])
+
+      transferExtensionModel.getByTransferId.returns(null)
+      const found3 = await TransferFacade.getById(transferId2)
+      // TODO: extend testing for the current code branch
+      test.equal(found3, transfers[1])
       test.end()
     } catch (err) {
       Logger.error(`getById failed with error - ${err}`)
@@ -317,7 +367,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
   await transferFacadeTest.test('getByIdLight should return transfer by id for RESERVED', async (test) => {
     try {
       const transferId1 = 't1'
+      const transferId2 = 't2'
       const transfer = { transferId: transferId1, extensionList: transferExtensions }
+      const transfer2 = { transferId: transferId2, errorCode: 5105, transferStateEnumeration: Enum.Transfers.TransferState.ABORTED }
 
       const builderStub = sandbox.stub()
       const ilpPacketStub = sandbox.stub()
@@ -378,6 +430,33 @@ Test('Transfer facade', async (transferFacadeTest) => {
       ).calledOnce)
       test.ok(orderByStub.withArgs('tsc.transferStateChangeId', 'desc').calledOnce)
       test.ok(firstStub.withArgs().calledOnce)
+
+      Db.transfer.query.returns(transfer2)
+      builderStub.where.returns({
+        leftJoin: ilpPacketStub.returns({
+          leftJoin: stateChangeStub.returns({
+            leftJoin: transferStateStub.returns({
+              leftJoin: transferFulfilmentStub.returns({
+                leftJoin: transferErrorStub.returns({
+                  select: selectStub.returns({
+                    orderBy: orderByStub.returns({
+                      first: firstStub.returns(transfer2)
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+      const found2 = await TransferFacade.getByIdLight(transferId2)
+      // TODO: extend testing for the current code branch
+      test.equal(found2, transfer2)
+
+      transferExtensionModel.getByTransferId.returns(null)
+      const found3 = await TransferFacade.getByIdLight(transferId2)
+      // TODO: extend testing for the current code branch
+      test.equal(found3, transfer2)
       test.end()
     } catch (err) {
       Logger.error(`getByIdLight failed with error - ${err}`)

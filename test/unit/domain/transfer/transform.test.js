@@ -26,7 +26,9 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
+const Uuid = require('uuid4')
 const TransformService = require('../../../../src/domain/transfer/transform')
+const Util = require('@mojaloop/central-services-shared').Util
 
 Test('Transform Service', transformTest => {
   let sandbox
@@ -187,44 +189,52 @@ Test('Transform Service', transformTest => {
       }
     })
 
-    // TODO @ggrg: improve coverage for replaced methods
+    toTransferTest.test('return result for savePayeeTransferResponseExecuted', async (test) => {
+      try {
+        const transferId = Uuid()
+        const executedTransfer = {
+          transferFulfilmentRecord: {
+            transferId,
+            ilpFulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+            completedDate: '2016-06-24T09:38:08.699-04:00'
+          },
+          transferStateChangeRecord: {
+            transferId,
+            transferStateId: 'COMMITTED',
+            createdDate: '2016-06-24T09:38:08.699-04:00'
+          },
+          transferExtensionRecordsList: [
+            {
+              key: 'key1',
+              value: 'value1'
+            }
+          ],
+          savePayeeTransferResponseExecuted: true
+        }
 
-    // toTransferTest.test('return result for saveTransferFulfilledExecuted', async (test) => {
-    //   try {
-    //     const executedTransfer = {
-    //       transferFulfilmentRecord: {
-    //         transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-    //         ilpFulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-    //         completedDate: '2016-06-24T09:38:08.699-04:00'
-    //       },
-    //       transferStateChangeRecord: {
-    //         transferStateId: 'COMMIT'
-    //       },
-    //       transferExtensionsRecordList: [
-    //         {
-    //           key: 'key1',
-    //           value: 'value1'
-    //         }
-    //       ],
-    //       saveTransferFulfilledExecuted: true
-    //     }
+        const expected = {
+          transferId,
+          transferState: 'COMMITTED',
+          completedTimestamp: '2016-06-24T09:38:08.699-04:00',
+          fulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
+          extensionList: [{ key: 'key1', value: 'value1' }]
+        }
 
-    //     const expected = {
-    //       completedTimestamp: '2016-06-24T09:38:08.699-04:00',
-    //       extensionList: [{ key: 'key1', value: 'value1' }],
-    //       fulfilment: 'YlK5TZyhflbXaDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
-    //       transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
-    //       transferState: 'COMMIT'
-    //     }
+        const result = TransformService.toTransfer(executedTransfer)
+        test.deepEqual(result, expected, 'Results match after first call')
 
-    //     const result = TransformService.toTransfer(executedTransfer)
-    //     test.deepEqual(result, expected, 'Results Match')
-    //     test.end()
-    //   } catch (e) {
-    //     test.fail('Error Thrown')
-    //     test.end()
-    //   }
-    // })
+        const executedTransfer2 = Util.clone(executedTransfer)
+
+        delete executedTransfer2.transferFulfilmentRecord.completedDate
+        const result2 = TransformService.toTransfer(executedTransfer2)
+        test.deepEqual(result2, expected, 'Results match after second call')
+
+        test.end()
+      } catch (e) {
+        test.fail('Error Thrown')
+        test.end()
+      }
+    })
 
     toTransferTest.test('throw error', async (test) => {
       try {

@@ -111,6 +111,19 @@ const fulfil = {
   }
 }
 
+const errInfo = {
+  errorInformation: {
+    errorCode: 5105,
+    errorDescription: 'Payee transaction limit reached'
+  },
+  extensionList: {
+    extension: [{
+      key: 'errorDetail',
+      value: 'This is an abort extension'
+    }]
+  }
+}
+
 const messageProtocol = {
   id: Uuid(),
   from: transfer.payerFsp,
@@ -1391,6 +1404,34 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    fulfilTest.test('produce error notification when hash matched, transferState is undefined', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      KafkaUtil.Consumer.isConsumerAutoCommitEnabled.returns(true)
+      KafkaUtil.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        expirationDate: new Date('1900-01-01'),
+        transferState: undefined,
+        transferStateEnumeration: undefined
+      }))
+      KafkaUtil.proceed.returns(true)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: true,
+        hasDuplicateHash: true
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
     fulfilTest.test('continue execution when hash exists not matching', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
@@ -1598,7 +1639,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.test('enter ABORT branch when action ABORT', async (test) => {
+    fulfilTest.test('enter validation error branch when abort with undefined code', async (test) => {
       const invalidEventMessage = MainUtil.clone(fulfilMessages)[0]
       await Consumer.createHandler(topicName, config, command)
       KafkaUtil.transformGeneralTopicName.returns(topicName)
@@ -1608,10 +1649,36 @@ Test('Transfer handler', transferHandlerTest => {
         payeeFsp: 'dfsp2',
         transferState: TransferState.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
       invalidEventMessage.value.metadata.event.action = 'abort'
-      delete fulfilMessages[0].value.content.payload.fulfilment
+      invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
+      KafkaUtil.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, invalidEventMessage.value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, invalidEventMessage)
+      test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('set transfer ABORTED when valid errorInformation is provided', async (test) => {
+      const invalidEventMessage = MainUtil.clone(fulfilMessages)[0]
+      await Consumer.createHandler(topicName, config, command)
+      KafkaUtil.transformGeneralTopicName.returns(topicName)
+      Validator.validateFulfilCondition.returns(true)
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        transferState: TransferState.RESERVED
+      }))
+      TransferService.handlePayeeResponse.returns(Promise.resolve({ transferErrorRecord: { errorCode: '5000', errorDescription: 'error text' } }))
+      invalidEventMessage.value.metadata.event.action = 'abort'
+      invalidEventMessage.value.content.payload = errInfo
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       KafkaUtil.proceed.returns(true)
 

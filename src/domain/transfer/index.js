@@ -65,6 +65,9 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
  *
  * TransferDuplicateCheckModel.checkAndInsertDuplicateHash called to check the existing hash or insert the hash if not exists in the database
  *
+ * TODO: Currently this method is only used during reconciliation transfers (FundsIn/FundsOut) and is to replaced by the newly implemented request duplicate
+ * checking in future story
+ *
  * @param {string} payload - the transfer object
  *
  * @returns {object} - Returns the result of the comparision of the hash if exists, otherwise false values, or throws an error if failed
@@ -77,9 +80,8 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
  * ```
  */
 
-const validateDuplicateHash = async (transferId, payload, isFulfilment = false, isTransferError = false) => {
+const validateDuplicateHash = async (transferId, payload) => {
   try {
-    let result
     if (!payload) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid payload')
     }
@@ -88,10 +90,7 @@ const validateDuplicateHash = async (transferId, payload, isFulfilment = false, 
     hash = hashSha256.update(hash)
     // remove trailing '=' as per specification
     hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
-
-    if (!isFulfilment && !isTransferError) {
-      result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
-    }
+    const result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

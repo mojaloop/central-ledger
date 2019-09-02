@@ -76,14 +76,14 @@ const transferStateChangeRecord = {
   createdDate: new Date()
 }
 
-// const transferRecord = {
-//   transferId: payload.transferId,
-//   amount: payload.amount.amount,
-//   currencyId: payload.amount.currency,
-//   ilpCondition: payload.condition,
-//   expirationDate: new Date(payload.expiration),
-//   createdDate: new Date()
-// }
+const transferRecord = {
+  transferId: payload.transferId,
+  amount: payload.amount.amount,
+  currencyId: payload.amount.currency,
+  ilpCondition: payload.condition,
+  expirationDate: new Date(payload.expiration),
+  createdDate: new Date()
+}
 
 // const saveTransferAbortedResult = {
 //   saveTransferAbortedExecuted: true,
@@ -149,101 +149,37 @@ Test('Transfer Service', transferIndexTest => {
     preparedTest.end()
   })
 
-  // TODO @ggrg: improve coverage for replaced methods
+  transferIndexTest.test('handlePayeeResponse should', handlePayeeResponseTest => {
+    handlePayeeResponseTest.test('commit transfer', async (test) => {
+      try {
+        TransferFacade.savePayeeTransferResponse.returns(Promise.resolve(transferRecord))
+        TransferObjectTransform.toTransfer.returns(payload)
+        const response = await TransferService.handlePayeeResponse(payload.transferId, payload)
+        test.equal(response, payload)
+        test.end()
+      } catch (err) {
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
 
-  // transferIndexTest.test('fulfil should', fulfilTest => {
-  //   fulfilTest.test('commit transfer', async (test) => {
-  //     try {
-  //       TransferFacade.saveTransferFulfilled.returns(Promise.resolve(transferRecord))
-  //       TransferObjectTransform.toTransfer.returns(payload)
-  //       const response = await TransferService.fulfil(payload.transferId, payload)
-  //       test.equal(response, payload)
-  //       test.end()
-  //     } catch (err) {
-  //       Logger.error(`fulfil failed with error - ${err}`)
-  //       test.fail()
-  //       test.end()
-  //     }
-  //   })
+    handlePayeeResponseTest.test('throw error', async (test) => {
+      try {
+        TransferFacade.savePayeeTransferResponse.throws(new Error())
+        TransferObjectTransform.toTransfer.returns(payload)
+        await TransferService.handlePayeeResponse(payload.transferId, payload)
+        test.fail('Error not thrown')
+        test.end()
+      } catch (err) {
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
 
-  //   fulfilTest.test('throw error', async (test) => {
-  //     try {
-  //       TransferFacade.saveTransferFulfilled.throws(new Error())
-  //       TransferObjectTransform.toTransfer.returns(payload)
-  //       await TransferService.fulfil(payload.transferId, payload)
-  //       test.fail('Error not thrown')
-  //       test.end()
-  //     } catch (err) {
-  //       Logger.error(`fulfil failed with error - ${err}`)
-  //       test.pass('Error thrown')
-  //       test.end()
-  //     }
-  //   })
-
-  //   fulfilTest.end()
-  // })
-
-  // transferIndexTest.test('reject should', rejectTest => {
-  //   rejectTest.test('commit transfer', async (test) => {
-  //     try {
-  //       TransferFacade.saveTransferFulfilled.returns(Promise.resolve(transferRecord))
-  //       TransferObjectTransform.toTransfer.returns(payload)
-  //       const response = await TransferService.reject(payload.transferId, payload)
-  //       test.equal(response, payload)
-  //       test.end()
-  //     } catch (err) {
-  //       Logger.error(`reject failed with error - ${err}`)
-  //       test.fail()
-  //       test.end()
-  //     }
-  //   })
-
-  //   rejectTest.test('throw error', async (test) => {
-  //     try {
-  //       TransferFacade.saveTransferFulfilled.throws(new Error())
-  //       TransferObjectTransform.toTransfer.returns(payload)
-  //       await TransferService.reject(payload.transferId, payload)
-  //       test.fail('Error not thrown')
-  //       test.end()
-  //     } catch (err) {
-  //       Logger.error(`reject failed with error - ${err}`)
-  //       test.pass('Error thrown')
-  //       test.end()
-  //     }
-  //   })
-
-  //   rejectTest.end()
-  // })
-
-  // transferIndexTest.test('abort should', abortTest => {
-  //   abortTest.test('abort transfer', async (test) => {
-  //     try {
-  //       TransferFacade.saveTransferAborted.returns(Promise.resolve(saveTransferAbortedResult))
-  //       const response = await TransferService.abort(payload.transferId, payload)
-  //       test.deepEqual(response, saveTransferAbortedResult)
-  //       test.end()
-  //     } catch (err) {
-  //       Logger.error(`abort failed with error - ${err}`)
-  //       test.fail()
-  //       test.end()
-  //     }
-  //   })
-
-  //   abortTest.test('throw error', async (test) => {
-  //     try {
-  //       TransferFacade.saveTransferAborted.throws(new Error())
-  //       await TransferService.abort(payload.transferId, payload)
-  //       test.fail('Error not thrown')
-  //       test.end()
-  //     } catch (err) {
-  //       Logger.error(`abort failed with error - ${err}`)
-  //       test.pass('Error thrown')
-  //       test.end()
-  //     }
-  //   })
-
-  //   abortTest.end()
-  // })
+    handlePayeeResponseTest.end()
+  })
 
   transferIndexTest.test('logTransferError should', logTransferErrorTest => {
     logTransferErrorTest.test('log the transfer error', async (test) => {
@@ -301,7 +237,7 @@ Test('Transfer Service', transferIndexTest => {
       }
     })
 
-    validateDuplicateHashTest.test('hash exists and not matches', async (test) => {
+    validateDuplicateHashTest.test('hash exists and not matched', async (test) => {
       try {
         TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({
           existsMatching: false,
