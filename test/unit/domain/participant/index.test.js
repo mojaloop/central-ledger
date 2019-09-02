@@ -1244,8 +1244,8 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('getLimitsForAllParticipants', async (assert) => {
-    const currencyId = 'USD'
-    const type = 'NET_DEBIT_CAP'
+    const currencyId = undefined
+    const type = undefined
 
     ParticipantFacade.getLimitsForAllParticipants.throws(new Error())
     try {
