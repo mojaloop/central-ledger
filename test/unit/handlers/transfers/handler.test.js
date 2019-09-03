@@ -259,7 +259,8 @@ Test('Transfer handler', transferHandlerTest => {
       finish: sandbox.stub().callsFake(),
       debug: sandbox.stub().callsFake(),
       info: sandbox.stub().callsFake(),
-      getChild: sandbox.stub().returns(SpanStub)
+      getChild: sandbox.stub().returns(SpanStub),
+      setTags: sandbox.stub().callsFake()
     }
 
     const TracerStub = {
