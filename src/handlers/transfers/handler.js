@@ -245,7 +245,7 @@ const prepare = async (error, messages) => {
           throw fspiopError
         }
         // Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
-        const callbackErrorGenericSpan = validationFailedSpan.getChild(`callback error generic--${actionLetter}7`)
+        const callbackErrorGenericSpan = validationFailedSpan.getChild(`callback error generic - ${actionLetter}7`)
 
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
         await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
