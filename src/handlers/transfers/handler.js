@@ -96,21 +96,22 @@ const prepare = async (error, messages) => {
   } else {
     message = messages
   }
-  const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
   const parentSpanService = 'cl_transfer_prepare'
+  const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
   const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
   try {
-    await span.audit(message, EventSdk.AuditEventAction.start)
     const payload = decodePayload(message.value.content.payload)
     const headers = message.value.content.headers
     const action = message.value.metadata.event.action
     const transferId = payload.transferId
+    span.setTags({ transactionId: transferId })
+    await span.audit(message, EventSdk.AuditEventAction.start)
     const kafkaTopic = message.topic
     let consumer
     await span.debug({
       message,
       topicName: kafkaTopic
-      // clientId: kafkaConfig.rdkafkaConf['client.id']
+      // clientId: kafkaConfig.rdkafkaConf['client.id'] //TODO find the right way to get the clientId from the command
     })
     // Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
     try {
@@ -129,106 +130,133 @@ const prepare = async (error, messages) => {
 
     // Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
-    const dupCheckSpan = span.getChild(`${parentSpanService}-dupCheck`)
+    const dupCheckSpan = span.getChild('duplicate check')
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) {
-      const handleResendSpan = dupCheckSpan.getChild(Util.breadcrumb(location, 'handleResend'))
+      const handleResendSpan = dupCheckSpan.getChild('handle resend')
       // Logger.info(Util.breadcrumb(location, 'handleResend'))
+
       const transfer = await TransferService.getByIdLight(transferId)
       const transferStateEnum = transfer && transfer.transferStateEnumeration
       if ([TransferState.COMMITTED, TransferState.ABORTED].includes(transferStateEnum)) {
         // Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
-        const callbackFinilized1Span = handleResendSpan.getChild(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
+        const callbackFinilized1Span = handleResendSpan.getChild(`callback finilized 1 - ${actionLetter}1`)
+
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         message.value.content.uriParams = { id: transferId }
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
-        // await span.info({ breadcrumb: Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`), message })
+        callbackFinilized1Span.info(message)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, fromSwitch })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+
         await callbackFinilized1Span.finish()
         await handleResendSpan.finish()
         await dupCheckSpan.finish()
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
-        const inProgress1Span = handleResendSpan.getChild(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
         // Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
+        const inProgress1Span = handleResendSpan.getChild(`in progress 1 - ${actionLetter}2`)
+
+        inProgress1Span.info(message)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+
         await inProgress1Span.finish()
         await handleResendSpan.finish()
         await dupCheckSpan.finish()
+
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
     } else if (hasDuplicateId && !hasDuplicateHash) {
       // Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
-      const callbackErrorModified1Span = dupCheckSpan.getChild(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
+      const callbackErrorModified1Span = dupCheckSpan.getChild(`callback error modified 1 - ${actionLetter}3`)
+
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
-      await callbackErrorModified1Span.finish()
-      await dupCheckSpan.finish()
+
+      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+      await callbackErrorModified1Span.error(fspiopError, state)
+      await callbackErrorModified1Span.finish(fspiopError.message, state)
+      await dupCheckSpan.finish(fspiopError.message, state)
       throw fspiopError
     } else { // !hasDuplicateId
       const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       if (validationPassed) {
+        const validationPassedSpan = dupCheckSpan.getChild('validation passed')
         // Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-        const validationPassedSpan = dupCheckSpan.getChild(Util.breadcrumb(location, { path: 'validationPassed' }))
-        const saveTransferSpan = validationPassedSpan.getChild(Util.breadcrumb(location, 'saveTransfer'))
+        const saveTransferSpan = validationPassedSpan.getChild('save transfer')
+
         try {
           // Logger.info(Util.breadcrumb(location, 'saveTransfer'))
           await saveTransferSpan.info(payload)
           await TransferService.prepare(payload)
+
           await saveTransferSpan.finish()
         } catch (err) {
-          Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
-          Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-          const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
-          await saveTransferSpan.finish()
-          await validationPassedSpan.finish()
-          await dupCheckSpan.finish()
-          throw fspiopError
-        }
-        const positionTopic1Span = validationPassedSpan.getChild(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
-        // Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
-        const producer = { functionality: TransferEventType.POSITION, action }
-        await positionTopic1Span.info(message)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        await positionTopic1Span.finish()
-        await validationPassedSpan.finish()
-        await dupCheckSpan.finish()
-        return true
-      } else {
-        const validationFailedSpan = dupCheckSpan.getChild(Util.breadcrumb(location, { path: 'validationFailed' }))
-        const saveInvalidRequestSpan = validationFailedSpan.getChild(Util.breadcrumb(location, 'saveInvalidRequest'))
-        // Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
-        try {
-          // Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-          await TransferService.prepare(payload, reasons.toString(), false)
-          saveInvalidRequestSpan.info(payload)
-          saveInvalidRequestSpan.finish()
-        } catch (err) {
-          // const callbackErrorInternal2Span = saveInvalidRequestSpan.getChild(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-          // Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-          saveInvalidRequestSpan.error(`${Util.breadcrumb(location)}::${err.message}`)
+          // Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
           // Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
           const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
-          await saveInvalidRequestSpan.finish()
-          await validationFailedSpan.finish()
-          await dupCheckSpan.finish()
+
+          const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+          await saveTransferSpan.error(fspiopError, state)
+          await saveTransferSpan.finish(fspiopError.message, state)
+          await validationPassedSpan.finish(fspiopError.message, state)
+          await dupCheckSpan.finish(fspiopError.message, state)
+
           throw fspiopError
         }
-        Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
+        const positionTopic1Span = validationPassedSpan.getChild(`position topic 1 - ${actionLetter}5`)
+        // Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
+        const producer = { functionality: TransferEventType.POSITION, action }
+        positionTopic1Span.info(message)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
+
+        await positionTopic1Span.finish()
+        await validationPassedSpan.finish()
+        await dupCheckSpan.finish()
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
+      } else {
+        const validationFailedSpan = dupCheckSpan.getChild('validation failed')
+        const saveInvalidRequestSpan = validationFailedSpan.getChild('save invalid request')
+
+        // Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+        try {
+          // Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+          await TransferService.prepare(payload, reasons.toString(), false)
+
+          saveInvalidRequestSpan.info(payload)
+          saveInvalidRequestSpan.finish()
+        } catch (err) {
+          // Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+          // Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+          const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
+
+          const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+          await saveInvalidRequestSpan.error(fspiopError, state)
+          await saveInvalidRequestSpan.finish(fspiopError.message, state)
+          await validationFailedSpan.finish(fspiopError.message, state)
+          await dupCheckSpan.finish(fspiopError.message, state)
+          throw fspiopError
+        }
+        // Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
+        const callbackErrorGenericSpan = validationFailedSpan.getChild(`callback error generic--${actionLetter}7`)
+
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
         await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
-        await dupCheckSpan.finish()
-        await validationFailedSpan.finish()
+
+        const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+        await callbackErrorGenericSpan.error(fspiopError, state)
+        await callbackErrorGenericSpan.finish(fspiopError.message, state)
+        await validationFailedSpan.finish(fspiopError.message, state)
+        await dupCheckSpan.finish(fspiopError.message, state)
         throw fspiopError
       }
     }
