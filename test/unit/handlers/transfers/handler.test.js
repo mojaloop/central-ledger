@@ -256,7 +256,10 @@ Test('Transfer handler', transferHandlerTest => {
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),
-      finish: sandbox.stub().callsFake()
+      finish: sandbox.stub().callsFake(),
+      debug: sandbox.stub().callsFake(),
+      info: sandbox.stub().callsFake(),
+      getChild: sandbox.stub().returns(SpanStub)
     }
 
     const TracerStub = {
