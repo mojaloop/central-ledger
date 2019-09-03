@@ -97,7 +97,8 @@ const prepare = async (error, messages) => {
     message = messages
   }
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
-  const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_prepare', contextFromMessage)
+  const parentSpanService = 'cl_transfer_prepare'
+  const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
   try {
     await span.audit(message, EventSdk.AuditEventAction.start)
     const payload = decodePayload(message.value.content.payload)
@@ -106,12 +107,18 @@ const prepare = async (error, messages) => {
     const transferId = payload.transferId
     const kafkaTopic = message.topic
     let consumer
-    Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
+    await span.debug({
+      message,
+      topicName: kafkaTopic
+      // clientId: kafkaConfig.rdkafkaConf['client.id']
+    })
+    // Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
     } catch (err) {
-      Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(err)
+      // Logger.info(`No consumer found for topic ${kafkaTopic}`)
+      // Logger.error(err)
+      span.error({ message: `No consumer found for topic ${kafkaTopic}`, error: err })
       histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
@@ -120,64 +127,99 @@ const prepare = async (error, messages) => {
         : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, consumer, span }
 
-    Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+    // Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
+    const dupCheckSpan = span.getChild(`${parentSpanService}-dupCheck`)
+    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) {
-      Logger.info(Util.breadcrumb(location, 'handleResend'))
+      const handleResendSpan = dupCheckSpan.getChild(Util.breadcrumb(location, 'handleResend'))
+      // Logger.info(Util.breadcrumb(location, 'handleResend'))
       const transfer = await TransferService.getByIdLight(transferId)
       const transferStateEnum = transfer && transfer.transferStateEnumeration
       if ([TransferState.COMMITTED, TransferState.ABORTED].includes(transferStateEnum)) {
-        Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
+        // Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
+        const callbackFinilized1Span = handleResendSpan.getChild(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         message.value.content.uriParams = { id: transferId }
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
+        // await span.info({ breadcrumb: Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`), message })
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        await callbackFinilized1Span.finish()
+        await handleResendSpan.finish()
+        await dupCheckSpan.finish()
         return true
       } else {
-        Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
+        const inProgress1Span = handleResendSpan.getChild(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
+        // Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        await inProgress1Span.finish()
+        await handleResendSpan.finish()
+        await dupCheckSpan.finish()
         return true
       }
     } else if (hasDuplicateId && !hasDuplicateHash) {
-      Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
+      // Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
+      const callbackErrorModified1Span = dupCheckSpan.getChild(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
+      await callbackErrorModified1Span.finish()
+      await dupCheckSpan.finish()
       throw fspiopError
     } else { // !hasDuplicateId
       const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       if (validationPassed) {
-        Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
+        // Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
+        const validationPassedSpan = dupCheckSpan.getChild(Util.breadcrumb(location, { path: 'validationPassed' }))
+        const saveTransferSpan = validationPassedSpan.getChild(Util.breadcrumb(location, 'saveTransfer'))
         try {
-          Logger.info(Util.breadcrumb(location, 'saveTransfer'))
+          // Logger.info(Util.breadcrumb(location, 'saveTransfer'))
+          await saveTransferSpan.info(payload)
           await TransferService.prepare(payload)
+          await saveTransferSpan.finish()
         } catch (err) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
           Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
           const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
+          await saveTransferSpan.finish()
+          await validationPassedSpan.finish()
+          await dupCheckSpan.finish()
           throw fspiopError
         }
-        Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
+        const positionTopic1Span = validationPassedSpan.getChild(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
+        // Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
         const producer = { functionality: TransferEventType.POSITION, action }
+        await positionTopic1Span.info(message)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        await positionTopic1Span.finish()
+        await validationPassedSpan.finish()
+        await dupCheckSpan.finish()
         return true
       } else {
-        Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+        const validationFailedSpan = dupCheckSpan.getChild(Util.breadcrumb(location, { path: 'validationFailed' }))
+        const saveInvalidRequestSpan = validationFailedSpan.getChild(Util.breadcrumb(location, 'saveInvalidRequest'))
+        // Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
         try {
-          Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+          // Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
           await TransferService.prepare(payload, reasons.toString(), false)
+          saveInvalidRequestSpan.info(payload)
+          saveInvalidRequestSpan.finish()
         } catch (err) {
-          Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-          Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
+          // const callbackErrorInternal2Span = saveInvalidRequestSpan.getChild(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+          // Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+          saveInvalidRequestSpan.error(`${Util.breadcrumb(location)}::${err.message}`)
+          // Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
           const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
+          await saveInvalidRequestSpan.finish()
+          await validationFailedSpan.finish()
+          await dupCheckSpan.finish()
           throw fspiopError
         }
         Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
@@ -185,6 +227,8 @@ const prepare = async (error, messages) => {
         await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(), producer, fromSwitch })
+        await dupCheckSpan.finish()
+        await validationFailedSpan.finish()
         throw fspiopError
       }
     }
