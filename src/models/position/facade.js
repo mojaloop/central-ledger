@@ -123,7 +123,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           } else {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
-            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject()
+            const FSPIOPErrorToApiErrorObjectOptions = { includeCauseExtension: Config.ERROR_HANDLING_INCLUDE_CAUSE_EXTENSION, truncateCause: Config.ERROR_HANDLING_TRUNCATE_CAUSE }
+            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
           }
           const runningPosition = parseFloat((currentPosition + sumReserved).toFixed(Config.AMOUNT.SCALE)) /* effective position */
           const runningReservedValue = parseFloat((sumTransfersInBatch - sumReserved).toFixed(Config.AMOUNT.SCALE))

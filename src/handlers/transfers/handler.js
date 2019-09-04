@@ -53,6 +53,8 @@ const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protoco
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+const FSPIOPErrorToApiErrorObjectOptions = { includeCauseExtension: Config.ERROR_HANDLING_INCLUDE_CAUSE_EXTENSION, truncateCause: Config.ERROR_HANDLING_TRUNCATE_CAUSE }
+
 const consumerCommit = true
 const fromSwitch = true
 const toDestination = true
@@ -138,7 +140,7 @@ const prepare = async (error, messages) => {
       }
     } else if (hasDuplicateId && !hasDuplicateHash) {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -153,7 +155,7 @@ const prepare = async (error, messages) => {
         } catch (err) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
           Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR).toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -172,14 +174,14 @@ const prepare = async (error, messages) => {
         } catch (err) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
           Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
-          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR).toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
         Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString()).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString()).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
         await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
@@ -241,7 +243,7 @@ const fulfil = async (error, messages) => {
 
     if (!transfer) {
       Logger.error(Util.breadcrumb(location, `callbackInternalServerErrorNotFound--${actionLetter}1`))
-      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer not found').toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer not found').toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -253,7 +255,7 @@ const fulfil = async (error, messages) => {
        * This is also the reason why we need to retrieve the transfer info upfront now.
        */
       Logger.info(Util.breadcrumb(location, `callbackErrorSourceNotMatchingPayeeFsp--${actionLetter}2`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp`).toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp`).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
       const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
       const toDestination = transfer.payeeFsp // overrding global boolean declaration with string value for local use only
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch, toDestination })
@@ -296,7 +298,7 @@ const fulfil = async (error, messages) => {
       } else {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidTransferStateEnum--${actionLetter}6`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(
-          `Invalid transferStateEnumeration:(${transferStateEnum}) for event action:(${action}) and type:(${type})`).toApiErrorObject()
+          `Invalid transferStateEnumeration:(${transferStateEnum}) for event action:(${action}) and type:(${type})`).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -304,7 +306,7 @@ const fulfil = async (error, messages) => {
       }
     } else if (hasDuplicateId && !hasDuplicateHash) {
       let producer
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
       if (!isTransferError) {
         Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}7`))
         producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.FULFIL_DUPLICATE }
@@ -320,7 +322,7 @@ const fulfil = async (error, messages) => {
         Util.breadcrumb(location, { path: 'validationFailed' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment').toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment').toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
           await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
           const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
@@ -328,7 +330,7 @@ const fulfil = async (error, messages) => {
           return true
         } else if (transfer.transferState !== TransferState.RESERVED) {
           Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state').toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state').toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -336,7 +338,7 @@ const fulfil = async (error, messages) => {
         } else if (transfer.expirationDate <= new Date()) {
           Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
           // TODO: Previously thrown code was 3300, now - 3303
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject()
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -363,13 +365,13 @@ const fulfil = async (error, messages) => {
               let fspiopError
               const eInfo = payload.errorInformation
               try { // handle only valid errorCodes provided by the payee
-                fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorCode(eInfo.errorCode, eInfo.errorDescription).toApiErrorObject()
+                fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorCode(eInfo.errorCode, eInfo.errorDescription).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
               } catch (err) {
                 /**
                  * TODO: Handling of out-of-range errorCodes is to be introduced to the ml-api-adapter,
                  * so that such requests are rejected right away, instead of aborting the transfer here.
                  */
-                fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode').toApiErrorObject()
+                fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode').toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
                 await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
                 const producer = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
                 await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, toDestination })
@@ -386,7 +388,7 @@ const fulfil = async (error, messages) => {
         }
       } else {
         Logger.info(Util.breadcrumb(location, `callbackErrorInvalidEventAction--${actionLetter}15`))
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${type})`).toApiErrorObject()
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${type})`).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -453,14 +455,14 @@ const getTransfer = async (error, messages) => {
     const transfer = await TransferService.getByIdLight(transferId)
     if (!transfer) {
       Logger.info(Util.breadcrumb(location, `callbackErrorTransferNotFound--${actionLetter}3`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.').toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Transfer ID was not found on the server.').toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
     if (!await Validator.validateParticipantTransferId(message.value.from, transferId)) {
       Logger.info(Util.breadcrumb(location, `callbackErrorNotTransferParticipant--${actionLetter}2`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR).toApiErrorObject()
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
