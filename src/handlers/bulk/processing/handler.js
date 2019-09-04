@@ -256,8 +256,7 @@ const bulkProcessing = async (error, messages) => {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
         Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
-        const FSPIOPErrorToApiErrorObjectOptions = { includeCauseExtension: Config.ERROR_HANDLING_INCLUDE_CAUSE_EXTENSION, truncateCause: Config.ERROR_HANDLING_TRUNCATE_CAUSE }
-        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`).toApiErrorObject(FSPIOPErrorToApiErrorObjectOptions)
+        const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`).toApiErrorObject(Config.ERROR_HANDLING)
         const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
         await Kafka.proceed(params, { consumerCommit, fspiopError, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
