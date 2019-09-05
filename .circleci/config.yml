@@ -351,7 +351,8 @@ jobs:
           command: mkdir -p ./audit/results
       - run:
           name: Check for new npm vulnerabilities
-          command: npm run audit:check --silent -- --json > ./audit/results/auditResults.json 
+          # TODO: change back to silent, we make this verbose to catch this bug: https://github.com/mojaloop/project/issues/958
+          command: npm run audit:check --verbose -- --json > ./audit/results/auditResults.json 
       - store_artifacts:
           path: ./audit/results
           prefix: audit
