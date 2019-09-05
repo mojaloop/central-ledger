@@ -66,7 +66,7 @@ const timeout = async () => {
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
     const intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
     const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-    const fspiopExpiredError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, 'Transfer has expired at the switch').toApiErrorObject()
+    const fspiopExpiredError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, 'Transfer has expired at the switch').toApiErrorObject(Config.ERROR_HANDLING)
     if (!Array.isArray(result)) {
       result[0] = result
     }

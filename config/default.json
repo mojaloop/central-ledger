@@ -24,6 +24,10 @@
     "DISABLED": false,
     "URI": "mongodb://localhost:27017/mlos"
   },
+  "ERROR_HANDLING": {
+    "includeCauseExtension": true,
+    "truncateCause": false
+  },
   "HANDLERS": {
     "DISABLED": false,
     "API": {
