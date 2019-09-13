@@ -89,7 +89,7 @@
     "docdash": "1.1.1",
     "five-bells-condition": "5.0.1",
     "glob": "7.1.4",
-    "@hapi/good": "8.2.1",
+    "@hapi/good": "8.2.2",
     "good-winston": "4.0.0",
     "@hapi/hapi": "18.3.2",
     "hapi-auth-basic": "5.0.0",
