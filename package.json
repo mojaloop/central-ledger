@@ -107,7 +107,7 @@
     "require-glob": "3.2.0",
     "urlsafe-base64": "1.0.0",
     "uuid4": "1.1.4",
-    "@hapi/vision": "5.5.3",
+    "@hapi/vision": "5.5.4",
     "ws": "7.1.2"
   },
   "optionalDependencies": {
