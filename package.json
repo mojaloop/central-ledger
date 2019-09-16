@@ -96,7 +96,7 @@
     "hapi-auth-bearer-token": "6.2.1",
     "hapi-swagger": "10.1.1",
     "@hapi/inert": "5.2.1",
-    "@hapi/joi": "15.1.1",
+    "@hapi/joi": "16.0.1",
     "jsdoc": "3.6.3",
     "knex": "0.19.3",
     "lodash": "4.17.15",
