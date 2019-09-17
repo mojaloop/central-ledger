@@ -148,7 +148,7 @@ const bulkPrepare = async (error, messages) => {
           const bulkTransferAssociationRecord = {
             transferId: individualTransfer.transferId,
             bulkTransferId: payload.bulkTransferId,
-            bulkProcessingStateId: Enum.BulkProcessingState.RECEIVED
+            bulkProcessingStateId: Enum.Transfers.BulkProcessingState.RECEIVED
           }
           await BulkTransferService.bulkTransferAssociationCreate(bulkTransferAssociationRecord)
           const dataUri = encodePayload(JSON.stringify(individualTransfer), headers[Enum.Http.Headers.GENERAL.CONTENT_TYPE.value])

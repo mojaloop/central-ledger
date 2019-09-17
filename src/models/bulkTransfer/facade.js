@@ -86,7 +86,7 @@ const saveBulkTransferProcessing = async (payload, bulkTransferFulfilmentId, sta
     }
     // TODO: Remove count or decide on the strategy how to handle intdividual transfer results. Count is not sufficient criteria
     // because even if it's matched the transferId's may not match those on record.
-    // const count = await BulkTransferAssociation.count(payload.bulkTransferId, Enum.BulkProcessingState.ACCEPTED)
+    // const count = await BulkTransferAssociation.count(payload.bulkTransferId, Enum.Transfers.BulkProcessingState.ACCEPTED)
     const state = (isValid /* && payload.count === count */ ? Enum.Transfers.BulkTransferState.PROCESSING : Enum.Transfers.BulkTransferState.INVALID)
     const bulkTransferStateChangeRecord = {
       bulkTransferId: payload.bulkTransferId,

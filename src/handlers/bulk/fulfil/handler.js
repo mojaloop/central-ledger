@@ -139,15 +139,15 @@ const bulkFulfil = async (error, messages) => {
           const bulkTransferAssociationRecord = {
             transferId,
             bulkTransferId: payload.bulkTransferId,
-            bulkProcessingStateId: Enum.BulkProcessingState.PROCESSING
+            bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING
           }
           await BulkTransferService.bulkTransferAssociationUpdate(transferId, bulkTransferId, bulkTransferAssociationRecord)
-          if (state === Enum.BulkTransferState.INVALID ||
+          if (state === Enum.Transfers.BulkTransferState.INVALID ||
             individualTransferFulfil.errorInformation ||
             !individualTransferFulfil.fulfilment) {
-            individualTransferFulfil.transferState = Enum.TransferStateEnum.ABORTED
+            individualTransferFulfil.transferState = Enum.Transfers.TransferState.ABORTED
           } else {
-            individualTransferFulfil.transferState = Enum.TransferStateEnum.COMMITTED
+            individualTransferFulfil.transferState = Enum.Transfers.TransferState.COMMITTED
           }
           const dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers[Enum.Http.Headers.GENERAL.CONTENT_TYPE.value])
           const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEventState(message.value.metadata.event.id, Enum.Events.Event.Type.FULFIL, Enum.Events.Event.Action.COMMIT, Enum.Events.EventStatus.SUCCESS.status, Enum.Events.EventStatus.SUCCESS.code, Enum.Events.EventStatus.SUCCESS.description) // TODO: switch action to 'bulk-fulfil' flow

@@ -222,7 +222,7 @@ const bulkProcessing = async (error, messages) => {
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
         const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers: Util.clone(headers) }, getBulkTransferByIdResult.payerBulkTransfer)
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers: Util.clone(headers) }, getBulkTransferByIdResult.payeeBulkTransfer)
-        payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.headers.FSPIOP.SWITCH
+        payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
         payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.DESTINATION] = participants.payeeFsp
         delete payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SIGNATURE]
         const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
@@ -247,9 +247,9 @@ const bulkProcessing = async (error, messages) => {
         })
         const payeeMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payeeParams.message.value.metadata.type, payeeParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
-        await Kafka.proceed(payerParams, { consumerCommit, producer })
+        await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, producer })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        await Kafka.proceed(payeeParams, { consumerCommit, producer })
+        await Kafka.proceed(Config.KAFKA_CONFIG, payeeParams, { consumerCommit, producer })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
@@ -258,7 +258,7 @@ const bulkProcessing = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`).toApiErrorObject(Config.ERROR_HANDLING)
         const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
-        await Kafka.proceed(params, { consumerCommit, fspiopError, producer, fromSwitch })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
