@@ -30,7 +30,7 @@ const currencyList = require('../../../seeds/currency.js').currencyList
 
 const tags = ['api', 'participants']
 const nameValidator = Joi.string().alphanum().min(2).max(30).required().description('Name of the participant')
-const currencyValidator = Joi.string().valid(currencyList).description('Currency code')
+const currencyValidator = Joi.string().valid(...currencyList).description('Currency code')
 
 module.exports = [
   {
@@ -48,9 +48,9 @@ module.exports = [
     options: {
       tags,
       validate: {
-        params: {
+        params: Joi.object({
           name: Joi.string().required().description('Participant name')
-        }
+        })
       }
     }
   },
@@ -65,12 +65,12 @@ module.exports = [
         failAction: 'error'
       },
       validate: {
-        payload: {
+        payload: Joi.object({
           name: nameValidator,
           // password: passwordValidator,
           currency: currencyValidator // ,
           // emailAddress: Joi.string().email().required()
-        }
+        })
       }
     }
   },
@@ -85,12 +85,12 @@ module.exports = [
         failAction: 'error'
       },
       validate: {
-        payload: {
+        payload: Joi.object({
           isActive: Joi.boolean().required().description('Participant isActive boolean')
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: Joi.string().required().description('Participant name')
-        }
+        })
       }
     }
   },
@@ -107,13 +107,13 @@ module.exports = [
         failAction: 'error'
       },
       validate: {
-        payload: {
+        payload: Joi.object({
           type: Joi.string().required().description('Endpoint Type'),
           value: Joi.string().required().description('Endpoint Value')
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: nameValidator
-        }
+        })
       }
     }
   },
@@ -126,9 +126,9 @@ module.exports = [
       tags: tags,
       description: 'View participant endpoints',
       validate: {
-        params: {
+        params: Joi.object({
           name: nameValidator
-        }
+        })
       }
     }
   },
@@ -145,17 +145,17 @@ module.exports = [
         failAction: 'error'
       },
       validate: {
-        payload: {
+        payload: Joi.object({
           currency: currencyValidator,
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
             value: Joi.number().positive().allow(0).required().description('Limit Value')
           }).required().description('Participant Limit'),
           initialPosition: Joi.number().optional().description('Initial Position Value')
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: nameValidator
-        }
+        })
       }
     }
   },
@@ -168,13 +168,13 @@ module.exports = [
       tags: tags,
       description: 'View participant limits',
       validate: {
-        params: {
+        params: Joi.object({
           name: nameValidator
-        },
-        query: {
+        }),
+        query: Joi.object({
           currency: currencyValidator,
           type: Joi.string().optional().description('Limit Type')
-        }
+        })
       }
     }
   },
@@ -187,10 +187,10 @@ module.exports = [
       tags: tags,
       description: 'View limits for all participants',
       validate: {
-        query: {
+        query: Joi.object({
           currency: currencyValidator,
           type: Joi.string().optional().description('Limit Type')
-        }
+        })
       }
     }
   },
@@ -207,17 +207,17 @@ module.exports = [
         failAction: 'error'
       },
       validate: {
-        payload: {
+        payload: Joi.object({
           currency: currencyValidator,
           limit: Joi.object().keys({
             type: Joi.string().required().description('Limit Type'),
             value: Joi.number().required().description('Limit Value'),
             alarmPercentage: Joi.number().required().description('limit threshold alarm percentage value')
           }).required().description('Participant Limit')
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: nameValidator
-        }
+        })
       }
     }
   },
@@ -234,13 +234,13 @@ module.exports = [
         failAction: 'error'
       },
       validate: {
-        payload: {
+        payload: Joi.object({
           currency: currencyValidator,
           type: Joi.string().required().description('Account type') // Needs a validator here
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: Joi.string().required().description('Participant name') // nameValidator
-        }
+        })
       }
     }
   },
@@ -253,12 +253,12 @@ module.exports = [
       tags: tags,
       description: 'View participant positions',
       validate: {
-        params: {
+        params: Joi.object({
           name: nameValidator
-        },
-        query: {
+        }),
+        query: Joi.object({
           currency: currencyValidator
-        }
+        })
       }
     }
   },
@@ -271,9 +271,9 @@ module.exports = [
       tags: tags,
       description: 'View participant accounts and balances',
       validate: {
-        params: {
+        params: Joi.object({
           name: nameValidator
-        }
+        })
       }
     }
   },
@@ -286,13 +286,13 @@ module.exports = [
       tags: tags,
       description: 'Update participant accounts',
       validate: {
-        payload: {
+        payload: Joi.object({
           isActive: Joi.boolean().required().description('Participant currency isActive boolean')
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: nameValidator,
           id: Joi.number().integer().positive()
-        }
+        })
       }
     }
   },
@@ -305,10 +305,10 @@ module.exports = [
       tags: tags,
       description: 'Record Funds In or Out of participant account',
       validate: {
-        payload: {
+        payload: Joi.object({
           transferId: Joi.string().guid().required(),
           externalReference: Joi.string().required(),
-          action: Joi.string().required().valid(['recordFundsIn', 'recordFundsOutPrepareReserve']).label('action is missing or not supported'),
+          action: Joi.string().required().valid('recordFundsIn', 'recordFundsOutPrepareReserve').label('action is missing or not supported'),
           reason: Joi.string().required(),
           amount: Joi.object({
             amount: Joi.number().positive().precision(4).required(),
@@ -320,11 +320,11 @@ module.exports = [
               value: Joi.string()
             })
           })
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: nameValidator,
           id: Joi.number().integer().positive()
-        }
+        })
       }
     }
   },
@@ -337,15 +337,15 @@ module.exports = [
       tags: tags,
       description: 'Record Funds In or Out of participant account',
       validate: {
-        payload: {
-          action: Joi.string().valid(['recordFundsOutCommit', 'recordFundsOutAbort']).label('action is missing or not supported'),
+        payload: Joi.object({
+          action: Joi.string().valid('recordFundsOutCommit', 'recordFundsOutAbort').label('action is missing or not supported'),
           reason: Joi.string().required()
-        },
-        params: {
+        }),
+        params: Joi.object({
           name: nameValidator,
           id: Joi.number().integer().positive(),
           transferId: Joi.string().guid().required()
-        }
+        })
       }
     }
   }

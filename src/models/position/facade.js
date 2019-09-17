@@ -33,7 +33,7 @@
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const participantFacade = require('../participant/facade')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
@@ -123,7 +123,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           } else {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
-            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject()
+            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
           }
           const runningPosition = parseFloat((currentPosition + sumReserved).toFixed(Config.AMOUNT.SCALE)) /* effective position */
           const runningReservedValue = parseFloat((sumTransfersInBatch - sumReserved).toFixed(Config.AMOUNT.SCALE))

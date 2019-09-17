@@ -1,5 +1,4 @@
 {
   "reject": [
-    "@mojaloop/central-services-stream"
   ]
 }

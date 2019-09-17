@@ -1,7 +1,7 @@
 'use strict'
 
 const Util = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const transferProperties = [
@@ -90,13 +90,14 @@ const fromSaveTransferPrepared = (t) => fromTransferAggregate({
   extensionList: t.transferExtensionsRecordList
 })
 
-const fromSaveTransferExecuted = (t) => {
+const fromSavePayeeTransferResponseExecuted = (t) => {
   return {
-    transferId: t.transferFulfilmentRecord.transferId,
+    transferId: t.transferStateChangeRecord.transferId,
     transferState: t.transferStateChangeRecord.transferStateId,
-    completedTimestamp: t.transferFulfilmentRecord.completedDate,
-    fulfilment: t.transferFulfilmentRecord.ilpFulfilment,
-    extensionList: t.transferExtensionsRecordList
+    completedTimestamp: (t.transferFulfilmentRecord && t.transferFulfilmentRecord.completedDate) ||
+      t.transferStateChangeRecord.createdDate,
+    fulfilment: t.transferFulfilmentRecord && t.transferFulfilmentRecord.ilpFulfilment,
+    extensionList: t.transferExtensionRecordsList
   }
 }
 
@@ -134,9 +135,9 @@ const toTransfer = (t) => {
   } else if (t.isSaveTransferPrepared) {
     Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
     return Util.omitNil(fromSaveTransferPrepared(t)) // TODO: Remove this once the DB validation is done for 't'
-  } else if (t.saveTransferFulfilledExecuted) {
-    Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
-    return Util.omitNil(fromSaveTransferExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
+  } else if (t.savePayeeTransferResponseExecuted) {
+    Logger.debug('In aggregate transfer transform for isSavePayeeTransferResponseExecuted')
+    return Util.omitNil(fromSavePayeeTransferResponseExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
   } else throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to transfer: ${t}`)
 }
 

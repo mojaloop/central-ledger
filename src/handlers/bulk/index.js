@@ -34,7 +34,7 @@
 const BulkPrepareHandlers = require('./prepare/handler')
 const BulkFulfilHandlers = require('./fulfil/handler')
 const BulkProcessingHandlers = require('./processing/handler')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * @function RegisterAllHandlers

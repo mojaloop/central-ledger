@@ -29,7 +29,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const ParticipantModel = require('../../../../src/models/participant/participant')
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
 const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
@@ -1244,8 +1244,8 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('getLimitsForAllParticipants', async (assert) => {
-    const currencyId = 'USD'
-    const type = 'NET_DEBIT_CAP'
+    const currencyId = undefined
+    const type = undefined
 
     ParticipantFacade.getLimitsForAllParticipants.throws(new Error())
     try {
