@@ -29,7 +29,7 @@ const UrlParser = require('../../lib/urlParser')
 const Config = require('../../lib/config')
 const Util = require('@mojaloop/central-services-shared').Util
 const Sidecar = require('../../lib/sidecar')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const LocalEnum = {

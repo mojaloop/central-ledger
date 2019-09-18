@@ -38,7 +38,7 @@
  * @module src/handlers/positions
  */
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
 const Utility = require('@mojaloop/central-services-shared').Util
@@ -118,7 +118,8 @@ const positions = async (error, messages) => {
             : (action === Enum.Events.Event.Action.TIMEOUT_RESERVED ? Enum.Events.ActionLetter.timeout
               : (action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
                 : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-                  : Enum.Events.ActionLetter.unknown))))))
+                  : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
+                    : Enum.Events.ActionLetter.unknown)))))))
     const params = { message, kafkaTopic, consumer, decodedPayload: payload }
     const producer = { action }
     if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
@@ -194,9 +195,8 @@ const positions = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
-    } else if (eventType === Enum.Events.Event.Type.POSITION && action === Enum.Events.Event.Action.TIMEOUT_RESERVED) {
+    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
       Logger.info(Utility.breadcrumb(location, { path: 'timeout' }))
-      producer.action = Enum.Events.Event.Action.ABORT
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
         Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState2--${actionLetter}6`))
@@ -211,6 +211,9 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, null, null, null, payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
+        if (action === Enum.Events.Event.Action.TIMEOUT_RESERVED) {
+          producer.action = Enum.Events.Event.Action.ABORT
+        }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true

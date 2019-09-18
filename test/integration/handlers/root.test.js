@@ -26,7 +26,7 @@
 
 const Test = require('tape')
 const Joi = require('@hapi/joi')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Db = require('@mojaloop/central-services-database').Db
 
 const Config = require('../../../src/lib/config')

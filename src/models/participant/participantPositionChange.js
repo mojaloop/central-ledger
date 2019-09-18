@@ -29,7 +29,7 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * @function getByParticipantPositionId

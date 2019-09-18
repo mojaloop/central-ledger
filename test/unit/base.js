@@ -23,7 +23,7 @@
 'use strict'
 
 const ServerSetup = require('../../src/shared/setup')
-// const Logger = require('@mojaloop/central-services-shared').Logger
+// const Logger = require('@mojaloop/central-services-logger')
 
 const setupServer = async (ApiRoutes) => {
   const server = await ServerSetup.createServer(3000, [ApiRoutes])

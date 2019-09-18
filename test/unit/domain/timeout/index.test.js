@@ -31,7 +31,7 @@ const TransferTimeoutModel = require('../../../../src/models/transfer/transferTi
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const SegmentModel = require('../../../../src/models/misc/segment')
 const TransferStateChangeModel = require('../../../../src/models/transfer/transferStateChange')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 
 Test('Timeout Service', timeoutTest => {
   let sandbox

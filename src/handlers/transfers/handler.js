@@ -37,7 +37,7 @@
  * @module src/handlers/transfers
  */
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const TransferService = require('../../domain/transfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -181,7 +181,13 @@ const prepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString()).toApiErrorObject(Config.ERROR_HANDLING)
         await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
-        const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE }
+        let functionality
+        if (action === TransferEventAction.PREPARE) {
+          functionality = TransferEventType.NOTIFICATION
+        } else { // action === TransferEventAction.BULK_PREPARE
+          functionality = TransferEventType.BULK_PROCESSING
+        }
+        const producer = { functionality, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true

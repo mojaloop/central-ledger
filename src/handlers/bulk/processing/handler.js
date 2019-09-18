@@ -29,7 +29,7 @@
  ******/
 'use strict'
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -98,9 +98,10 @@ const bulkProcessing = async (error, messages) => {
       return true
     }
     const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
-      : (action === Enum.Events.Event.Action.BULK_FULFIL ? Enum.Events.ActionLetter.bulkFulfil
-        : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-          : Enum.Events.ActionLetter.unknown))
+      : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
+        : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED ? Enum.Events.ActionLetter.bulkTimeoutReceived
+          : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
+            : Enum.Events.ActionLetter.unknown)))
     const params = { message, kafkaTopic, consumer, decodedPayload: payload }
     const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
