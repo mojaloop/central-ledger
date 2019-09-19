@@ -170,7 +170,6 @@ const prepareTestData = async (dataObj) => {
 
   const errorPayload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject()
   errorPayload.errorInformation.extensionList = { extension: [{ key: 'errorDetail', value: 'This is an abort extension' }] }
-  delete errorPayload.errorInformation.errorDescription
 
   const messageProtocolPrepare = {
     id: Uuid(),
