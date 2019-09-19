@@ -10,7 +10,7 @@
     "SCALE": 4
   },
   "SIDECAR": {
-    "DISABLED": false,
+    "DISABLED": true,
     "HOST": "localhost",
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,

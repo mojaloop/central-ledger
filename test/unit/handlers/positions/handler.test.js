@@ -2,7 +2,6 @@
 
 const Sinon = require('sinon')
 const Test = require('tapes')(require('tape'))
-const allTransferHandlers = require('../../../../src/handlers/positions/handler')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
@@ -10,13 +9,15 @@ const PositionService = require('../../../../src/domain/position')
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const KafkaConsumer = Kafka.Consumer.Consumer
 const Uuid = require('uuid4')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
 const transferEventAction = require('@mojaloop/central-services-shared').Enum.Events.Event.Action
 const Enum = require('@mojaloop/central-services-shared').Enum
+const EventSdk = require('@mojaloop/event-sdk')
 const Clone = require('lodash').clone
 const TransferState = Enum.Transfers.TransferState
 const TransferInternalState = Enum.Transfers.TransferInternalState
+const Proxyquire = require('proxyquire')
 
 const transfer = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -130,11 +131,37 @@ const config = {
 const command = () => {
 }
 
+let SpanStub
+let allTransferHandlers
+
 Test('Position handler', transferHandlerTest => {
   let sandbox
 
   transferHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    SpanStub = {
+      audit: sandbox.stub().callsFake(),
+      error: sandbox.stub().callsFake(),
+      finish: sandbox.stub().callsFake()
+    }
+
+    const TracerStub = {
+      extractContextFromMessage: sandbox.stub().callsFake(() => {
+        return {}
+      }),
+      createChildSpanFromContext: sandbox.stub().callsFake(() => {
+        return SpanStub
+      })
+    }
+
+    const EventSdkStub = {
+      Tracer: TracerStub
+    }
+
+    allTransferHandlers = Proxyquire('../../../../src/handlers/positions/handler', {
+      '@mojaloop/event-sdk': EventSdkStub
+    })
+
     sandbox.stub(Kafka)
     sandbox.stub(KafkaConsumer.prototype, 'constructor').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
@@ -227,7 +254,7 @@ Test('Position handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('positions should', positionsTest => {
-    positionsTest.test('throws when the message contains no uriParams', async test => {
+    positionsTest.test('logs an error when the message contains no uriParams', async test => {
       // Arrange
       await Kafka.Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
@@ -244,11 +271,11 @@ Test('Position handler', transferHandlerTest => {
       // Act
       try {
         await allTransferHandlers.positions(null, [message])
-        test.fail('Error should have thrown')
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        test.ok(SpanStub.finish.calledWith('transferId is null or undefined', expectedState))
         test.end()
       } catch (err) {
-        // Assert
-        test.equal(err.message, 'transferId is null or undefined', 'Error messages should match.')
+        test.fail('Error should not be thrown')
         test.end()
       }
     })
@@ -697,7 +724,7 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
-    positionsTest.test('throw error if the transfer state is not reserved-timeout', async (test) => {
+    positionsTest.test('logs error if the transfer state is not reserved-timeout', async (test) => {
       try {
         await Kafka.Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
@@ -708,11 +735,11 @@ Test('Position handler', transferHandlerTest => {
         m.value.metadata.event.action = transferEventAction.TIMEOUT_RESERVED
 
         await allTransferHandlers.positions(null, [m])
-        test.fail('should throw')
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        test.ok(SpanStub.finish.calledWith('Internal server error', expectedState))
         test.end()
       } catch (e) {
-        console.log('error thrown' + e)
-        test.pass('Error thrown' + e)
+        test.fail('Error should not be thrown')
         test.end()
       }
     })

@@ -40,7 +40,7 @@ const TransferDuplicateCheckModel = require('../../../../src/models/transfer/tra
 const TransferFulfilmentDuplicateCheckModel = require('../../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../../../src/models/transfer/transferErrorDuplicateCheck')
 const TransferInternalState = require('@mojaloop/central-services-shared').Enum.Transfers.TransferInternalState
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Crypto = require('crypto')
 
 const payload = {

@@ -31,7 +31,7 @@
 
 const Config = require('./config')
 const Db = require('./db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 
 const endpointType = async function () {
   try {

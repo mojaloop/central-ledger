@@ -30,7 +30,7 @@
 
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferExtension')
 const HelperModule = require('../../helpers')

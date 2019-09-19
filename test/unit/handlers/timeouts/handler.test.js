@@ -136,6 +136,23 @@ Test('Timeout handler', TimeoutHandlerTest => {
       test.end()
     })
 
+    timeoutTest.test('handle message errors', async (test) => {
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(timeoutSegmentMock)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
+      Utility.produceGeneralMessage = sandbox.stub().throws()
+
+      try {
+        await TimeoutHandler.timeout()
+        test.error('Exception expected')
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
     timeoutTest.end()
   })
 
