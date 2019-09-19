@@ -108,11 +108,12 @@ const prepare = async (error, messages) => {
     await span.audit(message, EventSdk.AuditEventAction.start)
     const kafkaTopic = message.topic
     let consumer
-    await span.debug({
-      message,
-      topicName: kafkaTopic
-      // clientId: kafkaConfig.rdkafkaConf['client.id'] //TODO find the right way to get the clientId from the command
-    })
+    // TODO: re-enable once we are able to configure the log-level
+    // await span.debug({
+    //   message,
+    //   topicName: kafkaTopic
+    //   // clientId: kafkaConfig.rdkafkaConf['client.id'] //TODO find the right way to get the clientId from the command
+    // })
     Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
@@ -133,17 +134,14 @@ const prepare = async (error, messages) => {
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
-
       const transfer = await TransferService.getByIdLight(transferId)
       const transferStateEnum = transfer && transfer.transferStateEnumeration
       if ([TransferState.COMMITTED, TransferState.ABORTED].includes(transferStateEnum)) {
         Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
-
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         message.value.content.uriParams = { id: transferId }
         const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.PREPARE_DUPLICATE }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, fromSwitch })
-
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
@@ -162,7 +160,6 @@ const prepare = async (error, messages) => {
       const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
       if (validationPassed) {
         Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-
         try {
           Logger.info(Util.breadcrumb(location, 'saveTransfer'))
           await TransferService.prepare(payload)
@@ -177,7 +174,6 @@ const prepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
         const producer = { functionality: TransferEventType.POSITION, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer, toDestination })
-
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
