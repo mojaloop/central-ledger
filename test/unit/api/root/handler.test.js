@@ -57,13 +57,13 @@ Test('Root', rootHandlerTest => {
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
       sandbox.stub(Kafka.Consumer, 'getListOfTopics').returns(['admin'])
       sandbox.stub(Kafka.Consumer, 'isConnected').returns(Promise.resolve())
-      const schema = {
+      const schema = Joi.compile({
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),
         startTime: Joi.date().iso().required(),
         versionNumber: Joi.string().required(),
         services: Joi.array().required()
-      }
+      })
       const expectedStatus = 200
       const expectedServices = [
         { name: 'datastore', status: 'OK' },
@@ -77,8 +77,8 @@ Test('Root', rootHandlerTest => {
       } = await unwrapResponse((reply) => Handler.getHealth(createRequest({}), reply))
 
       // Assert
-      const validationResult = Joi.validate(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
-      test.equal(validationResult.error, null, 'The response matches the validation schema')
+      const validationResult = Joi.attempt(responseBody, schema) // We use Joi to validate the results as they rely on timestamps that are variable
+      test.equal(validationResult.error, undefined, 'The response matches the validation schema')
       test.deepEqual(responseCode, expectedStatus, 'The response code matches')
       test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
       test.end()
