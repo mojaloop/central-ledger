@@ -129,7 +129,7 @@ const positions = async (error, messages) => {
                     : Enum.Events.ActionLetter.unknown)))))))
     const params = { message, kafkaTopic, consumer, decodedPayload: payload, span }
     const producer = { action }
-    if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
+    if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
       producer.functionality = Enum.Events.Event.Type.NOTIFICATION
     } else {
       producer.functionality = Enum.Events.Event.Type.BULK_PROCESSING

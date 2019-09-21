@@ -121,9 +121,9 @@ const bulkProcessing = async (error, messages) => {
         errorDescription = payload.errorInformation.errorDescription
       } else if (action === Enum.Events.Event.Action.BULK_PREPARE && state.status === Enum.Events.EventState.SUCCESS) {
         processingStateId = Enum.Transfers.BulkProcessingState.ACCEPTED
-      } else if ([Enum.Events.Event.Action.TIMEOUT_RECEIVED, Enum.Events.Event.Action.TIMEOUT_RESERVED].includes(action)) {
-        incompleteBulkState = null
-        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
+      } else if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
+        incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
+        completedBulkState = Enum.Transfers.BulkTransferState.EXPIRED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 2
@@ -131,17 +131,17 @@ const bulkProcessing = async (error, messages) => {
         errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.RECEIVED} state`
       }
     } else if ([Enum.Transfers.BulkTransferState.ACCEPTED].includes(bulkTransferInfo.bulkTransferStateId)) {
-      if (action === Enum.Events.Event.Action.TIMEOUT_RESERVED) {
+      if (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED) {
         criteriaState = Enum.Transfers.BulkTransferState.ACCEPTED
-        incompleteBulkState = null
-        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
+        incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
+        completedBulkState = Enum.Transfers.BulkTransferState.EXPIRED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 3
         errorCode = 3 // TODO: Change to MLAPI spec defined error and move description text to enum
         errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`
       }
-    } else if ([Enum.Transfers.BulkTransferState.PROCESSING, Enum.Transfers.BulkTransferState.PENDING_FULFIL].includes(bulkTransferInfo.bulkTransferStateId)) {
+    } else if ([Enum.Transfers.BulkTransferState.PROCESSING, Enum.Transfers.BulkTransferState.PENDING_FULFIL, Enum.Transfers.BulkTransferState.EXPIRING].includes(bulkTransferInfo.bulkTransferStateId)) {
       criteriaState = Enum.Transfers.BulkTransferState.PROCESSING
       incompleteBulkState = Enum.Transfers.BulkTransferState.PENDING_FULFIL
       completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
@@ -153,18 +153,18 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.Transfers.BulkProcessingState.REJECTED
       } else if ([Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.ABORT].includes(action) && state.status === Enum.Events.EventState.ERROR) {
         processingStateId = Enum.Transfers.BulkProcessingState.FULFIL_INVALID
-      } else if (action === Enum.Events.Event.Action.TIMEOUT_RESERVED) {
-        incompleteBulkState = null
-        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
+      } else if (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED) {
+        incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
+        completedBulkState = Enum.Transfers.BulkTransferState.EXPIRED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 4
-        errorCode = 4 // TODO: Change to MLAPI spec defined error and move description text to enum
+        errorCode = 4 // TODO: Change to BULK API spec defined error and move description text to enum
         errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`
       }
     } else { // ['PENDING_INVALID', 'COMPLETED', 'REJECTED', 'INVALID']
       exitCode = 1
-      errorCode = 1 // TODO: Change to MLAPI spec defined error and move description text to enum
+      errorCode = 1 // TODO: Change to BULK API spec defined error and move description text to enum
       errorDescription = 'Individual transfer can not be processed when bulk transfer state is final'
     }
     await BulkTransferService.bulkTransferAssociationUpdate(
@@ -253,6 +253,12 @@ const bulkProcessing = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, payeeParams, { consumerCommit, producer })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
+      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, null, null, null, payload.extensionList)
+        producer.action = Enum.Events.Event.Action.BULK_ABORT
+        params.message.value.content.uriParams.id = bulkTransferInfo.bulkTransferId
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer })
+        throw fspiopError
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.

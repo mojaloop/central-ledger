@@ -56,9 +56,19 @@ const bulkTransferStates = [
     description: 'Fulfilment request has been received by the switch'
   },
   {
+    bulkTransferStateId: 'EXPIRING',
+    enumeration: 'PROCESSING',
+    description: 'One or more individual transfers from have expired'
+  },
+  {
     bulkTransferStateId: 'COMPLETED',
     enumeration: 'COMPLETED',
     description: 'Final state when transfers in the bulk are committed'
+  },
+  {
+    bulkTransferStateId: 'EXPIRED',
+    enumeration: 'COMPLETED',
+    description: 'Final state when transfers in the bulk have expired'
   },
   {
     bulkTransferStateId: 'REJECTED',
