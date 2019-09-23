@@ -2,7 +2,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 const Path = require('path')
 const Migrations = require('@mojaloop/central-services-database').Migrations
 const Proxyquire = require('proxyquire')
@@ -30,9 +29,9 @@ Test('migrator', migratorTest => {
 
   migratorTest.test('migrate should', migrateTest => {
     migrateTest.test('override migrations directory path and run migrations', test => {
-      Migrations.migrate.returns(P.resolve())
+      Migrations.migrate.returns(Promise.resolve())
 
-      let updatedMigrationsPath = Path.join(process.cwd(), configuredMigrationsFolder)
+      const updatedMigrationsPath = Path.join(process.cwd(), configuredMigrationsFolder)
 
       Migrator.migrate()
         .then(() => {

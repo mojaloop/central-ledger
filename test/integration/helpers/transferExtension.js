@@ -31,13 +31,14 @@ const TransferPreparationModule = require('./transfer')
 const TransferModel = require('../../../src/models/transfer/transfer')
 const Model = require('../../../src/models/transfer/transferExtension')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
-const Time = require('../../../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
   try {
-    let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
+    const transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
 
-    let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
+    const transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
 
     await Model.saveTransferExtension({
       transferId: transferResult.transfer.transferId,
@@ -45,8 +46,8 @@ exports.prepareData = async () => {
       value: 'extension.value',
       createdDate: Time.getUTCString(new Date())
     })
-    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
-    let extension = await Model.getByTransferId(transferResult.transfer.transferId)
+    const transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    const extension = await Model.getByTransferId(transferResult.transfer.transferId)
 
     return {
       extension,
@@ -57,7 +58,7 @@ exports.prepareData = async () => {
       }
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -67,6 +68,6 @@ exports.deletePreparedData = async (extensionId, transferId, payerName, payeeNam
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

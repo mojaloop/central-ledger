@@ -2,20 +2,20 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Handler = require('../../../../src/api/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const createRequest = ({ payload, params, query }) => {
-  let sandbox = Sinon.createSandbox()
+  const sandbox = Sinon.createSandbox()
   const requestPayload = payload || {}
   const requestParams = params || {}
   const requestQuery = query || {}
-  let enums = sandbox.stub()
+  const enums = sandbox.stub()
   enums.withArgs('ledgerAccountType').returns({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 })
   return {
     payload: requestPayload,
@@ -124,21 +124,21 @@ Test('Participant', participantHandlerTest => {
 
   participantHandlerTest.test('Handler Test', async handlerTest => {
     handlerTest.test('getAll should return all the participants', async function (test) {
-      Participant.getAll.returns(P.resolve(participantFixtures))
+      Participant.getAll.returns(Promise.resolve(participantFixtures))
       const result = await Handler.getAll(createRequest({}))
       test.deepEqual(result, participantResults, 'The results match')
       test.end()
     })
 
     handlerTest.test('getByName should return the participant', async function (test) {
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participantFixtures[0]))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participantFixtures[0]))
       const result = await Handler.getByName(createRequest({ params: { name: participantFixtures[0].name } }))
       test.deepEqual(result, participantResults[0], 'The results match')
       test.end()
     })
 
     handlerTest.test('getByName should throw error', async function (test) {
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(null))
       try {
         await Handler.getByName(createRequest({ params: { name: participantFixtures[0].name } }))
       } catch (e) {
@@ -149,7 +149,7 @@ Test('Participant', participantHandlerTest => {
     })
 
     handlerTest.test('update should update, return participant and utilize logger', async function (test) {
-      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).returns(P.resolve(participantFixtures[0]))
+      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).returns(Promise.resolve(participantFixtures[0]))
       try {
         const result = await Handler.update(createRequest({
           params: { name: participantFixtures[0].name },
@@ -165,7 +165,7 @@ Test('Participant', participantHandlerTest => {
     })
 
     handlerTest.test('update should update, return participant if participant when inactive and utilize', async function (test) {
-      Participant.update.withArgs(participantFixtures[0].name, { isActive: 0 }).returns(P.resolve(participantFixtures[0]))
+      Participant.update.withArgs(participantFixtures[0].name, { isActive: 0 }).returns(Promise.resolve(participantFixtures[0]))
       try {
         const result = await Handler.update(createRequest({
           params: { name: participantFixtures[0].name },
@@ -181,7 +181,7 @@ Test('Participant', participantHandlerTest => {
     })
 
     handlerTest.test('update should update, return participant, but omit logging when isActive is not being updated', async function (test) {
-      Participant.update.withArgs(participantFixtures[0].name, {}).returns(P.resolve(participantFixtures[0]))
+      Participant.update.withArgs(participantFixtures[0].name, {}).returns(Promise.resolve(participantFixtures[0]))
       try {
         const result = await Handler.update(createRequest({
           params: { name: participantFixtures[0].name },
@@ -197,12 +197,12 @@ Test('Participant', participantHandlerTest => {
     })
 
     handlerTest.test('update should throw error', async function (test) {
-      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).throws(new Error())
+      Participant.update.withArgs(participantFixtures[0].name, { isActive: 1 }).throws(new Error('Test error'))
       try {
         await Handler.update(createRequest({ params: { name: participantFixtures[0].name }, payload: { isActive: 1 } }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -225,14 +225,14 @@ Test('Participant', participantHandlerTest => {
       const currencyList1 = { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
       const currencyList2 = { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
 
-      Participant.hubAccountExists.withArgs(participant.currency).returns(P.resolve(true))
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
-      Participant.create.withArgs(payload).returns(P.resolve(participant.participantId))
-      Participant.getById.withArgs(participant.participantId).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participantCurrencyId1))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(P.resolve(participantCurrencyId2))
-      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(P.resolve(currencyList1))
-      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(P.resolve(currencyList2))
+      Participant.hubAccountExists.withArgs(participant.currency).returns(Promise.resolve(true))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(null))
+      Participant.create.withArgs(payload).returns(Promise.resolve(participant.participantId))
+      Participant.getById.withArgs(participant.participantId).returns(Promise.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(Promise.resolve(participantCurrencyId1))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(Promise.resolve(participantCurrencyId2))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(Promise.resolve(currencyList1))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(Promise.resolve(currencyList2))
       const reply = {
         response: (response) => {
           return {
@@ -266,12 +266,12 @@ Test('Participant', participantHandlerTest => {
       const currencyList1 = { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
       const currencyList2 = { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
 
-      Participant.hubAccountExists.withArgs(participant.currency).returns(P.resolve(true))
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(P.resolve(participantCurrencyId1))
-      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(P.resolve(participantCurrencyId2))
-      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(P.resolve(currencyList1))
-      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(P.resolve(currencyList2))
+      Participant.hubAccountExists.withArgs(participant.currency).returns(Promise.resolve(true))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(Promise.resolve(participantCurrencyId1))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(Promise.resolve(participantCurrencyId2))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(Promise.resolve(currencyList1))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(Promise.resolve(currencyList2))
       const reply = {
         response: (response) => {
           return {
@@ -302,8 +302,8 @@ Test('Participant', participantHandlerTest => {
         ]
       }
 
-      Participant.hubAccountExists.withArgs(participant.currency).returns(P.resolve(true))
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.hubAccountExists.withArgs(participant.currency).returns(Promise.resolve(true))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
       try {
         await Handler.create(createRequest({ payload }))
         test.fail()
@@ -328,7 +328,7 @@ Test('Participant', participantHandlerTest => {
         currencyList: [{ currencyId: 'USD', isActive: 1 }]
       }
 
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
       try {
         await Handler.create(createRequest({ payload }))
         test.fail('Error not thrown')
@@ -353,8 +353,8 @@ Test('Participant', participantHandlerTest => {
         currencyList: []
       }
 
-      Participant.hubAccountExists.withArgs(participant.currency, Enum.LedgerAccountType.HUB_RECONCILIATION).returns(P.resolve(true))
-      Participant.hubAccountExists.withArgs(participant.currency, Enum.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT).returns(P.resolve(false))
+      Participant.hubAccountExists.withArgs(participant.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION).returns(Promise.resolve(true))
+      Participant.hubAccountExists.withArgs(participant.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT).returns(Promise.resolve(false))
       try {
         await Handler.create(createRequest({ payload }))
         test.fail('Error not thrown')
@@ -379,7 +379,7 @@ Test('Participant', participantHandlerTest => {
         currencyList: [{ currencyId: 'EUR', isActive: 1 }]
       }
 
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
       try {
         await Handler.create(createRequest({ payload }))
       } catch (e) {
@@ -393,8 +393,8 @@ Test('Participant', participantHandlerTest => {
         name: 'fsp1',
         currency: 'USD'
       }
-      Participant.hubAccountExists.returns(P.resolve(true))
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(null))
+      Participant.hubAccountExists.returns(Promise.resolve(true))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(null))
       Participant.create.withArgs(payload).throws(new Error('Error while creating participant'))
       try {
         await Handler.create(createRequest({ payload }))
@@ -414,7 +414,7 @@ Test('Participant', participantHandlerTest => {
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
-      Participant.addEndpoint.withArgs(params.name, payload).returns(P.resolve(1))
+      Participant.addEndpoint.withArgs(params.name, payload).returns(Promise.resolve(1))
       const reply = {
         response: (response) => {
           return {
@@ -437,13 +437,13 @@ Test('Participant', participantHandlerTest => {
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
 
-      Participant.addEndpoint.withArgs(params.name, payload).throws(new Error())
+      Participant.addEndpoint.withArgs(params.name, payload).throws(new Error('Test error'))
 
       try {
         await Handler.addEndpoint(createRequest({ params, payload }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -463,7 +463,7 @@ Test('Participant', participantHandlerTest => {
         name: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }]
-      Participant.getEndpoint.withArgs(params.name, query.type).returns(P.resolve(endpointReturn))
+      Participant.getEndpoint.withArgs(params.name, query.type).returns(Promise.resolve(endpointReturn))
       const result = await Handler.getEndpoint(createRequest({ params, query }))
       test.deepEqual(result, endpoint, 'The results match')
       test.end()
@@ -478,7 +478,7 @@ Test('Participant', participantHandlerTest => {
       }
       const endpoint = {}
       const endpointReturn = []
-      Participant.getEndpoint.withArgs(params.name, query.type).returns(P.resolve(endpointReturn))
+      Participant.getEndpoint.withArgs(params.name, query.type).returns(Promise.resolve(endpointReturn))
       const result = await Handler.getEndpoint(createRequest({ params, query }))
       test.deepEqual(result, endpoint, 'The results match')
       test.end()
@@ -509,7 +509,7 @@ Test('Participant', participantHandlerTest => {
         }
       ]
 
-      Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpoints))
+      Participant.getAllEndpoints.withArgs(params.name).returns(Promise.resolve(endpoints))
       const result = await Handler.getEndpoint(createRequest({ params }))
       test.deepEqual(result, endpointsResult, 'The results match')
       test.end()
@@ -522,7 +522,7 @@ Test('Participant', participantHandlerTest => {
       const endpoints = []
       const endpointsResult = []
 
-      Participant.getAllEndpoints.withArgs(params.name).returns(P.resolve(endpoints))
+      Participant.getAllEndpoints.withArgs(params.name).returns(Promise.resolve(endpoints))
       const result = await Handler.getEndpoint(createRequest({ params }))
       test.deepEqual(result, endpointsResult, 'The results match')
       test.end()
@@ -535,13 +535,13 @@ Test('Participant', participantHandlerTest => {
       const query = {
         type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST'
       }
-      Participant.getEndpoint.withArgs(params.name, query.type).throws(new Error())
+      Participant.getEndpoint.withArgs(params.name, query.type).throws(new Error('Test error'))
 
       try {
         await Handler.getEndpoint(createRequest({ params, query }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -559,7 +559,7 @@ Test('Participant', participantHandlerTest => {
         initialPosition: 0
       }
 
-      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(P.resolve(1))
+      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(Promise.resolve(1))
       const reply = {
         response: (response) => {
           return {
@@ -585,7 +585,7 @@ Test('Participant', participantHandlerTest => {
         }
       }
 
-      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(P.resolve(1))
+      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(Promise.resolve(1))
       const reply = {
         response: (response) => {
           return {
@@ -612,13 +612,13 @@ Test('Participant', participantHandlerTest => {
         initialPosition: 0
       }
 
-      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).throws(new Error())
+      Participant.addLimitAndInitialPosition.withArgs(params.name, payload).throws(new Error('Test error'))
 
       try {
         await Handler.addLimitAndInitialPosition(createRequest({ params, payload }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -648,7 +648,7 @@ Test('Participant', participantHandlerTest => {
           value: 1000000
         }
       ]
-      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -663,7 +663,7 @@ Test('Participant', participantHandlerTest => {
         type: 'NET_DEBIT_CAP'
       }
       const expected = []
-      Participant.getLimits.withArgs(params.name, query).returns(P.resolve([]))
+      Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve([]))
       const result = await Handler.getLimits(createRequest({ params, query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -700,7 +700,7 @@ Test('Participant', participantHandlerTest => {
         name: 'NET_DEBIT_CAP',
         value: 5000000
       }]
-      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -726,7 +726,7 @@ Test('Participant', participantHandlerTest => {
         name: 'NET_DEBIT_CAP',
         value: 1000000
       }]
-      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -754,7 +754,7 @@ Test('Participant', participantHandlerTest => {
         name: 'NET_DEBIT_CAP',
         value: 1000000
       }]
-      Participant.getLimits.withArgs(params.name, query).returns(P.resolve(limitReturn))
+      Participant.getLimits.withArgs(params.name, query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimits(createRequest({ params, query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -768,13 +768,13 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         type: 'NET_DEBIT_CAP'
       }
-      Participant.getLimits.withArgs(params.name, query).throws(new Error())
+      Participant.getLimits.withArgs(params.name, query).throws(new Error('Test error'))
 
       try {
         await Handler.getLimits(createRequest({ params, query }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -818,7 +818,7 @@ Test('Participant', participantHandlerTest => {
           value: 2000000
         }
       ]
-      Participant.getLimitsForAllParticipants.withArgs(query).returns(P.resolve(limitReturn))
+      Participant.getLimitsForAllParticipants.withArgs(query).returns(Promise.resolve(limitReturn))
       const result = await Handler.getLimitsForAllParticipants(createRequest({ query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -830,7 +830,7 @@ Test('Participant', participantHandlerTest => {
         type: 'NET_DEBIT_CAP'
       }
       const expected = []
-      Participant.getLimitsForAllParticipants.withArgs(query).returns(P.resolve([]))
+      Participant.getLimitsForAllParticipants.withArgs(query).returns(Promise.resolve([]))
       const result = await Handler.getLimitsForAllParticipants(createRequest({ query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -841,13 +841,13 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD',
         type: 'NET_DEBIT_CAP'
       }
-      Participant.getLimitsForAllParticipants.withArgs(query).throws(new Error())
+      Participant.getLimitsForAllParticipants.withArgs(query).throws(new Error('Test error'))
 
       try {
         await Handler.getLimitsForAllParticipants(createRequest({ query }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -864,7 +864,7 @@ Test('Participant', participantHandlerTest => {
           alarmPercentage: 5
         }
       }
-      let participantLimit = {
+      const participantLimit = {
         participantCurrencyId: 1,
         participantLimitTypeId: 1,
         value: payload.limit.value,
@@ -883,7 +883,7 @@ Test('Participant', participantHandlerTest => {
         }
       }
 
-      Participant.adjustLimits.withArgs(params.name, payload).returns(P.resolve({ participantLimit }))
+      Participant.adjustLimits.withArgs(params.name, payload).returns(Promise.resolve({ participantLimit }))
       const reply = {
         response: (response) => {
           return {
@@ -910,13 +910,13 @@ Test('Participant', participantHandlerTest => {
         }
       }
 
-      Participant.adjustLimits.withArgs(params.name, payload).throws(new Error())
+      Participant.adjustLimits.withArgs(params.name, payload).throws(new Error('Test error'))
 
       try {
         await Handler.adjustLimits(createRequest({ params, payload }))
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -938,7 +938,7 @@ Test('Participant', participantHandlerTest => {
         value: 1000,
         updatedTime: '2018-08-14T04:01:55.000Z'
       }
-      Participant.getPositions.withArgs(params.name, query).returns(P.resolve(positionReturn))
+      Participant.getPositions.withArgs(params.name, query).returns(Promise.resolve(positionReturn))
       const result = await Handler.getPositions(createRequest({ params, query }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -994,7 +994,7 @@ Test('Participant', participantHandlerTest => {
         }
       ]
 
-      Participant.getPositions.withArgs(params.name, {}).returns(P.resolve(positionReturn))
+      Participant.getPositions.withArgs(params.name, {}).returns(Promise.resolve(positionReturn))
       const result = await Handler.getPositions(createRequest({ params }))
       test.deepEqual(result, expected, 'The results match')
       test.end()
@@ -1008,15 +1008,15 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD'
       }
 
-      Participant.getPositions.withArgs(params.name, query).throws(new Error())
+      Participant.getPositions.withArgs(params.name, query).throws(new Error('Test error'))
 
       try {
         await Handler.getPositions(createRequest({ params, query }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -1028,7 +1028,7 @@ Test('Participant', participantHandlerTest => {
       const query = {
         currency: 'USD'
       }
-      Participant.getAccounts.withArgs(params.name, query).returns(P.resolve(true))
+      Participant.getAccounts.withArgs(params.name, query).returns(Promise.resolve(true))
       const result = await Handler.getAccounts(createRequest({ params, query }))
       test.ok(result, 'Result returned')
       test.ok(Participant.getAccounts.calledOnce, 'Participant.getAccounts called once')
@@ -1043,15 +1043,15 @@ Test('Participant', participantHandlerTest => {
         currency: 'USD'
       }
 
-      Participant.getAccounts.withArgs(params.name, query).throws(new Error())
+      Participant.getAccounts.withArgs(params.name, query).throws(new Error('Test error'))
 
       try {
         await Handler.getAccounts(createRequest({ params, query }))
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -1158,15 +1158,15 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      Participant.updateAccount.throws(new Error())
+      Participant.updateAccount.throws(new Error('Test error'))
 
       try {
         await Handler.updateAccount(createRequest({ payload, params }), h)
         test.fail('Error not thrown')
         test.end()
       } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Bad Request')
+        test.ok(e instanceof FSPIOPError)
+        test.equal(e.message, 'Test error')
         test.end()
       }
     })
@@ -1217,10 +1217,10 @@ Test('Participant', participantHandlerTest => {
         reservedValue: 0,
         changedDate: '2018-07-17T16:04:24.185Z'
       }
-      Participant.getByName.withArgs('Hub').returns(P.resolve(participant))
-      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
-      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.getByName.withArgs('Hub').returns(Promise.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(Promise.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(Promise.resolve(undefined))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(Promise.resolve({ participantCurrency, participantPosition }))
       const reply = {
         response: (response) => {
           return {
@@ -1266,9 +1266,9 @@ Test('Participant', participantHandlerTest => {
         isActive: 1
       }
 
-      Participant.getByName.withArgs('Hub').returns(P.resolve(participant))
-      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
-      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(true))
+      Participant.getByName.withArgs('Hub').returns(Promise.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(Promise.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(Promise.resolve(true))
 
       try {
         await Handler.createHubAccount(createRequest({ params, payload }))
@@ -1310,10 +1310,10 @@ Test('Participant', participantHandlerTest => {
         isActive: 1
       }
 
-      Participant.getByName.withArgs(params.name).returns(P.resolve(participant))
-      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
-      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(null))
-      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve(null))
+      Participant.getByName.withArgs(params.name).returns(Promise.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(Promise.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(Promise.resolve(null))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(Promise.resolve(null))
 
       try {
         await Handler.createHubAccount(createRequest({ params, payload }))
@@ -1344,7 +1344,7 @@ Test('Participant', participantHandlerTest => {
           }
         }
       }
-      let enums = sandbox.stub()
+      const enums = sandbox.stub()
       enums.withArgs('all').returns({})
       Participant.recordFundsInOut.withArgs(payload, params, {}).resolves()
       try {
@@ -1432,10 +1432,10 @@ Test('Participant', participantHandlerTest => {
         reservedValue: 0,
         changedDate: '2018-10-23 14:17:07'
       }
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(undefined))
-      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(Promise.resolve(undefined))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(Promise.resolve(undefined))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(Promise.resolve({ participantCurrency, participantPosition }))
       try {
         await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')
@@ -1492,10 +1492,10 @@ Test('Participant', participantHandlerTest => {
         reservedValue: 0,
         changedDate: '2018-10-23 14:17:07'
       }
-      Participant.getByName.withArgs(participantFixtures[2].name).returns(P.resolve(participant))
-      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
-      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(participantCurrency))
-      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.getByName.withArgs(participantFixtures[2].name).returns(Promise.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(Promise.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(Promise.resolve(participantCurrency))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(Promise.resolve({ participantCurrency, participantPosition }))
       try {
         await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')
@@ -1536,10 +1536,10 @@ Test('Participant', participantHandlerTest => {
         ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
         isActive: 1
       }
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
-      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve(undefined))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(Promise.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(Promise.resolve(undefined))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(Promise.resolve(undefined))
       try {
         await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')
@@ -1595,10 +1595,10 @@ Test('Participant', participantHandlerTest => {
         reservedValue: 0,
         changedDate: '2018-10-23 14:17:07'
       }
-      Participant.getByName.withArgs(participantFixtures[0].name).returns(P.resolve(participant))
-      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(P.resolve(ledgerAccountType))
-      Participant.getParticipantAccount.withArgs(accountParams).returns(P.resolve(undefined))
-      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(P.resolve({ participantCurrency, participantPosition }))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
+      Participant.getLedgerAccountTypeName.withArgs(payload.type).returns(Promise.resolve(ledgerAccountType))
+      Participant.getParticipantAccount.withArgs(accountParams).returns(Promise.resolve(undefined))
+      Participant.createHubAccount.withArgs(participant.participantId, payload.currency, ledgerAccountType.ledgerAccountTypeId).returns(Promise.resolve({ participantCurrency, participantPosition }))
       try {
         await Handler.createHubAccount(createRequest({ params, payload }))
         test.fail('Error not thrown')

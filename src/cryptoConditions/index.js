@@ -1,13 +1,13 @@
 'use strict'
 
 const FiveBellsCondition = require('five-bells-condition')
-const Errors = require('../errors')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const validateCondition = (conditionUri) => {
   try {
     return FiveBellsCondition.validateCondition(conditionUri)
-  } catch (error) {
-    throw new Errors.ValidationError(error.message)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

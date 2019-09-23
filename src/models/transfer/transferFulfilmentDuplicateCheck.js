@@ -29,7 +29,49 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
+/**
+ * @function GetTransferFulfilmentDuplicateCheck
+ *
+ * @async
+ * @description This retrieves the transferFulfilmentDuplicateCheck table record if present
+ *
+ * @param {string} transferId - the transfer id
+ *
+ * @returns {object} - Returns the record from transferFulfilmentDuplicateCheck table, or throws an error if failed
+ */
+
+const getTransferFulfilmentDuplicateCheck = async (transferId) => {
+  Logger.debug(`get transferFulfilmentDuplicateCheck (transferId=${transferId})`)
+  try {
+    return Db.transferFulfilmentDuplicateCheck.findOne({ transferId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
+
+/**
+ * @function SaveTransferFulfilmentDuplicateCheck
+ *
+ * @async
+ * @description This inserts a record into transferFulfilmentDuplicateCheck table
+ *
+ * @param {string} transferId - the transfer id
+ * @param {string} hash - the hash of the transfer fulfilment request payload
+ *
+ * @returns {integer} - Returns the database id of the inserted row, or throws an error if failed
+ */
+
+const saveTransferFulfilmentDuplicateCheck = async (transferId, hash) => {
+  Logger.debug(`save transferFulfilmentDuplicateCheck (transferId=${transferId}, hash=${hash})`)
+  try {
+    return Db.transferFulfilmentDuplicateCheck.insert({ transferId, hash })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 
 /**
  * @function CheckAndInsertDuplicateHash
@@ -37,7 +79,6 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * @async
  * @description This checks if there is a matching hash for a transfer request in transferFulfilmentDuplicateCheck table, if it does not exist, it will be inserted
  *
- * @param {string} transferFulfilmentId - the transfer fulfilment id
  * @param {string} transferId - the transfer id
  * @param {string} hash - the hash of the transfer request payload
  *
@@ -45,7 +86,6 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * Example:
  * ```
  * {
- *    transferFulfilmentId: '2ce13cc7-b685-45e9-aa44-6c37af3757da',
  *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
  *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8',
  *    createdDate: '2018-08-17 09:46:21'
@@ -53,7 +93,7 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * ```
  */
 
-const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentId) => {
+const checkAndInsertDuplicateHash = async (transferId, hash) => {
   Logger.debug('check and insert hash into transferFulfilmentDuplicateCheck' + transferId.toString())
   try {
     const knex = Db.getKnex()
@@ -64,7 +104,7 @@ const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentI
         let isValid = false
 
         const existingHashes = await knex('transferFulfilmentDuplicateCheck').transacting(trx)
-          .leftJoin('transferFulfilment AS tf', 'tf.transferFulfilmentId', 'transferFulfilmentDuplicateCheck.transferFulfilmentId')
+          .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transferFulfilmentDuplicateCheck.transferId')
           .where({ 'transferFulfilmentDuplicateCheck.transferId': transferId })
           .select('transferFulfilmentDuplicateCheck.*', 'tf.isValid')
 
@@ -75,7 +115,7 @@ const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentI
           isValid = !!matchedHash.isValid
         } else {
           await knex('transferFulfilmentDuplicateCheck').transacting(trx)
-            .insert({ transferFulfilmentId, transferId, hash })
+            .insert({ transferId, hash })
           existsNotMatching = existingHashes.length > 0
         }
         await trx.commit
@@ -90,10 +130,12 @@ const checkAndInsertDuplicateHash = async (transferId, hash, transferFulfilmentI
       }
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 module.exports = {
+  getTransferFulfilmentDuplicateCheck,
+  saveTransferFulfilmentDuplicateCheck,
   checkAndInsertDuplicateHash
 }

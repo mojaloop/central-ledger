@@ -26,39 +26,39 @@
 
 const settlementStates = [
   {
-    'settlementStateId': 'PENDING_SETTLEMENT',
-    'enumeration': 'PENDING_SETTLEMENT',
-    'description': 'The net settlement report for this window has been taken, with the parameter set to indicate that settlement is to be processed.'
+    settlementStateId: 'PENDING_SETTLEMENT',
+    enumeration: 'PENDING_SETTLEMENT',
+    description: 'The net settlement report for this window has been taken, with the parameter set to indicate that settlement is to be processed.'
   },
   {
-    'settlementStateId': 'PS_TRANSFERS_RECORDED',
-    'enumeration': 'PS_TRANSFERS_RECORDED',
-    'description': 'Record transfer entries against the Position Account and the Multi-lateral Net Settlement Account, these are the "multi-lateral net  settlement transfers" (MLNS transfers). An identifier might be provided to be past to the reference bank.'
+    settlementStateId: 'PS_TRANSFERS_RECORDED',
+    enumeration: 'PS_TRANSFERS_RECORDED',
+    description: 'Record transfer entries against the Position Account and the Multi-lateral Net Settlement Account, these are the "multi-lateral net  settlement transfers" (MLNS transfers). An identifier might be provided to be past to the reference bank.'
   },
   {
-    'settlementStateId': 'PS_TRANSFERS_RESERVED',
-    'enumeration': 'PS_TRANSFERS_RESERVED',
-    'description': 'All the debit entries for the MLNS transfers are reserved.'
+    settlementStateId: 'PS_TRANSFERS_RESERVED',
+    enumeration: 'PS_TRANSFERS_RESERVED',
+    description: 'All the debit entries for the MLNS transfers are reserved.'
   },
   {
-    'settlementStateId': 'PS_TRANSFERS_COMMITTED',
-    'enumeration': 'PS_TRANSFERS_COMMITTED',
-    'description': 'All the credit entries for the MLNS transfers are committed. An identifier might be received and recorded from the Settlement bank to allow reconciliation.'
+    settlementStateId: 'PS_TRANSFERS_COMMITTED',
+    enumeration: 'PS_TRANSFERS_COMMITTED',
+    description: 'All the credit entries for the MLNS transfers are committed. An identifier might be received and recorded from the Settlement bank to allow reconciliation.'
   },
   {
-    'settlementStateId': 'SETTLING',
-    'enumeration': 'SETTLING',
-    'description': 'If all accounts are not yet SETTLED, the Status of the settlement is moved to SETTLING. Note: applies only on settlement level.'
+    settlementStateId: 'SETTLING',
+    enumeration: 'SETTLING',
+    description: 'If all accounts are not yet SETTLED, the Status of the settlement is moved to SETTLING. Note: applies only on settlement level.'
   },
   {
-    'settlementStateId': 'SETTLED',
-    'enumeration': 'SETTLED',
-    'description': 'When all outstanding accounts are SETTLED, the entire Settlement is moved to SETTLED.'
+    settlementStateId: 'SETTLED',
+    enumeration: 'SETTLED',
+    description: 'When all outstanding accounts are SETTLED, the entire Settlement is moved to SETTLED.'
   },
   {
-    'settlementStateId': 'ABORTED',
-    'enumeration': 'ABORTED',
-    'description': 'Final state when the settlement is not possible.'
+    settlementStateId: 'ABORTED',
+    enumeration: 'ABORTED',
+    description: 'Final state when the settlement is not possible.'
   }
 ]
 

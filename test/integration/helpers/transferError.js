@@ -26,23 +26,26 @@
 
 const TransferPreparationModule = require('./transfer')
 const TransferDuplicateCheckPreparationModule = require('./transferDuplicateCheck')
+const TransferErrorDuplicateCheckModel = require('../../../src/models/transfer/transferErrorDuplicateCheck')
 const TransferErrorModel = require('../../../src/models/transfer/transferError')
 const TransferStateChangeModel = require('../../../src/models/transfer/transferStateChange')
 const TransferStatePreparationHelper = require('./transferState')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 exports.prepareData = async () => {
   try {
-    let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
-    let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
+    const transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
+    const transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
     TransferStatePreparationHelper.prepareData() // transfer seed
 
     await TransferStateChangeModel.saveTransferStateChange({
       transferId: transferResult.transfer.transferId,
       transferStateId: 'INVALID'
     })
-    let transferStateChange = await TransferStateChangeModel.getByTransferId(transferResult.transfer.transferId)
-    await TransferErrorModel.insert(transferStateChange.transferStateChangeId, 3100, 'Invalid Request')
+    const transferStateChange = await TransferStateChangeModel.getByTransferId(transferResult.transfer.transferId)
+    await TransferErrorDuplicateCheckModel.saveTransferErrorDuplicateCheck(transferResult.transfer.transferId, 'helper.hash')
+    await TransferErrorModel.insert(transferResult.transfer.transferId, transferStateChange.transferStateChangeId, 3100, 'Invalid Request')
 
-    let transferError = await TransferErrorModel.getByTransferStateChangeId(transferStateChange.transferStateChangeId)
+    const transferError = await TransferErrorModel.getByTransferStateChangeId(transferStateChange.transferStateChangeId)
 
     return {
       transferError,
@@ -53,7 +56,7 @@ exports.prepareData = async () => {
       }
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -61,6 +64,6 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
   try {
     return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

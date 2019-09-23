@@ -27,15 +27,14 @@
 const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/participant/participantLimit')
-const Enum = require('../../../../src/lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 Test('Participant Limit model', async (participantLimitTest) => {
-  let sandbox
   const participantLimit1 = {
     participantCurrencyId: 1,
-    participantLimitTypeId: Enum.ParticipantLimitType.NET_DEBIT_CAP,
+    participantLimitTypeId: Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP,
     value: 1000,
     thresholdAlarmPercentage: 10,
     startAfterParticipantPositionChangeId: null,
@@ -44,7 +43,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
     createdBy: 'unit-testing'
   }
 
-  sandbox = Sinon.createSandbox()
+  const sandbox = Sinon.createSandbox()
   Db.participantLimit = {
     insert: sandbox.stub(),
     update: sandbox.stub(),
@@ -54,7 +53,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
   await participantLimitTest.test('insert participant limit', async (assert) => {
     try {
       Db.participantLimit.insert.withArgs(participantLimit1).returns(1)
-      let result = await Model.insert(participantLimit1)
+      const result = await Model.insert(participantLimit1)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
@@ -81,7 +80,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
   await participantLimitTest.test('update participant limit', async (assert) => {
     try {
       Db.participantLimit.update.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }, { value: participantLimit1.value, isActive: participantLimit1.isActive }).returns(1)
-      let result = await Model.update(participantLimit1)
+      const result = await Model.update(participantLimit1)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
@@ -108,7 +107,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
   await participantLimitTest.test('getLimitByCurrencyId participant limit', async (assert) => {
     try {
       Db.participantLimit.findOne.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }).returns(1)
-      let result = await Model.getLimitByCurrencyId(participantLimit1.participantCurrencyId)
+      const result = await Model.getLimitByCurrencyId(participantLimit1.participantCurrencyId)
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {

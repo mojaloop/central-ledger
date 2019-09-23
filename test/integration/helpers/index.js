@@ -27,9 +27,11 @@
 
 'use strict'
 
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
 exports.prepareNeededData = async (tableName) => {
   if (!tableName) {
-    throw new Error('Please provide a table name parameter to function "prepareNeededData"!')
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide a table name parameter to function "prepareNeededData"!')
   }
 
   switch (tableName) {
@@ -46,37 +48,37 @@ exports.prepareNeededData = async (tableName) => {
     case 'transferError':
       return require('./transferError').prepareData()
     default:
-      throw new Error('Please provide a table name that has methods to insert its prepared data!')
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide a table name that has methods to insert its prepared data!')
   }
 }
 
 exports.deletePreparedData = async (tableName, data) => {
   if (!tableName || !data) {
-    throw new Error('Please provide a table name parameter to function "prepareNeededData"!')
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide a table name parameter to function "prepareNeededData"!')
   }
 
   switch (tableName) {
     case 'ilp':
       if (!data || !data.ilpId || !data.transferId || !data.payerName || !data.payeeName) {
-        throw new Error('Please provide ilpId, transferId, payerName and payeeName in order to delete the prepared data!')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide ilpId, transferId, payerName and payeeName in order to delete the prepared data!')
       }
       return require('./ilpPacket').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'extension':
       if (!data || !data.transferExtensionId || !data.transferId || !data.payerName || !data.payeeName) {
-        throw new Error('Please provide transferExtensionId, transferId in order to delete the prepared data!')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide transferExtensionId, transferId in order to delete the prepared data!')
       }
       return require('./transferExtension').deletePreparedData(data.extensionId, data.transferId, data.payerName, data.payeeName)
     case 'transferStateChange':
       if (!data || !data.transferId || !data.payerName || !data.payeeName) {
-        throw new Error('Please provide transferId, payer and payee names in order to delete the prepared data!')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide transferId, payer and payee names in order to delete the prepared data!')
       }
       return require('./transferStateChange').deletePreparedData(data.transferId, data.payerName, data.payeeName)
     case 'transferModel':
       if (!data || !data.transferId || !data.payerName || !data.payeeName) {
-        throw new Error('Please provide transferId, payer and payee names in order to delete the prepared data!')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide transferId, payer and payee names in order to delete the prepared data!')
       }
       return require('./transferTestHelper').deletePreparedData(data.transferId, data.payerName, data.payeeName)
     default:
-      throw new Error('Please provide a table name that has methods to delete its prepared data!')
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Please provide a table name that has methods to delete its prepared data!')
   }
 }

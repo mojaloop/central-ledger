@@ -26,29 +26,94 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const Db = require('../../../../src/lib/db')
-const Uuid = require('uuid4')
 
 Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicateCheckTest) => {
   let sandbox
-  const transferFulfilmentId = Uuid()
   const newHash = 'EE1H9SMsUlHDMOm0H4OfI4D57MHOVTYwwXBK+BWHr/1'
   const existingHashes = [{
     transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
     hash: 'EE1H9SMsUlHDMOm0H4OfI4D57MHOVTYwwXBK+BWHr/4',
-    createdDate: '2018-08-15 13:41:28',
-    transferFulfilmentId
+    createdDate: '2018-08-15 13:41:28'
   }]
   TransferFulfilmentDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    Db.transferFulfilmentDuplicateCheck = {
+      findOne: sandbox.stub(),
+      insert: sandbox.stub()
+    }
     test.end()
   })
 
   TransferFulfilmentDuplicateCheckTest.afterEach(test => {
     sandbox.restore()
     test.end()
+  })
+
+  await TransferFulfilmentDuplicateCheckTest.test('getTransferFulfilmentDuplicateCheck should', async (getTransferFulfilmentDuplicateCheckTest) => {
+    await getTransferFulfilmentDuplicateCheckTest.test('get the transfer duplicate check hash', async test => {
+      try {
+        const { transferId } = existingHashes[0]
+        Db.transferFulfilmentDuplicateCheck.findOne.withArgs({ transferId }).returns(existingHashes[0])
+        const result = await Model.getTransferFulfilmentDuplicateCheck(transferId)
+        test.deepEqual(result, existingHashes[0])
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferFulfilmentDuplicateCheck failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await getTransferFulfilmentDuplicateCheckTest.test('throw error', async test => {
+      try {
+        const { transferId } = existingHashes[0]
+        Db.transferFulfilmentDuplicateCheck.findOne.throws(new Error('message'))
+        await Model.getTransferFulfilmentDuplicateCheck(transferId)
+        test.fail(' should throw')
+        test.end()
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await getTransferFulfilmentDuplicateCheckTest.end()
+  })
+
+  await TransferFulfilmentDuplicateCheckTest.test('saveTransferFulfilmentDuplicateCheck should', async (saveTransferFulfilmentDuplicateCheckTest) => {
+    await saveTransferFulfilmentDuplicateCheckTest.test('save the transfer duplicate check hash', async test => {
+      try {
+        Db.transferFulfilmentDuplicateCheck.insert.returns(1)
+        const { transferId, hash } = existingHashes[0]
+        const result = await Model.saveTransferFulfilmentDuplicateCheck(transferId, hash)
+        test.equal(result, 1)
+        test.end()
+      } catch (err) {
+        Logger.error(`saveTransferFulfilmentDuplicateCheck failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await saveTransferFulfilmentDuplicateCheckTest.test('throw error', async test => {
+      try {
+        Db.transferFulfilmentDuplicateCheck.insert.throws(new Error('message'))
+        const { transferId, hash } = existingHashes[0]
+        await Model.saveTransferFulfilmentDuplicateCheck(transferId, hash)
+        test.fail(' should throw')
+        test.end()
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await saveTransferFulfilmentDuplicateCheckTest.end()
   })
 
   await TransferFulfilmentDuplicateCheckTest.test('checkAndInsertDuplicateHash should', async (checkAndInsertDuplicateHashTest) => {
@@ -76,7 +141,7 @@ Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicat
           isValid: false
         }
 
-        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, newHash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, newHash)
         test.ok(knexStub.withArgs('transferFulfilmentDuplicateCheck').calledTwice, 'knex called with transferFulfilmentDuplicateCheck twice')
         test.deepEqual(result, expected, 'result matched')
         test.end()
@@ -110,7 +175,7 @@ Test('TransferFulfilmentDuplicateCheck model', async (TransferFulfilmentDuplicat
           isValid: false
         }
 
-        let result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHashes[0].transferId, existingHashes[0].hash)
         test.ok(knexStub.withArgs('transferFulfilmentDuplicateCheck').calledOnce, 'knex called with transferFulfilmentDuplicateCheck once')
         test.deepEqual(result, expected, 'result matched')
         test.end()

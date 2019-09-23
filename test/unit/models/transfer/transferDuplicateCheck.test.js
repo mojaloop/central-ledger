@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferDuplicateCheck')
 const Db = require('../../../../src/lib/db')
 
@@ -40,6 +40,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
   TransferDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     Db.transferDuplicateCheck = {
+      findOne: sandbox.stub(),
       insert: sandbox.stub()
     }
     test.end()
@@ -50,11 +51,44 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
     test.end()
   })
 
+  await TransferDuplicateCheckTest.test('getTransferDuplicateCheck should', async (getTransferDuplicateCheckTest) => {
+    await getTransferDuplicateCheckTest.test('get the transfer duplicate check hash', async test => {
+      try {
+        const { transferId } = existingHash
+        Db.transferDuplicateCheck.findOne.withArgs({ transferId }).returns(existingHash)
+        const result = await Model.getTransferDuplicateCheck(transferId)
+        test.deepEqual(result, existingHash)
+        test.end()
+      } catch (err) {
+        Logger.error(`getTransferDuplicateCheck failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await getTransferDuplicateCheckTest.test('throw error', async test => {
+      try {
+        const { transferId } = existingHash
+        Db.transferDuplicateCheck.findOne.throws(new Error('message'))
+        await Model.getTransferDuplicateCheck(transferId)
+        test.fail(' should throw')
+        test.end()
+        test.end()
+      } catch (err) {
+        test.pass('Error thrown')
+        test.end()
+      }
+    })
+
+    await getTransferDuplicateCheckTest.end()
+  })
+
   await TransferDuplicateCheckTest.test('saveTransferDuplicateCheck should', async (saveTransferDuplicateCheckTest) => {
     await saveTransferDuplicateCheckTest.test('save the transfer duplicate check hash', async test => {
       try {
         Db.transferDuplicateCheck.insert.returns(1)
-        let result = await Model.saveTransferDuplicateCheck(existingHash)
+        const { transferId, hash } = existingHash
+        const result = await Model.saveTransferDuplicateCheck(transferId, hash)
         test.equal(result, 1)
         test.end()
       } catch (err) {
@@ -67,7 +101,8 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
     await saveTransferDuplicateCheckTest.test('throw error', async test => {
       try {
         Db.transferDuplicateCheck.insert.throws(new Error('message'))
-        await Model.saveTransferDuplicateCheck(existingHash)
+        const { transferId, hash } = existingHash
+        await Model.saveTransferDuplicateCheck(transferId, hash)
         test.fail(' should throw')
         test.end()
         test.end()
@@ -100,7 +135,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
             insert: sandbox.stub().returns(null)
           })
         })
-        let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
         test.ok(knexStub.withArgs('transferDuplicateCheck').calledOnce, 'knex called with transferDuplicateCheck once')
         test.deepEqual(result, { existsMatching: true, existsNotMatching: false })
         test.end()
@@ -130,7 +165,7 @@ Test('TransferDuplicateCheck model', async (TransferDuplicateCheckTest) => {
             insert: sandbox.stub().returns([1])
           })
         })
-        let result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
+        const result = await Model.checkAndInsertDuplicateHash(existingHash.transferId, existingHash.hash)
         test.ok(knexStub.withArgs('transferDuplicateCheck').calledTwice, 'knex called with transferDuplicateCheck once')
         test.deepEqual(result, { existsMatching: false, existsNotMatching: false })
         test.end()

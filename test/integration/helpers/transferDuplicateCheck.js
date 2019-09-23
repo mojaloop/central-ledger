@@ -26,17 +26,18 @@
 
 const Model = require('../../../src/models/transfer/transferDuplicateCheck')
 const ParticipantPreparationModule = require('./participant')
-const Time = require('../../../src/lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const Crypto = require('crypto')
 const Uuid = require('uuid4')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
   try {
-    let participantPayerResult = await ParticipantPreparationModule.prepareData('payerFsp')
-    let participantPayeeResult = await ParticipantPreparationModule.prepareData('payeeFsp')
+    const participantPayerResult = await ParticipantPreparationModule.prepareData('payerFsp')
+    const participantPayeeResult = await ParticipantPreparationModule.prepareData('payeeFsp')
 
-    let transferId = Uuid()
-    let payload = {
+    const transferId = Uuid()
+    const payload = {
       payerFsp: participantPayerResult.name,
       payeeFsp: participantPayeeResult.name,
       amount: {
@@ -48,7 +49,7 @@ exports.prepareData = async () => {
       expiration: new Date((new Date()).getTime() + (24 * 60 * 60 * 1000)) // tomorrow
 
     }
-    let transfer = {
+    const transfer = {
       transferId: transferId,
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
@@ -61,10 +62,7 @@ exports.prepareData = async () => {
     hash = hashSha256.update(hash)
     hash = hashSha256.digest(hash).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
 
-    const saveResult = await Model.saveTransferDuplicateCheck({
-      transferId,
-      hash
-    })
+    const saveResult = await Model.saveTransferDuplicateCheck(transferId, hash)
 
     return {
       success: !!(saveResult),
@@ -74,7 +72,7 @@ exports.prepareData = async () => {
       participantPayeeResult
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -87,6 +85,6 @@ exports.prepareData = async () => {
 //       await TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
 //     })
 //   } catch (err) {
-//     throw new Error(err.message)
+//     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, err.message)
 //   }
 // }

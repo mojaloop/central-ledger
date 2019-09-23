@@ -33,74 +33,27 @@ const TransferFacade = require('../../models/transfer/facade')
 const TransferModel = require('../../models/transfer/transfer')
 const TransferStateChangeModel = require('../../models/transfer/transferStateChange')
 const TransferErrorModel = require('../../models/transfer/transferError')
-const TransferFulfilmentModel = require('../../models/transfer/transferFulfilment')
 const TransferDuplicateCheckModel = require('../../models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../models/transfer/transferErrorDuplicateCheck')
 const TransferObjectTransform = require('./transform')
-const Errors = require('../../errors')
 const Crypto = require('crypto')
 const TransferError = require('../../models/transfer/transferError')
-const ErrorText = require('../../../src/lib/errors')
-
-const PayeeRejectedTransactionError = 5104
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
   try {
     return await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
-  } catch (e) {
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
-const getFulfilment = async (id) => {
-  const transfer = await TransferFacade.getById(id)
-  if (!transfer) {
-    throw new Errors.TransferNotFoundError()
-  }
-  if (!transfer.ilpCondition) {
-    throw new Errors.TransferNotConditionalError()
-  }
-  const transferFulfilment = await TransferFulfilmentModel.getByTransferId(id)
-  if (!transferFulfilment) {
-    throw new Errors.TransferNotFoundError()
-  }
-  if (!transferFulfilment.ilpFulfilment) {
-    throw new Errors.MissingFulfilmentError()
-  }
-  return transferFulfilment.ilpFulfilment
-}
-
-const expire = (id) => {
-  // return reject({id, rejection_reason: Enum.RejectionType.EXPIRED})
-}
-
-const fulfil = async (transferFulfilmentId, transferId, payload) => {
+const handlePayeeResponse = async (transferId, payload, action, fspiopError) => {
   try {
-    const isCommit = true
-    const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit)
+    const transfer = await TransferFacade.savePayeeTransferResponse(transferId, payload, action, fspiopError)
     return TransferObjectTransform.toTransfer(transfer)
   } catch (err) {
-    throw err
-  }
-}
-
-const reject = async (transferFulfilmentId, transferId, payload) => {
-  try {
-    const isCommit = false
-    const stateReason = ErrorText.getErrorDescription(PayeeRejectedTransactionError)
-    const transfer = await TransferFacade.saveTransferFulfilled(transferFulfilmentId, transferId, payload, isCommit, stateReason)
-    return TransferObjectTransform.toTransfer(transfer)
-  } catch (err) {
-    throw err
-  }
-}
-
-const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
-  try {
-    return TransferFacade.saveTransferAborted(transferId, payload, transferErrorDuplicateCheckId)
-  } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -111,6 +64,9 @@ const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
  * @description This checks if there is a matching hash for a transfer request in transferDuplicateCheck table, if it does not exist, it will be inserted
  *
  * TransferDuplicateCheckModel.checkAndInsertDuplicateHash called to check the existing hash or insert the hash if not exists in the database
+ *
+ * TODO: Currently this method is only used during reconciliation transfers (FundsIn/FundsOut) and is to replaced by the newly implemented request duplicate
+ * checking in future story
  *
  * @param {string} payload - the transfer object
  *
@@ -124,28 +80,20 @@ const abort = async (transferId, payload, transferErrorDuplicateCheckId) => {
  * ```
  */
 
-const validateDuplicateHash = async (transferId, payload, transferFulfilmentId = false, isTransferError = false) => {
+const validateDuplicateHash = async (transferId, payload) => {
   try {
-    let result
     if (!payload) {
-      throw new Error('Invalid payload')
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid payload')
     }
     const hashSha256 = Crypto.createHash('sha256')
     let hash = JSON.stringify(payload)
     hash = hashSha256.update(hash)
     // remove trailing '=' as per specification
     hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
-
-    if (!transferFulfilmentId) {
-      result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
-    } else if (!isTransferError) {
-      result = await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash, transferFulfilmentId)
-    } else {
-      result = await TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
-    }
+    const result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
     return result
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -168,19 +116,15 @@ const validateDuplicateHash = async (transferId, payload, transferFulfilmentId =
 const logTransferError = async (transferId, errorCode, errorDescription) => {
   try {
     const transferStateChange = await TransferStateChangeModel.getByTransferId(transferId)
-    return TransferError.insert(transferStateChange.transferStateChangeId, errorCode, errorDescription)
-  } catch (e) {
-    throw e
+    return TransferError.insert(transferId, transferStateChange.transferStateChangeId, errorCode, errorDescription)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const TransferService = {
-  getFulfilment,
   prepare,
-  fulfil,
-  reject,
-  abort,
-  expire,
+  handlePayeeResponse,
   validateDuplicateHash,
   logTransferError,
   getTransferErrorByTransferId: TransferErrorModel.getByTransferId,
@@ -196,7 +140,13 @@ const TransferService = {
   reconciliationTransferReserve: TransferFacade.reconciliationTransferReserve,
   reconciliationTransferCommit: TransferFacade.reconciliationTransferCommit,
   reconciliationTransferAbort: TransferFacade.reconciliationTransferAbort,
-  getTransferParticipant: TransferFacade.getTransferParticipant
+  getTransferParticipant: TransferFacade.getTransferParticipant,
+  getTransferDuplicateCheck: TransferDuplicateCheckModel.getTransferDuplicateCheck,
+  saveTransferDuplicateCheck: TransferDuplicateCheckModel.saveTransferDuplicateCheck,
+  getTransferFulfilmentDuplicateCheck: TransferFulfilmentDuplicateCheckModel.getTransferFulfilmentDuplicateCheck,
+  saveTransferFulfilmentDuplicateCheck: TransferFulfilmentDuplicateCheckModel.saveTransferFulfilmentDuplicateCheck,
+  getTransferErrorDuplicateCheck: TransferErrorDuplicateCheckModel.getTransferErrorDuplicateCheck,
+  saveTransferErrorDuplicateCheck: TransferErrorDuplicateCheckModel.saveTransferErrorDuplicateCheck
 }
 
 module.exports = TransferService

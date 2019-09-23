@@ -1,0 +1,8 @@
+{
+  "1065|@mojaloop/central-services-database>knex>lodash": {
+    "ignore": 1
+  },
+  "1065|@mojaloop/central-services-database>lodash": {
+    "ignore": 1
+  }
+}

@@ -33,23 +33,25 @@
  */
 
 const Db = require('../../lib/db')
-const Uuid = require('uuid4')
-const Enum = require('../../lib/enum')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const TransferEventAction = Enum.Events.Event.Action
+const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
-const Time = require('../../lib/time')
+const Time = require('@mojaloop/central-services-shared').Util.Time
 const Config = require('../../lib/config')
 const _ = require('lodash')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-logger')
 
-const errorPayeeGeneric = 5000
-const intervalMinPayeeError = errorPayeeGeneric
-const intervalMaxPayeeError = 5500
+// Alphabetically ordered list of error texts used below
+const UnsupportedActionText = 'Unsupported action'
 
 const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
     return await Db.transfer.query(async (builder) => {
-      let transferResult = await builder
+      const transferResult = await builder
         .where({
           'transfer.transferId': id,
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
@@ -72,6 +74,7 @@ const getById = async (id) => {
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
+        .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
         .select(
           'transfer.*',
           'transfer.currencyId AS currency',
@@ -91,18 +94,27 @@ const getById = async (id) => {
           'ts.description as transferStateDescription',
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
-          'tf.ilpFulfilment AS fulfilment'
+          'tf.ilpFulfilment AS fulfilment',
+          'te.errorCode',
+          'te.errorDescription'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
       if (transferResult) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(id) // TODO: check if this is needed
+        if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transferResult.extensionList) transferResult.extensionList = []
+          transferResult.extensionList.push({
+            key: 'cause',
+            value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128)
+          })
+        }
         transferResult.isTransferReadModel = true
       }
       return transferResult
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -110,12 +122,13 @@ const getByIdLight = async (id) => {
   try {
     /** @namespace Db.transfer **/
     return await Db.transfer.query(async (builder) => {
-      let transferResult = await builder
+      const transferResult = await builder
         .where({ 'transfer.transferId': id })
         .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
         .leftJoin('transferStateChange AS tsc', 'tsc.transferId', 'transfer.transferId')
         .leftJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'transfer.transferId')
+        .leftJoin('transferError as te', 'te.transferId', 'transfer.transferId') // currently transferError.transferId is PK ensuring one error per transferId
         .select(
           'transfer.*',
           'transfer.currencyId AS currency',
@@ -128,7 +141,8 @@ const getByIdLight = async (id) => {
           'ilpp.value AS ilpPacket',
           'transfer.ilpCondition AS condition',
           'tf.ilpFulfilment AS fulfilment',
-          'tf.transferFulfilmentId'
+          'te.errorCode',
+          'te.errorDescription'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
@@ -136,21 +150,30 @@ const getByIdLight = async (id) => {
         if (!transferResult.fulfilment) {
           transferResult.extensionList = await TransferExtensionModel.getByTransferId(id)
         } else {
-          transferResult.extensionList = await TransferExtensionModel.getByTransferFulfilmentId(transferResult.transferFulfilmentId)
+          const isFulfilment = true
+          transferResult.extensionList = await TransferExtensionModel.getByTransferId(id, isFulfilment)
+        }
+        if (transferResult.errorCode && transferResult.transferStateEnumeration === Enum.Transfers.TransferState.ABORTED) {
+          if (!transferResult.extensionList) transferResult.extensionList = []
+          transferResult.extensionList.push({
+            key: 'cause',
+            value: `${transferResult.errorCode}: ${transferResult.errorDescription}`.substr(0, 128),
+            isError: true
+          })
         }
         transferResult.isTransferReadModel = true
       }
       return transferResult
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getAll = async () => {
   try {
     return await Db.transfer.query(async (builder) => {
-      let transferResultList = await builder
+      const transferResultList = await builder
         .where({
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
           'tprt2.name': 'PAYEE_DFSP'
@@ -190,14 +213,14 @@ const getAll = async () => {
           'tf.ilpFulfilment AS fulfilment'
         )
         .orderBy('tsc.transferStateChangeId', 'desc')
-      for (let transferResult of transferResultList) {
+      for (const transferResult of transferResultList) {
         transferResult.extensionList = await TransferExtensionModel.getByTransferId(transferResult.transferId)
         transferResult.isTransferReadModel = true
       }
       return transferResultList
     })
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -220,128 +243,76 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
         .orderBy('tsc.transferStateChangeId', 'desc')
         .first()
     })
-  } catch (e) {
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-const saveTransferFulfilled = async (transferFulfilmentId, transferId, payload, isCommit = true, stateReason = null, hasPassedValidation = true) => {
-  const state = (hasPassedValidation ? (isCommit ? Enum.TransferState.RECEIVED_FULFIL : Enum.TransferState.RECEIVED_REJECT) : Enum.TransferState.ABORTED_REJECTED)
-  const completedTimestamp = (payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date()
-  const transferFulfilmentRecord = {
-    transferFulfilmentId,
-    transferId,
-    ilpFulfilment: payload.fulfilment,
-    completedDate: Time.getUTCString(completedTimestamp),
-    isValid: true,
-    createdDate: Time.getUTCString(new Date())
+const savePayeeTransferResponse = async (transferId, payload, action, fspiopError) => {
+  let state
+  let isFulfilment = false
+  let isError = false
+  const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
+  const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
+  let extensionList
+  switch (action) {
+    case TransferEventAction.COMMIT:
+    case TransferEventAction.BULK_COMMIT:
+      state = TransferInternalState.RECEIVED_FULFIL
+      extensionList = payload.extensionList
+      isFulfilment = true
+      break
+    case TransferEventAction.REJECT:
+      state = TransferInternalState.RECEIVED_REJECT
+      extensionList = payload.extensionList
+      isFulfilment = true
+      break
+    case TransferEventAction.ABORT:
+      state = TransferInternalState.RECEIVED_ERROR
+      extensionList = payload.errorInformation.extensionList
+      isError = true
+      break
+    default:
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(UnsupportedActionText)
   }
-  let transferExtensions = []
-  if (payload.extensionList && payload.extensionList.extension) {
-    transferExtensions = payload.extensionList.extension.map(ext => {
+  const completedTimestamp = Time.getUTCString((payload.completedTimestamp && new Date(payload.completedTimestamp)) || new Date())
+  const transactionTimestamp = Time.getUTCString(new Date())
+  const result = {
+    savePayeeTransferResponseExecuted: false
+  }
+
+  const transferFulfilmentRecord = {
+    transferId,
+    ilpFulfilment: payload.fulfilment || null,
+    completedDate: completedTimestamp,
+    isValid: !fspiopError,
+    settlementWindowId: null,
+    createdDate: transactionTimestamp
+  }
+  let transferExtensionRecordsList = []
+  if (extensionList && extensionList.extension) {
+    transferExtensionRecordsList = extensionList.extension.map(ext => {
       return {
         transferId,
-        transferFulfilmentId,
         key: ext.key,
-        value: ext.value
+        value: ext.value,
+        isFulfilment,
+        isError
       }
     })
   }
   const transferStateChangeRecord = {
     transferId,
     transferStateId: state,
-    reason: stateReason,
-    createdDate: Time.getUTCString(new Date())
+    reason: errorDescription,
+    createdDate: transactionTimestamp
   }
-
-  try {
-    /** @namespace Db.getKnex **/
-    const knex = await Db.getKnex()
-    await knex.transaction(async (trx) => {
-      try {
-        /** @namespace Db.settlementWindow **/
-        let result = await Db.settlementWindow.query(builder => {
-          return builder
-            .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
-            .select(
-              'settlementWindow.settlementWindowId',
-              'swsc.settlementWindowStateId as state',
-              'swsc.reason as reason',
-              'settlementWindow.createdDate as createdDate',
-              'swsc.createdDate as changedDate'
-            )
-            .where('swsc.settlementWindowStateId', 'OPEN')
-            .orderBy('changedDate', 'desc')
-        })
-        transferFulfilmentRecord.settlementWindowId = result[0].settlementWindowId
-        await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
-        for (let transferExtension of transferExtensions) {
-          await knex('transferExtension').transacting(trx).insert(transferExtension)
-        }
-        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-        await trx.commit
-      } catch (err) {
-        await trx.rollback
-        throw err
-      }
-    }).catch((err) => {
-      throw err
-    })
-    return {
-      saveTransferFulfilledExecuted: true,
-      transferFulfilmentRecord,
-      transferStateChangeRecord,
-      transferExtensions
-    }
-  } catch (e) {
-    throw e
-  }
-}
-
-/**
- * @function saveTransferAborted
- *
- * @async
- * @description This will set transfer state to RECEIVED_ERROR and record extensions if provided
- *
- * @param {string} transfer - transfer id
- * @param {object} payload - message payload containing errorInformation and extensions
- *
- * @returns {Object} - Returns details for the affected db records
- */
-
-const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCheckId) => {
-  let errorCode
-  let errorDescription
-  let transferErrorRecord
-
-  const transactionTimestamp = Time.getUTCString(new Date())
-
-  if (payload.errorInformation.errorCode &&
-    payload.errorInformation.errorCode > intervalMinPayeeError &&
-    payload.errorInformation.errorCode < intervalMaxPayeeError) {
-    errorCode = payload.errorInformation.errorCode.toString()
-  } else {
-    errorCode = errorPayeeGeneric.toString()
-  }
-  errorDescription = payload.errorInformation.errorDescription
-
-  const transferStateChangeRecord = {
+  const transferErrorRecord = {
     transferId,
-    transferStateId: Enum.TransferState.RECEIVED_ERROR,
-    createdDate: transactionTimestamp,
-    reason: errorDescription
-  }
-
-  let transferExtensions = []
-  if (payload.errorInformation.extensionList && payload.errorInformation.extensionList.extension) {
-    transferExtensions = payload.errorInformation.extensionList.extension.map(ext => {
-      return {
-        transferId,
-        key: ext.key,
-        value: ext.value
-      }
-    })
+    transferStateChangeId: null,
+    errorCode,
+    errorDescription,
+    createdDate: transactionTimestamp
   }
 
   try {
@@ -349,49 +320,60 @@ const saveTransferAborted = async (transferId, payload, transferErrorDuplicateCh
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
-        // insert transfer state change record and retrieve inserted identity
-        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-        const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
-          .where({ transferId: transferStateChangeRecord.transferId })
-          .forUpdate().first().orderBy('transferStateChangeId', 'desc')
-        transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
-
-        // insert transfer error
-        transferErrorRecord = {
-          transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-          errorCode,
-          errorDescription,
-          createdDate: transactionTimestamp,
-          transferErrorDuplicateCheckId
+        if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
+          const res = await Db.settlementWindow.query(builder => {
+            return builder
+              .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
+              .select(
+                'settlementWindow.settlementWindowId',
+                'swsc.settlementWindowStateId as state',
+                'swsc.reason as reason',
+                'settlementWindow.createdDate as createdDate',
+                'swsc.createdDate as changedDate'
+              )
+              .where('swsc.settlementWindowStateId', 'OPEN')
+              .orderBy('changedDate', 'desc')
+          })
+          transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
+          Logger.debug('savePayeeTransferResponse::settlementWindowId')
         }
-        await knex('transferError').transacting(trx).insert(transferErrorRecord)
-
-        // insert transfer extensions if provided
-        if (transferExtensions.length > 0) {
-          const insertedTransferError = await knex('transferError').transacting(trx)
-            .where({ transferStateChangeId: insertedTransferStateChange.transferStateChangeId })
-            .first().orderBy('transferErrorId', 'desc')
-          for (let transferExtension of transferExtensions) {
-            transferExtension.transferErrorId = insertedTransferError.transferErrorId
+        if (isFulfilment) {
+          await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
+          result.transferFulfilmentRecord = transferFulfilmentRecord
+          Logger.debug('savePayeeTransferResponse::transferFulfilment')
+        }
+        if (transferExtensionRecordsList.length > 0) {
+          for (const transferExtension of transferExtensionRecordsList) {
             await knex('transferExtension').transacting(trx).insert(transferExtension)
           }
+          result.transferExtensionRecordsList = transferExtensionRecordsList
+          Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
+        }
+        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+        result.transferStateChangeRecord = transferStateChangeRecord
+        Logger.debug('savePayeeTransferResponse::transferStateChange')
+        if (fspiopError) {
+          const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
+            .where({ transferId })
+            .forUpdate().first().orderBy('transferStateChangeId', 'desc')
+          transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+          transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+          await knex('transferError').transacting(trx).insert(transferErrorRecord)
+          result.transferErrorRecord = transferErrorRecord
+          Logger.debug('savePayeeTransferResponse::transferError')
         }
         await trx.commit
+        result.savePayeeTransferResponseExecuted = true
+        Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
         await trx.rollback
+        Logger.error('savePayeeTransferResponse::failure')
         throw err
       }
-    }).catch((err) => {
-      throw err
     })
-    return {
-      saveTransferAbortedExecuted: true,
-      transferStateChangeRecord,
-      transferErrorRecord,
-      transferExtensions
-    }
-  } catch (e) {
-    throw e
+    return result
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -400,12 +382,12 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const participants = []
     const names = [payload.payeeFsp, payload.payerFsp]
 
-    for (let name of names) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.LedgerAccountType.POSITION)
+    for (const name of names) {
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
       if (participant) {
         participants.push(participant)
       } else {
-        throw new Error('Invalid FSP name or currency')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid FSP name or currency')
       }
     }
 
@@ -425,7 +407,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.TransferState.RECEIVED_PREPARE : Enum.TransferState.INVALID)
+    const state = ((hasPassedValidation) ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE : Enum.Transfers.TransferInternalState.INVALID)
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
@@ -437,48 +419,89 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const payerTransferParticipantRecord = {
       transferId: payload.transferId,
       participantCurrencyId: participantCurrencyIds[payload.payerFsp],
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
-      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: payload.amount.amount
     }
 
     const payeeTransferParticipantRecord = {
       transferId: payload.transferId,
       participantCurrencyId: participantCurrencyIds[payload.payeeFsp],
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
-      ledgerEntryTypeId: Enum.LedgerEntryType.PRINCIPLE_VALUE,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE,
       amount: -payload.amount.amount
     }
 
     const knex = await Db.getKnex()
-    return await knex.transaction(async (trx) => {
-      try {
-        await knex('transfer').transacting(trx).insert(transferRecord)
-        await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
-        await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
-        payerTransferParticipantRecord.name = payload.payerFsp
-        payeeTransferParticipantRecord.name = payload.payeeFsp
-        let transferExtensionsRecordList = []
-        if (payload.extensionList && payload.extensionList.extension) {
-          transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-            return {
-              transferId: payload.transferId,
-              key: ext.key,
-              value: ext.value
-            }
-          })
-          await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+    if (hasPassedValidation) {
+      return await knex.transaction(async (trx) => {
+        try {
+          await knex('transfer').transacting(trx).insert(transferRecord)
+          await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+          await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+          payerTransferParticipantRecord.name = payload.payerFsp
+          payeeTransferParticipantRecord.name = payload.payeeFsp
+          let transferExtensionsRecordList = []
+          if (payload.extensionList && payload.extensionList.extension) {
+            transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+              return {
+                transferId: payload.transferId,
+                key: ext.key,
+                value: ext.value
+              }
+            })
+            await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+          }
+          await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
+          await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+          await trx.commit
+        } catch (err) {
+          await trx.rollback
+          throw err
         }
-        await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
-        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-        await trx.commit
+      })
+    } else {
+      await knex('transfer').insert(transferRecord)
+      try {
+        await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        await trx.rollback
-        throw err
+        Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
       }
-    })
-  } catch (e) {
-    throw e
+      try {
+        await knex('transferParticipant').insert(payeeTransferParticipantRecord)
+      } catch (err) {
+        Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
+      }
+      payerTransferParticipantRecord.name = payload.payerFsp
+      payeeTransferParticipantRecord.name = payload.payeeFsp
+      let transferExtensionsRecordList = []
+      if (payload.extensionList && payload.extensionList.extension) {
+        transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+          return {
+            transferId: payload.transferId,
+            key: ext.key,
+            value: ext.value
+          }
+        })
+        try {
+          await knex.batchInsert('transferExtension', transferExtensionsRecordList)
+        } catch (err) {
+          Logger.warn(`batchInsert transferExtension error: ${err.message}`)
+        }
+      }
+      try {
+        await knex('ilpPacket').insert(ilpPacketRecord)
+      } catch (err) {
+        Logger.warn(`ilpPacket insert error: ${err.message}`)
+      }
+      try {
+        await knex('transferStateChange').insert(transferStateChangeRecord)
+      } catch (err) {
+        Logger.warn(`transferStateChange insert error: ${err.message}`)
+      }
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -519,13 +542,13 @@ const getTransferStateByTransferId = async (id) => {
         .first()
     })
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
   try {
-    let transactionTimestamp = new Date()
+    const transactionTimestamp = Time.getUTCString(new Date())
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
       try {
@@ -542,7 +565,7 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
               .whereNull('tt.transferId')
-              .whereIn('tsc.transferStateId', [`${Enum.TransferState.RECEIVED_PREPARE}`, `${Enum.TransferState.RESERVED}`])
+              .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`])
               .select('t.transferId', 't.expirationDate')
           })// .toSQL().sql
         // console.log('SQL: ' + q)
@@ -558,8 +581,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               )
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.TransferState.RECEIVED_PREPARE}`)
-              .select('tt.transferId', knex.raw('?', Enum.TransferState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
+              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
@@ -574,8 +597,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
               )
               .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
               .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.TransferState.RESERVED}`)
-              .select('tt.transferId', knex.raw('?', Enum.TransferState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
+              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
+              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
           })// .toSQL().sql
         // console.log('SQL: ' + q)
 
@@ -593,10 +616,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
 
     return knex('transferTimeout AS tt')
@@ -609,13 +632,13 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
       .innerJoin('transferParticipant AS tp1', function () {
         this.on('tp1.transferId', 'tt.transferId')
-          .andOn('tp1.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYER_DFSP)
-          .andOn('tp1.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+          .andOn('tp1.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP)
+          .andOn('tp1.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       })
       .innerJoin('transferParticipant AS tp2', function () {
         this.on('tp2.transferId', 'tt.transferId')
-          .andOn('tp2.transferParticipantRoleTypeId', Enum.TransferParticipantRoleType.PAYEE_DFSP)
-          .andOn('tp2.ledgerEntryTypeId', Enum.LedgerEntryType.PRINCIPLE_VALUE)
+          .andOn('tp2.transferParticipantRoleTypeId', Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP)
+          .andOn('tp2.ledgerEntryTypeId', Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       })
       .innerJoin('participantCurrency AS pc1', 'pc1.participantCurrencyId', 'tp1.participantCurrencyId')
       .innerJoin('participant AS p1', 'p1.participantId', 'pc1.participantId')
@@ -626,8 +649,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .where('tt.expirationDate', '<', transactionTimestamp)
       .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
         'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
-  } catch (e) {
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -636,6 +659,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
     const knex = await Db.getKnex()
 
     const trxFunction = async (trx, doCommit = true) => {
+      const transactionTimestamp = Time.getUTCString(new Date())
       let info, transferStateChangeId
       try {
         info = await knex('transfer AS t')
@@ -698,7 +722,10 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             info.drAmount = -info.drAmount
           }
           await knex('participantPosition')
-            .update('value', info.drPositionValue + info.drAmount)
+            .update({
+              value: parseFloat((info.drPositionValue + info.drAmount).toFixed(Config.AMOUNT.SCALE)),
+              changedDate: transactionTimestamp
+            })
             .where('participantPositionId', info.drPositionId)
             .transacting(trx)
 
@@ -706,7 +733,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             .insert({
               participantPositionId: info.drPositionId,
               transferStateChangeId: transferStateChangeId,
-              value: info.drPositionValue + info.drAmount,
+              value: parseFloat((info.drPositionValue + info.drAmount).toFixed(Config.AMOUNT.SCALE)),
               reservedValue: info.drReservedValue,
               createdDate: param1.createdDate
             })
@@ -718,7 +745,10 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             info.crAmount = -info.crAmount
           }
           await knex('participantPosition')
-            .update('value', info.crPositionValue + info.crAmount)
+            .update({
+              value: parseFloat((info.crPositionValue + info.crAmount).toFixed(Config.AMOUNT.SCALE)),
+              changedDate: transactionTimestamp
+            })
             .where('participantPositionId', info.crPositionId)
             .transacting(trx)
 
@@ -726,7 +756,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             .insert({
               participantPositionId: info.crPositionId,
               transferStateChangeId: transferStateChangeId,
-              value: info.crPositionValue + info.crAmount,
+              value: parseFloat((info.crPositionValue + info.crAmount).toFixed(Config.AMOUNT.SCALE)),
               reservedValue: info.crReservedValue,
               createdDate: param1.createdDate
             })
@@ -744,8 +774,8 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       }
       return {
         transferStateChangeId,
-        drPositionValue: info.drPositionValue + info.drAmount,
-        crPositionValue: info.crPositionValue + info.crAmount
+        drPositionValue: parseFloat((info.drPositionValue + info.drAmount).toFixed(Config.AMOUNT.SCALE)),
+        crPositionValue: parseFloat((info.crPositionValue + info.crAmount).toFixed(Config.AMOUNT.SCALE))
       }
     }
 
@@ -755,7 +785,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       return await knex.transaction(trxFunction)
     }
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -782,7 +812,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .transacting(trx)
 
         // Retrieve hub reconciliation account for the specified currency
-        let { reconciliationAccountId } = await knex('participantCurrency')
+        const { reconciliationAccountId } = await knex('participantCurrency')
           .select('participantCurrencyId AS reconciliationAccountId')
           .where('participantId', Config.HUB_ID)
           .andWhere('currencyId', payload.amount.currency)
@@ -790,14 +820,14 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
           .transacting(trx)
 
         let ledgerEntryTypeId, amount
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN) {
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_IN
           amount = payload.amount.amount
-        } else if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE) {
+        } else if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE) {
           ledgerEntryTypeId = enums.ledgerEntryType.RECORD_FUNDS_OUT
           amount = -payload.amount.amount
         } else {
-          throw new Error('Action not allowed for reconciliationTransferPrepare')
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Action not allowed for reconciliationTransferPrepare')
         }
 
         // Insert transferParticipant records
@@ -851,7 +881,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
             })
           )
         }
-        for (let transferExtension of transferExtensions) {
+        for (const transferExtension of transferExtensions) {
           await knex('transferExtension').insert(transferExtension).transacting(trx)
         }
 
@@ -873,7 +903,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -883,7 +913,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
 
     const trxFunction = async (trx, doCommit = true) => {
       try {
-        let param1 = {
+        const param1 = {
           transferId: payload.transferId,
           transferStateId: enums.transferState.RESERVED,
           reason: payload.reason,
@@ -891,12 +921,12 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
           drUpdated: true,
           crUpdated: false
         }
-        let positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
+        const positionResult = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE &&
           positionResult.drPositionValue > 0) {
           payload.reason = 'Aborted due to insufficient funds'
-          payload.action = Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT
+          payload.action = Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT
           await TransferFacade.reconciliationTransferAbort(payload, transactionTimestamp, enums, trx)
         }
 
@@ -918,7 +948,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
     }
     return 0
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -929,18 +959,15 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferFulfilmentId = Uuid()
         const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
-            transferFulfilmentId,
             transferId
           })
           .transacting(trx)
 
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId,
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
@@ -950,9 +977,9 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
           })
           .transacting(trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_IN ||
-          payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
-          let param1 = {
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_IN ||
+          payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
+          const param1 = {
             transferId: payload.transferId,
             transferStateId: enums.transferState.COMMITTED,
             reason: payload.reason,
@@ -983,7 +1010,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
     }
     return 0
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -994,18 +1021,15 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // Persist transfer state and participant position change
-        const transferFulfilmentId = Uuid()
         const transferId = payload.transferId
         await knex('transferFulfilmentDuplicateCheck')
           .insert({
-            transferFulfilmentId,
             transferId
           })
           .transacting(trx)
 
         await knex('transferFulfilment')
           .insert({
-            transferFulfilmentId,
             transferId,
             ilpFulfilment: 0,
             completedDate: transactionTimestamp,
@@ -1015,8 +1039,8 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
           })
           .transacting(trx)
 
-        if (payload.action === Enum.adminTransferAction.RECORD_FUNDS_OUT_ABORT) {
-          let param1 = {
+        if (payload.action === Enum.Transfers.AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
+          const param1 = {
             transferId: payload.transferId,
             transferStateId: enums.transferState.ABORTED_REJECTED,
             reason: payload.reason,
@@ -1047,7 +1071,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
     }
     return 0
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -1068,7 +1092,7 @@ const getTransferParticipant = async (participantName, transferId) => {
         )
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -1077,8 +1101,7 @@ const TransferFacade = {
   getByIdLight,
   getAll,
   getTransferInfoToChangePosition,
-  saveTransferFulfilled: saveTransferFulfilled,
-  saveTransferAborted,
+  savePayeeTransferResponse,
   saveTransferPrepared,
   getTransferStateByTransferId,
   timeoutExpireReserved,

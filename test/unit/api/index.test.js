@@ -26,9 +26,8 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
 const Routes = require('../../../src/api/routes')
 const Setup = require('../../../src/shared/setup')
@@ -56,8 +55,8 @@ Test('Api index', indexTest => {
           uri: ''
         }
       }
-      server.start.returns(P.resolve({}))
-      Setup.initialize.returns(P.resolve(server))
+      server.start.returns(Promise.resolve({}))
+      Setup.initialize.returns(Promise.resolve(server))
 
       await require('../../../src/api/index')
       test.ok(Setup.initialize.calledWith({

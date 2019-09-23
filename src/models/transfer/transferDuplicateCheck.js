@@ -29,7 +29,28 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
+/**
+ * @function GetTransferDuplicateCheck
+ *
+ * @async
+ * @description This retrieves the transferDuplicateCheck table record if present
+ *
+ * @param {string} transferId - the transfer id
+ *
+ * @returns {object} - Returns the record from transferDuplicateCheck table, or throws an error if failed
+ */
+
+const getTransferDuplicateCheck = async (transferId) => {
+  Logger.debug(`get transferDuplicateCheck (transferId=${transferId})`)
+  try {
+    return Db.transferDuplicateCheck.findOne({ transferId })
+  } catch (err) {
+    throw new Error(err.message)
+  }
+}
 
 /**
  * @function SaveTransferDuplicateCheck
@@ -37,24 +58,18 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * @async
  * @description This inserts a record into transferDuplicateCheck table
  *
- * @param {object} transferDuplicateCheck - the object to be inserted with values of transferId and hash
- * Example:
- * ```
- * {
- *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
- *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8'
- * }
- * ```
+ * @param {string} transferId - the transfer id
+ * @param {string} hash - the hash of the transfer request payload
  *
  * @returns {integer} - Returns the database id of the inserted row, or throws an error if failed
  */
 
-const saveTransferDuplicateCheck = async (transferDuplicateCheck) => {
-  Logger.debug('save transferDuplicateCheck' + transferDuplicateCheck.toString())
+const saveTransferDuplicateCheck = async (transferId, hash) => {
+  Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    return Db.transferDuplicateCheck.insert(transferDuplicateCheck)
+    return Db.transferDuplicateCheck.insert({ transferId, hash })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -110,11 +125,12 @@ const checkAndInsertDuplicateHash = async (transferId, hash) => {
       }
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 module.exports = {
+  getTransferDuplicateCheck,
   saveTransferDuplicateCheck,
   checkAndInsertDuplicateHash
 }

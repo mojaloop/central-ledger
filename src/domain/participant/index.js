@@ -37,11 +37,9 @@ const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAcc
 const ParticipantFacade = require('../../models/participant/facade')
 const PositionFacade = require('../../models/position/facade')
 const Config = require('../../lib/config')
-const Utility = require('../../handlers/lib/utility')
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Uuid = require('uuid4')
-const Enum = require('../../lib/enum')
-const TransferEventType = Enum.transferEventType
-const TransferEventAction = Enum.transferEventAction
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 // Alphabetically ordered list of error texts used below
 const AccountInactiveErrorText = 'Account is currently set inactive'
@@ -54,30 +52,30 @@ const ParticipantAccountMismatchText = 'Participant/account mismatch'
 const ParticipantInactiveText = 'Participant is currently set inactive'
 const ParticipantInitialPositionExistsText = 'Participant Limit or Initial Position already set'
 const ParticipantNotFoundText = 'Participant does not exist'
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const create = async (payload) => {
   try {
-    const participant = await ParticipantModel.create({ name: payload.name })
-    return participant
+    return ParticipantModel.create({ name: payload.name })
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getAll = async () => {
   try {
-    let all = await ParticipantModel.getAll()
+    const all = await ParticipantModel.getAll()
     await Promise.all(all.map(async (participant) => {
       participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     }))
     return all
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getById = async (id) => {
-  let participant = await ParticipantModel.getById(id)
+  const participant = await ParticipantModel.getById(id)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
@@ -85,7 +83,7 @@ const getById = async (id) => {
 }
 
 const getByName = async (name) => {
-  let participant = await ParticipantModel.getByName(name)
+  const participant = await ParticipantModel.getByName(name)
   if (participant) {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
   }
@@ -97,9 +95,9 @@ const participantExists = (participant, checkIsActive = false) => {
     if (!checkIsActive || participant.isActive) {
       return participant
     }
-    throw new Error(ParticipantInactiveText)
+    throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInactiveText)
   }
-  throw new Error(ParticipantNotFoundText)
+  throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantNotFoundText)
 }
 
 const update = async (name, payload) => {
@@ -111,7 +109,7 @@ const update = async (name, payload) => {
     participant.currencyList = await ParticipantCurrencyModel.getByParticipantId(participant.participantId)
     return participant
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -120,7 +118,7 @@ const createParticipantCurrency = async (participantId, currencyId, ledgerAccoun
     const participantCurrency = await ParticipantCurrencyModel.create(participantId, currencyId, ledgerAccountTypeId, isActive)
     return participantCurrency
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -129,7 +127,7 @@ const createHubAccount = async (participantId, currencyId, ledgerAccountTypeId) 
     const participantCurrency = await ParticipantFacade.addHubAccountAndInitPosition(participantId, currencyId, ledgerAccountTypeId)
     return participantCurrency
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -137,19 +135,19 @@ const getParticipantCurrencyById = async (participantCurrencyId) => {
   try {
     return await ParticipantCurrencyModel.getById(participantCurrencyId)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const destroyByName = async (name) => {
   try {
-    let participant = await ParticipantModel.getByName(name)
+    const participant = await ParticipantModel.getByName(name)
     await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
     await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -177,7 +175,7 @@ const addEndpoint = async (name, payload) => {
     participantExists(participant)
     return ParticipantFacade.addEndpoint(participant.participantId, payload)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -200,10 +198,9 @@ const getEndpoint = async (name, type) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    const participantEndpoint = await ParticipantFacade.getEndpoint(participant.participantId, type)
-    return participantEndpoint
+    return ParticipantFacade.getEndpoint(participant.participantId, type)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -225,10 +222,9 @@ const getAllEndpoints = async (name) => {
   try {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
-    const participantEndpoints = await ParticipantFacade.getAllEndpoints(participant.participantId)
-    return participantEndpoints
+    return ParticipantFacade.getAllEndpoints(participant.participantId)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -250,7 +246,7 @@ const destroyParticipantEndpointByName = async (name) => {
     participantExists(participant)
     return ParticipantModel.destroyParticipantEndpointByParticipantId(participant.participantId)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -279,24 +275,24 @@ const destroyParticipantEndpointByName = async (name) => {
 
 const addLimitAndInitialPosition = async (participantName, limitAndInitialPositionObj) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
-    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.LedgerAccountType.SETTLEMENT)
+    const settlementAccount = await ParticipantFacade.getByNameAndCurrency(participantName, limitAndInitialPositionObj.currency, Enum.Accounts.LedgerAccountType.SETTLEMENT)
     const existingLimit = await ParticipantLimitModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingPosition = await ParticipantPositionModel.getByParticipantCurrencyId(participant.participantCurrencyId)
     const existingSettlementPosition = await ParticipantPositionModel.getByParticipantCurrencyId(settlementAccount.participantCurrencyId)
     if (existingLimit || existingPosition || existingSettlementPosition) {
-      throw new Error(ParticipantInitialPositionExistsText)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInitialPositionExistsText)
     }
-    let limitAndInitialPosition = limitAndInitialPositionObj
+    const limitAndInitialPosition = limitAndInitialPositionObj
     if (!limitAndInitialPosition.initialPosition) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSITION
     }
-    let payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
-    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
+    const payload = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
+    await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return ParticipantFacade.addLimitAndInitialPosition(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitAndInitialPosition, true)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -316,7 +312,7 @@ const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -336,7 +332,7 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
   try {
     return ParticipantPositionChangeModel.getByParticipantPositionId(participantPositionId)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -354,11 +350,11 @@ const getPositionChangeByParticipantPositionId = async (participantPositionId) =
 
 const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
     return ParticipantPositionModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -377,11 +373,11 @@ const destroyParticipantPositionByNameAndCurrency = async (name, currencyId) => 
 
 const destroyParticipantLimitByNameAndCurrency = async (name, currencyId) => {
   try {
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.LedgerAccountType.POSITION)
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
     return ParticipantLimitModel.destroyByParticipantCurrencyId(participant.participantCurrencyId)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -406,16 +402,16 @@ const getLimits = async (name, { currency = null, type = null }) => {
   try {
     let participant
     if (currency != null) {
-      participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
+      participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
       participantExists(participant)
       return ParticipantFacade.getParticipantLimitsByCurrencyId(participant.participantCurrencyId, type)
     } else {
       participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.LedgerAccountType.POSITION)
+      return ParticipantFacade.getParticipantLimitsByParticipantId(participant.participantId, type, Enum.Accounts.LedgerAccountType.POSITION)
     }
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -435,9 +431,9 @@ const getLimits = async (name, { currency = null, type = null }) => {
 
 const getLimitsForAllParticipants = async ({ currency = null, type = null }) => {
   try {
-    return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.LedgerAccountType.POSITION)
+    return ParticipantFacade.getLimitsForAllParticipants(currency, type, Enum.Accounts.LedgerAccountType.POSITION)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -466,19 +462,19 @@ const getLimitsForAllParticipants = async ({ currency = null, type = null }) => 
 
 const adjustLimits = async (name, payload) => {
   try {
-    let { limit, currency } = payload
-    const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.LedgerAccountType.POSITION)
+    const { limit, currency } = payload
+    const participant = await ParticipantFacade.getByNameAndCurrency(name, currency, Enum.Accounts.LedgerAccountType.POSITION)
     participantExists(participant)
-    let result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
+    const result = await ParticipantFacade.adjustLimits(participant.participantCurrencyId, limit)
     payload.name = name
-    await Utility.produceGeneralMessage(TransferEventType.NOTIFICATION, Enum.adminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Utility.ENUMS.STATE.SUCCESS)
+    await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Events.Event.Type.NOTIFICATION, Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, createLimitAdjustmentMessageProtocol(payload), Enum.Events.EventStatus.SUCCESS)
     return result
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-const createLimitAdjustmentMessageProtocol = (payload, action = Enum.adminNotificationActions.LIMIT_ADJUSTMENT, state = '', pp = '') => {
+const createLimitAdjustmentMessageProtocol = (payload, action = Enum.Transfers.AdminNotificationActions.LIMIT_ADJUSTMENT, state = '', pp = '') => {
   return {
     id: Uuid(),
     from: payload.name,
@@ -548,9 +544,9 @@ const createLimitAdjustmentMessageProtocol = (payload, action = Enum.adminNotifi
 const getPositions = async (name, query) => {
   try {
     if (query.currency) {
-      const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.LedgerAccountType.POSITION)
+      const participant = await ParticipantFacade.getByNameAndCurrency(name, query.currency, Enum.Accounts.LedgerAccountType.POSITION)
       participantExists(participant)
-      const result = await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION, query.currency, Enum.LedgerAccountType.POSITION)
+      const result = await PositionFacade.getByNameAndCurrency(name, Enum.Accounts.LedgerAccountType.POSITION, query.currency) // TODO this function only takes a max of 3 params, this has 4
       let position = {}
       if (Array.isArray(result) && result.length > 0) {
         position = {
@@ -563,8 +559,8 @@ const getPositions = async (name, query) => {
     } else {
       const participant = await ParticipantModel.getByName(name)
       participantExists(participant)
-      const result = await await PositionFacade.getByNameAndCurrency(name, Enum.LedgerAccountType.POSITION)
-      let positions = []
+      const result = await await PositionFacade.getByNameAndCurrency(name, Enum.Accounts.LedgerAccountType.POSITION)
+      const positions = []
       if (Array.isArray(result) && result.length > 0) {
         result.forEach(item => {
           positions.push({
@@ -577,7 +573,7 @@ const getPositions = async (name, query) => {
       return positions
     }
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -586,7 +582,7 @@ const getAccounts = async (name, query) => {
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     const result = await PositionFacade.getAllByNameAndCurrency(name, query.currency)
-    let positions = []
+    const positions = []
     if (Array.isArray(result) && result.length > 0) {
       result.forEach(item => {
         positions.push({
@@ -602,26 +598,26 @@ const getAccounts = async (name, query) => {
     }
     return positions
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const updateAccount = async (payload, params, enums) => {
   try {
-    let { name, id } = params
+    const { name, id } = params
     const participant = await ParticipantModel.getByName(name)
     participantExists(participant)
     const account = await ParticipantCurrencyModel.getById(id)
     if (!account) {
-      throw new Error(AccountNotFoundErrorText)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotFoundErrorText)
     } else if (account.participantId !== participant.participantId) {
-      throw new Error(ParticipantAccountMismatchText)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountMismatchText)
     } else if (account.ledgerAccountTypeId !== enums.ledgerAccountType.POSITION) {
-      throw new Error(AccountNotPositionTypeErrorText)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotPositionTypeErrorText)
     }
     return await ParticipantCurrencyModel.update(id, payload.isActive)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -629,7 +625,7 @@ const getLedgerAccountTypeName = async (name) => {
   try {
     return await LedgerAccountTypeModel.getLedgerAccountByName(name)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -637,7 +633,7 @@ const getParticipantAccount = async (accountParams) => {
   try {
     return await ParticipantCurrencyModel.getByName(accountParams)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -666,55 +662,55 @@ const createRecordFundsMessageProtocol = (payload, action = '', state = '', pp =
 }
 
 const setPayerPayeeFundsInOut = (fspName, payload, enums) => {
-  let { action } = payload
+  const { action } = payload
   const actions = {
-    'recordFundsIn': {
+    recordFundsIn: {
       payer: fspName,
       payee: enums.hubParticipant.name
     },
-    'recordFundsOutPrepareReserve': {
+    recordFundsOutPrepareReserve: {
       payer: enums.hubParticipant.name,
       payee: fspName
     },
-    'recordFundsOutCommit': {
+    recordFundsOutCommit: {
       payer: enums.hubParticipant.name,
       payee: fspName
     },
-    'recordFundsOutAbort': {
+    recordFundsOutAbort: {
       payer: enums.hubParticipant.name,
       payee: fspName
     }
   }
-  if (!actions[action]) throw new Error(ActionNotSupportedText)
+  if (!actions[action]) throw ErrorHandler.Factory.createInternalServerFSPIOPError(ActionNotSupportedText)
   return Object.assign(payload, actions[action])
 }
 
 const recordFundsInOut = async (payload, params, enums) => {
   try {
-    let { name, id, transferId } = params
+    const { name, id, transferId } = params
     const participant = await ParticipantModel.getByName(name)
     const currency = (payload.amount && payload.amount.currency) || null
     const isAccountActive = null
     const checkIsActive = true
     participantExists(participant, checkIsActive)
     const accounts = await ParticipantFacade.getAllAccountsByNameAndCurrency(name, currency, isAccountActive)
-    let accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
+    const accountMatched = accounts[accounts.map(account => account.participantCurrencyId).findIndex(i => i === id)]
     if (!accountMatched) {
-      throw new Error(ParticipantAccountCurrencyMismatchText)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantAccountCurrencyMismatchText)
     } else if (!accountMatched.accountIsActive) {
-      throw new Error(AccountInactiveErrorText)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountInactiveErrorText)
     } else if (accountMatched.ledgerAccountTypeId !== enums.ledgerAccountType.SETTLEMENT) {
-      throw new Error(AccountNotSettlementTypeErrorText)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(AccountNotSettlementTypeErrorText)
     }
     transferId && (payload.transferId = transferId)
-    let messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
+    const messageProtocol = createRecordFundsMessageProtocol(setPayerPayeeFundsInOut(name, payload, enums))
     messageProtocol.metadata.request = {
       params: params,
       enums: enums
     }
-    return await Utility.produceGeneralMessage(TransferEventType.ADMIN, TransferEventAction.TRANSFER, messageProtocol, Utility.ENUMS.STATE.SUCCESS)
+    return await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER, messageProtocol, Enum.Events.EventStatus.SUCCESS)
   } catch (err) {
-    throw err
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

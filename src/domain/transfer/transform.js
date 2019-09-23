@@ -1,7 +1,8 @@
 'use strict'
 
-const Util = require('../../lib/util')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Util = require('@mojaloop/central-services-shared').Util
+const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const transferProperties = [
   'transferId',
@@ -89,14 +90,14 @@ const fromSaveTransferPrepared = (t) => fromTransferAggregate({
   extensionList: t.transferExtensionsRecordList
 })
 
-const fromSaveTransferExecuted = (t) => {
+const fromSavePayeeTransferResponseExecuted = (t) => {
   return {
-    transferId: t.transferFulfilmentRecord.transferId,
-    transferFulfilmentId: t.transferFulfilmentRecord.transferFulfilmentId,
+    transferId: t.transferStateChangeRecord.transferId,
     transferState: t.transferStateChangeRecord.transferStateId,
-    completedTimestamp: t.transferFulfilmentRecord.completedDate,
-    fulfilment: t.transferFulfilmentRecord.ilpFulfilment,
-    extensionList: t.transferExtensionsRecordList
+    completedTimestamp: (t.transferFulfilmentRecord && t.transferFulfilmentRecord.completedDate) ||
+      t.transferStateChangeRecord.createdDate,
+    fulfilment: t.transferFulfilmentRecord && t.transferFulfilmentRecord.ilpFulfilment,
+    extensionList: t.transferExtensionRecordsList
   }
 }
 
@@ -111,18 +112,18 @@ const transformExtensionList = (extensionList) => {
 
 const transformTransferToFulfil = (transfer) => {
   try {
-    let result = {
+    const result = {
       fulfilment: transfer.fulfilment,
       completedTimestamp: transfer.completedTimestamp,
       transferState: transfer.transferStateEnumeration
     }
-    let extensionList = transformExtensionList(transfer.extensionList)
+    const extensionList = transformExtensionList(transfer.extensionList)
     if (extensionList.length > 0) {
       result.extensionList = extensionList
     }
     return Util.omitNil(result)
   } catch (err) {
-    throw new Error(`Unable to transform to fulfil response: ${err}`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to fulfil response: ${err}`)
   }
 }
 
@@ -134,10 +135,10 @@ const toTransfer = (t) => {
   } else if (t.isSaveTransferPrepared) {
     Logger.debug('In aggregate transfer transform for isSaveTransferPrepared')
     return Util.omitNil(fromSaveTransferPrepared(t)) // TODO: Remove this once the DB validation is done for 't'
-  } else if (t.saveTransferFulfilledExecuted) {
-    Logger.debug('In aggregate transfer transform for isSaveTransferExecuted')
-    return Util.omitNil(fromSaveTransferExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
-  } else throw new Error(`Unable to transform to transfer: ${t}`)
+  } else if (t.savePayeeTransferResponseExecuted) {
+    Logger.debug('In aggregate transfer transform for isSavePayeeTransferResponseExecuted')
+    return Util.omitNil(fromSavePayeeTransferResponseExecuted(t)) // TODO: Remove this once the DB validation is done for 't'
+  } else throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Unable to transform to transfer: ${t}`)
 }
 
 // const fromPayload = (payload) => Util.merge(payload, { id: UrlParser.idFromTransferUri(payload.id) })

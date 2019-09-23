@@ -37,19 +37,19 @@ const TransferFacade = require('../../../src/models/transfer/facade')
 const TransferFulfilmentDuplicateCheckModel = require('../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const TransferFulfilmentModel = require('../../../src/models/transfer/transferFulfilment')
 const TransferParticipantModel = require('../../../src/models/transfer/transferParticipant')
-const Enum = require('../../../src/lib/enum')
-const Time = require('../../../src/lib/time')
-const Uuid = require('uuid4')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Time = require('@mojaloop/central-services-shared').Util.Time
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 // TODO: add data to transferParticipant, transferParticipantRoleType, transferFulfilment
 
 exports.prepareData = async () => {
   try {
-    let transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
+    const transferDuplicateCheckResult = await TransferDuplicateCheckPreparationModule.prepareData() // participants + transferDuplicateCheck
 
-    let transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
+    const transferResult = await TransferPreparationModule.prepareData(transferDuplicateCheckResult.transfer) // transfer
 
-    let transferStateResults = TransferStatePreparationHelper.prepareData() // transfer seed
+    const transferStateResults = TransferStatePreparationHelper.prepareData() // transfer seed
 
     await TransferExtensionModel.saveTransferExtension({
       transferId: transferResult.transfer.transferId,
@@ -70,16 +70,14 @@ exports.prepareData = async () => {
       transferStateId: transferStateResults[0].transferStateId
     })
 
-    let transferStateChangeResult = await StateChangeModel.getByTransferId(transferResult.transfer.transferId)
-    let ilp = await IlpModel.getByTransferId(transferResult.transfer.transferId)
-    let extension = await TransferExtensionModel.getByTransferId(transferResult.transfer.transferId)
+    const transferStateChangeResult = await StateChangeModel.getByTransferId(transferResult.transfer.transferId)
+    const ilp = await IlpModel.getByTransferId(transferResult.transfer.transferId)
+    const extension = await TransferExtensionModel.getByTransferId(transferResult.transfer.transferId)
     // let transfer = await TransferFacade.getById(transferResult.transfer.transferId)
 
     const transferId = transferResult.transfer.transferId
-    const transferFulfilmentId = Uuid()
-    await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, 'helper.hash', transferFulfilmentId)
+    await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, 'helper.hash')
     await TransferFulfilmentModel.saveTransferFulfilment({
-      transferFulfilmentId,
       transferId,
       ilpFulfilment: 'helper.oAKAAA',
       completedDate: Time.getUTCString(new Date()),
@@ -91,8 +89,8 @@ exports.prepareData = async () => {
       transferParticipantId: transferDuplicateCheckResult.participantPayerResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayerResult.participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYER_DFSP,
-      ledgerEntryTypeId: Enum.LedgerAccountType.POSITION,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerAccountType.POSITION,
       amount: transferResult.transfer.amount
     })
 
@@ -100,8 +98,8 @@ exports.prepareData = async () => {
       transferParticipantId: transferDuplicateCheckResult.participantPayeeResult.participant.participantId,
       transferId: transferResult.transfer.transferId,
       participantCurrencyId: transferDuplicateCheckResult.participantPayeeResult.participantCurrencyId,
-      transferParticipantRoleTypeId: Enum.TransferParticipantRoleType.PAYEE_DFSP,
-      ledgerEntryTypeId: Enum.LedgerAccountType.POSITION,
+      transferParticipantRoleTypeId: Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP,
+      ledgerEntryTypeId: Enum.Accounts.LedgerAccountType.POSITION,
       amount: -transferResult.transfer.amount
     })
 
@@ -117,7 +115,7 @@ exports.prepareData = async () => {
       }
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -140,6 +138,6 @@ exports.deletePreparedData = async (transferId, payerName, payeeName) => {
       })
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

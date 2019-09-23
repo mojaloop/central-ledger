@@ -29,12 +29,13 @@
 const TransferPreparationModule = require('./transferTestHelper')
 const TransferModel = require('../../../src/models/transfer/facade')
 const IlpPacketModel = require('../../../src/models/transfer/ilpPacket')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.prepareData = async () => {
   try {
-    let transferResult = await TransferPreparationModule.prepareData()
-    let transfer = await TransferModel.getById(transferResult.transfer.transferId)
-    let ilp = await IlpPacketModel.getByTransferId(transferResult.transfer.transferId)
+    const transferResult = await TransferPreparationModule.prepareData()
+    const transfer = await TransferModel.getById(transferResult.transfer.transferId)
+    const ilp = await IlpPacketModel.getByTransferId(transferResult.transfer.transferId)
 
     return {
       ilp,
@@ -43,7 +44,7 @@ exports.prepareData = async () => {
       participantPayee: transferResult.participantPayeeResult
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -55,6 +56,6 @@ exports.deletePreparedData = async (ilpId, transferId, payerName, payeeName) => 
       return TransferPreparationModule.deletePreparedData(transferId, payerName, payeeName)
     })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

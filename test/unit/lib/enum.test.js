@@ -26,8 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../src/lib/enum')
 const Db = require('../../../src/lib/db')
 
@@ -102,42 +101,63 @@ Test('Enum test', async (enumTest) => {
         transferStateId: 'COMMITTED',
         enumeration: 'COMMITTED'
       }
+    ],
+    bulkProcessingState: [
+      {
+        bulkProcessingStateId: 1,
+        name: 'RECEIVED'
+      }
+    ],
+    bulkTransferState: [
+      {
+        bulkTransferStateId: 'RECEIVED',
+        enumeration: 'RECEIVED'
+      }
     ]
   }
 
   const allEnumExpected = {
     endpointType: {
-      'ALARM_NOTIFICATION_URL': 1,
-      'ALARM_NOTIFICATION_TOPIC': 2
+      ALARM_NOTIFICATION_URL: 1,
+      ALARM_NOTIFICATION_TOPIC: 2
     },
     hubParticipant: {
       participantId: 1,
       name: 'Hub'
     },
     ledgerAccountType: {
-      'POSITION': 1,
-      'SETTLEMENT': 2,
-      'HUB_SETTLEMENT': 3
+      POSITION: 1,
+      SETTLEMENT: 2,
+      HUB_SETTLEMENT: 3
     },
     ledgerEntryType: {
-      'PRINCIPLE_VALUE': 1,
-      'INTERCHANGE_FEE': 2,
-      'HUB_FEE': 3
+      PRINCIPLE_VALUE: 1,
+      INTERCHANGE_FEE: 2,
+      HUB_FEE: 3
     },
     participantLimitType: {
-      'NET_DEBIT_CAP': 1
+      NET_DEBIT_CAP: 1
     },
     transferParticipantRoleType: {
-      'PAYER_DFSP': 1,
-      'PAYEE_DFSP': 2
+      PAYER_DFSP: 1,
+      PAYEE_DFSP: 2
     },
     transferState: {
-      'ABORTED_REJECTED': 'ABORTED_REJECTED',
-      'COMMITTED': 'COMMITTED'
+      ABORTED_REJECTED: 'ABORTED_REJECTED',
+      COMMITTED: 'COMMITTED'
     },
     transferStateEnum: {
-      'ABORTED_REJECTED': 'ABORTED_REJECTED',
-      'COMMITTED': 'COMMITTED'
+      ABORTED_REJECTED: 'ABORTED_REJECTED',
+      COMMITTED: 'COMMITTED'
+    },
+    bulkProcessingState: {
+      RECEIVED: 1
+    },
+    bulkTransferState: {
+      RECEIVED: 'RECEIVED'
+    },
+    bulkTransferStateEnum: {
+      RECEIVED: 'RECEIVED'
     }
   }
 
@@ -164,6 +184,12 @@ Test('Enum test', async (enumTest) => {
     Db.transferState = {
       find: sandbox.stub()
     }
+    Db.bulkProcessingState = {
+      find: sandbox.stub()
+    }
+    Db.bulkTransferState = {
+      find: sandbox.stub()
+    }
 
     t.end()
   })
@@ -176,7 +202,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('endpointType should', async (endpointTypeTest) => {
     await endpointTypeTest.test('return the endpoints', async (test) => {
       try {
-        Db.endpointType.find.returns(P.resolve(allEnums.endpointType))
+        Db.endpointType.find.returns(Promise.resolve(allEnums.endpointType))
         const result = await Model.endpointType()
         test.deepEqual(result, allEnumExpected.endpointType, 'Results match')
         test.end()
@@ -221,7 +247,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('ledgerAccountType should', async (ledgerAccountTypeTest) => {
     await ledgerAccountTypeTest.test('return the ledgerAccountType', async (test) => {
       try {
-        Db.ledgerAccountType.find.returns(P.resolve(allEnums.ledgerAccountType))
+        Db.ledgerAccountType.find.returns(Promise.resolve(allEnums.ledgerAccountType))
         const result = await Model.ledgerAccountType()
         test.deepEqual(result, allEnumExpected.ledgerAccountType, 'Results match')
         test.end()
@@ -250,7 +276,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('ledgerEntryType should', async (ledgerEntryTypeTest) => {
     await ledgerEntryTypeTest.test('return the ledgerEntryType', async (test) => {
       try {
-        Db.ledgerEntryType.find.returns(P.resolve(allEnums.ledgerEntryType))
+        Db.ledgerEntryType.find.returns(Promise.resolve(allEnums.ledgerEntryType))
         const result = await Model.ledgerEntryType()
         test.deepEqual(result, allEnumExpected.ledgerEntryType, 'Results match')
         test.end()
@@ -279,7 +305,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('participantLimitType should', async (participantLimitTypeTest) => {
     await participantLimitTypeTest.test('return the participantLimitType', async (test) => {
       try {
-        Db.participantLimitType.find.returns(P.resolve(allEnums.participantLimitType))
+        Db.participantLimitType.find.returns(Promise.resolve(allEnums.participantLimitType))
         const result = await Model.participantLimitType()
         test.deepEqual(result, allEnumExpected.participantLimitType, 'Results match')
         test.end()
@@ -308,7 +334,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('transferParticipantRoleType should', async (transferParticipantRoleTypeTest) => {
     await transferParticipantRoleTypeTest.test('return the transferParticipantRoleType', async (test) => {
       try {
-        Db.transferParticipantRoleType.find.returns(P.resolve(allEnums.transferParticipantRoleType))
+        Db.transferParticipantRoleType.find.returns(Promise.resolve(allEnums.transferParticipantRoleType))
         const result = await Model.transferParticipantRoleType()
         test.deepEqual(result, allEnumExpected.transferParticipantRoleType, 'Results match')
         test.end()
@@ -337,7 +363,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('transferState should', async (transferStateTest) => {
     await transferStateTest.test('return the transferState', async (test) => {
       try {
-        Db.transferState.find.returns(P.resolve(allEnums.transferState))
+        Db.transferState.find.returns(Promise.resolve(allEnums.transferState))
         const result = await Model.transferState()
         test.deepEqual(result, allEnumExpected.transferState, 'Results match')
         test.end()
@@ -366,7 +392,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('transferStateEnum should', async (transferStateEnumTest) => {
     await transferStateEnumTest.test('return the transferStateEnum', async (test) => {
       try {
-        Db.transferState.find.returns(P.resolve(allEnums.transferState))
+        Db.transferState.find.returns(Promise.resolve(allEnums.transferState))
         const result = await Model.transferStateEnum()
         test.deepEqual(result, allEnumExpected.transferStateEnum, 'Results match')
         test.end()
@@ -392,16 +418,105 @@ Test('Enum test', async (enumTest) => {
     await transferStateEnumTest.end()
   })
 
+  await enumTest.test('bulkProcessingState should', async (bulkProcessingStateTest) => {
+    await bulkProcessingStateTest.test('return the bulkProcessingState', async (test) => {
+      try {
+        Db.bulkProcessingState.find.returns(Promise.resolve(allEnums.bulkProcessingState))
+        const result = await Model.bulkProcessingState()
+        test.deepEqual(result, allEnumExpected.bulkProcessingState, 'Results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`bulkProcessingState failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await bulkProcessingStateTest.test('throw error on error while getting bulkProcessingState', async (test) => {
+      try {
+        Db.bulkProcessingState.find.throws(new Error())
+        await Model.bulkProcessingState()
+        test.fail('should throw error')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
+    await bulkProcessingStateTest.end()
+  })
+
+  await enumTest.test('bulkTransferState should', async (bulkTransferStateTest) => {
+    await bulkTransferStateTest.test('return the bulkTransferState', async (test) => {
+      try {
+        Db.bulkTransferState.find.returns(Promise.resolve(allEnums.bulkTransferState))
+        const result = await Model.bulkTransferState()
+        test.deepEqual(result, allEnumExpected.bulkTransferState, 'Results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`bulkTransferState failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await bulkTransferStateTest.test('throw error on error while getting bulkTransferState', async (test) => {
+      try {
+        Db.bulkTransferState.find.throws(new Error())
+        await Model.bulkTransferState()
+        test.fail('should throw error')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
+    await bulkTransferStateTest.end()
+  })
+
+  await enumTest.test('bulkTransferStateEnum should', async (bulkTransferStateEnumTest) => {
+    await bulkTransferStateEnumTest.test('return the bulkTransferStateEnum', async (test) => {
+      try {
+        Db.bulkTransferState.find.returns(Promise.resolve(allEnums.bulkTransferState))
+        const result = await Model.bulkTransferStateEnum()
+        test.deepEqual(result, allEnumExpected.bulkTransferState, 'Results match')
+        test.end()
+      } catch (err) {
+        Logger.error(`bulkTransferStateEnum failed with error - ${err}`)
+        test.fail()
+        test.end()
+      }
+    })
+
+    await bulkTransferStateEnumTest.test('throw error on error while getting bulkTransferStateEnum', async (test) => {
+      try {
+        Db.bulkTransferState.find.throws(new Error())
+        await Model.bulkTransferStateEnum()
+        test.fail('should throw error')
+        test.end()
+      } catch (err) {
+        test.ok(err instanceof Error)
+        test.end()
+      }
+    })
+
+    await bulkTransferStateEnumTest.end()
+  })
+
   await enumTest.test('all should', async (allTest) => {
     await allTest.test('return all enums', async (test) => {
       try {
-        Db.endpointType.find.returns(P.resolve(allEnums.endpointType))
-        Db.participant.find.returns(P.resolve([allEnums.hubParticipant]))
-        Db.transferState.find.returns(P.resolve(allEnums.transferState))
-        Db.ledgerAccountType.find.returns(P.resolve(allEnums.ledgerAccountType))
-        Db.ledgerEntryType.find.returns(P.resolve(allEnums.ledgerEntryType))
-        Db.participantLimitType.find.returns(P.resolve(allEnums.participantLimitType))
-        Db.transferParticipantRoleType.find.returns(P.resolve(allEnums.transferParticipantRoleType))
+        Db.endpointType.find.returns(Promise.resolve(allEnums.endpointType))
+        Db.participant.find.returns(Promise.resolve([allEnums.hubParticipant]))
+        Db.transferState.find.returns(Promise.resolve(allEnums.transferState))
+        Db.ledgerAccountType.find.returns(Promise.resolve(allEnums.ledgerAccountType))
+        Db.ledgerEntryType.find.returns(Promise.resolve(allEnums.ledgerEntryType))
+        Db.participantLimitType.find.returns(Promise.resolve(allEnums.participantLimitType))
+        Db.transferParticipantRoleType.find.returns(Promise.resolve(allEnums.transferParticipantRoleType))
+        Db.bulkProcessingState.find.returns(Promise.resolve(allEnums.bulkProcessingState))
+        Db.bulkTransferState.find.returns(Promise.resolve(allEnums.bulkTransferState))
         const result = await Model.all()
         test.deepEqual(result, allEnumExpected, 'Results match')
         test.end()

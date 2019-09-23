@@ -28,12 +28,13 @@
 'use strict'
 
 const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.getById = async (id) => {
   try {
     return await Db.participant.findOne({ participantId: id })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -42,7 +43,7 @@ exports.getByName = async (name) => {
     const named = await Db.participant.findOne({ name })
     return named
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -51,19 +52,19 @@ exports.getAll = async () => {
     const participants = await Db.participant.find({}, { order: 'name asc' })
     return participants
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 exports.create = async (participant) => {
   try {
-    let result = await Db.participant.insert({
+    const result = await Db.participant.insert({
       name: participant.name,
       createdBy: 'unknown'
     })
     return result
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -71,7 +72,7 @@ exports.update = async (participant, isActive) => {
   try {
     return await Db.participant.update({ participantId: participant.participantId }, { isActive })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -79,7 +80,7 @@ exports.destroyByName = async (name) => {
   try {
     return await Db.participant.destroy({ name: name })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -87,6 +88,6 @@ exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
   try {
     return Db.participantEndpoint.destroy({ participantId: participantId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

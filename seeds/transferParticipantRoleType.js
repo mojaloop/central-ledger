@@ -26,24 +26,24 @@
 
 const transferParticipantRoleTypes = [
   {
-    'name': 'PAYER_DFSP',
-    'description': 'The participant is the Payer DFSP in this transfer and is sending the funds'
+    name: 'PAYER_DFSP',
+    description: 'The participant is the Payer DFSP in this transfer and is sending the funds'
   },
   {
-    'name': 'PAYEE_DFSP',
-    'description': 'The participant is the Payee DFSP in this transfer and is receiving the funds'
+    name: 'PAYEE_DFSP',
+    description: 'The participant is the Payee DFSP in this transfer and is receiving the funds'
   },
   {
-    'name': 'HUB',
-    'description': 'The participant is representing the Hub Operator'
+    name: 'HUB',
+    description: 'The participant is representing the Hub Operator'
   },
   {
-    'name': 'DFSP_SETTLEMENT',
-    'description': 'Indicates the settlement account'
+    name: 'DFSP_SETTLEMENT',
+    description: 'Indicates the settlement account'
   },
   {
-    'name': 'DFSP_POSITION',
-    'description': 'Indicates the position account'
+    name: 'DFSP_POSITION',
+    description: 'Indicates the position account'
   }
 ]
 

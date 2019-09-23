@@ -29,7 +29,7 @@
 const src = '../../../../src'
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const NullClient = require(`${src}/lib/sidecar/nullClient`)
 
 Test('Null SidecarClient', nullSidecarTest => {
@@ -48,7 +48,7 @@ Test('Null SidecarClient', nullSidecarTest => {
 
   nullSidecarTest.test('create should', createTest => {
     createTest.test('create new null client', test => {
-      let client = NullClient.create()
+      const client = NullClient.create()
       test.ok(client)
       test.end()
     })
@@ -58,7 +58,7 @@ Test('Null SidecarClient', nullSidecarTest => {
 
   nullSidecarTest.test('connect should', connectTest => {
     connectTest.test('log and return resolved promise immediately', test => {
-      let client = NullClient.create()
+      const client = NullClient.create()
 
       client.connect()
         .then(() => {
@@ -72,9 +72,9 @@ Test('Null SidecarClient', nullSidecarTest => {
 
   nullSidecarTest.test('write should', writeTest => {
     writeTest.test('log message', test => {
-      let client = NullClient.create()
+      const client = NullClient.create()
 
-      let msg = 'This is a test'
+      const msg = 'This is a test'
       client.write(msg)
       test.ok(Logger.debug.calledWith(`Sidecar disabled: writing message ${msg} in NullClient`))
       test.end()

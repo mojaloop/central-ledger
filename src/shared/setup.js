@@ -23,43 +23,54 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/
 
 'use strict'
 
-const Hapi = require('hapi')
-const ErrorHandling = require('@mojaloop/central-services-error-handling')
-const P = require('bluebird')
+const Hapi = require('@hapi/hapi')
 const Migrator = require('../lib/migrator')
 const Db = require('../lib/db')
+const ObjStoreDb = require('@mojaloop/central-object-store').Db
 const Plugins = require('./plugins')
 const Config = require('../lib/config')
 const Sidecar = require('../lib/sidecar')
 const RequestLogger = require('../lib/requestLogger')
 const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
-const Logger = require('@mojaloop/central-services-shared').Logger
-// const Participant = require('../domain/participant')
-const Boom = require('boom')
+const Logger = require('@mojaloop/central-services-logger')
 const RegisterHandlers = require('../handlers/register')
-// const KafkaCron = require('../handlers/lib/kafka').Cron
 const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const migrate = (runMigrations) => {
-  return runMigrations ? Migrator.migrate() : P.resolve()
+  return runMigrations ? Migrator.migrate() : true
 }
 const getEnums = (id) => {
   return Enums[id]()
 }
 const connectDatabase = async () => {
-  let result = await Db.connect(Config.DATABASE_URI)
-  return result
+  return Db.connect(Config.DATABASE_URI)
+}
+const connectMongoose = async () => {
+  if (!Config.MONGODB_DISABLED) {
+    try {
+      return ObjStoreDb.connect(Config.MONGODB_URI, {
+        promiseLibrary: global.Promise
+      })
+    } catch (error) {
+      Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
+      return null
+    }
+  } else {
+    return null
+  }
 }
 
 /**
@@ -88,9 +99,9 @@ const createServer = (port, modules) => {
       ],
       routes: {
         validate: {
-          options: ErrorHandling.validateRoutes(),
+          options: ErrorHandler.validateRoutes(),
           failAction: async (request, h, err) => {
-            throw Boom.boomify(err)
+            throw ErrorHandler.Factory.reformatFSPIOPError(err)
           }
         }
       }
@@ -139,7 +150,7 @@ const createServer = (port, modules) => {
  * @returns {Promise<boolean>} Returns true if Handlers were registered
  */
 const createHandlers = async (handlers) => {
-  let registeredHandlers = {
+  const registeredHandlers = {
     connection: {},
     register: {},
     ext: {},
@@ -148,40 +159,59 @@ const createHandlers = async (handlers) => {
     handlers: handlers
   }
 
-  for (let handler of handlers) {
+  for (const handler of handlers) {
     if (handler.enabled) {
       Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
-        case 'prepare':
+        case 'prepare': {
           await RegisterHandlers.transfers.registerPrepareHandler()
           // if (!Config.HANDLERS_CRON_DISABLED) {
           //   Logger.info('Starting Kafka Cron Jobs...')
           //   await KafkaCron.start('prepare')
           // }
           break
-        case 'position':
+        }
+        case 'position': {
           await RegisterHandlers.positions.registerPositionHandler()
           // if (!Config.HANDLERS_CRON_DISABLED) {
           //   Logger.info('Starting Kafka Cron Jobs...')
           //   await KafkaCron.start('position')
           // }
           break
-        case 'fulfil':
+        }
+        case 'fulfil': {
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
-        case 'timeout':
+        }
+        case 'timeout': {
           await RegisterHandlers.timeouts.registerTimeoutHandler()
           break
-        case 'admin':
+        }
+        case 'admin': {
           await RegisterHandlers.admin.registerAdminHandlers()
           break
-        case 'get':
+        }
+        case 'get': {
           await RegisterHandlers.transfers.registerGetHandler()
           break
-        default:
-          let error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
+        }
+        case 'bulkprepare': {
+          await RegisterHandlers.bulk.registerBulkPrepareHandler()
+          break
+        }
+        case 'bulkfulfil': {
+          await RegisterHandlers.bulk.registerBulkFulfilHandler()
+          break
+        }
+        case 'bulkprocessing': {
+          await RegisterHandlers.bulk.registerBulkProcessingHandler()
+          break
+        }
+        default: {
+          const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.error(error)
           throw new Error(error)
+        }
       }
     }
   }
@@ -217,24 +247,26 @@ const initializeInstrumentation = () => {
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
   await migrate(runMigrations)
   await connectDatabase()
+  await connectMongoose()
   await Sidecar.connect(service)
   initializeInstrumentation()
   let server
   switch (service) {
     case 'api':
+    case 'admin': {
       server = await createServer(port, modules)
       break
-    case 'admin':
-      server = await createServer(port, modules)
-      break
-    case 'handler':
+    }
+    case 'handler': {
       if (!Config.HANDLERS_API_DISABLED) {
         server = await createServer(port, modules)
       }
       break
-    default:
+    }
+    default: {
       Logger.error(`No valid service type ${service} found!`)
-      throw new Error(`No valid service type ${service} found!`)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
+    }
   }
 
   if (runHandlers) {

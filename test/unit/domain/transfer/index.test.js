@@ -29,7 +29,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Uuid = require('uuid4')
 const TransferService = require('../../../../src/domain/transfer')
 const TransferObjectTransform = require('../../../../src/domain/transfer/transform')
 const TransferModel = require('../../../../src/models/transfer/transfer')
@@ -40,8 +39,8 @@ const TransferFulfilmentModel = require('../../../../src/models/transfer/transfe
 const TransferDuplicateCheckModel = require('../../../../src/models/transfer/transferDuplicateCheck')
 const TransferFulfilmentDuplicateCheckModel = require('../../../../src/models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../../../src/models/transfer/transferErrorDuplicateCheck')
-const TransferState = require('../../../../src/lib/enum').TransferState
-const Logger = require('@mojaloop/central-services-shared').Logger
+const TransferInternalState = require('@mojaloop/central-services-shared').Enum.Transfers.TransferInternalState
+const Logger = require('@mojaloop/central-services-logger')
 const Crypto = require('crypto')
 
 const payload = {
@@ -72,7 +71,7 @@ hashFixture = hashSha256.digest(hashFixture).toString('base64').slice(0, -1) // 
 
 const transferStateChangeRecord = {
   transferId: payload.transferId,
-  transferStateId: TransferState.RECEIVED_PREPARE,
+  transferStateId: TransferInternalState.RECEIVED_PREPARE,
   reason: null,
   createdDate: new Date()
 }
@@ -86,29 +85,20 @@ const transferRecord = {
   createdDate: new Date()
 }
 
-const transferFulfilmentRecord = {
-  transferId: payload.transferId,
-  ilpFulfilment: 'oAKAAA',
-  completedDate: new Date() - 60000,
-  isValid: true,
-  settlementWindowId: null,
-  createdDate: new Date()
-}
-
-const saveTransferAbortedResult = {
-  saveTransferAbortedExecuted: true,
-  transferStateChangeRecord: {
-    transferId: '054ef1c9-901d-4570-9c4e-ad99c6bce7af',
-    transferStateId: 'RECEIVED_ERROR',
-    createdDate: '2019-03-07 18:40:25.026'
-  },
-  transferErrorRecord: {
-    transferStateChangeId: 200,
-    errorCode: '5100',
-    errorDescription: 'Payer aborted transfer without fulfilment',
-    createdDate: '2019-03-07 18:40:25.026'
-  }
-}
+// const saveTransferAbortedResult = {
+//   saveTransferAbortedExecuted: true,
+//   transferStateChangeRecord: {
+//     transferId: '054ef1c9-901d-4570-9c4e-ad99c6bce7af',
+//     transferStateId: 'RECEIVED_ERROR',
+//     createdDate: '2019-03-07 18:40:25.026'
+//   },
+//   transferErrorRecord: {
+//     errorCode: '5100',
+//     errorDescription: 'Payer aborted transfer without fulfilment',
+//     isError: true,
+//     createdDate: '2019-03-07 18:40:25.026'
+//   }
+// }
 
 Test('Transfer Service', transferIndexTest => {
   let sandbox
@@ -159,190 +149,36 @@ Test('Transfer Service', transferIndexTest => {
     preparedTest.end()
   })
 
-  transferIndexTest.test('getFulfilment should', getFulfilmentTest => {
-    getFulfilmentTest.test('return ilpFulfilment', async (test) => {
+  transferIndexTest.test('handlePayeeResponse should', handlePayeeResponseTest => {
+    handlePayeeResponseTest.test('commit transfer', async (test) => {
       try {
-        TransferFacade.getById.returns(Promise.resolve(transferRecord))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
-        const response = await TransferService.getFulfilment(payload.transferId)
-        test.equal(response, transferFulfilmentRecord.ilpFulfilment)
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw TransferNotFoundError', async (test) => {
-      try {
-        TransferFacade.getById.returns(Promise.resolve(null))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'TransferNotFoundError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw TransferNotConditionalError', async (test) => {
-      try {
-        const transfer = Object.assign({}, transferRecord, { ilpCondition: null })
-        TransferFacade.getById.returns(Promise.resolve(transfer))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilmentRecord))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'TransferNotConditionalError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw TransferNotFoundError when looking up transfer fulfilment', async (test) => {
-      try {
-        // const transfer = Object.assign({}, transferRecord, {ilpCondition: null})
-        TransferFacade.getById.returns(Promise.resolve(transferRecord))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(null))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'TransferNotFoundError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.test('throw MissingFulfilmentError when looking up transfer fulfilment', async (test) => {
-      try {
-        const transferFulfilment = Object.assign({}, transferFulfilmentRecord, { ilpFulfilment: null })
-        TransferFacade.getById.returns(Promise.resolve(transferRecord))
-        TransferFulfilmentModel.getByTransferId.returns(Promise.resolve(transferFulfilment))
-        await TransferService.getFulfilment(payload.transferId)
-        test.fail('Error not thrown!')
-        test.end()
-      } catch (err) {
-        Logger.error(`getFulfilment failed with error - ${err}`)
-        test.equal(err.name, 'MissingFulfilmentError')
-        test.end()
-      }
-    })
-
-    getFulfilmentTest.end()
-  })
-
-  transferIndexTest.test('expire should', expireTest => {
-    expireTest.test('be called', async (test) => {
-      try {
-        await TransferService.expire()
-        test.ok(true)
-        test.end()
-      } catch (err) {
-        Logger.error(`expire failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-    expireTest.end()
-  })
-
-  transferIndexTest.test('fulfil should', fulfilTest => {
-    fulfilTest.test('commit transfer', async (test) => {
-      try {
-        TransferFacade.saveTransferFulfilled.returns(Promise.resolve(transferRecord))
+        TransferFacade.savePayeeTransferResponse.returns(Promise.resolve(transferRecord))
         TransferObjectTransform.toTransfer.returns(payload)
-        const response = await TransferService.fulfil(payload.transferId, payload)
+        const response = await TransferService.handlePayeeResponse(payload.transferId, payload)
         test.equal(response, payload)
         test.end()
       } catch (err) {
-        Logger.error(`fulfil failed with error - ${err}`)
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
         test.fail()
         test.end()
       }
     })
 
-    fulfilTest.test('throw error', async (test) => {
+    handlePayeeResponseTest.test('throw error', async (test) => {
       try {
-        TransferFacade.saveTransferFulfilled.throws(new Error())
+        TransferFacade.savePayeeTransferResponse.throws(new Error())
         TransferObjectTransform.toTransfer.returns(payload)
-        await TransferService.fulfil(payload.transferId, payload)
+        await TransferService.handlePayeeResponse(payload.transferId, payload)
         test.fail('Error not thrown')
         test.end()
       } catch (err) {
-        Logger.error(`fulfil failed with error - ${err}`)
+        Logger.error(`handlePayeeResponse failed with error - ${err}`)
         test.pass('Error thrown')
         test.end()
       }
     })
 
-    fulfilTest.end()
-  })
-
-  transferIndexTest.test('reject should', rejectTest => {
-    rejectTest.test('commit transfer', async (test) => {
-      try {
-        TransferFacade.saveTransferFulfilled.returns(Promise.resolve(transferRecord))
-        TransferObjectTransform.toTransfer.returns(payload)
-        const response = await TransferService.reject(payload.transferId, payload)
-        test.equal(response, payload)
-        test.end()
-      } catch (err) {
-        Logger.error(`reject failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    rejectTest.test('throw error', async (test) => {
-      try {
-        TransferFacade.saveTransferFulfilled.throws(new Error())
-        TransferObjectTransform.toTransfer.returns(payload)
-        await TransferService.reject(payload.transferId, payload)
-        test.fail('Error not thrown')
-        test.end()
-      } catch (err) {
-        Logger.error(`reject failed with error - ${err}`)
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-
-    rejectTest.end()
-  })
-
-  transferIndexTest.test('abort should', abortTest => {
-    abortTest.test('abort transfer', async (test) => {
-      try {
-        TransferFacade.saveTransferAborted.returns(Promise.resolve(saveTransferAbortedResult))
-        const response = await TransferService.abort(payload.transferId, payload)
-        test.deepEqual(response, saveTransferAbortedResult)
-        test.end()
-      } catch (err) {
-        Logger.error(`abort failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    abortTest.test('throw error', async (test) => {
-      try {
-        TransferFacade.saveTransferAborted.throws(new Error())
-        await TransferService.abort(payload.transferId, payload)
-        test.fail('Error not thrown')
-        test.end()
-      } catch (err) {
-        Logger.error(`abort failed with error - ${err}`)
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-
-    abortTest.end()
+    handlePayeeResponseTest.end()
   })
 
   transferIndexTest.test('logTransferError should', logTransferErrorTest => {
@@ -401,58 +237,7 @@ Test('Transfer Service', transferIndexTest => {
       }
     })
 
-    validateDuplicateHashTest.test('validate against transfer fulfilment model', async (test) => {
-      try {
-        const transferFulfilmentId = Uuid()
-        TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture, transferFulfilmentId).returns({
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        })
-        const expected = {
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        }
-
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, transferFulfilmentId)
-        test.deepEqual(result, expected, 'results match')
-        test.ok(TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('validate against transfer error model', async (test) => {
-      try {
-        const transferFulfilmentId = Uuid()
-        const isTransferError = true
-        TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns({
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        })
-        const expected = {
-          existsMatching: true,
-          existsNotMatching: false,
-          isValid: true
-        }
-
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload, transferFulfilmentId, isTransferError)
-        test.deepEqual(result, expected, 'results match')
-        test.ok(TransferErrorDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('hash exists and not matches', async (test) => {
+    validateDuplicateHashTest.test('hash exists and not matched', async (test) => {
       try {
         TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({
           existsMatching: false,

@@ -2,7 +2,6 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
@@ -32,7 +31,7 @@ Test('cli', async (cliTest) => {
       sandbox = Sinon.createSandbox()
 
       SetupStub = {
-        initialize: sandbox.stub().returns(P.resolve())
+        initialize: sandbox.stub().returns(Promise.resolve())
       }
 
       process.argv = []
@@ -58,7 +57,10 @@ Test('cli', async (cliTest) => {
         '--get',
         '--fulfil',
         '--timeout',
-        '--admin'
+        '--admin',
+        '--bulkprepare',
+        '--bulkfulfil',
+        '--bulkprocessing'
       ]
 
       process.argv = argv
@@ -97,13 +99,31 @@ Test('cli', async (cliTest) => {
         enabled: true
       }
 
+      const bulkprepareHandler = {
+        type: 'bulkprepare',
+        enabled: true
+      }
+
+      const bulkfulfilHandler = {
+        type: 'bulkfulfil',
+        enabled: true
+      }
+
+      const bulkprocessingHandler = {
+        type: 'bulkprocessing',
+        enabled: true
+      }
+
       const modulesList = [
         prepareHandler,
         positionHandler,
         getHandler,
         fulfilHandler,
         timeoutHandler,
-        adminHandler
+        adminHandler,
+        bulkprepareHandler,
+        bulkfulfilHandler,
+        bulkprocessingHandler
         // rejectHandler
       ]
 

@@ -22,8 +22,10 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Valentin Genev <valentin.genev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -32,18 +34,16 @@
  * @module src/handlers/transfers
  */
 
-const Logger = require('@mojaloop/central-services-shared').Logger
-const Utility = require('../lib/utility')
-const Kafka = require('../lib/kafka')
-const Enum = require('../../lib/enum')
-const Time = require('../../lib/time')
-const TransferState = Enum.TransferState
-const TransferEventType = Enum.transferEventType
-const AdminTransferAction = Enum.adminTransferAction
+const Logger = require('@mojaloop/central-services-logger')
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Time = require('@mojaloop/central-services-shared').Util.Time
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Config = require('../../lib/config')
 const TransferService = require('../../domain/transfer')
 const Db = require('../../lib/db')
-const httpPostRelatedActions = [AdminTransferAction.RECORD_FUNDS_IN, AdminTransferAction.RECORD_FUNDS_OUT_PREPARE_RESERVE]
-const httpPutRelatedActions = [AdminTransferAction.RECORD_FUNDS_OUT_COMMIT, AdminTransferAction.RECORD_FUNDS_OUT_ABORT]
+const httpPostRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_IN, Enum.Events.Event.Action.RECORD_FUNDS_OUT_PREPARE_RESERVE]
+const httpPutRelatedActions = [Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT, Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT]
 const allowedActions = [].concat(httpPostRelatedActions).concat(httpPutRelatedActions)
 
 const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
@@ -52,7 +52,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
 
   Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry`)
   // Save the valid transfer into the database
-  if (payload.action === AdminTransferAction.RECORD_FUNDS_IN) {
+  if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_IN) {
     Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::newEntry::RECORD_FUNDS_IN`)
     return knex.transaction(async trx => {
       try {
@@ -62,7 +62,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
   } else {
@@ -74,7 +74,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await trx.commit
       } catch (err) {
         await trx.rollback
-        throw err
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
   }
@@ -85,16 +85,16 @@ const changeStatusOfRecordFundsOut = async (payload, transferId, transactionTime
   const transferState = await TransferService.getTransferState(transferId)
   if (!existingTransfer) {
     Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::notFound`)
-  } else if (transferState.transferStateId !== TransferState.RESERVED) {
+  } else if (transferState.transferStateId !== Enum.Transfers.TransferState.RESERVED) {
     Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::nonReservedState`)
   } else if (new Date(existingTransfer.expirationDate) <= new Date()) {
     Logger.info(`AdminTransferHandler::${payload.action}::validationFailed::transferExpired`)
   } else {
     Logger.info(`AdminTransferHandler::${payload.action}::validationPassed`)
-    if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_COMMIT) {
+    if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_COMMIT) {
       Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_COMMIT`)
       await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums)
-    } else if (payload.action === AdminTransferAction.RECORD_FUNDS_OUT_ABORT) {
+    } else if (payload.action === Enum.Events.Event.Action.RECORD_FUNDS_OUT_ABORT) {
       Logger.info(`AdminTransferHandler::${payload.action}::validationPassed::RECORD_FUNDS_OUT_ABORT`)
       payload.amount = {
         amount: existingTransfer.amount,
@@ -113,9 +113,9 @@ const transferExists = async (payload, transferId) => {
     Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::transfer state not found`)
   } else {
     const transferStateEnum = currentTransferState.enumeration
-    if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED_REJECTED) {
+    if (transferStateEnum === Enum.Transfers.TransferState.COMMITTED || transferStateEnum === Enum.Transfers.TransferInternalState.ABORTED_REJECTED) {
       Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::request already finalized`)
-    } else if (transferStateEnum === TransferState.RECEIVED_PREPARE || transferStateEnum === TransferState.RESERVED) {
+    } else if (transferStateEnum === Enum.Transfers.TransferInternalState.RECEIVED_PREPARE || transferStateEnum === Enum.Transfers.TransferState.RESERVED) {
       Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsMatching::previous request still in progress do nothing`)
     }
   }
@@ -125,7 +125,7 @@ const transferExists = async (payload, transferId) => {
 const transfer = async (error, messages) => {
   if (error) {
     Logger.error(error)
-    throw new Error()
+    throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   try {
@@ -139,7 +139,7 @@ const transfer = async (error, messages) => {
     const transferId = message.value.id
 
     if (!payload) {
-      Logger.info(`AdminTransferHandler::validationFailed`)
+      Logger.info('AdminTransferHandler::validationFailed')
       // TODO: Cannot be saved because no payload has been provided. What action should be taken?
       return false
     }
@@ -152,9 +152,9 @@ const transfer = async (error, messages) => {
     let consumer
     try {
       consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-    } catch (e) {
+    } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(e)
+      Logger.error(err)
       return true
     }
     if (!allowedActions.includes(payload.action)) {
@@ -173,11 +173,11 @@ const transfer = async (error, messages) => {
     } else {
       await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
     }
-    await Utility.commitMessageSync(kafkaTopic, consumer, message)
+    await Kafka.commitMessageSync(kafkaTopic, consumer, message)
     return true
-  } catch (error) {
-    Logger.error(error)
-    throw error
+  } catch (err) {
+    Logger.error(err)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -193,15 +193,15 @@ const registerTransferHandler = async () => {
   try {
     const transferHandler = {
       command: transfer,
-      topicName: Utility.transformGeneralTopicName(TransferEventType.ADMIN, TransferEventType.TRANSFER),
-      config: Utility.getKafkaConfig(Utility.ENUMS.CONSUMER, TransferEventType.ADMIN.toUpperCase(), TransferEventType.TRANSFER.toUpperCase())
+      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER),
+      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.ADMIN.toUpperCase(), Enum.Events.Event.Action.TRANSFER.toUpperCase())
     }
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
     await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    Logger.error(err)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -217,8 +217,8 @@ const registerAllHandlers = async () => {
   try {
     await registerTransferHandler()
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

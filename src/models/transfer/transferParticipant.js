@@ -25,13 +25,14 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 
 const saveTransferParticipant = async (record) => {
   Logger.debug('save transferParticipant' + record.toString())
   try {
     return await Db.transferParticipant.insert(record)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

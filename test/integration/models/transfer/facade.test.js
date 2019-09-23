@@ -31,7 +31,7 @@
 
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const HelperModule = require('../../helpers')
@@ -59,7 +59,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
 
   await transferReadModelTest.test('get the created transfer test', async function (assert) {
     try {
-      let transfers = await TransferFacade.getAll()
+      const transfers = await TransferFacade.getAll()
       assert.true(transfers.length >= 1, 'one or more transfers are returned')
       assert.equal(transfers[0].transferId, transferPrepareResult.transfer.transferId)
       assert.end()
@@ -72,7 +72,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
 
   await transferReadModelTest.test('get the created transfer change test', async (assert) => {
     try {
-      let transfer = await TransferFacade.getById(transferPrepareResult.transfer.transferId)
+      const transfer = await TransferFacade.getById(transferPrepareResult.transfer.transferId)
       assert.equal(transfer.transferId, transferPrepareResult.transfer.transferId, 'created and read transfer are equal')
       assert.end()
     } catch (err) {

@@ -33,7 +33,7 @@
  * @module Handlers CLI Startup
  */
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../lib/config')
 const Setup = require('../shared/setup')
 const PJson = require('../../package.json')
@@ -48,7 +48,7 @@ Program
   .description('CLI to manage Handlers')
 
 Program.command('handler') // sub-command name, coffeeType = type, required
-  .alias('h') // alternative sub-command is `o`
+  .alias('h') // alternative sub-command is 'o'
   .description('Start a specified Handler') // command description
   .option('--prepare', 'Start the Prepare Handler')
   .option('--position', 'Start the Position Handler')
@@ -56,55 +56,82 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--fulfil', 'Start the Fulfil Handler')
   .option('--timeout', 'Start the Timeout Handler')
   .option('--admin', 'Start the Admin Handler')
+  .option('--bulkprepare', 'Start the Bulk Prepare Handler')
+  .option('--bulkfulfil', 'Start the Bulk Fulfil Handler')
+  .option('--bulkprocessing', 'Start the Bulk Processing Handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
   .action(async (args) => {
-    let handlerList = []
+    const handlerList = []
     if (args.prepare) {
-      Logger.debug(`CLI: Executing --prepare`)
-      let handler = {
+      Logger.debug('CLI: Executing --prepare')
+      const handler = {
         type: 'prepare',
         enabled: true
       }
       handlerList.push(handler)
     }
     if (args.position) {
-      Logger.debug(`CLI: Executing --position`)
-      let handler = {
+      Logger.debug('CLI: Executing --position')
+      const handler = {
         type: 'position',
         enabled: true
       }
       handlerList.push(handler)
     }
     if (args.get) {
-      Logger.debug(`CLI: Executing --get`)
-      let handler = {
+      Logger.debug('CLI: Executing --get')
+      const handler = {
         type: 'get',
         enabled: true
       }
       handlerList.push(handler)
     }
     if (args.fulfil) {
-      Logger.debug(`CLI: Executing --fulfil`)
-      let handler = {
+      Logger.debug('CLI: Executing --fulfil')
+      const handler = {
         type: 'fulfil',
         enabled: true
       }
       handlerList.push(handler)
     }
     if (args.timeout) {
-      Logger.debug(`CLI: Executing --timeout`)
-      let handler = {
+      Logger.debug('CLI: Executing --timeout')
+      const handler = {
         type: 'timeout',
         enabled: true
       }
       handlerList.push(handler)
     }
     if (args.admin) {
-      Logger.debug(`CLI: Executing --admin`)
-      let handler = {
+      Logger.debug('CLI: Executing --admin')
+      const handler = {
         type: 'admin',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkprepare) {
+      Logger.debug('CLI: Executing --bulkprepare')
+      const handler = {
+        type: 'bulkprepare',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkfulfil) {
+      Logger.debug('CLI: Executing --bulkfulfil')
+      const handler = {
+        type: 'bulkfulfil',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkprocessing) {
+      Logger.debug('CLI: Executing --bulkprocessing')
+      const handler = {
+        type: 'bulkprocessing',
         enabled: true
       }
       handlerList.push(handler)

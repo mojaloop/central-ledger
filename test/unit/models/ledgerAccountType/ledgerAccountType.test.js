@@ -53,7 +53,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     createdDate: '2018-10-23 14:17:07'
   }
 
-  let accountParams = {
+  const accountParams = {
     participantId: participantCurrency.participantId,
     currencyId: 'USD',
     ledgerAccountTypeId: ledgerAccountType.ledgerAccountTypeId,
@@ -85,7 +85,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
   await ledgerAccountTypeTest.test('get a ledger account type', async (assert) => {
     try {
       Db.participantCurrency.findOne.withArgs(accountParams).returns(participantCurrency)
-      let result = await participantCurrencyModel.getByName(accountParams)
+      const result = await participantCurrencyModel.getByName(accountParams)
       assert.equal(JSON.stringify(result), JSON.stringify(participantCurrency))
       assert.end()
     } catch (err) {
@@ -121,7 +121,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
   await ledgerAccountTypeTest.test('ledger account name', async (assert) => {
     try {
       Db.ledgerAccountType.findOne.withArgs(name).returns(ledgerAccountType)
-      let result = await Model.getLedgerAccountByName(name.name)
+      const result = await Model.getLedgerAccountByName(name.name)
       assert.equal(JSON.stringify(result), JSON.stringify(ledgerAccountType))
       assert.end()
     } catch (err) {

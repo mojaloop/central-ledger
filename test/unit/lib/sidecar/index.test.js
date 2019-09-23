@@ -10,7 +10,7 @@ const Proxyquire = require('proxyquire')
 
 Test('Sidecar', sidecarTest => {
   let oldSidecar
-  let sidecarSettings = { HOST: 'local', PORT: 1234, CONNECT_TIMEOUT: 10000, RECONNECT_INTERVAL: 2000 }
+  const sidecarSettings = { HOST: 'local', PORT: 1234, CONNECT_TIMEOUT: 10000, RECONNECT_INTERVAL: 2000 }
   let sandbox
   let stubs
   let nullClientCreateStub
@@ -49,7 +49,7 @@ Test('Sidecar', sidecarTest => {
     })
 
     importTest.test('return sidecar client if not disabled', test => {
-      let sidecarStub = { 'on': sandbox.stub(), 'write': sandbox.stub() }
+      const sidecarStub = { on: sandbox.stub(), write: sandbox.stub() }
       clientCreateStub.returns(sidecarStub)
 
       Proxyquire(`${src}/lib/sidecar`, stubs)
@@ -70,10 +70,10 @@ Test('Sidecar', sidecarTest => {
 
   sidecarTest.test('connect should', connectTest => {
     connectTest.test('call sidecar client connect', test => {
-      let sidecarStub = { 'on': sandbox.stub(), 'connect': sandbox.stub() }
+      const sidecarStub = { on: sandbox.stub(), connect: sandbox.stub() }
       clientCreateStub.returns(sidecarStub)
 
-      let Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
+      const Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
 
       Sidecar.connect()
       test.ok(sidecarStub.connect.calledOnce)
@@ -85,10 +85,10 @@ Test('Sidecar', sidecarTest => {
 
   sidecarTest.test('write should', writeTest => {
     writeTest.test('write to sidecar client', test => {
-      let sidecarStub = { 'on': sandbox.stub(), 'write': sandbox.stub() }
+      const sidecarStub = { on: sandbox.stub(), write: sandbox.stub() }
       clientCreateStub.returns(sidecarStub)
 
-      let Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
+      const Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
 
       const msg = 'message'
       Sidecar.write(msg)
@@ -101,12 +101,12 @@ Test('Sidecar', sidecarTest => {
 
   sidecarTest.test('logRequest should', logRequestTest => {
     logRequestTest.test('write to sidecar client with request message', test => {
-      let sidecarStub = { 'on': sandbox.stub(), 'write': sandbox.stub() }
+      const sidecarStub = { on: sandbox.stub(), write: sandbox.stub() }
       clientCreateStub.returns(sidecarStub)
 
-      let Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
+      const Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
 
-      let now = new Date()
+      const now = new Date()
       Moment.utc.returns(now)
 
       const request = { method: 'post', url: { path: 'path' }, body: 'body', auth: 'auth' }
@@ -123,11 +123,11 @@ Test('Sidecar', sidecarTest => {
 
   sidecarTest.test('receiving close event should', closeEventTest => {
     closeEventTest.test('throw error', test => {
-      let sidecarStub = new EventEmitter()
+      const sidecarStub = new EventEmitter()
       sidecarStub.connect = sandbox.stub()
       clientCreateStub.returns(sidecarStub)
 
-      let Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
+      const Sidecar = Proxyquire(`${src}/lib/sidecar`, stubs)
 
       Sidecar.connect()
 

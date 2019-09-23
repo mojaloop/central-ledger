@@ -25,21 +25,23 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getById = async (transferId) => {
   try {
     return await Db.transfer.findOne({ transferId: transferId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const saveTransfer = async (record) => {
   Logger.debug('save transfer' + record.toString())
   try {
-    return await Db.transfer.insert(record)
+    return Db.transfer.insert(record)
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
@@ -48,7 +50,7 @@ const destroyById = async (id) => {
   try {
     await Db.transfer.destroy({ transferId: id })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -56,6 +58,7 @@ const truncateTransfer = async () => {
   try {
     return await Db.transfer.truncate()
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }

@@ -4,6 +4,7 @@ const Client = require('@mojaloop/forensic-logging-client')
 const NullClient = require('./nullClient')
 const Config = require('../config')
 const Moment = require('moment')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const sidecar = createClient()
 
@@ -12,7 +13,7 @@ function createClient () {
     return NullClient.create()
   }
 
-  let sc = Client.create({
+  const sc = Client.create({
     host: Config.SIDECAR.HOST,
     port: Config.SIDECAR.PORT,
     connectTimeout: Config.SIDECAR.CONNECT_TIMEOUT,
@@ -20,7 +21,7 @@ function createClient () {
   })
 
   sc.on('close', () => {
-    throw new Error('Sidecar connection closed')
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Sidecar connection closed')
   })
 
   return sc

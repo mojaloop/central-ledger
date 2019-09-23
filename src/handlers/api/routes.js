@@ -22,22 +22,22 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Miguel de Barros <miguel.debarros@modusbox.com>
+ * ModusBox
+ - Miguel de Barros <miguel.debarros@modusbox.com>
 
  --------------
  ******/
 
 'use strict'
 
+const RootHandler = require('../../api/root/handler')
 const tags = ['api', 'root']
 
 module.exports = [
   {
     method: 'GET',
     path: '/health',
-    handler: function (request, h) {
-      return h.response({ status: 'OK' }).code(200)
-    },
+    handler: RootHandler.getHealth,
     options: {
       tags
     }

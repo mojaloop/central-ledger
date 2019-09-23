@@ -2,12 +2,14 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const P = require('bluebird')
 const Handlers = require('../../../src/handlers/register')
-const TransferHandler = require('../../../src/handlers/transfers/handler')
-const PositionHandler = require('../../../src/handlers/positions/handler')
-const TimeoutHandler = require('../../../src/handlers/timeouts/handler')
-const AdminHandler = require('../../../src/handlers/admin/handler')
+const TransferHandlers = require('../../../src/handlers/transfers/handler')
+const PositionHandlers = require('../../../src/handlers/positions/handler')
+const TimeoutHandlers = require('../../../src/handlers/timeouts/handler')
+const AdminHandlers = require('../../../src/handlers/admin/handler')
+const BulkTransferHandlers = require('../../../src/handlers/bulk/prepare/handler')
+const BulkProcessingHandlers = require('../../../src/handlers/bulk/processing/handler')
+const BulkFulfilHandlers = require('../../../src/handlers/bulk/fulfil/handler')
 const Proxyquire = require('proxyquire')
 
 Test('handlers', handlersTest => {
@@ -15,10 +17,13 @@ Test('handlers', handlersTest => {
 
   handlersTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(PositionHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(TransferHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(TimeoutHandler, 'registerAllHandlers').returns(P.resolve(true))
-    sandbox.stub(AdminHandler, 'registerAllHandlers').returns(P.resolve(true))
+    sandbox.stub(PositionHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(TransferHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(TimeoutHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(AdminHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(BulkTransferHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(BulkProcessingHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
+    sandbox.stub(BulkFulfilHandlers, 'registerAllHandlers').returns(Promise.resolve(true))
     test.end()
   })
 
@@ -35,8 +40,8 @@ Test('handlers', handlersTest => {
     })
 
     registerAllTest.test('throw error on Handlers.registerAllHandlers', async (test) => {
-      let errorMessage = 'require-glob Stub ERROR'
-      let HandlersStub = Proxyquire('../../../src/handlers/register', {
+      const errorMessage = 'require-glob Stub ERROR'
+      const HandlersStub = Proxyquire('../../../src/handlers/register', {
         'require-glob': sandbox.stub().throws(new Error(errorMessage))
       })
       try {
@@ -52,7 +57,7 @@ Test('handlers', handlersTest => {
 
     registerAllTest.test('throw error when transfer handler throws error', async (test) => {
       try {
-        sandbox.stub(TransferHandler, 'registerAllHandlers').throws(new Error())
+        sandbox.stub(TransferHandlers, 'registerAllHandlers').throws(new Error())
         await Handlers.registerAllHandlers()
         test.fail('Error not thrown')
         test.end()

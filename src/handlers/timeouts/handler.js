@@ -22,7 +22,9 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
 
  --------------
  ******/
@@ -33,17 +35,16 @@
  */
 
 const CronJob = require('cron').CronJob
-const Logger = require('@mojaloop/central-services-shared').Logger
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
-const Enum = require('../../lib/enum')
-const Utility = require('../lib/utility')
-const Errors = require('../../lib/errors')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Utility = require('@mojaloop/central-services-shared').Util
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const EventSdk = require('@mojaloop/event-sdk')
 
 let timeoutJob
 let isRegistered
-const errorCodeInternal = 3300
-const errorDescriptionInternal = Errors.getErrorDescription(errorCodeInternal)
 
 /**
  * @function TransferTimeoutHandler
@@ -60,44 +61,47 @@ const errorDescriptionInternal = Errors.getErrorDescription(errorCodeInternal)
 const timeout = async () => {
   try {
     const timeoutSegment = await TimeoutService.getTimeoutSegment()
-    let intervalMin = timeoutSegment ? timeoutSegment.value : 0
-    let segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
+    const intervalMin = timeoutSegment ? timeoutSegment.value : 0
+    const segmentId = timeoutSegment ? timeoutSegment.segmentId : 0
     const cleanup = await TimeoutService.cleanupTransferTimeout()
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
-    let intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
-    let result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-
+    const intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
+    const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
+    const fspiopExpiredError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, 'Transfer has expired at the switch').toApiErrorObject(Config.ERROR_HANDLING)
     if (!Array.isArray(result)) {
       result[0] = result
     }
-    let message
     for (let i = 0; i < result.length; i++) {
-      message = {
-        id: result[i].transferId,
-        from: result[i].payerFsp,
-        to: result[i].payeeFsp,
-        type: 'application/vnd.interoperability.transfers+json;version=1.0',
-        content: {
-          headers: {
-            'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
-            'Date': new Date().toISOString(),
-            'FSPIOP-Source': Enum.headers.FSPIOP.SWITCH,
-            'FSPIOP-Destination': result[i].payerFsp
-          },
-          payload: Utility.createPrepareErrorStatus(errorCodeInternal, errorDescriptionInternal)
-        },
-        metadata: {
-          event: {}
+      const span = EventSdk.Tracer.createSpan('cl_transfer_timeout')
+      try {
+        const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription)
+        const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(result[i].transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
+        const headers = Utility.Http.SwitchDefaultHeaders(result[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value)
+        const message = Utility.StreamingProtocol.createMessage(result[i].transferId, result[i].payeeFsp, result[i].payerFsp, metadata, headers, fspiopExpiredError, { id: result[i].transferId }, 'application/vnd.interoperability.transfers+json;version=1.0')
+        await span.audit({
+          state,
+          metadata,
+          headers,
+          message
+        }, EventSdk.AuditEventAction.start)
+        if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
+          message.to = message.from
+          message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+          await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
+        } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
+          message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
+          await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
         }
-      }
-      if (result[i].transferStateId === Enum.TransferState.EXPIRED_PREPARED) {
-        message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RECEIVED
-        message.to = message.from
-        message.from = Enum.headers.FSPIOP.SWITCH
-        await Utility.produceGeneralMessage(Utility.ENUMS.NOTIFICATION, Enum.transferEventAction.TIMEOUT_RECEIVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal))
-      } else if (result[i].transferStateId === Enum.TransferState.RESERVED_TIMEOUT) {
-        message.metadata.event.action = Enum.transferEventAction.TIMEOUT_RESERVED
-        await Utility.produceGeneralMessage(Enum.transferEventType.POSITION, Enum.transferEventAction.TIMEOUT_RESERVED, message, Utility.createState(Utility.ENUMS.STATE.FAILURE.status, errorCodeInternal, errorDescriptionInternal), result[i].payerFsp)
+      } catch (err) {
+        const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
+        const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+        throw fspiopError
+      } finally {
+        if (!span.isFinished) {
+          await span.finish()
+        }
       }
     }
     return {
@@ -106,9 +110,8 @@ const timeout = async () => {
       intervalMax,
       result
     }
-  } catch (error) {
-    Logger.error(error)
-    throw error
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -160,9 +163,8 @@ const registerTimeoutHandler = async () => {
 
     await timeoutJob.start()
     return true
-  } catch (e) {
-    Logger.error(e)
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -180,8 +182,8 @@ const registerAllHandlers = async () => {
       await registerTimeoutHandler()
     }
     return true
-  } catch (e) {
-    throw e
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 

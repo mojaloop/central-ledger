@@ -23,11 +23,11 @@
  ******/
 'use strict'
 
-const transferStateENUM = require('../../../src/lib/enum').TransferState
+const transferStateENUM = require('@mojaloop/central-services-shared').Enum.Transfers.TransferInternalState
 
-let transferStateResult = []
+const transferStateResult = []
 
-for (let transferState of Object.keys(transferStateENUM)) {
+for (const transferState of Object.keys(transferStateENUM)) {
   transferStateResult.push({
     transferStateId: transferState
   })

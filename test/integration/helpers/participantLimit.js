@@ -26,6 +26,7 @@
 'use strict'
 
 const Model = require('../../../src/domain/participant')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const limitAndInitialPositionSampleData = {
   currency: 'USD',
@@ -48,7 +49,7 @@ exports.prepareLimitAndInitialPosition = async (participantName, limitAndInitial
     }
     return await Model.addLimitAndInitialPosition(participantName, limitAndInitialPosition)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -63,7 +64,7 @@ exports.adjustLimits = async (participantName, limitObj = {}) => {
     }
     return Model.adjustLimits(participantName, limit)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -75,7 +76,7 @@ exports.deleteInitialPositionData = async (participantName) => {
   try {
     return await Model.destroyParticipantPositionByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -87,6 +88,6 @@ exports.deleteInitialLimitData = async (participantName) => {
   try {
     return await Model.destroyParticipantLimitByNameAndCurrency(participantName, limitAndInitialPositionSampleData.currency)
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

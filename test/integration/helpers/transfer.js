@@ -29,6 +29,7 @@
 
 // const ParticipantPreparationModule = require('./participant')
 const Model = require('../../../src/models/transfer/transfer')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 // const time = require('../../../src/lib/time')
 
 // const transferFacade = require('../../../src/models/transfer/facade')
@@ -52,7 +53,7 @@ exports.prepareData = async (transfer) => {
       // participantPayeeResult
     }
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -69,6 +70,6 @@ exports.deletePreparedData = async (transferId) => {
     //   }
     // })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -29,10 +29,9 @@ const Base = require('../../base')
 const AdminRoutes = require('../../../../src/api/routes')
 const Sinon = require('sinon')
 const Enum = require('../../../../src/lib/enum')
-const P = require('bluebird')
 
 Test('test root routes - health', async function (assert) {
-  let req = Base.buildRequest({ url: '/health', method: 'GET' })
+  const req = Base.buildRequest({ url: '/health', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)
@@ -41,10 +40,10 @@ Test('test root routes - health', async function (assert) {
 })
 
 Test('test root routes - enums', async function (assert) {
-  let sandbox = Sinon.createSandbox()
+  const sandbox = Sinon.createSandbox()
 
-  sandbox.stub(Enum, 'all').returns(P.resolve({}))
-  let req = Base.buildRequest({ url: '/enums', method: 'GET' })
+  sandbox.stub(Enum, 'all').returns(Promise.resolve({}))
+  const req = Base.buildRequest({ url: '/enums', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)
@@ -54,7 +53,7 @@ Test('test root routes - enums', async function (assert) {
 })
 
 Test('test root routes - /', async function (assert) {
-  let req = Base.buildRequest({ url: '/', method: 'GET' })
+  const req = Base.buildRequest({ url: '/', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)

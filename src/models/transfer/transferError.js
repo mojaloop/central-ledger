@@ -30,7 +30,8 @@
  */
 
 const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  * @function Insert
@@ -45,12 +46,12 @@ const Logger = require('@mojaloop/central-services-shared').Logger
  * @returns {integer} - Returns the id of the transferError record if successful, or throws an error if failed
  */
 
-const insert = async (transferStateChangeId, errorCode, errorDescription) => {
-  Logger.debug('insert transferError - ', errorCode, errorDescription)
+const insert = async (transferId, transferStateChangeId, errorCode, errorDescription) => {
+  Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
   try {
-    return Db.transferError.insert({ transferStateChangeId, errorCode, errorDescription })
+    return Db.transferError.insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -79,7 +80,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
     return Db.transferError.find({ transferStateChangeId: transferStateChangeId })
   } catch (err) {
-    throw new Error(err.message)
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
@@ -106,18 +107,17 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
 
 const getByTransferId = async (id) => {
   try {
-    let transferError = await Db.transferError.query(async (builder) => {
-      let result = builder
-        .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'transferError.transferStateChangeId')
-        .where({ 'tsc.transferId': id })
-        .select('transferError.*')
-        .orderBy('transferErrorId', 'desc')
+    const transferError = await Db.transferError.query(async (builder) => {
+      const result = builder
+        .where({ transferId: id })
+        .select('*')
         .first()
       return result
     })
     transferError.errorCode = transferError.errorCode.toString()
     return transferError
   } catch (err) {
+    Logger.error(err)
     throw err
   }
 }
