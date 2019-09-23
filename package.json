@@ -69,10 +69,10 @@
     "dep:update": "npx ncu -u"
   },
   "dependencies": {
-    "@hapi/good": "8.2.2",
+    "@hapi/good": "8.2.3",
     "@hapi/hapi": "18.4.0",
     "@hapi/inert": "5.2.2",
-    "@hapi/joi": "16.1.2",
+    "@hapi/joi": "16.1.4",
     "@hapi/vision": "5.5.4",
     "@mojaloop/central-object-store": "7.1.0",
     "@mojaloop/central-services-auth": "5.2.1",
