@@ -109,9 +109,9 @@ const bulkProcessing = async (error, messages) => {
     let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription, exitCode
     let produceNotification = false
 
-    if ([Enum.Transfers.BulkTransferState.RECEIVED, Enum.Transfers.BulkTransferStateEnum.PENDING_PREPARE].includes(bulkTransferInfo.bulkTransferStateId)) {
+    if ([Enum.Transfers.BulkTransferState.RECEIVED, Enum.Transfers.BulkTransferState.PENDING_PREPARE].includes(bulkTransferInfo.bulkTransferStateId)) {
       criteriaState = Enum.Transfers.BulkTransferState.RECEIVED
-      incompleteBulkState = Enum.Transfers.BulkTransferStateEnum.PENDING_PREPARE
+      incompleteBulkState = Enum.Transfers.BulkTransferState.PENDING_PREPARE
       completedBulkState = Enum.Transfers.BulkTransferState.ACCEPTED
       if (action === Enum.Events.Event.Action.PREPARE_DUPLICATE) {
         processingStateId = Enum.Transfers.BulkProcessingState.RECEIVED_DUPLICATE
@@ -123,7 +123,7 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.Transfers.BulkProcessingState.ACCEPTED
       } else if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
         incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
-        completedBulkState = Enum.Transfers.BulkTransferState.EXPIRED
+        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 2
@@ -134,7 +134,7 @@ const bulkProcessing = async (error, messages) => {
       if (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED) {
         criteriaState = Enum.Transfers.BulkTransferState.ACCEPTED
         incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
-        completedBulkState = Enum.Transfers.BulkTransferState.EXPIRED
+        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 3
@@ -155,7 +155,7 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.Transfers.BulkProcessingState.FULFIL_INVALID
       } else if (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED) {
         incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
-        completedBulkState = Enum.Transfers.BulkTransferState.EXPIRED
+        completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
       } else {
         exitCode = 4
@@ -173,20 +173,33 @@ const bulkProcessing = async (error, messages) => {
         errorCode,
         errorDescription
       })
-    const exists = await BulkTransferService.bulkTransferAssociationExists(
-      bulkTransferInfo.bulkTransferId,
-      Enum.Transfers.BulkProcessingState[criteriaState]
-    )
+    let exists
+    if (criteriaState !== Enum.Transfers.BulkTransferState.PROCESSING) {
+      exists = await BulkTransferService.bulkTransferAssociationExists(
+        bulkTransferInfo.bulkTransferId,
+        Enum.Transfers.BulkProcessingState[criteriaState]
+      )
+    } else {
+      exists = await BulkTransferService.bulkTransferAssociationExists(
+        bulkTransferInfo.bulkTransferId,
+        Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.PROCESSING]
+      ) || await BulkTransferService.bulkTransferAssociationExists(
+        bulkTransferInfo.bulkTransferId,
+        Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.ACCEPTED]
+      )
+    }
     if (exists) {
       bulkTransferState = incompleteBulkState
     } else {
       bulkTransferState = completedBulkState
       produceNotification = true
     }
-    await BulkTransferService.createBulkTransferState({
-      bulkTransferId: bulkTransferInfo.bulkTransferId,
-      bulkTransferStateId: bulkTransferState
-    })
+    if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
+      await BulkTransferService.createBulkTransferState({
+        bulkTransferId: bulkTransferInfo.bulkTransferId,
+        bulkTransferStateId: bulkTransferState
+      })
+    }
 
     let getBulkTransferByIdResult
     if (exitCode > 0) {
@@ -218,7 +231,7 @@ const bulkProcessing = async (error, messages) => {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
-      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && action === Enum.Events.Event.Action.BULK_COMMIT) {
+      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
         Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}2`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
         const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers: Util.clone(headers) }, getBulkTransferByIdResult.payerBulkTransfer)
@@ -248,13 +261,16 @@ const bulkProcessing = async (error, messages) => {
         })
         const payeeMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payeeParams.message.value.metadata.type, payeeParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
+        if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
+          producer.action = Enum.Events.Event.Action.BULK_COMMIT
+        }
         await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, producer })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         await Kafka.proceed(Config.KAFKA_CONFIG, payeeParams, { consumerCommit, producer })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
-        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, null, null, null, payload.extensionList)
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED, null, null, null, payload.extensionList)
         producer.action = Enum.Events.Event.Action.BULK_ABORT
         params.message.value.content.uriParams.id = bulkTransferInfo.bulkTransferId
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer })

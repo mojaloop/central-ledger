@@ -67,17 +67,17 @@ const timeout = async () => {
     const latestTransferStateChange = await TimeoutService.getLatestTransferStateChange()
     const intervalMax = (latestTransferStateChange && parseInt(latestTransferStateChange.transferStateChangeId)) || 0
     const result = await TimeoutService.timeoutExpireReserved(segmentId, intervalMin, intervalMax)
-    const fspiopExpiredError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.EXPIRED_ERROR, 'Transfer has expired at the switch').toApiErrorObject(Config.ERROR_HANDLING)
+    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED).toApiErrorObject(Config.ERROR_HANDLING)
     if (!Array.isArray(result)) {
       result[0] = result
     }
     for (let i = 0; i < result.length; i++) {
       const span = EventSdk.Tracer.createSpan('cl_transfer_timeout')
       try {
-        const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopExpiredError.errorInformation.errorCode, fspiopExpiredError.errorInformation.errorDescription)
+        const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
         const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(result[i].transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
         const headers = Utility.Http.SwitchDefaultHeaders(result[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value)
-        const message = Utility.StreamingProtocol.createMessage(result[i].transferId, result[i].payeeFsp, result[i].payerFsp, metadata, headers, fspiopExpiredError, { id: result[i].transferId }, 'application/vnd.interoperability.transfers+json;version=1.0')
+        const message = Utility.StreamingProtocol.createMessage(result[i].transferId, result[i].payeeFsp, result[i].payerFsp, metadata, headers, fspiopError, { id: result[i].transferId }, 'application/vnd.interoperability.transfers+json;version=1.0')
         await span.audit({
           state,
           metadata,

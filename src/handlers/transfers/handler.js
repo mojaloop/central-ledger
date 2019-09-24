@@ -356,9 +356,8 @@ const fulfil = async (error, messages) => {
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer, fromSwitch })
           throw fspiopError
-        } else if (transfer.expirationDate <= new Date()) {
+        } else if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
           Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
-          // TODO: Previously thrown code was 3300, now - 3303
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
           const producer = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.COMMIT }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer, fromSwitch })
