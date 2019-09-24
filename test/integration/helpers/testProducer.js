@@ -28,7 +28,7 @@
 'use strict'
 
 const Producer = require('@mojaloop/central-services-shared').Util.Kafka.Producer
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Uuid = require('uuid4')
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum

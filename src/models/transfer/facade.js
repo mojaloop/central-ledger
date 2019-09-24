@@ -42,7 +42,7 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 
 // Alphabetically ordered list of error texts used below
 const UnsupportedActionText = 'Unsupported action'

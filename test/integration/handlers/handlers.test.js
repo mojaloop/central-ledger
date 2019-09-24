@@ -28,7 +28,7 @@
 const Test = require('tape')
 const Uuid = require('uuid4')
 const retry = require('async-retry')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
 const sleep = require('@mojaloop/central-services-shared').Util.Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
@@ -170,7 +170,6 @@ const prepareTestData = async (dataObj) => {
 
   const errorPayload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject()
   errorPayload.errorInformation.extensionList = { extension: [{ key: 'errorDetail', value: 'This is an abort extension' }] }
-  delete errorPayload.errorInformation.errorDescription
 
   const messageProtocolPrepare = {
     id: Uuid(),

@@ -37,7 +37,7 @@ const BulkTransferModel = require('../../models/bulkTransfer/bulkTransfer')
 const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTransferStateChange')
 const IndividualTransferModel = require('../../models/bulkTransfer/individualTransfer')
 const IndividualTransferExtensionModel = require('../../models/transfer/transferExtension')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 
 const checkDuplicate = async (bulkTransferId, hash, isFulfilment = null) => {
   try {

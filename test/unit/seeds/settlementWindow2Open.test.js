@@ -26,7 +26,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../seeds/settlementWindow2Open')
 
 Test('Settlement Window2 Open', async (settlementWindow2OpenTest) => {

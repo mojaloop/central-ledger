@@ -1,6 +1,6 @@
 'use strict'
 
-const Logger = require('@mojaloop/central-services-shared').Logger
+const Logger = require('@mojaloop/central-services-logger')
 const Util = require('util')
 
 const logRequest = function (request) {
