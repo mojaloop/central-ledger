@@ -8,7 +8,7 @@ services:
   central-ledger:
     build:
       context: .
-      cache_from: 
+      cache_from:
         - mojaloop/central-ledger
         - central-ledger
     container_name: cl_central-ledger
@@ -109,7 +109,7 @@ services:
       - cl-mojaloop-net
     depends_on:
       - mockserver
-  
+
   kafka:
     image: johnnypark/kafka-zookeeper:2.3.0
     container_name: cl_kafka
