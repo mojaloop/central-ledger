@@ -33,10 +33,11 @@ const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
-const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -90,7 +91,7 @@ const bulkProcessing = async (error, messages) => {
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
     } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(err)
@@ -315,7 +316,7 @@ const registerBulkProcessingHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.PROCESSING.toUpperCase())
     }
     bulkProcessingHandler.config.rdkafkaConf['client.id'] = bulkProcessingHandler.topicName
-    await Kafka.Consumer.createHandler(bulkProcessingHandler.topicName, bulkProcessingHandler.config, bulkProcessingHandler.command)
+    await KafkaUtil.Consumer.createHandler(bulkProcessingHandler.topicName, bulkProcessingHandler.config, bulkProcessingHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

@@ -44,12 +44,13 @@ const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
 const Uuid = require('uuid4')
-const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
-const decodeMessages = require('@mojaloop/central-services-stream').Kafka.Protocol.decodeMessages
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
+const decodeMessages = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodeMessages
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
@@ -111,7 +112,7 @@ const positions = async (error, messages) => {
     let consumer
     Logger.info(Utility.breadcrumb(location, { method: 'positions' }))
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
     } catch (e) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(e)
@@ -260,7 +261,7 @@ const registerPositionHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.TRANSFER.toUpperCase(), Enum.Events.Event.Action.POSITION.toUpperCase())
     }
     positionHandler.config.rdkafkaConf['client.id'] = `${positionHandler.config.rdkafkaConf['client.id']}-${Uuid()}`
-    await Kafka.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
+    await KafkaUtil.Consumer.createHandler(positionHandler.topicName, positionHandler.config, positionHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

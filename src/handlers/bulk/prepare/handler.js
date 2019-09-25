@@ -35,12 +35,13 @@ const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
-const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
+const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 
 const location = { module: 'BulkPrepareHandler', method: '', path: '' } // var object used as pointer
 const consumerCommit = true
@@ -94,7 +95,7 @@ const bulkPrepare = async (error, messages) => {
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
     } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(err)
@@ -203,7 +204,7 @@ const registerBulkPrepareHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.PREPARE.toUpperCase())
     }
     bulkPrepareHandler.config.rdkafkaConf['client.id'] = bulkPrepareHandler.topicName
-    await Kafka.Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
+    await KafkaUtil.Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
     return true
   } catch (err) {
     Logger.error(err)

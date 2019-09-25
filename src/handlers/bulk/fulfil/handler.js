@@ -34,12 +34,13 @@ const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
-const encodePayload = require('@mojaloop/central-services-stream/src/kafka/protocol').encodePayload
+const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 
 const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
 
@@ -87,7 +88,7 @@ const bulkFulfil = async (error, messages) => {
     let consumer
     Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
     } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(err)
@@ -201,7 +202,7 @@ const registerBulkFulfilHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.BULK.toUpperCase(), Enum.Events.Event.Action.FULFIL.toUpperCase())
     }
     bulkFulfilHandler.config.rdkafkaConf['client.id'] = bulkFulfilHandler.topicName
-    await Kafka.Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
+    await KafkaUtil.Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
     return true
   } catch (err) {
     Logger.error(err)

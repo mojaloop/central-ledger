@@ -42,6 +42,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Validator = require('./validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferState = Enum.Transfers.TransferState
@@ -50,7 +51,7 @@ const TransferEventAction = Enum.Events.Event.Action
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../lib/config')
-const decodePayload = require('@mojaloop/central-services-stream').Kafka.Protocol.decodePayload
+const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -116,7 +117,7 @@ const prepare = async (error, messages) => {
     // })
     Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
     } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(err)
@@ -247,7 +248,7 @@ const fulfil = async (error, messages) => {
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
     } catch (e) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(e)
@@ -462,7 +463,7 @@ const getTransfer = async (error, messages) => {
     let consumer
     Logger.info(Util.breadcrumb(location, { method: `getTransfer:${action}` }))
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
     } catch (e) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(e)
@@ -531,7 +532,7 @@ const registerPrepareHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
-    await Kafka.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+    await KafkaUtil.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -554,7 +555,7 @@ const registerFulfilHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
-    await Kafka.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
+    await KafkaUtil.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -577,7 +578,7 @@ const registerGetTransferHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.GET.toUpperCase())
     }
     getHandler.config.rdkafkaConf['client.id'] = getHandler.topicName
-    await Kafka.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
+    await KafkaUtil.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
