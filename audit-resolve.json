@@ -1,0 +1,24 @@
+{
+  "decisions": {
+    "1065|@mojaloop/central-services-database>knex>lodash": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "1065|@mojaloop/central-services-database>lodash": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "1164|hapi-swagger>handlebars": {
+      "decision": "ignore",
+      "madeAt": 1569450958247,
+      "expiresAt": 1570055748135
+    },
+    "1164|nyc>istanbul-reports>handlebars": {
+      "decision": "ignore",
+      "madeAt": 1569450958247,
+      "expiresAt": 1570055748135
+    }
+  },
+  "rules": {},
+  "version": 1
+}
