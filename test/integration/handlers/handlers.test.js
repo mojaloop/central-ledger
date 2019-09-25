@@ -32,9 +32,8 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
 const sleep = require('@mojaloop/central-services-shared').Util.Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
-const Consumer = require('@mojaloop/central-services-shared').Util.Kafka.Consumer
-const Producer = require('@mojaloop/central-services-shared').Util.Kafka.Producer
-const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const { Consumer, Producer } = require('@mojaloop/central-services-stream').Util
+const KafkaUtil = require('@mojaloop/central-services-shared').Util.Kafka
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantHelper = require('../helpers/participant')
 const ParticipantLimitHelper = require('../helpers/participantLimit')
@@ -217,8 +216,8 @@ const prepareTestData = async (dataObj) => {
   messageProtocolError.content.payload = errorPayload
   messageProtocolError.metadata.event.action = TransferEventAction.ABORT
 
-  const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
-  const topicConfTransferFulfil = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL)
+  const topicConfTransferPrepare = KafkaUtil.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
+  const topicConfTransferFulfil = KafkaUtil.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL)
 
   return {
     transferPayload,
@@ -261,7 +260,7 @@ Test('Handlers test', async handlersTest => {
     const td = await prepareTestData(testData)
 
     await transferFulfilCommit.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -300,7 +299,7 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferFulfilCommit.test('update transfer state to COMMITTED by FULFIL request', async (test) => {
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -347,7 +346,7 @@ Test('Handlers test', async handlersTest => {
     const td = await prepareTestData(testData)
 
     await transferFulfilReject.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -379,7 +378,7 @@ Test('Handlers test', async handlersTest => {
     })
 
     await transferFulfilReject.test('update transfer state to ABORTED_REJECTED by ABORT request', async (test) => {
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -425,7 +424,7 @@ Test('Handlers test', async handlersTest => {
     const td = await prepareTestData(testData)
 
     await transferPrepareExceedLimit.test('fail the transfer if the amount is higher than the remaining participant limit', async (test) => {
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -464,7 +463,7 @@ Test('Handlers test', async handlersTest => {
     const td = await prepareTestData(testData)
 
     await transferAbort.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -497,7 +496,7 @@ Test('Handlers test', async handlersTest => {
 
     await transferAbort.test('update transfer state to ABORTED_ERROR by PUT /transfers/{id}/error endpoint', async (test) => {
       const expectedErrorDescription = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject().errorInformation.errorDescription
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),
@@ -550,7 +549,7 @@ Test('Handlers test', async handlersTest => {
     const td = await prepareTestData(testData)
 
     await timeoutTest.test('update transfer state to RESERVED by PREPARE request', async (test) => {
-      const config = Utility.getKafkaConfig(
+      const config = KafkaUtil.getKafkaConfig(
         Config.KAFKA_CONFIG,
         Enum.Kafka.Config.PRODUCER,
         TransferEventType.TRANSFER.toUpperCase(),

@@ -35,7 +35,8 @@
  */
 
 const Logger = require('@mojaloop/central-services-logger')
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-shared').Util.Kafka
+const { Consumer } = require('@mojaloop/central-services-stream').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -149,14 +150,7 @@ const transfer = async (error, messages) => {
     const transactionTimestamp = Time.getUTCString(new Date())
     Logger.info(`AdminTransferHandler::${metadata.event.action}::${transferId}`)
     const kafkaTopic = message.topic
-    let consumer
-    try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
-    } catch (err) {
-      Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(err)
-      return true
-    }
+
     if (!allowedActions.includes(payload.action)) {
       Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
     }
@@ -173,7 +167,7 @@ const transfer = async (error, messages) => {
     } else {
       await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
     }
-    await Kafka.commitMessageSync(kafkaTopic, consumer, message)
+    await KafkaUtil.commitMessageSync(Consumer, kafkaTopic, message)
     return true
   } catch (err) {
     Logger.error(err)
@@ -193,11 +187,11 @@ const registerTransferHandler = async () => {
   try {
     const transferHandler = {
       command: transfer,
-      topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER),
-      config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.ADMIN.toUpperCase(), Enum.Events.Event.Action.TRANSFER.toUpperCase())
+      topicName: KafkaUtil.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.ADMIN, Enum.Events.Event.Action.TRANSFER),
+      config: KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.ADMIN.toUpperCase(), Enum.Events.Event.Action.TRANSFER.toUpperCase())
     }
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
-    await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
+    await Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
   } catch (err) {
     Logger.error(err)

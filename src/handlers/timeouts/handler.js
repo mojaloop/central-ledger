@@ -38,8 +38,9 @@ const CronJob = require('cron').CronJob
 const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Utility = require('@mojaloop/central-services-shared').Util
+const KafkaUtil = require('@mojaloop/central-services-shared').Util.Kafka
+const { Producer } = require('@mojaloop/central-services-stream').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 
@@ -87,10 +88,10 @@ const timeout = async () => {
         if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
           message.to = message.from
           message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
-          await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
+          await KafkaUtil.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
         } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
           message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
-          await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
+          await KafkaUtil.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
         }
       } catch (err) {
         const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)

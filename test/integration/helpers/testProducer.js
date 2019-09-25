@@ -27,10 +27,10 @@
 
 'use strict'
 
-const Producer = require('@mojaloop/central-services-shared').Util.Kafka.Producer
 const Logger = require('@mojaloop/central-services-logger')
 const Uuid = require('uuid4')
-const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-shared').Util.Kafka
+const { Producer } = require('@mojaloop/central-services-stream').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Config = require('../../../src/lib/config')
 const TransferState = Enum.Transfers.TransferState
@@ -85,14 +85,14 @@ const fulfil = {
 }
 
 const topicConfTransferPrepare = {
-  topicName: Utility.transformAccountToTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.PARTICIPANT_TOPIC_TEMPLATE.TEMPLATE, transfer.payerFsp, TransferEventType.TRANSFER, TransferEventType.PREPARE),
+  topicName: KafkaUtil.transformAccountToTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.PARTICIPANT_TOPIC_TEMPLATE.TEMPLATE, transfer.payerFsp, TransferEventType.TRANSFER, TransferEventType.PREPARE),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
 }
 
 exports.transferPrepare = async () => {
-  const config = Utility.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.PREPARE.toUpperCase())
+  const config = KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.PREPARE.toUpperCase())
   config.logger = Logger
   // extend the message with topic information
   const transferObj = requestBodys().messageProtocol()
@@ -102,13 +102,13 @@ exports.transferPrepare = async () => {
 }
 
 const topicConfTransferFulfil = {
-  topicName: Utility.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL),
+  topicName: KafkaUtil.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL),
   key: 'producerTest',
   partition: 0,
   opaqueKey: 0
 }
 exports.transferFulfil = async (transferId) => {
-  const config = Utility.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
+  const config = KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger
   const fulfilObj = requestBodys(transferId).messageProtocolFulfil()
   await Producer.produceMessage(fulfilObj, topicConfTransferFulfil, config)
@@ -116,14 +116,14 @@ exports.transferFulfil = async (transferId) => {
 }
 
 exports.transferFulfilReject = async (transferId) => {
-  const config = Utility.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, 'TRANSFER', 'REJECT')
+  const config = KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, 'TRANSFER', 'REJECT')
   config.logger = Logger
   const fulfilRejectObj = requestBodys(transferId).messageProtocolFulfilReject()
   await Producer.produceMessage(fulfilRejectObj, topicConfTransferFulfil, config)
   return true
 }
 exports.transferReject = async (transferId) => {
-  const config = Utility.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
+  const config = KafkaUtil.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.PRODUCER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
   config.logger = Logger
   const rejectObj = requestBodys(transferId).messageProtocolReject()
   await Producer.produceMessage(rejectObj, topicConfTransferFulfil, config)

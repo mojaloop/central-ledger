@@ -37,7 +37,7 @@ const TimeoutService = require('../../../../src/domain/timeout')
 const Config = require('../../../../src/lib/config')
 const Uuid = require('uuid4')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaUtil = require('@mojaloop/central-services-shared').Util.Kafka
 
 Test('Timeout handler', TimeoutHandlerTest => {
   let sandbox
@@ -45,7 +45,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
   TimeoutHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(TimeoutService)
-    sandbox.stub(Utility)
+    sandbox.stub(KafkaUtil)
     sandbox.stub(CronJob.prototype, 'constructor').returns(Promise.resolve())
     sandbox.stub(CronJob.prototype, 'start').returns(Promise.resolve(true))
     sandbox.stub(CronJob.prototype, 'stop').returns(Promise.resolve(true))
@@ -98,8 +98,8 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
-      Utility.produceGeneralMessage = sandbox.stub()
-      Utility.produceParticipantMessage = sandbox.stub()
+      KafkaUtil.produceGeneralMessage = sandbox.stub()
+      KafkaUtil.produceParticipantMessage = sandbox.stub()
 
       const result = await TimeoutHandler.timeout()
       test.deepEqual(result, expected, 'Expected result is returned')
@@ -111,8 +111,8 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock[0])
-      Utility.produceGeneralMessage = sandbox.stub()
-      Utility.produceParticipantMessage = sandbox.stub()
+      KafkaUtil.produceGeneralMessage = sandbox.stub()
+      KafkaUtil.produceParticipantMessage = sandbox.stub()
       expected = {
         cleanup: 1,
         intervalMin: 0,
@@ -141,7 +141,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
-      Utility.produceGeneralMessage = sandbox.stub().throws()
+      KafkaUtil.produceGeneralMessage = sandbox.stub().throws()
 
       try {
         await TimeoutHandler.timeout()
