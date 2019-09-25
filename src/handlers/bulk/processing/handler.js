@@ -125,6 +125,8 @@ const bulkProcessing = async (error, messages) => {
         incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
         completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         exitCode = 2
         errorCode = 2 // TODO: Change to MLAPI spec defined error and move description text to enum
@@ -136,6 +138,8 @@ const bulkProcessing = async (error, messages) => {
         incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
         completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         exitCode = 3
         errorCode = 3 // TODO: Change to MLAPI spec defined error and move description text to enum
@@ -157,6 +161,8 @@ const bulkProcessing = async (error, messages) => {
         incompleteBulkState = Enum.Transfers.BulkTransferState.EXPIRING
         completedBulkState = Enum.Transfers.BulkTransferState.COMPLETED
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         exitCode = 4
         errorCode = 4 // TODO: Change to BULK API spec defined error and move description text to enum
@@ -234,11 +240,11 @@ const bulkProcessing = async (error, messages) => {
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
         Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}2`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
+        const normalizedKeys = Object.keys(headers).reduce((keys, k) => { keys[k.toLowerCase()] = k; return keys }, {})
+        const payeeBulkResponseHeaders = Util.Headers.transformHeaders(headers, { httpMethod: headers[normalizedKeys[Enum.Http.Headers.FSPIOP.HTTP_METHOD]], sourceFsp: Enum.Http.Headers.FSPIOP.SWITCH.value, destinationFsp: participants.payeeFsp })
+        delete payeeBulkResponseHeaders[normalizedKeys[Enum.Http.Headers.FSPIOP.SIGNATURE]]
         const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers: Util.clone(headers) }, getBulkTransferByIdResult.payerBulkTransfer)
-        const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers: Util.clone(headers) }, getBulkTransferByIdResult.payeeBulkTransfer)
-        payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE] = Enum.Http.Headers.FSPIOP.SWITCH.value
-        payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.DESTINATION] = participants.payeeFsp
-        delete payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SIGNATURE]
+        const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers: payeeBulkResponseHeaders }, getBulkTransferByIdResult.payeeBulkTransfer)
         const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
         await (new BulkTransferResultModel(payerBulkResponse)).save()
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
@@ -252,7 +258,7 @@ const bulkProcessing = async (error, messages) => {
           extensionList: payerBulkResponse.extensionList
         })
         const payerMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payerParams.message.value.metadata.type, payerParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
-        payerParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payerFsp, payerBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE], payerMetadata, payerBulkResponse.headers, payerPayload)
+        payerParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payerFsp, payerBulkResponse.headers[normalizedKeys[Enum.Http.Headers.FSPIOP.SOURCE]], payerMetadata, payerBulkResponse.headers, payerPayload)
         const payeePayload = Util.omitNil({
           bulkTransferId: payeeBulkResponse.bulkTransferId,
           bulkTransferState: payeeBulkResponse.bulkTransferState,
