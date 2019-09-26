@@ -35,6 +35,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
 const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -159,7 +160,7 @@ const bulkPrepare = async (error, messages) => {
           }
           params = { message: msg, kafkaTopic, consumer }
           const producer = { functionality: Enum.Events.Event.Type.PREPARE, action: Enum.Events.Event.Action.BULK_PREPARE }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer }, KafkaProducer)
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // TODO: handle individual transfers streaming error

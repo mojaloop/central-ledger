@@ -44,6 +44,7 @@ const TransferService = require('../../domain/transfer')
 const PositionService = require('../../domain/position')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
 const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -148,14 +149,14 @@ const positions = async (error, messages) => {
         const { transferState } = prepareMessage
         if (transferState.transferStateId === Enum.Transfers.TransferState.RESERVED) {
           Logger.info(Utility.breadcrumb(location, `payer--${actionLetter}1`))
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer }, KafkaProducer)
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         } else {
           Logger.info(Utility.breadcrumb(location, `resetPayer--${actionLetter}2`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY)
           await TransferService.logTransferError(transferId, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer, fromSwitch })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING, KafkaProducer), producer, fromSwitch })
           throw fspiopError
         }
       }
@@ -165,7 +166,7 @@ const positions = async (error, messages) => {
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
         Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer, fromSwitch })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING, KafkaProducer), producer, fromSwitch })
         throw fspiopError
       } else {
         Logger.info(Utility.breadcrumb(location, `payee--${actionLetter}4`))
@@ -175,7 +176,7 @@ const positions = async (error, messages) => {
           transferStateId: Enum.Transfers.TransferState.COMMITTED
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer }, KafkaProducer)
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
@@ -198,7 +199,7 @@ const positions = async (error, messages) => {
         reason: transferInfo.reason
       }
       await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer }, KafkaProducer)
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
@@ -220,14 +221,14 @@ const positions = async (error, messages) => {
         if (action === Enum.Events.Event.Action.TIMEOUT_RESERVED) {
           producer.action = Enum.Events.Event.Action.ABORT
         }
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING, KafkaProducer), producer })
         throw fspiopError
       }
     } else {
       Logger.info(Utility.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}8`))
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`)
       const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.POSITION }
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), producer, fromSwitch })
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING, KafkaProducer), producer, fromSwitch })
       throw fspiopError
     }
   } catch (err) {
