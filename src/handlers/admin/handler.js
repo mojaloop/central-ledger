@@ -36,6 +36,7 @@
 
 const Logger = require('@mojaloop/central-services-logger')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -151,7 +152,7 @@ const transfer = async (error, messages) => {
     const kafkaTopic = message.topic
     let consumer
     try {
-      consumer = Kafka.Consumer.getConsumer(kafkaTopic)
+      consumer = Consumer.getConsumer(kafkaTopic)
     } catch (err) {
       Logger.info(`No consumer found for topic ${kafkaTopic}`)
       Logger.error(err)
@@ -197,7 +198,7 @@ const registerTransferHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, Enum.Events.Event.Type.ADMIN.toUpperCase(), Enum.Events.Event.Action.TRANSFER.toUpperCase())
     }
     transferHandler.config.rdkafkaConf['client.id'] = transferHandler.topicName
-    await Kafka.Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
+    await Consumer.createHandler(transferHandler.topicName, transferHandler.config, transferHandler.command)
     return true
   } catch (err) {
     Logger.error(err)

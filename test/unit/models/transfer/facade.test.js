@@ -1619,10 +1619,12 @@ Test('Transfer facade', async (transferFacadeTest) => {
                       innerJoin: sandbox.stub().returns({
                         innerJoin: sandbox.stub().returns({
                           innerJoin: sandbox.stub().returns({
-                            where: sandbox.stub().returns({
-                              select: sandbox.stub().returns(
-                                Promise.resolve(expectedResult)
-                              )
+                            leftJoin: sandbox.stub().returns({
+                              where: sandbox.stub().returns({
+                                select: sandbox.stub().returns(
+                                  Promise.resolve(expectedResult)
+                                )
+                              })
                             })
                           })
                         })

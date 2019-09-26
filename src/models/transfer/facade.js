@@ -646,9 +646,12 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
       .innerJoin('participantCurrency AS pc2', 'pc2.participantCurrencyId', 'tp2.participantCurrencyId')
       .innerJoin('participant AS p2', 'p2.participantId', 'pc2.participantId')
 
+      .leftJoin('bulkTransferAssociation AS bta', 'bta.transferId', 'tt.transferId')
+
       .where('tt.expirationDate', '<', transactionTimestamp)
       .select('tt.*', 'tsc.transferStateId', 'tp1.participantCurrencyId AS payerParticipantId',
-        'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId')
+        'p1.name AS payerFsp', 'p2.name AS payeeFsp', 'tp2.participantCurrencyId AS payeeParticipantId',
+        'bta.bulkTransferId')
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
