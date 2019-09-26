@@ -34,7 +34,8 @@ const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
+const Producer = require('@mojaloop/central-services-stream').Util.Producer
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Validator = require('../shared/validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -86,18 +87,9 @@ const bulkFulfil = async (error, messages) => {
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
-    let consumer
     Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
-    try {
-      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
-    } catch (err) {
-      Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(err)
-      histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
-    }
     const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit : Enum.Events.ActionLetter.unknown
-    let params = { message, kafkaTopic, consumer, decodedPayload: payload }
+    let params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
     const isFulfilment = true
@@ -156,9 +148,9 @@ const bulkFulfil = async (error, messages) => {
           const msg = {
             value: Util.StreamingProtocol.createMessage(messageId, headers[Enum.Http.Headers.FSPIOP.DESTINATION], headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, headers, dataUri, { id: transferId })
           }
-          params = { message: msg, kafkaTopic, consumer }
-          const producer = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_COMMIT }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, producer }, KafkaProducer)
+          params = { message: msg, kafkaTopic, consumer: Consumer, producer: Producer }
+          const eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_COMMIT }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, eventDetail })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // TODO: handle individual transfers streaming error

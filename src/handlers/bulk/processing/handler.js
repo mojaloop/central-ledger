@@ -33,7 +33,8 @@ const Logger = require('@mojaloop/central-services-logger')
 const BulkTransferService = require('../../../domain/bulkTransfer')
 const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
+const Producer = require('@mojaloop/central-services-stream').Util.Producer
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -89,23 +90,15 @@ const bulkProcessing = async (error, messages) => {
     const state = message.value.metadata.event.state
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     const kafkaTopic = message.topic
-    let consumer
     Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
-    try {
-      consumer = KafkaUtil.Consumer.getConsumer(kafkaTopic)
-    } catch (err) {
-      Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(err)
-      histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-      return true
-    }
+
     const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
       : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
         : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED ? Enum.Events.ActionLetter.bulkTimeoutReceived
           : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
             : Enum.Events.ActionLetter.unknown)))
-    const params = { message, kafkaTopic, consumer, decodedPayload: payload }
-    const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+    const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
+    const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
     let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription, exitCode
@@ -236,7 +229,7 @@ const bulkProcessing = async (error, messages) => {
         })
         const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, params.message.value.metadata.type, params.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         params.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, payeeBulkResponse.destination, payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, payeeBulkResponse.headers, payload)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, producer }, KafkaProducer)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
@@ -270,26 +263,26 @@ const bulkProcessing = async (error, messages) => {
         const payeeMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payeeParams.message.value.metadata.type, payeeParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
         if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
-          producer.action = Enum.Events.Event.Action.BULK_COMMIT
+          eventDetail.action = Enum.Events.Event.Action.BULK_COMMIT
         }
-        await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, producer }, KafkaProducer)
+        await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        await Kafka.proceed(Config.KAFKA_CONFIG, payeeParams, { consumerCommit, producer }, KafkaProducer)
+        await Kafka.proceed(Config.KAFKA_CONFIG, payeeParams, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED, null, null, null, payload.extensionList)
-        producer.action = Enum.Events.Event.Action.BULK_ABORT
+        eventDetail.action = Enum.Events.Event.Action.BULK_ABORT
         params.message.value.content.uriParams.id = bulkTransferInfo.bulkTransferId
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING, KafkaProducer), producer })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail })
         throw fspiopError
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
         Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`).toApiErrorObject(Config.ERROR_HANDLING)
-        const producer = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, producer, fromSwitch }, KafkaProducer)
+        const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
