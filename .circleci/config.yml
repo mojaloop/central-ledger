@@ -370,6 +370,9 @@ jobs:
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
+          name: Prune non-production packages before running license-scanner
+          command: npm prune --production
+      - run:
           name: Run the license-scanner
           command: cd /tmp/license-scanner && pathToRepo=$CIRCLE_WORKING_DIRECTORY make run
       - store_artifacts:
