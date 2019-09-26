@@ -1,4 +1,7 @@
 {
   "reject": [
+    "@mojaloop/central-services-health",
+    "@mojaloop/central-services-shared",
+    "@mojaloop/central-services-stream"
   ]
 }
