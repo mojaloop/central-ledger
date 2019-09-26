@@ -39,7 +39,7 @@ const Config = require('../../lib/config')
 const TimeoutService = require('../../domain/timeout')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
-const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
+const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -90,11 +90,11 @@ const timeout = async () => {
             message.to = message.from
             message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
             // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
           } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
             message.metadata.event.type = Enum.Events.Event.Type.POSITION
             message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
           }
         } else { // individual transfer from a bulk
           if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
@@ -102,11 +102,11 @@ const timeout = async () => {
             message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
             message.metadata.event.type = Enum.Events.Event.Type.BULK_PROCESSING
             message.metadata.event.action = Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Kafka.Topics.BULK_PROCESSING, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, message, state)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.BULK_PROCESSING, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, message, state)
           } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
             message.metadata.event.type = Enum.Events.Event.Type.POSITION
             message.metadata.event.action = Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, KafkaProducer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, message, state, result[i].payerFsp)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, message, state, result[i].payerFsp)
           }
         }
       } catch (err) {
