@@ -386,8 +386,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       const participant = await ParticipantFacade.getByNameAndCurrency(name, payload.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
       if (participant) {
         participants.push(participant)
-      } else {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid FSP name or currency')
       }
     }
 

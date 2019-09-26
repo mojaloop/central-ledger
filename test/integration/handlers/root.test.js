@@ -138,7 +138,7 @@ Test('Root handler test', async handlersTest => {
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
-        console.log(`handlers.test.js finished in (${elapsedTime}s)`)
+        console.log(`root.test.js finished in (${elapsedTime}s)`)
       }
       assert.end()
     } catch (err) {
