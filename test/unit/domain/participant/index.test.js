@@ -38,7 +38,7 @@ const ParticipantFacade = require('../../../../src/models/participant/facade')
 const PositionFacade = require('../../../../src/models/position/facade')
 const ParticipantPositionChangeModel = require('../../../../src/models/participant/participantPositionChange')
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
-const Utility = require('@mojaloop/central-services-shared').Util.Kafka
+const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 const Service = require('../../../../src/domain/participant/index')
@@ -163,7 +163,7 @@ Test('Participant service', async (participantTest) => {
 
     sandbox.stub(LedgerAccountTypeModel, 'getLedgerAccountByName')
 
-    sandbox.stub(Utility, 'produceGeneralMessage')
+    sandbox.stub(Kafka, 'produceGeneralMessage')
     Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
@@ -691,7 +691,7 @@ Test('Participant service', async (participantTest) => {
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
       ParticipantPositionModel.getByParticipantCurrencyId.withArgs(settlementAccount.participantCurrencyId).returns(null)
       ParticipantFacade.addLimitAndInitialPosition.withArgs(participant.participantCurrencyId, settlementAccount.participantCurrencyId, limitPositionObj).returns(1)
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
       const result = await Service.addLimitAndInitialPosition(participant.name, payload)
       assert.deepEqual(result, 1, 'Results matched')
       assert.end()
@@ -1786,7 +1786,7 @@ Test('Participant service', async (participantTest) => {
         isActive: 1,
         createdDate: new Date()
       })
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
 
       const result = await Service.recordFundsInOut(payload, params, enums)
       assert.ok(result, 'topic created')
@@ -1833,7 +1833,7 @@ Test('Participant service', async (participantTest) => {
         isActive: 1,
         createdDate: new Date()
       })
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
 
       const result = await Service.recordFundsInOut(payload, params, enums)
       assert.ok(result, 'topic created')
@@ -1884,7 +1884,7 @@ Test('Participant service', async (participantTest) => {
         isActive: 1,
         createdDate: new Date()
       })
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
       await Service.recordFundsInOut(payload, params, enums)
       assert.fail('Error not thrown!')
       assert.end()
@@ -1933,7 +1933,7 @@ Test('Participant service', async (participantTest) => {
         isActive: 1,
         createdDate: new Date()
       })
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
       await Service.recordFundsInOut(payload, params, enums)
       assert.fail('Error not thrown!')
       assert.end()
@@ -1974,7 +1974,7 @@ Test('Participant service', async (participantTest) => {
         isActive: 1,
         createdDate: new Date()
       })
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
       await Service.recordFundsInOut(payload, params, {})
       assert.fail('Error not thrown!')
       assert.end()
@@ -2015,7 +2015,7 @@ Test('Participant service', async (participantTest) => {
         isActive: 0,
         createdDate: new Date()
       })
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
       await Service.recordFundsInOut(payload, params, {})
       assert.fail('Error not thrown!')
       assert.end()
@@ -2060,7 +2060,7 @@ Test('Participant service', async (participantTest) => {
         isActive: 1,
         createdDate: new Date()
       })
-      Utility.produceGeneralMessage.returns(true)
+      Kafka.produceGeneralMessage.returns(true)
 
       await Service.recordFundsInOut(payload, params, enums)
       assert.fail('Error not thrown!')

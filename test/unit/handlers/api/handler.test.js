@@ -27,7 +27,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Handler = require('../../../../src/handlers/api/routes')
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 
 function createRequest (routes) {
@@ -60,7 +60,7 @@ Test('route handler', (handlerTest) => {
     healthTest.test('return status ok', async assert => {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
-      sandbox.stub(Kafka.Consumer, 'isConnected').returns(Promise.resolve())
+      sandbox.stub(Consumer, 'isConnected').returns(Promise.resolve())
       const jp = require('jsonpath')
       const healthHandler = jp.query(Handler, '$[?(@.path=="/health")]')
 

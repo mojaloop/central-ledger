@@ -69,18 +69,42 @@ Test('Timeout handler', TimeoutHandlerTest => {
     const resultMock = [
       {
         transferId: Uuid(),
+        bulkTransferId: null,
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED
       },
       {
         transferId: Uuid(),
+        bulkTransferId: null,
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2',
         transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
       },
       {
         transferId: Uuid(),
+        bulkTransferId: null,
+        payerFsp: 'dfsp2',
+        payeeFsp: 'dfsp1',
+        transferStateId: Enum.Transfers.TransferState.COMMITTED
+      },
+      {
+        transferId: Uuid(),
+        bulkTransferId: Uuid(),
+        payerFsp: 'dfsp1',
+        payeeFsp: 'dfsp2',
+        transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED
+      },
+      {
+        transferId: Uuid(),
+        bulkTransferId: Uuid(),
+        payerFsp: 'dfsp1',
+        payeeFsp: 'dfsp2',
+        transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT
+      },
+      {
+        transferId: Uuid(),
+        bulkTransferId: Uuid(),
         payerFsp: 'dfsp2',
         payeeFsp: 'dfsp1',
         transferStateId: Enum.Transfers.TransferState.COMMITTED
@@ -99,10 +123,10 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock)
       Utility.produceGeneralMessage = sandbox.stub()
-      Utility.produceParticipantMessage = sandbox.stub()
 
       const result = await TimeoutHandler.timeout()
       test.deepEqual(result, expected, 'Expected result is returned')
+      test.equal(Utility.produceGeneralMessage.callCount, 4, 'Four different messages were produced')
       test.end()
     })
 
@@ -112,7 +136,6 @@ Test('Timeout handler', TimeoutHandlerTest => {
       TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(null)
       TimeoutService.timeoutExpireReserved = sandbox.stub().returns(resultMock[0])
       Utility.produceGeneralMessage = sandbox.stub()
-      Utility.produceParticipantMessage = sandbox.stub()
       expected = {
         cleanup: 1,
         intervalMin: 0,
@@ -122,6 +145,7 @@ Test('Timeout handler', TimeoutHandlerTest => {
 
       const result = await TimeoutHandler.timeout()
       test.deepEqual(result, expected, 'Expected result is returned')
+      test.ok(Utility.produceGeneralMessage.notCalled, 'No messages have been produced produced')
       test.end()
     })
 

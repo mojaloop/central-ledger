@@ -26,7 +26,7 @@
 
 const { statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
 const Logger = require('@mojaloop/central-services-logger')
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 
 const MigrationLockModel = require('../../models/misc/migrationLock')
 
@@ -40,10 +40,10 @@ const MigrationLockModel = require('../../models/misc/migrationLock')
  * @returns Promise<SubServiceHealth> The SubService health object for the broker
  */
 const getSubServiceHealthBroker = async () => {
-  const consumerTopics = Kafka.Consumer.getListOfTopics()
+  const consumerTopics = Consumer.getListOfTopics()
   let status = statusEnum.OK
   try {
-    await Promise.all(consumerTopics.map(t => Kafka.Consumer.isConnected(t)))
+    await Promise.all(consumerTopics.map(t => Consumer.isConnected(t)))
   } catch (err) {
     Logger.debug(`getSubServiceHealthBroker failed with error ${err.message}.`)
     status = statusEnum.DOWN
