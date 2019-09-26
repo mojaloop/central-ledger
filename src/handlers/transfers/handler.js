@@ -44,7 +44,6 @@ const Util = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
-const KafkaUtil = require('@mojaloop/central-services-stream').Util
 const Validator = require('./validator')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferState = Enum.Transfers.TransferState
@@ -503,7 +502,7 @@ const registerPrepareHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventAction.PREPARE.toUpperCase())
     }
     prepareHandler.config.rdkafkaConf['client.id'] = prepareHandler.topicName
-    await KafkaUtil.Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
+    await Consumer.createHandler(prepareHandler.topicName, prepareHandler.config, prepareHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -526,7 +525,7 @@ const registerFulfilHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.FULFIL.toUpperCase())
     }
     fulfillHandler.config.rdkafkaConf['client.id'] = fulfillHandler.topicName
-    await KafkaUtil.Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
+    await Consumer.createHandler(fulfillHandler.topicName, fulfillHandler.config, fulfillHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -549,7 +548,7 @@ const registerGetTransferHandler = async () => {
       config: Kafka.getKafkaConfig(Config.KAFKA_CONFIG, Enum.Kafka.Config.CONSUMER, TransferEventType.TRANSFER.toUpperCase(), TransferEventType.GET.toUpperCase())
     }
     getHandler.config.rdkafkaConf['client.id'] = getHandler.topicName
-    await KafkaUtil.Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
+    await Consumer.createHandler(getHandler.topicName, getHandler.config, getHandler.command)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
