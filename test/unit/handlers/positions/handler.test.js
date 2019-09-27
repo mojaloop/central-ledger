@@ -7,7 +7,8 @@ const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const PositionService = require('../../../../src/domain/position')
 const MainUtil = require('@mojaloop/central-services-shared').Util
-const KafkaConsumer = Kafka.Consumer.Consumer
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const KafkaConsumer = Consumer.Consumer
 const Uuid = require('uuid4')
 const Logger = require('@mojaloop/central-services-logger')
 const TransferStateChange = require('../../../../src/models/transfer/transferStateChange')
@@ -167,7 +168,7 @@ Test('Position handler', transferHandlerTest => {
     sandbox.stub(KafkaConsumer.prototype, 'connect').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'consume').resolves()
     sandbox.stub(KafkaConsumer.prototype, 'commitMessageSync').resolves()
-    sandbox.stub(Kafka.Consumer, 'getConsumer').returns({
+    sandbox.stub(Consumer, 'getConsumer').returns({
       commitMessageSync: async function () { return true }
     })
 
@@ -187,7 +188,7 @@ Test('Position handler', transferHandlerTest => {
 
   transferHandlerTest.test('createPrepareHandler should', registerHandlersTest => {
     registerHandlersTest.test('register all consumers on Kafka', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
 
@@ -197,7 +198,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     registerHandlersTest.test('register a consumer on Kafka', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       const result = await allTransferHandlers.registerAllHandlers()
@@ -207,7 +208,7 @@ Test('Position handler', transferHandlerTest => {
 
     registerHandlersTest.test('throw error retrieveAllParticipants', async (test) => {
       try {
-        Kafka.Consumer.createHandler(topicName, config, command)
+        Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.throws(new Error())
 
@@ -222,7 +223,7 @@ Test('Position handler', transferHandlerTest => {
 
     registerHandlersTest.test('log and skip consumer registration when no participants', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
 
@@ -237,7 +238,7 @@ Test('Position handler', transferHandlerTest => {
 
     registerHandlersTest.test('registerPrepareHandler topic list is passed', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.throws(new Error())
 
@@ -256,7 +257,7 @@ Test('Position handler', transferHandlerTest => {
   transferHandlerTest.test('positions should', positionsTest => {
     positionsTest.test('logs an error when the message contains no uriParams', async test => {
       // Arrange
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -282,7 +283,7 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('update transferStateChange for timeout-reserved when messages is an array', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
@@ -307,7 +308,7 @@ Test('Position handler', transferHandlerTest => {
 
   transferHandlerTest.test('positions should', positionsTest => {
     positionsTest.test('update transferStateChange for prepare when single message', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -327,8 +328,8 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('throw error when not able to get consumer', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
-      Kafka.Consumer.getConsumer.throws(new Error())
+      await Consumer.createHandler(topicName, config, command)
+      Consumer.getConsumer.throws(new Error())
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -350,7 +351,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('update transferStateChange for prepare when single message and participant limit fail', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -370,7 +371,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('update transferStateChange for prepare when single message and no transfer state id is available', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -390,7 +391,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('update transferStateChange for prepare when messages is an array', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -411,7 +412,7 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('update transferStateChange for prepare when messages is an array no transfer state id is available', async (test) => {
       config.rdkafkaConf['enable.auto.commit'] = true
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       config.rdkafkaConf['enable.auto.commit'] = false
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
@@ -438,7 +439,7 @@ Test('Position handler', transferHandlerTest => {
         transferStateId: TransferState.COMMITTED
       }
 
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
 
@@ -462,8 +463,8 @@ Test('Position handler', transferHandlerTest => {
         transferStateId: TransferState.COMMITTED
       }
 
-      await Kafka.Consumer.createHandler(topicName, config, command)
-      Kafka.Consumer.getConsumer.returns(null)
+      await Consumer.createHandler(topicName, config, command)
+      Consumer.getConsumer.returns(null)
 
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
@@ -483,7 +484,7 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('update transferStateChange for fake when single', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
 
@@ -507,7 +508,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('update transferStateChange for received-error and transferStateId is fake when single message', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       const m = Object.assign({}, MainUtil.clone(messages[1]))
@@ -524,7 +525,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('update transferStateChange for reject and transferStateId is fake when single message', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       const m = Object.assign({}, MainUtil.clone(messages[1]))
@@ -547,7 +548,7 @@ Test('Position handler', transferHandlerTest => {
         transferStateId: TransferInternalState.ABORTED_REJECTED,
         reason: transferInfo.reason
       }
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
@@ -572,8 +573,8 @@ Test('Position handler', transferHandlerTest => {
         transferStateId: TransferInternalState.ABORTED_REJECTED,
         reason: transferInfo.reason
       }
-      await Kafka.Consumer.createHandler(topicName, config, command)
-      Kafka.Consumer.getConsumer.throws(new Error())
+      await Consumer.createHandler(topicName, config, command)
+      Consumer.getConsumer.throws(new Error())
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
@@ -593,7 +594,7 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('update transferStateChange for timeout-received when messages is an array', async (test) => {
       config.rdkafkaConf['enable.auto.commit'] = true
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       config.rdkafkaConf['enable.auto.commit'] = false
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
@@ -612,7 +613,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('update transferStateChange for reject and transferStateId is fake when single message', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       const m = Object.assign({}, MainUtil.clone(messages[1]))
@@ -636,7 +637,7 @@ Test('Position handler', transferHandlerTest => {
         reason: transferInfo.reason
       }
       config.rdkafkaConf['enable.auto.commit'] = true
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       config.rdkafkaConf['enable.auto.commit'] = false
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
@@ -657,7 +658,7 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('update transferStateChange for timeout-reserved when messages is an array', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
@@ -680,7 +681,7 @@ Test('Position handler', transferHandlerTest => {
     positionsTest.test('update transferStateChange for timeout-reserved when messages is an array (auto.commit)', async (test) => {
       try {
         config.rdkafkaConf['enable.auto.commit'] = true
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         config.rdkafkaConf['enable.auto.commit'] = false
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
@@ -703,8 +704,8 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('update transferStateChange for timeout-reserved when messages is an array -- consumer throws error', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
-        Kafka.Consumer.getConsumer.throws(new Error())
+        await Consumer.createHandler(topicName, config, command)
+        Consumer.getConsumer.throws(new Error())
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
@@ -726,7 +727,7 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('logs error if the transfer state is not reserved-timeout', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
@@ -745,7 +746,7 @@ Test('Position handler', transferHandlerTest => {
     })
 
     positionsTest.test('update transferStateChange for BULK_PREPARE prepare when single message', async (test) => {
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
       TransferStateChange.saveTransferStateChange.resolves(true)
@@ -773,7 +774,7 @@ Test('Position handler', transferHandlerTest => {
         transferStateId: TransferState.COMMITTED
       }
 
-      await Kafka.Consumer.createHandler(topicName, config, command)
+      await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       Kafka.getKafkaConfig.returns(config)
 
@@ -792,7 +793,7 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('Throw error when invalid action is received', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
@@ -812,7 +813,7 @@ Test('Position handler', transferHandlerTest => {
     positionsTest.test('Throw error when invalid action is received (auto.commit)', async (test) => {
       try {
         config.rdkafkaConf['enable.auto.commit'] = true
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         config.rdkafkaConf['enable.auto.commit'] = false
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
@@ -832,8 +833,8 @@ Test('Position handler', transferHandlerTest => {
 
     positionsTest.test('Throw error when invalid action is received -- consumer throws error', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
-        Kafka.Consumer.getConsumer.throws(new Error())
+        await Consumer.createHandler(topicName, config, command)
+        Consumer.getConsumer.throws(new Error())
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
@@ -849,7 +850,7 @@ Test('Position handler', transferHandlerTest => {
     })
     positionsTest.test('throw error on positions', async (test) => {
       try {
-        await Kafka.Consumer.createHandler(topicName, config, command)
+        await Consumer.createHandler(topicName, config, command)
         Kafka.transformGeneralTopicName.returns(topicName)
         Kafka.getKafkaConfig.returns(config)
         TransferStateChange.saveTransferStateChange.resolves(true)
