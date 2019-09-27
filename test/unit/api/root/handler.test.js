@@ -29,7 +29,7 @@ const Joi = require('@hapi/joi')
 const Sinon = require('sinon')
 
 const Handler = require('../../../../src/api/root/handler')
-const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const {
   createRequest,
@@ -55,8 +55,8 @@ Test('Root', rootHandlerTest => {
     handlerTest.test('getHealth returns the detailed health check', async function (test) {
       // Arrange
       sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
-      sandbox.stub(Kafka.Consumer, 'getListOfTopics').returns(['admin'])
-      sandbox.stub(Kafka.Consumer, 'isConnected').returns(Promise.resolve())
+      sandbox.stub(Consumer, 'getListOfTopics').returns(['admin'])
+      sandbox.stub(Consumer, 'isConnected').returns(Promise.resolve())
       const schema = Joi.compile({
         status: Joi.string().valid('OK').required(),
         uptime: Joi.number().required(),

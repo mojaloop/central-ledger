@@ -139,6 +139,8 @@ const getBulkTransferById = async (id) => {
     }
     if (payeeIndividualTransfers.length > 0) {
       payeeBulkTransfer.individualTransferResults = payeeIndividualTransfers
+    } else {
+      payeeBulkTransfer.individualTransferResults = individualTransfers
     }
     return { payerBulkTransfer, payeeBulkTransfer }
   } catch (err) {

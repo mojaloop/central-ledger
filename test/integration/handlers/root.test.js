@@ -30,8 +30,8 @@ const Logger = require('@mojaloop/central-services-logger')
 const Db = require('@mojaloop/central-services-database').Db
 
 const Config = require('../../../src/lib/config')
-const Consumer = require('@mojaloop/central-services-shared').Util.Kafka.Consumer
-const Producer = require('@mojaloop/central-services-shared').Util.Kafka.Producer
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const rootApiHandler = require('../../../src/api/root/handler')
 const {
   createRequest,
@@ -138,7 +138,7 @@ Test('Root handler test', async handlersTest => {
 
       if (debug) {
         const elapsedTime = Math.round(((new Date()) - startTime) / 100) / 10
-        console.log(`handlers.test.js finished in (${elapsedTime}s)`)
+        console.log(`root.test.js finished in (${elapsedTime}s)`)
       }
       assert.end()
     } catch (err) {
