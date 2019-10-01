@@ -40,6 +40,7 @@ const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const Config = require('../../lib/config')
 const TransferService = require('../../domain/transfer')
 const Db = require('../../lib/db')
@@ -150,23 +151,17 @@ const transfer = async (error, messages) => {
     const transactionTimestamp = Time.getUTCString(new Date())
     Logger.info(`AdminTransferHandler::${metadata.event.action}::${transferId}`)
     const kafkaTopic = message.topic
-    let consumer
-    try {
-      consumer = Consumer.getConsumer(kafkaTopic)
-    } catch (err) {
-      Logger.info(`No consumer found for topic ${kafkaTopic}`)
-      Logger.error(err)
-      return true
-    }
+
     if (!allowedActions.includes(payload.action)) {
       Logger.info(`AdminTransferHandler::${payload.action}::invalidPayloadAction`)
     }
     if (httpPostRelatedActions.includes(payload.action)) {
-      const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload.transferId, payload)
-      if (!existsMatching && !existsNotMatching) {
+      const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+      // const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload.transferId, payload)
+      if (!hasDuplicateId) {
         Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
         await createRecordFundsInOut(payload, transactionTimestamp, enums)
-      } else if (existsMatching) {
+      } else if (hasDuplicateHash) {
         await transferExists(payload, transferId)
       } else {
         Logger.info(`AdminTransferHandler::${payload.action}::dupcheck::existsNotMatching::request exists with different parameters`)
@@ -174,7 +169,7 @@ const transfer = async (error, messages) => {
     } else {
       await changeStatusOfRecordFundsOut(payload, transferId, transactionTimestamp, enums)
     }
-    await Kafka.commitMessageSync(kafkaTopic, consumer, message)
+    await Kafka.commitMessageSync(Consumer, kafkaTopic, message)
     return true
   } catch (err) {
     Logger.error(err)
