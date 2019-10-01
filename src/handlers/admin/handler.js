@@ -157,7 +157,6 @@ const transfer = async (error, messages) => {
     }
     if (httpPostRelatedActions.includes(payload.action)) {
       const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
-      // const { existsMatching, existsNotMatching } = await TransferService.validateDuplicateHash(payload.transferId, payload)
       if (!hasDuplicateId) {
         Logger.info(`AdminTransferHandler::${payload.action}::transfer does not exist`)
         await createRecordFundsInOut(payload, transactionTimestamp, enums)
