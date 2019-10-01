@@ -960,7 +960,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve(null))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -987,7 +986,6 @@ Test('Transfer handler', transferHandlerTest => {
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve(null))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
@@ -1000,7 +998,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ payeeFsp: 'dfsp2' }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
       Kafka.proceed.returns(true)
 
@@ -1015,7 +1012,6 @@ Test('Transfer handler', transferHandlerTest => {
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ payeeFsp: 'dfsp2' }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp1'
       Kafka.proceed.returns(true)
 
@@ -1029,7 +1025,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ condition: 'condition', payeeFsp: 'dfsp2' }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Kafka.proceed.returns(true)
@@ -1052,7 +1047,6 @@ Test('Transfer handler', transferHandlerTest => {
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ condition: 'condition', payeeFsp: 'dfsp2' }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'fulfilment'
       Kafka.proceed.returns(true)
@@ -1074,7 +1068,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferInternalState.RECEIVED_PREPARE }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       Validator.validateFulfilCondition.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
@@ -1097,7 +1090,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RESERVED }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
@@ -1121,7 +1113,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RESERVED }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
       localfulfilMessages[1].value.content.headers['fspiop-source'] = 'dfsp2'
@@ -1147,7 +1138,6 @@ Test('Transfer handler', transferHandlerTest => {
       Validator.validateFulfilCondition.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({ condition: 'condition', payeeFsp: 'dfsp2', transferState: TransferState.RESERVED }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       ilp.update.returns(Promise.resolve())
       Kafka.proceed.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
@@ -1175,7 +1165,6 @@ Test('Transfer handler', transferHandlerTest => {
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
@@ -1205,7 +1194,6 @@ Test('Transfer handler', transferHandlerTest => {
         expirationDate: new Date('1900-01-01'),
         transferState: TransferState.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       ilp.update.returns(Promise.resolve())
       Validator.validateFulfilCondition.returns(true)
       Kafka.proceed.returns(true)
@@ -1253,7 +1241,6 @@ Test('Transfer handler', transferHandlerTest => {
     //     expirationDate: new Date('1900-01-01'),
     //     transferState: TransferState.RESERVED
     //   }))
-    //   TransferService.validateDuplicateHash.returns(Promise.resolve({
     //     existsMatching: true,
     //     existsNotMatching: false
     //   }))
@@ -1592,7 +1579,6 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.metadata.event.action = 'reject'
       Kafka.proceed.returns(true)
@@ -1621,7 +1607,6 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       invalidEventMessage.value.content.headers['fspiop-source'] = 'dfsp2'
       invalidEventMessage.value.metadata.event.action = 'reject'
       Kafka.proceed.returns(true)
@@ -1649,7 +1634,6 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.RESERVED,
         transferStateEnumeration: TransferState.RESERVED
       }))
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       invalidEventMessage.value.metadata.event.action = 'reject'
       delete fulfilMessages[0].value.content.payload.fulfilment
       TransferService.handlePayeeResponse.returns({
@@ -1777,7 +1761,6 @@ Test('Transfer handler', transferHandlerTest => {
       await Consumer.createHandler(topicName, config, command)
       Consumer.isConsumerAutoCommitEnabled.returns(true)
       Kafka.transformGeneralTopicName.returns(topicName)
-      TransferService.validateDuplicateHash.returns(Promise.resolve({}))
       invalidEventMessage.value.metadata.event.action = 'invalid event'
       invalidEventMessage.value.content.payload = { extensionList: {} }
       Kafka.proceed.returns(true)

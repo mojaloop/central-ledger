@@ -37,7 +37,6 @@ const TransferDuplicateCheckModel = require('../../models/transfer/transferDupli
 const TransferFulfilmentDuplicateCheckModel = require('../../models/transfer/transferFulfilmentDuplicateCheck')
 const TransferErrorDuplicateCheckModel = require('../../models/transfer/transferErrorDuplicateCheck')
 const TransferObjectTransform = require('./transform')
-const Crypto = require('crypto')
 const TransferError = require('../../models/transfer/transferError')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -52,46 +51,6 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
   try {
     const transfer = await TransferFacade.savePayeeTransferResponse(transferId, payload, action, fspiopError)
     return TransferObjectTransform.toTransfer(transfer)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-/**
- * @function ValidateDuplicateHash
- *
- * @async
- * @description This checks if there is a matching hash for a transfer request in transferDuplicateCheck table, if it does not exist, it will be inserted
- *
- * TransferDuplicateCheckModel.checkAndInsertDuplicateHash called to check the existing hash or insert the hash if not exists in the database
- *
- * TODO: Currently this method is only used during reconciliation transfers (FundsIn/FundsOut) and is to replaced by the newly implemented request duplicate
- * checking in future story
- *
- * @param {string} payload - the transfer object
- *
- * @returns {object} - Returns the result of the comparision of the hash if exists, otherwise false values, or throws an error if failed
- * Example:
- * ```
- * {
- *    existsMatching: true,
- *    existsNotMatching: false
- * }
- * ```
- */
-
-const validateDuplicateHash = async (transferId, payload) => {
-  try {
-    if (!payload) {
-      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Invalid payload')
-    }
-    const hashSha256 = Crypto.createHash('sha256')
-    let hash = JSON.stringify(payload)
-    hash = hashSha256.update(hash)
-    // remove trailing '=' as per specification
-    hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
-    const result = await TransferDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, hash)
-    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -125,7 +84,6 @@ const logTransferError = async (transferId, errorCode, errorDescription) => {
 const TransferService = {
   prepare,
   handlePayeeResponse,
-  validateDuplicateHash,
   logTransferError,
   getTransferErrorByTransferId: TransferErrorModel.getByTransferId,
   getTransferById: TransferModel.getById,
