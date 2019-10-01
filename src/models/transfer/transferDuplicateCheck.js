@@ -73,64 +73,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
   }
 }
 
-/**
- * @function CheckAndInsertDuplicateHash
- *
- * @async
- * @description This checks if there is a matching hash for a transfer request in transferDuplicateCheck table, if it does not exist, it will be inserted
- *
- * @param {string} transferId - the transfer id
- * @param {string} hash - the hash of the transfer request payload
- *
- * @returns {object} - Returns the hash if exists, otherwise null, or throws an error if failed
- * Example:
- * ```
- * {
- *    transferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
- *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8',
- *    createdDate: '2018-08-17 09:46:21'
- * }
- * ```
- */
-
-const checkAndInsertDuplicateHash = async (transferId, hash) => {
-  Logger.debug('check and insert hash into transferDuplicateCheck' + transferId.toString())
-  try {
-    const knex = Db.getKnex()
-    return knex.transaction(async trx => {
-      try {
-        let existsMatching = false
-        let existsNotMatching = false
-
-        const existingHash = await knex('transferDuplicateCheck').transacting(trx)
-          .where({ transferId: transferId })
-          .select('*')
-          .first()
-
-        if (!existingHash) {
-          await knex('transferDuplicateCheck').transacting(trx)
-            .insert({ transferId, hash })
-        } else {
-          existsMatching = hash === existingHash.hash
-          existsNotMatching = !existsMatching
-        }
-        await trx.commit
-        return {
-          existsMatching,
-          existsNotMatching
-        }
-      } catch (err) {
-        await trx.rollback
-        throw err
-      }
-    })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
 module.exports = {
   getTransferDuplicateCheck,
-  saveTransferDuplicateCheck,
-  checkAndInsertDuplicateHash
+  saveTransferDuplicateCheck
 }

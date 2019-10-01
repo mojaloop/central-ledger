@@ -306,7 +306,6 @@ Test('Admin handler', adminHandlerTest => {
       commitMessageSync: async function () { return Promise.resolve(true) }
     })
     sandbox.stub(Consumer, 'isConsumerAutoCommitEnabled')
-    sandbox.stub(TransferService, 'validateDuplicateHash')
     sandbox.stub(TransferService, 'reconciliationTransferPrepare')
     sandbox.stub(TransferService, 'reconciliationTransferReserve')
     sandbox.stub(TransferService, 'reconciliationTransferCommit')

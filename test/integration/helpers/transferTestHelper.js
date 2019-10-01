@@ -76,7 +76,7 @@ exports.prepareData = async () => {
     // let transfer = await TransferFacade.getById(transferResult.transfer.transferId)
 
     const transferId = transferResult.transfer.transferId
-    await TransferFulfilmentDuplicateCheckModel.checkAndInsertDuplicateHash(transferId, 'helper.hash')
+    await TransferFulfilmentDuplicateCheckModel.saveTransferFulfilmentDuplicateCheck(transferId, 'helper.hash')
     await TransferFulfilmentModel.saveTransferFulfilment({
       transferId,
       ilpFulfilment: 'helper.oAKAAA',

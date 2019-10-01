@@ -797,7 +797,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
     const trxFunction = async (trx, doCommit = true) => {
       try {
         // transferDuplicateCheck check and insert is done prior to calling the prepare
-        // see admin/handler.js :: transfer -> TransferService.validateDuplicateHash
+        // see admin/handler.js :: transfer -> Comparators.duplicateCheckComparator
 
         // Insert transfer
         await knex('transfer')
