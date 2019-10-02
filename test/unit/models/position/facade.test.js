@@ -491,7 +491,6 @@ Test('Position facade', async (positionFacadeTest) => {
       await changeParticipantPositionTransaction.test('use a transaction to update database when position is increasing', async (test) => {
         try {
           isIncrease = true
-
           sandbox.stub(Db, 'getKnex')
           const knexStub = sandbox.stub()
           const trxStub = sandbox.stub()

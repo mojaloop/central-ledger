@@ -29,8 +29,10 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
+const Config = require('../../../../src/lib/config')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
+const MlNumber = require('@mojaloop/ml-number')
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -1017,198 +1019,6 @@ Test('Transfer facade', async (transferFacadeTest) => {
     }
   })
 
-  // await transferFacadeTest.test('saveTransferAborted should', async saveTransferAborted => {
-  //   try {
-  //     const transferId = Uuid()
-  //     const transactionTimestamp = Time.getUTCString(new Date())
-  //     const ModuleProxy = Proxyquire('../../../../src/models/transfer/facade', {
-  //       Time: {
-  //         getUTCString: sandbox.stub().returns(transactionTimestamp)
-  //       }
-  //     })
-  //     const state = Enum.Transfers.TransferInternalState.RECEIVED_ERROR
-  //     const transferStateChangeRecord = {
-  //       transferId,
-  //       transferStateId: state,
-  //       createdDate: transactionTimestamp
-  //     }
-  //     const insertedTransferStateChange = transferStateChangeRecord
-  //     insertedTransferStateChange.transferStateChangeId = 1
-
-  //     await saveTransferAborted.test('return transfer in RECEIVED_ERROR state with custom payee error', async (test) => {
-  //       try {
-  //         const transferExtensions = [{ key: 'key', value: 'value' }]
-  //         const payload = {
-  //           errorInformation: {
-  //             errorCode: '5001',
-  //             errorDescription: 'error description',
-  //             extensionList: {
-  //               extension: transferExtensions
-  //             }
-  //           }
-  //         }
-  //         const errorPayeeCustom = payload.errorInformation.errorCode.toString()
-  //         const errorPayeeCustomDescription = payload.errorInformation.errorDescription
-  //         const transferErrorRecord = {
-  //           transferId,
-  //           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-  //           errorCode: errorPayeeCustom,
-  //           errorDescription: errorPayeeCustomDescription,
-  //           createdDate: transactionTimestamp
-  //         }
-  //         transferExtensions[0].transferId = transferId
-  //         transferExtensions[0].isError = true
-  //         transferStateChangeRecord.reason = payload.errorInformation.errorDescription
-  //         const expectedResult = {
-  //           saveTransferAbortedExecuted: true,
-  //           transferStateChangeRecord,
-  //           transferErrorRecord,
-  //           transferExtensions
-  //         }
-
-  //         sandbox.stub(Db, 'getKnex')
-  //         const trxStub = sandbox.stub()
-  //         trxStub.commit = sandbox.stub()
-  //         const knexStub = sandbox.stub()
-  //         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-  //         Db.getKnex.returns(knexStub)
-  //         const transactingStub = sandbox.stub()
-  //         const insertStub = sandbox.stub()
-  //         const whereStub = sandbox.stub()
-  //         knexStub.returns({
-  //           transacting: transactingStub.returns({
-  //             insert: insertStub,
-  //             where: whereStub.returns({
-  //               forUpdate: sandbox.stub().returns({
-  //                 first: sandbox.stub().returns({
-  //                   orderBy: sandbox.stub().returns(insertedTransferStateChange)
-  //                 })
-  //               })
-  //             })
-  //           })
-  //         })
-
-  //         const response = await ModuleProxy.saveTransferAborted(transferId, payload)
-  //         test.deepEqual(expectedResult, response, 'response matches expected result')
-  //         test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
-  //         test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-  //         test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
-  //         test.ok(insertStub.withArgs(transferErrorRecord).calledOnce, 'insert transferErrorRecord called once')
-  //         test.ok(whereStub.withArgs({ transferId: transferStateChangeRecord.transferId }).calledOnce, 'where with transferId condtion called once')
-  //         test.end()
-  //       } catch (err) {
-  //         Logger.error(`saveTransferAborted failed with error - ${err}`)
-  //         test.fail()
-  //         test.end()
-  //       }
-  //     })
-
-  //     await saveTransferAborted.test('return transfer in RECEIVED_ERROR state when no extensions are provided', async (test) => {
-  //       try {
-  //         const transferExtensions = []
-  //         const payload = {
-  //           errorInformation: {
-  //             errorCode: '5001',
-  //             errorDescription: 'error description',
-  //             extensionList: {
-  //               extension: transferExtensions
-  //             }
-  //           }
-  //         }
-  //         const errorPayeeCustom = payload.errorInformation.errorCode.toString()
-  //         const errorPayeeCustomDescription = payload.errorInformation.errorDescription
-  //         const transferErrorRecord = {
-  //           transferId,
-  //           transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-  //           errorCode: errorPayeeCustom,
-  //           errorDescription: errorPayeeCustomDescription,
-  //           createdDate: transactionTimestamp
-  //         }
-  //         transferStateChangeRecord.reason = payload.errorInformation.errorDescription
-  //         const expectedResult = {
-  //           saveTransferAbortedExecuted: true,
-  //           transferStateChangeRecord,
-  //           transferErrorRecord,
-  //           transferExtensions
-  //         }
-
-  //         sandbox.stub(Db, 'getKnex')
-  //         const trxStub = sandbox.stub()
-  //         trxStub.commit = sandbox.stub()
-  //         const knexStub = sandbox.stub()
-  //         knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-  //         Db.getKnex.returns(knexStub)
-  //         const transactingStub = sandbox.stub()
-  //         const insertStub = sandbox.stub()
-  //         const whereStub = sandbox.stub()
-  //         knexStub.returns({
-  //           transacting: transactingStub.returns({
-  //             insert: insertStub,
-  //             where: whereStub.returns({
-  //               forUpdate: sandbox.stub().returns({
-  //                 first: sandbox.stub().returns({
-  //                   orderBy: sandbox.stub().returns(insertedTransferStateChange)
-  //                 })
-  //               })
-  //             })
-  //           })
-  //         })
-
-  //         const response = await ModuleProxy.saveTransferAborted(transferId, payload)
-  //         test.deepEqual(expectedResult, response, 'response matches expected result')
-  //         test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
-  //         test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
-  //         test.ok(insertStub.withArgs(transferStateChangeRecord).calledOnce, 'insert transferStateChangeRecord called once')
-  //         test.ok(insertStub.withArgs(transferErrorRecord).calledOnce, 'insert transferErrorRecord called once')
-  //         test.ok(whereStub.withArgs({ transferId: transferStateChangeRecord.transferId }).calledOnce, 'where with transferId condtion called once')
-  //         test.end()
-  //       } catch (err) {
-  //         Logger.error(`saveTransferAborted failed with error - ${err}`)
-  //         test.fail()
-  //         test.end()
-  //       }
-  //     })
-
-  //     await saveTransferAborted.end()
-  //   } catch (err) {
-  //     Logger.error(`saveTransferAborted failed with error - ${err}`)
-  //     saveTransferAborted.fail()
-  //     await saveTransferAborted.end()
-  //   }
-  // })
-
-  // await transferFacadeTest.test('saveTransferAborted should throw an error', async (test) => {
-  //   try {
-  //     const transferId = 't1'
-  //     const payload = {
-  //       errorInformation: {
-  //         errorCode: '5500',
-  //         errorDescription: 'error text'
-  //       }
-  //     }
-  //     sandbox.stub(Db, 'getKnex')
-  //     const trxStub = sandbox.stub()
-  //     trxStub.commit = sandbox.stub()
-  //     const knexStub = sandbox.stub()
-  //     knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
-  //     Db.getKnex.returns(knexStub)
-  //     const transactingStub = sandbox.stub()
-  //     const insertStub = sandbox.stub()
-  //     knexStub.returns({
-  //       transacting: transactingStub.returns({
-  //         insert: insertStub.throws(new Error('insert error'))
-  //       })
-  //     })
-  //     await TransferFacade.saveTransferAborted(transferId, payload)
-  //     test.fail('Error not thrown')
-  //     test.end()
-  //   } catch (err) {
-  //     Logger.error(`saveTransferAborted failed with error - ${err}`)
-  //     test.pass('Error thrown')
-  //     test.end()
-  //   }
-  // })
-
   await transferFacadeTest.test('saveTransferPrepared save prepared transfer', async (test) => {
     try {
       ParticipantFacade.getByNameAndCurrency.withArgs('dfsp1', 'USD', 1).returns('dfsp1', 1)
@@ -1776,8 +1586,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           const expectedResult = {
             transferStateChangeId: 9,
-            drPositionValue: infoDataStub.drPositionValue + infoDataStub.drAmount,
-            crPositionValue: infoDataStub.crPositionValue + infoDataStub.crAmount
+            drPositionValue: new MlNumber(infoDataStub.drPositionValue).add(infoDataStub.drAmount).toFixed(Config.AMOUNT.SCALE),
+            crPositionValue: new MlNumber(infoDataStub.crPositionValue).add(infoDataStub.crAmount).toFixed(Config.AMOUNT.SCALE)
           }
           let result = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trxStub)
           test.deepEqual(result, expectedResult, 'Expected result is returned')
@@ -1882,8 +1692,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           const expectedResult = {
             transferStateChangeId: 9,
-            drPositionValue: infoDataStub.drPositionValue - infoDataStub.drAmount,
-            crPositionValue: infoDataStub.crPositionValue - infoDataStub.crAmount
+            drPositionValue: new MlNumber(infoDataStub.drPositionValue).subtract(infoDataStub.drAmount).toFixed(Config.AMOUNT.SCALE),
+            crPositionValue: new MlNumber(infoDataStub.crPositionValue).subtract(infoDataStub.crAmount).toFixed(Config.AMOUNT.SCALE)
           }
           const result = await TransferFacade.transferStateAndPositionUpdate(param1, enums)
           test.deepEqual(result, expectedResult, 'Expected result is returned')

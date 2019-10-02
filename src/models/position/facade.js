@@ -35,6 +35,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const participantFacade = require('../participant/facade')
 const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
+const MlNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 
@@ -82,9 +83,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           if (transferState.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
-            const transferAmount = parseFloat(transfer.amount.amount) /* Just do this once,so add to reservedTransfers */
+            const transferAmount = new MlNumber(transfer.amount.amount) /* Just do this once, so add to reservedTransfers */
             reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
-            sumTransfersInBatch = parseFloat((sumTransfersInBatch + transferAmount).toFixed(Config.AMOUNT.SCALE))
+            sumTransfersInBatch = new MlNumber(sumTransfersInBatch).add(transferAmount).toFixed(Config.AMOUNT.SCALE)
           } else {
             transferState.transferStateChangeId = null
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
@@ -97,16 +98,16 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         // Get the effective position for this participantCurrency at the start of processing the Batch
         // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
         const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId: participantCurrency.participantCurrencyId }).forUpdate().select('*').first()
-        const currentPosition = parseFloat(initialParticipantPosition.value)
-        const reservedPosition = parseFloat(initialParticipantPosition.reservedValue)
-        const effectivePosition = parseFloat((currentPosition + reservedPosition).toFixed(Config.AMOUNT.SCALE))
-        initialParticipantPosition.reservedValue = parseFloat((initialParticipantPosition.reservedValue + sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE))
+        const currentPosition = new MlNumber(initialParticipantPosition.value)
+        const reservedPosition = new MlNumber(initialParticipantPosition.reservedValue)
+        const effectivePosition = currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE)
+        initialParticipantPosition.reservedValue = new MlNumber(initialParticipantPosition.reservedValue).add(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE)
         initialParticipantPosition.changedDate = transactionTimestamp
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
         // Get the actual position limit and calculate the available position for the transfers to use in this batch
         // Note: see optimisation decision notes to understand the justification for the algorithm
         const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
-        let availablePosition = parseFloat((participantLimit.value - effectivePosition).toFixed(Config.AMOUNT.SCALE))
+        let availablePosition = new MlNumber(participantLimit.value).subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
         /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
            since further rules are expected we do not do this at this point
            As we enter this next step the order in which the transfer is processed against the Position is critical.
@@ -116,17 +117,17 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
         for (const transferId in reservedTransfers) {
           const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
-          if (availablePosition >= transferAmount) {
-            availablePosition = parseFloat((availablePosition - transferAmount).toFixed(Config.AMOUNT.SCALE))
+          if (new MlNumber(availablePosition).toNumber() >= transferAmount.toNumber()) {
+            availablePosition = new MlNumber(availablePosition).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
             transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
-            sumReserved = parseFloat((sumReserved + transferAmount).toFixed(Config.AMOUNT.SCALE)) /* actually used */
+            sumReserved = new MlNumber(sumReserved).add(transferAmount).toFixed(Config.AMOUNT.SCALE) /* actually used */
           } else {
             transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
             transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
             rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
           }
-          const runningPosition = parseFloat((currentPosition + sumReserved).toFixed(Config.AMOUNT.SCALE)) /* effective position */
-          const runningReservedValue = parseFloat((sumTransfersInBatch - sumReserved).toFixed(Config.AMOUNT.SCALE))
+          const runningPosition = new MlNumber(currentPosition).add(sumReserved).toFixed(Config.AMOUNT.SCALE) /* effective position */
+          const runningReservedValue = new MlNumber(sumTransfersInBatch).subtract(sumReserved).toFixed(Config.AMOUNT.SCALE)
           processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
         }
         /*
@@ -134,14 +135,14 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           So the position moves forward by the sum of the transfers actually reserved (sumReserved)
           and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
         */
-        const processedPositionValue = initialParticipantPosition.value + sumReserved
+        const processedPositionValue = new MlNumber(initialParticipantPosition.value).add(sumReserved)
         await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
-          value: processedPositionValue,
-          reservedValue: parseFloat((initialParticipantPosition.reservedValue - sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE)),
+          value: processedPositionValue.toFixed(Config.AMOUNT.SCALE),
+          reservedValue: new MlNumber(initialParticipantPosition.reservedValue).subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE),
           changedDate: transactionTimestamp
         })
         // TODO this limit needs to be clarified
-        if (processedPositionValue > participantLimit.value * participantLimit.thresholdAlarmPercentage) {
+        if (processedPositionValue.toNumber() > new MlNumber(participantLimit.value).multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
           limitAlarms.push(participantLimit)
         }
         /*
@@ -194,11 +195,11 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
         let latestPosition
         if (isReversal) {
-          latestPosition = participantPosition.value - amount
+          latestPosition = new MlNumber(participantPosition.value).subtract(amount)
         } else {
-          latestPosition = participantPosition.value + amount
+          latestPosition = new MlNumber(participantPosition.value).add(amount)
         }
-        latestPosition = parseFloat(latestPosition.toFixed(Config.AMOUNT.SCALE))
+        latestPosition = latestPosition.toFixed(Config.AMOUNT.SCALE)
         await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({
           value: latestPosition,
           changedDate: transactionTimestamp
