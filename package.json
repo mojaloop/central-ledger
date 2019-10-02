@@ -86,7 +86,7 @@
     "@mojaloop/central-services-stream": "8.1.1",
     "@mojaloop/event-sdk": "8.1.0",
     "@mojaloop/forensic-logging-client": "5.2.0",
-    "@mojaloop/ml-number": "^8.1.0",
+    "@mojaloop/ml-number": "8.1.0",
     "@now-ims/hapi-now-auth": "2.0.0",
     "awaitify-stream": "1.0.2",
     "base64url": "3.0.1",
