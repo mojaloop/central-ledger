@@ -39,7 +39,7 @@ const TransferInternalState = Enum.Transfers.TransferInternalState
 const TransferExtensionModel = require('./transferExtension')
 const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
-const MlNumber = require('@mojaloop/ml-number')
+const MLNumber = require('@mojaloop/ml-number')
 const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -725,7 +725,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           }
           await knex('participantPosition')
             .update({
-              value: new MlNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
+              value: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
               changedDate: transactionTimestamp
             })
             .where('participantPositionId', info.drPositionId)
@@ -735,7 +735,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             .insert({
               participantPositionId: info.drPositionId,
               transferStateChangeId: transferStateChangeId,
-              value: new MlNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
+              value: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
               reservedValue: info.drReservedValue,
               createdDate: param1.createdDate
             })
@@ -748,7 +748,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           }
           await knex('participantPosition')
             .update({
-              value: new MlNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
+              value: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
               changedDate: transactionTimestamp
             })
             .where('participantPositionId', info.crPositionId)
@@ -758,7 +758,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
             .insert({
               participantPositionId: info.crPositionId,
               transferStateChangeId: transferStateChangeId,
-              value: new MlNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
+              value: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE),
               reservedValue: info.crReservedValue,
               createdDate: param1.createdDate
             })
@@ -776,8 +776,8 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
       }
       return {
         transferStateChangeId,
-        drPositionValue: new MlNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
-        crPositionValue: new MlNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE)
+        drPositionValue: new MLNumber(info.drPositionValue).add(info.drAmount).toFixed(Config.AMOUNT.SCALE),
+        crPositionValue: new MLNumber(info.crPositionValue).add(info.crAmount).toFixed(Config.AMOUNT.SCALE)
       }
     }
 
