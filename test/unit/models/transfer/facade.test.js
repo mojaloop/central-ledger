@@ -32,7 +32,7 @@ const Sinon = require('sinon')
 const Config = require('../../../../src/lib/config')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const MlNumber = require('@mojaloop/ml-number')
+const MLNumber = require('@mojaloop/ml-number')
 const TransferFacade = require('../../../../src/models/transfer/facade')
 const transferExtensionModel = require('../../../../src/models/transfer/transferExtension')
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -1586,8 +1586,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           const expectedResult = {
             transferStateChangeId: 9,
-            drPositionValue: new MlNumber(infoDataStub.drPositionValue).add(infoDataStub.drAmount).toFixed(Config.AMOUNT.SCALE),
-            crPositionValue: new MlNumber(infoDataStub.crPositionValue).add(infoDataStub.crAmount).toFixed(Config.AMOUNT.SCALE)
+            drPositionValue: new MLNumber(infoDataStub.drPositionValue).add(infoDataStub.drAmount).toFixed(Config.AMOUNT.SCALE),
+            crPositionValue: new MLNumber(infoDataStub.crPositionValue).add(infoDataStub.crAmount).toFixed(Config.AMOUNT.SCALE)
           }
           let result = await TransferFacade.transferStateAndPositionUpdate(param1, enums, trxStub)
           test.deepEqual(result, expectedResult, 'Expected result is returned')
@@ -1692,8 +1692,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
 
           const expectedResult = {
             transferStateChangeId: 9,
-            drPositionValue: new MlNumber(infoDataStub.drPositionValue).subtract(infoDataStub.drAmount).toFixed(Config.AMOUNT.SCALE),
-            crPositionValue: new MlNumber(infoDataStub.crPositionValue).subtract(infoDataStub.crAmount).toFixed(Config.AMOUNT.SCALE)
+            drPositionValue: new MLNumber(infoDataStub.drPositionValue).subtract(infoDataStub.drAmount).toFixed(Config.AMOUNT.SCALE),
+            crPositionValue: new MLNumber(infoDataStub.crPositionValue).subtract(infoDataStub.crAmount).toFixed(Config.AMOUNT.SCALE)
           }
           const result = await TransferFacade.transferStateAndPositionUpdate(param1, enums)
           test.deepEqual(result, expectedResult, 'Expected result is returned')
