@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "8.2.1",
+  "version": "8.2.2",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -119,6 +119,7 @@
   "devDependencies": {
     "async-retry": "1.2.3",
     "faucet": "0.0.1",
+    "get-port": "5.0.0",
     "jsdoc": "3.6.3",
     "jsonpath": "1.0.2",
     "nodemon": "1.19.3",
