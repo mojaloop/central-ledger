@@ -117,9 +117,9 @@ const transformTransferToFulfil = (transfer) => {
       transferState: transfer.transferStateEnumeration
     }
     if (transfer.fulfilment !== '0') result.fulfilment = transfer.fulfilment
-    const extensionList = transformExtensionList(transfer.extensionList)
-    if (extensionList.length > 0) {
-      result.extensionList = extensionList
+    const extension = transformExtensionList(transfer.extensionList)
+    if (extension.length > 0) {
+      result.extensionList = { extension }
     }
     return Util.omitNil(result)
   } catch (err) {
