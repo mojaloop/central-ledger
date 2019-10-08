@@ -340,7 +340,11 @@ const fulfil = async (error, messages) => {
       } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
         Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
         /**
-         * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk prepare
+         * HOWTO: Nearly impossible to trigger for bulk - an individual transfer from a bulk needs to be triggered
+         * for processing in order to have the fulfil duplicate hash recorded. While it is still in RESERVED state
+         * the individual transfer needs to be requested by another bulk fulfil request!
+         *
+         * TODO: find a way to trigger this code branch and handle it at BulkProcessingHandler (not in scope of #967)
          */
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

@@ -101,8 +101,24 @@ const bulkProcessing = async (error, messages) => {
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
     const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
+    /**
+     * Acquire bulk transfer info by transferId below needs to be improved. Currently, if
+     * an individual transfer fulfil is attempted as part of another bulk, bulkTransferInfo
+     * refers to the original bulkTransferId where that inidividual transfer has been added
+     * initially. This leads to an error which could be hard to trace back and determine
+     * the reason why it occured. Instead, the aquired bulkTransferInfo.bulkTransferId
+     * needs to be compared to the original bulkTransferId currently processed and an error
+     * needs to be thrown when these not match. The underlying problem is that as part of
+     * the reused chain prepare-position-bulk-processing / fulfil-position-bulk-processing,
+     * the bulkTransferId is not being transmitted!
+     *
+     * TODO: Add bulkTransferId field to messages from PrepareHandler and PositionHandler
+     * and compare the transmitted bulkTransferId to the bellow bulkTransferInfo.bulkTransferId
+     * (not in scope of #967)
+     */
     const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
-    let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription, exitCode
+
+    let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription
     let produceNotification = false
 
     if ([Enum.Transfers.BulkTransferState.RECEIVED, Enum.Transfers.BulkTransferState.PENDING_PREPARE].includes(bulkTransferInfo.bulkTransferStateId)) {
