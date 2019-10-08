@@ -95,7 +95,9 @@ const bulkProcessing = async (error, messages) => {
       : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
         : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED ? Enum.Events.ActionLetter.bulkTimeoutReceived
           : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
-            : Enum.Events.ActionLetter.unknown)))
+            : (action === Enum.Events.Event.Action.PREPARE_DUPLICATE ? Enum.Events.ActionLetter.bulkPrepareDuplicate
+              : (action === Enum.Events.Event.Action.FULFIL_DUPLICATE ? Enum.Events.ActionLetter.bulkFulfilDuplicate
+                : Enum.Events.ActionLetter.unknown)))))
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
     const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
@@ -167,43 +169,47 @@ const bulkProcessing = async (error, messages) => {
       errorCode = 1 // TODO: Change to BULK API spec defined error and move description text to enum
       errorDescription = 'Individual transfer can not be processed when bulk transfer state is final'
     }
-    await BulkTransferService.bulkTransferAssociationUpdate(
-      transferId, bulkTransferInfo.bulkTransferId, {
-        bulkProcessingStateId: processingStateId,
-        errorCode,
-        errorDescription
-      })
-    let exists
-    if (criteriaState !== Enum.Transfers.BulkTransferState.PROCESSING) {
-      exists = await BulkTransferService.bulkTransferAssociationExists(
-        bulkTransferInfo.bulkTransferId,
-        Enum.Transfers.BulkProcessingState[criteriaState]
-      )
-    } else {
-      exists = await BulkTransferService.bulkTransferAssociationExists(
-        bulkTransferInfo.bulkTransferId,
-        Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.PROCESSING]
-      ) || await BulkTransferService.bulkTransferAssociationExists(
-        bulkTransferInfo.bulkTransferId,
-        Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.ACCEPTED]
-      )
-    }
-    if (exists) {
-      bulkTransferState = incompleteBulkState
-    } else {
-      bulkTransferState = completedBulkState
-      produceNotification = true
-    }
-    if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
-      await BulkTransferService.createBulkTransferState({
-        bulkTransferId: bulkTransferInfo.bulkTransferId,
-        bulkTransferStateId: bulkTransferState
-      })
+
+    if (!exitCode) {
+      await BulkTransferService.bulkTransferAssociationUpdate(
+        transferId, bulkTransferInfo.bulkTransferId, {
+          bulkProcessingStateId: processingStateId,
+          errorCode,
+          errorDescription
+        })
+      let exists
+      if (criteriaState !== Enum.Transfers.BulkTransferState.PROCESSING) {
+        exists = await BulkTransferService.bulkTransferAssociationExists(
+          bulkTransferInfo.bulkTransferId,
+          Enum.Transfers.BulkProcessingState[criteriaState]
+        )
+      } else {
+        exists = await BulkTransferService.bulkTransferAssociationExists(
+          bulkTransferInfo.bulkTransferId,
+          Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.PROCESSING]
+        ) || await BulkTransferService.bulkTransferAssociationExists(
+          bulkTransferInfo.bulkTransferId,
+          Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.ACCEPTED]
+        )
+      }
+      if (exists) {
+        bulkTransferState = incompleteBulkState
+      } else {
+        bulkTransferState = completedBulkState
+        produceNotification = true
+      }
+      if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
+        await BulkTransferService.createBulkTransferState({
+          bulkTransferId: bulkTransferInfo.bulkTransferId,
+          bulkTransferStateId: bulkTransferState
+        })
+      }
     }
 
     let getBulkTransferByIdResult
     if (exitCode > 0) {
-      Logger.info(Util.breadcrumb(location, { path: 'exitCodeGt0' }))
+      Logger.info(Util.breadcrumb(location, { path: 'exitCodeSet' }))
+      Logger.error(Util.breadcrumb(location, `{exitCode: ${exitCode}, errorCode: ${errorCode}, errorDescription: ${errorDescription}}--${actionLetter}1`))
       // TODO: Prepare Bulk Error Notification callback message
     } else if (produceNotification) {
       Logger.info(Util.breadcrumb(location, { path: 'produceNotification' }))
@@ -216,7 +222,7 @@ const bulkProcessing = async (error, messages) => {
 
     if (produceNotification) {
       if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && action === Enum.Events.Event.Action.BULK_PREPARE) {
-        Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}1`))
+        Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}2`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
         const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
@@ -232,7 +238,7 @@ const bulkProcessing = async (error, messages) => {
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
-        Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}2`))
+        Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}3`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
         const normalizedKeys = Object.keys(headers).reduce((keys, k) => { keys[k.toLowerCase()] = k; return keys }, {})
         const payeeBulkResponseHeaders = Util.Headers.transformHeaders(headers, { httpMethod: headers[normalizedKeys[Enum.Http.Headers.FSPIOP.HTTP_METHOD]], sourceFsp: Enum.Http.Headers.FSPIOP.SWITCH.value, destinationFsp: participants.payeeFsp })
@@ -278,7 +284,7 @@ const bulkProcessing = async (error, messages) => {
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
-        Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}3`))
+        Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}4`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`).toApiErrorObject(Config.ERROR_HANDLING)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
