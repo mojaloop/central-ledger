@@ -113,13 +113,13 @@ const transformExtensionList = (extensionList) => {
 const transformTransferToFulfil = (transfer) => {
   try {
     const result = {
-      fulfilment: transfer.fulfilment,
       completedTimestamp: transfer.completedTimestamp,
       transferState: transfer.transferStateEnumeration
     }
-    const extensionList = transformExtensionList(transfer.extensionList)
-    if (extensionList.length > 0) {
-      result.extensionList = extensionList
+    if (transfer.fulfilment !== '0') result.fulfilment = transfer.fulfilment
+    const extension = transformExtensionList(transfer.extensionList)
+    if (extension.length > 0) {
+      result.extensionList = { extension }
     }
     return Util.omitNil(result)
   } catch (err) {
