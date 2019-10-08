@@ -132,7 +132,7 @@ const prepare = async (error, messages) => {
         message.value.content.uriParams = { id: transferId }
         const eventDetail = { functionality, action: TransferEventAction.PREPARE_DUPLICATE }
         /**
-         * TODO:967 BULK-NOT_OK, but after fulfil reported to payer as a GET fulfilled, not as duplicate
+         * TODO:967 BULK-NEEDS_CLAIRTY - after fulfil reported to payer as a GET fulfilled, not as duplicate
          * also ML Object Store fails initially with dup_key, which requires manual clean up before request
          * HOWTO: Not possible to reproduce with a regular transfer. Complete a bulk, then drop the object
          * store and prepare another bulk, without generating new transferId for one of the transfers
@@ -143,7 +143,7 @@ const prepare = async (error, messages) => {
       } else {
         Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
         /**
-         * TODO:967 BULK-NOT_OK, needs to be processed by BulkProcessingHandler (as PREPARE_DUPLICATE).
+         * TODO:967 BULK-NEEDS_CLAIRTY - needs to be processed by BulkProcessingHandler (as PREPARE_DUPLICATE).
          * Otherwise bulk would hang as PENDING_PREPARE and will never change to ACCEPTED.
          * HOWTO: Prepare a bulk, drop the object store, prepare another bulk with matching transferId
          */
@@ -206,7 +206,7 @@ const prepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
         await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
-        const eventDetail = { functionality, action } 
+        const eventDetail = { functionality, action }
         /**
          * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
          * HOWTO: For regular transfers this branch may be triggered by sending
@@ -325,8 +325,7 @@ const fulfil = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, `callbackFinilized2--${actionLetter}3`))
           const eventDetail = { functionality, action: TransferEventAction.FULFIL_DUPLICATE }
           /**
-           * TODO-967: BulkProcessingHandler
-           * HOWTO: During bulk fulfil use an individualTransfer from a previous fulfil
+           * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
            */
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -340,6 +339,9 @@ const fulfil = async (error, messages) => {
         }
       } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
         Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
+        /**
+         * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk prepare
+         */
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true

@@ -124,9 +124,8 @@ const bulkProcessing = async (error, messages) => {
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
-        exitCode = 2
-        errorCode = 2 // TODO: Change to MLAPI spec defined error and move description text to enum
-        errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.RECEIVED} state`
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.RECEIVED} state`)
+        throw fspiopError
       }
     } else if ([Enum.Transfers.BulkTransferState.ACCEPTED].includes(bulkTransferInfo.bulkTransferStateId)) {
       if (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED) {
@@ -137,9 +136,8 @@ const bulkProcessing = async (error, messages) => {
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
-        exitCode = 3
-        errorCode = 3 // TODO: Change to MLAPI spec defined error and move description text to enum
-        errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.ACCEPTED} state`)
+        throw fspiopError
       }
     } else if ([Enum.Transfers.BulkTransferState.PROCESSING, Enum.Transfers.BulkTransferState.PENDING_FULFIL, Enum.Transfers.BulkTransferState.EXPIRING].includes(bulkTransferInfo.bulkTransferStateId)) {
       criteriaState = Enum.Transfers.BulkTransferState.PROCESSING
@@ -160,58 +158,64 @@ const bulkProcessing = async (error, messages) => {
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
-        exitCode = 4
-        errorCode = 4 // TODO: Change to BULK API spec defined error and move description text to enum
-        errorDescription = `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`
+        const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
+        throw fspiopError
       }
+    } else if (bulkTransferInfo.bulkTransferStateId === Enum.Transfers.BulkTransferState.COMPLETED && action === Enum.Events.Event.Action.FULFIL_DUPLICATE) {
+      /**
+       * Bulk transfer state is detected as COMPLETED, because data is fetched by trasnferId,
+       * not by bulkTransferId, thus the duplicate fulfil refers to the original bulk where
+       * it exists, not the current bulk in which duplicate fulfil is included.
+       *
+       * TODO:967 BULK-NEEDS_CLAIRTY - Currently this is only added to the log and no
+       * errorInformation is queued to be sent to Payee for the duplicate fulfil.
+       * Also, please be aware, that such a duplicate fulfil may be processed after
+       * all expected individual transfers have been processed and notification has
+       * been sent to parties!
+       */
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `fulfil-duplicate error occurred for transferId ${transferId}`)
+      throw fspiopError
     } else { // ['PENDING_INVALID', 'COMPLETED', 'REJECTED', 'INVALID']
-      exitCode = 1
-      errorCode = 1 // TODO: Change to BULK API spec defined error and move description text to enum
-      errorDescription = 'Individual transfer can not be processed when bulk transfer state is final'
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Could not process transferId ${transferId} after bulk is finilized`)
+      throw fspiopError
     }
 
-    if (!exitCode) {
-      await BulkTransferService.bulkTransferAssociationUpdate(
-        transferId, bulkTransferInfo.bulkTransferId, {
-          bulkProcessingStateId: processingStateId,
-          errorCode,
-          errorDescription
-        })
-      let exists
-      if (criteriaState !== Enum.Transfers.BulkTransferState.PROCESSING) {
-        exists = await BulkTransferService.bulkTransferAssociationExists(
-          bulkTransferInfo.bulkTransferId,
-          Enum.Transfers.BulkProcessingState[criteriaState]
-        )
-      } else {
-        exists = await BulkTransferService.bulkTransferAssociationExists(
-          bulkTransferInfo.bulkTransferId,
-          Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.PROCESSING]
-        ) || await BulkTransferService.bulkTransferAssociationExists(
-          bulkTransferInfo.bulkTransferId,
-          Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.ACCEPTED]
-        )
-      }
-      if (exists) {
-        bulkTransferState = incompleteBulkState
-      } else {
-        bulkTransferState = completedBulkState
-        produceNotification = true
-      }
-      if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
-        await BulkTransferService.createBulkTransferState({
-          bulkTransferId: bulkTransferInfo.bulkTransferId,
-          bulkTransferStateId: bulkTransferState
-        })
-      }
+    await BulkTransferService.bulkTransferAssociationUpdate(
+      transferId, bulkTransferInfo.bulkTransferId, {
+        bulkProcessingStateId: processingStateId,
+        errorCode,
+        errorDescription
+      })
+    let exists
+    if (criteriaState !== Enum.Transfers.BulkTransferState.PROCESSING) {
+      exists = await BulkTransferService.bulkTransferAssociationExists(
+        bulkTransferInfo.bulkTransferId,
+        Enum.Transfers.BulkProcessingState[criteriaState]
+      )
+    } else {
+      exists = await BulkTransferService.bulkTransferAssociationExists(
+        bulkTransferInfo.bulkTransferId,
+        Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.PROCESSING]
+      ) || await BulkTransferService.bulkTransferAssociationExists(
+        bulkTransferInfo.bulkTransferId,
+        Enum.Transfers.BulkProcessingState[Enum.Transfers.BulkTransferState.ACCEPTED]
+      )
+    }
+    if (exists) {
+      bulkTransferState = incompleteBulkState
+    } else {
+      bulkTransferState = completedBulkState
+      produceNotification = true
+    }
+    if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
+      await BulkTransferService.createBulkTransferState({
+        bulkTransferId: bulkTransferInfo.bulkTransferId,
+        bulkTransferStateId: bulkTransferState
+      })
     }
 
     let getBulkTransferByIdResult
-    if (exitCode > 0) {
-      Logger.info(Util.breadcrumb(location, { path: 'exitCodeSet' }))
-      Logger.error(Util.breadcrumb(location, `{exitCode: ${exitCode}, errorCode: ${errorCode}, errorDescription: ${errorDescription}}--${actionLetter}1`))
-      // TODO: Prepare Bulk Error Notification callback message
-    } else if (produceNotification) {
+    if (produceNotification) {
       Logger.info(Util.breadcrumb(location, { path: 'produceNotification' }))
       getBulkTransferByIdResult = await BulkTransferService.getBulkTransferById(bulkTransferInfo.bulkTransferId)
     } else {
