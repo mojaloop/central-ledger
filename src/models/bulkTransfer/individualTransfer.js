@@ -41,10 +41,12 @@ const getAllById = async (id) => {
         )
         .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts1.maxTransferStateChangeId')
         .innerJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
+        .innerJoin('bulkProcessingState AS bps', 'bps.bulkProcessingStateId', 'bulkTransferAssociation.bulkProcessingStateId')
         .where({ 'bulkTransferAssociation.bulkTransferId': id })
         .select('bulkTransferAssociation.transferId', 'tf.ilpFulfilment AS fulfilment',
           'bulkTransferAssociation.errorCode', 'bulkTransferAssociation.errorDescription',
-          'ts.enumeration AS transferStateEnum')
+          'ts.enumeration AS transferStateEnum', 'bulkTransferAssociation.bulkProcessingStateId',
+          'bps.name AS bulkProcessingState')
       return result
     })
   } catch (err) {

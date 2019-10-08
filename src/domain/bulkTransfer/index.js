@@ -74,14 +74,13 @@ const getBulkTransferById = async (id) => {
         const result = {
           transferId: transfer.transferId
         }
-        if (transfer.fulfilment) {
-          result.fulfilment = transfer.fulfilment
-        }
         if (transfer.errorCode) {
           result.errorInformation = {
             errorCode: transfer.errorCode,
             errorDescription: transfer.errorDescription
           }
+        } else if (transfer.fulfilment) {
+          result.fulfilment = transfer.fulfilment
         }
         if (extensions.length > 0) {
           if (!transfer.fulfilment) {
@@ -99,11 +98,10 @@ const getBulkTransferById = async (id) => {
         if (extension && extension.length > 0) {
           result.extensionList = { extension }
         }
-        const allowedPayeeTransfers = [
-          Enum.Transfers.TransferState.RESERVED,
-          Enum.Transfers.TransferState.COMMITTED
-        ]
-        if (allowedPayeeTransfers.includes(transfer.transferStateEnum)) {
+        if ((bulkTransfer.bulkTransferStateId === Enum.Transfers.BulkTransferState.ACCEPTED &&
+          transfer.bulkProcessingStateId === Enum.Transfers.BulkProcessingState.ACCEPTED) ||
+          (bulkTransfer.bulkTransferStateId === Enum.Transfers.BulkTransferState.COMPLETED &&
+          transfer.bulkProcessingStateId > Enum.Transfers.BulkProcessingState.PROCESSING)) {
           payeeIndividualTransfers.push(result)
         }
         return resolve(result)
