@@ -355,7 +355,7 @@ const fulfil = async (error, messages) => {
           `Invalid transferStateEnumeration:(${transferStateEnum}) for event action:(${action}) and type:(${type})`).toApiErrorObject(Config.ERROR_HANDLING)
         const eventDetail = { functionality, action: TransferEventAction.COMMIT }
         /**
-         * TODO: BulkProcessingHandler
+         * HOWTO: Impossible to trigger for individual transfer in a bulk? (not in scope of #967)
          */
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
@@ -368,14 +368,12 @@ const fulfil = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorModified2--${actionLetter}7`))
         eventDetail = { functionality, action: TransferEventAction.FULFIL_DUPLICATE }
         /**
-         * TODO: BulkProcessingHandler
+         * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil,
+         * but use different fulfilment value.
          */
       } else {
         Logger.info(Util.breadcrumb(location, `callbackErrorModified3--${actionLetter}8`))
         eventDetail = { functionality, action: TransferEventAction.ABORT_DUPLICATE }
-        /**
-         * TODO: BulkProcessingHandler
-         */
       }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
@@ -394,7 +392,7 @@ const fulfil = async (error, messages) => {
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
           const eventDetail = { functionality, action: TransferEventAction.COMMIT }
           /**
-           * TODO: BulkProcessingHandler
+           * TODO: BulkProcessingHandler (not in scope of #967)
            */
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
@@ -403,7 +401,7 @@ const fulfil = async (error, messages) => {
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
           const eventDetail = { functionality, action: TransferEventAction.COMMIT }
           /**
-           * TODO: BulkProcessingHandler
+           * TODO: BulkProcessingHandler (not in scope of #967)
            */
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
@@ -453,7 +451,7 @@ const fulfil = async (error, messages) => {
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${type})`)
         const eventDetail = { functionality, action: TransferEventAction.COMMIT }
         /**
-         * TODO: BulkProcessingHandler
+         * TODO: BulkProcessingHandler (not in scope of #967)
          */
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError

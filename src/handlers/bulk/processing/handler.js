@@ -189,7 +189,12 @@ const bulkProcessing = async (error, messages) => {
        * all expected individual transfers have been processed and notification has
        * been sent to parties!
        */
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `fulfil-duplicate error occurred for transferId ${transferId}`)
+      let fspiopError
+      if (payload && payload.errorInformation) {
+        fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(payload.errorInformation) // handles Modified request errorInformation payload
+      } else {
+        fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `fulfil-duplicate error occurred for transferId ${transferId}`)
+      }
       throw fspiopError
     } else { // ['PENDING_INVALID', 'COMPLETED', 'REJECTED', 'INVALID']
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Could not process transferId ${transferId} after bulk is finilized`)
