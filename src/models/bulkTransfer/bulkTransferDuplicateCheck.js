@@ -25,7 +25,7 @@
 'use strict'
 
 /**
- * @module src/models/transfer/BulkTransferDuplicateCheck/
+ * @module src/models/bulkTransfer/BulkTransferDuplicateCheck/
  */
 
 const Db = require('../../lib/db')

@@ -42,6 +42,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
 const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
+const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 
 const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
 
@@ -91,14 +92,14 @@ const bulkFulfil = async (error, messages) => {
     let params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    const isFulfilment = true
-    const { isDuplicateId, isResend, identity } = await BulkTransferService.checkDuplicate(bulkTransferId, payload.hash, isFulfilment)
-    if (isDuplicateId && isResend) { // TODO: handle resend
+
+    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload.hash, BulkTransferService.getBulkTransferFulfilmentDuplicateCheck, BulkTransferService.saveBulkTransferFulfilmentDuplicateCheck)
+    if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend
       Logger.info(Util.breadcrumb(location, 'resend'))
       Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
-    if (isDuplicateId && !isResend) { // TODO: handle modified request
+    if (hasDuplicateId && !hasDuplicateHash) { // TODO: handle modified request
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
       Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
@@ -111,7 +112,7 @@ const bulkFulfil = async (error, messages) => {
       Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
         Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
-        state = await BulkTransferService.bulkFulfil(payload, identity)
+        state = await BulkTransferService.bulkFulfil(payload)
       } catch (err) { // TODO: handle insert errors
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.info(Util.breadcrumb(location, 'notImplemented'))

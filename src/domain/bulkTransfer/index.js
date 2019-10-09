@@ -39,26 +39,6 @@ const IndividualTransferModel = require('../../models/bulkTransfer/individualTra
 const IndividualTransferExtensionModel = require('../../models/transfer/transferExtension')
 const Logger = require('@mojaloop/central-services-logger')
 
-const checkDuplicate = async (bulkTransferId, hash, isFulfilment = null) => {
-  try {
-    let result
-
-    if (!hash) {
-      throw new Error('Invalid hash')
-    }
-
-    if (!isFulfilment) {
-      result = await BulkTransferDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
-    } else {
-      result = await BulkTransferFulfilmentDuplicateCheckModel.checkDuplicate(bulkTransferId, hash)
-    }
-    return result
-  } catch (err) {
-    Logger.error(err)
-    throw err
-  }
-}
-
 const getBulkTransferById = async (id) => {
   try {
     const bulkTransfer = await BulkTransferModel.getById(id)
@@ -124,7 +104,7 @@ const getBulkTransferById = async (id) => {
         })
       } else {
         bulkExtension = bulkTransferExtensions.filter(ext => {
-          return !!ext.bulkTransferFulfilmentId
+          return ext.isFulfilment
         }).map(ext => {
           return { key: ext.key, value: ext.value }
         })
@@ -148,7 +128,6 @@ const getBulkTransferById = async (id) => {
 }
 
 const BulkTransferService = {
-  checkDuplicate,
   getBulkTransferById,
   getParticipantsById: BulkTransferModel.getParticipantsById,
   bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,
@@ -159,7 +138,9 @@ const BulkTransferService = {
   createBulkTransferState: BulkTransferStateChangeModel.create,
   getBulkTransferState: BulkTransferStateChangeModel.getByTransferId,
   getBulkTransferDuplicateCheck: BulkTransferDuplicateCheckModel.getBulkTransferDuplicateCheck,
-  saveBulkTransferDuplicateCheck: BulkTransferDuplicateCheckModel.saveBulkTransferDuplicateCheck
+  saveBulkTransferDuplicateCheck: BulkTransferDuplicateCheckModel.saveBulkTransferDuplicateCheck,
+  getBulkTransferFulfilmentDuplicateCheck: BulkTransferFulfilmentDuplicateCheckModel.getBulkTransferFulfilmentDuplicateCheck,
+  saveBulkTransferFulfilmentDuplicateCheck: BulkTransferFulfilmentDuplicateCheckModel.saveBulkTransferFulfilmentDuplicateCheck
 }
 
 module.exports = BulkTransferService

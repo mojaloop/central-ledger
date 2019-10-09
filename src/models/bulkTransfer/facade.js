@@ -77,10 +77,9 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
   }
 }
 
-const saveBulkTransferProcessing = async (payload, bulkTransferFulfilmentId, stateReason = null, isValid = true) => {
+const saveBulkTransferProcessing = async (payload, stateReason = null, isValid = true) => {
   try {
     const bulkTransferFulfilmentRecord = {
-      bulkTransferFulfilmentId,
       bulkTransferId: payload.bulkTransferId,
       completedDate: Time.getUTCString(new Date(payload.completedTimestamp))
     }
@@ -102,7 +101,7 @@ const saveBulkTransferProcessing = async (payload, bulkTransferFulfilmentId, sta
           const bulkTransferExtensionsRecordList = payload.extensionList.extension.map(ext => {
             return {
               bulkTransferId: payload.bulkTransferId,
-              bulkTransferFulfilmentId,
+              isFulfilment: true,
               key: ext.key,
               value: ext.value
             }
