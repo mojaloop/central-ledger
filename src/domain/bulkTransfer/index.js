@@ -157,7 +157,9 @@ const BulkTransferService = {
   bulkTransferAssociationUpdate: BulkTransferAssociationModel.update,
   bulkTransferAssociationExists: BulkTransferAssociationModel.exists,
   createBulkTransferState: BulkTransferStateChangeModel.create,
-  getBulkTransferState: BulkTransferStateChangeModel.getByTransferId
+  getBulkTransferState: BulkTransferStateChangeModel.getByTransferId,
+  getBulkTransferDuplicateCheck: BulkTransferDuplicateCheckModel.getBulkTransferDuplicateCheck,
+  saveBulkTransferDuplicateCheck: BulkTransferDuplicateCheckModel.saveBulkTransferDuplicateCheck
 }
 
 module.exports = BulkTransferService
