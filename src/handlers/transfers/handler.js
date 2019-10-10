@@ -136,6 +136,9 @@ const prepare = async (error, messages) => {
          * also ML Object Store fails initially with dup_key, which requires manual clean up before request
          * HOWTO: Not possible to reproduce with a regular transfer. Complete a bulk, then drop the object
          * store and prepare another bulk, without generating new transferId for one of the transfers
+         *
+         * no MLOS related id checks
+         * errorInformation for the correct transerId association
          */
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

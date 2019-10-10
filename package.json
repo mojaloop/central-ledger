@@ -75,7 +75,7 @@
     "@hapi/inert": "5.2.2",
     "@hapi/joi": "16.1.5",
     "@hapi/vision": "5.5.4",
-    "@mojaloop/central-object-store": "7.1.0",
+    "@mojaloop/central-object-store": "file:../central-object-store",
     "@mojaloop/central-services-auth": "5.2.1",
     "@mojaloop/central-services-database": "7.4.0",
     "@mojaloop/central-services-error-handling": "8.2.0",
