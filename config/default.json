@@ -33,10 +33,6 @@
     "CONNECT_TIMEOUT": 45000,
     "RECONNECT_INTERVAL": 5000
   },
-  "DB_CONNECTION": {
-    "POOL_MIN": 10,
-    "POOL_MAX": 30
-  },
   "MONGODB": {
     "DISABLED": false,
     "URI": "mongodb://localhost:27017/mlos"

@@ -44,26 +44,26 @@ module.exports = {
     },
     pool: {
       // minimum size
-      min: RC.DATABASE.POOL_MIN_SIZE ? RC.DATABASE.POOL_MIN_SIZE : 2,
+      min: RC.DATABASE.POOL_MIN_SIZE,
       // maximum size
-      max: RC.DATABASE.POOL_MAX_SIZE ? RC.DATABASE.POOL_MAX_SIZE : 10,
+      max: RC.DATABASE.POOL_MAX_SIZE,
       // acquire promises are rejected after this many milliseconds
       // if a resource cannot be acquired
-      acquireTimeoutMillis: RC.DATABASE.ACQUIRE_TIMEOUT_MILLIS ? RC.DATABASE.ACQUIRE_TIMEOUT_MILLIS : 30000,
+      acquireTimeoutMillis: RC.DATABASE.ACQUIRE_TIMEOUT_MILLIS,
       // create operations are cancelled after this many milliseconds
       // if a resource cannot be acquired
-      createTimeoutMillis: RC.DATABASE.CREATE_TIMEOUT_MILLIS ? RC.DATABASE.CREATE_TIMEOUT_MILLIS : 3000,
+      createTimeoutMillis: RC.DATABASE.CREATE_TIMEOUT_MILLIS,
       // destroy operations are awaited for at most this many milliseconds
       // new resources will be created after this timeout
-      destroyTimeoutMillis: RC.DATABASE.DESTROY_TIMEOUT_MILLIS ? RC.DATABASE.DESTROY_TIMEOUT_MILLIS : 5000,
+      destroyTimeoutMillis: RC.DATABASE.DESTROY_TIMEOUT_MILLIS,
       // free resouces are destroyed after this many milliseconds
-      idleTimeoutMillis: RC.DATABASE.IDLE_TIMEOUT_MILLIS ? RC.DATABASE.IDLE_TIMEOUT_MILLIS : 30000,
+      idleTimeoutMillis: RC.DATABASE.IDLE_TIMEOUT_MILLIS,
       // how often to check for idle resources to destroy
-      reapIntervalMillis: RC.DATABASE.REAP_INTERVAL_MILLIS ? RC.DATABASE.REAP_INTERVAL_MILLIS : 1000,
+      reapIntervalMillis: RC.DATABASE.REAP_INTERVAL_MILLIS,
       // long long to idle after failed create before trying again
-      createRetryIntervalMillis: RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS ? RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS : 200
+      createRetryIntervalMillis: RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS
       // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
     },
-    debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false
+    debug: RC.DATABASE.DEBUG
   }
 }

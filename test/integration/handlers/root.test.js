@@ -51,7 +51,7 @@ Test('Root handler test', async handlersTest => {
   const startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
-      await Db.connect(Config.DATABASE_URI)
+      await Db.connect(Config.DATABASE)
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
