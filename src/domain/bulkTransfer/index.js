@@ -45,12 +45,10 @@ const getBulkTransferById = async (id) => {
     const bulkTransferExtensions = await BulkTransferExtensionModel.getByBulkTransferId(id)
     let individualTransfers = await IndividualTransferModel.getAllById(id)
     const payeeIndividualTransfers = []
-    // TODO: re-factor this to move away from Promises and use async-await
+    // TODO: refactor this to move away from Promises and use async-await
     individualTransfers = await Promise.all(individualTransfers.map(async (transfer) => {
       // eslint-disable-next-line no-async-promise-executor
       return new Promise(async (resolve, reject) => {
-        const extensions = await IndividualTransferExtensionModel.getByTransferId(transfer.transferId)
-        let extension
         const result = {
           transferId: transfer.transferId
         }
@@ -61,22 +59,24 @@ const getBulkTransferById = async (id) => {
           }
         } else if (transfer.fulfilment) {
           result.fulfilment = transfer.fulfilment
-        }
-        if (extensions.length > 0) {
-          if (!transfer.fulfilment) {
-            extension = extensions.map(ext => {
-              return { key: ext.key, value: ext.value }
-            })
-          } else {
-            extension = extensions.filter(ext => {
-              return ext.isFulfilment
-            }).map(ext => {
-              return { key: ext.key, value: ext.value }
-            })
+          let extension
+          const extensions = await IndividualTransferExtensionModel.getByTransferId(transfer.transferId)
+          if (extensions.length > 0) {
+            if (!transfer.fulfilment) {
+              extension = extensions.map(ext => {
+                return { key: ext.key, value: ext.value }
+              })
+            } else {
+              extension = extensions.filter(ext => {
+                return ext.isFulfilment
+              }).map(ext => {
+                return { key: ext.key, value: ext.value }
+              })
+            }
           }
-        }
-        if (extension && extension.length > 0) {
-          result.extensionList = { extension }
+          if (extension && extension.length > 0) {
+            result.extensionList = { extension }
+          }
         }
         if ((bulkTransfer.bulkTransferStateId === Enum.Transfers.BulkTransferState.ACCEPTED &&
           transfer.bulkProcessingStateId === Enum.Transfers.BulkProcessingState.ACCEPTED) ||

@@ -125,8 +125,10 @@ const bulkProcessing = async (error, messages) => {
       criteriaState = Enum.Transfers.BulkTransferState.RECEIVED
       incompleteBulkState = Enum.Transfers.BulkTransferState.PENDING_PREPARE
       completedBulkState = Enum.Transfers.BulkTransferState.ACCEPTED
-      if (action === Enum.Events.Event.Action.PREPARE_DUPLICATE) {
+      if (action === Enum.Events.Event.Action.PREPARE_DUPLICATE && state.status === Enum.Events.EventState.ERROR) {
         processingStateId = Enum.Transfers.BulkProcessingState.RECEIVED_DUPLICATE
+        errorCode = payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation.errorDescription
       } else if (action === Enum.Events.Event.Action.BULK_PREPARE && state.status === Enum.Events.EventState.ERROR) {
         processingStateId = Enum.Transfers.BulkProcessingState.RECEIVED_INVALID
         errorCode = payload.errorInformation.errorCode

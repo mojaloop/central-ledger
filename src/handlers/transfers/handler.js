@@ -82,7 +82,7 @@ const toDestination = true
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
 const prepare = async (error, messages) => {
-  const location = { module: 'PrepareHandler', method: '', path: '' } // var object used as pointer
+  const location = { module: 'PrepareHandler', method: '', path: '' }
   const histTimerEnd = Metrics.getHistogram(
     'transfer_prepare',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',
@@ -126,38 +126,40 @@ const prepare = async (error, messages) => {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
       const transfer = await TransferService.getByIdLight(transferId)
       const transferStateEnum = transfer && transfer.transferStateEnumeration
+      const eventDetail = { functionality, action: TransferEventAction.PREPARE_DUPLICATE }
       if ([TransferState.COMMITTED, TransferState.ABORTED].includes(transferStateEnum)) {
-        Logger.info(Util.breadcrumb(location, `callbackFinilized1--${actionLetter}1`))
-        message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-        message.value.content.uriParams = { id: transferId }
-        const eventDetail = { functionality, action: TransferEventAction.PREPARE_DUPLICATE }
-        /**
-         * TODO:967 BULK-NEEDS_CLAIRTY - after fulfil reported to payer as a GET fulfilled, not as duplicate
-         * also ML Object Store fails initially with dup_key, which requires manual clean up before request
-         * HOWTO: Not possible to reproduce with a regular transfer. Complete a bulk, then drop the object
-         * store and prepare another bulk, without generating new transferId for one of the transfers
-         *
-         * no MLOS related id checks
-         * errorInformation for the correct transerId association
-         */
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        Logger.info(Util.breadcrumb(location, 'finalized'))
+        if (action === TransferEventAction.PREPARE) {
+          Logger.info(Util.breadcrumb(location, `callback--${actionLetter}1`))
+          message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+          message.value.content.uriParams = { id: transferId }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          return true
+        } else if (action === TransferEventAction.BULK_PREPARE) {
+          Logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Individual transfer prepare duplicate')
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+          throw fspiopError
+        }
       } else {
-        Logger.info(Util.breadcrumb(location, `inProgress1--${actionLetter}2`))
-        /**
-         * TODO:967 BULK-NEEDS_CLAIRTY - needs to be processed by BulkProcessingHandler (as PREPARE_DUPLICATE).
-         * Otherwise bulk would hang as PENDING_PREPARE and will never change to ACCEPTED.
-         * HOWTO: Prepare a bulk, drop the object store, prepare another bulk with matching transferId
-         */
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        Logger.info(Util.breadcrumb(location, 'inProgress'))
+        if (action === TransferEventAction.PREPARE) {
+          Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          return true
+        } else if (action === TransferEventAction.BULK_PREPARE) {
+          Logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Individual transfer prepare duplicate')
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+          throw fspiopError
+        }
       }
     } else if (hasDuplicateId && !hasDuplicateHash) {
-      Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}3`))
+      Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}5`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
-      const eventDetail = { functionality, action } // BULK-OK
+      const eventDetail = { functionality, action }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
@@ -168,7 +170,7 @@ const prepare = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, 'saveTransfer'))
           await TransferService.prepare(payload)
         } catch (err) {
-          Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}4`))
+          Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}6`))
           Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
           const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const eventDetail = { functionality, action: TransferEventAction.PREPARE }
@@ -180,7 +182,7 @@ const prepare = async (error, messages) => {
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
-        Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}5`))
+        Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
         functionality = TransferEventType.POSITION
         const eventDetail = { functionality, action }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
@@ -192,7 +194,7 @@ const prepare = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
           await TransferService.prepare(payload, reasons.toString(), false)
         } catch (err) {
-          Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+          Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}8`))
           Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
           const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
           const eventDetail = { functionality, action: TransferEventAction.PREPARE }
@@ -206,7 +208,7 @@ const prepare = async (error, messages) => {
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
-        Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}7`))
+        Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}9`))
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, reasons.toString())
         await TransferService.logTransferError(transferId, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code, reasons.toString())
         const eventDetail = { functionality, action }
@@ -236,7 +238,7 @@ const prepare = async (error, messages) => {
 }
 
 const fulfil = async (error, messages) => {
-  const location = { module: 'FulfilHandler', method: '', path: '' } // var object used as pointer
+  const location = { module: 'FulfilHandler', method: '', path: '' }
   const histTimerEnd = Metrics.getHistogram(
     'transfer_fulfil',
     'Consume a fulfil transfer message from the kafka topic and process it accordingly',
@@ -485,7 +487,7 @@ const fulfil = async (error, messages) => {
  * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
  */
 const getTransfer = async (error, messages) => {
-  const location = { module: 'GetTransferHandler', method: '', path: '' } // var object used as pointer
+  const location = { module: 'GetTransferHandler', method: '', path: '' }
   const histTimerEnd = Metrics.getHistogram(
     'transfer_get',
     'Consume a get transfer message from the kafka topic and process it accordingly',
