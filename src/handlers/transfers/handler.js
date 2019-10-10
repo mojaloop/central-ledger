@@ -287,9 +287,11 @@ const fulfil = async (error, messages) => {
       Logger.error(Util.breadcrumb(location, `callbackInternalServerErrorNotFound--${actionLetter}1`))
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transfer not found')
       const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-      // TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
-      // HOWTO: The list of individual transfers being committed should contain
-      // non-existing transferId
+      /**
+       * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
+       * HOWTO: The list of individual transfers being committed should contain
+       * non-existing transferId
+       */
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else if (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase()) {
@@ -388,9 +390,13 @@ const fulfil = async (error, messages) => {
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
-          await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError)
+          const apiFspiopError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
+          await TransferService.handlePayeeResponse(transferId, payload, action, apiFspiopError)
           const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
+          /**
+           * TODO: BulkProcessingHandler (not in scope of #967)
+           */
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
           throw fspiopError
         } else if (transfer.transferState !== TransferState.RESERVED) {
           Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))

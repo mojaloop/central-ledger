@@ -57,8 +57,10 @@ const getBulkTransferById = async (id) => {
             errorCode: transfer.errorCode,
             errorDescription: transfer.errorDescription
           }
-        } else if (transfer.fulfilment) {
-          result.fulfilment = transfer.fulfilment
+        } else {
+          if (transfer.fulfilment) {
+            result.fulfilment = transfer.fulfilment
+          }
           let extension
           const extensions = await IndividualTransferExtensionModel.getByTransferId(transfer.transferId)
           if (extensions.length > 0) {

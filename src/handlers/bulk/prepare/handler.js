@@ -103,12 +103,12 @@ const bulkPrepare = async (error, messages) => {
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend
-      Logger.info(Util.breadcrumb(location, 'resend'))
+      Logger.error(Util.breadcrumb(location, `resend--${actionLetter}1`))
       Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) { // TODO: handle modified request
-      Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}4`))
+      Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
       Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
