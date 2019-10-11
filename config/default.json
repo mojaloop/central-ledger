@@ -4,7 +4,7 @@
   "DATABASE": {
     "DIALECT": "mysql",
     "HOST": "localhost",
-    "PORT": 3308,
+    "PORT": 3306,
     "USER": "central_ledger",
     "PASSWORD": "password",
     "SCHEMA": "central_ledger",
