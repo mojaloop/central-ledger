@@ -138,7 +138,7 @@ const prepare = async (error, messages) => {
           return true
         } else if (action === TransferEventAction.BULK_PREPARE) {
           Logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Individual transfer prepare duplicate')
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
@@ -151,7 +151,7 @@ const prepare = async (error, messages) => {
           return true
         } else if (action === TransferEventAction.BULK_PREPARE) {
           Logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
-          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'Individual transfer prepare duplicate')
+          const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
@@ -394,7 +394,7 @@ const fulfil = async (error, messages) => {
           await TransferService.handlePayeeResponse(transferId, payload, action, apiFspiopError)
           const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
           /**
-           * TODO: BulkProcessingHandler (not in scope of #967)
+           * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
            */
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
           throw fspiopError

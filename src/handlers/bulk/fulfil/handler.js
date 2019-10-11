@@ -43,10 +43,13 @@ const Config = require('../../../lib/config')
 const BulkTransferModels = require('@mojaloop/central-object-store').Models.BulkTransfer
 const encodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.encodePayload
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const location = { module: 'BulkFulfilHandler', method: '', path: '' } // var object used as pointer
 
 const consumerCommit = true
+const fromSwitch = true
+
 /**
  * @function BulkFulfilHandler
  *
@@ -94,15 +97,17 @@ const bulkFulfil = async (error, messages) => {
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload.hash, BulkTransferService.getBulkTransferFulfilmentDuplicateCheck, BulkTransferService.saveBulkTransferFulfilmentDuplicateCheck)
-    if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend
+    if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
       Logger.error(Util.breadcrumb(location, `resend--${actionLetter}1`))
       Logger.info(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
-    if (hasDuplicateId && !hasDuplicateHash) { // TODO: handle modified request
+    if (hasDuplicateId && !hasDuplicateHash) {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
-      Logger.info(Util.breadcrumb(location, 'notImplemented'))
-      return true
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
     }
 
     // TODO: move FSPIOP-Source validation before Transfer Duplicate Check to accept only Payee's first request

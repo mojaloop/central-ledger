@@ -116,7 +116,7 @@ const bulkProcessing = async (error, messages) => {
      * and compare the transmitted bulkTransferId to the bellow bulkTransferInfo.bulkTransferId
      * (not in scope of #967)
      */
-    const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId)
+    const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId) // TODO: This is not ideal, as this transferId might be part from another bulkTransfer
 
     let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription
     let produceNotification = false
