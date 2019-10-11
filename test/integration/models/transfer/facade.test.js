@@ -41,7 +41,7 @@ Test('Transfer read model test', async (transferReadModelTest) => {
 
   await transferReadModelTest.test('setup', async (assert) => {
     try {
-      await Db.connect(Config.DATABASE_URI).then(async () => {
+      await Db.connect(Config.DATABASE).then(async () => {
         transferPrepareResult = await HelperModule.prepareNeededData('transferModel')
         assert.pass('setup OK')
         assert.end()
