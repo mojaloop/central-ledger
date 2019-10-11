@@ -51,7 +51,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('setup', async (assert) => {
     try {
-      await Db.connect(Config.DATABASE_URI).then(() => {
+      await Db.connect(Config.DATABASE).then(() => {
         assert.pass('setup OK')
         assert.end()
       }).catch(err => {

@@ -56,7 +56,7 @@ const getEnums = (id) => {
   return Enums[id]()
 }
 const connectDatabase = async () => {
-  return Db.connect(Config.DATABASE_URI)
+  return Db.connect(Config.DATABASE)
 }
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {

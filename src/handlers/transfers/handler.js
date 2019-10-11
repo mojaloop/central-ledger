@@ -144,16 +144,16 @@ const prepare = async (error, messages) => {
         }
       } else {
         Logger.info(Util.breadcrumb(location, 'inProgress'))
-        if (action === TransferEventAction.PREPARE) {
-          Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        } else if (action === TransferEventAction.BULK_PREPARE) {
+        if (action === TransferEventAction.BULK_PREPARE) {
           Logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
+        } else { // action === TransferEventAction.PREPARE
+          Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          return true
         }
       }
     } else if (hasDuplicateId && !hasDuplicateHash) {

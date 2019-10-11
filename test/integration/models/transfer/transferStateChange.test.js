@@ -40,7 +40,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
   let stateChangePrepareResult = {}
   await stateChangeTest.test('setup', async (assert) => {
     try {
-      await Db.connect(Config.DATABASE_URI).then(async () => {
+      await Db.connect(Config.DATABASE).then(async () => {
         assert.pass('setup OK')
         assert.end()
       }).catch(err => {

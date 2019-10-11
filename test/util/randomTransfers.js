@@ -144,7 +144,7 @@ const insert = async (cfg) => {
   let elapsedTime
 
   try {
-    await Db.connect(Config.DATABASE_URI)
+    await Db.connect(Config.DATABASE)
 
     // prepare participants and participant limits
     const str = Uuid()
@@ -208,7 +208,7 @@ const insert = async (cfg) => {
 
 const cleanAll = async () => {
   try {
-    await Db.connect(Config.DATABASE_URI)
+    await Db.connect(Config.DATABASE)
     await Db.transferStateChange.destroy()
     await Db.transfer.destroy()
     console.log('Transfer data cleaned!')
