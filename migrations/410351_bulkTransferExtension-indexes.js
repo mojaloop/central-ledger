@@ -27,13 +27,11 @@
 exports.up = function (knex, Promise) {
   return knex.schema.table('bulkTransferExtension', (t) => {
     t.index('bulkTransferId')
-    t.index('bulkTransferFulfilmentId')
   })
 }
 
 exports.down = function (knex, Promise) {
   return knex.schema.table('bulkTransferExtension', (t) => {
     t.dropIndex('bulkTransferId')
-    t.dropIndex('bulkTransferFulfilmentId')
   })
 }

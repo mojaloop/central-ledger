@@ -28,9 +28,9 @@ exports.up = async (knex, Promise) => {
   return await knex.schema.hasTable('bulkTransferFulfilmentDuplicateCheck').then(function(exists) {
     if (!exists) {
       return knex.schema.createTable('bulkTransferFulfilmentDuplicateCheck', (t) => {
-        t.bigIncrements('bulkTransferFulfilmentId').primary().notNullable()
-        t.string('bulkTransferId', 36).notNullable()
-        t.string('hash', 256).nullable()
+        t.string('bulkTransferId', 36).primary().notNullable()
+        t.foreign('bulkTransferId').references('bulkTransferId').inTable('bulkTransfer')
+        t.string('hash', 256).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
       })
     }

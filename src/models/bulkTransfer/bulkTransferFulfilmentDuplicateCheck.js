@@ -18,79 +18,62 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 'use strict'
 
 /**
- * @module src/models/bulkTransfer/bulkTransferFulfilmentDuplicateCheck/
+ * @module src/models/bulkTransfer/BulkTransferFulfilmentDuplicateCheck/
  */
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
- * @function CheckDuplicate
+ * @function GetBulkTransferFulfilmentDuplicateCheck
  *
  * @async
- * @description This checks if there is a matching hash for a bulkTransfer request in bulkTransferFulfilmentDuplicateCheck table, if it does not exist, it will be inserted
+ * @description This retrieves the BulkTransferFulfilmentDuplicateCheck table record if present
  *
- * @param {string} bulkTransferId - the bulkTransfer id
- * @param {string} hash - the hash of the bulkTransfer request payload
+ * @param {string} bulkTransferId - the bulk transfer id
  *
- * @returns {object} - Returns the hash if exists, otherwise null, or throws an error if failed
- * Example:
- * ```
- * {
- *    bulkTransferId: '9136780b-37e2-457c-8c05-f15dbb033b10',
- *    hash: 'H4epygr6RZNgQs9UkUmRwAJtNnLQ7eB4Q0jmROxcY+8',
- *    createdDate: '2018-08-17 09:46:21'
- * }
- * ```
+ * @returns {object} - Returns the record from BulkTransferFulfilmentDuplicateCheck table, or throws an error if failed
  */
 
-const checkDuplicate = async (bulkTransferId, hash) => {
-  Logger.debug('check and insert hash into bulkTransferFulfilmentDuplicateCheck' + bulkTransferId.toString())
+const getBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId) => {
+  Logger.debug(`get BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId})`)
   try {
-    const knex = Db.getKnex()
-    return knex.transaction(async trx => {
-      try {
-        let isDuplicateId
-        let isResend
-        let identity
-
-        const existingHash = await knex('bulkTransferFulfilmentDuplicateCheck').transacting(trx)
-          .where({ bulkTransferId: bulkTransferId })
-          .select('*')
-          .first()
-
-        if (!existingHash) {
-          const result = await knex('bulkTransferFulfilmentDuplicateCheck').transacting(trx)
-            .insert({ bulkTransferId, hash })
-          identity = result[0]
-          isDuplicateId = false
-          isResend = false
-        } else {
-          isDuplicateId = true
-          isResend = hash === existingHash.hash
-        }
-        await trx.commit
-        return {
-          isDuplicateId,
-          isResend,
-          identity
-        }
-      } catch (err) {
-        await trx.rollback
-        throw err
-      }
-    })
+    return Db.bulkTransferFulfilmentDuplicateCheck.findOne({ bulkTransferId })
   } catch (err) {
     throw new Error(err.message)
   }
 }
 
+/**
+ * @function SaveBulkTransferFulfilmentDuplicateCheck
+ *
+ * @async
+ * @description This inserts a record into BulkTransferFulfilmentDuplicateCheck table
+ *
+ * @param {string} bulkTransferId - the bulk transfer id
+ * @param {string} hash - the hash of the transfer request payload
+ *
+ * @returns {integer} - Returns the database id of the inserted row, or throws an error if failed
+ */
+
+const saveBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId, hash) => {
+  Logger.debug(`save BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId}, hash=${hash})`)
+  try {
+    return Db.bulkTransferFulfilmentDuplicateCheck.insert({ bulkTransferId, hash })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
-  checkDuplicate
+  getBulkTransferFulfilmentDuplicateCheck,
+  saveBulkTransferFulfilmentDuplicateCheck
 }

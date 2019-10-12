@@ -31,7 +31,7 @@ const getByBulkTransferId = async (id) => {
     return await Db.bulkTransferExtension.query(async (builder) => {
       const result = builder
         .where({ bulkTransferId: id })
-        .select('key', 'value', 'bulkTransferFulfilmentId')
+        .select('key', 'value', 'isFulfilment')
       return result
     })
   } catch (err) {
