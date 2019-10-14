@@ -70,7 +70,7 @@
     "dep:update": "npx ncu -u"
   },
   "dependencies": {
-    "@hapi/good": "8.2.3",
+    "@hapi/good": "8.2.4",
     "@hapi/hapi": "18.4.0",
     "@hapi/inert": "5.2.2",
     "@hapi/joi": "16.1.7",
