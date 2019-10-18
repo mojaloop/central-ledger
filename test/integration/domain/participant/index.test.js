@@ -52,6 +52,9 @@ Test('Participant service', async (participantTest) => {
     fsp1Name: 'dfsp1',
     fsp2Name: 'dfsp2',
     endpointBase: 'http://localhost:1080',
+    fsp3Name: 'payerfsp',
+    fsp4Name: 'payeefsp',
+    simulatorBase: 'http://localhost:8444',
     notificationEmail: 'test@example.com'
   }
 
@@ -108,6 +111,12 @@ Test('Participant service', async (participantTest) => {
       participantFixtures.push(result.participant)
       getByNameResult = await ParticipantService.getByName(testData.fsp2Name)
       result = await ParticipantHelper.prepareData(testData.fsp2Name, testData.currency, !!getByNameResult)
+      participantFixtures.push(result.participant)
+      getByNameResult = await ParticipantService.getByName(testData.fsp3Name)
+      result = await ParticipantHelper.prepareData(testData.fsp3Name, testData.currency, !!getByNameResult)
+      participantFixtures.push(result.participant)
+      getByNameResult = await ParticipantService.getByName(testData.fsp4Name)
+      result = await ParticipantHelper.prepareData(testData.fsp4Name, testData.currency, !!getByNameResult)
       participantFixtures.push(result.participant)
       participantFixtures.forEach(async participant => {
         const read = await ParticipantService.getById(participant.participantId)
@@ -181,6 +190,7 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${testData.endpointBase}/bulkTransfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${testData.endpointBase}/bulkTransfers/{{id}}`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${testData.endpointBase}/bulkTransfers/{{id}}/error`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_QUOTES', `${testData.endpointBase}`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
@@ -197,6 +207,29 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${testData.endpointBase}/bulkTransfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${testData.endpointBase}/bulkTransfers/{{id}}`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${testData.endpointBase}/bulkTransfers/{{id}}/error`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_QUOTES', `${testData.endpointBase}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
+      participant = participantFixtures[2]
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}/error`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/bulkTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/bulkTransfers/{{id}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${testData.simulatorBase}/${participant.name}/bulkTransfers/{{id}}/error`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_QUOTES', `${testData.simulatorBase}/${participant.name}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
+      participant = participantFixtures[3]
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}/error`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/bulkTransfers`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/bulkTransfers/{{id}}`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${testData.simulatorBase}/${participant.name}/bulkTransfers/{{id}}/error`)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_QUOTES', `${testData.simulatorBase}/${participant.name}`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
@@ -364,7 +397,10 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('teardown', async (assert) => {
     try {
       for (const participant of participantFixtures) {
-        if (participant.name === testData.fsp1Name || participant.name === testData.fsp2Name) {
+        if (participant.name === testData.fsp1Name ||
+          participant.name === testData.fsp2Name ||
+          participant.name === testData.fsp3Name ||
+          participant.name === testData.fsp4Name) {
           assert.pass(`participant ${participant.name} preserved`)
         } else {
           const result = await ParticipantHelper.deletePreparedData(participant.name)
