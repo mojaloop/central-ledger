@@ -7,6 +7,16 @@
     "1164|nyc>istanbul-reports>handlebars": {
       "decision": "fix",
       "madeAt": 1569472078086
+    },
+    "1184|npm-check-updates>pacote>make-fetch-happen>https-proxy-agent": {
+      "decision": "ignore",
+      "madeAt": 1571649787349,
+      "expiresAt": 1574241710583
+    },
+    "1184|npm-check-updates>pacote>npm-registry-fetch>make-fetch-happen>https-proxy-agent": {
+      "decision": "ignore",
+      "madeAt": 1571649787349,
+      "expiresAt": 1574241710583
     }
   },
   "rules": {},
