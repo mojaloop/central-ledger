@@ -86,7 +86,7 @@ const create = async function (request, h) {
         return currency.currencyId === request.payload.currency
       })
       if (currencyExists) {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant currency has already been registered')
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Participant currency has already been registered')
       }
     } else {
       const participantId = await ParticipantService.create(request.payload)
