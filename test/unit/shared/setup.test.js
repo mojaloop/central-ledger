@@ -15,7 +15,7 @@ Test('setup', setupTest => {
   let Setup
   let DbStub
   let ObjStoreStub
-  let ObjStoreStubThrows
+  // let ObjStoreStubThrows
   let SidecarStub
   let MigratorStub
   let RegisterHandlersStub
@@ -71,11 +71,11 @@ Test('setup', setupTest => {
         connect: sandbox.stub().returns(Promise.resolve())
       }
     }
-    ObjStoreStubThrows = {
-      Db: {
-        connect: sandbox.stub().throws(new Error('MongoDB unavailable'))
-      }
-    }
+    // ObjStoreStubThrows = {
+    //   Db: {
+    //     connect: sandbox.stub().throws(new Error('MongoDB unavailable'))
+    //   }
+    // }
 
     uuidStub = sandbox.stub()
 
@@ -653,7 +653,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
-        '@mojaloop/central-object-store': ObjStoreStubThrows,
+        '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,
