@@ -79,7 +79,7 @@
     "@mojaloop/central-services-auth": "5.2.1",
     "@mojaloop/central-services-database": "8.2.1",
     "@mojaloop/central-services-error-handling": "8.3.0",
-    "@mojaloop/central-services-health": "8.1.1",
+    "@mojaloop/central-services-health": "8.3.0",
     "@mojaloop/central-services-logger": "8.1.2",
     "@mojaloop/central-services-metrics": "8.3.0",
     "@mojaloop/central-services-shared": "8.3.3",
