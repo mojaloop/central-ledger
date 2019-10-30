@@ -124,7 +124,7 @@
     "jsonpath": "1.0.2",
     "nodemon": "1.19.4",
     "npm-audit-resolver": "2.1.0",
-    "npm-check-updates": "3.1.25",
+    "npm-check-updates": "3.1.26",
     "nyc": "14.1.1",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
