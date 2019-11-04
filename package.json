@@ -92,7 +92,7 @@
     "base64url": "3.0.1",
     "blipp": "4.0.1",
     "catbox-memory": "4.0.1",
-    "commander": "3.0.2",
+    "commander": "4.0.0",
     "cron": "1.7.2",
     "decimal.js": "10.2.0",
     "docdash": "1.1.1",
