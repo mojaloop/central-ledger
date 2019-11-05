@@ -1,6 +1,23 @@
 {
   "PORT": 3001,
   "HOSTNAME": "http://central-ledger",
+  "DATABASE": {
+    "DIALECT": "mysql",
+    "HOST": "localhost",
+    "PORT": 3306,
+    "USER": "central_ledger",
+    "PASSWORD": "password",
+    "SCHEMA": "central_ledger",
+    "POOL_MIN_SIZE": 10,
+    "POOL_MAX_SIZE": 10,
+    "ACQUIRE_TIMEOUT_MILLIS": 30000,
+    "CREATE_TIMEOUT_MILLIS": 30000,
+    "DESTROY_TIMEOUT_MILLIS": 5000,
+    "IDLE_TIMEOUT_MILLIS": 30000,
+    "REAP_INTERVAL_MILLIS": 1000,
+    "CREATE_RETRY_INTERVAL_MILLIS": 200,
+    "DEBUG": false
+  },
   "MIGRATIONS": {
     "DISABLED": false,
     "RUN_DATA_MIGRATIONS": true
@@ -15,10 +32,6 @@
     "PORT": 5678,
     "CONNECT_TIMEOUT": 45000,
     "RECONNECT_INTERVAL": 5000
-  },
-  "DB_CONNECTION": {
-    "POOL_MIN": 10,
-    "POOL_MAX": 30
   },
   "MONGODB": {
     "DISABLED": false,

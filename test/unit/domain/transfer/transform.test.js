@@ -281,12 +281,14 @@ Test('Transform Service', transformTest => {
           fulfilment: 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI',
           completedTimestamp: '2016-06-24T08:38:08.699-04:00',
           transferState: 'COMMITTED',
-          extensionList: [
-            {
-              key: 'key1',
-              value: 'value1'
-            }
-          ]
+          extensionList: {
+            extension: [
+              {
+                key: 'key1',
+                value: 'value1'
+              }
+            ]
+          }
         }
 
         const result = TransformService.toFulfil(completedTransfer)

@@ -112,6 +112,7 @@ const prepareTestData = async (dataObj) => {
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${dataObj.endpoint.base}/bulkTransfers`)
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{id}}`)
     await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{id}}/error`)
+    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
   }
 
   const transferPayload = {
@@ -242,7 +243,7 @@ Test('Handlers test', async handlersTest => {
   const startTime = new Date()
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
-      await Db.connect(Config.DATABASE_URI)
+      await Db.connect(Config.DATABASE)
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()

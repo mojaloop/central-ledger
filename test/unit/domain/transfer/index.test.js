@@ -41,7 +41,6 @@ const TransferFulfilmentDuplicateCheckModel = require('../../../../src/models/tr
 const TransferErrorDuplicateCheckModel = require('../../../../src/models/transfer/transferErrorDuplicateCheck')
 const TransferInternalState = require('@mojaloop/central-services-shared').Enum.Transfers.TransferInternalState
 const Logger = require('@mojaloop/central-services-logger')
-const Crypto = require('crypto')
 
 const payload = {
   transferId: 'b51ec534-ee48-4575-b6a9-ead2955b8999',
@@ -63,11 +62,6 @@ const payload = {
     ]
   }
 }
-
-const hashSha256 = Crypto.createHash('sha256')
-let hashFixture = JSON.stringify(payload)
-hashFixture = hashSha256.update(hashFixture)
-hashFixture = hashSha256.digest(hashFixture).toString('base64').slice(0, -1) // removing the trailing '=' as per the specification
 
 const transferStateChangeRecord = {
   transferId: payload.transferId,
@@ -212,78 +206,6 @@ Test('Transfer Service', transferIndexTest => {
     })
 
     logTransferErrorTest.end()
-  })
-
-  transferIndexTest.test('validateDuplicateHash should', validateDuplicateHashTest => {
-    validateDuplicateHashTest.test('validate against transfer model', async (test) => {
-      try {
-        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns({
-          existsMatching: true,
-          existsNotMatching: false
-        })
-        const expected = {
-          existsMatching: true,
-          existsNotMatching: false
-        }
-
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload)
-        test.deepEqual(result, expected, 'results match')
-        test.ok(TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).calledOnce)
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('hash exists and not matched', async (test) => {
-      try {
-        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve({
-          existsMatching: false,
-          existsNotMatching: true
-        }))
-        const expected = {
-          existsMatching: false,
-          existsNotMatching: true
-        }
-
-        const result = await TransferService.validateDuplicateHash(payload.transferId, payload)
-        test.deepEqual(result, expected, 'results match')
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('hash not exists then insert the hash', async (test) => {
-      try {
-        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve(null))
-        await TransferService.validateDuplicateHash(payload.transferId, payload)
-        test.pass('hash inserted successfully')
-        test.end()
-      } catch (err) {
-        Logger.error(`validateDuplicateHash failed with error - ${err}`)
-        test.fail()
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.test('throw error on invalid payload', async (test) => {
-      try {
-        TransferDuplicateCheckModel.checkAndInsertDuplicateHash.withArgs(payload.transferId, hashFixture).returns(Promise.resolve(null))
-        await TransferService.validateDuplicateHash(null)
-        test.fail('should throw')
-        test.end()
-      } catch (err) {
-        test.pass('Error thrown')
-        test.end()
-      }
-    })
-
-    validateDuplicateHashTest.end()
   })
 
   transferIndexTest.end()

@@ -9,15 +9,13 @@ Test('setup', setupTest => {
   let sandbox
   let uuidStub
   let oldHostName
-  let oldDatabaseUri
   let oldMongoDbUri
   const hostName = 'http://test.com'
-  const databaseUri = 'some-database-uri'
   const mongoDbUri = 'mongo-db-uri'
   let Setup
   let DbStub
   let ObjStoreStub
-  let ObjStoreStubThrows
+  // let ObjStoreStubThrows
   let SidecarStub
   let MigratorStub
   let RegisterHandlersStub
@@ -73,11 +71,11 @@ Test('setup', setupTest => {
         connect: sandbox.stub().returns(Promise.resolve())
       }
     }
-    ObjStoreStubThrows = {
-      Db: {
-        connect: sandbox.stub().throws(new Error('MongoDB unavailable'))
-      }
-    }
+    // ObjStoreStubThrows = {
+    //   Db: {
+    //     connect: sandbox.stub().throws(new Error('MongoDB unavailable'))
+    //   }
+    // }
 
     uuidStub = sandbox.stub()
 
@@ -109,7 +107,6 @@ Test('setup', setupTest => {
         registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve())
       }
     }
-
     const ConfigStub = Config
     ConfigStub.HANDLERS_API_DISABLED = false
     ConfigStub.HANDLERS_CRON_DISABLED = false
@@ -131,10 +128,8 @@ Test('setup', setupTest => {
     })
 
     oldHostName = Config.HOSTNAME
-    oldDatabaseUri = Config.DATABASE_URI
     oldMongoDbUri = Config.MONGODB_URI
     Config.HOSTNAME = hostName
-    Config.DATABASE_URI = databaseUri
     Config.MONGODB_URI = mongoDbUri
 
     test.end()
@@ -144,7 +139,6 @@ Test('setup', setupTest => {
     sandbox.restore()
 
     Config.HOSTNAME = oldHostName
-    Config.DATABASE_URI = oldDatabaseUri
     Config.MONGODB_URI = oldMongoDbUri
 
     test.end()
@@ -191,7 +185,7 @@ Test('setup', setupTest => {
       const service = 'api'
 
       Setup.initialize({ service }).then(s => {
-        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.ok(SidecarStub.connect.calledWith(service))
         test.notOk(MigratorStub.migrate.called)
@@ -225,7 +219,7 @@ Test('setup', setupTest => {
       })
 
       Setup.initialize({ service }).then(s => {
-        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.notOk(ObjStoreStub.Db.connect.called)
         test.ok(SidecarStub.connect.calledWith(service))
         test.notOk(MigratorStub.migrate.called)
@@ -241,7 +235,7 @@ Test('setup', setupTest => {
       const service = 'api'
 
       Setup.initialize({ service }).then(s => {
-        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
@@ -256,7 +250,7 @@ Test('setup', setupTest => {
       const service = 'admin'
 
       Setup.initialize({ service }).then(s => {
-        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
@@ -271,7 +265,7 @@ Test('setup', setupTest => {
       const service = 'handler'
 
       Setup.initialize({ service }).then(s => {
-        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
@@ -286,7 +280,7 @@ Test('setup', setupTest => {
       const service = 'undefined'
 
       Setup.initialize({ service }).then(s => {
-        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
@@ -301,7 +295,7 @@ Test('setup', setupTest => {
       const service = 'api'
 
       Setup.initialize({ service, runMigrations: true }).then(() => {
-        test.ok(DbStub.connect.calledWith(databaseUri))
+        test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.ok(MigratorStub.migrate.called)
         test.end()
@@ -659,7 +653,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
-        '@mojaloop/central-object-store': ObjStoreStubThrows,
+        '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
         '../lib/requestLogger': requestLoggerStub,

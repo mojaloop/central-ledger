@@ -249,7 +249,7 @@ docker logs $APP_HOST
 >&1 echo "Copy results to local directory"
 docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
 
-if [ "$test_exit_code" == 0 ]
+if [ "$test_exit_code" = "0" ]
 then
   >&1 echo "Showing results..."
   cat $APP_DIR_TEST_RESULTS/$TEST_RESULTS_FILE

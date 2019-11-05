@@ -56,17 +56,17 @@ const getEnums = (id) => {
   return Enums[id]()
 }
 const connectDatabase = async () => {
-  return Db.connect(Config.DATABASE_URI)
+  return Db.connect(Config.DATABASE)
 }
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {
-      return ObjStoreDb.connect(Config.MONGODB_URI, {
-        promiseLibrary: global.Promise
-      })
-    } catch (error) {
-      Logger.error(`error - ${error}`) // TODO: ADD PROPER ERROR HANDLING HERE POST-POC
-      return null
+      return ObjStoreDb.connect(Config.MONGODB_URI)
+    } catch (err) {
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      // TODO: review as code is being changed from returning null to returning a FSPIOPError
+      // Logger.error(`error - ${err}`)
+      // return null
     }
   } else {
     return null
@@ -101,7 +101,7 @@ const createServer = (port, modules) => {
         validate: {
           options: ErrorHandler.validateRoutes(),
           failAction: async (request, h, err) => {
-            throw ErrorHandler.Factory.reformatFSPIOPError(err)
+            throw ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.MALFORMED_SYNTAX)
           }
         }
       }

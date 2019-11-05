@@ -4,7 +4,7 @@ services:
     build:
       dockerfile: test-integration.Dockerfile
       context: .
-      cache_from: 
+      cache_from:
         - mojaloop/central-ledger
         - central-ledger
         - central-ledger:test
@@ -20,10 +20,9 @@ services:
       - ./src:/opt/central-ledger/src
       # - ./node_modules:/opt/central-ledger/node_modules
     environment:
-      - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
       - CLEDG_SIDECAR__DISABLED=true
       - CLEDG_MONGODB__DISABLED=true
     command:
-      - tail 
-      - -f 
+      - tail
+      - -f
       - /dev/null
