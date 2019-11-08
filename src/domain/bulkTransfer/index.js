@@ -37,6 +37,8 @@ const BulkTransferModel = require('../../models/bulkTransfer/bulkTransfer')
 const BulkTransferStateChangeModel = require('../../models/bulkTransfer/bulkTransferStateChange')
 const IndividualTransferModel = require('../../models/bulkTransfer/individualTransfer')
 const IndividualTransferExtensionModel = require('../../models/transfer/transferExtension')
+const MLNumber = require('@mojaloop/ml-number')
+const Config = require('../../lib/config')
 const Logger = require('@mojaloop/central-services-logger')
 
 const getBulkTransferById = async (id) => {
@@ -59,7 +61,7 @@ const getBulkTransferById = async (id) => {
         } else {
           if (!transfer.fulfilment) {
             result.transferAmount = {
-              amount: transfer.amount,
+              amount: new MLNumber(transfer.amount).toFixed(Config.AMOUNT.SCALE),
               currency: transfer.currencyId
             }
             result.ilpPacket = transfer.ilpPacket
