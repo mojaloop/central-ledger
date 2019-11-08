@@ -116,7 +116,7 @@ const bulkProcessing = async (error, messages) => {
      * and compare the transmitted bulkTransferId to the bellow bulkTransferInfo.bulkTransferId
      * (not in scope of #967)
      */
-    const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId) // TODO: This is not ideal, as this transferId might be part from another bulkTransfer
+    const bulkTransferInfo = await BulkTransferService.getBulkTransferState(transferId) // TODO: This is not ideal, as the transferId might be from another bulk
 
     let criteriaState, incompleteBulkState, completedBulkState, bulkTransferState, processingStateId, errorCode, errorDescription
     let produceNotification = false
@@ -251,19 +251,34 @@ const bulkProcessing = async (error, messages) => {
       if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && action === Enum.Events.Event.Action.BULK_PREPARE) {
         Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}2`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
-        const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
-        await (new BulkTransferResultModel(payeeBulkResponse)).save()
-        const payload = Util.omitNil({
-          bulkTransferId: payeeBulkResponse.bulkTransferId,
-          bulkTransferState: payeeBulkResponse.bulkTransferState,
-          completedTimestamp: payeeBulkResponse.completedTimestamp,
-          extensionList: payeeBulkResponse.extensionList
+        const payeeIndividualTransfers = payeeBulkResponse.individualTransferResults.filter(individualTransfer => {
+          return !individualTransfer.errorInformation
         })
-        const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, params.message.value.metadata.type, params.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
-        params.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, payeeBulkResponse.destination, payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, payeeBulkResponse.headers, payload)
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-        return true
+        if (payeeIndividualTransfers.length) {
+          payeeBulkResponse.individualTransferResults = payeeIndividualTransfers
+          const BulkTransferResultModel = BulkTransferModels.getBulkTransferResultModel()
+          await (new BulkTransferResultModel(payeeBulkResponse)).save()
+          const payload = Util.omitNil({
+            bulkTransferId: payeeBulkResponse.bulkTransferId,
+            bulkQuoteId: getBulkTransferByIdResult.bulkQuoteId,
+            payerFsp: getBulkTransferByIdResult.payerFsp,
+            payeeFsp: getBulkTransferByIdResult.payeeFsp,
+            expiration: getBulkTransferByIdResult.expiration,
+            extensionList: payeeBulkResponse.extensionList
+          })
+          const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, params.message.value.metadata.type, params.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
+          params.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, payeeBulkResponse.destination, payeeBulkResponse.headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, payeeBulkResponse.headers, payload)
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          return true
+        } else {
+          // TODO: handle use case when no individual transfer has been accepted:
+          // Switch to finilize bulk state and notify payer with PUT /bulkTransfers/{id}
+          // const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payerBulkTransfer)
+          Logger.error(Util.breadcrumb(location, `noTransfers--${actionLetter}1`))
+          Logger.info(Util.breadcrumb(location, 'notImplemented'))
+          return true
+        }
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
         Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}3`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)

@@ -307,6 +307,10 @@ Test('Participant service', async (participantTest) => {
       assert.ok(result, `addLimitAndInitialPosition successful for participant: ${participantFixtures[0].name}`)
       result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[1].name, { limit: { value: 1000 } })
       assert.ok(result, `addLimitAndInitialPosition successful for participant: ${participantFixtures[1].name}`)
+      result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[2].name, { limit: { value: 1000 } })
+      assert.ok(result, `addLimitAndInitialPosition successful for participant: ${participantFixtures[2].name}`)
+      result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[3].name, { limit: { value: 1000 } })
+      assert.ok(result, `addLimitAndInitialPosition successful for participant: ${participantFixtures[3].name}`)
       assert.end()
     } catch (err) {
       console.log(err)

@@ -47,6 +47,29 @@ const getById = async (id) => {
   }
 }
 
+const getByTransferId = async (id) => {
+  try {
+    return await Db.bulkTransfer.query(async (builder) => {
+      const result = builder
+        .innerJoin('bulkTransferAssociation AS bta', 'bta.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
+        .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
+        .innerJoin('bulkTransferStateChange AS btsc', 'btsc.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .leftJoin('bulkTransferFulfilment AS btf', 'btf.bulkTransferId', 'bulkTransfer.bulkTransferId')
+        .where({ 'bta.transferId': id })
+        .orderBy('btsc.bulkTransferStateChangeId', 'desc')
+        .select('bulkTransfer.bulkTransferId', 'btsc.bulkTransferStateId', 'btf.completedDate AS completedTimestamp',
+          'payer.name AS payerFsp', 'payee.name AS payeeFsp', 'bulkTransfer.bulkQuoteId',
+          'bulkTransfer.expirationDate AS expiration')
+        .first()
+      return result
+    })
+  } catch (err) {
+    Logger.error(err)
+    throw err
+  }
+}
+
 const getParticipantsById = async (id) => {
   try {
     return await Db.bulkTransfer.query(async (builder) => {
@@ -66,5 +89,6 @@ const getParticipantsById = async (id) => {
 
 module.exports = {
   getById,
+  getByTransferId,
   getParticipantsById
 }

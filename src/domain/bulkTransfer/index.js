@@ -42,7 +42,6 @@ const Logger = require('@mojaloop/central-services-logger')
 const getBulkTransferById = async (id) => {
   try {
     const bulkTransfer = await BulkTransferModel.getById(id)
-    const bulkTransferExtensions = await BulkTransferExtensionModel.getByBulkTransferId(id)
     let individualTransfers = await IndividualTransferModel.getAllById(id)
     const payeeIndividualTransfers = []
     // TODO: refactor this to move away from Promises and use async-await
@@ -58,7 +57,14 @@ const getBulkTransferById = async (id) => {
             errorDescription: transfer.errorDescription
           }
         } else {
-          if (transfer.fulfilment) {
+          if (!transfer.fulfilment) {
+            result.transferAmount = {
+              amount: transfer.amount,
+              currency: transfer.currencyId
+            }
+            result.ilpPacket = transfer.ilpPacket
+            result.condition = transfer.condition
+          } else {
             result.fulfilment = transfer.fulfilment
           }
           let extension
@@ -98,9 +104,42 @@ const getBulkTransferById = async (id) => {
     }
     const payerBulkTransfer = { destination: bulkTransfer.payerFsp, ...bulkResponse }
     const payeeBulkTransfer = { destination: bulkTransfer.payeeFsp, ...bulkResponse }
-    let bulkExtension
+    const extensionList = await getBulkTransferExtensionListById(id, bulkTransfer.completedTimestamp)
+    if (extensionList) {
+      payerBulkTransfer.extensionList = extensionList
+      payeeBulkTransfer.extensionList = extensionList
+    }
+    if (individualTransfers.length > 0) {
+      payerBulkTransfer.individualTransferResults = individualTransfers
+    }
+    if (payeeIndividualTransfers.length > 0) {
+      payeeBulkTransfer.individualTransferResults = payeeIndividualTransfers
+    } else {
+      payeeBulkTransfer.individualTransferResults = individualTransfers
+    }
+    return {
+      bulkTransferId: id,
+      bulkQuoteId: bulkTransfer.bulkQuoteId,
+      payerFsp: bulkTransfer.payerFsp,
+      payeeFsp: bulkTransfer.payeeFsp,
+      expiration: bulkTransfer.expirationDate,
+      completedDate: bulkTransfer.completedDate,
+      payerBulkTransfer,
+      payeeBulkTransfer
+    }
+  } catch (err) {
+    Logger.error(err)
+    throw err
+  }
+}
+
+const getBulkTransferExtensionListById = async (id, completedTimestamp) => {
+  try {
+    let extensionList = null
+    const bulkTransferExtensions = await BulkTransferExtensionModel.getByBulkTransferId(id)
     if (bulkTransferExtensions.length > 0) {
-      if (!bulkTransfer.completedTimestamp) {
+      let bulkExtension
+      if (!completedTimestamp) {
         bulkExtension = bulkTransferExtensions.map(ext => {
           return { key: ext.key, value: ext.value }
         })
@@ -111,18 +150,9 @@ const getBulkTransferById = async (id) => {
           return { key: ext.key, value: ext.value }
         })
       }
-      payerBulkTransfer.extensionList = { extension: bulkExtension }
-      payeeBulkTransfer.extensionList = { extension: bulkExtension }
+      extensionList = { extension: bulkExtension }
     }
-    if (individualTransfers.length > 0) {
-      payerBulkTransfer.individualTransferResults = individualTransfers
-    }
-    if (payeeIndividualTransfers.length > 0) {
-      payeeBulkTransfer.individualTransferResults = payeeIndividualTransfers
-    } else {
-      payeeBulkTransfer.individualTransferResults = individualTransfers
-    }
-    return { payerBulkTransfer, payeeBulkTransfer }
+    return extensionList
   } catch (err) {
     Logger.error(err)
     throw err
@@ -131,6 +161,8 @@ const getBulkTransferById = async (id) => {
 
 const BulkTransferService = {
   getBulkTransferById,
+  getBulkTransferExtensionListById,
+  getBulkTransferByTransferId: BulkTransferModel.getByTransferId,
   getParticipantsById: BulkTransferModel.getParticipantsById,
   bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,
   bulkFulfil: BulkTransferFacade.saveBulkTransferProcessing,
