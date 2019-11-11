@@ -98,8 +98,8 @@ const bulkFulfil = async (error, messages) => {
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload.hash, BulkTransferService.getBulkTransferFulfilmentDuplicateCheck, BulkTransferService.saveBulkTransferFulfilmentDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      Logger.error(Util.breadcrumb(location, `resend--${actionLetter}1`))
-      Logger.info(Util.breadcrumb(location, 'notImplemented'))
+      Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
+      Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) {
@@ -120,7 +120,7 @@ const bulkFulfil = async (error, messages) => {
         state = await BulkTransferService.bulkFulfil(payload)
       } catch (err) { // TODO: handle insert errors
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.info(Util.breadcrumb(location, 'notImplemented'))
+        Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       try {
@@ -160,21 +160,27 @@ const bulkFulfil = async (error, messages) => {
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.info(Util.breadcrumb(location, 'notImplemented'))
+        Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
     } else { // TODO: handle validation failure
       Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
         Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+        /**
+         * TODO: Following the example for regular transfers, the folloing should ABORT the
+         * entire bulk. CAUTION: As of 20191111 this code would also execute when failure
+         * reason is "FSPIOP-Source header should match Payee". In this case we should not
+         * abort the bulk as we would have accepted non-legitimate source.
+         */
         await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.info(Util.breadcrumb(location, 'notImplemented'))
+        Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.info(Util.breadcrumb(location, 'notImplemented'))
+      Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
     }
   } catch (err) {

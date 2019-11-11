@@ -31,19 +31,23 @@ const getAllById = async (id) => {
     const knex = await Db.getKnex()
     return await Db.bulkTransferAssociation.query(async (builder) => {
       const result = builder
-        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 'bulkTransferAssociation.transferId')
+        .innerJoin('transfer AS t', 't.transferId', 'bulkTransferAssociation.transferId')
+        .innerJoin('ilpPacket AS ip', 'ip.transferId', 't.transferId')
+        .leftJoin('transferFulfilment AS tf', 'tf.transferId', 't.transferId')
         .innerJoin(knex('transferStateChange AS tsc1')
           .select('tsc1.transferId')
           .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
           .innerJoin('bulkTransferAssociation AS bta1', 'bta1.transferId', 'tsc1.transferId')
           .where('bta1.bulkTransferId', id)
-          .groupBy('tsc1.transferId').as('ts1'), 'ts1.transferId', 'bulkTransferAssociation.transferId'
+          .groupBy('tsc1.transferId').as('ts1'), 'ts1.transferId', 't.transferId'
         )
         .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts1.maxTransferStateChangeId')
         .innerJoin('transferState AS ts', 'ts.transferStateId', 'tsc.transferStateId')
         .innerJoin('bulkProcessingState AS bps', 'bps.bulkProcessingStateId', 'bulkTransferAssociation.bulkProcessingStateId')
         .where({ 'bulkTransferAssociation.bulkTransferId': id })
-        .select('bulkTransferAssociation.transferId', 'tf.ilpFulfilment AS fulfilment',
+        .select('t.transferId', 't.amount',
+          't.currencyId', 't.ilpCondition AS condition',
+          'ip.value AS ilpPacket', 'tf.ilpFulfilment AS fulfilment',
           'bulkTransferAssociation.errorCode', 'bulkTransferAssociation.errorDescription',
           'ts.enumeration AS transferStateEnum', 'bulkTransferAssociation.bulkProcessingStateId',
           'bps.name AS bulkProcessingState')
