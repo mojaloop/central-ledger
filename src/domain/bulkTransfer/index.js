@@ -151,7 +151,9 @@ const getBulkTransferExtensionListById = async (id, completedTimestamp) => {
           return { key: ext.key, value: ext.value }
         })
       }
-      extensionList = { extension: bulkExtension }
+      if (bulkExtension && bulkExtension.length > 0) {
+        extensionList = { extension: bulkExtension }
+      }
     }
     return extensionList
   } catch (err) {
