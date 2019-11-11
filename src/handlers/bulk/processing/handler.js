@@ -275,8 +275,8 @@ const bulkProcessing = async (error, messages) => {
           // TODO: handle use case when no individual transfer has been accepted:
           // Switch to finilize bulk state and notify payer with PUT /bulkTransfers/{id}
           // const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payerBulkTransfer)
-          Logger.error(Util.breadcrumb(location, `noTransfers--${actionLetter}1`))
-          Logger.info(Util.breadcrumb(location, 'notImplemented'))
+          Logger.info(Util.breadcrumb(location, `noTransfers--${actionLetter}1`))
+          Logger.error(Util.breadcrumb(location, 'notImplemented'))
           return true
         }
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
