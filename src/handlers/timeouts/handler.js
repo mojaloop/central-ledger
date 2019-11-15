@@ -79,6 +79,7 @@ const timeout = async () => {
         const metadata = Utility.StreamingProtocol.createMetadataWithCorrelatedEvent(result[i].transferId, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, state)
         const headers = Utility.Http.SwitchDefaultHeaders(result[i].payerFsp, Enum.Http.HeaderResources.TRANSFERS, Enum.Http.Headers.FSPIOP.SWITCH.value)
         const message = Utility.StreamingProtocol.createMessage(result[i].transferId, result[i].payeeFsp, result[i].payerFsp, metadata, headers, fspiopError, { id: result[i].transferId }, 'application/vnd.interoperability.transfers+json;version=1.0')
+        span.setTags(Utility.EventFramework.getTransferSpanTags({ payload: message.content.payload, headers }, Enum.Events.Event.Type.TRANSFER, Enum.Events.Event.Action.TIMEOUT_RECEIVED))
         await span.audit({
           state,
           metadata,
@@ -90,11 +91,11 @@ const timeout = async () => {
             message.to = message.from
             message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
             // event & type set above when `const metadata` is initialized to NOTIFICATION / TIMEOUT_RECEIVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.NOTIFICATION, Enum.Events.Event.Action.TIMEOUT_RECEIVED, message, state, null, span)
           } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
             message.metadata.event.type = Enum.Events.Event.Type.POSITION
             message.metadata.event.action = Enum.Events.Event.Action.TIMEOUT_RESERVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.TIMEOUT_RESERVED, message, state, result[i].payerFsp, span)
           }
         } else { // individual transfer from a bulk
           if (result[i].transferStateId === Enum.Transfers.TransferInternalState.EXPIRED_PREPARED) {
@@ -102,11 +103,11 @@ const timeout = async () => {
             message.from = Enum.Http.Headers.FSPIOP.SWITCH.value
             message.metadata.event.type = Enum.Events.Event.Type.BULK_PROCESSING
             message.metadata.event.action = Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.BULK_PROCESSING, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, message, state)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.BULK_PROCESSING, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, message, state, null, span)
           } else if (result[i].transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
             message.metadata.event.type = Enum.Events.Event.Type.POSITION
             message.metadata.event.action = Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED
-            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, message, state, result[i].payerFsp)
+            await Kafka.produceGeneralMessage(Config.KAFKA_CONFIG, Producer, Enum.Kafka.Topics.POSITION, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, message, state, result[i].payerFsp, span)
           }
         }
       } catch (err) {

@@ -126,7 +126,7 @@ const validateBulkTransferFulfilment = async (payload, headers) => {
     isValid = false
     return { isValid, reasons }
   }
-  isValid = isValid && validateFspiopSourceAndDestination(payload, headers)
+  isValid = isValid && await validateFspiopSourceAndDestination(payload, headers)
   return { isValid, reasons }
 }
 

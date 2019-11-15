@@ -143,7 +143,8 @@ Test('Position handler', transferHandlerTest => {
     SpanStub = {
       audit: sandbox.stub().callsFake(),
       error: sandbox.stub().callsFake(),
-      finish: sandbox.stub().callsFake()
+      finish: sandbox.stub().callsFake(),
+      setTags: sandbox.stub().callsFake()
     }
 
     const TracerStub = {
@@ -737,6 +738,7 @@ Test('Position handler', transferHandlerTest => {
 
         await allTransferHandlers.positions(null, [m])
         const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        console.log(expectedState)
         test.ok(SpanStub.finish.calledWith('Internal server error', expectedState))
         test.end()
       } catch (e) {

@@ -106,8 +106,8 @@ const bulkPrepare = async (error, messages) => {
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      Logger.error(Util.breadcrumb(location, `resend--${actionLetter}1`))
-      Logger.info(Util.breadcrumb(location, 'notImplemented'))
+      Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
+      Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) { // TODO: handle modified request
@@ -128,7 +128,7 @@ const bulkPrepare = async (error, messages) => {
         await BulkTransferService.bulkPrepare(payload, participants)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.info(Util.breadcrumb(location, 'notImplemented'))
+        Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       try {
@@ -165,7 +165,7 @@ const bulkPrepare = async (error, messages) => {
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.info(Util.breadcrumb(location, 'notImplemented'))
+        Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
     } else { // TODO: handle validation failure
@@ -175,11 +175,11 @@ const bulkPrepare = async (error, messages) => {
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
       } catch (err) { // TODO: handle insert error
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.info(Util.breadcrumb(location, 'notImplemented'))
+        Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.info(Util.breadcrumb(location, 'notImplemented'))
+      Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
     }
   } catch (err) {
