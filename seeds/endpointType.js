@@ -102,16 +102,8 @@ const endpointTypes = [
     description: 'Participant callback URL to which bulk transfer error notifications can be sent'
   },
   {
-    name: 'FSPIOP_CALLBACK_URL_AUTHORIZATION_GET',
-    description: 'Participant callback URL to which authorization get can be sent'
-  },
-  {
-    name: 'FSPIOP_CALLBACK_URL_AUTHORIZATION_PUT',
-    description: 'Participant callback URL to which authorization put can be sent'
-  },
-  {
-    name: 'FSPIOP_CALLBACK_URL_AUTHORIZATION_PUT_ERROR',
-    description: 'Participant callback URL to which authorization put error can be sent'
+    name: 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS',
+    description: 'Participant callback URL to which authorization requests can be sent'
   }
 ]
 
