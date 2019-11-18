@@ -62,12 +62,20 @@ const endpointTypes = [
     description: 'Participant callback URL to which put participant information can be sent'
   },
   {
+    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_SUB_ID_PUT',
+    description: 'Participant callback URL to which put participant information can be sent, when subId is specified'
+  },
+  {
     name: 'FSPIOP_CALLBACK_URL_PARTIES_GET',
     description: 'Participant callback URL to which get parties information can be requested'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR',
     description: 'Participant callback URL to which put participant error information can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_SUB_ID_PUT_ERROR',
+    description: 'Participant callback URL to which put participant error information can be sent, when subId is specified'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT',
