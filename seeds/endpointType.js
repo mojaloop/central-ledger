@@ -83,14 +83,6 @@ const endpointTypes = [
     description: 'Participant callback URL to which delete participant information can be sent, when subId is specified'
   },
   {
-    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_DELETE_ERROR',
-    description: 'Participant callback URL to which put participant error information can be sent'
-  },
-  {
-    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_SUB_ID_DELETE_ERROR',
-    description: 'Participant callback URL to which put participant error information can be sent, when subId is specified'
-  },
-  {
     name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT',
     description: 'Participant callback URL to which put batch participant information can be sent'
   },
