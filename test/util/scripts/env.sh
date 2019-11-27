@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 export KAFKA_ID=kafka
 export MOCKSERVER_ID=mockserver
+export MOCK_SIM_PORT=8444
 export DB_ID=mysql
 export DBUSER=central_ledger
 export DBPASS=password
