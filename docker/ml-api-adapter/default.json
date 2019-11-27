@@ -21,6 +21,10 @@
     "PRECISION": 10,
     "SCALE": 2
   },
+  "ERROR_HANDLING": {
+    "includeCauseExtension": false,
+    "truncateExtensions": true
+  },
   "HANDLERS": {
     "DISABLED": false,
     "API": {

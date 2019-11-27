@@ -43,7 +43,7 @@
   },
   "ERROR_HANDLING": {
     "includeCauseExtension": true,
-    "truncateCause": false
+    "truncateExtensions": false
   },
   "HANDLERS": {
     "DISABLED": false,
