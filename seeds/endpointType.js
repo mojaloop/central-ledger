@@ -92,15 +92,27 @@ const endpointTypes = [
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTIES_GET',
-    description: 'Participant callback URL to which get parties information can be requested'
+    description: 'Parties callback URL to which get parties information can be requested'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTIES_SUB_ID_GET',
+    description: 'Parties callback URL to which get parties information can be requested'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTIES_PUT',
-    description: 'Parties callback URL to which put participant information can be sent'
+    description: 'Parties callback URL to which put parties information can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTIES_SUB_ID_PUT',
+    description: 'Parties callback URL to which put parties information can be sent when SubId is specified'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR',
     description: 'Parties callback URL to which put participant error information can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTIES_SUB_ID_PUT_ERROR',
+    description: 'Parties callback URL to which put parties error information can be sent when SubId is specified'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_QUOTES',
