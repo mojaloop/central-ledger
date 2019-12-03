@@ -40,5 +40,8 @@ until is_db_up; do
 done
 
 docker exec -it ${DB_ID} mysql -uroot -e "ALTER USER '$DBUSER'@'%' IDENTIFIED WITH mysql_native_password BY '$DBPASS';"
+docker exec -it ${DB_ID} mysql -uroot -e "UPDATE mysql.user SET host = '%' WHERE user = 'root';"
+docker exec -it ${DB_ID} mysql -uroot -e "UPDATE mysql.db SET host = '%' WHERE user = 'root';"
+docker exec -it ${DB_ID} mysql -uroot -e "FLUSH PRIVILEGES;"
 
 echo "${DB_ID} ready to accept requests..."

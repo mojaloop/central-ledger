@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+
  --------------
  ******/
 
@@ -62,12 +63,24 @@ const endpointTypes = [
     description: 'Participant callback URL to which put participant information can be sent'
   },
   {
-    name: 'FSPIOP_CALLBACK_URL_PARTIES_GET',
-    description: 'Participant callback URL to which get parties information can be requested'
+    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_SUB_ID_PUT',
+    description: 'Participant callback URL to which put participant information can be sent, when subId is specified'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR',
     description: 'Participant callback URL to which put participant error information can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_SUB_ID_PUT_ERROR',
+    description: 'Participant callback URL to which put participant error information can be sent, when subId is specified'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_DELETE',
+    description: 'Participant callback URL to which delete participant information can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_SUB_ID_DELETE',
+    description: 'Participant callback URL to which delete participant information can be sent, when subId is specified'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT',
@@ -78,12 +91,28 @@ const endpointTypes = [
     description: 'Participant callback URL to which put batch participant error information can be sent'
   },
   {
+    name: 'FSPIOP_CALLBACK_URL_PARTIES_GET',
+    description: 'Parties callback URL to which get parties information can be requested'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTIES_SUB_ID_GET',
+    description: 'Parties callback URL to which get parties information can be requested'
+  },
+  {
     name: 'FSPIOP_CALLBACK_URL_PARTIES_PUT',
-    description: 'Parties callback URL to which put participant information can be sent'
+    description: 'Parties callback URL to which put parties information can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTIES_SUB_ID_PUT',
+    description: 'Parties callback URL to which put parties information can be sent when SubId is specified'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR',
     description: 'Parties callback URL to which put participant error information can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_PARTIES_SUB_ID_PUT_ERROR',
+    description: 'Parties callback URL to which put parties error information can be sent when SubId is specified'
   },
   {
     name: 'FSPIOP_CALLBACK_URL_QUOTES',
