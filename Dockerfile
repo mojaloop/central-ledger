@@ -17,7 +17,7 @@ COPY seeds /opt/central-ledger/seeds
 FROM node:10.15.3-alpine
 WORKDIR /opt/central-ledger
 
-COPY --from=builder /opt/central-event-processor .
+COPY --from=builder /opt/central-ledger .
 
 RUN npm prune --production
 
