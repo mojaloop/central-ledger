@@ -1,17 +1,13 @@
-# CircleCI v2 Config
-version: 2
+# CircleCI v2.1 Config
+version: 2.1
+orbs:
+  anchore: anchore/anchore-engine@1.6.0
 
-defaults_working_directory: &defaults_working_directory
-  working_directory: /home/circleci/project
-
-defaults_docker_node: &defaults_docker_node
-  docker:
-    - image: node:10.15.3-alpine
-
-defaults_docker_helm_kube: &defaults_docker_helm_kube
-  docker:
-    - image: hypnoglow/kubernetes-helm
-
+##
+# defaults
+#
+# YAML defaults templates, in alphabetical order
+##
 defaults_Dependencies: &defaults_Dependencies |
     apk --no-cache add git
     apk --no-cache add ca-certificates
@@ -31,68 +27,37 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
     pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
     apk -v --purge del py-pip
 
-defaults_license_scanner: &defaults_license_scanner
-  name: Install and set up license-scanner
-  command: |
-    git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
-    cd /tmp/license-scanner && make build default-files set-up
-
-defaults_Environment: &defaults_environment
-  name: Set default environment
-  command: |
-    echo "Nothing to do here right now...move along!"
-
-defaults_build_docker_login: &defaults_build_docker_login
-  name: Login to Docker Hub
-  command: |
-    docker login -u $DOCKER_USER -p $DOCKER_PASS
-
 defaults_build_docker_build: &defaults_build_docker_build
   name: Build Docker $CIRCLE_TAG image
   command: |
     echo "Building Docker image: $CIRCLE_TAG"
     docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
 
-defaults_build_docker_build_release: &defaults_build_docker_build_release
-  name: Build Docker $RELEASE_TAG image
+defaults_build_docker_login: &defaults_build_docker_login
+  name: Login to Docker Hub
   command: |
-    echo "Building Docker image: $RELEASE_TAG"
-    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG .
+    docker login -u $DOCKER_USER -p $DOCKER_PASS
 
 defaults_build_docker_publish: &defaults_build_docker_publish
   name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
   command: |
     echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
     docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-
-defaults_build_docker_publish_release: &defaults_build_docker_publish_release
-  name: Publish Docker image $RELEASE_TAG tag to Docker Hub
-  command: |
     echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
     docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
 
-defaults_deploy_prequisites: &defaults_deploy_prequisites
-  name: Copy deployment pre-requisites from S3 bucket
-  command: |
-    if [ -z "$K8_USER_TOKEN" ];
-    then
-        echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
-        mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
-        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
-        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
-    else
-        echo "Skipping K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
-    fi
-
-    echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $K8_RELEASE_NAME release"
-    mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
-    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
 
 defaults_deploy_config_kubernetes_cluster: &defaults_deploy_config_kubernetes_cluster
   name: Configure Kubernetes cluster
   command: |
     echo "Configure Kubernetes cluster ${K8_CLUSTER_NAME}"
     kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
+
+defaults_deploy_config_kubernetes_context: &defaults_deploy_config_kubernetes_context
+  name: Confi gure Kubernetes context
+  command: |
+    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
+    kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$K8_NAMESPACE
 
 defaults_deploy_config_kubernetes_credentials: &defaults_deploy_config_kubernetes_credentials
   name: Configure Kubernetes credentails
@@ -106,18 +71,6 @@ defaults_deploy_config_kubernetes_credentials: &defaults_deploy_config_kubernete
         echo "Configure Kubernetes credentials ${K8_USER_NAME} using Certs"
         kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
     fi
-
-defaults_deploy_config_kubernetes_context: &defaults_deploy_config_kubernetes_context
-  name: Confi gure Kubernetes context
-  command: |
-    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
-    kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$K8_NAMESPACE
-
-defaults_deploy_set_kubernetes_context: &defaults_deploy_set_kubernetes_context
-  name: Set Kubernetes context
-  command: |
-    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
-    kubectl config use-context $K8_CLUSTER_NAME
 
 defaults_deploy_configure_helm: &defaults_deploy_configure_helm
   name: Configure Helm
@@ -137,6 +90,35 @@ defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgra
         helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION --reuse-values $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
     fi
 
+defaults_deploy_prequisites: &defaults_deploy_prequisites
+  name: Copy deployment pre-requisites from S3 bucket
+  command: |
+    if [ -z "$K8_USER_TOKEN" ];
+    then
+        echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
+        mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
+        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
+    else
+        echo "Skipping K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
+    fi
+
+    echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $K8_RELEASE_NAME release"
+    mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
+    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
+
+defaults_deploy_set_kubernetes_context: &defaults_deploy_set_kubernetes_context
+  name: Set Kubernetes context
+  command: |
+    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
+    kubectl config use-context $K8_CLUSTER_NAME
+
+defaults_license_scanner: &defaults_license_scanner
+  name: Install and set up license-scanner
+  command: |
+    git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
+    cd /tmp/license-scanner && make build default-files set-up
+
 defaults_slack_announcement: &defaults_slack_announcement
   name: Slack announcement for tag releases
   command: |
@@ -144,27 +126,44 @@ defaults_slack_announcement: &defaults_slack_announcement
       $SLACK_WEBHOOK_ANNOUNCEMENT \
       -H 'Content-type: application/json' \
       -H 'cache-control: no-cache' \
-      -d "{
-      \"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"
-    }"
+      -d "{\"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"}"
 
+##
+# Executors
+#
+# CircleCI Executors
+##
+executors:
+  default-docker:
+    working_directory: /home/circleci/project
+    docker: 
+      - image: node:10.15.3-alpine
+
+  default-machine:
+    machine:
+      image: ubuntu-1604:201903-01
+
+  helm-kube:
+    working_directory: /home/circleci/project
+    docker: 
+      - image: hypnoglow/kubernetes-helm
+
+##
+# Jobs
+#
+# A map of CircleCI jobs
+##
 jobs:
   setup:
-    <<: *defaults_working_directory
-    <<: *defaults_docker_node
+    executor: default-docker
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - checkout
-      - run:
-          <<: *defaults_environment
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
-#      - run:
-#          name: Install interledgerjs/five-bells-ledger-api-tests
-#          command: npm install github:interledgerjs/five-bells-ledger-api-tests
       - run:
           name: Update NPM install
           command: npm install
@@ -177,15 +176,12 @@ jobs:
             - node_modules
 
   test-unit:
-    <<: *defaults_working_directory
-    <<: *defaults_docker_node
+    executor: default-docker
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - checkout
-      - run:
-          <<: *defaults_environment
       - restore_cache:
           keys:
           - dependency-cache-{{ checksum "package.json" }}
@@ -205,15 +201,12 @@ jobs:
           path: ./test/results
 
   test-coverage:
-    <<: *defaults_working_directory
-    <<: *defaults_docker_node
+    executor: default-docker
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - checkout
-      - run:
-          <<: *defaults_environment
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
@@ -240,12 +233,9 @@ jobs:
             fi
 
   test-integration:
-    machine: true
-    <<: *defaults_working_directory
+    executor: default-machine
     steps:
       - checkout
-      - run:
-          <<: *defaults_environment
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
@@ -261,89 +251,13 @@ jobs:
       - store_test_results:
           path: ./test/results
 
-#  test-functional:
-#    machine: true
-#    <<: *defaults_working_directory
-#    steps:
-#      - run:
-#          name: Add the Postgres 9.6 binaries to the path.
-#          command: echo "/usr/lib/postgresql/9.6/bin/:$PATH" >> $BASH_ENV
-#      - run:
-#          name: Install Docker Compose
-#          command: |
-#            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
-#            chmod +x ~/docker-compose
-#            mv ~/docker-compose /usr/local/bin/docker-compose
-#      - checkout
-#      - restore_cache:
-#          key: dependency-cache-{{ checksum "package.json" }}
-#      - run:
-#          name: Create dir for test results
-#          command: mkdir -p ./test/results
-#      - run:
-#          name: Execute functional tests
-#          command: npm -s run test:functional
-#      - store_artifacts:
-#          path: ./test/results
-#          prefix: test
-#      - store_test_results:
-#          path: ./test/results
-
-#   test-spec:
-#     machine: true
-#     # <<: *defaults
-#     steps:
-#     #   - run:
-#     #       name: Install general dependencies
-#     #       command: *defaultDependencies
-#     #   - run:
-#     #       name: Add the Postgres 9.6 binaries to the path.
-#     #       command: apk --no-cache add postgresql-client
-#     #   - setup_remote_docker
-#     #   - run:
-#     #       name: Add docker
-#     #       command: apk --no-cache add docker
-#     #   - run:
-#     #       name: Add docker compose
-#     #       command: |
-#     #         apk --no-cache add py-pip
-#     #         pip install docker-compose
-#     #   - run:
-#     #       name: Install Docker Compose
-#     #       command: |
-#     #         curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose; chmod +x /usr/local/bin/docker-compose
-#       - run:
-#           name: Add the Postgres 9.6 binaries to the path.
-#           command: echo "/usr/lib/postgresql/9.6/bin/:$PATH" >> $BASH_ENV
-#       - run:
-#           name: Install Docker Compose
-#           command: |
-#             curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
-#             chmod +x ~/docker-compose
-#             mv ~/docker-compose /usr/local/bin/docker-compose
-#       - checkout
-#       - restore_cache:
-#           key: dependency-cache-{{ checksum "package.json" }}
-#       - run:
-#           name: Create dir for test results
-#           command: mkdir -p ./test/results
-#       - run:
-#           name: Execute unit tests
-#           command: npm -s run test:spec
-#       - store_artifacts:
-#           path: ./test/results
-#           prefix: test
-#       - store_test_results:
-#           path: ./test/results
-
   vulnerability-check:
-    <<: *defaults_working_directory
-    <<: *defaults_docker_node
+    executor: default-docker
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
@@ -351,22 +265,20 @@ jobs:
           command: mkdir -p ./audit/results
       - run:
           name: Check for new npm vulnerabilities
-          # TODO: change back to silent, we make this verbose to catch this bug: https://github.com/mojaloop/project/issues/958
-          command: npm run audit:check --verbose -- --json > ./audit/results/auditResults.json 
+          command: npm run audit:check --silent -- --json > ./audit/results/auditResults.json 
       - store_artifacts:
           path: ./audit/results
           prefix: audit
           
   audit-licenses:
-    <<: *defaults_working_directory
-    <<: *defaults_docker_node
+    executor: default-docker
     steps:
+      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
       - run:
           <<: *defaults_license_scanner
-      - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
@@ -379,65 +291,29 @@ jobs:
           path: /tmp/license-scanner/results
           prefix: licenses
 
-  build-snapshot:
-    machine: true
-    <<: *defaults_working_directory
-    steps:
-      - checkout
-      - run:
-          <<: *defaults_environment
-      - run:
-          name: setup environment vars for SNAPSHOT release
-          command: |
-            echo 'export RELEASE_TAG=$RELEASE_TAG_SNAPSHOT' >> $BASH_ENV
-      - run:
-          <<: *defaults_build_docker_login
-      - run:
-          <<: *defaults_build_docker_build
-      - run:
-          <<: *defaults_build_docker_build_release
-      - run:
-          <<: *defaults_build_docker_publish
-      - run:
-          <<: *defaults_build_docker_publish_release
-      - run:
-          <<: *defaults_slack_announcement
-
-  build-hotfix:
-    machine: true
-    # <<: *default_env
-    steps:
-      - checkout
-      - run:
-          <<: *defaults_environment
-      - run:
-          name: setup environment vars for HOTFIX release
-          command: |
-            echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
-      - run:
-          <<: *defaults_build_docker_login
-      - run:
-          <<: *defaults_build_docker_build
-      - run:
-          <<: *defaults_build_docker_publish
-      - run:
-          <<: *defaults_slack_announcement
-
   build:
-    machine: true
-    # <<: *default_env
+    executor: default-machine
     steps:
       - checkout
       - run:
-          <<: *defaults_environment
-      - run:
-          name: setup environment vars for LATEST release
-          command: |
-            echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
-      - run:
-          <<: *defaults_build_docker_login
-      - run:
           <<: *defaults_build_docker_build
+      - run:
+          name: Save docker image to workspace
+          command: docker save -o /tmp/docker-image.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - ./docker-image.tar
+
+  license-scan:
+    executor: default-machine
+    # <<: *defaults_test_env
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker image from workspace
+          command: docker load -i /tmp/docker-image.tar
       - run:
           <<: *defaults_license_scanner
       - run:
@@ -446,72 +322,82 @@ jobs:
       - store_artifacts:
           path: /tmp/license-scanner/results
           prefix: licenses
+
+  image-scan:
+    executor: anchore/anchore_engine
+    steps:
+      - setup_remote_docker
+      - checkout
+      - attach_workspace:
+          at: /tmp
       - run:
-          <<: *defaults_build_docker_build_release
+          name: Load the pre-built docker image from workspace
+          command: docker load -i /tmp/docker-image.tar
+      - anchore/analyze_local_image:
+          dockerfile_path: ./Dockerfile
+          image_name: ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}
+          # Anchore bug: if policy_failure is `true`, reports don't get written - we manually check for failures below
+          policy_failure: false
+          timeout: '500'
+      - run:
+          name: Evaluate Failures.
+          command: |
+            if [[ ! $(which jq) ]]; then
+              (set +o pipefail; apk add jq || apt-get install -y jq || yum install -y jq)
+            fi
+            if [[ $(ls anchore-reports/*content-os*.json 2> /dev/null) ]]; then
+              printf "\n%s\n" "The following OS packages are installed:"
+              jq '[.content | sort_by(.package) | .[] | {package: .package, version: .version}]' anchore-reports/*content-os*.json
+            fi
+            if [[ $(ls anchore-reports/*vuln*.json 2> /dev/null) ]]; then
+              printf "\n%s\n" "The following vulnerabilities were found:"
+              jq '[.vulnerabilities | group_by(.package) | .[] | {package: .[0].package, vuln: [.[].vuln]}]' anchore-reports/*vuln*.json
+            fi
+
+            # TODO: Enable this when we want to increase the strictness of our security policies
+            # failCount=$(cat anchore-reports/*policy*.json | grep 'fail' | wc -l)
+            # echo "FailCount is: ${failCount}"
+            # if [ $failCount -gt 0 ]; then
+            #   printf "Failed with a policy failure count of: ${failCount}"
+            #   exit 1
+            # fi
+
+      - store_artifacts:
+          path: anchore-reports
+
+  publish:
+    executor: default-machine
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load the pre-built docker image from workspace
+          command: docker load -i /tmp/docker-image.tar
+      - run:
+          <<: *defaults_build_docker_login
+      - run:
+          name: setup environment vars for release/snapshot
+          command: ./.circleci/_set_up_deploy_envs.sh
+      - run:
+          name: Re-tag pre built image
+          command: |
+            docker tag $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
       - run:
           <<: *defaults_build_docker_publish
       - run:
-          <<: *defaults_build_docker_publish_release
-      - run:
           <<: *defaults_slack_announcement
-
-  deploy-snapshot:
-    <<: *defaults_working_directory
-    <<: *defaults_docker_helm_kube
-    steps:
-      - run:
-          <<: *defaults_environment
-      - run:
-          name: Install AWS CLI dependencies
-          command: *defaults_awsCliDependencies
-      - run:
-          name: setup environment vars for SNAPSHOT release
-          command: |
-            echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_SNAPSHOT' >> $BASH_ENV
-            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_SNAPSHOT' >> $BASH_ENV
-            echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_SNAPSHOT' >> $BASH_ENV
-            echo 'export K8_NAMESPACE=$K8_NAMESPACE_SNAPSHOT' >> $BASH_ENV
-            echo 'export K8_USER_NAME=$K8_USER_NAME_SNAPSHOT' >> $BASH_ENV
-            echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_SNAPSHOT' >> $BASH_ENV
-            echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_SNAPSHOT' >> $BASH_ENV
-            echo 'export K8_HELM_CHART_VERSION=$K8_HELM_CHART_VERSION_SNAPSHOT' >> $BASH_ENV
-            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
-      - run:
-          <<: *defaults_deploy_prequisites
-      - run:
-          <<: *defaults_deploy_config_kubernetes_cluster
-      - run:
-          <<: *defaults_deploy_config_kubernetes_credentials
-      - run:
-          <<: *defaults_deploy_config_kubernetes_context
-      - run:
-          <<: *defaults_deploy_set_kubernetes_context
-      - run:
-          <<: *defaults_deploy_configure_helm
-      - run:
-          <<: *defaults_deploy_install_or_upgrade_helm_chart
-
+        
   deploy:
-    <<: *defaults_working_directory
-    <<: *defaults_docker_helm_kube
+    executor: helm-kube
     steps:
-      - run:
-          <<: *defaults_environment
+      - checkout
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
       - run:
-          name: setup environment vars for release
-          command: |
-            echo 'export HELM_VALUE_FILENAME=$K8_HELM_VALUE_FILENAME_PROD' >> $BASH_ENV
-            echo 'export K8_CLUSTER_SERVER=$K8_CLUSTER_SERVER_PROD' >> $BASH_ENV
-            echo 'export K8_RELEASE_NAME=$K8_RELEASE_NAME_PROD' >> $BASH_ENV
-            echo 'export K8_NAMESPACE=$K8_NAMESPACE_PROD' >> $BASH_ENV
-            echo 'export K8_USER_NAME=$K8_USER_NAME_PROD' >> $BASH_ENV
-            echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_PROD' >> $BASH_ENV
-            echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_PROD' >> $BASH_ENV
-            echo 'export K8_HELM_CHART_VERSION=$K8_HELM_CHART_VERSION_PROD' >> $BASH_ENV
-            echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+          name: setup environment vars for release/snapshot
+          command: ./.circleci/_set_up_deploy_envs.sh
       - run:
           <<: *defaults_deploy_prequisites
       - run:
@@ -527,6 +413,11 @@ jobs:
       - run:
           <<: *defaults_deploy_install_or_upgrade_helm_chart
 
+##
+# Workflows
+#
+# CircleCI Workflow config
+##
 workflows:
   version: 2
   build_and_test:
@@ -595,55 +486,6 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-#      - test-functional:
-#          context: org-global
-#          requires:
-#            - setup
-#          filters:
-#            tags:
-#              only: /.*/
-#            branches:
-#              ignore:
-#                - /feature*/
-#                - /bugfix*/
-#       - test-spec:
-#           context: org-global
-#           requires:
-#             - setup
-#           filters:
-#               tags:
-#                 only: /.*/
-#             branches:
-#               ignore:
-#                 - /feature*/
-#                 - /bugfix*/
-      - build-snapshot:
-          context: org-global
-          requires:
-            - setup
-            - test-unit
-            - test-coverage
-            - test-integration
-#            - test-functional
-#            - test-spec
-            - vulnerability-check
-            - audit-licenses
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*\-snapshot/
-            branches:
-              ignore:
-                - /.*/
-      - deploy-snapshot:
-          context: org-global
-          requires:
-            - build-snapshot
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*\-snapshot/
-            branches:
-              ignore:
-                - /.*/
       - build:
           context: org-global
           requires:
@@ -651,40 +493,52 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-#            - test-functional
-#            - test-spec
             - vulnerability-check
             - audit-licenses
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
             branches:
               ignore:
                 - /.*/
-      - build-hotfix:
+      - license-scan:
           context: org-global
           requires:
-            - setup
-            - test-unit
-            - test-coverage
-            - test-integration
-#            - test-functional
-#            - test-spec
-            - vulnerability-check
-            - audit-licenses
+            - build
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*\-hotfix(\.[0-9]+)/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
+            branches:
+              ignore:
+                - /.*/
+      - image-scan:
+          context: org-global
+          requires:
+            - build
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
+            branches:
+              ignore:
+                - /.*/
+      - publish:
+          context: org-global
+          requires:
+            - license-scan
+            - image-scan
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
             branches:
               ignore:
                 - /.*/
       - deploy:
           context: org-global
           requires:
-            - build
+            - publish
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?/
             branches:
               ignore:
                 - /.*/
