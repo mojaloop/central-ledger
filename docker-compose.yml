@@ -23,6 +23,7 @@ services:
        - ./docker/wait-for:/opt/wait-for
     environment:
       - LOG_LEVEL=info
+      - CSL_LOG_TRANSPORT=file
       - CLEDG_SIDECAR__DISABLED=true
       - CLEDG_MONGODB__DISABLED=false
     networks:
