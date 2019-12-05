@@ -25,22 +25,22 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
-  return await knex.schema.hasTable('settlementWindowContentStateChange').then(function(exists) {
-    if (!exists) {
-      return knex.schema.createTable('settlementWindowContentStateChange', (t) => {
-        t.bigIncrements('settlementWindowContentStateChangeId').primary().notNullable()
-        t.bigInteger('settlementWindowContentId').unsigned().notNullable()
-        t.foreign('settlementWindowContentId', 'swc_settlementwindowcontentid_foreign').references('settlementWindowContentId').inTable('settlementWindowContent')
-        t.string('settlementWindowStateId', 50).notNullable()
-        t.foreign('settlementWindowStateId', 'sws1_settlementwindowstateid_foreign').references('settlementWindowStateId').inTable('settlementWindowState')
-        t.string('reason', 512).defaultTo(null).nullable()
-        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-      })
-    }
+exports.up = function (knex, Promise) {
+  return knex.schema.table('settlementContentAggregationStateChange', (t) => {
+    t.index('settlementContentAggregationId', 'scasc_settlementcontentAggregationid_index')
+    t.index('settlementWindowStateId', 'scasc_settlementwindowstateid_index')
+  })
+  .table('settlementContentAggregation', (t) => {
+    t.foreign('currentStateChangeId').references('settlementContentAggregationStateChange.settlementContentAggregationStateChangeId')
   })
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.dropTableIfExists('settlementWindowContentStateChange')
+  return knex.schema.table('settlementContentAggregationStateChange', (t) => {
+    t.dropIndex('settlementContentAggregationId', 'scasc_settlementcontentAggregationid_index')
+    t.dropIndex('settlementWindowStateId', 'scasc_settlementwindowstateid_index')
+  })
+  .table('settlementContentAggregation', (t) => {
+    t.dropForeign('currentStateChangeId')
+  })
 }
