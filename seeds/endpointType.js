@@ -133,6 +133,10 @@ const endpointTypes = [
   {
     name: 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS',
     description: 'Participant callback URL to which authorization requests can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_TRANSACTION',
+    description: 'Participant callback URL to which transaction requests can be sent'
   }
 ]
 
