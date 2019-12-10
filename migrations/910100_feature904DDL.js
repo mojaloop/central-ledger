@@ -151,10 +151,10 @@ const migrateDDL = async (knex) => {
   return 0
 }
 
-exports.up = async (knex, Promise) => {
+exports.up = async (knex) => {
   return await migrateDDL(knex)
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.dropTableIfExists('transferFulfilmentDuplicateCheck')
 }
