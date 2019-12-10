@@ -31,7 +31,7 @@ Contributors
 // Notes: these changes are required for the quoting-service and are not used by central-ledger
 'use strict'
 
-exports.up = (knex, Promise) => {
+exports.up = (knex) => {
   return knex.schema.hasTable('transferRules').then((exists) => {
     if (!exists) {
       return knex.schema.createTable('transferRules', (t) => {
@@ -46,6 +46,6 @@ exports.up = (knex, Promise) => {
   })
 }
 
-exports.down = (knex, Promise) => {
+exports.down = (knex) => {
   return knex.schema.dropTableIfExists('transferRules')
 }
