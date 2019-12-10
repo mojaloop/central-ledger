@@ -64,7 +64,7 @@ Test('Ilp service tests', async (ilpTest) => {
 
   await ilpTest.test('create ilp', async (assert) => {
     try {
-      ilpTestValues.forEach(async ilp => {
+      ilpTestValues.forEach(async () => {
         try {
           const ilpResult = await HelperModule.prepareNeededData('ilpPacket')
           const result = ilpResult.ilp

@@ -68,7 +68,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('create extension', async (assert) => {
     try {
-      extensionTestValues.forEach(async (extension) => {
+      extensionTestValues.forEach(async () => {
         try {
           const extensionResult = await HelperModule.prepareNeededData('transferExtension')
           const result = extensionResult.extension[0]
