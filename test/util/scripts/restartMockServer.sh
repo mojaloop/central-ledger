@@ -25,11 +25,11 @@ echo "Destroying MockServer ${MOCKSERVER_ID}"
 docker stop $MOCKSERVER_ID
 docker rm $MOCKSERVER_ID
 
-echo "Starting Docker ${MOCKSERVER_ID}"
+echo "Starting Docker ${MOCKSERVER_ID}{default} with binding 1080:1080"
 docker run --name ${MOCKSERVER_ID} -d -p 1080:1080 jamesdbloom/mockserver;
 
 is_service_up() {
-  docker run --rm --network host byrnedo/alpine-curl -s -X PUT 'http://localhost:1080/status' -d '{"method": "*", "path": "*"}'
+  docker run --rm --network host byrnedo/alpine-curl -s -X PUT "http://localhost:1080/status" -d '{"method": "*", "path": "*"}' > /dev/null 2>&1
 }
 
 echo "Waiting for mockserver to start"

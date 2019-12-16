@@ -23,7 +23,6 @@
  ******/
 
 'use strict'
-const Time = require('@mojaloop/central-services-shared').Util.Time
 const Config = require('../src/lib/config')
 const RUN_DATA_MIGRATIONS = Config.DB_RUN_DATA_MIGRATIONS
 
@@ -31,8 +30,8 @@ const RUN_DATA_MIGRATIONS = Config.DB_RUN_DATA_MIGRATIONS
  * This migration script is provided with no warranties! It is given as a reference
  * to help implementers, as well as used by maintainers for QA and other enabling tasks.
  * Use at your own risk!
- * 
- * Make sure you have fresh DB backup before initializing it and also set 
+ *
+ * Make sure you have fresh DB backup before initializing it and also set
  * `tableNameSuffix` to match the suffix of the tables you want to migrate data from.
  * If you need to execute this script multiple times after failure or modifications,
  * please delete the corresponding record from central_ledger.migration table.
@@ -270,12 +269,12 @@ const migrateData = async (knex) => {
   })
 }
 
-exports.up = async (knex, Promise) => {
+exports.up = async (knex) => {
   if (RUN_DATA_MIGRATIONS) {
     return await migrateData(knex)
   }
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.dropTableIfExists('currency')
 }

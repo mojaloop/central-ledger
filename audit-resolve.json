@@ -17,6 +17,30 @@
       "decision": "ignore",
       "madeAt": 1571649787349,
       "expiresAt": 1574241710583
+    },
+    "1316|hapi-swagger>handlebars": {
+      "decision": "fix",
+      "madeAt": 1574855424585
+    },
+    "1316|nyc>istanbul-reports>handlebars": {
+      "decision": "fix",
+      "madeAt": 1574855424585
+    },
+    "1324|hapi-swagger>handlebars": {
+      "decision": "fix",
+      "madeAt": 1574855424585
+    },
+    "1324|nyc>istanbul-reports>handlebars": {
+      "decision": "fix",
+      "madeAt": 1574855424585
+    },
+    "1325|hapi-swagger>handlebars": {
+      "decision": "fix",
+      "madeAt": 1574855424585
+    },
+    "1325|nyc>istanbul-reports>handlebars": {
+      "decision": "fix",
+      "madeAt": 1574855424585
     }
   },
   "rules": {},

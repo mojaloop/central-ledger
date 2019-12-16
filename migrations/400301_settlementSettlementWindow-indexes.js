@@ -25,7 +25,7 @@
 
 'use strict'
 
-exports.up = function (knex, Promise) {
+exports.up = function (knex) {
   return knex.schema.table('settlementSettlementWindow', (t) => {
     t.index('settlementId')
     t.index('settlementWindowId')
@@ -33,7 +33,7 @@ exports.up = function (knex, Promise) {
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.table('settlementSettlementWindow', (t) => {
     t.dropIndex('settlementId')
     t.dropIndex('settlementWindowId')

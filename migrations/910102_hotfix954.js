@@ -51,13 +51,13 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
+exports.up = async (knex) => {
   return knex.schema.table('transferError', (t) => {
     // Dropping foreign keys for the transferError table to allow the error to be logged without any record existing in the transferErrorDuplicateCheck
     t.dropForeign('transferId')
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.dropTableIfExists('transferError')
 }
