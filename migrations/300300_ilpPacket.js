@@ -25,7 +25,7 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
+exports.up = async (knex) => {
   return await knex.schema.hasTable('ilpPacket').then(function(exists) {
     if (!exists) {
       return knex.schema.createTable('ilpPacket', (t) => {
@@ -38,6 +38,6 @@ exports.up = async (knex, Promise) => {
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.dropTableIfExists('ilpPacket')
 }

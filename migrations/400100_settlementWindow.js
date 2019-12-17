@@ -25,7 +25,7 @@
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
+exports.up = async (knex) => {
   return await knex.schema.hasTable('settlementWindow').then(function(exists) {
     if (!exists) {
       return knex.schema.createTable('settlementWindow', (t) => {
@@ -38,6 +38,6 @@ exports.up = async (knex, Promise) => {
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.dropTableIfExists('settlementWindow')
 }

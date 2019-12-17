@@ -25,7 +25,7 @@
 
 'use strict'
 
-exports.up = function (knex, Promise) {
+exports.up = function (knex) {
   // foreign keys sorted alphabetically by table name
   return knex.schema
   .table('transferExtension', (t) => {
@@ -33,7 +33,7 @@ exports.up = function (knex, Promise) {
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema
   .table('transferExtension', (t) => {
     t.dropForeign('transferErrorId')

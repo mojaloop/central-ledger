@@ -25,13 +25,13 @@
 
 'use strict'
 
-exports.up = function (knex, Promise) {
+exports.up = function (knex) {
   return knex.schema.table('endpointType', (t) => {
     t.unique('name')
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.table('endpointType', (t) => {
     t.dropUnique('name')
   })
