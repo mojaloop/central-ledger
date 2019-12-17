@@ -26,21 +26,21 @@
 'use strict'
 
 exports.up = function (knex, Promise) {
-  return knex.schema.table('settlementContentAggregationStateChange', (t) => {
-    t.index('settlementContentAggregationId', 'scasc_settlementcontentAggregationid_index')
-    t.index('settlementWindowStateId', 'scasc_settlementwindowstateid_index')
-  })
-  .table('settlementContentAggregation', (t) => {
-    t.foreign('currentStateChangeId').references('settlementContentAggregationStateChange.settlementContentAggregationStateChangeId')
+  return knex.schema.table('settlementModel', (t) => {
+    t.index('settlementGranularityId')
+    t.index('settlementInterchangeId')
+    t.index('settlementDelayId')
+    t.index('currencyId')
+    t.index('ledgerAccountTypeId')
   })
 }
 
 exports.down = function (knex, Promise) {
-  return knex.schema.table('settlementContentAggregationStateChange', (t) => {
-    t.dropIndex('settlementContentAggregationId', 'scasc_settlementcontentAggregationid_index')
-    t.dropIndex('settlementWindowStateId', 'scasc_settlementwindowstateid_index')
-  })
-  .table('settlementContentAggregation', (t) => {
-    t.dropForeign('currentStateChangeId')
+  return knex.schema.table('settlementModel', (t) => {
+    t.dropIndex('settlementGranularityId')
+    t.dropIndex('settlementInterchangeId')
+    t.dropIndex('settlementDelayId')
+    t.dropIndex('currencyId')
+    t.dropIndex('ledgerAccountTypeId')
   })
 }

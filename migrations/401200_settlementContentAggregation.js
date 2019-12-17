@@ -40,7 +40,10 @@ exports.up = async (knex, Promise) => {
         t.foreign('ledgerEntryTypeId').references('ledgerEntryTypeId').inTable('ledgerEntryType')
         t.decimal('amount', 18, 2).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
-        t.bigInteger('currentStateChangeId').unsigned().nullable()
+        t.string('settlementWindowStateId', 50).notNullable()
+        t.foreign('settlementWindowStateId').references('settlementWindowStateId').inTable('settlementWindowState')
+        t.bigInteger('settlementId').unsigned()
+        t.foreign('settlementId').references('settlementId').inTable('settlement')
       })
     }
   })
