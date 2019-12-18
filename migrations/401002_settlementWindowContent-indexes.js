@@ -31,6 +31,7 @@ exports.up = function (knex, Promise) {
     t.index('ledgerAccountTypeId')
     t.index('currencyId')
     t.index('currentStateChangeId')
+    t.index('settlementId')
   })
 }
 
@@ -40,5 +41,6 @@ exports.down = function (knex, Promise) {
     t.dropIndex('ledgerAccountTypeId')
     t.dropIndex('currencyId')
     t.dropIndex('currentStateChangeId')
+    t.dropIndex('settlementId')
   })
 }

@@ -38,6 +38,8 @@ exports.up = async (knex, Promise) => {
         t.foreign('currencyId').references('currencyId').inTable('currency')
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
         t.bigInteger('currentStateChangeId').unsigned().nullable()
+        t.bigInteger('settlementId').unsigned()
+        t.foreign('settlementId').references('settlementId').inTable('settlement')
       })
     }
   })
