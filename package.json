@@ -101,7 +101,7 @@
     "hapi-auth-basic": "5.0.0",
     "hapi-auth-bearer-token": "6.2.1",
     "hapi-swagger": "11.1.0",
-    "knex": "0.20.4",
+    "knex": "0.20.6",
     "lodash": "4.17.15",
     "moment": "2.24.0",
     "mongoose": "5.8.1",
