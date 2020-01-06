@@ -416,7 +416,7 @@ Test('Participant', participantHandlerTest => {
 
       Participant.addEndpoint.withArgs(params.name, payload).returns(Promise.resolve(1))
       const reply = {
-        response: (response) => {
+        response: () => {
           return {
             code: statusCode => {
               test.equal(statusCode, 201, 'Participant Endpoint created successfully')
@@ -561,7 +561,7 @@ Test('Participant', participantHandlerTest => {
 
       Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(Promise.resolve(1))
       const reply = {
-        response: (response) => {
+        response: () => {
           return {
             code: statusCode => {
               test.equal(statusCode, 201, 'Participant limit and initial position added successfully')
@@ -587,7 +587,7 @@ Test('Participant', participantHandlerTest => {
 
       Participant.addLimitAndInitialPosition.withArgs(params.name, payload).returns(Promise.resolve(1))
       const reply = {
-        response: (response) => {
+        response: () => {
           return {
             code: statusCode => {
               test.equal(statusCode, 201, 'Participant limit and initial position added successfully')
@@ -1336,7 +1336,7 @@ Test('Participant', participantHandlerTest => {
       }
 
       const h = {
-        response: (response) => {
+        response: () => {
           return {
             code: statusCode => {
               test.deepEqual(statusCode, 202)
@@ -1368,7 +1368,7 @@ Test('Participant', participantHandlerTest => {
       }
 
       const h = {
-        response: (response) => {
+        response: () => {
           return {
             code: statusCode => {
               test.deepEqual(statusCode, 202)

@@ -285,7 +285,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
@@ -325,7 +325,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
@@ -364,7 +364,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
@@ -403,7 +403,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
@@ -442,7 +442,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
@@ -481,7 +481,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
@@ -528,7 +528,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
@@ -574,7 +574,7 @@ Test('Handlers test', async handlersTest => {
       }
 
       try {
-        await retry(async bail => { // use bail(new Error('to break before max retries'))
+        await retry(async () => { // use bail(new Error('to break before max retries'))
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)

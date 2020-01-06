@@ -18,13 +18,14 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-exports.up = async (knex, Promise) => {
+exports.up = async (knex) => {
   return await knex.schema.hasTable('settlementTransferParticipant').then(function(exists) {
     if (exists) {
       return knex.schema.alterTable('settlementTransferParticipant', (t) => {
@@ -34,6 +35,6 @@ exports.up = async (knex, Promise) => {
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.dropTableIfExists('settlementTransferParticipant')
 }

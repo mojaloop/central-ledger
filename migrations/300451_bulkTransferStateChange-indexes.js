@@ -18,20 +18,21 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-exports.up = function (knex, Promise) {
+exports.up = function (knex) {
   return knex.schema.table('bulkTransferStateChange', (t) => {
     t.index('bulkTransferId')
     t.index('bulkTransferStateId')
   })
 }
 
-exports.down = function (knex, Promise) {
+exports.down = function (knex) {
   return knex.schema.table('bulkTransferStateChange', (t) => {
     t.dropIndex('bulkTransferId')
     t.dropIndex('bulkTransferStateId')

@@ -48,7 +48,7 @@ const getBulkTransferById = async (id) => {
     // TODO: refactor this to move away from Promises and use async-await
     individualTransfers = await Promise.all(individualTransfers.map(async (transfer) => {
       // eslint-disable-next-line no-async-promise-executor
-      return new Promise(async (resolve, reject) => {
+      return new Promise(async (resolve) => {
         const result = {
           transferId: transfer.transferId
         }
