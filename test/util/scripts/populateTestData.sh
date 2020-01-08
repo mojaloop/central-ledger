@@ -236,7 +236,7 @@ do
     -H 'Cache-Control: no-cache' \
     -H 'Content-Type: application/json' \
     -d '{
-    \"type\": \"FSPIOP_CALLBACK_URL_TRANSACTION\",
+    \"type\": \"FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE\",
     \"value\": \"http://localhost:1080/${FSP}\"
   }'"
 
