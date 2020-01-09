@@ -27,7 +27,8 @@
 const ledgerAccountTypes = [
   {
     name: 'POSITION',
-    description: 'Typical accounts from which a DFSP provisions  transfers '
+    description: 'Typical accounts from which a DFSP provisions transfers',
+    isSettleable: 1
   },
   {
     name: 'SETTLEMENT',
@@ -44,6 +45,11 @@ const ledgerAccountTypes = [
   {
     name: 'HUB_FEE',
     description: 'An account to which fees will be charged or collected'
+  },
+  {
+    name: 'INTERCHANGE_FEE',
+    description: null,
+    isSettleable: 1
   }
 ]
 
