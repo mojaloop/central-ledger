@@ -195,6 +195,10 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
+      result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
+      endpointsFixtures.push(result)
+      result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
+      endpointsFixtures.push(result)
       endpointsFixtures.forEach(async endpoint => {
         const read = await ParticipantService.getEndpoint(participant.name, endpoint.type)
         assert.equal(read[0].name, endpoint.type, `endpoint type ${endpoint.type} equal`)
@@ -211,6 +215,8 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
       participant = participantFixtures[2]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
@@ -222,6 +228,8 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
       participant = participantFixtures[3]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.simulatorBase}/${participant.name}/transfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.simulatorBase}/${participant.name}/transfers/{{transferId}}`)
@@ -233,6 +241,8 @@ Test('Participant service', async (participantTest) => {
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_THRESHOLD_BREACH_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'NET_DEBIT_CAP_ADJUSTMENT_EMAIL', testData.notificationEmail)
       await ParticipantEndpointHelper.prepareData(participant.name, 'SETTLEMENT_TRANSFER_POSITION_CHANGE_EMAIL', testData.notificationEmail)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS', testData.endpointBase)
+      await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
       assert.end()
     } catch (err) {
       console.log(err)
