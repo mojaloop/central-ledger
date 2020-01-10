@@ -26,17 +26,7 @@
 
 const HealthCheck = require('@mojaloop/central-services-shared').HealthCheck.HealthCheck
 const { defaultHealthHandler } = require('@mojaloop/central-services-health')
-
 const packageJson = require('../../../package.json')
-const {
-  getSubServiceHealthDatastore,
-  getSubServiceHealthBroker
-} = require('../../lib/healthCheck/subServiceHealth')
-
-const healthCheck = new HealthCheck(packageJson, [
-  getSubServiceHealthDatastore,
-  getSubServiceHealthBroker
-])
 
 /**
  * @function getHealth
@@ -46,7 +36,24 @@ const healthCheck = new HealthCheck(packageJson, [
  * @param {*} request - the Hapi request object
  * @param {*} h - the Hapi handler object
  */
-const getHealth = defaultHealthHandler(healthCheck)
+const getHealth = (request, h) => {
+  const simpleHealthCheck = request.query && 'simple' in request.query && (request.query.simple === '' || request.query.simple === true)
+  let healthCheck
+  if (simpleHealthCheck) {
+    healthCheck = new HealthCheck(packageJson, [])
+  } else {
+    const {
+      getSubServiceHealthDatastore,
+      getSubServiceHealthBroker
+    } = require('../../lib/healthCheck/subServiceHealth')
+
+    healthCheck = new HealthCheck(packageJson, [
+      getSubServiceHealthDatastore,
+      getSubServiceHealthBroker
+    ])
+  }
+  return defaultHealthHandler(healthCheck)(request, h)
+}
 
 module.exports = {
   getHealth

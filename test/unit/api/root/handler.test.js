@@ -84,6 +84,96 @@ Test('Root', rootHandlerTest => {
       test.end()
     })
 
+    handlerTest.test('getHealth returns detailed health check when query string simple=false', async function (test) {
+      // Arrange
+      sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
+      sandbox.stub(Consumer, 'getListOfTopics').returns(['admin'])
+      sandbox.stub(Consumer, 'isConnected').returns(Promise.resolve())
+      const schema = Joi.compile({
+        status: Joi.string().valid('OK').required(),
+        uptime: Joi.number().required(),
+        startTime: Joi.date().iso().required(),
+        versionNumber: Joi.string().required(),
+        services: Joi.array().required()
+      })
+      const expectedStatus = 200
+      const expectedServices = [
+        { name: 'datastore', status: 'OK' },
+        { name: 'broker', status: 'OK' }
+      ]
+
+      // Act
+      const {
+        responseBody,
+        responseCode
+      } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { simple: false } }), reply))
+
+      // Assert
+      const validationResult = Joi.attempt(responseBody, schema)
+      test.equal(validationResult.error, undefined, 'The response matches the validation schema')
+      test.deepEqual(responseCode, expectedStatus, 'The response code matches')
+      test.deepEqual(responseBody.services, expectedServices, 'The sub-services are correct')
+      test.end()
+    })
+
+    handlerTest.test('getHealth returns simple health check when query string simple=true', async function (test) {
+      // Arrange
+      sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
+      sandbox.stub(Consumer, 'getListOfTopics').returns(['admin'])
+      sandbox.stub(Consumer, 'isConnected').returns(Promise.resolve())
+      const schema = Joi.compile({
+        status: Joi.string().valid('OK').required(),
+        uptime: Joi.number().required(),
+        startTime: Joi.date().iso().required(),
+        versionNumber: Joi.string().required(),
+        services: Joi.array().length(0)
+      })
+      const expectedStatus = 200
+      const expectedServices = []
+
+      // Act
+      const {
+        responseBody,
+        responseCode
+      } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { simple: true } }), reply))
+
+      // Assert
+      const validationResult = Joi.attempt(responseBody, schema)
+      test.equal(validationResult.error, undefined, 'The response matches the validation schema')
+      test.deepEqual(responseCode, expectedStatus, 'The response code matches')
+      test.deepEqual(responseBody.services, expectedServices, 'The sub-services are empty')
+      test.end()
+    })
+
+    handlerTest.test('getHealth returns simple health check when query string "simple" is supplied with empty string', async function (test) {
+      // Arrange
+      sandbox.stub(MigrationLockModel, 'getIsMigrationLocked').returns(false)
+      sandbox.stub(Consumer, 'getListOfTopics').returns(['admin'])
+      sandbox.stub(Consumer, 'isConnected').returns(Promise.resolve())
+      const schema = Joi.compile({
+        status: Joi.string().valid('OK').required(),
+        uptime: Joi.number().required(),
+        startTime: Joi.date().iso().required(),
+        versionNumber: Joi.string().required(),
+        services: Joi.array().length(0)
+      })
+      const expectedStatus = 200
+      const expectedServices = []
+
+      // Act
+      const {
+        responseBody,
+        responseCode
+      } = await unwrapResponse((reply) => Handler.getHealth(createRequest({ query: { simple: '' } }), reply))
+
+      // Assert
+      const validationResult = Joi.attempt(responseBody, schema)
+      test.equal(validationResult.error, undefined, 'The response matches the validation schema')
+      test.deepEqual(responseCode, expectedStatus, 'The response code matches')
+      test.deepEqual(responseBody.services, expectedServices, 'The sub-services are empty')
+      test.end()
+    })
+
     handlerTest.end()
   })
 
