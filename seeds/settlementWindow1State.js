@@ -49,6 +49,16 @@ const settlementWindowStates = [
     settlementWindowStateId: 'ABORTED',
     enumeration: 'ABORTED',
     description: 'Window returned to this state when the settlement was not possible. This window may now be included in a future settlement.'
+  },
+  {
+    settlementWindowStateId: 'PROCESSING',
+    enumeration: 'PROCESSING',
+    description: 'Intermediate state when closing a window.'
+  },
+  {
+    settlementWindowStateId: 'FAILED',
+    enumeration: 'FAILED',
+    description: 'Used when close window processing failed and all retries have been exhausted.'
   }
 ]
 
