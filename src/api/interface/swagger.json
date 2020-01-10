@@ -30,6 +30,15 @@
     "/health": {
       "get": {
         "operationId": "getHealth",
+        "parameters": [
+          {
+            "type": "boolean",
+            "description": "Simple health check switch",
+            "name": "simple",
+            "in": "query",
+            "required": false
+          }
+        ],
         "tags": [
           "health"
         ],

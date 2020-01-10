@@ -28,6 +28,7 @@
  --------------
  ******/
 'use strict'
+const Joi = require('@hapi/joi')
 const Handler = require('./handler')
 
 const tags = ['api', 'root']
@@ -38,7 +39,15 @@ module.exports = [
     path: '/health',
     handler: Handler.getHealth,
     options: {
-      tags
+      tags,
+      validate: {
+        query: Joi.object({
+          simple: [
+            Joi.string().max(0).allow(''),
+            Joi.boolean()
+          ]
+        })
+      }
     }
   },
   {
