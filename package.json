@@ -82,9 +82,9 @@
     "@mojaloop/central-services-health": "8.3.0",
     "@mojaloop/central-services-logger": "8.6.0",
     "@mojaloop/central-services-metrics": "8.3.0",
-    "@mojaloop/central-services-shared": "8.7.1",
+    "@mojaloop/central-services-shared": "8.7.2",
     "@mojaloop/central-services-stream": "8.7.2",
-    "@mojaloop/event-sdk": "8.6.2",
+    "@mojaloop/event-sdk": "8.7.0",
     "@mojaloop/forensic-logging-client": "8.3.0",
     "@mojaloop/ml-number": "8.2.0",
     "@now-ims/hapi-now-auth": "2.0.0",
@@ -104,7 +104,7 @@
     "knex": "0.20.7",
     "lodash": "4.17.15",
     "moment": "2.24.0",
-    "mongoose": "5.8.5",
+    "mongoose": "5.8.6",
     "npm-run-all": "4.1.5",
     "rc": "1.2.8",
     "require-glob": "3.2.0",
@@ -128,7 +128,7 @@
     "sinon": "8.0.4",
     "standard": "14.3.1",
     "tap-xunit": "2.4.1",
-    "tape": "4.12.1",
+    "tape": "4.13.0",
     "tapes": "4.1.0"
   }
 }

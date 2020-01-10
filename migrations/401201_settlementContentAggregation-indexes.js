@@ -31,7 +31,7 @@ exports.up = function (knex, Promise) {
     t.index('participantCurrencyId')
     t.index('transferParticipantRoleTypeId')
     t.index('ledgerEntryTypeId')
-    t.index('settlementWindowStateId')
+    t.index('currentStateId')
     t.index('settlementId')
   })
 }
@@ -42,7 +42,7 @@ exports.down = function (knex, Promise) {
     t.dropIndex('participantCurrencyId')
     t.dropIndex('transferParticipantRoleTypeId')
     t.dropIndex('ledgerEntryTypeId')
-    t.dropIndex('settlementWindowStateId')
+    t.dropIndex('currentStateId')
     t.dropIndex('settlementId')
   })
 }
