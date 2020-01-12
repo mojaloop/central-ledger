@@ -1,6 +1,9 @@
 {
   "reject": [
-    "@hapi/joi",
-    "@hapi/inert"
+    "@hapi/good",
+    "@hapi/hapi",
+    "@hapi/inert",
+    "@hapi/vision",
+    "@hapi/joi"
   ]
 }
