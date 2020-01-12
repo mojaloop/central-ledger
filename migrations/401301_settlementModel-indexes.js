@@ -27,6 +27,7 @@
 
 exports.up = function (knex, Promise) {
   return knex.schema.table('settlementModel', (t) => {
+    t.unique('name')
     t.index('settlementGranularityId')
     t.index('settlementInterchangeId')
     t.index('settlementDelayId')
@@ -37,6 +38,7 @@ exports.up = function (knex, Promise) {
 
 exports.down = function (knex, Promise) {
   return knex.schema.table('settlementModel', (t) => {
+    t.dropUnique('name')
     t.dropIndex('settlementGranularityId')
     t.dropIndex('settlementInterchangeId')
     t.dropIndex('settlementDelayId')
