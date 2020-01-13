@@ -27,6 +27,16 @@
 const HealthCheck = require('@mojaloop/central-services-shared').HealthCheck.HealthCheck
 const { defaultHealthHandler } = require('@mojaloop/central-services-health')
 const packageJson = require('../../../package.json')
+const {
+  getSubServiceHealthDatastore,
+  getSubServiceHealthBroker
+} = require('../../lib/healthCheck/subServiceHealth')
+
+const simpleCheck = new HealthCheck(packageJson, [])
+const healthCheck = new HealthCheck(packageJson, [
+  getSubServiceHealthDatastore,
+  getSubServiceHealthBroker
+])
 
 /**
  * @function getHealth
@@ -38,20 +48,11 @@ const packageJson = require('../../../package.json')
  */
 const getHealth = (request, h) => {
   const simpleHealthCheck = request.query && 'simple' in request.query && (request.query.simple === '' || request.query.simple === true)
-  let healthCheck
-  if (simpleHealthCheck) {
-    healthCheck = new HealthCheck(packageJson, [])
-  } else {
-    const {
-      getSubServiceHealthDatastore,
-      getSubServiceHealthBroker
-    } = require('../../lib/healthCheck/subServiceHealth')
 
-    healthCheck = new HealthCheck(packageJson, [
-      getSubServiceHealthDatastore,
-      getSubServiceHealthBroker
-    ])
+  if (simpleHealthCheck) {
+    return defaultHealthHandler(simpleCheck)(request, h)
   }
+
   return defaultHealthHandler(healthCheck)(request, h)
 }
 
