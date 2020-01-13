@@ -3,6 +3,8 @@
     "@hapi/joi",
     "@hapi/inert",
     "@hapi/hapi",
-    "@hapi/vision"
+    "@hapi/vision",
+    "@hapi/good",
+    "hapi-swagger"
   ]
 }
