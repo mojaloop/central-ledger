@@ -5,6 +5,7 @@
     "@hapi/hapi",
     "@hapi/vision",
     "@hapi/good",
-    "hapi-swagger"
+    "hapi-swagger",
+    "@mojaloop/central-services-shared"
   ]
 }
