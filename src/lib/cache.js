@@ -2,7 +2,7 @@
 
 const CatboxMemory = require('catbox-memory')
 const Config = require('../lib/config')
-const Enums = require('../lib/enum')
+const Enums = require('../lib/enumx')
 
 const ttl = 60 * 1000
 let catboxMemoryClient = null
@@ -19,13 +19,15 @@ const getEnums = async (id) => {
     segment: 'enums',
     id: 'id'
   }
-  let enums = catboxMemoryClient.get(key)
-  if (enums === null) {
+  let enums = null
+  const enumsFromCache = catboxMemoryClient.get(key)
+  if (enumsFromCache === null) {
+    console.log('enums cache miss')
     enums = await Enums[id]()
-    console.log('get')
     catboxMemoryClient.set(key, enums, ttl)
   } else {
-    console.log('get CACHED')
+    console.log('enums cache hit')
+    enums = enumsFromCache.item
   }
   return enums
 }
