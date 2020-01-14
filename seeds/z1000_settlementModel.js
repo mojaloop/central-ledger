@@ -18,31 +18,39 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * ModusBox
- - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-exports.up = function (knex, Promise) {
-  return knex.schema.table('settlementModel', (t) => {
-    t.unique('name')
-    t.index('settlementGranularityId')
-    t.index('settlementInterchangeId')
-    t.index('settlementDelayId')
-    t.index('currencyId')
-    t.index('ledgerAccountTypeId')
-  })
-}
+const settlementModels = [
+  {
+    name: 'DEFERRED_NET',
+    settlementGranularityId: 2, // NET
+    settlementInterchangeId: 2, // MULTILATERAL
+    settlementDelayId: 2, // DEFERRED
+    ledgerAccountTypeId: 1, // POSITION
+    currencyId: null
+  },
+  {
+    name: 'DEFERRED_NET_USD',
+    settlementGranularityId: 2, // NET
+    settlementInterchangeId: 2, // MULTILATERAL
+    settlementDelayId: 2, // DEFERRED
+    ledgerAccountTypeId: 1, // POSITION
+    currencyId: 'USD'
+  }
+]
 
-exports.down = function (knex, Promise) {
-  return knex.schema.table('settlementModel', (t) => {
-    t.dropUnique('name')
-    t.dropIndex('settlementGranularityId')
-    t.dropIndex('settlementInterchangeId')
-    t.dropIndex('settlementDelayId')
-    t.dropIndex('currencyId')
-    t.dropIndex('ledgerAccountTypeId')
-  })
+exports.seed = async function (knex) {
+  try {
+    return await knex('settlementModel').insert(settlementModels)
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return -1001
+    else {
+      console.log(`Uploading seeds for settlementModel has failed with the following error: ${err}`)
+      return -1000
+    }
+  }
 }
