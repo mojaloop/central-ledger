@@ -47,7 +47,7 @@ const healthCheck = new HealthCheck(packageJson, [
  * @param {*} h - the Hapi handler object
  */
 const getHealth = (request, h) => {
-  const simpleHealthCheck = request.query && 'simple' in request.query && (request.query.simple === '' || request.query.simple === true)
+  const simpleHealthCheck = request && request.query && 'simple' in request.query && (request.query.simple === '' || request.query.simple === true)
 
   if (simpleHealthCheck) {
     return defaultHealthHandler(simpleCheck)(request, h)
