@@ -4,6 +4,7 @@
     "@hapi/hapi",
     "@hapi/inert",
     "@hapi/vision",
-    "@hapi/joi"
+    "@hapi/joi",
+    "hapi-swagger"
   ]
 }
