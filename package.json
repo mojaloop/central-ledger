@@ -72,7 +72,7 @@
   },
   "dependencies": {
     "@hapi/good": "8.2.4",
-    "@hapi/hapi": "18.4.0",
+    "@hapi/hapi": "19.0.4",
     "@hapi/inert": "5.2.2",
     "@hapi/joi": "16.1.8",
     "@hapi/vision": "5.5.4",
@@ -100,7 +100,7 @@
     "glob": "7.1.6",
     "hapi-auth-basic": "5.0.0",
     "hapi-auth-bearer-token": "6.2.1",
-    "hapi-swagger": "11.1.0",
+    "hapi-swagger": "12.0.0",
     "knex": "0.20.7",
     "lodash": "4.17.15",
     "moment": "2.24.0",
