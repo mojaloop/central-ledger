@@ -92,10 +92,6 @@ const createServer = (port, modules) => {
         }
       }
     })
-    server.method({
-      name: 'enums',
-      method: Cache.getEnums
-    })
     server.ext('onRequest', function (request, h) {
       const transferId = UrlParser.idFromTransferUri(`${Config.HOSTNAME}${request.url.path}`)
       request.headers.traceid = request.headers.traceid || transferId || Uuid()
