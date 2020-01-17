@@ -22,7 +22,7 @@ const initCache = async function () {
 const _getAllEnums = async function () {
   try {
     const allEnums = {}
-    for (let enumId of Enums.enumsIds) {
+    for (const enumId of Enums.enumsIds) {
       allEnums[enumId] = await getEnums(enumId)
     }
     return allEnums
