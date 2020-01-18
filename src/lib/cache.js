@@ -3,14 +3,15 @@
 const CatboxMemory = require('catbox-memory')
 const Config = require('../lib/config')
 const Enums = require('../lib/enum')
-const Logger = require('@mojaloop/central-services-logger')
 
 const ttl = 60 * 1000
 let catboxMemoryClient = null
 
 const initCache = async function () {
-  // Init catbox
-  catboxMemoryClient = new CatboxMemory({
+  // Init catbox.
+  // Note: The strange looking "module.exports.CatboxMemory" reference
+  // simplifies the setup of tests.
+  catboxMemoryClient = new module.exports.CatboxMemory({
     maxByteSize: Config.CACHE_CONFIG.MAX_BYTE_SIZE
   })
   catboxMemoryClient.start()
@@ -19,17 +20,16 @@ const initCache = async function () {
   await _getAllEnums()
 }
 
+const destroyCache = function () {
+  catboxMemoryClient.stop()
+}
+
 const _getAllEnums = async function () {
-  try {
-    const allEnums = {}
-    for (const enumId of Enums.enumsIds) {
-      allEnums[enumId] = await getEnums(enumId)
-    }
-    return allEnums
-  } catch (err) {
-    Logger.error(err)
-    throw err
+  const allEnums = {}
+  for (const enumId of Enums.enumsIds) {
+    allEnums[enumId] = await getEnums(enumId)
   }
+  return allEnums
 }
 
 const getEnums = async (id) => {
@@ -53,6 +53,13 @@ const getEnums = async (id) => {
 }
 
 module.exports = {
+  // Init & destroy the cache
   initCache,
-  getEnums
+  destroyCache,
+
+  // enums
+  getEnums,
+
+  // exposed for tests
+  CatboxMemory
 }
