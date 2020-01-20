@@ -31,6 +31,7 @@ const Util = require('@mojaloop/central-services-shared').Util
 const Sidecar = require('../../lib/sidecar')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Cache = require('../../lib/cache')
 
 const LocalEnum = {
   activated: 'activated',
@@ -71,7 +72,7 @@ const handleMissingRecord = (entity) => {
 const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
     const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
     if (!hubReconciliationAccountExists) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub reconciliation account for the specified currency does not exist')
@@ -139,7 +140,7 @@ const createHubAccount = async function (request, h) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Participant was not found.')
     }
     // end here : move to domain
-    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
@@ -149,7 +150,7 @@ const createHubAccount = async function (request, h) {
 
 const getAll = async function (request) {
   const results = await ParticipantService.getAll()
-  const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+  const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
   const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
   return results.map(record => entityItem(record, ledgerAccountIds))
 }
@@ -157,7 +158,7 @@ const getAll = async function (request) {
 const getByName = async function (request) {
   const entity = await ParticipantService.getByName(request.params.name)
   handleMissingRecord(entity)
-  const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+  const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
   const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
   return entityItem(entity, ledgerAccountIds)
 }
@@ -171,7 +172,7 @@ const update = async function (request) {
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
       Logger.info(`Participant has been ${isActiveText} :: ${changeLog}`)
     }
-    const ledgerAccountTypes = await request.server.methods.enums('ledgerAccountType')
+    const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
@@ -319,7 +320,7 @@ const updateAccount = async function (request, h) {
   Sidecar.logRequest(request)
   try {
     const enums = {
-      ledgerAccountType: await request.server.methods.enums('ledgerAccountType')
+      ledgerAccountType: await Cache.getEnums('ledgerAccountType')
     }
     await ParticipantService.updateAccount(request.payload, request.params, enums)
     if (request.payload.isActive !== undefined) {
@@ -336,7 +337,7 @@ const updateAccount = async function (request, h) {
 const recordFunds = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    const enums = await request.server.methods.enums('all')
+    const enums = await Cache.getEnums('all')
     await ParticipantService.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
