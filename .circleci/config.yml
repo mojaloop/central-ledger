@@ -328,6 +328,9 @@ jobs:
     steps:
       - setup_remote_docker
       - checkout
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
       - attach_workspace:
           at: /tmp
       - run:
@@ -353,7 +356,13 @@ jobs:
               printf "\n%s\n" "The following vulnerabilities were found:"
               jq '[.vulnerabilities | group_by(.package) | .[] | {package: .[0].package, vuln: [.[].vuln]}]' anchore-reports/*vuln*.json
             fi
-
+      - run:
+          name: Upload Anchore reports to s3
+          command: |
+            aws s3 cp anchore-reports ${AWS_S3_DIR_ANCHORE_REPORTS}/${CIRCLE_PROJECT_REPONAME}/ --recursive
+            aws s3 rm ${AWS_S3_DIR_ANCHORE_REPORTS}/latest/ --recursive --exclude "*" --include "${CIRCLE_PROJECT_REPONAME}*"
+            aws s3 cp anchore-reports ${AWS_S3_DIR_ANCHORE_REPORTS}/latest/ --recursive
+        
             # TODO: Enable this when we want to increase the strictness of our security policies
             # failCount=$(cat anchore-reports/*policy*.json | grep 'fail' | wc -l)
             # echo "FailCount is: ${failCount}"
@@ -361,7 +370,6 @@ jobs:
             #   printf "Failed with a policy failure count of: ${failCount}"
             #   exit 1
             # fi
-
       - store_artifacts:
           path: anchore-reports
 
