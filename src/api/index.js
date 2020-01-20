@@ -1,5 +1,7 @@
 'use strict'
 
+process.env.UV_THREADPOOL_SIZE = 12
+
 const Config = require('../lib/config')
 const Routes = require('./routes')
 const Setup = require('../shared/setup')

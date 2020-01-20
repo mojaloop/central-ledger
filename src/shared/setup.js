@@ -45,15 +45,12 @@ const Uuid = require('uuid4')
 const UrlParser = require('../lib/urlParser')
 const Logger = require('@mojaloop/central-services-logger')
 const RegisterHandlers = require('../handlers/register')
-const Enums = require('../lib/enum')
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Cache = require('../lib/cache')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
-}
-const getEnums = (id) => {
-  return Enums[id]()
 }
 const connectDatabase = async () => {
   return Db.connect(Config.DATABASE)
@@ -86,34 +83,12 @@ const createServer = (port, modules) => {
   return (async () => {
     const server = await new Hapi.Server({
       port,
-      cache: [
-        {
-          provider: {
-            constructor: require('catbox-memory'),
-            options: {
-              partition: 'cache'
-            }
-          },
-          name: 'memCache'
-        }
-      ],
       routes: {
         validate: {
           options: ErrorHandler.validateRoutes(),
           failAction: async (request, h, err) => {
             throw ErrorHandler.Factory.reformatFSPIOPError(err, ErrorHandler.Enums.FSPIOPErrorCodes.MALFORMED_SYNTAX)
           }
-        }
-      }
-    })
-    server.method({
-      name: 'enums',
-      method: getEnums,
-      options: {
-        cache: {
-          cache: 'memCache',
-          expiresIn: 5 * 60 * 1000,
-          generateTimeout: 30 * 1000
         }
       }
     })
@@ -248,6 +223,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
   await migrate(runMigrations)
   await connectDatabase()
   await connectMongoose()
+  await Cache.initCache()
   await Sidecar.connect(service)
   initializeInstrumentation()
   let server
