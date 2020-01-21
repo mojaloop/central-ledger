@@ -29,10 +29,25 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Cache = require('../../lib/cache')
 
+/*
+ Private API for Cache-only callbacks
+ */
+const participantCacheClient = {
+  getAllNoCache: async () => {
+    return Db.participant.find({}, { order: 'name asc' })
+  }
+}
+Cache.registerParticipantClient(participantCacheClient)
+
+/*
+  Public API
+*/
 exports.getById = async (id) => {
   try {
-    return await Db.participant.findOne({ participantId: id })
+    const cachedParticipants = await Cache.getParticipantsCached()
+    return cachedParticipants.indexById[id]
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -40,8 +55,8 @@ exports.getById = async (id) => {
 
 exports.getByName = async (name) => {
   try {
-    const named = await Db.participant.findOne({ name })
-    return named
+    const cachedParticipants = await Cache.getParticipantsCached()
+    return cachedParticipants.indexByName[name]
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -49,8 +64,8 @@ exports.getByName = async (name) => {
 
 exports.getAll = async () => {
   try {
-    const participants = await Db.participant.find({}, { order: 'name asc' })
-    return participants
+    const cachedParticipants = await Cache.getParticipantsCached()
+    return cachedParticipants.allParticipants
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
