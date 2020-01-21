@@ -32,13 +32,16 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 
 /*
- Private API for Cache-only callbacks
- */
-const participantCacheClient = {
-  getAllNoCache: async () => {
-    return Db.participant.find({}, { order: 'name asc' })
-  }
+ Private API for Cache-only callbacks and tests
+*/
+exports.getAllNoCache = async () => {
+  return Db.participant.find({}, { order: 'name asc' })
 }
+
+const participantCacheClient = {
+  getAllNoCache: exports.getAllNoCache
+}
+
 Cache.registerParticipantClient(participantCacheClient)
 
 /*

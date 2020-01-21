@@ -21,6 +21,9 @@ Test('Cache test', async (cacheTest) => {
       Enums[enumId].returns(Promise.resolve(templateValueForEnum(enumId)))
       allEnumsValue[enumId] = templateValueForEnum(enumId)
     }
+    Cache.registerParticipantClient({
+      getAllNoCache: async () => {return [{},{}]}
+    })
 
     t.end()
   })

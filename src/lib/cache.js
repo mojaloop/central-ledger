@@ -72,6 +72,26 @@ const getEnums = async (id) => {
   return enums
 }
 
+const buildUnifiedParticipantsData = (allParticipants) => {
+  // build indexes (or indices?) - optimization for byId and byName access
+  const indexById = {}
+  const indexByName = {}
+
+  allParticipants.forEach((oneParticipant) => {
+    indexById[oneParticipant.participantId] = oneParticipant
+    indexByName[oneParticipant.name] = oneParticipant
+  })
+
+  // build unified structure - indexes + data
+  const unifiedParticipants = {
+    indexById,
+    indexByName,
+    allParticipants
+  }
+
+  return unifiedParticipants
+}
+
 const getParticipantsCached = async () => {
   const key = {
     segment: 'participants',
@@ -81,22 +101,7 @@ const getParticipantsCached = async () => {
   let cachedParticipants = catboxMemoryClient.get(key)
   if (!cachedParticipants) {
     const allParticipants = await cacheClients.participant.api.getAllNoCache()
-
-    // build indexes (or indices?) - optimization for byId and byName access
-    const indexById = {}
-    const indexByName = {}
-
-    allParticipants.forEach((oneParticipant) => {
-      indexById[oneParticipant.participantId] = oneParticipant
-      indexByName[oneParticipant.name] = oneParticipant
-    })
-
-    // build unified structure - indexes + data
-    cachedParticipants = {
-      indexById,
-      indexByName,
-      allParticipants
-    }
+    cachedParticipants = buildUnifiedParticipantsData(allParticipants)
 
     // store in cache
     catboxMemoryClient.set(key, cachedParticipants, ttl)
@@ -120,6 +125,7 @@ module.exports = {
 
   // participants
   getParticipantsCached,
+  buildUnifiedParticipantsData,
 
   // exposed for tests
   CatboxMemory
