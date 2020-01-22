@@ -62,7 +62,6 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('setup', async (assert) => {
     try {
       sandbox = Sinon.createSandbox()
-      Cache.initCache()
       await Db.connect(Config.DATABASE).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -71,6 +70,7 @@ Test('Participant service', async (participantTest) => {
         assert.fail()
         assert.end()
       })
+      await Cache.initCache()
     } catch (err) {
       Logger.error(`Setup for test failed with error - ${err}`)
       assert.fail()
@@ -423,7 +423,7 @@ Test('Participant service', async (participantTest) => {
           assert.ok(result, `destroy ${participant.name} success`)
         }
       }
-      Cache.destroyCache()
+      await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,

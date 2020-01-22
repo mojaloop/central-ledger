@@ -44,8 +44,9 @@ const initCache = async function () {
   await getParticipantsCached()
 }
 
-const destroyCache = function () {
+const destroyCache = async function () {
   catboxMemoryClient.stop()
+  catboxMemoryClient = null
 }
 
 const _getAllEnums = async function () {

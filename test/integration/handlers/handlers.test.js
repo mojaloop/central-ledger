@@ -32,6 +32,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../src/lib/config')
 const sleep = require('@mojaloop/central-services-shared').Util.Time.sleep
 const Db = require('@mojaloop/central-services-database').Db
+const Cache = require('../../../src/lib/cache')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
 const Utility = require('@mojaloop/central-services-shared').Util.Kafka
@@ -244,6 +245,7 @@ Test('Handlers test', async handlersTest => {
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
       await Db.connect(Config.DATABASE)
+      await Cache.initCache()
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
@@ -608,6 +610,7 @@ Test('Handlers test', async handlersTest => {
   await handlersTest.test('teardown', async (assert) => {
     try {
       await Handlers.timeouts.stop()
+      await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
 
