@@ -80,6 +80,7 @@ exports.create = async (participant) => {
       name: participant.name,
       createdBy: 'unknown'
     })
+    await Cache.invalidateParticipantsCache()
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -88,7 +89,9 @@ exports.create = async (participant) => {
 
 exports.update = async (participant, isActive) => {
   try {
-    return await Db.participant.update({ participantId: participant.participantId }, { isActive })
+    const result = await Db.participant.update({ participantId: participant.participantId }, { isActive })
+    await Cache.invalidateParticipantsCache()
+    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -96,7 +99,9 @@ exports.update = async (participant, isActive) => {
 
 exports.destroyByName = async (name) => {
   try {
-    return await Db.participant.destroy({ name: name })
+    const result = await Db.participant.destroy({ name: name })
+    await Cache.invalidateParticipantsCache()
+    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -104,7 +109,9 @@ exports.destroyByName = async (name) => {
 
 exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
   try {
-    return Db.participantEndpoint.destroy({ participantId: participantId })
+    const result = Db.participantEndpoint.destroy({ participantId: participantId })
+    await Cache.invalidateParticipantsCache()
+    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

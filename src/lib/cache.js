@@ -21,6 +21,11 @@ const cacheClients = {
   }
 }
 
+const participantsAllCacheKey = {
+  segment: 'participants',
+  id: 'all'
+}
+
 const registerParticipantClient = (participantClient) => {
   cacheClients.participant.api = participantClient
 }
@@ -78,6 +83,12 @@ const buildUnifiedParticipantsData = (allParticipants) => {
   const indexByName = {}
 
   allParticipants.forEach((oneParticipant) => {
+    // Participant API returns Date type, but cache internals will serialize it to String
+    // by calling JSON.stringify(), which calls .toISOString() on a Date object.
+    // Let's ensure all places return same kind of String.
+    oneParticipant.createdDate = JSON.stringify(oneParticipant.createdDate)
+
+    // Add to indexes
     indexById[oneParticipant.participantId] = oneParticipant
     indexByName[oneParticipant.name] = oneParticipant
   })
@@ -93,23 +104,24 @@ const buildUnifiedParticipantsData = (allParticipants) => {
 }
 
 const getParticipantsCached = async () => {
-  const key = {
-    segment: 'participants',
-    id: 'all'
-  }
-
-  let cachedParticipants = catboxMemoryClient.get(key)
+  // Do we have valid participants list in the cache ?
+  let cachedParticipants = catboxMemoryClient.get(participantsAllCacheKey)
   if (!cachedParticipants) {
+    // No participants in the cache, so fetch from participan API
     const allParticipants = await cacheClients.participant.api.getAllNoCache()
     cachedParticipants = buildUnifiedParticipantsData(allParticipants)
 
     // store in cache
-    catboxMemoryClient.set(key, cachedParticipants, ttl)
+    catboxMemoryClient.set(participantsAllCacheKey, cachedParticipants, ttl)
   } else {
-    // unwrap from catbox structure
+    // unwrap participants list from catbox structure
     cachedParticipants = cachedParticipants.item
   }
   return cachedParticipants
+}
+
+const invalidateParticipantsCache = async () => {
+  catboxMemoryClient.drop(participantsAllCacheKey)
 }
 
 module.exports = {
@@ -126,6 +138,7 @@ module.exports = {
   // participants
   getParticipantsCached,
   buildUnifiedParticipantsData,
+  invalidateParticipantsCache,
 
   // exposed for tests
   CatboxMemory

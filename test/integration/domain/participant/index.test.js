@@ -31,6 +31,7 @@
 const Test = require('tape')
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
+const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const ParticipantService = require('../../../../src/domain/participant')
@@ -61,6 +62,7 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('setup', async (assert) => {
     try {
       sandbox = Sinon.createSandbox()
+      Cache.initCache()
       await Db.connect(Config.DATABASE).then(() => {
         assert.pass('setup OK')
         assert.end()
@@ -118,7 +120,7 @@ Test('Participant service', async (participantTest) => {
       getByNameResult = await ParticipantService.getByName(testData.fsp4Name)
       result = await ParticipantHelper.prepareData(testData.fsp4Name, testData.currency, !!getByNameResult)
       participantFixtures.push(result.participant)
-      participantFixtures.forEach(async participant => {
+      for (const participant of participantFixtures) {
         const read = await ParticipantService.getById(participant.participantId)
         participantMap.set(participant.participantId, read)
         if (debug) assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
@@ -126,7 +128,7 @@ Test('Participant service', async (participantTest) => {
         assert.deepEqual(read.currencyList, participant.currencyList, 'currency match')
         assert.equal(read.isActive, participant.isActive, 'isActive flag matches')
         assert.equal(read.createdDate.toString(), participant.createdDate.toString(), 'created date matches')
-      })
+      }
       assert.end()
     } catch (err) {
       Logger.error(`create participant failed with error - ${err}`)
@@ -137,13 +139,13 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getByName', async (assert) => {
     try {
-      participantFixtures.forEach(async participant => {
+      for (const participant of participantFixtures) {
         const result = await ParticipantService.getByName(participant.name)
         assert.equal(result.name, participant.name, 'names are equal')
         assert.deepEqual(result.currencyList, participant.currencyList, 'currencies match')
         assert.equal(result.isActive, participant.isActive, 'isActive flag matches')
         assert.equal(result.createdDate.toString(), participant.createdDate.toString(), 'created date matches')
-      })
+      }
       assert.end()
     } catch (err) {
       Logger.error(`get participant by name failed with error - ${err}`)
@@ -199,11 +201,11 @@ Test('Participant service', async (participantTest) => {
       endpointsFixtures.push(result)
       result = await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE', testData.endpointBase)
       endpointsFixtures.push(result)
-      endpointsFixtures.forEach(async endpoint => {
+      for (const endpoint of endpointsFixtures) {
         const read = await ParticipantService.getEndpoint(participant.name, endpoint.type)
         assert.equal(read[0].name, endpoint.type, `endpoint type ${endpoint.type} equal`)
         assert.equal(read[0].value, endpoint.value, 'endpoint values match')
-      })
+      }
       participant = participantFixtures[1]
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${testData.endpointBase}/transfers`)
       await ParticipantEndpointHelper.prepareData(participant.name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${testData.endpointBase}/transfers/{{transferId}}`)
@@ -254,12 +256,12 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getEndpoint', async (assert) => {
     try {
-      endpointsFixtures.forEach(async endpoint => {
+      for (const endpoint of endpointsFixtures) {
         const result = await ParticipantService.getEndpoint(participantFixtures[0].name, endpoint.type)
         assert.equal(result[0].name, endpoint.type, `endpoint type ${endpoint.type} equal`)
         assert.equal(result[0].value, endpoint.value, 'endpoint values match')
         assert.equal(result[0].isActive, 1, 'isActive flag match')
-      })
+      }
       assert.end()
     } catch (err) {
       Logger.error(`get endpoint failed with error - ${err}`)
@@ -421,6 +423,7 @@ Test('Participant service', async (participantTest) => {
           assert.ok(result, `destroy ${participant.name} success`)
         }
       }
+      Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
       // @ggrg: Having the following 3 lines commented prevents the current test from exiting properly when run individually,
