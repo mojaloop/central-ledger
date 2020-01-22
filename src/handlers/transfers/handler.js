@@ -79,7 +79,7 @@ const toDestination = true
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
  *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ * @returns {boolean} - Returns a boolean: true if successful, or throws an error if failed
  */
 const prepare = async (error, messages) => {
   const location = { module: 'PrepareHandler', method: '', path: '' }
@@ -92,12 +92,7 @@ const prepare = async (error, messages) => {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
-  let message = {}
-  if (Array.isArray(messages)) {
-    message = messages[0]
-  } else {
-    message = messages
-  }
+  const message = Array.isArray(messages) ? messages[0] : messages
   const parentSpanService = 'cl_transfer_prepare'
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
   const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
@@ -247,12 +242,7 @@ const fulfil = async (error, messages) => {
   if (error) {
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
-  let message = {}
-  if (Array.isArray(messages)) {
-    message = messages[0]
-  } else {
-    message = messages
-  }
+  const message = Array.isArray(messages) ? messages[0] : messages
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
   const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_fulfil', contextFromMessage)
   try {
