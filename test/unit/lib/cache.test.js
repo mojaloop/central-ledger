@@ -158,6 +158,17 @@ Test('Cache test', async (cacheTest) => {
       await Cache.destroyCache()
       test.end()
     })
+
+    await participantTest.test('when invalidateParticipantsCache() called it should call CatboxMemory::drop()', async (test) => {
+      sandbox.stub(Cache.CatboxMemory.prototype, 'drop')
+      await Cache.initCache()
+      test.notOk(Cache.CatboxMemory.prototype.drop.calledOnce, 'participants cache drop was never called')
+      await Cache.invalidateParticipantsCache()
+      test.ok(Cache.CatboxMemory.prototype.drop.calledOnce, 'participants cache drop was called once')
+      await Cache.destroyCache()
+      test.end()
+    })
+
     participantTest.end()
   })
 
