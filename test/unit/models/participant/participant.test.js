@@ -75,6 +75,8 @@ Test('Participant model', async (participantTest) => {
       return unifiedParticipants
     })
 
+    sandbox.stub(Cache, 'invalidateParticipantsCache')
+
     t.end()
   })
 
