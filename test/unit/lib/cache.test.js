@@ -13,6 +13,23 @@ Test('Cache test', async (cacheTest) => {
     return { testEnumKey: `testEnum of ${enumId}` }
   }
 
+  const participantFixtures = [
+    {
+      participantId: '1',
+      name: 'fsp1z',
+      currency: 'USD',
+      isActive: 1,
+      createdDate: (new Date()).toString()
+    },
+    {
+      participantId: '2',
+      name: 'fsp2',
+      currency: 'EUR',
+      isActive: 1,
+      createdDate: (new Date()).toString()
+    }
+  ]
+
   cacheTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Enums)
@@ -21,6 +38,9 @@ Test('Cache test', async (cacheTest) => {
       Enums[enumId].returns(Promise.resolve(templateValueForEnum(enumId)))
       allEnumsValue[enumId] = templateValueForEnum(enumId)
     }
+    Cache.registerParticipantClient({
+      getAllNoCache: async () => { return participantFixtures }
+    })
 
     t.end()
   })
@@ -51,11 +71,14 @@ Test('Cache test', async (cacheTest) => {
       test.ok(Cache.CatboxMemory.prototype.stop.calledOnce)
       test.end()
     })
+    initTest.end()
+  })
 
-    await initTest.test('pre-fetch all endpoints info at start', async (test) => {
+  await cacheTest.test('Caching enums:', async (enumTest) => {
+    await enumTest.test('should pre-fetch all enums info at start', async (test) => {
       // Check that Enums haven't been called
       for (const enumId of Enums.enumsIds) {
-        test.notOk(Enums[enumId].calledOnce)
+        test.notOk(Enums[enumId].calledOnce, `enum ${enumId} wasn't called before initCache`)
       }
 
       // This should pre-fetch all enums
@@ -63,13 +86,13 @@ Test('Cache test', async (cacheTest) => {
 
       // Check that Enums have been called
       for (const enumId of Enums.enumsIds) {
-        test.ok(Enums[enumId].calledOnce)
+        test.ok(Enums[enumId].calledOnce, `enum ${enumId} was called once during initCache`)
       }
       await Cache.destroyCache()
       test.end()
     })
 
-    await initTest.test('call endpoints only once and then should return cached info (should not call endpoints again)', async (test) => {
+    await enumTest.test('should call enums only once and then should return cached data (should not call enums again)', async (test) => {
       // This should pre-fetch all enums
       await Cache.initCache()
 
@@ -102,7 +125,51 @@ Test('Cache test', async (cacheTest) => {
       test.end()
     })
 
-    initTest.end()
+    enumTest.end()
+  })
+
+  await cacheTest.test('Caching participants:', async (participantTest) => {
+    await participantTest.test('should pre-fetch participants info at start and do not fetch again', async (test) => {
+      // Prepare API callback which counts self-calls
+      let getAllNoCacheCalledCnt = 0
+      Cache.registerParticipantClient({
+        getAllNoCache: async () => {
+          getAllNoCacheCalledCnt++
+          return participantFixtures
+        }
+      })
+
+      // Test participant-getAll gets called during cache init
+      await Cache.initCache()
+      test.ok(getAllNoCacheCalledCnt === 1)
+
+      // Test participant-getAll doesn't get called again - the cache works
+      const allParticipants = await Cache.getParticipantsCached()
+      test.ok(getAllNoCacheCalledCnt === 1)
+
+      // ...and returns expected data structure
+      test.deepEqual(allParticipants.allParticipants, participantFixtures, 'Participant list is correct')
+      test.deepEqual(allParticipants.indexById[1], participantFixtures[0], 'Participant index-by-id is correct')
+      test.deepEqual(allParticipants.indexById[2], participantFixtures[1], 'Participant index-by-id is correct')
+      test.deepEqual(allParticipants.indexByName.fsp1z, participantFixtures[0], 'Participant index-by-name is correct')
+      test.deepEqual(allParticipants.indexByName.fsp2, participantFixtures[1], 'Participant index-by-name is correct')
+
+      // end
+      await Cache.destroyCache()
+      test.end()
+    })
+
+    await participantTest.test('when invalidateParticipantsCache() called it should call CatboxMemory::drop()', async (test) => {
+      sandbox.stub(Cache.CatboxMemory.prototype, 'drop')
+      await Cache.initCache()
+      test.notOk(Cache.CatboxMemory.prototype.drop.calledOnce, 'participants cache drop was never called')
+      await Cache.invalidateParticipantsCache()
+      test.ok(Cache.CatboxMemory.prototype.drop.calledOnce, 'participants cache drop was called once')
+      await Cache.destroyCache()
+      test.end()
+    })
+
+    participantTest.end()
   })
 
   cacheTest.end()

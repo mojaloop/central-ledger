@@ -30,6 +30,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
+const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/participant/participant')
 
@@ -38,12 +39,14 @@ Test('Participant model', async (participantTest) => {
 
   const participantFixtures = [
     {
+      participantId: '1',
       name: 'fsp1z',
       currency: 'USD',
       isActive: 1,
       createdDate: new Date()
     },
     {
+      participantId: '2',
       name: 'fsp2',
       currency: 'EUR',
       isActive: 1,
@@ -65,6 +68,15 @@ Test('Participant model', async (participantTest) => {
     Db.participantEndpoint = {
       destroy: sandbox.stub()
     }
+
+    sandbox.replace(Cache, 'getParticipantsCached', async () => {
+      const allParticipants = await Model.getAllNoCache()
+      const unifiedParticipants = Cache.buildUnifiedParticipantsData(allParticipants)
+      return unifiedParticipants
+    })
+
+    sandbox.stub(Cache, 'invalidateParticipantsCache')
+
     t.end()
   })
 
@@ -132,7 +144,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getByName', async (assert) => {
     try {
-      Db.participant.findOne.withArgs({ name: participant.name }).returns(participantFixtures[0])
+      Db.participant.find.returns(participantFixtures)
       const result = await Model.getByName(participant.name)
       assert.equal(result.name, participant.name, ' names are equal')
       assert.equal(result.currency, participant.currency, ' currencies match')
@@ -175,7 +187,7 @@ Test('Participant model', async (participantTest) => {
 
   await participantTest.test('getById', async (assert) => {
     try {
-      Db.participant.findOne.withArgs({ participantId: 1 }).returns(participantFixtures[0])
+      Db.participant.find.returns(participantFixtures)
       const participant = await Model.getById(1)
       assert.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
       assert.end()
