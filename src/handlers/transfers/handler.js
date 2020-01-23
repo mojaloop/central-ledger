@@ -242,7 +242,7 @@ const fulfil = async (error, messages) => {
   if (error) {
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
-  const message = Array.isArray(messages) ? messages[0] : messages
+  const message = Array.isArray(messages) ? messages[0] : messages || {}
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
   const span = EventSdk.Tracer.createChildSpanFromContext('cl_transfer_fulfil', contextFromMessage)
   try {
