@@ -170,6 +170,10 @@ const positions = async (error, messages) => {
         }
         // TODO: changeParticipantPosition logic might need to be revisited for the change in amount source.
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+        // "prism" is not needed after this point.
+        if (params.message.value.content.prism) {
+          delete params.message.value.content.prism
+        }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
