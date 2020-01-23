@@ -155,7 +155,8 @@ const positions = async (error, messages) => {
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
-      const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+      const transferInfo = message.value.content.prism || {}
+    // const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
         Logger.info(Utility.breadcrumb(location, `validationFailed::notReceivedFulfilState1--${actionLetter}3`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid State: ${transferInfo.transferStateId} - expected: ${Enum.Transfers.TransferInternalState.RECEIVED_FULFIL}`)
@@ -168,6 +169,7 @@ const positions = async (error, messages) => {
           transferId: transferInfo.transferId,
           transferStateId: Enum.Transfers.TransferState.COMMITTED
         }
+        // TODO: changeParticipantPosition logic might need to be revisited for the change in amount source.
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
