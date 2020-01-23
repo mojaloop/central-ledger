@@ -445,7 +445,14 @@ Test('Position handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
 
       const m = Object.assign({}, MainUtil.clone(messages[1]))
-      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      m.value.content.prism = {
+        transferInfo: {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferInternalState.RECEIVED_FULFIL,
+          participantCurrencyId: transferInfo.amount.currency,
+          amount: transferInfo.amount.amount
+        }
+      }
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.COMMIT
@@ -471,7 +478,14 @@ Test('Position handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
 
       const m = Object.assign({}, MainUtil.clone(messages[1]))
-      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      m.value.content.prism = {
+        transferInfo: {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferInternalState.RECEIVED_FULFIL,
+          participantCurrencyId: transferInfo.amount.currency,
+          amount: transferInfo.amount.amount
+        }
+      }
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.COMMIT
@@ -781,7 +795,14 @@ Test('Position handler', transferHandlerTest => {
       Kafka.getKafkaConfig.returns(config)
 
       const m = Object.assign({}, MainUtil.clone(messages[1]))
-      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      m.value.content.prism = {
+        transferInfo: {
+          transferId: transferInfo.transferId,
+          transferStateId: TransferInternalState.RECEIVED_FULFIL,
+          participantCurrencyId: transferInfo.amount.currency,
+          amount: transferInfo.amount.amount
+        }
+      }
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.BULK_COMMIT
