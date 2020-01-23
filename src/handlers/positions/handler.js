@@ -168,6 +168,7 @@ const positions = async (error, messages) => {
           transferId: transferInfo.transferId,
           transferStateId: Enum.Transfers.TransferState.COMMITTED
         }
+        // TODO: changeParticipantPosition logic might need to be revisited for the change in amount source.
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
