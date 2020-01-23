@@ -68,7 +68,8 @@
     "audit:resolve": "SHELL=sh resolve-audit",
     "audit:check": "SHELL=sh check-audit",
     "dep:check": "npx ncu -e 2",
-    "dep:update": "npx ncu -u"
+    "dep:update": "npx ncu -u",
+    "postinstall": "echo 'Removing packages with incompatible licenses' && rm -rf ./node_modules/spdx-exceptions"
   },
   "dependencies": {
     "@hapi/good": "8.2.4",
