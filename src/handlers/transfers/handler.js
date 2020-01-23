@@ -410,8 +410,17 @@ const fulfil = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
           if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
             Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
-            await TransferService.handlePayeeResponse(transferId, payload, action)
+            const transferUpdate = await TransferService.handlePayeeResponse(transferId, payload, action)
             const eventDetail = { functionality: TransferEventType.POSITION, action }
+            const prism = {
+              transferInfo: {
+                transferId: transferUpdate.transferId,
+                transferStateId: transferUpdate.transferState,
+                participantCurrencyId: transfer.payeeParticipantCurrencyId,
+                amount: transfer.amount
+              }
+            }
+            params.message.value.content.prism = prism
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
             histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
             return true
