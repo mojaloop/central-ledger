@@ -161,26 +161,20 @@ const bulkTransferStateEnum = async function () {
     throw err
   }
 }
-const all = async function () {
-  try {
-    return {
-      endpointType: await endpointType(),
-      hubParticipant: await hubParticipant(),
-      ledgerAccountType: await ledgerAccountType(),
-      ledgerEntryType: await ledgerEntryType(),
-      participantLimitType: await participantLimitType(),
-      transferParticipantRoleType: await transferParticipantRoleType(),
-      transferState: await transferState(),
-      transferStateEnum: await transferStateEnum(),
-      bulkProcessingState: await bulkProcessingState(),
-      bulkTransferState: await bulkTransferState(),
-      bulkTransferStateEnum: await bulkTransferStateEnum()
-    }
-  } catch (err) {
-    Logger.error(err)
-    throw err
-  }
-}
+
+const enumsIds = [
+  'endpointType',
+  'hubParticipant',
+  'ledgerAccountType',
+  'ledgerEntryType',
+  'participantLimitType',
+  'transferParticipantRoleType',
+  'transferState',
+  'transferStateEnum',
+  'bulkProcessingState',
+  'bulkTransferState',
+  'bulkTransferStateEnum'
+]
 
 module.exports = {
   endpointType,
@@ -194,5 +188,5 @@ module.exports = {
   bulkProcessingState,
   bulkTransferState,
   bulkTransferStateEnum,
-  all
+  enumsIds
 }
