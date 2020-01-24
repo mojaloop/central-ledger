@@ -14,6 +14,7 @@ Test('setup', setupTest => {
   const mongoDbUri = 'mongo-db-uri'
   let Setup
   let DbStub
+  let CacheStub
   let ObjStoreStub
   // let ObjStoreStubThrows
   let SidecarStub
@@ -66,6 +67,10 @@ Test('setup', setupTest => {
       disconnect: sandbox.stub().returns(Promise.resolve())
     }
 
+    CacheStub = {
+      initCache: sandbox.stub().returns(Promise.resolve())
+    }
+
     ObjStoreStub = {
       Db: {
         connect: sandbox.stub().returns(Promise.resolve())
@@ -116,6 +121,7 @@ Test('setup', setupTest => {
       uuid4: uuidStub,
       '../handlers/register': RegisterHandlersStub,
       '../lib/db': DbStub,
+      '../lib/cache': CacheStub,
       '@mojaloop/central-object-store': ObjStoreStub,
       '../lib/migrator': MigratorStub,
       '../lib/sidecar': SidecarStub,
@@ -158,6 +164,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
@@ -188,6 +195,7 @@ Test('setup', setupTest => {
         test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.ok(SidecarStub.connect.calledWith(service))
+        test.ok(CacheStub.initCache.called)
         test.notOk(MigratorStub.migrate.called)
         test.equal(s, serverStub)
         test.end()
@@ -207,6 +215,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
@@ -323,6 +332,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
@@ -354,6 +364,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
@@ -386,6 +397,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
@@ -420,6 +432,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,
@@ -653,6 +666,7 @@ Test('setup', setupTest => {
         uuid4: uuidStub,
         '../handlers/register': RegisterHandlersStub,
         '../lib/db': DbStub,
+        '../lib/cache': CacheStub,
         '@mojaloop/central-object-store': ObjStoreStub,
         '../lib/migrator': MigratorStub,
         '../lib/sidecar': SidecarStub,

@@ -30,6 +30,7 @@
 
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
+const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferStateChange')
@@ -41,6 +42,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
   await stateChangeTest.test('setup', async (assert) => {
     try {
       await Db.connect(Config.DATABASE).then(async () => {
+        await Cache.initCache()
         assert.pass('setup OK')
         assert.end()
       }).catch(err => {
@@ -117,6 +119,7 @@ Test('Transfer State Change model test', async (stateChangeTest) => {
 
   await stateChangeTest.test('teardown', async (assert) => {
     try {
+      await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
       assert.end()
