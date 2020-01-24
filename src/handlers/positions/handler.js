@@ -168,7 +168,6 @@ const positions = async (error, messages) => {
           transferId: transferInfo.transferId,
           transferStateId: Enum.Transfers.TransferState.COMMITTED
         }
-        // TODO: changeParticipantPosition logic might need to be revisited for the change in amount source.
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         // "prism" is not needed after this point.
         if (params.message.value.content.prism) {
