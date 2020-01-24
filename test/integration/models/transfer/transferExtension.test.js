@@ -30,6 +30,7 @@
 
 const Test = require('tape')
 const Db = require('../../../../src/lib/db')
+const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const Model = require('../../../../src/models/transfer/transferExtension')
@@ -59,6 +60,7 @@ Test('Extension model test', async (extensionTest) => {
         assert.fail(`Connecting to database - ${err}`)
         assert.end()
       })
+      await Cache.initCache()
     } catch (err) {
       Logger.error(`Setup for test failed with error - ${err}`)
       assert.fail(`Setup for test failed with error - ${err}`)
@@ -192,6 +194,7 @@ Test('Extension model test', async (extensionTest) => {
 
   await extensionTest.test('teardown', async (assert) => {
     try {
+      await Cache.destroyCache()
       await Db.disconnect()
       assert.pass('database connection closed')
       assert.end()
