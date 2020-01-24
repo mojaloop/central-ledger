@@ -92,7 +92,7 @@ const prepare = async (error, messages) => {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
-  const message = Array.isArray(messages) ? messages[0] : messages
+  const message = Array.isArray(messages) ? messages[0] : messages || {}
   const parentSpanService = 'cl_transfer_prepare'
   const contextFromMessage = EventSdk.Tracer.extractContextFromMessage(message.value)
   const span = EventSdk.Tracer.createChildSpanFromContext(parentSpanService, contextFromMessage)
