@@ -30,7 +30,6 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
-const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/participant/participant')
 
@@ -68,14 +67,6 @@ Test('Participant model', async (participantTest) => {
     Db.participantEndpoint = {
       destroy: sandbox.stub()
     }
-
-    sandbox.replace(Cache, 'getParticipantsCached', async () => {
-      const allParticipants = await Model.getAllNoCache()
-      const unifiedParticipants = Cache.buildUnifiedParticipantsData(allParticipants)
-      return unifiedParticipants
-    })
-
-    sandbox.stub(Cache, 'invalidateParticipantsCache')
 
     t.end()
   })
@@ -142,22 +133,6 @@ Test('Participant model', async (participantTest) => {
     assert.end()
   })
 
-  await participantTest.test('getByName', async (assert) => {
-    try {
-      Db.participant.find.returns(participantFixtures)
-      const result = await Model.getByName(participant.name)
-      assert.equal(result.name, participant.name, ' names are equal')
-      assert.equal(result.currency, participant.currency, ' currencies match')
-      assert.equal(result.isActive, participant.isActive, ' isActive flag match')
-      assert.equal(result.createdDate, participant.createdDate, ' created date matches')
-      assert.end()
-    } catch (err) {
-      Logger.error(`create participant failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
   await participantTest.test('getAll', async (assert) => {
     Db.participant.find.returns(participantFixtures)
     try {
@@ -180,33 +155,6 @@ Test('Participant model', async (participantTest) => {
       test.end()
     } catch (err) {
       Logger.error(`get all participants failed with error - ${err}`)
-      test.pass('Error thrown')
-      test.end()
-    }
-  })
-
-  await participantTest.test('getById', async (assert) => {
-    try {
-      Db.participant.find.returns(participantFixtures)
-      const participant = await Model.getById(1)
-      assert.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
-      assert.end()
-    } catch (err) {
-      Logger.error(`get participant by Id failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await participantTest.test('getById should fail', async (test) => {
-    try {
-      Db.participant.findOne.withArgs({ participantId: 1 }).throws(new Error())
-      const participant = await Model.getById(1)
-      test.equal(JSON.stringify(participant), JSON.stringify(participantFixtures[0]))
-      test.fail('Error not thrown')
-      test.end()
-    } catch (err) {
-      Logger.error(`get participant by Id failed with error - ${err}`)
       test.pass('Error thrown')
       test.end()
     }

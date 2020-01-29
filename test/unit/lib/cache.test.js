@@ -13,23 +13,6 @@ Test('Cache test', async (cacheTest) => {
     return { testEnumKey: `testEnum of ${enumId}` }
   }
 
-  const participantFixtures = [
-    {
-      participantId: '1',
-      name: 'fsp1z',
-      currency: 'USD',
-      isActive: 1,
-      createdDate: (new Date()).toString()
-    },
-    {
-      participantId: '2',
-      name: 'fsp2',
-      currency: 'EUR',
-      isActive: 1,
-      createdDate: (new Date()).toString()
-    }
-  ]
-
   cacheTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Enums)
@@ -38,8 +21,9 @@ Test('Cache test', async (cacheTest) => {
       Enums[enumId].returns(Promise.resolve(templateValueForEnum(enumId)))
       allEnumsValue[enumId] = templateValueForEnum(enumId)
     }
-    Cache.registerParticipantClient({
-      getAllNoCache: async () => { return participantFixtures }
+    Cache.registerCacheClient({
+      id: 'testCacheClient',
+      preloadCache: async () => sandbox.stub()
     })
 
     t.end()
@@ -128,37 +112,26 @@ Test('Cache test', async (cacheTest) => {
     enumTest.end()
   })
 
-  await cacheTest.test('Caching participants:', async (participantTest) => {
-    await participantTest.test('should pre-fetch participants info at start and do not fetch again', async (test) => {
-      // Prepare API callback which counts self-calls
-      let getAllNoCacheCalledCnt = 0
-      Cache.registerParticipantClient({
-        getAllNoCache: async () => {
-          getAllNoCacheCalledCnt++
-          return participantFixtures
+  await cacheTest.test('Cache client', async (participantTest) => {
+    await participantTest.test('preload should be callled once during Cache.initCache()', async (test) => {
+      let preloadCacheCalledCnt = 0
+      Cache.registerCacheClient({
+        id: 'testCacheClient',
+        preloadCache: async () => {
+          preloadCacheCalledCnt++
         }
       })
 
       // Test participant-getAll gets called during cache init
+      test.ok(preloadCacheCalledCnt === 0, 'should not be called yet')
       await Cache.initCache()
-      test.ok(getAllNoCacheCalledCnt === 1)
-
-      // Test participant-getAll doesn't get called again - the cache works
-      const allParticipants = await Cache.getParticipantsCached()
-      test.ok(getAllNoCacheCalledCnt === 1)
-
-      // ...and returns expected data structure
-      test.deepEqual(allParticipants.allParticipants, participantFixtures, 'Participant list is correct')
-      test.deepEqual(allParticipants.indexById[1], participantFixtures[0], 'Participant index-by-id is correct')
-      test.deepEqual(allParticipants.indexById[2], participantFixtures[1], 'Participant index-by-id is correct')
-      test.deepEqual(allParticipants.indexByName.fsp1z, participantFixtures[0], 'Participant index-by-name is correct')
-      test.deepEqual(allParticipants.indexByName.fsp2, participantFixtures[1], 'Participant index-by-name is correct')
+      test.ok(preloadCacheCalledCnt === 1, 'should be called 1 time')
 
       // end
       await Cache.destroyCache()
       test.end()
     })
-
+    /*
     await participantTest.test('when invalidateParticipantsCache() called it should call CatboxMemory::drop()', async (test) => {
       sandbox.stub(Cache.CatboxMemory.prototype, 'drop')
       await Cache.initCache()
@@ -168,7 +141,7 @@ Test('Cache test', async (cacheTest) => {
       await Cache.destroyCache()
       test.end()
     })
-
+    */
     participantTest.end()
   })
 

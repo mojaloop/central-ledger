@@ -48,6 +48,7 @@ const RegisterHandlers = require('../handlers/register')
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../lib/cache')
+const ParticipantCached = require('../models/participant/participantCached')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -200,6 +201,11 @@ const initializeInstrumentation = () => {
   }
 }
 
+const initializeCache = async () => {
+  await Cache.initCache()
+  await ParticipantCached.initialize()
+}
+
 /**
  * @function initialize
  *
@@ -223,7 +229,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
   await migrate(runMigrations)
   await connectDatabase()
   await connectMongoose()
-  await Cache.initCache()
+  await initializeCache()
   await Sidecar.connect(service)
   initializeInstrumentation()
   let server

@@ -29,46 +29,10 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Cache = require('../../lib/cache')
-
-/*
- Private API for Cache-only callbacks and tests
-*/
-exports.getAllNoCache = async () => {
-  return Db.participant.find({}, { order: 'name asc' })
-}
-
-const participantCacheClient = {
-  getAllNoCache: exports.getAllNoCache
-}
-
-Cache.registerParticipantClient(participantCacheClient)
-
-/*
-  Public API
-*/
-exports.getById = async (id) => {
-  try {
-    const cachedParticipants = await Cache.getParticipantsCached()
-    return cachedParticipants.indexById[id]
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-exports.getByName = async (name) => {
-  try {
-    const cachedParticipants = await Cache.getParticipantsCached()
-    return cachedParticipants.indexByName[name]
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
 
 exports.getAll = async () => {
   try {
-    const cachedParticipants = await Cache.getParticipantsCached()
-    return cachedParticipants.allParticipants
+    return Db.participant.find({}, { order: 'name asc' })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -80,7 +44,6 @@ exports.create = async (participant) => {
       name: participant.name,
       createdBy: 'unknown'
     })
-    await Cache.invalidateParticipantsCache()
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -90,7 +53,6 @@ exports.create = async (participant) => {
 exports.update = async (participant, isActive) => {
   try {
     const result = await Db.participant.update({ participantId: participant.participantId }, { isActive })
-    await Cache.invalidateParticipantsCache()
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -100,7 +62,6 @@ exports.update = async (participant, isActive) => {
 exports.destroyByName = async (name) => {
   try {
     const result = await Db.participant.destroy({ name: name })
-    await Cache.invalidateParticipantsCache()
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -110,7 +71,6 @@ exports.destroyByName = async (name) => {
 exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
   try {
     const result = Db.participantEndpoint.destroy({ participantId: participantId })
-    await Cache.invalidateParticipantsCache()
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
