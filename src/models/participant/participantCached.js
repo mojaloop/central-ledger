@@ -123,10 +123,10 @@ exports.getAll = async () => {
   }
 }
 
-const withInvalidate = (theFunction) => {
+const withInvalidate = (theFunctionName) => {
   return async (...args) => {
     try {
-      const result = await theFunction(...args)
+      const result = await ParticipantModel[theFunctionName](...args)
       await exports.invalidateParticipantsCache()
       return result
     } catch (err) {
@@ -135,7 +135,7 @@ const withInvalidate = (theFunction) => {
   }
 }
 
-exports.create = withInvalidate(ParticipantModel.create)
-exports.update = withInvalidate(ParticipantModel.update)
-exports.destroyByName = withInvalidate(ParticipantModel.destroyByName)
-exports.destroyParticipantEndpointByParticipantId = withInvalidate(ParticipantModel.destroyParticipantEndpointByParticipantId)
+exports.create = withInvalidate('create')
+exports.update = withInvalidate('update')
+exports.destroyByName = withInvalidate('destroyByName')
+exports.destroyParticipantEndpointByParticipantId = withInvalidate('destroyParticipantEndpointByParticipantId')

@@ -24,7 +24,7 @@ class CacheClient {
   }
 
   get (key) {
-    catboxMemoryClient.get(key)
+    return catboxMemoryClient.get(key)
   }
 
   set (key, value) {
@@ -64,12 +64,10 @@ const initCache = async function () {
 
   // Preload data
   await _getAllEnums()
-  console.log('cacheClients:', cacheClients)
+
   for (const clientId in cacheClients) {
     const clientMeta = cacheClients[clientId].getMeta()
-    if (clientMeta.preloadCache) {
-      await clientMeta.preloadCache()
-    }
+    await clientMeta.preloadCache()
   }
 }
 
