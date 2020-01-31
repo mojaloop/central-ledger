@@ -160,7 +160,7 @@ Test('Cache test', async (cacheTest) => {
         preloadCache: async () => {}
       })
       const testKey = cacheClient.createKey('testKeyName')
-      const valueToCache = {a:'some random value', b:10}
+      const valueToCache = { a: 'some random value', b: 10 }
 
       // Init cache
       test.notOk(setSpy.called, 'CatboxMemory::set() not called before initCache()')
@@ -191,7 +191,7 @@ Test('Cache test', async (cacheTest) => {
         preloadCache: async () => {}
       })
       const testKey = cacheClient.createKey('testKeyName')
-      const valueToCache = {a:'some random value', b:10}
+      const valueToCache = { a: 'some random value', b: 10 }
 
       // Init cache
       test.notOk(dropSpy.called, 'CatboxMemory::drop() not called before initCache()')
@@ -223,7 +223,7 @@ Test('Cache test', async (cacheTest) => {
       test.end()
     })
 
-   cacheClientTest.end()
+    cacheClientTest.end()
   })
 
   cacheTest.end()
