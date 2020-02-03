@@ -28,7 +28,7 @@
  * @module src/domain/participant/
  */
 
-const ParticipantModel = require('../../models/participant/participant')
+const ParticipantModel = require('../../models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
