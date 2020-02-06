@@ -29,7 +29,7 @@
  */
 
 const Db = require('../../lib/db')
-const ParticipantCurrencyModel = require('./participantCurrency')
+const ParticipantCurrencyModel = require('./participantCurrencyCached')
 const Logger = require('@mojaloop/central-services-logger')
 
 const insert = async (participantLimit) => {

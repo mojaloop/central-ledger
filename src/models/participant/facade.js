@@ -31,6 +31,7 @@
 const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   try {
@@ -351,6 +352,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
           await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
           await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
+          await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
         }
         await trx.commit
         return {
@@ -533,6 +535,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
           createdDate: Time.getUTCString(new Date())
         }
         result = await knex('participantCurrency').transacting(trx).insert(participantCurrency)
+        await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
         participantCurrency.participantCurrencyId = result[0]
         const participantPosition = {
           participantCurrencyId: participantCurrency.participantCurrencyId,
