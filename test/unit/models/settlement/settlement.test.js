@@ -37,7 +37,7 @@ Test('Settlement model', async (settlementTest) => {
   await settlementTest.test('create settlement model', async (assert) => {
     Db.settlementModel = {
       insert: sandbox.stub().returns(true),
-      find: sandbox.stub(),
+      find: sandbox.stub()
     }
     try {
       const r = await Model.create({ name: 'DEFERRED_NET', settlementGranularityId: 2, settlementInterchangeId: 2, settlementDelayId: 2, ledgerAccountTypeId: 1 })
@@ -66,10 +66,10 @@ Test('Settlement model', async (settlementTest) => {
 
   await settlementTest.test('get settlement model', async (assert) => {
     try {
-      Db.settlementModel.find.withArgs({name: 'test'}).returns([
+      Db.settlementModel.find.withArgs({ name: 'test' }).returns([
         {
           settlementModelId: 106,
-          name: "testingSevennnnN91",
+          name: 'testingSevennnnN91',
           isActive: 1,
           settlementGranularityId: 1,
           settlementInterchangeId: 1,
@@ -80,7 +80,7 @@ Test('Settlement model', async (settlementTest) => {
         }])
       const expected = {
         settlementModelId: 106,
-        name: "testingSevennnnN91",
+        name: 'testingSevennnnN91',
         isActive: 1,
         settlementGranularityId: 1,
         settlementInterchangeId: 1,
@@ -97,7 +97,6 @@ Test('Settlement model', async (settlementTest) => {
       assert.fail()
       assert.end()
     }
-
   })
 
   await settlementTest.test('get with empty name', async (assert) => {

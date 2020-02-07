@@ -58,7 +58,7 @@ Test('SettlementModel service', async (settlementModelTest) => {
 
     {
       settlementModelId: 106,
-      name: "testingSevennnnN91",
+      name: 'testingSevennnnN91',
       isActive: 1,
       settlementGranularityId: 1,
       settlementInterchangeId: 1,

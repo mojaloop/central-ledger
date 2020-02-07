@@ -24,7 +24,6 @@
 
 'use strict'
 
-
 const SettlementService = require('../../domain/settlement')
 const Sidecar = require('../../lib/sidecar')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -34,22 +33,20 @@ const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-
-     const settlementGranularity = Enum.SettlementGranularity[request.payload.settlementGranularity]
-     const settlementInterchange = Enum.SettlementInterchange[request.payload.settlementInterchange]
-     const settlementDelay = Enum.SettlementDelay[request.payload.settlementDelay]
+    const settlementGranularity = Enum.SettlementGranularity[request.payload.settlementGranularity]
+    const settlementInterchange = Enum.SettlementInterchange[request.payload.settlementInterchange]
+    const settlementDelay = Enum.SettlementDelay[request.payload.settlementDelay]
     const ledgerAccountType = await SettlementService.getLedgerAccountTypeName(request.payload.ledgerAccountType)
     if (!ledgerAccountType) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found.')
     }
     const settlementModelExist = await SettlementService.getByName(request.payload.name)
-    if(settlementModelExist){
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Settlement Model already exists')
-      }
-      else {
-        await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId)
-        return h.response().code(201)
-         }
+    if (settlementModelExist) {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Settlement Model already exists')
+    } else {
+      await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId)
+      return h.response().code(201)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
