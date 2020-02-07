@@ -29,7 +29,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId) => {
   try {
-    const result = await Db.settlementModel.insert({
+    return await Db.settlementModel.insert({
       name,
       isActive,
       settlementGranularityId,
@@ -39,15 +39,14 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
       requireLiquidityCheck,
       ledgerAccountTypeId
     })
-    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 exports.getByName = async (name) => {
   try {
-    const test = await Db.settlementModel.find({ name: name })
-    return test[0]
+    const result = await Db.settlementModel.find({ name: name })
+    return result[0]
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
