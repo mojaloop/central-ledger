@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
 
@@ -34,8 +35,11 @@ const settlementGranularityTypes = [
     description: null
   }
 ]
+const settlementGranularityList = settlementGranularityTypes.map(currentValue => {
+  return currentValue.name
+}).sort()
 
-exports.seed = async function (knex) {
+const seed = async function (knex) {
   try {
     return await knex('settlementGranularity').insert(settlementGranularityTypes)
   } catch (err) {
@@ -45,4 +49,9 @@ exports.seed = async function (knex) {
       return -1000
     }
   }
+}
+
+module.exports = {
+  settlementGranularityList,
+  seed
 }

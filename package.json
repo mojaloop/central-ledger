@@ -1,7 +1,7 @@
 {
   "name": "@mojaloop/central-ledger",
   "version": "8.8.2-snapshot",
-  "description": "Central ledger hosted by a scheme to record and settle transfers",
+  "description": "Central ledger hosted by a scheme to record and settle transfers.",
   "license": "Apache-2.0",
   "author": "ModusBox",
   "contributors": [
@@ -10,7 +10,8 @@
     "Lewis Daly <lewisd@crosslaketech.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
-    "Steven Oderayi <steven.oderayi@modusbox.com>"
+    "Steven Oderayi <steven.oderayi@modusbox.com>",
+    "Lazola Lucas <lazola.lucas@modusbox.com>"
   ],
   "repository": {
     "type": "git",
@@ -82,7 +83,7 @@
     "@mojaloop/central-services-health": "8.3.0",
     "@mojaloop/central-services-logger": "8.6.0",
     "@mojaloop/central-services-metrics": "8.3.0",
-    "@mojaloop/central-services-shared": "8.8.0",
+    "@mojaloop/central-services-shared": "9.1.0",
     "@mojaloop/central-services-stream": "8.7.2",
     "@mojaloop/event-sdk": "8.7.0",
     "@mojaloop/forensic-logging-client": "8.3.0",

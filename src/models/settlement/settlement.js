@@ -18,38 +18,36 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Lazola Lucas <lazola.lucas@modusbox.com>
+ - Lazola Lucas <lazola.lucas@modusbox.com>
+
  --------------
  ******/
 
 'use strict'
+const Db = require('../../lib/db')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const settlementDelayTypes = [
-  {
-    name: 'IMMEDIATE',
-    description: null
-  },
-  {
-    name: 'DEFERRED',
-    description: null
-  }
-]
-const settlementDelayList = settlementDelayTypes.map(currentValue => {
-  return currentValue.name
-}).sort()
-const seed = async function (knex) {
+exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId) => {
   try {
-    return await knex('settlementDelay').insert(settlementDelayTypes)
+    return await Db.settlementModel.insert({
+      name,
+      isActive,
+      settlementGranularityId,
+      settlementInterchangeId,
+      settlementDelayId,
+      currencyId,
+      requireLiquidityCheck,
+      ledgerAccountTypeId
+    })
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for settlementDelay has failed with the following error: ${err}`)
-      return -1000
-    }
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-module.exports = {
-  settlementDelayList,
-  seed
+exports.getByName = async (name) => {
+  try {
+    const result = await Db.settlementModel.find({ name: name })
+    return result[0]
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
 }

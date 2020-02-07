@@ -18,38 +18,43 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Lazola Lucas <lazola.lucas@modusbox.com>
+ - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const settlementDelayTypes = [
-  {
-    name: 'IMMEDIATE',
-    description: null
-  },
-  {
-    name: 'DEFERRED',
-    description: null
-  }
-]
-const settlementDelayList = settlementDelayTypes.map(currentValue => {
-  return currentValue.name
-}).sort()
-const seed = async function (knex) {
+const SettlementModel = require('../../models/settlement/settlement')
+const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
+
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
+const createSettlementModel = async (name, isActive = true, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId = null, requireLiquidityCheck = true, ledgerAccountTypeId) => {
   try {
-    return await knex('settlementDelay').insert(settlementDelayTypes)
+    await SettlementModel.create(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId)
+    return true
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for settlementDelay has failed with the following error: ${err}`)
-      return -1000
-    }
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+const getByName = async (name) => {
+  try {
+    return await SettlementModel.getByName(name)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const getLedgerAccountTypeName = async (name) => {
+  try {
+    return await LedgerAccountTypeModel.getLedgerAccountByName(name)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
-  settlementDelayList,
-  seed
+  createSettlementModel,
+  getLedgerAccountTypeName,
+  getByName
 }

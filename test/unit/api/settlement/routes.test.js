@@ -18,38 +18,21 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Lazola Lucas <lazola.lucas@modusbox.com>
+ - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const settlementDelayTypes = [
-  {
-    name: 'IMMEDIATE',
-    description: null
-  },
-  {
-    name: 'DEFERRED',
-    description: null
-  }
-]
-const settlementDelayList = settlementDelayTypes.map(currentValue => {
-  return currentValue.name
-}).sort()
-const seed = async function (knex) {
-  try {
-    return await knex('settlementDelay').insert(settlementDelayTypes)
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for settlementDelay has failed with the following error: ${err}`)
-      return -1000
-    }
-  }
-}
-module.exports = {
-  settlementDelayList,
-  seed
-}
+const Test = require('tape')
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/api/routes')
+
+Test('test settlementModel routes', async function (assert) {
+  const req = Base.buildRequest({ url: '/settlementModel', method: 'POST' })
+  const server = await Base.setup(AdminRoutes)
+  const res = await server.inject(req)
+  assert.ok(res)
+  await server.stop()
+  assert.end()
+})
