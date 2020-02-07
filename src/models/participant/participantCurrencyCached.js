@@ -28,8 +28,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const Config = require('../../../src/lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
-const { SeriesTool } = require('../../lib/SeriesTool')
-const { performance } = require('perf_hooks')
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -154,24 +152,3 @@ const withInvalidate = (theFunctionName) => {
 exports.create = withInvalidate('create')
 exports.update = withInvalidate('update')
 exports.destroyByParticipantId = withInvalidate('destroyByParticipantId')
-
-const mangle = (oldExports) => {
-  const newExports = {}
-  const timings = {}
-  for (const methodName in oldExports) {
-    const key = 'ParticipantCurrencyCached::' + methodName
-    console.log(key)
-    timings[key] = new SeriesTool(key)
-    newExports[methodName] = async (...args) => {
-      console.log(key)
-      const tick = performance.now()
-      const rv = await oldExports[methodName](...args)
-      const toe = performance.now()
-      timings[key].addDatapoint(toe - tick)
-      return rv
-    }
-  }
-  return newExports
-}
-
-module.exports = mangle(exports)

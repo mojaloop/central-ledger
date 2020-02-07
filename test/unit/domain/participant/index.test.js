@@ -31,7 +31,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ParticipantModelCached = require('../../../../src/models/participant/participantCached')
-const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
+const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
@@ -132,10 +132,12 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantModelCached, 'destroyByName')
     sandbox.stub(ParticipantModelCached, 'destroyParticipantEndpointByParticipantId')
 
+    sandbox.stub(ParticipantCurrencyModel, 'invalidateParticipantCurrencyCache')
     sandbox.stub(ParticipantCurrencyModel, 'create')
     sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
     sandbox.stub(ParticipantCurrencyModel, 'getById')
     sandbox.stub(ParticipantCurrencyModel, 'destroyByParticipantId')
+    sandbox.stub(ParticipantCurrencyModel, 'findOneByParams')
 
     sandbox.stub(ParticipantFacade, 'getEndpoint')
     sandbox.stub(ParticipantFacade, 'getAllEndpoints')
@@ -160,8 +162,6 @@ Test('Participant service', async (participantTest) => {
 
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
-
-    sandbox.stub(ParticipantCurrencyModel, 'getByName')
 
     sandbox.stub(LedgerAccountTypeModel, 'getLedgerAccountByName')
 

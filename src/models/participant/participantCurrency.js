@@ -93,17 +93,3 @@ exports.getByName = async (accountParams) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
-exports.hubAccountExists = async (currencyId, ledgerAccountTypeId) => {
-  try {
-    const params = {
-      participantId: Config.HUB_ID,
-      currencyId,
-      ledgerAccountTypeId
-    }
-    const participantCurrency = await Db.participantCurrency.findOne(params)
-    return !!participantCurrency
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
