@@ -45,6 +45,7 @@ Test('SettlementModel', settlementModelHandlerTest => {
         type: 'POSITION'
       }
       Settlement.getLedgerAccountTypeName.returns(Promise.resolve(ledgerAccountType))
+      Settlement.getByName.returns(Promise.resolve(false))
       const reply = {
         response: () => {
           return {
@@ -56,6 +57,28 @@ Test('SettlementModel', settlementModelHandlerTest => {
         }
       }
       await Handler.create({ payload }, reply)
+    })
+
+    handlerTest.test('create should fail if the settlement model exists', async function (test) {
+      const payload = {
+        name: 'IMMEDIATE_GROSS',
+        settlementGranularity: 'GROSS',
+        settlementInterchange: 'BILATERAL',
+        settlementDelay: 'IMMEDIATE',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION'
+      }
+      Settlement.getLedgerAccountTypeName.returns(Promise.resolve(ledgerAccountType))
+      Settlement.getByName.returns(Promise.resolve(true))
+      try {
+        await Handler.create({ payload })
+        test.fail('Error not thrown')
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'This Settlement Model already exists')
+        test.end()
+      }
     })
 
     handlerTest.test('create should fail if account type does not exists', async function (test) {

@@ -24,7 +24,6 @@
  ******/
 
 'use strict'
-
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
@@ -41,6 +40,14 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
       ledgerAccountTypeId
     })
     return result
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+exports.getByName = async (name) => {
+  try {
+    const test = await Db.settlementModel.find({ name: name })
+    return test[0]
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

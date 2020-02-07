@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
 
@@ -34,8 +35,10 @@ const settlementDelayTypes = [
     description: null
   }
 ]
-
-exports.seed = async function (knex) {
+const settlementDelayList = settlementDelayTypes.map(currentValue => {
+  return currentValue.name
+}).sort()
+const seed = async function (knex) {
   try {
     return await knex('settlementDelay').insert(settlementDelayTypes)
   } catch (err) {
@@ -45,4 +48,8 @@ exports.seed = async function (knex) {
       return -1000
     }
   }
+}
+module.exports = {
+  settlementDelayList,
+  seed
 }

@@ -37,6 +37,13 @@ const createSettlementModel = async (name, isActive = true, settlementGranularit
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+const getByName = async (name) => {
+  try {
+    return await SettlementModel.getByName(name)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 
 const getLedgerAccountTypeName = async (name) => {
   try {
@@ -48,5 +55,6 @@ const getLedgerAccountTypeName = async (name) => {
 
 module.exports = {
   createSettlementModel,
-  getLedgerAccountTypeName
+  getLedgerAccountTypeName,
+  getByName
 }

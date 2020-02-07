@@ -54,6 +54,21 @@ Test('SettlementModel service', async (settlementModelTest) => {
     t.end()
   })
 
+  const settlementModel = [
+
+    {
+      settlementModelId: 106,
+      name: "testingSevennnnN91",
+      isActive: 1,
+      settlementGranularityId: 1,
+      settlementInterchangeId: 1,
+      settlementDelayId: 2,
+      currencyId: null,
+      requireLiquidityCheck: 1,
+      ledgerAccountTypeId: 6
+    }
+  ]
+
   await settlementModelTest.test('create settlement model', async (assert) => {
     try {
       sandbox.stub(SettlementModel, 'create')
@@ -121,6 +136,29 @@ Test('SettlementModel service', async (settlementModelTest) => {
       assert.end()
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+  await settlementModelTest.test('get settlement model by name', async (assert) => {
+    try {
+      sandbox.stub(SettlementModel, 'getByName').returns(settlementModel)
+      const expected = await Service.getByName('test')
+      assert.equal(expected, settlementModel)
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+
+  await settlementModelTest.test('get settlement model by name should throw an error', async (assert) => {
+    try {
+      sandbox.stub(SettlementModel, 'getByName').throws(new Error())
+      await Service.getByName('test')
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error)
       assert.end()
     }
   })

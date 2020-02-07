@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
 
@@ -52,8 +53,12 @@ const ledgerAccountTypes = [
     isSettleable: 1
   }
 ]
-
-exports.seed = async function (knex) {
+const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
+  return currentValue.isSettleable
+}).map(currentValue => {
+  return currentValue.name
+}).sort()
+const seed = async function (knex) {
   try {
     return await knex('ledgerAccountType').insert(ledgerAccountTypes)
   } catch (err) {
@@ -64,3 +69,8 @@ exports.seed = async function (knex) {
     }
   }
 }
+module.exports = {
+  ledgerAccountList,
+  seed
+}
+

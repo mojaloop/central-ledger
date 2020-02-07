@@ -35,9 +35,9 @@ Test('Settlement model', async (settlementTest) => {
   const sandbox = Sinon.createSandbox()
 
   await settlementTest.test('create settlement model', async (assert) => {
-    //    Db.settlementModel.insert.withArgs({ name: 'DEFERRED_NET', settlementGranularityId: 2, settlementInterchangeId: 2, settlementDelayId: 2, ledgerAccountTypeId: 1 })
     Db.settlementModel = {
-      insert: sandbox.stub().returns(true)
+      insert: sandbox.stub().returns(true),
+      find: sandbox.stub(),
     }
     try {
       const r = await Model.create({ name: 'DEFERRED_NET', settlementGranularityId: 2, settlementInterchangeId: 2, settlementDelayId: 2, ledgerAccountTypeId: 1 })
@@ -60,6 +60,53 @@ Test('Settlement model', async (settlementTest) => {
       assert.assert(err instanceof Error)
       Logger.error(`create settlement model failed with error - ${err}`)
       assert.pass('Error thrown')
+    }
+    assert.end()
+  })
+
+  await settlementTest.test('get settlement model', async (assert) => {
+    try {
+      Db.settlementModel.find.withArgs({name: 'test'}).returns([
+        {
+          settlementModelId: 106,
+          name: "testingSevennnnN91",
+          isActive: 1,
+          settlementGranularityId: 1,
+          settlementInterchangeId: 1,
+          settlementDelayId: 2,
+          currencyId: null,
+          requireLiquidityCheck: 1,
+          ledgerAccountTypeId: 6
+        }])
+      const expected = {
+        settlementModelId: 106,
+        name: "testingSevennnnN91",
+        isActive: 1,
+        settlementGranularityId: 1,
+        settlementInterchangeId: 1,
+        settlementDelayId: 2,
+        currencyId: null,
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 6
+      }
+      const result = await Model.getByName('test')
+      assert.equal(JSON.stringify(result), JSON.stringify(expected))
+      assert.end()
+    } catch (err) {
+      Logger.error(`get settlement model by name failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+
+  })
+
+  await settlementTest.test('get with empty name', async (assert) => {
+    Db.settlementModel.find.withArgs({ name: '' }).throws(new Error())
+    try {
+      await Model.getByName('')
+      assert.fail(' should throws with empty name ')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
     }
     assert.end()
   })
