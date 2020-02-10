@@ -18,20 +18,21 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
-const SettlementModel = require('../../models/settlement/settlement')
+const SettlementModelModel = require('../../models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const createSettlementModel = async (name, isActive = true, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId = null, requireLiquidityCheck = true, ledgerAccountTypeId) => {
+const createSettlementModel = async (name, isActive = true, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId = null, requireLiquidityCheck = true, ledgerAccountTypeId, autoPositionReset = false) => {
   try {
-    await SettlementModel.create(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId)
+    await SettlementModelModel.create(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -39,7 +40,7 @@ const createSettlementModel = async (name, isActive = true, settlementGranularit
 }
 const getByName = async (name) => {
   try {
-    return await SettlementModel.getByName(name)
+    return await SettlementModelModel.getByName(name)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

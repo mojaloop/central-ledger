@@ -18,22 +18,22 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Lazola Lucas <lazola.lucas@modusbox.com>
-
  --------------
  ******/
-
 'use strict'
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
-const SettlementModel = require('../../../../src/models/settlement/settlement')
+const SettlementModel = require('../../../../src/models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
-const Service = require('../../../../src/domain/settlement/index')
+const SettlementService = require('../../../../src/domain/settlement/index')
 
-Test('SettlementModel service', async (settlementModelTest) => {
+Test('SettlementModel SettlementService', async (settlementModelTest) => {
   let sandbox
 
   settlementModelTest.beforeEach(t => {
@@ -72,7 +72,7 @@ Test('SettlementModel service', async (settlementModelTest) => {
   await settlementModelTest.test('create settlement model', async (assert) => {
     try {
       sandbox.stub(SettlementModel, 'create')
-      const expected = await Service.createSettlementModel('IMMEDIATE_GROSS', true, 1, 1, 1, 'USD', true, 'POSITION')
+      const expected = await SettlementService.createSettlementModel('IMMEDIATE_GROSS', true, 1, 1, 1, 'USD', true, 'POSITION', true)
       assert.equal(expected, true)
       assert.end()
     } catch (err) {
@@ -84,7 +84,7 @@ Test('SettlementModel service', async (settlementModelTest) => {
   await settlementModelTest.test('create settlement model should throw an error', async (assert) => {
     try {
       sandbox.stub(SettlementModel, 'create').throws(new Error())
-      await Service.createSettlementModel()
+      await SettlementService.createSettlementModel()
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
@@ -107,7 +107,7 @@ Test('SettlementModel service', async (settlementModelTest) => {
 
     try {
       LedgerAccountTypeModel.getLedgerAccountByName.withArgs(name.type).returns(ledgerAccountsMock)
-      const expected = await Service.getLedgerAccountTypeName(name.type)
+      const expected = await SettlementService.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
     } catch (err) {
@@ -131,7 +131,7 @@ Test('SettlementModel service', async (settlementModelTest) => {
 
     try {
       LedgerAccountTypeModel.getLedgerAccountByName.withArgs(name.type).throws(new Error())
-      const expected = await Service.getLedgerAccountTypeName(name.type)
+      const expected = await SettlementService.getLedgerAccountTypeName(name.type)
       assert.deepEqual(expected, ledgerAccountsMock, 'Results matched')
       assert.end()
     } catch (err) {
@@ -142,7 +142,7 @@ Test('SettlementModel service', async (settlementModelTest) => {
   await settlementModelTest.test('get settlement model by name', async (assert) => {
     try {
       sandbox.stub(SettlementModel, 'getByName').returns(settlementModel)
-      const expected = await Service.getByName('test')
+      const expected = await SettlementService.getByName('test')
       assert.equal(expected, settlementModel)
       assert.end()
     } catch (err) {
@@ -154,7 +154,7 @@ Test('SettlementModel service', async (settlementModelTest) => {
   await settlementModelTest.test('get settlement model by name should throw an error', async (assert) => {
     try {
       sandbox.stub(SettlementModel, 'getByName').throws(new Error())
-      await Service.getByName('test')
+      await SettlementService.getByName('test')
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {

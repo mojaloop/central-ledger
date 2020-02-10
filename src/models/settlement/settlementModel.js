@@ -18,16 +18,17 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Lazola Lucas <lazola.lucas@modusbox.com>
-
  --------------
  ******/
-
 'use strict'
+
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId) => {
+exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset) => {
   try {
     return await Db.settlementModel.insert({
       name,
@@ -37,7 +38,8 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
       settlementDelayId,
       currencyId,
       requireLiquidityCheck,
-      ledgerAccountTypeId
+      ledgerAccountTypeId,
+      autoPositionReset
     })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
