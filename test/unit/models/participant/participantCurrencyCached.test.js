@@ -60,7 +60,7 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
       isActive: 1,
       createdDate: new Date(),
       createdBy: 'theCreator'
-    },
+    }
   ]
 
   participantCurrencyCachedTest.beforeEach(t => {
@@ -122,8 +122,6 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
     await Model.initialize()
 
     // check getById()
-    const participantById = await Model.getById(1)
-
     const participantByParticipantId = await Model.getByParticipantId(participantCurrencyFixtures[1].participantId)
     const participantByParticipantIdMatch = [participantCurrencyFixtures[0], participantCurrencyFixtures[1]]
     test.equal(JSON.stringify(participantByParticipantId), JSON.stringify(participantByParticipantIdMatch), 'getByParticipantId(<arg>) works')
@@ -220,7 +218,6 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
 
     test.end()
   })
-
 
   await participantCurrencyCachedTest.end()
 })

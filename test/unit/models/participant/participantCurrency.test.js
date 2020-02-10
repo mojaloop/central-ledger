@@ -87,6 +87,40 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
     assert.end()
   })
 
+  await participantCurrencyTest.test('getAll', async (assert) => {
+    try {
+      Db.participantCurrency.find.returns([{
+        participantCurrencyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }, {
+        participantCurrencyId: 2,
+        participantId: 2,
+        currencyId: 'GBP',
+        isActive: 1
+      }])
+      const expected = [{
+        participantCurrencyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }, {
+        participantCurrencyId: 2,
+        participantId: 2,
+        currencyId: 'GBP',
+        isActive: 1
+      }]
+      const result = await Model.getAll()
+      assert.equal(JSON.stringify(result), JSON.stringify(expected))
+      assert.end()
+    } catch (err) {
+      Logger.error(`getAll() failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await participantCurrencyTest.test('getById', async (assert) => {
     try {
       Db.participantCurrency.findOne.withArgs({ participantCurrencyId: 1 }).returns({
