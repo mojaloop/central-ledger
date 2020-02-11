@@ -25,7 +25,6 @@
 'use strict'
 
 const Db = require('../../lib/db')
-const Config = require('../../../src/lib/config')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
@@ -37,6 +36,14 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
       isActive,
       createdBy: 'unknown'
     })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+exports.getAll = async () => {
+  try {
+    return Db.participantCurrency.find({}, { order: 'participantCurrencyId asc' })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -82,20 +89,6 @@ exports.getByName = async (accountParams) => {
   try {
     const participantCurrency = await Db.participantCurrency.findOne(accountParams)
     return participantCurrency
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-exports.hubAccountExists = async (currencyId, ledgerAccountTypeId) => {
-  try {
-    const params = {
-      participantId: Config.HUB_ID,
-      currencyId,
-      ledgerAccountTypeId
-    }
-    const participantCurrency = await Db.participantCurrency.findOne(params)
-    return !!participantCurrency
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

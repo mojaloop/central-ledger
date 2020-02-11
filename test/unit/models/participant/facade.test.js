@@ -33,12 +33,14 @@ const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/participant/facade')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
 
 Test('Participant facade', async (facadeTest) => {
   let sandbox
 
   facadeTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(ParticipantCurrencyModel, 'invalidateParticipantCurrencyCache')
     Db.participant = {
       query: sandbox.stub()
     }

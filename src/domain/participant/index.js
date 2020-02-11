@@ -29,7 +29,7 @@
  */
 
 const ParticipantModel = require('../../models/participant/participantCached')
-const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
+const ParticipantCurrencyModel = require('../../models/participant/participantCurrencyCached')
 const ParticipantPositionModel = require('../../models/participant/participantPosition')
 const ParticipantPositionChangeModel = require('../../models/participant/participantPositionChange')
 const ParticipantLimitModel = require('../../models/participant/participantLimit')
@@ -632,7 +632,7 @@ const getLedgerAccountTypeName = async (name) => {
 
 const getParticipantAccount = async (accountParams) => {
   try {
-    return await ParticipantCurrencyModel.getByName(accountParams)
+    return await ParticipantCurrencyModel.findOneByParams(accountParams)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -65,7 +65,7 @@ const getParticipantsCached = async () => {
   // Do we have valid participants list in the cache ?
   let cachedParticipants = cacheClient.get(participantsAllCacheKey)
   if (!cachedParticipants) {
-    // No participants in the cache, so fetch from participan API
+    // No participants in the cache, so fetch from participant API
     const allParticipants = await ParticipantModel.getAll()
     cachedParticipants = buildUnifiedParticipantsData(allParticipants)
 
