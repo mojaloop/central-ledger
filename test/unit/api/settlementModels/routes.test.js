@@ -18,18 +18,19 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
 const Test = require('tape')
 const Base = require('../../base')
 const AdminRoutes = require('../../../../src/api/routes')
 
-Test('test settlementModel routes', async function (assert) {
-  const req = Base.buildRequest({ url: '/settlementModel', method: 'POST' })
+Test('test settlementModels routes', async function (assert) {
+  const req = Base.buildRequest({ url: '/settlementModels', method: 'POST' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)
   assert.ok(res)

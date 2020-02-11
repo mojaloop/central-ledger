@@ -18,10 +18,11 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
 const SettlementService = require('../../domain/settlement')
@@ -38,13 +39,13 @@ const create = async function (request, h) {
     const settlementDelay = Enum.SettlementDelay[request.payload.settlementDelay]
     const ledgerAccountType = await SettlementService.getLedgerAccountTypeName(request.payload.ledgerAccountType)
     if (!ledgerAccountType) {
-      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found.')
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found')
     }
     const settlementModelExist = await SettlementService.getByName(request.payload.name)
     if (settlementModelExist) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Settlement Model already exists')
     } else {
-      await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId)
+      await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId, request.payload.autoPositionReset)
       return h.response().code(201)
     }
   } catch (err) {

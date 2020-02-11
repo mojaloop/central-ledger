@@ -18,18 +18,18 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Lazola Lucas <lazola.lucas@modusbox.com>
-
  --------------
  ******/
-
 'use strict'
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const Model = require('../../../../src/models/settlement/settlement')
+const SettlementModelModel = require('../../../../src/models/settlement/settlementModel')
 
 Test('Settlement model', async (settlementTest) => {
   const sandbox = Sinon.createSandbox()
@@ -40,7 +40,7 @@ Test('Settlement model', async (settlementTest) => {
       find: sandbox.stub()
     }
     try {
-      const r = await Model.create({ name: 'DEFERRED_NET', settlementGranularityId: 2, settlementInterchangeId: 2, settlementDelayId: 2, ledgerAccountTypeId: 1 })
+      const r = await SettlementModelModel.create({ name: 'DEFERRED_NET', settlementGranularityId: 2, settlementInterchangeId: 2, settlementDelayId: 2, ledgerAccountTypeId: 1 })
       assert.ok(r)
       assert.end()
     } catch (err) {
@@ -53,7 +53,7 @@ Test('Settlement model', async (settlementTest) => {
   await settlementTest.test('create settlement model should throw an error', async (assert) => {
     Db.settlementModel.insert.throws(new Error('message'))
     try {
-      const r = await Model.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
+      const r = await SettlementModelModel.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
       assert.comment(r)
       assert.fail(' should throw')
     } catch (err) {
@@ -89,7 +89,7 @@ Test('Settlement model', async (settlementTest) => {
         requireLiquidityCheck: 1,
         ledgerAccountTypeId: 6
       }
-      const result = await Model.getByName('test')
+      const result = await SettlementModelModel.getByName('test')
       assert.equal(JSON.stringify(result), JSON.stringify(expected))
       assert.end()
     } catch (err) {
@@ -102,7 +102,7 @@ Test('Settlement model', async (settlementTest) => {
   await settlementTest.test('get with empty name', async (assert) => {
     Db.settlementModel.find.withArgs({ name: '' }).throws(new Error())
     try {
-      await Model.getByName('')
+      await SettlementModelModel.getByName('')
       assert.fail(' should throws with empty name ')
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)

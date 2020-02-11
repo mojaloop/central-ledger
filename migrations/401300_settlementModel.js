@@ -43,6 +43,7 @@ exports.up = async (knex, Promise) => {
         t.boolean('requireLiquidityCheck').defaultTo(true).notNullable()
         t.integer('ledgerAccountTypeId').unsigned().notNullable()
         t.foreign('ledgerAccountTypeId').references('ledgerAccountTypeId').inTable('ledgerAccountType')
+        t.boolean('autoPositionReset').defaultTo(false).notNullable()
       })
     }
   })
