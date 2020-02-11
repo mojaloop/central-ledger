@@ -2,6 +2,7 @@
 
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
+const Config = require('../../../src/lib/config')
 const Cache = require('../../../src/lib/cache')
 const Enums = require('../../../src/lib/enum')
 
@@ -16,6 +17,7 @@ Test('Cache test', async (cacheTest) => {
   cacheTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Enums)
+    sandbox.stub(Config.CACHE_CONFIG, 'CACHE_ENABLED')
     allEnumsValue = {}
     for (const enumId of Enums.enumsIds) {
       Enums[enumId].returns(Promise.resolve(templateValueForEnum(enumId)))
@@ -133,6 +135,7 @@ Test('Cache test', async (cacheTest) => {
     })
 
     await cacheClientTest.test('get() should call Catbox Memory get()', async (test) => {
+      Config.CACHE_CONFIG.CACHE_ENABLED = true
       const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
 
       const cacheClient = Cache.registerCacheClient({
@@ -152,7 +155,29 @@ Test('Cache test', async (cacheTest) => {
       test.end()
     })
 
+    await cacheClientTest.test('get() should NOT call Catbox Memory get() when cache is disabled', async (test) => {
+      Config.CACHE_CONFIG.CACHE_ENABLED = false
+      const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
+
+      const cacheClient = Cache.registerCacheClient({
+        id: 'testCacheClient',
+        preloadCache: async () => {}
+      })
+
+      // Test get()
+      test.notOk(getSpy.called, 'CatboxMemory::get() not called before initCache()')
+      await Cache.initCache()
+      getSpy.resetHistory()
+      await cacheClient.get('')
+      test.notOk(getSpy.called, 'CatboxMemory::get() was called once by direct get()')
+
+      // end
+      await Cache.destroyCache()
+      test.end()
+    })
+
     await cacheClientTest.test('set() should call Catbox Memory set() and should work', async (test) => {
+      Config.CACHE_CONFIG.CACHE_ENABLED = true
       const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
       const setSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'set')
       const cacheClient = Cache.registerCacheClient({
@@ -183,6 +208,7 @@ Test('Cache test', async (cacheTest) => {
     })
 
     await cacheClientTest.test('drop() works', async (test) => {
+      Config.CACHE_CONFIG.CACHE_ENABLED = true
       const getSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'get')
       const setSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'set')
       const dropSpy = sandbox.spy(Cache.CatboxMemory.prototype, 'drop')
