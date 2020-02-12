@@ -4,7 +4,8 @@ const CatboxMemory = require('catbox-memory')
 const Config = require('../lib/config')
 const Enums = require('../lib/enum')
 
-const ttl = 60 * 1000
+let enabled = true
+let ttl
 let catboxMemoryClient = null
 
 class CacheClient {
@@ -24,7 +25,10 @@ class CacheClient {
   }
 
   get (key) {
-    return catboxMemoryClient.get(key)
+    if (enabled) {
+      return catboxMemoryClient.get(key)
+    }
+    return null
   }
 
   set (key, value) {
@@ -54,6 +58,10 @@ const registerCacheClient = (clientMeta) => {
 }
 
 const initCache = async function () {
+  // Read config
+  ttl = Config.CACHE_CONFIG.EXPIRES_IN_MS
+  enabled = Config.CACHE_CONFIG.CACHE_ENABLED
+
   // Init catbox.
   // Note: The strange looking "module.exports.CatboxMemory" reference
   // simplifies the setup of tests.
