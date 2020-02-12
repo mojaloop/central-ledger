@@ -5,7 +5,7 @@ const Config = require('../lib/config')
 const Enums = require('../lib/enum')
 
 let enabled = true
-let ttl = 60 * 1000
+let ttl
 let catboxMemoryClient = null
 
 class CacheClient {
