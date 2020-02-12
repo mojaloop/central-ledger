@@ -30,6 +30,7 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const SettlementModel = require('../../../../src/models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
+const Logger = require('@mojaloop/central-services-logger')
 
 const SettlementService = require('../../../../src/domain/settlement/index')
 
@@ -44,6 +45,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       insert: sandbox.stub(),
       update: sandbox.stub(),
       findOne: sandbox.stub(),
+      find: sandbox.stub(),
       destroy: sandbox.stub()
     }
     t.end()
@@ -58,7 +60,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
 
     {
       settlementModelId: 106,
-      name: 'testingSevennnnN91',
+      name: 'DEFERRED_NET',
       isActive: 1,
       settlementGranularityId: 1,
       settlementInterchangeId: 1,
@@ -155,6 +157,70 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
     try {
       sandbox.stub(SettlementModel, 'getByName').throws(new Error())
       await SettlementService.getByName('test')
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error)
+      assert.end()
+    }
+  })
+
+  await settlementModelTest.test('getAll', async (assert) => {
+    try {
+      sandbox.stub(SettlementModel, 'getAll').returns(settlementModel)
+      const result = await SettlementService.getAll()
+      assert.deepEqual(result, settlementModel)
+      assert.end()
+    } catch (err) {
+      Logger.error(`get all settlement models failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await settlementModelTest.test('getAll', async (assert) => {
+    try {
+      sandbox.stub(SettlementModel, 'getAll').throws(new Error())
+      await SettlementService.getAll()
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error)
+      assert.end()
+    }
+  })
+
+  await settlementModelTest.test('update', async (assert) => {
+    try {
+      sandbox.stub(SettlementModel, 'getByName').returns(settlementModel)
+      sandbox.stub(SettlementModel, 'update').returns(settlementModel)
+      const result = await SettlementService.update('DEFERRED_NET', { isActive: 1 })
+      assert.deepEqual(result, settlementModel)
+      assert.end()
+    } catch (err) {
+      Logger.error(`get all settlement models failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await settlementModelTest.test('update should throw an error', async (assert) => {
+    try {
+      sandbox.stub(SettlementModel, 'getByName').throws(new Error())
+      sandbox.stub(SettlementModel, 'update').returns(settlementModel)
+      await SettlementService.update('DEFERRED_NET', { isActive: 1 })
+      assert.fail('Error not thrown')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error)
+      assert.end()
+    }
+  })
+  await settlementModelTest.test('update should throw an error when settlement model does not exists', async (assert) => {
+    try {
+      sandbox.stub(SettlementModel, 'getByName').returns(false)
+      sandbox.stub(SettlementModel, 'update').returns(settlementModel)
+      await SettlementService.update('DEFERRED_NET', { isActive: 1 })
       assert.fail('Error not thrown')
       assert.end()
     } catch (err) {
