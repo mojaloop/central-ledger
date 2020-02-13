@@ -78,7 +78,7 @@
     "@hapi/vision": "5.5.4",
     "@mojaloop/central-object-store": "8.5.0-snapshot",
     "@mojaloop/central-services-database": "8.2.1",
-    "@mojaloop/central-services-error-handling": "8.7.0",
+    "@mojaloop/central-services-error-handling": "9.1.0",
     "@mojaloop/central-services-health": "8.3.0",
     "@mojaloop/central-services-logger": "8.6.0",
     "@mojaloop/central-services-metrics": "8.8.0",
