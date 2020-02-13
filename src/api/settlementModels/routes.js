@@ -36,6 +36,27 @@ const tags = ['api', 'settlement']
 
 module.exports = [
   {
+    method: 'GET',
+    path: '/settlementModels',
+    handler: Handler.getAll,
+    options: {
+      tags
+    }
+  },
+  {
+    method: 'GET',
+    path: '/settlementModels/{name}',
+    handler: Handler.getByName,
+    options: {
+      tags,
+      validate: {
+        params: Joi.object({
+          name: Joi.string().required().description('SettlementModel name')
+        })
+      }
+    }
+  },
+  {
     method: 'POST',
     path: '/settlementModels',
     handler: Handler.create,
@@ -55,6 +76,26 @@ module.exports = [
           requireLiquidityCheck: Joi.boolean().required().description('Liquidity Check boolean'),
           ledgerAccountType: Joi.string().required().valid(...ledgerAccountList).description('Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE'),
           autoPositionReset: Joi.boolean().required().description('Automatic position reset setting, which determines whether to execute the settlement transfer or not')
+        })
+      }
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/settlementModels/{name}',
+    handler: Handler.update,
+    options: {
+      tags,
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: Joi.object({
+          isActive: Joi.boolean().required().description('settlementModel isActive boolean')
+        }),
+        params: Joi.object({
+          name: Joi.string().required().description('settlementModel name')
         })
       }
     }

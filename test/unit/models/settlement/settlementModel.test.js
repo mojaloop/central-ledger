@@ -32,12 +32,28 @@ const Logger = require('@mojaloop/central-services-logger')
 const SettlementModelModel = require('../../../../src/models/settlement/settlementModel')
 
 Test('Settlement model', async (settlementTest) => {
-  const sandbox = Sinon.createSandbox()
+  const settlementModelId = 1
+  const settlementModel = [
 
+    {
+      settlementModelId: 106,
+      name: 'DEFERRED_NET',
+      isActive: 1,
+      settlementGranularityId: 1,
+      settlementInterchangeId: 1,
+      settlementDelayId: 2,
+      currencyId: null,
+      requireLiquidityCheck: 1,
+      ledgerAccountTypeId: 6
+    }
+  ]
+
+  const sandbox = Sinon.createSandbox()
   await settlementTest.test('create settlement model', async (assert) => {
     Db.settlementModel = {
       insert: sandbox.stub().returns(true),
-      find: sandbox.stub()
+      find: sandbox.stub(),
+      update: sandbox.stub()
     }
     try {
       const r = await SettlementModelModel.create({ name: 'DEFERRED_NET', settlementGranularityId: 2, settlementInterchangeId: 2, settlementDelayId: 2, ledgerAccountTypeId: 1 })
@@ -53,7 +69,7 @@ Test('Settlement model', async (settlementTest) => {
   await settlementTest.test('create settlement model should throw an error', async (assert) => {
     Db.settlementModel.insert.throws(new Error('message'))
     try {
-      const r = await SettlementModelModel.create({ participantId: 1, currencyId: 'USD', createdBy: 'unknown' })
+      const r = await SettlementModelModel.create({ name: 'DEFERRED_NET', settlementGranularityId: 2, settlementInterchangeId: 2, settlementDelayId: 2, ledgerAccountTypeId: 1 })
       assert.comment(r)
       assert.fail(' should throw')
     } catch (err) {
@@ -108,6 +124,87 @@ Test('Settlement model', async (settlementTest) => {
       assert.assert(err instanceof Error, ` throws ${err} `)
     }
     assert.end()
+  })
+
+  await settlementTest.test('get all settlement models', async (assert) => {
+    try {
+      Db.settlementModel.find.withArgs().returns([
+        {
+          settlementModelId: 106,
+          name: 'testingSevennnnN91',
+          isActive: 1,
+          settlementGranularityId: 1,
+          settlementInterchangeId: 1,
+          settlementDelayId: 2,
+          currencyId: null,
+          requireLiquidityCheck: 1,
+          ledgerAccountTypeId: 6
+        }])
+      const expected = [{
+        settlementModelId: 106,
+        name: 'testingSevennnnN91',
+        isActive: 1,
+        settlementGranularityId: 1,
+        settlementInterchangeId: 1,
+        settlementDelayId: 2,
+        currencyId: null,
+        requireLiquidityCheck: 1,
+        ledgerAccountTypeId: 6
+      }]
+      const result = await SettlementModelModel.getAll()
+      assert.equal(JSON.stringify(result), JSON.stringify(expected))
+      assert.end()
+    } catch (err) {
+      Logger.error(`get settlement model by name failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await settlementTest.test('getAl throws an error', async (assert) => {
+    Db.settlementModel.find.withArgs().throws(new Error())
+    try {
+      await SettlementModelModel.getAll()
+      assert.fail(' should throws an error ')
+    } catch (err) {
+      assert.assert(err instanceof Error, ` throws ${err} `)
+    }
+    assert.end()
+  })
+
+  await settlementTest.test('update', async (assert) => {
+    try {
+      Db.settlementModel.update.withArgs(
+        { settlementModelId: 1 }, { isActive: 1 }
+      ).returns(settlementModelId)
+      const updatedId = await SettlementModelModel.update(Object.assign(settlementModel[0], { settlementModelId: 1 }), 1)
+      assert.equal(updatedId, settlementModelId)
+      sandbox.restore()
+      assert.end()
+    } catch (err) {
+      Logger.error(`update settlementModel failed with error - ${err}`)
+      sandbox.restore()
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await settlementTest.test('update should throw an error', async (test) => {
+    try {
+      Db.settlementModel.update.withArgs(
+        { settlementModelId: 1 }, { isActive: 1 }
+      ).throws(new Error())
+      const updatedId = await SettlementModelModel.update(Object.assign(settlementModel[0], { settlementModelId: 1 }), 1)
+      test.equal(updatedId, settlementModelId)
+      test.fail('Error not thrown')
+      sandbox.restore()
+      test.end()
+    } catch (err) {
+      Logger.error(`update settlementModel failed with error - ${err}`)
+      test.pass('Error thrown')
+      sandbox.restore()
+      test.end()
+    }
   })
   await settlementTest.end()
 })

@@ -45,7 +45,13 @@ const getByName = async (name) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
+const getAll = async () => {
+  try {
+    return await SettlementModelModel.getAll()
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 const getLedgerAccountTypeName = async (name) => {
   try {
     return await LedgerAccountTypeModel.getLedgerAccountByName(name)
@@ -54,8 +60,28 @@ const getLedgerAccountTypeName = async (name) => {
   }
 }
 
+const update = async (name, payload) => {
+  try {
+    const settlementModel = await SettlementModelModel.getByName(name)
+    settlementModeExists(settlementModel)
+    await SettlementModelModel.update(settlementModel, payload.isActive)
+    settlementModel.isActive = +payload.isActive
+    return settlementModel
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+const settlementModeExists = (settlementModel) => {
+  if (settlementModel) {
+    return settlementModel
+  }
+  throw ErrorHandler.Factory.createInternalServerFSPIOPError('Settlement Model does not exist')
+}
 module.exports = {
   createSettlementModel,
   getLedgerAccountTypeName,
-  getByName
+  getByName,
+  getAll,
+  update
 }

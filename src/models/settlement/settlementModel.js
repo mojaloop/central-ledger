@@ -53,3 +53,17 @@ exports.getByName = async (name) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+exports.getAll = async () => {
+  try {
+    return await Db.settlementModel.find()
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+exports.update = async (settlementModel, isActive) => {
+  try {
+    return await Db.settlementModel.update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
