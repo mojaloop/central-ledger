@@ -83,7 +83,7 @@
     "@mojaloop/central-services-health": "8.3.0",
     "@mojaloop/central-services-logger": "8.6.0",
     "@mojaloop/central-services-metrics": "8.8.0",
-    "@mojaloop/central-services-shared": "9.1.1",
+    "@mojaloop/central-services-shared": "9.1.2",
     "@mojaloop/central-services-stream": "8.7.2",
     "@mojaloop/event-sdk": "8.7.0",
     "@mojaloop/forensic-logging-client": "8.3.0",

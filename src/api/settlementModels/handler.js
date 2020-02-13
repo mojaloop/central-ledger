@@ -33,25 +33,18 @@ const Util = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 const Logger = require('@mojaloop/central-services-logger')
 
-const LocalEnum = {
-  0: false,
-  1: true,
-  activated: 'activated',
-  disabled: 'disabled'
-}
-
 const entityItem = ({ settlementModelId, name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset }, ledgerAccountIds, settlementGranularityIds, settlementInterchangeIds, settlementDelayIds) => {
   return {
     settlementModelId,
     name,
-    isActive: LocalEnum[isActive],
+    isActive: Enum.booleanType[isActive],
     settlementGranularity: settlementGranularityIds[settlementGranularityId],
     settlementInterchange: settlementInterchangeIds[settlementInterchangeId],
     settlementDelay: settlementDelayIds[settlementDelayId],
     currency: currencyId,
-    requireLiquidityCheck: LocalEnum[requireLiquidityCheck],
+    requireLiquidityCheck: Enum.booleanType[requireLiquidityCheck],
     ledgerAccountTypeId: ledgerAccountIds[ledgerAccountTypeId],
-    autoPositionReset: LocalEnum[autoPositionReset]
+    autoPositionReset: Enum.booleanType[autoPositionReset]
 
   }
 }
@@ -88,7 +81,7 @@ const update = async function (request) {
   try {
     const updatedEntity = await SettlementService.update(request.params.name, request.payload)
     if (request.payload.isActive !== undefined) {
-      const isActiveText = request.payload.isActive ? LocalEnum.activated : LocalEnum.disabled
+      const isActiveText = request.payload.isActive ? Enum.isActiveText.activated : Enum.isActiveText.disabled
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
       Logger.info(`Settlement Model has been ${isActiveText} :: ${changeLog}`)
     }
