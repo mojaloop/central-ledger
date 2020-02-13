@@ -101,6 +101,10 @@ const create = async function (request, h) {
     const settlementGranularity = Enum.SettlementGranularity[request.payload.settlementGranularity]
     const settlementInterchange = Enum.SettlementInterchange[request.payload.settlementInterchange]
     const settlementDelay = Enum.SettlementDelay[request.payload.settlementDelay]
+    const { isValid, reasons } = Util.Settlement.validateSettlementModel(settlementDelay, settlementGranularity, settlementInterchange)
+    if (!isValid) {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, reasons.join('. '))
+    }
     const ledgerAccountType = await SettlementService.getLedgerAccountTypeName(request.payload.ledgerAccountType)
     if (!ledgerAccountType) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found')

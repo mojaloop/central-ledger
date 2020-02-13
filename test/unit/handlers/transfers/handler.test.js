@@ -756,7 +756,7 @@ Test('Transfer handler', transferHandlerTest => {
         Kafka.transformAccountToTopicName.returns('invalid-topic')
         await allTransferHandlers.prepare(null, localMessages)
         const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
-        test.ok(SpanStub.finish.calledWith('Cannot destructure property `hasDuplicateId` of \'undefined\' or \'null\'.', expectedState))
+        test.ok(SpanStub.finish.calledWith('Cannot destructure property \'hasDuplicateId\' of \'(intermediate value)\' as it is undefined.', expectedState))
         test.end()
       } catch (e) {
         test.fail('Error Thrown')
