@@ -180,6 +180,29 @@ Test('SettlementModel', settlementModelHandlerTest => {
       }
     })
 
+    handlerTest.test('create should fail if definition is not supported', async function (test) {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'GROSS',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true
+      }
+      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(false))
+
+      try {
+        await Handler.create({ payload })
+        test.fail('Error not thrown')
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Invalid settlement model definition - delay-granularity-interchange combination is not supported')
+        test.end()
+      }
+    })
+
     handlerTest.test('getAll should return all the settlement models', async function (test) {
       SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(ledgerAccountType))
       SettlementService.getAll.returns(Promise.resolve(settlementModelService))
