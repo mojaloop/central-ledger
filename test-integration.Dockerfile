@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:12.16.0
+FROM node:12.16.0-alpine
 USER root
 
 WORKDIR /opt/central-ledger

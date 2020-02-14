@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:12.16.0 as builder
+FROM node:12.16.0-alpine as builder
 WORKDIR /opt/central-ledger
 
 RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
@@ -14,7 +14,7 @@ COPY config /opt/central-ledger/config
 COPY migrations /opt/central-ledger/migrations
 COPY seeds /opt/central-ledger/seeds
 
-FROM mhart/alpine-node:12.16.0
+FROM node:12.16.0-alpine
 WORKDIR /opt/central-ledger
 
 COPY --from=builder /opt/central-ledger .
