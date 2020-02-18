@@ -6,8 +6,9 @@
     "http"
   ],
   "info": {
-    "title": "Central Ledger API Documentation",
-    "version": "7.2.0"
+    "title": "Mojaloop Hub Admin / Operations API",
+    "version": "1.0",
+    "description": "API for Hub Administration, onboarding FSPs and maintenance"
   },
   "tags": [],
   "paths": {
