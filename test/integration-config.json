@@ -85,7 +85,9 @@
   },
   "INTERNAL_TRANSFER_VALIDITY_SECONDS": "432000",
   "CACHE": {
-    "MAX_BYTE_SIZE": 10000000
+    "CACHE_ENABLED": false,
+    "MAX_BYTE_SIZE": 10000000,
+    "EXPIRES_IN_MS": 1000
   },
   "EMAIL_USER": "modusboxemailtest@gmail.com",
   "EMAIL_PASSWORD": "April2o0%",

@@ -35,6 +35,8 @@ const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../../../../src/lib/config')
 const ParticipantService = require('../../../../src/domain/participant')
+const ParticipantCached = require('../../../../src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantHelper = require('../../helpers/participant')
 const ParticipantEndpointHelper = require('../../helpers/participantEndpoint')
 const ParticipantLimitHelper = require('../../helpers/participantLimit')
@@ -59,22 +61,19 @@ Test('Participant service', async (participantTest) => {
     notificationEmail: 'test@example.com'
   }
 
-  await participantTest.test('setup', async (assert) => {
+  await participantTest.test('setup', async (test) => {
     try {
       sandbox = Sinon.createSandbox()
-      await Db.connect(Config.DATABASE).then(() => {
-        assert.pass('setup OK')
-        assert.end()
-      }).catch(err => {
-        Logger.error(`Setup for test failed with error - ${err}`)
-        assert.fail()
-        assert.end()
-      })
+      await Db.connect(Config.DATABASE)
+      await ParticipantCached.initialize()
+      await ParticipantCurrencyCached.initialize()
       await Cache.initCache()
+      test.pass()
+      test.end()
     } catch (err) {
       Logger.error(`Setup for test failed with error - ${err}`)
-      assert.fail()
-      assert.end()
+      test.fail()
+      test.end()
     }
   })
 

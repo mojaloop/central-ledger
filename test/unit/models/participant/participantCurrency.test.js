@@ -87,6 +87,40 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
     assert.end()
   })
 
+  await participantCurrencyTest.test('getAll', async (assert) => {
+    try {
+      Db.participantCurrency.find.returns([{
+        participantCurrencyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }, {
+        participantCurrencyId: 2,
+        participantId: 2,
+        currencyId: 'GBP',
+        isActive: 1
+      }])
+      const expected = [{
+        participantCurrencyId: 1,
+        participantId: 1,
+        currencyId: 'USD',
+        isActive: 1
+      }, {
+        participantCurrencyId: 2,
+        participantId: 2,
+        currencyId: 'GBP',
+        isActive: 1
+      }]
+      const result = await Model.getAll()
+      assert.equal(JSON.stringify(result), JSON.stringify(expected))
+      assert.end()
+    } catch (err) {
+      Logger.error(`getAll() failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
   await participantCurrencyTest.test('getById', async (assert) => {
     try {
       Db.participantCurrency.findOne.withArgs({ participantCurrencyId: 1 }).returns({
@@ -227,52 +261,6 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       test.end()
     } catch (err) {
       Logger.error(`destroy participant failed with error - ${err}`)
-      test.pass('Error thrown')
-      sandbox.restore()
-      test.end()
-    }
-  })
-
-  await participantCurrencyTest.test('hubAccountExists', async (assert) => {
-    try {
-      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD', ledgerAccountTypeId: 3 }).returns(Promise.resolve(true))
-      const result = await Model.hubAccountExists('USD', 3)
-      assert.equal(result, true)
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`hubReconciliationAccountExists failed with error - ${err}`)
-      sandbox.restore()
-      assert.fail()
-      assert.end()
-    }
-  })
-
-  await participantCurrencyTest.test('hubAccountExists should throw', async (assert) => {
-    try {
-      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD', ledgerAccountTypeId: 3 }).throws(new Error())
-      await Model.hubAccountExists('USD', 3)
-      assert.fail('Error not thrown!')
-      sandbox.restore()
-      assert.end()
-    } catch (err) {
-      Logger.error(`hubReconciliationAccountExists failed with error - ${err}`)
-      sandbox.restore()
-      assert.pass('Error thrown')
-      assert.end()
-    }
-  })
-
-  await participantCurrencyTest.test('hubReconciliationAccountExists should throw an error', async (test) => {
-    try {
-      Db.participantCurrency.findOne.withArgs({ participantId: 1, currencyId: 'USD' }).throws(new Error())
-      const result = await Model.hubReconciliationAccountExists('USD')
-      test.equal(result, true)
-      test.fail('Error not thrown')
-      sandbox.restore()
-      test.end()
-    } catch (err) {
-      Logger.error(`hubReconciliationAccountExists failed with error - ${err}`)
       test.pass('Error thrown')
       sandbox.restore()
       test.end()
