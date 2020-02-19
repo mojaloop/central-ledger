@@ -755,8 +755,10 @@ Test('Transfer handler', transferHandlerTest => {
         await Consumer.createHandler(topicName, config, command)
         Kafka.transformAccountToTopicName.returns('invalid-topic')
         await allTransferHandlers.prepare(null, localMessages)
-        test.ok(SpanStub.error.calledOnce)
-        test.ok(SpanStub.finish.calledTwice)
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '2001', 'Internal server error')
+        const args = SpanStub.finish.getCall(0).args
+        test.ok(args[0].length > 0)
+        test.deepEqual(args[1], expectedState)
         test.end()
       } catch (e) {
         test.fail('Error Thrown')
