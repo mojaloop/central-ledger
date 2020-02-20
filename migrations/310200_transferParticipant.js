@@ -40,6 +40,7 @@ exports.up = async (knex) => {
         t.foreign('ledgerEntryTypeId').references('ledgerEntryTypeId').inTable('ledgerEntryType')
         t.decimal('amount', 18, 2).notNullable()
         t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+        t.bigInteger('currentStateChangeId').unsigned().nullable()
       })
     }
   })

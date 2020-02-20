@@ -25,35 +25,22 @@
 
 'use strict'
 
-exports.up = function (knex) {
-  // foreign keys sorted alphabetically by table name
-  return knex.schema
-  .table('settlement', (t) => {
-    t.foreign('currentStateChangeId').references('settlementStateChange.settlementStateChangeId')
-  })
-  .table('settlementParticipantCurrency', (t) => {
-    t.foreign('currentStateChangeId', 'spc_currentstatechangeid_foreign').references('settlementParticipantCurrencyStateChange.settlementParticipantCurrencyStateChangeId')
-  })
-  .table('settlementWindow', (t) => {
-    t.foreign('currentStateChangeId').references('settlementWindowStateChange.settlementWindowStateChangeId')
-  })
-  .table('transferParticipant', (t) => {
-    t.foreign('currentStateChangeId').references('transferParticipantStateChange.transferParticipantStateChangeId')
+exports.up = async (knex) => {
+  return await knex.schema.hasTable('transferParticipantStateChange').then(function(exists) {
+    if (!exists) {
+      return knex.schema.createTable('transferParticipantStateChange', (t) => {
+        t.bigIncrements('transferParticipantStateChangeId').primary().notNullable()
+        t.bigInteger('transferParticipantId').unsigned().notNullable()
+        t.foreign('transferParticipantId').references('transferParticipantId').inTable('transferParticipant')
+        t.string('settlementWindowStateId', 50).notNullable()
+        t.foreign('settlementWindowStateId').references('settlementWindowStateId').inTable('settlementWindowState')
+        t.string('reason', 512).defaultTo(null).nullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+      })
+    }
   })
 }
 
 exports.down = function (knex) {
-  return knex.schema
-  .table('settlement', (t) => {
-    t.dropForeign('currentStateChangeId')
-  })
-  .table('settlementParticipantCurrency', (t) => {
-    t.dropForeign('currentStateChangeId', 'spc_settlementparticipantcurrencystatechangeid_foreign')
-  })
-  .table('settlementWindow', (t) => {
-    t.dropForeign('currentStateChangeId')
-  })
-  .table('transferParticipant', (t) => {
-    t.dropForeign('currentStateChangeId')
-  })
+  return knex.schema.dropTableIfExists('settlementWindowStateChange')
 }
