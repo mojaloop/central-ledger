@@ -77,7 +77,7 @@
     "@hapi/joi": "17.1.0",
     "@hapi/vision": "6.0.0",
     "@mojaloop/central-object-store": "9.1.0-snapshot",
-    "@mojaloop/central-services-database": "9.1.0",
+    "@mojaloop/central-services-database": "9.2.0",
     "@mojaloop/central-services-error-handling": "9.1.0",
     "@mojaloop/central-services-health": "9.2.0",
     "@mojaloop/central-services-logger": "9.1.0",
