@@ -1,0 +1,235 @@
+# Default values for central-services-stream-perf.
+# This is a YAML-formatted file.
+
+# Declare global configurations
+global:
+  config:
+    ## Pod scheduling preferences.
+    ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+    ##
+    affinity: {}
+
+    ## Node labels for pod assignment
+    ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+    nodeSelector: {}
+
+    ## Set toleration for scheduler
+    ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+    tolerations: {}
+
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+image:
+  repository: mojaloop/central-services-stream-perf
+  tag: v0.1
+  pullPolicy: Always
+  command: "node src/index.js consume --batchSize 10 --api"
+  env: {}
+
+init:
+  enabled: true
+  kafka:
+    name: wait-for-kafka
+    repository: solsson/kafka
+    tag: latest
+    pullPolicy: Always
+    command: "until ./bin/kafka-broker-api-versions.sh --bootstrap-server $kafka_host:$kafka_port; do echo waiting for Kafka; sleep 2; done;"
+    env: {}
+    ## Env example
+    # env:
+    #   envItem1:
+    #     name: hello
+    #     value: world
+
+service:
+  name: cssperf
+  type: ClusterIP
+  externalPort: 80
+  internalPort: 6969
+
+  annotations: {}
+
+  # This allows one to point the service to an external backend.
+  # This is useful for local development where one wishes to hijack
+  # the communication from the service to the node layer and point
+  # to a specific endpoint (IP, Port, etc).
+  external:
+    enabled: false
+    # 10.0.2.2 is the magic IP for the host on virtualbox's network
+    ip: 10.0.2.2
+    ports:
+      api:
+        name: cssperf
+        externalPort: 3081
+
+readinessProbe:
+  enabled: false
+  httpGet:
+    path: /health
+  initialDelaySeconds: 30
+  periodSeconds: 15
+
+livenessProbe:
+  enabled: false
+  httpGet:
+    path: /health
+  initialDelaySeconds: 30
+  periodSeconds: 15
+
+ingress:
+  enabled: true
+  # Used to create an Ingress record.
+  hosts:
+    api: central-services-stream-perf.local
+
+  externalPath: /
+
+  annotations:
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+
+  tls:
+    # Secrets must be manually created in the namespace.
+    # - secretName: chart-example-tls
+    #   hosts:
+    #     - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+## metric configuration for prometheus instrumentation
+metrics:
+  ## flag to enable/disable the metrics end-points
+  enabled: true
+  config:
+    timeout: 5000
+    prefix: css_perf_
+    defaultLabels:
+      serviceName: css-perf-consumer
+
+mysql:
+  enabled: true
+  nameOverride: "centralledger-mysql"
+  # Default values for Percona XtraDB Cluster
+
+  ## percona image and version
+  ## ref: https://hub.docker.com/r/percona/percona-xtradb-cluster/tags/
+  image:
+    repository: "percona/percona-xtradb-cluster"
+    tag: "5.7.19"
+    pullPolicy: Always
+
+  # Desired number of members of xtradb cluster
+  replicas: 1
+
+  ## Specify password for root user
+  ##
+  # mysqlRootPassword: not-a-secure-password
+
+  ## Specify password for xtradb backup user
+  ##
+  # xtraBackupPassword: replicate-my-data
+
+  ## Uncomment to create a database user
+  ##
+  mysqlUser: central_ledger
+  mysqlPassword: oyMxgZChuu
+
+  ## Allow unauthenticated access, uncomment to enable
+  ##
+  # mysqlAllowEmptyPassword: true
+
+  ## Uncomment to Create a database
+  ##
+  mysqlDatabase: central_ledger
+
+  ## hosts to allow root user access from
+  # set to "127.0.0.1" to deny remote root.
+  allowRootFrom: "%"
+
+  ## Persist data to a persitent volume
+  persistence:
+    enabled: false
+    ## percona data Persistent Volume Storage Class
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    # storageClass: "-"
+    accessMode: ReadWriteOnce
+    size: 8Gi
+
+  ## Node labels for pod assignment
+  ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+
+  ## Pod annotations
+  ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+
+  ## Tolerations labels for pod assignment
+  ## Allow the scheduling on tainted nodes (requires Kubernetes >= 1.6)
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+
+  ## Configure resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  # resources:
+  #  requests:
+  #    memory: 256Mi
+  #    cpu: 100m
+
+  ## Configure the following values below if required
+  #   performance_schema=ON
+  #   max_connections=999
+  #   max_user_connections=999
+  #   thread_cache_size=999
+  configFiles:
+    node.cnf: |+
+      [mysqld]
+      datadir=/var/lib/mysql
+      default_storage_engine=InnoDB
+      binlog_format=ROW
+      innodb_flush_log_at_trx_commit  = 0
+      innodb_flush_method             = O_DIRECT
+      innodb_file_per_table           = 1
+      innodb_autoinc_lock_mode=2
+      bind_address = 0.0.0.0
+      wsrep_slave_threads=2
+      wsrep_cluster_address=gcomm://
+      wsrep_provider=/usr/lib/galera3/libgalera_smm.so
+      wsrep_cluster_name=galera
+      wsrep_sst_method=xtrabackup-v2
+      pxc_strict_mode=DISABLED
+      max_connections=999
+      max_user_connections=994
+      thread_cache_size=999
+  ## When set to true will create sidecar for `prom/mysqld-exporter`
+  ## metrics exporting
+  metricsExporter:
+    enabled: true
+    tag: v0.11.0
+
+  ## When set to true will create sidecar to tail mysql log
+  logTail: true
+
+  service:
+    type: ClusterIP
+    port: 3306
+    externalIPs: []

@@ -1,0 +1,83 @@
+{{- $kafkaHost := ( .Values.config.kafka_host | replace "$release_name" .Release.Name ) -}}
+{
+    "PRODUCER": {
+        "HOSTNAME": "{{ .Values.config.producer.host }}",
+        "PORT": {{ .Values.config.producer.port }},
+        "KAFKA": {
+            "topics": [
+                "{{ .Values.config.topics }}"
+            ],
+            "configs": {
+                "options": {
+                    "pollIntervalMs": 10,
+                    "messageCharset": "utf8"
+                },
+                "rdkafkaConf": {
+                    "metadata.broker.list": "{{ (default .Values.config.kafka_host $kafkaHost) }}:{{ .Values.config.kafka_port }}",
+                    "client.id": "producer1",
+                    "event_cb": true,
+                    "compression.codec": "none",
+                    "retry.backoff.ms": 100,
+                    "message.send.max.retries": 2,
+                    "socket.keepalive.enable": true,
+                    "queue.buffering.max.messages": 4000000,
+                    "queue.buffering.max.ms": 50,
+                    "queue.buffering.max.kbytes": 20000000,
+                    "batch.num.messages": 1,
+                    "api.version.request": true,
+                    "dr_cb": true,
+                    "statistics.interval.ms": {{ .Values.config.statistics.intervalMs }}
+                },
+                "topicConf": {
+                    "request.required.acks": 1
+                }
+            }
+        }
+    },
+    "CONSUMER": {
+        "HOSTNAME": "{{ .Values.config.consumer.host }}",
+        "PORT": {{ .Values.config.consumer.port }},
+        "KAFKA": {
+            "topics": [
+                "{{ .Values.config.topics }}"
+            ],
+            "configs": {
+                "options": {
+                    "mode": 2,
+                    "batchSize": 1,
+                    "recursiveTimeout": 100,
+                    "messageCharset": "utf8",
+                    "messageAsJSON": true,
+                    "sync": true,
+                    "consumeTimeout": 1000
+                },
+                "rdkafkaConf": {
+                    "client.id": "consumer1",
+                    "group.id": "group1",
+                    "metadata.broker.list": "{{ (default .Values.config.kafka_host $kafkaHost) }}:{{ .Values.config.kafka_port }}",
+                    "queue.buffering.max.messages": 100,
+                    "queue.buffering.max.ms": 50,
+                    "enable.auto.commit": true,
+                    "statistics.interval.ms": {{ .Values.config.statistics.intervalMs }}
+                },
+                "topicConf": {
+                    "auto.offset.reset": "beginning"
+                }
+            }
+        }
+    },
+    "INSTRUMENTATION": {
+        "METRICS": {
+            "DISABLED": false,
+            "config": {
+                "timeout": 5000,
+                "prefix": "moja_",
+                "defaultLabels": {
+                {{- range $key, $value := .Values.metrics.config.defaultLabels }}
+                    {{ $key  | quote }}: {{ $value | quote }}
+                {{- end }}
+                }
+            }
+        }
+    }
+}

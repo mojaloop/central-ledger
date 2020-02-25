@@ -1,0 +1,1059 @@
+REVISION: 1
+RELEASED: Fri Feb 14 17:54:40 2020
+CHART: central-services-stream-perf-0.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+config:
+  consumer:
+    host: localhost
+    port: 6969
+  kafka_host: $release_name-kafka
+  kafka_port: 9092
+  producer:
+    host: localhost
+    port: 6868
+  statistics:
+    intervalMs: 1000
+  topics: test1
+global:
+  config:
+    affinity: {}
+    nodeSelector: {}
+    tolerations: {}
+image:
+  pullPolicy: Always
+  repository: mojaloop/central-services-stream-perf
+  tag: v0.1
+ingress:
+  annotations: null
+  enabled: true
+  externalPath: /
+  hosts:
+    api: central-services-stream-perf.local
+  tls: null
+init:
+  enabled: true
+  kafka:
+    command: until ./bin/kafka-broker-api-versions.sh --bootstrap-server $kafka_host:$kafka_port;
+      do echo waiting for Kafka; sleep 2; done;
+    env: {}
+    name: wait-for-kafka
+    pullPolicy: Always
+    repository: solsson/kafka
+    tag: latest
+kafka:
+  additionalPorts: {}
+  affinity: {}
+  configJob:
+    backoffLimit: 6
+  configurationOverrides:
+    confluent.support.metrics.enable: false
+    default.replication.factor: 1
+    offsets.topic.replication.factor: 1
+  enabled: true
+  envOverrides:
+    kafka.log4j.loggers: kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO
+    kafka.log4j.root.loglevel: INFO
+  external:
+    distinct: false
+    dns:
+      useExternal: true
+      useInternal: false
+    domain: cluster.local
+    enabled: false
+    firstListenerPort: 31090
+    init:
+      image: lwolf/kubectl_deployer
+      imagePullPolicy: IfNotPresent
+      imageTag: "0.4"
+    loadBalancerIP: []
+    servicePort: 19092
+    type: NodePort
+  global:
+    config:
+      affinity: {}
+      nodeSelector: {}
+      tolerations: {}
+  headless:
+    port: 9092
+  image: confluentinc/cp-kafka
+  imagePullPolicy: IfNotPresent
+  imageTag: 5.0.1
+  jmx:
+    configMap:
+      enabled: true
+      overrideConfig: {}
+      overrideName: ""
+    port: 5555
+    whitelistObjectNames:
+    - kafka.controller:*
+    - kafka.server:*
+    - java.lang:*
+    - kafka.network:*
+    - kafka.log:*
+  kafkaHeapOptions: -Xmx1G -Xms1G
+  logSubPath: logs
+  nameOverride: kafka
+  nodeSelector: {}
+  persistence:
+    enabled: false
+    mountPath: /opt/kafka/data
+    size: 1Gi
+  podAnnotations: {}
+  podManagementPolicy: OrderedReady
+  prometheus:
+    jmx:
+      enabled: true
+      image: solsson/kafka-prometheus-jmx-exporter@sha256
+      imageTag: a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8
+      interval: 10s
+      port: 5556
+      resources: {}
+      scrapeTimeout: 10s
+    kafka:
+      affinity: {}
+      enabled: true
+      image: danielqsj/kafka-exporter
+      imageTag: v1.2.0
+      interval: 10s
+      nodeSelector: {}
+      port: 9308
+      resources: {}
+      scrapeTimeout: 10s
+      tolerations: []
+    operator:
+      enabled: false
+      serviceMonitor:
+        namespace: monitoring
+        selector:
+          prometheus: kube-prometheus
+  rbac:
+    enabled: true
+  readinessProbe:
+    failureThreshold: 3
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  replicas: 5
+  resources: {}
+  terminationGracePeriodSeconds: 60
+  tolerations: []
+  topics: []
+  updateStrategy:
+    type: OnDelete
+  zookeeper:
+    affinity: {}
+    enabled: true
+    env:
+      JMXAUTH: "false"
+      JMXDISABLE: "false"
+      JMXPORT: 1099
+      JMXSSL: "false"
+      ZK_CLIENT_PORT: 2181
+      ZK_ELECTION_PORT: 3888
+      ZK_HEAP_SIZE: 1G
+      ZK_INIT_LIMIT: 5
+      ZK_LOG_LEVEL: INFO
+      ZK_MAX_CLIENT_CNXNS: 60
+      ZK_MAX_SESSION_TIMEOUT: 40000
+      ZK_MIN_SESSION_TIMEOUT: 4000
+      ZK_PURGE_INTERVAL: 0
+      ZK_SERVER_PORT: 2888
+      ZK_SNAP_RETAIN_COUNT: 3
+      ZK_SYNC_LIMIT: 10
+      ZK_TICK_TIME: 2000
+    exporters:
+      jmx:
+        config:
+          lowercaseOutputName: false
+          rules:
+          - name: zookeeper_$2
+            pattern: org.apache.ZooKeeperService<name0=ReplicatedServer_id(\d+)><>(\w+)
+          - labels:
+              replicaId: $2
+            name: zookeeper_$3
+            pattern: org.apache.ZooKeeperService<name0=ReplicatedServer_id(\d+), name1=replica.(\d+)><>(\w+)
+          - labels:
+              memberType: $3
+              replicaId: $2
+            name: zookeeper_$4
+            pattern: org.apache.ZooKeeperService<name0=ReplicatedServer_id(\d+), name1=replica.(\d+),
+              name2=(\w+)><>(\w+)
+          - labels:
+              memberType: $3
+              replicaId: $2
+            name: zookeeper_$4_$5
+            pattern: org.apache.ZooKeeperService<name0=ReplicatedServer_id(\d+), name1=replica.(\d+),
+              name2=(\w+), name3=(\w+)><>(\w+)
+          startDelaySeconds: 30
+        enabled: false
+        env: {}
+        image:
+          pullPolicy: IfNotPresent
+          repository: sscaling/jmx-prometheus-exporter
+          tag: 0.3.0
+        livenessProbe:
+          failureThreshold: 8
+          httpGet:
+            path: /metrics
+            port: jmxxp
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 60
+        path: /metrics
+        ports:
+          jmxxp:
+            containerPort: 9404
+            protocol: TCP
+        readinessProbe:
+          failureThreshold: 8
+          httpGet:
+            path: /metrics
+            port: jmxxp
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 60
+        resources: {}
+      zookeeper:
+        config:
+          logLevel: info
+          resetOnScrape: "true"
+        enabled: false
+        env: {}
+        image:
+          pullPolicy: IfNotPresent
+          repository: josdotso/zookeeper-exporter
+          tag: v1.1.2
+        livenessProbe:
+          failureThreshold: 8
+          httpGet:
+            path: /metrics
+            port: zookeeperxp
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 60
+        path: /metrics
+        ports:
+          zookeeperxp:
+            containerPort: 9141
+            protocol: TCP
+        readinessProbe:
+          failureThreshold: 8
+          httpGet:
+            path: /metrics
+            port: zookeeperxp
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 60
+        resources: {}
+    global:
+      config:
+        affinity: {}
+        nodeSelector: {}
+        tolerations: {}
+    headless:
+      annotations: {}
+    heap: 1G
+    image:
+      PullPolicy: IfNotPresent
+      pullPolicy: IfNotPresent
+      repository: gcr.io/google_samples/k8szk
+      tag: v3
+    imagePullPolicy: IfNotPresent
+    jobs:
+      chroots:
+        activeDeadlineSeconds: 300
+        backoffLimit: 5
+        completions: 1
+        config:
+          create: []
+        enabled: false
+        env: []
+        parallelism: 1
+        resources: {}
+        restartPolicy: Never
+    livenessProbe:
+      exec:
+        command:
+        - zkOk.sh
+      initialDelaySeconds: 20
+    nodeSelector: {}
+    persistence:
+      accessMode: ReadWriteOnce
+      enabled: false
+      size: 5Gi
+    podAnnotations: {}
+    podDisruptionBudget:
+      maxUnavailable: 1
+    podLabels: {}
+    port: 2181
+    ports:
+      client:
+        containerPort: 2181
+        protocol: TCP
+      election:
+        containerPort: 3888
+        protocol: TCP
+      server:
+        containerPort: 2888
+        protocol: TCP
+    priorityClassName: ""
+    readinessProbe:
+      exec:
+        command:
+        - zkOk.sh
+      initialDelaySeconds: 20
+    replicaCount: 3
+    resources: {}
+    securityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+    service:
+      annotations: {}
+      ports:
+        client:
+          port: 2181
+          protocol: TCP
+          targetPort: client
+      type: ClusterIP
+    terminationGracePeriodSeconds: 1800
+    tolerations: []
+    updateStrategy:
+      type: OnDelete
+    url: ""
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+  initialDelaySeconds: 30
+  periodSeconds: 15
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+  initialDelaySeconds: 30
+  periodSeconds: 15
+replicaCount: 1
+resources: {}
+service:
+  annotations: {}
+  external:
+    enabled: false
+    ip: 10.0.2.2
+    ports:
+      api:
+        externalPort: 3081
+        name: cssperf
+  externalPort: 80
+  internalPort: 6868
+  name: cssperf
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: central-services-stream-perf/charts/kafka/charts/zookeeper/templates/poddisruptionbudget.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: testname-zookeeper
+  labels:
+    app: zookeeper
+    chart: zookeeper-1.2.0
+    release: testname
+    heritage: Tiller
+    component: server
+spec:
+  selector:
+    matchLabels:
+      app: zookeeper
+      release: testname
+      component: server
+  maxUnavailable: 1
+  
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/configmap-jmx.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testname-kafka-metrics
+  labels:
+    app: kafka
+    chart: kafka-0.13.11
+    release: testname
+    heritage: Tiller
+data:
+  jmx-kafka-prometheus.yml: |+
+    jmxUrl: service:jmx:rmi:///jndi/rmi://127.0.0.1:5555/jmxrmi
+    lowercaseOutputName: true
+    lowercaseOutputLabelNames: true
+    ssl: false
+    
+    whitelistObjectNames: ["kafka.controller:*","kafka.server:*","java.lang:*","kafka.network:*","kafka.log:*"]
+    
+    rules:
+    - pattern: kafka.controller<type=(ControllerChannelManager), name=(QueueSize), broker-id=(\d+)><>(Value)
+      name: kafka_controller_$1_$2_$4
+      labels:
+        broker_id: "$3"
+    - pattern: kafka.controller<type=(ControllerChannelManager), name=(TotalQueueSize)><>(Value)
+      name: kafka_controller_$1_$2_$3
+    - pattern: kafka.controller<type=(KafkaController), name=(.+)><>(Value)
+      name: kafka_controller_$1_$2_$3
+    - pattern: kafka.controller<type=(ControllerStats), name=(.+)><>(Count)
+      name: kafka_controller_$1_$2_$3
+    - pattern: kafka.server<type=(ReplicaFetcherManager), name=(.+), clientId=(.+)><>(Value)
+      name: kafka_server_$1_$2_$4
+      labels:
+        client_id: "$3"
+    - pattern : kafka.network<type=(Processor), name=(IdlePercent), networkProcessor=(.+)><>(Value)
+      name: kafka_network_$1_$2_$4
+      labels:
+        network_processor: $3
+    - pattern : kafka.network<type=(RequestMetrics), name=(RequestsPerSec), request=(.+)><>(Count)
+      name: kafka_network_$1_$2_$4
+      labels:
+        request: $3
+    - pattern: kafka.server<type=(.+), name=(.+), topic=(.+)><>(Count|OneMinuteRate)
+      name: kafka_server_$1_$2_$4
+      labels:
+        topic: $3
+    - pattern: kafka.server<type=(DelayedOperationPurgatory), name=(.+), delayedOperation=(.+)><>(Value)
+      name: kafka_server_$1_$2_$3_$4
+    - pattern: kafka.server<type=(.+), name=(.+)><>(Count|Value|OneMinuteRate)
+      name: kafka_server_$1_total_$2_$3
+    - pattern: kafka.server<type=(.+)><>(queue-size)
+      name: kafka_server_$1_$2
+    - pattern: java.lang<type=(.+), name=(.+)><(.+)>(\w+)
+      name: java_lang_$1_$4_$3_$2
+    - pattern: java.lang<type=(.+), name=(.+)><>(\w+)
+      name: java_lang_$1_$3_$2
+    - pattern : java.lang<type=(.*)>
+    - pattern: kafka.log<type=(.+), name=(.+), topic=(.+), partition=(.+)><>Value
+      name: kafka_log_$1_$2
+      labels:
+        topic: $3
+        partition: $4
+
+---
+# Source: central-services-stream-perf/templates/config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testname-central-services-stream-perf-config
+  labels:
+    app.kubernetes.io/name: central-services-stream-perf
+    app.kubernetes.io/instance: testname
+    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/managed-by: Tiller
+    helm.sh/chart: central-services-stream-perf-0.1
+data:
+  default.json: "{\n    \"PRODUCER\": {\n        \"HOSTNAME\": \"localhost\",\n        \"PORT\": 6868,\n        \"KAFKA\": {\n            \"topics\": [\n                \"test1\"\n            ],\n            \"configs\": {\n                \"options\": {\n                    \"pollIntervalMs\": 10,\n                    \"messageCharset\": \"utf8\"\n                },\n                \"rdkafkaConf\": {\n                    \"metadata.broker.list\": \"testname-kafka:9092\",\n                    \"client.id\": \"default-client\",\n                    \"event_cb\": false,\n                    \"compression.codec\": \"none\",\n                    \"retry.backoff.ms\": 100,\n                    \"message.send.max.retries\": 2,\n                    \"socket.keepalive.enable\": true,\n                    \"queue.buffering.max.messages\": 20000,\n                    \"queue.buffering.max.ms\": 50,\n                    \"batch.num.messages\": 100,\n                    \"api.version.request\": true,\n                    \"dr_cb\": true,\n                    \"statistics.interval.ms\": 1000\n                },\n                \"topicConf\": {\n                    \"request.required.acks\": 1\n                }\n            }\n        }\n    },\n    \"CONSUMER\": {\n        \"HOSTNAME\": \"localhost\",\n        \"PORT\": 6969,\n        \"KAFKA\": {\n            \"topics\": [\n                \"test1\"\n            ],\n            \"configs\": {\n                \"options\": {\n                    \"mode\": 2,\n                    \"batchSize\": 100,\n                    \"recursiveTimeout\": 100,\n                    \"messageCharset\": \"utf8\",\n                    \"messageAsJSON\": true,\n                    \"sync\": true,\n                    \"consumeTimeout\": 1000\n                },\n                \"rdkafkaConf\": {\n                    \"client.id\": \"consumer1\",\n                    \"group.id\": \"group1\",\n                    \"metadata.broker.list\": \"testname-kafka:9092\",\n                    \"queue.buffering.max.messages\": 100,\n                    \"queue.buffering.max.ms\": 50,\n                    \"enable.auto.commit\": true,\n                    \"statistics.interval.ms\": 1000\n                },\n                \"topicConf\": {\n                    \"auto.offset.reset\": \"beginning\"\n                }\n            }\n        }\n    },\n    \"INSTRUMENTATION\": {\n        \"METRICS\": {\n            \"DISABLED\": false,\n            \"config\": {\n                \"timeout\": 5000,\n                \"prefix\": \"moja_\",\n                \"defaultLabels\": {\n                    \"serviceName\": \"central-services-stream\"\n                }\n            }\n        }\n    }\n}\n"
+  
+---
+# Source: central-services-stream-perf/charts/kafka/templates/rbac.yaml
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: testname
+  namespace: perf
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: testname
+  namespace: perf
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - patch
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: testname
+roleRef:
+  kind: Role
+  name: testname
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: testname
+  namespace: perf
+
+---
+# Source: central-services-stream-perf/charts/kafka/charts/zookeeper/templates/service-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: testname-zookeeper-headless
+  labels:
+    app: zookeeper
+    chart: zookeeper-1.2.0
+    release: testname
+    heritage: Tiller
+spec:
+  clusterIP: None
+  ports:
+    - name: client
+      port: 2181
+      targetPort: 
+      protocol: TCP
+    - name: election
+      port: 3888
+      targetPort: 
+      protocol: TCP
+    - name: server
+      port: 2888
+      targetPort: 
+      protocol: TCP
+  selector:
+    app: zookeeper
+    release: testname
+
+---
+# Source: central-services-stream-perf/charts/kafka/charts/zookeeper/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: testname-zookeeper
+  labels:
+    app: zookeeper
+    chart: zookeeper-1.2.0
+    release: testname
+    heritage: Tiller
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - name: client
+      port: 2181
+      protocol: TCP
+      targetPort: client
+      
+  selector:
+    app: zookeeper
+    release: testname
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/service-brokers.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: testname-kafka
+  labels:
+    app: kafka
+    chart: kafka-0.13.11
+    release: testname
+    heritage: Tiller
+spec:
+  ports:
+  - name: broker
+    port: 9092
+    targetPort: kafka
+  selector:
+    app: kafka
+    release: testname
+---
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/service-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: testname-kafka-headless
+  labels:
+    app: kafka
+    chart: kafka-0.13.11
+    release: testname
+    heritage: Tiller
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+  - name: broker
+    port: 9092
+  clusterIP: None
+  selector:
+    app: kafka
+    release: testname
+
+---
+# Source: central-services-stream-perf/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: testname-central-services-stream-perf
+  labels:
+    app.kubernetes.io/name: central-services-stream-perf
+    app.kubernetes.io/instance: testname
+    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/managed-by: Tiller
+    helm.sh/chart: central-services-stream-perf-0.1
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 6868
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: central-services-stream-perf
+    app.kubernetes.io/instance: testname
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/tests/test_topic_create_consume_produce.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "testname-test-topic-create-consume-produce"
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+  - name: testname-test-consume
+    image: confluentinc/cp-kafka:5.0.1
+    command:
+    - sh
+    - -c
+    - |
+      # Create the topic
+      kafka-topics --zookeeper testname-zookeeper:2181 --topic helm-test-topic-create-consume-produce --create --partitions 1 --replication-factor 1 --if-not-exists && \
+      # Create a message
+      MESSAGE="`date -u`" && \
+      # Produce a test message to the topic
+      echo "$MESSAGE" | kafka-console-producer --broker-list testname-kafka:9092 --topic helm-test-topic-create-consume-produce && \
+      # Consume a test message from the topic
+      kafka-console-consumer --bootstrap-server testname-kafka-headless:9092 --topic helm-test-topic-create-consume-produce --from-beginning --timeout-ms 2000 --max-messages 1 | grep "$MESSAGE"
+  restartPolicy: Never
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/deployment-kafka-exporter.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: testname-kafka-exporter
+  labels:
+    app: "kafka"
+    release: testname
+    heritage: Tiller
+    chart: "kafka-0.13.11"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-exporter
+      release: testname
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9308"
+      labels:
+        app: kafka-exporter
+        release: testname
+    spec:
+      containers:
+      - image: "danielqsj/kafka-exporter:v1.2.0"
+        name: kafka-exporter
+        args:
+          - --kafka.server=testname-kafka:9092
+          - --web.listen-address=:9308
+        ports:
+          - containerPort: 9308
+        resources:
+          {}
+          
+
+---
+# Source: central-services-stream-perf/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: testname-central-services-stream-perf
+  labels:
+    app.kubernetes.io/name: central-services-stream-perf
+    app.kubernetes.io/instance: testname
+    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/managed-by: Tiller
+    helm.sh/chart: central-services-stream-perf-0.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: central-services-stream-perf
+      app.kubernetes.io/instance: testname
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: central-services-stream-perf
+        app.kubernetes.io/instance: testname
+        app.kubernetes.io/version: 0.1
+        app.kubernetes.io/managed-by: Tiller
+        helm.sh/chart: central-services-stream-perf-0.1
+    spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: solsson/kafka:latest
+          imagePullPolicy: Always
+          command:
+            - sh
+            - "-c"
+            - "until ./bin/kafka-broker-api-versions.sh --bootstrap-server testname-kafka:9092; do echo waiting for Kafka; sleep 2; done;"
+          env:
+
+      containers:
+        - name: central-services-stream-perf
+          image: "mojaloop/central-services-stream-perf:v0.1"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 6868
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 6868
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 6868
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          volumeMounts:
+            - name: testname-central-services-stream-perf-config-volume
+              mountPath: /opt/app/test/perf/config
+          env:
+            - name: LOG_LEVEL
+              value: 
+            - name: CSL_LOG_TRANSPORT
+              value: 
+      volumes:
+        - name: testname-central-services-stream-perf-config-volume
+          configMap:
+            name: testname-central-services-stream-perf-config
+            items:
+              - key: default.json
+                path: default.json
+
+---
+# Source: central-services-stream-perf/charts/kafka/charts/zookeeper/templates/statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: testname-zookeeper
+  labels:
+    app: zookeeper
+    chart: zookeeper-1.2.0
+    release: testname
+    heritage: Tiller
+    component: server
+spec:
+  serviceName: testname-zookeeper-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: zookeeper
+      release: testname
+      component: server
+  updateStrategy:
+    type: OnDelete
+    
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+        release: testname
+        component: server
+      annotations:
+    spec:
+      terminationGracePeriodSeconds: 1800
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        
+      containers:
+
+        - name: zookeeper
+          image: "gcr.io/google_samples/k8szk:v3"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -xec
+            - zkGenConfig.sh && exec zkServer.sh start-foreground
+          ports:
+            - name: client
+              containerPort: 2181
+              protocol: TCP
+              
+            - name: election
+              containerPort: 3888
+              protocol: TCP
+              
+            - name: server
+              containerPort: 2888
+              protocol: TCP
+              
+          livenessProbe:
+            exec:
+              command:
+              - zkOk.sh
+            initialDelaySeconds: 20
+            
+          readinessProbe:
+            exec:
+              command:
+              - zkOk.sh
+            initialDelaySeconds: 20
+            
+          env:
+            - name: ZK_REPLICAS
+              value: "3"
+            - name: JMXAUTH
+              value: "false"
+            - name: JMXDISABLE
+              value: "false"
+            - name: JMXPORT
+              value: "1099"
+            - name: JMXSSL
+              value: "false"
+            - name: ZK_CLIENT_PORT
+              value: "2181"
+            - name: ZK_ELECTION_PORT
+              value: "3888"
+            - name: ZK_HEAP_SIZE
+              value: "1G"
+            - name: ZK_INIT_LIMIT
+              value: "5"
+            - name: ZK_LOG_LEVEL
+              value: "INFO"
+            - name: ZK_MAX_CLIENT_CNXNS
+              value: "60"
+            - name: ZK_MAX_SESSION_TIMEOUT
+              value: "40000"
+            - name: ZK_MIN_SESSION_TIMEOUT
+              value: "4000"
+            - name: ZK_PURGE_INTERVAL
+              value: "0"
+            - name: ZK_SERVER_PORT
+              value: "2888"
+            - name: ZK_SNAP_RETAIN_COUNT
+              value: "3"
+            - name: ZK_SYNC_LIMIT
+              value: "10"
+            - name: ZK_TICK_TIME
+              value: "2000"
+          resources:
+            {}
+            
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/zookeeper
+      volumes:
+        - name: data
+          emptyDir: {}
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/statefulset.yaml
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: testname-kafka
+  labels:
+    app: kafka
+    chart: kafka-0.13.11
+    release: testname
+    heritage: Tiller
+spec:
+  serviceName: testname-kafka-headless
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: OnDelete
+    
+  replicas: 5
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5556"
+      labels:
+        app: kafka
+        release: testname
+    spec:
+      serviceAccountName: testname
+      containers:
+      - name: metrics
+        image: "solsson/kafka-prometheus-jmx-exporter@sha256:a23062396cd5af1acdf76512632c20ea6be76885dfc20cd9ff40fb23846557e8"
+        command:
+        - sh
+        - -exc
+        - |
+          trap "exit 0" TERM; \
+          while :; do \
+          java \
+          -XX:+UnlockExperimentalVMOptions \
+          -XX:+UseCGroupMemoryLimitForHeap \
+          -XX:MaxRAMFraction=1 \
+          -XshowSettings:vm \
+          -jar \
+          jmx_prometheus_httpserver.jar \
+          "5556" \
+          /etc/jmx-kafka/jmx-kafka-prometheus.yml & \
+          wait $! || sleep 3; \
+          done
+        ports:
+        - containerPort: 5556
+          name: prometheus
+        resources:
+          {}
+          
+        volumeMounts:
+        - name: jmx-config
+          mountPath: /etc/jmx-kafka
+      - name: kafka-broker
+        image: "confluentinc/cp-kafka:5.0.1"
+        imagePullPolicy: "IfNotPresent"
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -ec
+              - /usr/bin/jps | /bin/grep -q SupportedKafka
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: kafka
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        ports:
+        - containerPort: 9092
+          name: kafka
+        - containerPort: 5555
+          name: jmx
+        resources:
+          {}
+          
+        env:
+        - name: JMX_PORT
+          value: "5555"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KAFKA_HEAP_OPTS
+          value: -Xmx1G -Xms1G
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: "testname-zookeeper:2181"
+        - name: KAFKA_LOG_DIRS
+          value: "/opt/kafka/data/logs"
+        - name: "KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE"
+          value: "false"
+        - name: "KAFKA_DEFAULT_REPLICATION_FACTOR"
+          value: "1"
+        - name: "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR"
+          value: "1"
+        - name: KAFKA_JMX_PORT
+          value: "5555"
+        - name: "KAFKA_LOG4J_LOGGERS"
+          value: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+        - name: "KAFKA_LOG4J_ROOT_LOGLEVEL"
+          value: "INFO"
+        # This is required because the Downward API does not yet support identification of
+        # pod numbering in statefulsets. Thus, we are required to specify a command which
+        # allows us to extract the pod ID for usage as the Kafka Broker ID.
+        # See: https://github.com/kubernetes/kubernetes/issues/31218
+        command:
+        - sh
+        - -exc
+        - |
+          unset KAFKA_PORT && \
+          export KAFKA_BROKER_ID=${POD_NAME##*-} && \
+          export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_NAME}.testname-kafka-headless.${POD_NAMESPACE}:9092 && \
+          exec /etc/confluent/docker/run
+        volumeMounts:
+        - name: datadir
+          mountPath: "/opt/kafka/data"
+      volumes:
+      - name: datadir
+        emptyDir: {}
+      - name: jmx-config
+        configMap:
+          name: testname-kafka-metrics
+      terminationGracePeriodSeconds: 60
+
+---
+# Source: central-services-stream-perf/templates/ingress.yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: testname-central-services-stream-perf
+  labels:
+    app.kubernetes.io/name: central-services-stream-perf
+    app.kubernetes.io/instance: testname
+    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/managed-by: Tiller
+    helm.sh/chart: central-services-stream-perf-0.1
+spec:
+  rules:
+    - host: "central-services-stream-perf.local"
+      http:
+        paths:
+          - path: 
+            backend:
+              serviceName: testname-central-services-stream-perf
+              servicePort: http
+
+---
+# Source: central-services-stream-perf/charts/kafka/charts/zookeeper/templates/config-jmx-exporter.yaml
+
+
+---
+# Source: central-services-stream-perf/charts/kafka/charts/zookeeper/templates/job-chroots.yaml
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/configmap-config.yaml
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/job-config.yaml
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/service-brokers-external.yaml
+
+
+---
+# Source: central-services-stream-perf/charts/kafka/templates/servicemonitors.yaml
+
+---
+
+

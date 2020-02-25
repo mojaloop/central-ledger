@@ -1,0 +1,8 @@
+# requirements.yaml
+dependencies:
+- name: kafka
+  version: 0.13.11
+  repository: http://storage.googleapis.com/kubernetes-charts-incubator
+  alias: kafka
+  condition: kafka.enabled
+
