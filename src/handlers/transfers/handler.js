@@ -120,8 +120,13 @@ const prepare = async (error, messages) => {
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-
+    const histTimerDuplicateCheckEnd = Metrics.getHistogram(
+      'handler_transfers',
+      'prepare_duplicateCheckComparator - Metrics for transfer handler',
+      ['success', 'funcName']
+    ).startTimer()
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+    histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator' })
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
       const transfer = await TransferService.getByIdLight(transferId)

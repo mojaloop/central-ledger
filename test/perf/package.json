@@ -1,0 +1,26 @@
+{
+  "name": "central-ledger-perf",
+  "version": "9.2.1-perf",
+  "description": "Central Ledger service for executing performance characterization, tests and benchmarks",
+  "main": "src/ndex.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mojaloop/central-ledger.git"
+  },
+  "author": "ModusBox",
+  "contributors": [
+    "Miguel de Barros <miguel.debarros@modusbox.com>",
+    "Valentin Genev <valentin.genev@modusbox.com>"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/mojaloop/central-services-stream/issues"
+  },
+  "homepage": "https://github.com/mojaloop/central-services-stream#readme",
+  "dependencies": {
+    "@mojaloop/central-services-metrics": "^9.1.0",
+    "@mojaloop/event-sdk": "^9.2.0",
+    "commander": "4.1.1"
+  }
+}
