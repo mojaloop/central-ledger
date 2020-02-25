@@ -55,7 +55,8 @@ persistence:
 ## Node labels for pod assignment
 ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
 ##
-nodeSelector: {}
+nodeSelector:
+  node-role.mojaloop.io: data
 
 ## Pod annotations
 ## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
@@ -66,7 +67,11 @@ podAnnotations: {}
 ## Allow the scheduling on tainted nodes (requires Kubernetes >= 1.6)
 ## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
 ##
-tolerations: []
+tolerations:
+  - key: "node-role.mojaloop.io"
+    operator: "Equal"
+    value: "data"
+    effect: "NoSchedule"
 
 ## Configure resource requests and limits
 ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
