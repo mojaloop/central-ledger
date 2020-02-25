@@ -1,1 +1,1 @@
-helm install --namespace testcss --name css-db percona/percona-xtradb-cluster -f ./valuesDb.yml
+helm install --namespace testcss --name css-db stable/percona-xtradb-cluster -f ./valuesDb.yml

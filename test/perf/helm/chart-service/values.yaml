@@ -126,7 +126,7 @@ config:
 
   ## Kafka Configuration
   # this can be set if the dependency chart for kafka is disabled. If 'kafka_host' is commented out, then the name of the dependency chart will be used.
-  kafka_host: 'perf-kafka.perf'
+  kafka_host: 'cssk-kafka'
   kafka_port: 9092
 
   ## Node Configuration

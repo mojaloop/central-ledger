@@ -11,8 +11,8 @@ function setImmediatePromise () {
 const generateTransfer = () => {
   return {
     transferId: uuidv4(),
-    payerFsp: 'payerfsp',
-    payeeFsp: 'payeefsp',
+    payerFsp: 'simfsp01',
+    payeeFsp: 'simfsp02',
     amount: {
       currency: 'USD',
       amount: '1'
