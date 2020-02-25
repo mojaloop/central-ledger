@@ -31,8 +31,14 @@
 const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
+  const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
+    'model_participant',
+    'facade_getByNameAndCurrency - Metrics for participant model',
+    ['success', 'queryName']
+  ).startTimer()
   try {
     return await Db.participant.query(async (builder) => {
       let b = builder
@@ -51,10 +57,11 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
       if (isCurrencyActive !== undefined) {
         b = b.andWhere({ 'pc.isActive': isCurrencyActive })
       }
-
+      histTimerParticipantGetByNameAndCurrencyEnd({ success: true, queryName: 'facade_getByNameAndCurrency' })
       return b
     })
   } catch (err) {
+    histTimerParticipantGetByNameAndCurrencyEnd({ success: false, queryName: 'facade_getByNameAndCurrency' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

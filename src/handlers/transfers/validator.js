@@ -44,6 +44,7 @@ const Crypto = require('crypto')
 const base64url = require('base64url')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const allowedScale = Config.AMOUNT.SCALE
 const allowedPrecision = Config.AMOUNT.PRECISION
@@ -163,6 +164,12 @@ const validateConditionAndExpiration = async (payload) => {
 }
 
 const validateByName = async (payload, headers) => {
+  const histTimerValidateByNameEnd = Metrics.getHistogram(
+    'handlers_transfer_validator',
+    'validateByName - Metrics for transfer handler',
+    ['success', 'funcName']
+  ).startTimer()
+
   reasons.length = 0
   let validationPassed
   if (!payload) {
@@ -178,6 +185,7 @@ const validateByName = async (payload, headers) => {
     validateAmount(payload.amount) &&
     await validateConditionAndExpiration(payload) &&
     validateDifferentDfsp(payload))
+  histTimerValidateByNameEnd({ success: true, funcName: 'validateByName' })
   return {
     validationPassed,
     reasons
