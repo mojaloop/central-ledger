@@ -27,21 +27,6 @@ image:
   command: "node src/index.js consume --batchSize 10 --api"
   env: {}
 
-init:
-  enabled: true
-  kafka:
-    name: wait-for-kafka
-    repository: solsson/kafka
-    tag: latest
-    pullPolicy: Always
-    command: "until ./bin/kafka-broker-api-versions.sh --bootstrap-server $kafka_host:$kafka_port; do echo waiting for Kafka; sleep 2; done;"
-    env: {}
-    ## Env example
-    # env:
-    #   envItem1:
-    #     name: hello
-    #     value: world
-
 service:
   name: cssperf
   type: ClusterIP

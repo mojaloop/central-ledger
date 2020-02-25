@@ -1,0 +1,1 @@
+helm install --namespace testcss --name ccsdb percona/percona-xtradb-cluster -f ./valuesDb.yml
