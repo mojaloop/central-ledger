@@ -1,1 +1,0 @@
-helm install --namespace testcss --name css ./chart-handler-transfer-prepare -f ./chart-handler-transfer-prepare/values.yaml

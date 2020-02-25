@@ -1,0 +1,14 @@
+apiVersion: v1
+description: Central-Ledger Service Helm chart for Kubernetes
+name: centralledger-service
+version: 8.8.0
+appVersion: "8.8.2"
+home: http://mojaloop.io
+icon: http://mojaloop.io/images/logo.png
+sources:
+  - https://github.com/mojaloop/mojaloop
+  - https://github.com/mojaloop/helm
+  - https://github.com/mojaloop/central-ledger
+maintainers:
+  - name: Miguel de Barros
+    email: miguel.debarros@modusbox.com

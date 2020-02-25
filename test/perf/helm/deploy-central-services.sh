@@ -1,0 +1,1 @@
+helm install --namespace testcss --name css-central ./chart-service -f ./chart-service/values.yaml

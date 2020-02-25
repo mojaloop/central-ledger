@@ -1,1 +1,0 @@
-helm del --purge css

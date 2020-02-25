@@ -26,7 +26,7 @@ containers:
       repository: mojaloop/central-ledger
       tag: v8.8.2
       pullPolicy: Always
-      command: '["node", "src/handlers/index.js", "handler", "--prepare"]'
+      command: '["node", "src/api/index.js"]'
     service:
       ports:
         api:
@@ -47,7 +47,7 @@ containers:
       periodSeconds: 15
 
 sidecar:
-  enabled: true
+  enabled: false
   image:
     repository: mojaloop/event-sidecar
     tag: v8.7.3
@@ -80,7 +80,7 @@ metrics:
     timeout: 5000
     prefix: moja_
     defaultLabels:
-      serviceName: central-handler-prepare
+      serviceName: central-service
 
 config:
   ## Forensic Logging sidecar
@@ -126,33 +126,21 @@ config:
 
   ## Kafka Configuration
   # this can be set if the dependency chart for kafka is disabled. If 'kafka_host' is commented out, then the name of the dependency chart will be used.
-  kafka_host: '$release_name-kafka'
+  kafka_host: 'perf-kafka.perf'
   kafka_port: 9092
 
   ## Node Configuration
-  log_level: 'info'
-  log_transport: file
+  log_level: info
   ## Enable local logging of events being recorded
   log_events_locally_enabled: false
+
+  log_transport: file
 
   ## Cache configuration
   cache_max_byte_size: 10000000
 
 init:
   enabled: true
-  kafka:
-    name: wait-for-kafka
-    repository: solsson/kafka
-    tag: latest
-    pullPolicy: Always
-    command: "until ./bin/kafka-broker-api-versions.sh --bootstrap-server $kafka_host:$kafka_port; do echo waiting for Kafka; sleep 2; done;"
-    env: {}
-    ## Env example
-    # env:
-    #   envItem1:
-    #     name: hello
-    #     value: world
-    #
   psql:
     name: wait-for-postgres
     repository: bowerswilkins/awaitpostgres
@@ -163,7 +151,13 @@ init:
     repository: mysql
     tag: latest
     pullPolicy: Always
-    command: "until result=$(mysql -h $db_host -P $db_port -u $db_user --password=$db_password  $db_database -ss -N -e 'select is_locked from migration_lock;') && eval 'echo is_locked=$result' && if [ -z $result ]; then false; fi && if [ $result -ne 0 ]; then false; fi; do echo waiting for MySQL; sleep 2; done;"
+    command: "until mysql -h $db_host -P $db_port -u $db_user --password=$db_password  $db_database   -e 'select version()' ; do echo waiting for MySQL; sleep 2; done;"
+  migration:
+    enabled: true
+    name: run-migration
+    command: npm run migrate
+    config:
+      run_data_migration: true
 
 service:
   type: ClusterIP
@@ -190,7 +184,7 @@ ingress:
     api: /
   # Used to create an Ingress record.
   hosts:
-    api: central-ledger-transfer-prepare.local
+    api: perf1-cl.mojaloop.live
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: '/'
     # kubernetes.io/ingress.class: nginx
