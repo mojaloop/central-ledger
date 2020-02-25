@@ -1,1 +1,1 @@
-helm del --purge ccsdb
+helm del --purge css-db

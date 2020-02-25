@@ -1,0 +1,177 @@
+{{- $dbHost := ( .Values.config.db_host | replace "$release_name" .Release.Name ) -}}
+{{- $kafkaHost := ( .Values.config.kafka_host | replace "$release_name" .Release.Name ) -}}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "centralledger-handler-transfer-prepare.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "centralledger-handler-transfer-prepare.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "centralledger-handler-transfer-prepare.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+      {{- if .Values.metrics.enabled }}
+      annotations:
+        prometheus.io/port: "{{ .Values.containers.api.service.ports.api.internalPort }}"
+        prometheus.io/scrape: "true"
+      {{- end }}
+    spec:
+{{- if .Values.global.config.affinity }}
+      affinity:
+{{ toYaml .Values.global.config.affinity | indent 8 }}
+{{- end }}
+{{- if .Values.global.config.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.global.config.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.global.config.tolerations }}
+      tolerations:
+{{ toYaml .Values.global.config.tolerations | indent 8 }}
+{{- end }}
+      {{- if .Values.init.enabled }}
+      initContainers:
+        {{- if eq .Values.config.db_type "postgres"}}
+        - name: {{ .Values.init.psql.name }}
+          image: {{ .Values.init.psql.repository }}:{{ .Values.init.psql.tag }}
+          imagePullPolicy: {{ .Values.init.psql.pullPolicy }}
+          env:
+          - name: "POSTGRES_URL"
+            value: "postgresql://{{ .Values.config.db_user }}:{{ .Values.config.db_password }}@{{ $dbHost }}:{{ .Values.config.db_port }}/{{ .Values.config.db_database }}?sslmode=disable"
+        {{- end }}
+        {{- if eq .Values.config.db_type "mysql"}}
+        - name: {{ .Values.init.mysql.name }}
+          image: {{ .Values.init.mysql.repository }}:{{ .Values.init.mysql.tag }}
+          imagePullPolicy: {{ .Values.init.mysql.pullPolicy }}
+          command:
+            - sh
+            - "-c"
+            - {{ (.Values.init.mysql.command | replace "$db_user" (print .Values.config.db_user) | replace "$db_password" (print .Values.config.db_password) | replace "$db_host" $dbHost | replace "$db_database" (print .Values.config.db_database) | replace "$db_port" (print .Values.config.db_port) )| quote }}
+        {{- end }}
+        # - name: {{ .Values.init.kafka.name }}
+        #   image: {{ .Values.init.kafka.repository }}:{{ .Values.init.kafka.tag }}
+        #   imagePullPolicy: {{ .Values.init.kafka.pullPolicy }}
+        #   command:
+        #     - sh
+        #     - "-c"
+        #     - {{ (.Values.init.kafka.command | replace "$kafka_host" $kafkaHost | replace "$kafka_port" (printf "%.0f" .Values.config.kafka_port) ) | quote }}
+        #   env:
+        #   {{- range $envItem := .Values.init.kafka.env }}
+        #     - name: {{ $envItem.name }}
+        #       value: {{ $envItem.value }}
+        #   {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ template "centralledger-handler-transfer-prepare.name" . }}
+          image: "{{ .Values.containers.api.image.repository }}:{{ .Values.containers.api.image.tag }}"
+          imagePullPolicy: {{ .Values.containers.api.image.pullPolicy }}
+          command: {{ .Values.containers.api.image.command }}
+          ports:
+          {{- range $port := .Values.containers.api.service.ports }}
+            - name: {{ $port.name }}
+              containerPort: {{ $port.internalPort }}
+          {{- end }}
+          {{- if .Values.containers.api.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.containers.api.readinessProbe.httpGet.path }}
+              port: {{ .Values.containers.api.service.ports.api.internalPort }}
+            initialDelaySeconds: {{ .Values.containers.api.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.containers.api.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.containers.api.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.containers.api.livenessProbe.httpGet.path }}
+              port: {{ .Values.containers.api.service.ports.api.internalPort }}
+            initialDelaySeconds: {{ .Values.containers.api.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.containers.api.livenessProbe.periodSeconds }}
+          {{- end }}
+          env:
+            - name: LOG_LEVEL
+              value: {{ .Values.config.log_level }}
+            - name: CSL_LOG_TRANSPORT
+              value: {{ .Values.config.log_transport}}
+            {{- if .Values.sidecar.enabled }}
+            - name: EVENT_SDK_SIDECAR_DISABLED
+              value: "false"
+            - name: EVENT_SDK_SIDECAR_WITH_LOGGER
+              value: {{ .Values.config.log_events_locally_enabled | quote }}
+            - name: EVENT_SDK_SERVER_HOST
+              value: {{ .Values.sidecar.config.event_logger_grpc_host | quote }}
+            - name: EVENT_SDK_SERVER_PORT
+              value: {{ .Values.sidecar.config.event_logger_grpc_port | quote }}
+            {{- end }}
+            - name: EVENT_SDK_VENDOR_PREFIX
+              value: {{ .Values.config.event_trace_vendor | quote }}
+            - name: EVENT_SDK_TRACESTATE_HEADER_ENABLED
+              value: {{ .Values.config.event_trace_state_enabled | quote }}
+            - name: EVENT_SDK_ASYNC_OVERRIDE_EVENTS
+              value: {{ .Values.config.event_async_override }}
+          volumeMounts:
+          - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-config-volume
+            mountPath: /opt/central-ledger/config
+        {{- if .Values.sidecar.enabled }}
+        - name: {{ .Chart.Name }}-sidecar
+          image: "{{ .Values.sidecar.image.repository }}:{{ .Values.sidecar.image.tag }}"
+          imagePullPolicy: {{ .Values.sidecar.image.pullPolicy }}
+          {{- if .Values.sidecar.image.imagePullSecrets }}
+          imagePullSecrets:
+          {{ toYaml .Values.sidecar.image.imagePullSecrets | indent 10 }}
+          {{- end }}
+          command: {{ .Values.sidecar.image.command }}
+          ports:
+            - containerPort: {{ .Values.sidecar.service.internalPort }}
+          {{- if .Values.sidecar.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.sidecar.readinessProbe.httpGet.path }}
+              port: {{ .Values.sidecar.service.internalPort }}
+            initialDelaySeconds: {{ .Values.sidecar.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.sidecar.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.sidecar.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.sidecar.livenessProbe.httpGet.path }}
+              port: {{ .Values.sidecar.service.internalPort }}
+            initialDelaySeconds: {{ .Values.sidecar.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.sidecar.livenessProbe.periodSeconds }}
+          {{- end }}
+          volumeMounts:
+            - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-sidecar-volume
+              mountPath: /opt/event-sidecar/config
+          env:
+            - name: LOG_LEVEL
+              value: {{ .Values.sidecar.config.log_level }}
+        {{- end }}
+      volumes:
+        - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-config-volume
+          configMap:
+            name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-config
+            items:
+            - key: default.json
+              path: default.json
+            - key: knexfile.js
+              path: knexfile.js
+        {{- if .Values.sidecar.enabled }}
+        - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-sidecar-volume
+          configMap:
+            name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-sidecar
+            items:
+            - key: default.json
+              path: default.json
+        {{- end }}

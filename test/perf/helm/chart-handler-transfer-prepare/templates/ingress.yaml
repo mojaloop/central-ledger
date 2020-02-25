@@ -1,0 +1,30 @@
+{{- if .Values.ingress.enabled -}}
+{{- $serviceName := include "centralledger-handler-transfer-prepare.fullname" . -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "centralledger-handler-transfer-prepare.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.hosts.api }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.externalPath.api }}
+            backend:
+              serviceName: {{ $serviceName }}
+              servicePort: {{ .Values.containers.api.service.ports.api.externalPort }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{ toYaml .Values.ingress.tls | indent 4 }}
+  {{- end -}}
+{{- end -}}

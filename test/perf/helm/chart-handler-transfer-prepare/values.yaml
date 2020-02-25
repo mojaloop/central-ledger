@@ -1,0 +1,214 @@
+# Default values for central-ledger.
+# This is a YAML-formatted file.
+
+# Declare global configurations
+global:
+  config:
+    ## Pod scheduling preferences.
+    ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+    ##
+    affinity: {}
+
+    ## Node labels for pod assignment
+    ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+    nodeSelector: {}
+
+    ## Set toleration for scheduler
+    ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+    tolerations: []
+
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+containers:
+  api:
+    image:
+      repository: mojaloop/central-ledger
+      tag: v8.8.2
+      pullPolicy: Always
+      # command: '["node", "src/handlers/index.js", "handler", "--prepare"]'
+      command: '["node", "src/api/index.js"]'
+    service:
+      ports:
+        api:
+          name: http-api
+          externalPort: 80
+          internalPort: 3001
+    readinessProbe:
+      enabled: true
+      httpGet:
+        path: /health
+      initialDelaySeconds: 60
+      periodSeconds: 15
+    livenessProbe:
+      enabled: true
+      httpGet:
+        path: /health
+      initialDelaySeconds: 60
+      periodSeconds: 15
+
+sidecar:
+  enabled: true
+  image:
+    repository: mojaloop/event-sidecar
+    tag: v8.7.3
+    pullPolicy: Always
+    command: '["npm", "run", "start"]'
+  service:
+    internalPort: 4001
+  readinessProbe:
+    enabled: true
+    httpGet:
+      path: /health
+    initialDelaySeconds: 120
+    periodSeconds: 15
+  livenessProbe:
+    enabled: true
+    httpGet:
+      path: /health
+    initialDelaySeconds: 90
+    periodSeconds: 15
+  config:
+    event_logger_grpc_host: localhost
+    event_logger_grpc_port: 50051
+    log_level: info
+
+## metric configuration for prometheus instrumentation
+metrics:
+  ## flag to enable/disable the metrics end-points
+  enabled: true
+  config:
+    timeout: 5000
+    prefix: moja_
+    defaultLabels:
+      serviceName: central-handler-prepare
+
+config:
+  ## Forensic Logging sidecar
+  # this is for Forensic Logging Sidecar
+  forensicloggingsidecar_disabled: true
+  forensicloggingsidecar_host: forensicloggingsidecar-ledger
+  forensicloggingsidecar_port: 5678
+
+  # Condig for tracing
+  event_trace_vendor: mojaloop
+  event_trace_state_enabled: true
+  # A comma-separated list of events that should return immediately instead of waiting for the event promises to resolve
+  # Any combination of: `log,audit,trace`
+  event_async_override: ''
+
+  error_handling:
+    include_cause_extension: false
+    truncate_extensions: true
+
+  ## DB Configuration
+  # db_type can either be 'postgres' or 'mysql'. Ensure the correct DB is enabled and configured below: postgresql.enabled or mysql.enabled
+  db_type: 'mysql'
+  # db_driver can either be 'pg' or 'mysql'. Ensure the correct corresponding db_type above has been set.
+  db_driver: 'mysql'
+  db_host: '$release_name-db-centralledger-mysql'
+  db_port: 3306
+  db_user: central_ledger
+  db_password: oyMxgZChuu
+  db_database: central_ledger
+  db_connection_pool_min: 10
+  db_connection_pool_max: 30
+  db_acquire_timeout_millis: 30000
+  db_create_timeout_millis: 30000
+  db_destroy_timeout_millis: 5000
+  db_idle_timeout_millis: 30000
+  db_reap_interval_millis: 1000
+  db_create_retry_interval_millis: 200
+  db_debug: false
+
+  ## MongoDB Configuration for Object Store
+  objstore_disabled: true
+  objstore_uri: 'mongodb://$release_name-centralledger-obj:27017/mlos'
+
+  ## Kafka Configuration
+  # this can be set if the dependency chart for kafka is disabled. If 'kafka_host' is commented out, then the name of the dependency chart will be used.
+  kafka_host: '$release_name-kafka'
+  kafka_port: 9092
+
+  ## Node Configuration
+  log_level: 'info'
+  log_transport: file
+  ## Enable local logging of events being recorded
+  log_events_locally_enabled: false
+
+  ## Cache configuration
+  cache_max_byte_size: 10000000
+
+init:
+  enabled: true
+  kafka:
+    name: wait-for-kafka
+    repository: solsson/kafka
+    tag: latest
+    pullPolicy: Always
+    command: "until ./bin/kafka-broker-api-versions.sh --bootstrap-server $kafka_host:$kafka_port; do echo waiting for Kafka; sleep 2; done;"
+    env: {}
+    ## Env example
+    # env:
+    #   envItem1:
+    #     name: hello
+    #     value: world
+    #
+  psql:
+    name: wait-for-postgres
+    repository: bowerswilkins/awaitpostgres
+    tag: latest
+    pullPolicy: Always
+  mysql:
+    name: wait-for-mysql
+    repository: mysql
+    tag: latest
+    pullPolicy: Always
+    command: "until result=$(mysql -h $db_host -P $db_port -u $db_user --password=$db_password  $db_database -ss -N -e 'select is_locked from migration_lock;') && eval 'echo is_locked=$result' && if [ -z $result ]; then false; fi && if [ $result -ne 0 ]; then false; fi; do echo waiting for MySQL; sleep 2; done;"
+
+service:
+  type: ClusterIP
+
+  annotations: {}
+
+  # This allows one to point the service to an external backend.
+  # This is useful for local development where one wishes to hijack
+  # the communication from the service to the node layer and point
+  # to a specific endpoint (IP, Port, etc).
+  external:
+    enabled: false
+    # 10.0.2.2 is the magic IP for the host on virtualbox's network
+    ip: 10.0.2.2
+    ports:
+      api:
+        name: http-api
+        externalPort: 3001
+
+ingress:
+  enabled: true
+  type: http
+  externalPath:
+    api: /
+  # Used to create an Ingress record.
+  hosts:
+    api: central-ledger-transfer-prepare.local
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: '/'
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  tls:
+    # Secrets must be manually created in the namespace.
+    # - secretName: chart-example-tls
+    #   hosts:
+    #     - chart-example.local
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi

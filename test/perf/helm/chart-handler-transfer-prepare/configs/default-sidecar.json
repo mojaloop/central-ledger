@@ -1,0 +1,49 @@
+{{- $kafkaHost := ( .Values.config.kafka_host | replace "$release_name" .Release.Name ) -}}
+{
+  "PORT": {{ .Values.sidecar.service.internalPort }},
+  "EVENT_LOGGER_GRPC_HOST": "{{ .Values.sidecar.config.event_logger_grpc_host }}",
+  "EVENT_LOGGER_GRPC_PORT": {{ .Values.sidecar.config.event_logger_grpc_port }},
+  "INSTRUMENTATION": {
+    "METRICS": {
+      "DISABLED": false,
+      "labels": {
+        "eventId": "*"
+      },
+      "config": {
+        "timeout": 5000,
+        "prefix": "moja_",
+        "defaultLabels": {
+          "serviceName": "{{ template "centralledger-handler-transfer-prepare.name" . }}-event-sidecar"
+        }
+      }
+    }
+  },
+  "KAFKA": {
+    "TOPIC_TEMPLATES": {
+      "GENERAL_TOPIC_TEMPLATE": {
+        "TEMPLATE": "topic-{{"{{"}}functionality{{"}}"}}",
+        "REGEX": "topic-(.*)"
+      }
+    },
+    "PRODUCER": {
+      "EVENT": {
+        "config": {
+          "options": {
+            "messageCharset": "utf8"
+          },
+          "rdkafkaConf": {
+            "metadata.broker.list": "{{ $kafkaHost }}:{{ .Values.config.kafka_port }}",
+            "client.id": "es-prod-event",
+            "event_cb": true,
+            "dr_cb": true,
+            "socket.keepalive.enable": true,
+            "queue.buffering.max.messages": 10000000
+          },
+          "topicConf": {
+            "request.required.acks": "all"
+          }
+        }
+      }
+    }
+  }
+}
