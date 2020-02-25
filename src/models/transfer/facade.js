@@ -44,6 +44,7 @@ const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 // Alphabetically ordered list of error texts used below
 const UnsupportedActionText = 'Unsupported action'
@@ -379,6 +380,11 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 }
 
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
+  const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
+    'model_transfer',
+    'facade_saveTransferPrepared - Metrics for transfer model',
+    ['success', 'queryName']
+  ).startTimer()
   try {
     const participants = []
     const names = [payload.payeeFsp, payload.payerFsp]
@@ -433,6 +439,11 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const knex = await Db.getKnex()
     if (hasPassedValidation) {
+      const histTimerSaveTranferTransactionValidationPassedEnd = Metrics.getHistogram(
+        'model_transfer',
+        'facade_saveTransferPrepared_transaction - Metrics for transfer model',
+        ['success', 'queryName']
+      ).startTimer()
       return await knex.transaction(async (trx) => {
         try {
           await knex('transfer').transacting(trx).insert(transferRecord)
@@ -453,22 +464,31 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           }
           await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
           await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-          await trx.commit
+          await trx.commit()
+          histTimerSaveTranferTransactionValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         } catch (err) {
-          await trx.rollback
+          await trx.rollback()
+          histTimerSaveTranferTransactionValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
           throw err
         }
       })
     } else {
+      const histTimerSaveTranferNoValidationEnd = Metrics.getHistogram(
+        'model_transfer',
+        'facade_saveTransferPrepared_no_validation - Metrics for transfer model',
+        ['success', 'queryName']
+      ).startTimer()
       await knex('transfer').insert(transferRecord)
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
         Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
+        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
+        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
         Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
       }
       payerTransferParticipantRecord.name = payload.payerFsp
@@ -486,20 +506,26 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
           await knex.batchInsert('transferExtension', transferExtensionsRecordList)
         } catch (err) {
           Logger.warn(`batchInsert transferExtension error: ${err.message}`)
+          histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
         }
       }
       try {
         await knex('ilpPacket').insert(ilpPacketRecord)
       } catch (err) {
         Logger.warn(`ilpPacket insert error: ${err.message}`)
+        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferStateChange').insert(transferStateChangeRecord)
+        histTimerSaveTranferNoValidationEnd({ success: true, queryName: 'facade_saveTransferPrepared_no_validation' })
       } catch (err) {
         Logger.warn(`transferStateChange insert error: ${err.message}`)
+        histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
     }
+    histTimerSaveTransferPreparedEnd({ success: true, queryName: 'transfer_model_facade_saveTransferPrepared' })
   } catch (err) {
+    histTimerSaveTransferPreparedEnd({ success: false, queryName: 'transfer_model_facade_saveTransferPrepared' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -680,9 +706,9 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
           .where('t.transferId', param1.transferId)
           .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .select('dr.participantCurrencyId AS drAccountId', 'dr.amount AS drAmount', 'drp.participantPositionId AS drPositionId',
             'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',
             'cr.amount AS crAmount', 'crp.participantPositionId AS crPositionId', 'crp.value AS crPositionValue',

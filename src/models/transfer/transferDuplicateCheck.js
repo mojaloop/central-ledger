@@ -31,7 +31,7 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
+const Metrics = require('@mojaloop/central-services-metrics')
 /**
  * @function GetTransferDuplicateCheck
  *
@@ -44,10 +44,18 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
  */
 
 const getTransferDuplicateCheck = async (transferId) => {
+  const histTimerGetTransferDuplicateCheckEnd = Metrics.getHistogram(
+    'model_transfer',
+    'transferDuplicateCheck_getTransferDuplicateCheck - Metrics for transfer duplicate check model',
+    ['success', 'queryName']
+  ).startTimer()
   Logger.debug(`get transferDuplicateCheck (transferId=${transferId})`)
   try {
-    return Db.transferDuplicateCheck.findOne({ transferId })
+    const result = Db.transferDuplicateCheck.findOne({ transferId })
+    histTimerGetTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
+    return result
   } catch (err) {
+    histTimerGetTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_getTransferDuplicateCheck' })
     throw new Error(err.message)
   }
 }
@@ -65,10 +73,18 @@ const getTransferDuplicateCheck = async (transferId) => {
  */
 
 const saveTransferDuplicateCheck = async (transferId, hash) => {
+  const histTimerSaveTransferDuplicateCheckEnd = Metrics.getHistogram(
+    'model_transfer',
+    'transferDuplicateCheck_saveTransferDuplicateCheck - Metrics for transfer duplicate check model',
+    ['success', 'queryName']
+  ).startTimer()
   Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    return Db.transferDuplicateCheck.insert({ transferId, hash })
+    const result = Db.transferDuplicateCheck.insert({ transferId, hash })
+    histTimerSaveTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
+    return result
   } catch (err) {
+    histTimerSaveTransferDuplicateCheckEnd({ success: false, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

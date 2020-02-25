@@ -220,12 +220,12 @@ const initializeInstrumentation = () => {
  * @returns {object} Returns HTTP Server object
  */
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
+  initializeInstrumentation()
   await migrate(runMigrations)
   await connectDatabase()
   await connectMongoose()
   await Cache.initCache()
   await Sidecar.connect(service)
-  initializeInstrumentation()
   let server
   switch (service) {
     case 'api':
