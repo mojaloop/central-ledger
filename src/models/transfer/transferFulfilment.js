@@ -28,8 +28,10 @@ const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+const LOG_ENABLED = false
+
 const getByTransferId = async (transferId) => {
-  Logger.debug('getByTransferId ' + transferId.toString())
+  !!LOG_ENABLED && Logger.debug('getByTransferId ' + transferId.toString())
   try {
     return await Db.transferFulfilment.find({ transferId: transferId })
   } catch (err) {
@@ -38,7 +40,7 @@ const getByTransferId = async (transferId) => {
 }
 
 const saveTransferFulfilment = async (record) => {
-  Logger.debug('save transferFulfilment ' + record.toString())
+  !!LOG_ENABLED && Logger.debug('save transferFulfilment ' + record.toString())
   try {
     return await Db.transferFulfilment.insert(record)
   } catch (err) {

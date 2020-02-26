@@ -27,8 +27,10 @@
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 
+const LOG_ENABLED = false
+
 const saveTransferParticipant = async (record) => {
-  Logger.debug('save transferParticipant' + record.toString())
+  !!LOG_ENABLED && Logger.debug('save transferParticipant' + record.toString())
   try {
     return await Db.transferParticipant.insert(record)
   } catch (err) {

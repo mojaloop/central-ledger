@@ -3,10 +3,12 @@
 const Logger = require('@mojaloop/central-services-logger')
 const Util = require('util')
 
+const LOG_ENABLED = false
+
 const logRequest = function (request) {
   const traceId = request.headers.traceid
-  Logger.debug(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
-  Logger.debug(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
+  !!LOG_ENABLED && Logger.debug(`L1p-Trace-Id=${traceId} - Method: ${request.method} Path: ${request.url.path} Query: ${JSON.stringify(request.query)}`)
+  !!LOG_ENABLED && Logger.debug(`L1p-Trace-Id=${traceId} - Headers: ${JSON.stringify(request.headers)}`)
   if (request.body) {
     Logger.debug(`L1p-Trace-Id=${traceId} - Body: ${request.body}`)
   }
