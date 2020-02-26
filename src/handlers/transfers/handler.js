@@ -56,7 +56,7 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const consumerCommit = true
+const consumerCommit = false
 const fromSwitch = true
 const toDestination = true
 

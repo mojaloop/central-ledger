@@ -36,11 +36,11 @@ containers:
   api:
     image:
       repository: mojaloop/central-ledger-perf
-      tag: v0.8
+      tag: v0.11
       pullPolicy: Always
       # command: "node src/index.js perf-prepare"
-      # command: '["node", "src/index.js", "perf-prepare"]'
-      command: '["node", "src/index.js", "perf-prepare", "--numberOfMsgs", "100"]'
+      command: '["node", "src/index.js", "perf-prepare"]'
+      # command: '["node", "src/index.js", "perf-prepare", "--numberOfMsgs", "100"]'
       # command:
       #   - sh
       #   - -c
