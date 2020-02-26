@@ -19,7 +19,7 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation
+ * Gates Foundation 
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
@@ -32,11 +32,19 @@
 const PositionFacade = require('../../models/position/facade')
 
 const changeParticipantPosition = (participantCurrencyId, isReversal, amount, transferStateChange) => {
-  return PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
+  const result = PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
+  return result
 }
 
 const calculatePreparePositionsBatch = async (transferList) => {
-  return PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  const histTimerPositionBatchDomainEnd = Metrics.getHistogram(
+    'domain_position',
+    'calculatePreparePositionsBatch - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  const result = PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  histTimerPositionBatchDomainEnd({ success: true, funcName: 'calculatePreparePositionsBatch' })
+  return result
 }
 
 module.exports = {

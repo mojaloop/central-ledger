@@ -40,6 +40,11 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
+  const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
+    'model_position',
+    'facade_prepareChangeParticipantPositionTransaction - Metrics for position model',
+    ['success', 'queryName']
+  ).startTimer()
   try {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
@@ -52,6 +57,12 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const transferIdList = []
     const limitAlarms = []
     let sumTransfersInBatch = 0
+    const histTimerChangeParticipantPositionTransEnd = Metrics.getHistogram(
+      'model_position',
+      'facade_prepareChangeParticipantPositionTransaction_transaction - Metrics for position model',
+      ['success', 'queryName']
+    ).startTimer()
+
     await knex.transaction(async (trx) => {
       try {
         const transactionTimestamp = Time.getUTCString(new Date())
@@ -75,7 +86,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           transferIdList.push(id)
           initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
         }
+        const histTimerChangeParticipantPositionTransEnd = Metrics.getHistogram(
+          'model_position',
+          'facade_prepareChangeParticipantPositionTransaction_transaction_initialTransferStateChangeList - Metrics for position model',
+          ['success', 'queryName']
+        ).startTimer()
         const initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
+        histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'initialTransferStateChangeList' })
         for (const id in initialTransferStateChangeList) {
           const transferState = initialTransferStateChangeList[id]
           const transfer = transferList[id].value.content.payload

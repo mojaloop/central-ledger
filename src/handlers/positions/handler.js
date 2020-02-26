@@ -142,7 +142,7 @@ const positions = async (error, messages) => {
         const { transferState } = prepareMessage
         if (transferState.transferStateId === Enum.Transfers.TransferState.RESERVED) {
           Logger.info(Utility.breadcrumb(location, `payer--${actionLetter}1`))
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
+          // await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
           return true
         } else {

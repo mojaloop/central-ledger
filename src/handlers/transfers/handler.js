@@ -56,9 +56,56 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+const positionsHandler = require('../positions/handler').positions
+const StreamingProtocol = require('@mojaloop/central-services-shared').Util.StreamingProtocol
+
 const consumerCommit = false
 const fromSwitch = true
 const toDestination = true
+
+const proceedToPosition = async (defaultKafkaConfig, params, opts) => {
+  const { message, kafkaTopic, consumer, decodedPayload, span, producer } = params
+  const { consumerCommit, fspiopError, eventDetail, fromSwitch, toDestination } = opts
+  let metadataState
+
+  if (fspiopError) {
+    if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
+      message.value.content.uriParams = { id: decodedPayload.transferId }
+    }
+    message.value.content.payload = fspiopError
+    metadataState = StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
+  } else {
+    metadataState = Enum.Events.EventStatus.SUCCESS
+  }
+  if (fromSwitch) {
+    message.value.to = message.value.from
+    message.value.from = Enum.Http.Headers.FSPIOP.SWITCH.value
+    if (message.value.content.headers) message.value.content.headers[Enum.Http.Headers.FSPIOP.DESTINATION] = message.value.to
+  }
+  let key
+  if (typeof toDestination === 'string') {
+    message.value.to = toDestination
+    if (message.value.content.headers) message.value.content.headers[Enum.Http.Headers.FSPIOP.DESTINATION] = toDestination
+  } else if (toDestination === true) {
+    key = message.value.content.headers && message.value.content.headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+  }
+  if (eventDetail && producer) {
+    await produceToPosition(defaultKafkaConfig, producer, eventDetail.functionality, eventDetail.action, message.value, metadataState, key, span)
+  }
+  return true
+}
+
+const produceToPosition = async (defaultKafkaConfig, kafkaProducer, functionality, action, message, state, key = null, span = null) => {
+  let messageProtocol = StreamingProtocol.updateMessageProtocolMetadata(message, functionality, action, state)
+  if (span) {
+    messageProtocol = await span.injectContextToMessage(messageProtocol)
+    span.audit(messageProtocol, EventSdk.AuditEventAction.egress)
+  }
+  await positionsHandler(null, { value: messageProtocol })
+  return true
+}
+
+
 
 /**
  * @function TransferPrepareHandler
@@ -184,13 +231,15 @@ const prepare = async (error, messages) => {
            * HOWTO: Stop execution at the `TransferService.prepare`, stop mysql,
            * continue execution to catch block, start mysql
            */
+          
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
         Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
         functionality = TransferEventType.POSITION
         const eventDetail = { functionality, action }
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
+        await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
+        // await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
@@ -223,6 +272,7 @@ const prepare = async (error, messages) => {
          * a tansfer in a currency not supported by either dfsp. Not sure if it
          * will be triggered for bulk, because of the BulkPrepareHandler.
          */
+
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       }
