@@ -30,8 +30,8 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
-const ParticipantModel = require('../../../../src/models/participant/participant')
-const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrency')
+const ParticipantModelCached = require('../../../../src/models/participant/participantCached')
+const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
 const ParticipantPositionModel = require('../../../../src/models/participant/participantPosition')
 const ParticipantLimitModel = require('../../../../src/models/participant/participantLimit')
 const ParticipantFacade = require('../../../../src/models/participant/facade')
@@ -122,18 +122,22 @@ Test('Participant service', async (participantTest) => {
 
   participantTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
-    sandbox.stub(ParticipantModel, 'create')
-    sandbox.stub(ParticipantModel, 'getByName')
-    sandbox.stub(ParticipantModel, 'getAll')
-    sandbox.stub(ParticipantModel, 'getById')
-    sandbox.stub(ParticipantModel, 'update')
-    sandbox.stub(ParticipantModel, 'destroyByName')
-    sandbox.stub(ParticipantModel, 'destroyParticipantEndpointByParticipantId')
 
+    sandbox.stub(ParticipantModelCached, 'invalidateParticipantsCache')
+    sandbox.stub(ParticipantModelCached, 'getById')
+    sandbox.stub(ParticipantModelCached, 'getByName')
+    sandbox.stub(ParticipantModelCached, 'getAll')
+    sandbox.stub(ParticipantModelCached, 'create')
+    sandbox.stub(ParticipantModelCached, 'update')
+    sandbox.stub(ParticipantModelCached, 'destroyByName')
+    sandbox.stub(ParticipantModelCached, 'destroyParticipantEndpointByParticipantId')
+
+    sandbox.stub(ParticipantCurrencyModel, 'invalidateParticipantCurrencyCache')
     sandbox.stub(ParticipantCurrencyModel, 'create')
     sandbox.stub(ParticipantCurrencyModel, 'getByParticipantId')
     sandbox.stub(ParticipantCurrencyModel, 'getById')
     sandbox.stub(ParticipantCurrencyModel, 'destroyByParticipantId')
+    sandbox.stub(ParticipantCurrencyModel, 'findOneByParams')
 
     sandbox.stub(ParticipantFacade, 'getEndpoint')
     sandbox.stub(ParticipantFacade, 'getAllEndpoints')
@@ -159,8 +163,6 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(PositionFacade, 'getByNameAndCurrency')
     sandbox.stub(PositionFacade, 'getAllByNameAndCurrency')
 
-    sandbox.stub(ParticipantCurrencyModel, 'getByName')
-
     sandbox.stub(LedgerAccountTypeModel, 'getLedgerAccountByName')
 
     sandbox.stub(Kafka, 'produceGeneralMessage')
@@ -182,10 +184,10 @@ Test('Participant service', async (participantTest) => {
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({ participant }).returns(index)
-      ParticipantModel.create.withArgs({ name: participant.name }).returns((index + 1))
-      ParticipantModel.getByName.withArgs(participant.name).returns(participantResult[index])
-      ParticipantModel.getById.withArgs(index).returns(participantResult[index])
-      ParticipantModel.update.withArgs(participant, 1).returns((index + 1))
+      ParticipantModelCached.create.withArgs({ name: participant.name }).returns((index + 1))
+      ParticipantModelCached.getByName.withArgs(participant.name).returns(participantResult[index])
+      ParticipantModelCached.getById.withArgs(index).returns(participantResult[index])
+      ParticipantModelCached.update.withArgs(participant, 1).returns((index + 1))
       ParticipantCurrencyModel.create.withArgs({
         participantId: index,
         currencyId: participant.currency
@@ -197,11 +199,11 @@ Test('Participant service', async (participantTest) => {
         isActive: 1
       })
       ParticipantCurrencyModel.getByParticipantId.withArgs(participant.participantId, 1).returns(participant.currency)
-      ParticipantModel.destroyByName.withArgs(participant.name).returns(Promise.resolve(true))
+      ParticipantModelCached.destroyByName.withArgs(participant.name).returns(Promise.resolve(true))
       ParticipantCurrencyModel.destroyByParticipantId.withArgs(participant.participantId).returns(Promise.resolve(true))
       Db.participant.destroy.withArgs({ name: participant.name }).returns(Promise.resolve(true))
     })
-    ParticipantModel.getAll.returns(Promise.resolve(participantResult))
+    ParticipantModelCached.getAll.returns(Promise.resolve(participantResult))
     t.end()
   })
 
@@ -212,7 +214,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getById with non-existing id should', async (assert) => {
     try {
-      ParticipantModel.getById.withArgs(10).returns(Promise.resolve(null))
+      ParticipantModelCached.getById.withArgs(10).returns(Promise.resolve(null))
       const result = await Service.getById(10)
       assert.equal(result, null, 'return null')
       assert.end()
@@ -225,7 +227,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getByName with non-existing name should', async (assert) => {
     try {
-      ParticipantModel.getByName.withArgs('name').returns(Promise.resolve(null))
+      ParticipantModelCached.getByName.withArgs('name').returns(Promise.resolve(null))
       const result = await Service.getByName('name')
       assert.equal(result, null, 'return null')
       assert.end()
@@ -238,7 +240,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('create false participant', async (assert) => {
     const falseParticipant = { name: 'fsp3' }
-    ParticipantModel.create.withArgs(falseParticipant).throws(new Error())
+    ParticipantModelCached.create.withArgs(falseParticipant).throws(new Error())
     try {
       await Service.create(falseParticipant)
       assert.fail('should throw')
@@ -264,10 +266,10 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('get with empty name', async (assert) => {
-    ParticipantModel.getByName.withArgs('').throws(new Error())
+    ParticipantModelCached.getByName.withArgs('').throws(new Error())
     try {
       await Service.getByName('')
-      assert.fail('should throws with empty name ')
+      assert.fail('should throw with empty name')
     } catch (err) {
       assert.assert(err instanceof Error, `throws ${err} `)
     }
@@ -308,7 +310,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAll should throw an error', async (assert) => {
     try {
-      ParticipantModel.getAll.throws(new Error())
+      ParticipantModelCached.getAll.throws(new Error())
       await Service.getAll()
       assert.fail('Error not thrown')
       assert.end()
@@ -350,7 +352,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('update should throw an error', async (assert) => {
-    ParticipantModel.getByName.withArgs(participantFixtures[0].name).throws(new Error())
+    ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).throws(new Error())
     try {
       await Service.update(participantFixtures[0].name, { isActive: 1 })
       assert.fail('Error not thrown')
@@ -459,7 +461,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroyByName', async (assert) => {
     try {
-      ParticipantModel.destroyByName = sandbox.stub().returns(Promise.resolve(true))
+      ParticipantModelCached.destroyByName = sandbox.stub().returns(Promise.resolve(true))
       await participantFixtures.forEach(async (participant) => {
         const result = await Service.destroyByName(participant.name)
         assert.comment(`Testing with participant \n ${JSON.stringify(participant, null, 2)}`)
@@ -476,8 +478,8 @@ Test('Participant service', async (participantTest) => {
   await participantTest.test('destroyByName should throw an error', async (assert) => {
     try {
       const falseParticipant = { name: 'fsp3', participantId: 3, currency: 'FAKE' }
-      ParticipantModel.getByName.withArgs(falseParticipant.name).returns(falseParticipant)
-      ParticipantModel.destroyByName.withArgs(falseParticipant.name).throws(new Error())
+      ParticipantModelCached.getByName.withArgs(falseParticipant.name).returns(falseParticipant)
+      ParticipantModelCached.destroyByName.withArgs(falseParticipant.name).throws(new Error())
       await Service.destroyByName(falseParticipant.name)
       assert.fail('should throw')
     } catch (err) {
@@ -492,7 +494,7 @@ Test('Participant service', async (participantTest) => {
         type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
-      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+      ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
       ParticipantFacade.getEndpoint.withArgs(participantFixtures[0].participantId, endpoint.type).returns([endpoints[0]])
       const result = await Service.getEndpoint(participantFixtures[0].name, endpoint.type)
@@ -510,7 +512,7 @@ Test('Participant service', async (participantTest) => {
       type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
       value: 'http://localhost:3001/participants/dfsp1/notification1'
     }
-    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+    ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
     ParticipantFacade.getEndpoint.withArgs(participantFixtures[0].participantId, endpoint.type).returns(null)
 
@@ -525,7 +527,7 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('getAllEndpoints', async (assert) => {
     try {
-      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+      ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
       ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0].participantId).returns(endpoints)
       const result = await Service.getAllEndpoints(participantFixtures[0].name)
@@ -539,7 +541,7 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('getAllEndpoints should throw error', async (assert) => {
-    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+    ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
     ParticipantFacade.getAllEndpoints.withArgs(participantFixtures[0].participantId).throws(new Error())
 
@@ -558,7 +560,7 @@ Test('Participant service', async (participantTest) => {
         type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
         value: 'http://localhost:3001/participants/dfsp1/notification1'
       }
-      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+      ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
       ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload).returns(1)
       const result = await Service.addEndpoint(participantFixtures[0].name, payload)
@@ -576,7 +578,7 @@ Test('Participant service', async (participantTest) => {
       type: 'FSPIOP_CALLBACK_URL_TRANSFER_POST',
       value: 'http://localhost:3001/participants/dfsp1/notification1'
     }
-    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+    ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
     ParticipantFacade.addEndpoint.withArgs(participantFixtures[0].participantId, payload).throws(new Error())
 
@@ -591,9 +593,9 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('destroyParticipantEndpointByName', async (assert) => {
     try {
-      ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+      ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-      ParticipantModel.destroyParticipantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).returns(true)
+      ParticipantModelCached.destroyParticipantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).returns(true)
       const result = await Service.destroyParticipantEndpointByName(participantFixtures[0].name)
       assert.equal(result, true, 'Results matched')
       assert.end()
@@ -605,9 +607,9 @@ Test('Participant service', async (participantTest) => {
   })
 
   await participantTest.test('destroyParticipantEndpointByName should fail', async (assert) => {
-    ParticipantModel.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
+    ParticipantModelCached.getByName.withArgs(participantFixtures[0].name).returns(participantFixtures[0])
 
-    ParticipantModel.destroyParticipantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).throws(new Error())
+    ParticipantModelCached.destroyParticipantEndpointByParticipantId.withArgs(participantFixtures[0].participantId).throws(new Error())
 
     try {
       await Service.destroyParticipantEndpointByName(participantFixtures[0].name)
@@ -1146,7 +1148,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantModel.getByName.withArgs(participant.name).returns(participant)
+      ParticipantModelCached.getByName.withArgs(participant.name).returns(participant)
 
       ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, 'NET_DEBIT_CAP', 1).returns(Promise.resolve(limit))
       const result = await Service.getLimits(participant.name, { type: 'NET_DEBIT_CAP' })
@@ -1181,7 +1183,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantModel.getByName.withArgs(participant.name).returns(participant)
+      ParticipantModelCached.getByName.withArgs(participant.name).returns(participant)
 
       ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).returns(Promise.resolve(limit))
       const result = await Service.getLimits(participant.name, {})
@@ -1203,7 +1205,7 @@ Test('Participant service', async (participantTest) => {
       createdDate: new Date(),
       participantCurrencyId: 1
     }
-    ParticipantModel.getByName.withArgs(participant.name).returns(participant)
+    ParticipantModelCached.getByName.withArgs(participant.name).returns(participant)
     ParticipantFacade.getParticipantLimitsByParticipantId.withArgs(participant.participantId, null, 1).throws(new Error())
     try {
       await Service.getLimits(participant.name, {})
@@ -1359,7 +1361,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      ParticipantModelCached.getByName.withArgs(participantName).returns(participant)
       PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, {})
@@ -1386,7 +1388,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      ParticipantModelCached.getByName.withArgs(participantName).returns(participant)
       PositionFacade.getByNameAndCurrency.withArgs(participantName).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getPositions(participantName, {})
@@ -1466,7 +1468,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1
       }
 
-      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      ParticipantModelCached.getByName.withArgs(participantName).returns(participant)
       PositionFacade.getAllByNameAndCurrency.withArgs(participantName, query.currency).returns(Promise.resolve(accountsMock))
 
       const result = await Service.getAccounts(participantName, query)
@@ -1493,7 +1495,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantModel.getByName.withArgs(participantName).returns(participant)
+      ParticipantModelCached.getByName.withArgs(participantName).returns(participant)
       PositionFacade.getAllByNameAndCurrency.withArgs(participantName).returns(Promise.resolve(positionReturn))
 
       const result = await Service.getAccounts(participantName, {})
@@ -1551,7 +1553,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         createdBy: 'unknown'
       }
-      ParticipantModel.getByName.withArgs(params.name).returns(Promise.resolve(participant))
+      ParticipantModelCached.getByName.withArgs(params.name).returns(Promise.resolve(participant))
       ParticipantCurrencyModel.getById.withArgs(params.id).returns(Promise.resolve(account))
 
       await Service.updateAccount(payload, params, enums)
@@ -1586,7 +1588,7 @@ Test('Participant service', async (participantTest) => {
         createdDate: new Date(),
         participantCurrencyId: 1
       }
-      ParticipantModel.getByName.withArgs(params.name).returns(Promise.resolve(participant))
+      ParticipantModelCached.getByName.withArgs(params.name).returns(Promise.resolve(participant))
 
       try {
         const account = null
@@ -1779,7 +1781,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1,
         accountIsActive: 1
       }])
-      ParticipantModel.getByName.withArgs(params.name).returns({
+      ParticipantModelCached.getByName.withArgs(params.name).returns({
         participantId: 0,
         name: 'dfsp1',
         currency: 'USD',
@@ -1826,7 +1828,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1,
         accountIsActive: 1
       }])
-      ParticipantModel.getByName.withArgs(params.name).returns({
+      ParticipantModelCached.getByName.withArgs(params.name).returns({
         participantId: 0,
         name: 'dfsp1',
         currency: 'USD',
@@ -1877,7 +1879,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 2,
         accountIsActive: 1
       }])
-      ParticipantModel.getByName.withArgs(params.name).returns({
+      ParticipantModelCached.getByName.withArgs(params.name).returns({
         participantId: 0,
         name: 'dfsp1',
         currency: 'USD',
@@ -1926,7 +1928,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1,
         accountIsActive: 1
       }])
-      ParticipantModel.getByName.withArgs(params.name).returns({
+      ParticipantModelCached.getByName.withArgs(params.name).returns({
         participantId: 0,
         name: 'dfsp1',
         currency: 'USD',
@@ -1967,7 +1969,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1,
         accountIsActive: 0
       }])
-      ParticipantModel.getByName.withArgs(params.name).returns({
+      ParticipantModelCached.getByName.withArgs(params.name).returns({
         participantId: 0,
         name: 'dfsp1',
         currency: 'USD',
@@ -2008,7 +2010,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1,
         accountIsActive: 1
       }])
-      ParticipantModel.getByName.withArgs(params.name).returns({
+      ParticipantModelCached.getByName.withArgs(params.name).returns({
         participantId: 0,
         name: 'dfsp1',
         currency: 'USD',
@@ -2053,7 +2055,7 @@ Test('Participant service', async (participantTest) => {
         participantCurrencyId: 1,
         accountIsActive: 1
       }])
-      ParticipantModel.getByName.withArgs(params.name).returns({
+      ParticipantModelCached.getByName.withArgs(params.name).returns({
         participantId: 0,
         name: 'dfsp1',
         currency: 'USD',

@@ -4,33 +4,64 @@ const CatboxMemory = require('catbox-memory')
 const Config = require('../lib/config')
 const Enums = require('../lib/enum')
 
-const ttl = 60 * 1000
+let enabled = true
+let ttl
 let catboxMemoryClient = null
 
-/*
-  Each client should register its API during module load.
-  This is to simplify file structure, so that at the same time:
-  - cache.js can control the life-cycle of underlying data (e.g. init, destroy, refresh, enable/disable, ttl)
-  - while leaving cached APIs and uncached APIs in their own namespaces (e.g. files or dirs)
-*/
-const cacheClients = {
-  participant: {
-    api: {
-      getAllNoCache: null
+class CacheClient {
+  constructor (meta) {
+    this.meta = meta
+  }
+
+  getMeta () {
+    return this.meta
+  }
+
+  createKey (id) {
+    return {
+      segment: this.meta.id,
+      id
     }
+  }
+
+  get (key) {
+    if (enabled) {
+      return catboxMemoryClient.get(key)
+    }
+    return null
+  }
+
+  set (key, value) {
+    catboxMemoryClient.set(key, value, ttl)
+  }
+
+  drop (key) {
+    catboxMemoryClient.drop(key)
   }
 }
 
-const participantsAllCacheKey = {
-  segment: 'participants',
-  id: 'all'
-}
+/*
+  Each client should register itself during module load.
+  The client meta should be:
+  {
+    id [MANDATORY]
+    preloadCache() [OPTIONAL]
+      this will be called to preload data
+  }
+*/
+const cacheClients = {}
 
-const registerParticipantClient = (participantClient) => {
-  cacheClients.participant.api = participantClient
+const registerCacheClient = (clientMeta) => {
+  const newClient = new CacheClient(clientMeta)
+  cacheClients[clientMeta.id] = newClient
+  return newClient
 }
 
 const initCache = async function () {
+  // Read config
+  ttl = Config.CACHE_CONFIG.EXPIRES_IN_MS
+  enabled = Config.CACHE_CONFIG.CACHE_ENABLED
+
   // Init catbox.
   // Note: The strange looking "module.exports.CatboxMemory" reference
   // simplifies the setup of tests.
@@ -41,7 +72,11 @@ const initCache = async function () {
 
   // Preload data
   await _getAllEnums()
-  await getParticipantsCached()
+
+  for (const clientId in cacheClients) {
+    const clientMeta = cacheClients[clientId].getMeta()
+    await clientMeta.preloadCache()
+  }
 }
 
 const destroyCache = async function () {
@@ -78,56 +113,9 @@ const getEnums = async (id) => {
   return enums
 }
 
-const buildUnifiedParticipantsData = (allParticipants) => {
-  // build indexes (or indices?) - optimization for byId and byName access
-  const indexById = {}
-  const indexByName = {}
-
-  allParticipants.forEach((oneParticipant) => {
-    // Participant API returns Date type, but cache internals will serialize it to String
-    // by calling JSON.stringify(), which calls .toISOString() on a Date object.
-    // Let's ensure all places return same kind of String.
-    oneParticipant.createdDate = JSON.stringify(oneParticipant.createdDate)
-
-    // Add to indexes
-    indexById[oneParticipant.participantId] = oneParticipant
-    indexByName[oneParticipant.name] = oneParticipant
-  })
-
-  // build unified structure - indexes + data
-  const unifiedParticipants = {
-    indexById,
-    indexByName,
-    allParticipants
-  }
-
-  return unifiedParticipants
-}
-
-const getParticipantsCached = async () => {
-  // Do we have valid participants list in the cache ?
-  let cachedParticipants = catboxMemoryClient.get(participantsAllCacheKey)
-  if (!cachedParticipants) {
-    // No participants in the cache, so fetch from participan API
-    const allParticipants = await cacheClients.participant.api.getAllNoCache()
-    cachedParticipants = buildUnifiedParticipantsData(allParticipants)
-
-    // store in cache
-    catboxMemoryClient.set(participantsAllCacheKey, cachedParticipants, ttl)
-  } else {
-    // unwrap participants list from catbox structure
-    cachedParticipants = cachedParticipants.item
-  }
-  return cachedParticipants
-}
-
-const invalidateParticipantsCache = async () => {
-  catboxMemoryClient.drop(participantsAllCacheKey)
-}
-
 module.exports = {
   // Clients registration
-  registerParticipantClient,
+  registerCacheClient,
 
   // Init & destroy the cache
   initCache,
@@ -135,11 +123,6 @@ module.exports = {
 
   // enums
   getEnums,
-
-  // participants
-  getParticipantsCached,
-  buildUnifiedParticipantsData,
-  invalidateParticipantsCache,
 
   // exposed for tests
   CatboxMemory

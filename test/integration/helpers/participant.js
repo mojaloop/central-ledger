@@ -30,7 +30,7 @@
 'use strict'
 
 const Model = require('../../../src/domain/participant')
-const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrency')
+const ParticipantCurrencyModel = require('../../../src/models/participant/participantCurrencyCached')
 const time = require('@mojaloop/central-services-shared').Util.Time
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
