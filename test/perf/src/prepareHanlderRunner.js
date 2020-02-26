@@ -1,6 +1,6 @@
 const prepareHanler = require('../../../src/handlers/transfers/handler').prepare
 const uuidv4 = require('uuid/v4')
-// ['dfsp1', 'dfsp2', 'dfsp3', 'dfsp4']
+const _ = require('lodash')
 
 function setImmediatePromise () {
   return new Promise((resolve) => {
@@ -8,11 +8,11 @@ function setImmediatePromise () {
   })
 }
 
-const generateTransfer = () => {
+const generateTransfer = (payerFsp, payeeFsp) => {
   return {
     transferId: uuidv4(),
-    payerFsp: 'simfsp01',
-    payeeFsp: 'simfsp02',
+    payerFsp,
+    payeeFsp,
     amount: {
       currency: 'USD',
       amount: '1'
@@ -35,8 +35,8 @@ const generateTransfer = () => {
   }
 }
 
-const generateProtocolMessage = () => {
-  const transfer = generateTransfer()
+const generateProtocolMessage = (payerFsp, payeeFsp) => {
+  const transfer = generateTransfer(payerFsp, payeeFsp)
   return {
     value: {
       id: uuidv4(),
@@ -65,20 +65,24 @@ const generateProtocolMessage = () => {
   }
 }
 
-module.exports.prepareHanlderRunner = async (numberOfMessages = 0, durationSeconds = 0) => {
+module.exports.prepareHanlderRunner = async (numberOfMessages = 0, durationSeconds = 0, dfspList) => {
+  const [payerFsp, payeeFsp] = _.sampleSize(dfspList, 2)
   if (numberOfMessages) {
-    for (let i; i < numberOfMessages; i++) {
-      await prepareHanler(null, generateProtocolMessage())
+    for (let i = 0; i < numberOfMessages; i++) {
+      await prepareHanler(null, [generateProtocolMessage(payerFsp, payeeFsp)])
       await setImmediatePromise()
-      return true
     }
+    return true
   } else if (durationSeconds) {
-    // const startDate = (new Date()).getTime()
-    // while ((new Date()).getTime() < startDate + )
-    throw new Error('not implemented')
+    const startTime = Date.now()
+    while ((Date.now() - startTime) < (durationSeconds * 1000) ) {
+      await prepareHanler(null, [generateProtocolMessage(payerFsp, payeeFsp)])
+      await setImmediatePromise()
+    }
+    return true
   } else {
     while (true) {
-      await prepareHanler(null, [generateProtocolMessage()])
+      await prepareHanler(null, [generateProtocolMessage(payerFsp, payeeFsp)])
       await setImmediatePromise()
     }
   }

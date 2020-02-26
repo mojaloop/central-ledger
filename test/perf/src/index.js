@@ -17,6 +17,7 @@ Program.command('perf-prepare')
   .description('start transfer prepare handler in perfmode')
   .option('--numberOfMsgs <num>', 'number of messages')
   .option('--runDurationSec <num>', 'seconds the handler should be running')
+  .option('--dfspList <string>', 'dfspList comma separated list of dfsps to be used in generated transfers')
   .action(async (args) => {
     if (args.numberOfMsgs) {
       Logger.debug(`CLI: Param --numberOfMsgs, ${args.numberOfMsgs}`)
@@ -30,6 +31,7 @@ Program.command('perf-prepare')
         type: 'prepare',
         enabled: true
       }
+      const dfspList = args.dfspList ? args.dfspList.trim().split(',').map(string => string.trim()) : ['simfsp01', 'simfsp02', 'simfsp03', 'simfsp04', 'simfsp05', 'simfsp06', 'simfsp07', 'simfsp08']
       await Setup.initialize({
         service: 'handler',
         port: Config.PORT,
@@ -38,7 +40,7 @@ Program.command('perf-prepare')
         handlers: [handler],
         runHandlers: true
       })
-      await prepareHanlderRunner(args.numberOfMsgs, args.runDurationSec)
+      await prepareHanlderRunner(parseInt(args.numberOfMsgs), parseInt(args.runDurationSec), dfspList)
     } catch (err) {
       Logger.error(err)
     }
