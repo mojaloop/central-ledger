@@ -36,10 +36,11 @@ containers:
   api:
     image:
       repository: mojaloop/central-ledger-perf
-      tag: v0.11
+      tag: v0.13
       pullPolicy: Always
       # command: "node src/index.js perf-prepare"
-      command: '["node", "src/index.js", "perf-prepare"]'
+      # command: '["node", "src/index.js", "perf-prepare"]'
+      command: '["node", "src/index.js", "perf-prepare", "--runDurationSec", "600"]'
       # command: '["node", "src/index.js", "perf-prepare", "--numberOfMsgs", "100"]'
       # command:
       #   - sh
@@ -148,13 +149,28 @@ config:
   kafka_port: 9092
 
   ## Node Configuration
-  log_level: 'info'
-  # log_transport: file
+  log_level: 'error'
+  log_filter: ''
+  # log_filter: 'error, warn, info'
+  log_transport: file
   ## Enable local logging of events being recorded
   log_events_locally_enabled: false
 
+  ## Tracing Configuration
+  event_trace_vendor: mojaloop
+  # event_log_filter: 'audit:*, log:warn, log:error'
+  event_log_filter: ''
+  # If set to true, only the metadata object from the event will be printed.
+  event_log_metadata_only: true
+  # A comma-separated list of events that should return immediately instead of waiting for the event promises to resolve
+  # Any combination of: `log,audit,trace`
+  event_async_override: 'log,trace'
+  event_trace_state_enabled: true
+  event_traceid_per_vendor: false
+
   ## Cache configuration
   cache_max_byte_size: 10000000
+
 
 init:
   enabled: true

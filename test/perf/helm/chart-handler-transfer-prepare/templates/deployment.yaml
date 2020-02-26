@@ -105,7 +105,13 @@ spec:
               value: {{ .Values.config.log_level }}
             - name: CSL_LOG_TRANSPORT
               value: {{ .Values.config.log_transport}}
+            - name: LOG_FILTER
+              value: {{ .Values.config.log_filter | quote}}
+            - name: EVENT_SDK_LOG_FILTER
+              value: {{ .Values.config.event_log_filter | quote }}
             {{- if .Values.sidecar.enabled }}
+            - name: EVENT_SDK_LOG_METADATA_ONLY
+              value: {{ .Values.config.event_log_metadata_only | quote }}
             - name: EVENT_SDK_SIDECAR_DISABLED
               value: "false"
             - name: EVENT_SDK_SIDECAR_WITH_LOGGER
@@ -120,7 +126,9 @@ spec:
             - name: EVENT_SDK_TRACESTATE_HEADER_ENABLED
               value: {{ .Values.config.event_trace_state_enabled | quote }}
             - name: EVENT_SDK_ASYNC_OVERRIDE_EVENTS
-              value: {{ .Values.config.event_async_override }}
+              value: {{ .Values.config.event_async_override | quote }}
+            - name: EVENT_SDK_TRACEID_PER_VENDOR
+              value: {{ .Values.config.event_traceid_per_vendor | quote }}
           volumeMounts:
           - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-config-volume
             mountPath: /opt/central-ledger/config

@@ -17,7 +17,7 @@ Program.command('perf-prepare')
   .description('start transfer prepare handler in perfmode')
   .option('--numberOfMsgs <num>', 'number of messages')
   .option('--runDurationSec <num>', 'seconds the handler should be running')
-  .option('--dfspList <string>', 'dfspList comma separated list of dfsps to be used in generated transfers')
+  .option('--dfspList <string>', 'dfspList comma separated list of dfsps to be used in generated transfers e.g "simfsp01, simfsp02"')
   .action(async (args) => {
     if (args.numberOfMsgs) {
       Logger.debug(`CLI: Param --numberOfMsgs, ${args.numberOfMsgs}`)

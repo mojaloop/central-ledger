@@ -6,14 +6,14 @@ RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool aut
     && npm config set unsafe-perm true \
     && npm install -g node-gyp
 
-# Main central-services-stream project
+## Main central-services-stream project
 COPY package.json package-lock.json /opt/central-ledger/
-COPY src /opt/central-ledger/src
-COPY config /opt/central-ledger/config
+# COPY src /opt/central-ledger/src
+# COPY config /opt/central-ledger/config
 
-# Perf scripts for central-services-stream project
+## Perf scripts for central-services-stream project
 # COPY test/perf/config /opt/central-ledger/test/perf/config
-COPY test/perf/src /opt/central-ledger/test/perf/src
+# COPY test/perf/src /opt/central-ledger/test/perf/src
 COPY test/perf/package.json /opt/central-ledger/test/perf/package.json
 COPY test/perf/package-lock.json /opt/central-ledger/test/perf/package-lock.json
 
@@ -30,13 +30,18 @@ COPY --from=builder /opt/central-ledger .
 
 # RUN npm prune --production
 
-# Create empty log file & link stdout to the application log file
-# RUN mkdir ./logs && touch ./logs/combined.log
-# RUN ln -sf /dev/stdout ./logs/combined.log
+## Central Ledger code-base
+COPY src /opt/central-ledger/src
+COPY config /opt/central-ledger/config
+
+## Central Ledger Perf Test Scripts
+COPY test/perf/src /opt/central-ledger/test/perf/src
+
 
 # Create empty log file & link stdout to the application log file
-# RUN mkdir ./logs && touch ./logs/combined.log
-# RUN ln -sf /dev/stdout ./logs/combined.log
+RUN mkdir ./logs && touch ./logs/combined.log
+RUN ln -sf /dev/stdout ./logs/combined.log
+
 WORKDIR /opt/central-ledger/test/perf
 EXPOSE 3001
 CMD node src/index.js perf-prepare --numberOfMsgs 10
