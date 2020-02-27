@@ -30,13 +30,13 @@ global:
 
 # Declare variables to be passed into your templates.
 
-replicaCount: 4
+replicaCount: 1
 
 containers:
   api:
     image:
       repository: mojaloop/central-ledger-perf
-      tag: v0.14
+      tag: v0.15
       pullPolicy: Always
       # command: "node src/index.js perf-prepare"
       # command: '["node", "src/index.js", "perf-prepare"]'
