@@ -8,7 +8,7 @@ version: 2.1
 ###
 orbs:
   anchore: anchore/anchore-engine@1.6.0
-  deploy-kube: mojaloop/deployment@0.1.4
+  deploy-kube: mojaloop/deployment@0.1.6
 
 ##
 # defaults
