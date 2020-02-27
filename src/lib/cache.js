@@ -84,6 +84,10 @@ const destroyCache = async function () {
   catboxMemoryClient = null
 }
 
+const isCacheEnabled = function () {
+  return enabled
+}
+
 const _getAllEnums = async function () {
   const allEnums = {}
   for (const enumId of Enums.enumsIds) {
@@ -120,6 +124,7 @@ module.exports = {
   // Init & destroy the cache
   initCache,
   destroyCache,
+  isCacheEnabled,
 
   // enums
   getEnums,
