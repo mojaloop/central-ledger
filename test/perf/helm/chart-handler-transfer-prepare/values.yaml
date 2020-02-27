@@ -30,13 +30,13 @@ global:
 
 # Declare variables to be passed into your templates.
 
-replicaCount: 4
+replicaCount: 1
 
 containers:
   api:
     image:
       repository: mojaloop/central-ledger-perf
-      tag: v0.3-perf2
+      tag: v0.25.1
       pullPolicy: Always
       # command: "node src/index.js perf-prepare"
       # command: '["node", "src/index.js", "perf-prepare"]'
@@ -142,9 +142,9 @@ config:
   kafka_port: 9092
 
   ## Node Configuration
-  log_level: 'info'
-  log_filter: ''
-  # log_filter: 'error, warn, info'
+  log_level: 'error'
+  # log_filter: ''
+  log_filter: 'error, warn, info'
   log_transport: file
   ## Enable local logging of events being recorded
   log_events_locally_enabled: false

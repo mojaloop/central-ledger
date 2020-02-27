@@ -39,11 +39,11 @@ COPY config /opt/central-ledger/config
 ## Central Ledger Perf Test Scripts
 COPY test/perf/src /opt/central-ledger/test/perf/src
 
+WORKDIR /opt/central-ledger/test/perf
 
 # Create empty log file & link stdout to the application log file
 RUN mkdir ./logs && touch ./logs/combined.log
 RUN ln -sf /dev/stdout ./logs/combined.log
 
-WORKDIR /opt/central-ledger/test/perf
 EXPOSE 3001
 CMD node src/index.js perf-prepare --numberOfMsgs 10
