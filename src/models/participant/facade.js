@@ -41,7 +41,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
     ['success', 'queryName']
   ).startTimer()
   try {
-    return await Db.participant.query(async (builder) => {
+    const result = await Db.participant.query(async (builder) => {
       let b = builder
         .where({ 'participant.name': name })
         .andWhere({ 'pc.currencyId': currencyId })
@@ -58,9 +58,11 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
       if (isCurrencyActive !== undefined) {
         b = b.andWhere({ 'pc.isActive': isCurrencyActive })
       }
-      histTimerParticipantGetByNameAndCurrencyEnd({ success: true, queryName: 'facade_getByNameAndCurrency' })
       return b
     })
+
+    histTimerParticipantGetByNameAndCurrencyEnd({ success: true, queryName: 'facade_getByNameAndCurrency' })
+    return result
   } catch (err) {
     histTimerParticipantGetByNameAndCurrencyEnd({ success: false, queryName: 'facade_getByNameAndCurrency' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
