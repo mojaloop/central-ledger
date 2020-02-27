@@ -22,6 +22,11 @@
  --------------
  ******/
 
+ /* Note: this seed script is currently not in use, but will should remain available
+  until it is confirmed no settlement models will be set as default for all schemas.
+  It might be also used for development purposes to easily instantiate settlement
+  models. z filename prefix is used to ensure proper script run order. */
+
 'use strict'
 
 const settlementModels = [
