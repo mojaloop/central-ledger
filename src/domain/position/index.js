@@ -31,6 +31,8 @@
 
 const PositionFacade = require('../../models/position/facade')
 
+const Metrics = require('@mojaloop/central-services-metrics')
+
 const changeParticipantPosition = (participantCurrencyId, isReversal, amount, transferStateChange) => {
   const result = PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
   return result
