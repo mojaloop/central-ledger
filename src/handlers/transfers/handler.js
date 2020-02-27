@@ -56,56 +56,25 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const positionsHandler = require('../positions/handler').positions
-const StreamingProtocol = require('@mojaloop/central-services-shared').Util.StreamingProtocol
+// ### START: PERF_TEST kafka.proceed   
+const { proceedToPosition } = require('../../../test/perf/src/util/prepare')
+// PERF_TEST
+
+// ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+const Crypto = require('crypto') // copied from @mojaloop/central-services-shared/src/util/hash.js <- to be removed once duplicate-check algorithm test changes are reverted, or made permanent.
+function generateSha256 (object) { // copied from @mojaloop/central-services-shared/src/util/hash.js
+  const hashSha256 = Crypto.createHash('sha256')
+  let hash = JSON.stringify(object)
+  hash = hashSha256.update(hash)
+  // remove trailing '=' as per specification
+  hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
+  return hash
+}
+// ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
 
 const consumerCommit = false
 const fromSwitch = true
 const toDestination = true
-
-const proceedToPosition = async (defaultKafkaConfig, params, opts) => {
-  const { message, kafkaTopic, consumer, decodedPayload, span, producer } = params
-  const { consumerCommit, fspiopError, eventDetail, fromSwitch, toDestination } = opts
-  let metadataState
-
-  if (fspiopError) {
-    if (!message.value.content.uriParams || !message.value.content.uriParams.id) {
-      message.value.content.uriParams = { id: decodedPayload.transferId }
-    }
-    message.value.content.payload = fspiopError
-    metadataState = StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
-  } else {
-    metadataState = Enum.Events.EventStatus.SUCCESS
-  }
-  if (fromSwitch) {
-    message.value.to = message.value.from
-    message.value.from = Enum.Http.Headers.FSPIOP.SWITCH.value
-    if (message.value.content.headers) message.value.content.headers[Enum.Http.Headers.FSPIOP.DESTINATION] = message.value.to
-  }
-  let key
-  if (typeof toDestination === 'string') {
-    message.value.to = toDestination
-    if (message.value.content.headers) message.value.content.headers[Enum.Http.Headers.FSPIOP.DESTINATION] = toDestination
-  } else if (toDestination === true) {
-    key = message.value.content.headers && message.value.content.headers[Enum.Http.Headers.FSPIOP.DESTINATION]
-  }
-  if (eventDetail && producer) {
-    await produceToPosition(defaultKafkaConfig, producer, eventDetail.functionality, eventDetail.action, message.value, metadataState, key, span)
-  }
-  return true
-}
-
-const produceToPosition = async (defaultKafkaConfig, kafkaProducer, functionality, action, message, state, key = null, span = null) => {
-  let messageProtocol = StreamingProtocol.updateMessageProtocolMetadata(message, functionality, action, state)
-  if (span) {
-    messageProtocol = await span.injectContextToMessage(messageProtocol)
-    span.audit(messageProtocol, EventSdk.AuditEventAction.egress)
-  }
-  await positionsHandler(null, { value: messageProtocol })
-  return true
-}
-
-
 
 /**
  * @function TransferPrepareHandler
@@ -172,7 +141,23 @@ const prepare = async (error, messages) => {
       'prepare_duplicateCheckComparator - Metrics for transfer handler',
       ['success', 'funcName']
     ).startTimer()
-    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+
+    // ### Following has been commented out to test the Insert only algorithm for duplicate-checks
+    // const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+    // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+    const generatedHash = generateSha256(payload) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+    let { hasDuplicateId, hasDuplicateHash } = { hasDuplicateId: true, hasDuplicateHash: true } // lets assume the worst case
+    try {
+      await TransferService.saveTransferDuplicateCheck(transferId, generatedHash) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+      hasDuplicateId = false // overriding results to golden path successful use-case only for testing purposes
+      hasDuplicateHash = false // overriding results to golden path successful use-case only for testing purposes
+    } catch (err) {
+      Logger.error(err)
+      hasDuplicateId = true // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+      hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
+    }
+    // ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+
     histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator' })
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
@@ -231,7 +216,6 @@ const prepare = async (error, messages) => {
            * HOWTO: Stop execution at the `TransferService.prepare`, stop mysql,
            * continue execution to catch block, start mysql
            */
-          
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }

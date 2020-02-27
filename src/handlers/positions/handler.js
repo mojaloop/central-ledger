@@ -235,7 +235,7 @@ const positions = async (error, messages) => {
     await span.finish(fspiopError.message, state)
     return true
   } finally {
-    if (!span.isFinished) {
+      if (!span.isFinished) {
       await span.finish()
     }
   }

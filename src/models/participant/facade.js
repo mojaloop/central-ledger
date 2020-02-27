@@ -44,8 +44,8 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
   ).startTimer()
 
   try {
-    if (Cache.isCacheEnabled())
     let participant
+    if (Cache.isCacheEnabled())
     {
       /* Cached version - fetch data from Models (which we trust are cached) */
       /* find paricipant id by name */
