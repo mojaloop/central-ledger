@@ -32,8 +32,6 @@ const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Cache = require('../../lib/cache')
-const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
@@ -42,61 +40,27 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
     'facade_getByNameAndCurrency - Metrics for participant model',
     ['success', 'queryName']
   ).startTimer()
-
   try {
-    if (Cache.isCacheEnabled())
-    let participant
-    {
-      /* Cached version - fetch data from Models (which we trust are cached) */
-      /* find paricipant id by name */
-      participant = await ParticipantModelCached.getByName(name)
-      if (participant) {
-        /* use the paricipant id and incoming params to prepare the filter */
-        const searchFilter = {
-          participantId: participant.participantId,
-          currencyId,
-          ledgerAccountTypeId
-        }
-        if (isCurrencyActive !== undefined) {
-          searchFilter.isActive = isCurrencyActive
-        }
+    return await Db.participant.query(async (builder) => {
+      let b = builder
+        .where({ 'participant.name': name })
+        .andWhere({ 'pc.currencyId': currencyId })
+        .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .select(
+          'participant.*',
+          'pc.participantCurrencyId',
+          'pc.currencyId',
+          'pc.isActive AS currencyIsActive'
+        )
+        .first()
 
-        /* find the participantCurrency by prepared filter */
-        const participantCurrency = await ParticipantCurrencyModelCached.findOneByParams(searchFilter)
-
-        if (participantCurrency) {
-          /* mix requested data from participantCurrency */
-          participant.participantCurrencyId = participantCurrency.participantCurrencyId
-          participant.currencyId = participantCurrency.currencyId
-          participant.currencyIsActive = participantCurrency.isActive
-        }
+      if (isCurrencyActive !== undefined) {
+        b = b.andWhere({ 'pc.isActive': isCurrencyActive })
       }
-    } else {
-      /* Non-cached version - direct call to DB */
-      participant = await Db.participant.query(async (builder) => {
-        let b = builder
-          .where({ 'participant.name': name })
-          .andWhere({ 'pc.currencyId': currencyId })
-          .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
-          .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-          .select(
-            'participant.*',
-            'pc.participantCurrencyId',
-            'pc.currencyId',
-            'pc.isActive AS currencyIsActive'
-          )
-          .first()
-
-        if (isCurrencyActive !== undefined) {
-          b = b.andWhere({ 'pc.isActive': isCurrencyActive })
-        }
-        return b
-      })
-    }
-
-    histTimerParticipantGetByNameAndCurrencyEnd({ success: true, queryName: 'facade_getByNameAndCurrency' })
-
-    return participant
+      histTimerParticipantGetByNameAndCurrencyEnd({ success: true, queryName: 'facade_getByNameAndCurrency' })
+      return b
+    })
   } catch (err) {
     histTimerParticipantGetByNameAndCurrencyEnd({ success: false, queryName: 'facade_getByNameAndCurrency' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

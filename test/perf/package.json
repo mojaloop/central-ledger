@@ -4,6 +4,7 @@
   "description": "Central Ledger service for executing performance characterization, tests and benchmarks",
   "main": "src/ndex.js",
   "scripts": {
+    "preinstall": "echo 'Installing central-services-stream...'; npm install ../../",
     "setupMacEnv": "export CPPFLAGS=-I/usr/local/opt/openssl/include; export LDFLAGS=-L/usr/local/opt/openssl/lib",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

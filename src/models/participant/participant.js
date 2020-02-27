@@ -29,6 +29,7 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Cache = require('../../lib/cache')
 
 exports.getAll = async () => {
   try {
@@ -44,6 +45,7 @@ exports.create = async (participant) => {
       name: participant.name,
       createdBy: 'unknown'
     })
+    await Cache.invalidateParticipantsCache()
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
