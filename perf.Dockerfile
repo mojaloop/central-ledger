@@ -1,4 +1,4 @@
-FROM node:10.15.3-alpine as builder
+FROM node:12.16.0-alpine as builder
 WORKDIR /opt/central-ledger
 
 RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
@@ -23,7 +23,7 @@ WORKDIR /opt/central-ledger/test/perf
 
 RUN npm install
 
-FROM node:10.15.3-alpine
+FROM node:12.16.0-alpine
 WORKDIR /opt/central-ledger
 
 COPY --from=builder /opt/central-ledger .
@@ -32,6 +32,8 @@ COPY --from=builder /opt/central-ledger .
 
 ## Central Ledger code-base
 COPY src /opt/central-ledger/src
+COPY seeds /opt/central-ledger/seeds
+COPY migrations /opt/central-ledger/migrations
 COPY config /opt/central-ledger/config
 
 ## Central Ledger Perf Test Scripts

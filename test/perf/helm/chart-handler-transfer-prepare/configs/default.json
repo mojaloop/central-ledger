@@ -92,7 +92,9 @@
     },
     "INTERNAL_TRANSFER_VALIDITY_SECONDS": "432000",
     "CACHE": {
-        "MAX_BYTE_SIZE": {{ .Values.config.cache_max_byte_size }}
+        "CACHE_ENABLED": {{ .Values.config.cache_enabled }},
+        "MAX_BYTE_SIZE": {{ .Values.config.cache_max_byte_size }},
+        "EXPIRES_IN_MS": {{ .Values.config.cache_expires_in_ms }}
     },
     "KAFKA": {
         "TOPIC_TEMPLATES": {
