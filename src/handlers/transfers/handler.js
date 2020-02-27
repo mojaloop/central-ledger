@@ -56,6 +56,18 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+// ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+const Crypto = require('crypto') // copied from @mojaloop/central-services-shared/src/util/hash.js <- to be removed once duplicate-check algorithm test changes are reverted, or made permanent.
+function generateSha256 (object) { // copied from @mojaloop/central-services-shared/src/util/hash.js
+  const hashSha256 = Crypto.createHash('sha256')
+  let hash = JSON.stringify(object)
+  hash = hashSha256.update(hash)
+  // remove trailing '=' as per specification
+  hash = hashSha256.digest(hash).toString('base64').slice(0, -1)
+  return hash
+}
+// ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+
 const consumerCommit = false
 const fromSwitch = true
 const toDestination = true
@@ -125,7 +137,23 @@ const prepare = async (error, messages) => {
       'prepare_duplicateCheckComparator - Metrics for transfer handler',
       ['success', 'funcName']
     ).startTimer()
-    const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+
+    // ### Following has been commented out to test the Insert only algorithm for duplicate-checks
+    // const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+    // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+    const generatedHash = generateSha256(payload) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+    let { hasDuplicateId, hasDuplicateHash } = { hasDuplicateId: true, hasDuplicateHash: true } // lets assume the worst case
+    try {
+      await TransferService.saveTransferDuplicateCheck(transferId, generatedHash) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+      hasDuplicateId = false // overriding results to golden path successful use-case only for testing purposes
+      hasDuplicateHash = false // overriding results to golden path successful use-case only for testing purposes
+    } catch (err) {
+      Logger.error(err)
+      hasDuplicateId = true // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+      hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
+    }
+    // ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+
     histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator' })
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
@@ -184,7 +212,7 @@ const prepare = async (error, messages) => {
            * HOWTO: Stop execution at the `TransferService.prepare`, stop mysql,
            * continue execution to catch block, start mysql
            */
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch }) /// <--- needs to be replaced with call to positionHandler
           throw fspiopError
         }
         Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
