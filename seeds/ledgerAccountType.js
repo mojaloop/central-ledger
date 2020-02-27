@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
 
@@ -27,7 +28,8 @@
 const ledgerAccountTypes = [
   {
     name: 'POSITION',
-    description: 'Typical accounts from which a DFSP provisions  transfers '
+    description: 'Typical accounts from which a DFSP provisions transfers',
+    isSettleable: 1
   },
   {
     name: 'SETTLEMENT',
@@ -44,10 +46,19 @@ const ledgerAccountTypes = [
   {
     name: 'HUB_FEE',
     description: 'An account to which fees will be charged or collected'
+  },
+  {
+    name: 'INTERCHANGE_FEE',
+    description: null,
+    isSettleable: 1
   }
 ]
-
-exports.seed = async function (knex) {
+const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
+  return currentValue.isSettleable
+}).map(currentValue => {
+  return currentValue.name
+}).sort()
+const seed = async function (knex) {
   try {
     return await knex('ledgerAccountType').insert(ledgerAccountTypes)
   } catch (err) {
@@ -57,4 +68,8 @@ exports.seed = async function (knex) {
       return -1000
     }
   }
+}
+module.exports = {
+  ledgerAccountList,
+  seed
 }
