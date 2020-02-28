@@ -5,7 +5,7 @@ version: 2.1
 # orbs
 #
 # Orbs used in this pipeline
-###
+##
 orbs:
   anchore: anchore/anchore-engine@1.6.0
   deploy-kube: mojaloop/deployment@0.1.6
@@ -320,26 +320,26 @@ jobs:
       - checkout
       - deploy-kube/setup_and_run:
           helm_set_values: |
-            --set .central.centralledger.centralledger-service.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .central.centralledger.centralledger-service.containers.api.image.tag=$CIRCLE_TAG \
-            --set .central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
-            --set .central.centralledger.centralledger-handler-admin-transfer.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .central.centralledger.centralledger-handler-admin-transfer.containers.api.image.tag=$CIRCLE_TAG \
-            --set .central.centralledger.centralledger-handler-transfer-position.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .central.centralledger.centralledger-handler-transfer-position.containers.api.image.tag=$CIRCLE_TAG \
-            --set .central.centralledger.centralledger-handler-transfer-get.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .central.centralledger.centralledger-handler-transfer-get.containers.api.image.tag=$CIRCLE_TAG \
-            --set .central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
-            --set .central.centralledger.centralledger-handler-timeout.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .central.centralledger.centralledger-handler-timeout.containers.api.image.tag=$CIRCLE_TAG \
-            --set .mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
-            --set .mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
-            --set .mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set .mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.tag=$CIRCLE_TAG
+            --set central.centralledger.centralledger-service.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-service.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-admin-transfer.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-admin-transfer.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-position.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-position.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-get.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-get.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-timeout.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-timeout.containers.api.image.tag=$CIRCLE_TAG \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.tag=$CIRCLE_TAG
 
 
 ##
