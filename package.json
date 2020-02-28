@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "9.2.2",
+  "version": "9.2.3",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -85,7 +85,7 @@
     "@mojaloop/central-services-metrics": "9.1.0",
     "@mojaloop/central-services-shared": "9.2.0",
     "@mojaloop/central-services-stream": "9.2.0",
-    "@mojaloop/event-sdk": "9.2.0",
+    "@mojaloop/event-sdk": "8.8.1-snapshot.3",
     "@mojaloop/forensic-logging-client": "8.3.0",
     "@mojaloop/ml-number": "8.2.0",
     "@now-ims/hapi-now-auth": "2.0.1",
