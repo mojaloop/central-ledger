@@ -56,10 +56,13 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+<<<<<<< HEAD
 // ### START: PERF_TEST kafka.proceed   
 const { proceedToPosition } = require('../../../test/perf/src/util/prepare')
 // PERF_TEST
 
+=======
+>>>>>>> v9.2.1-perf2.1
 // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
 const Crypto = require('crypto') // copied from @mojaloop/central-services-shared/src/util/hash.js <- to be removed once duplicate-check algorithm test changes are reverted, or made permanent.
 function generateSha256 (object) { // copied from @mojaloop/central-services-shared/src/util/hash.js
@@ -216,7 +219,7 @@ const prepare = async (error, messages) => {
            * HOWTO: Stop execution at the `TransferService.prepare`, stop mysql,
            * continue execution to catch block, start mysql
            */
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch }) /// <--- needs to be replaced with call to positionHandler
           throw fspiopError
         }
         Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
