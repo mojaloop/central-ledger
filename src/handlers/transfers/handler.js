@@ -56,13 +56,10 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-<<<<<<< HEAD
 // ### START: PERF_TEST kafka.proceed   
 const { proceedToPosition } = require('../../../test/perf/src/util/prepare')
 // PERF_TEST
 
-=======
->>>>>>> v9.2.1-perf2.1
 // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
 const Crypto = require('crypto') // copied from @mojaloop/central-services-shared/src/util/hash.js <- to be removed once duplicate-check algorithm test changes are reverted, or made permanent.
 function generateSha256 (object) { // copied from @mojaloop/central-services-shared/src/util/hash.js

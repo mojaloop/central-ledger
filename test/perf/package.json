@@ -23,6 +23,7 @@
   "homepage": "https://github.com/mojaloop/central-services-stream#readme",
   "dependencies": {
     "@mojaloop/central-services-metrics": "^9.1.0",
-    "commander": "4.1.1"
+    "commander": "4.1.1",
+    "elastic-apm-node": "^3.4.0"
   }
 }
