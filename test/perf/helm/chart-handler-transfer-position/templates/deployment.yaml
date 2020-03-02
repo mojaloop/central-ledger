@@ -1,11 +1,11 @@
 {{- $dbHost := ( .Values.config.db_host | replace "$release_name" .Release.Name ) -}}
 {{- $kafkaHost := ( .Values.config.kafka_host | replace "$release_name" .Release.Name ) -}}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}
+  name: {{ template "centralledger-handler-transfer-position.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "centralledger-handler-transfer-prepare.name" . }}
+    app.kubernetes.io/name: {{ include "centralledger-handler-transfer-position.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -14,12 +14,12 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "centralledger-handler-transfer-prepare.name" . }}
+      app.kubernetes.io/name: {{ include "centralledger-handler-transfer-position.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "centralledger-handler-transfer-prepare.name" . }}
+        app.kubernetes.io/name: {{ include "centralledger-handler-transfer-position.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -30,17 +30,17 @@ spec:
         prometheus.io/scrape: "true"
       {{- end }}
     spec:
-{{- if .Values.global.config.affinity }}
+{{- if .Values.affinity }}
       affinity:
-{{ toYaml .Values.global.config.affinity | indent 8 }}
+{{ toYaml .Values.affinity | indent 8 }}
 {{- end }}
-{{- if .Values.global.config.nodeSelector }}
+{{- if .Values.nodeSelector }}
       nodeSelector:
-{{ toYaml .Values.global.config.nodeSelector | indent 8 }}
+{{ toYaml .Values.nodeSelector | indent 8 }}
 {{- end }}
-{{- if .Values.global.config.tolerations }}
+{{- if .Values.tolerations }}
       tolerations:
-{{ toYaml .Values.global.config.tolerations | indent 8 }}
+{{ toYaml .Values.tolerations | indent 8 }}
 {{- end }}
       {{- if .Values.init.enabled }}
       initContainers:
@@ -75,7 +75,7 @@ spec:
           {{- end }}
       {{- end }}
       containers:
-        - name: {{ template "centralledger-handler-transfer-prepare.name" . }}
+        - name: {{ template "centralledger-handler-transfer-position.name" . }}
           image: "{{ .Values.containers.api.image.repository }}:{{ .Values.containers.api.image.tag }}"
           imagePullPolicy: {{ .Values.containers.api.image.pullPolicy }}
           command: {{ .Values.containers.api.image.command }}
@@ -101,27 +101,23 @@ spec:
             periodSeconds: {{ .Values.containers.api.livenessProbe.periodSeconds }}
           {{- end }}
           env:
-            - name: PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY
-              value: {{ .Values.config.perf_duplicate_insert_only | quote}}
             - name: LOG_LEVEL
-              value: {{ .Values.config.log_level }}
-            - name: CSL_LOG_TRANSPORT
-              value: {{ .Values.config.log_transport}}
+              value: {{ .Values.config.log_level | quote}}
             - name: LOG_FILTER
               value: {{ .Values.config.log_filter | quote}}
+            - name: CSL_LOG_TRANSPORT
+              value: {{ .Values.config.log_transport | quote}}
             - name: EVENT_SDK_LOG_FILTER
               value: {{ .Values.config.event_log_filter | quote }}
-            {{- if .Values.sidecar.enabled }}
             - name: EVENT_SDK_LOG_METADATA_ONLY
               value: {{ .Values.config.event_log_metadata_only | quote }}
+            {{- if .Values.sidecar.enabled }}
             - name: EVENT_SDK_SIDECAR_DISABLED
               value: "false"
-            - name: EVENT_SDK_SIDECAR_WITH_LOGGER
-              value: {{ .Values.config.log_events_locally_enabled | quote }}
             - name: EVENT_SDK_SERVER_HOST
-              value: {{ .Values.sidecar.config.event_logger_grpc_host | quote }}
+              value: {{ .Values.sidecar.config.event_log_grpc_host | quote }}
             - name: EVENT_SDK_SERVER_PORT
-              value: {{ .Values.sidecar.config.event_logger_grpc_port | quote }}
+              value: {{ .Values.sidecar.config.event_log_grpc_port | quote }}
             {{- end }}
             - name: EVENT_SDK_VENDOR_PREFIX
               value: {{ .Values.config.event_trace_vendor | quote }}
@@ -132,7 +128,7 @@ spec:
             - name: EVENT_SDK_TRACEID_PER_VENDOR
               value: {{ .Values.config.event_traceid_per_vendor | quote }}
           volumeMounts:
-          - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-config-volume
+          - name: {{ template "centralledger-handler-transfer-position.fullname" . }}-config-volume
             mountPath: /opt/central-ledger/config
         {{- if .Values.sidecar.enabled }}
         - name: {{ .Chart.Name }}-sidecar
@@ -162,25 +158,31 @@ spec:
             periodSeconds: {{ .Values.sidecar.livenessProbe.periodSeconds }}
           {{- end }}
           volumeMounts:
-            - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-sidecar-volume
+            - name: {{ template "centralledger-handler-transfer-position.fullname" . }}-sidecar-volum
               mountPath: /opt/event-sidecar/config
           env:
             - name: LOG_LEVEL
-              value: {{ .Values.sidecar.config.log_level }}
+              value: {{ .Values.sidecar.config.log_level | quote }}
+            - name: LOG_FILTER
+              value: {{ .Values.sidecar.config.log_filter | quote }}
+            - name: EVENT_SDK_LOG_FILTER
+              value: {{ .Values.sidecar.config.event_log_filter | quote }}
+            - name: EVENT_SDK_LOG_METADATA_ONLY
+              value: {{ .Values.sidecar.config.event_log_metadata_only | quote }}
         {{- end }}
       volumes:
-        - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-config-volume
+        - name: {{ template "centralledger-handler-transfer-position.fullname" . }}-config-volume
           configMap:
-            name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-config
+            name: {{ template "centralledger-handler-transfer-position.fullname" . }}-config
             items:
             - key: default.json
               path: default.json
             - key: knexfile.js
               path: knexfile.js
         {{- if .Values.sidecar.enabled }}
-        - name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-sidecar-volume
+        - name: {{ template "centralledger-handler-transfer-position.fullname" . }}-sidecar-volum
           configMap:
-            name: {{ template "centralledger-handler-transfer-prepare.fullname" . }}-sidecar
+            name: {{ template "centralledger-handler-transfer-position.fullname" . }}-sidecar
             items:
             - key: default.json
               path: default.json

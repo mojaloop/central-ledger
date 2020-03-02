@@ -40,7 +40,8 @@ Program.command('perf-prepare')
         handlers: [handler],
         runHandlers: true
       })
-      await prepareHanlderRunner(parseInt(args.numberOfMsgs), parseInt(args.runDurationSec), dfspList)
+      const count = await prepareHanlderRunner(parseInt(args.numberOfMsgs), parseInt(args.runDurationSec), dfspList)
+      Logger.info(`Total records: ${count}`)
     } catch (err) {
       Logger.error(err)
     }

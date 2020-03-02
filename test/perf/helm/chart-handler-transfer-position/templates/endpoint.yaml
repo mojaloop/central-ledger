@@ -1,0 +1,21 @@
+{{- if .Values.service.external.enabled -}}
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ template "centralledger-handler-transfer-position.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "centralledger-handler-transfer-position.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+subsets: 
+  -
+    addresses:
+      -
+        ip: {{ .Values.service.external.ip }}
+    ports:
+      -
+        port: {{ .Values.service.external.ports.api.externalPort }}
+        name: {{ .Values.service.external.ports.api.name }}
+{{- end -}}
