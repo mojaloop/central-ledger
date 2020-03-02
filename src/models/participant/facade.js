@@ -291,8 +291,14 @@ const addEndpoint = async (participantId, endpoint) => {
 }
 
 const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId) => {
+  const histGetParticipantLimitEnd = Metrics.getHistogram(
+    'model_participant',
+    'facade_getParticipantLimitByParticipantCurrencyLimit - Metrics for participant model',
+    ['success', 'queryName']
+  ).startTimer()
+
   try {
-    return await Db.participant.query(async (builder) => {
+    const result = await Db.participant.query(async (builder) => {
       return builder
         .where({
           'participant.participantId': participantId,
@@ -312,6 +318,8 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
           'pl.value AS value'
         ).first()
     })
+    histGetParticipantLimitEnd({success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit'})
+    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
