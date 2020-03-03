@@ -251,8 +251,14 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
 }
 
 const savePayeeTransferResponse = async (transferId, payload, action, fspiopError) => {
+  const histTimerSavePayeeTranferResponsedEnd = Metrics.getHistogram(
+    'model_transfer',
+    'facade_savePayeeTransferResponse - Metrics for transfer model',
+    ['success', 'queryName']
+  ).startTimer()
+
   let state
-  let isFulfilment = false
+  let isFulfilment = false  
   let isError = false
   const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
@@ -320,6 +326,12 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   try {
     /** @namespace Db.getKnex **/
     const knex = await Db.getKnex()
+    const histTPayeeResponseValidationPassedEnd = Metrics.getHistogram(
+      'model_transfer',
+      'facade_saveTransferPrepared_transaction - Metrics for transfer model',
+      ['success', 'queryName']
+    ).startTimer()
+
     await knex.transaction(async (trx) => {
       try {
         if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
@@ -364,17 +376,21 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           result.transferErrorRecord = transferErrorRecord
           Logger.debug('savePayeeTransferResponse::transferError')
         }
-        await trx.commit
+        await trx.commit()
+        histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         result.savePayeeTransferResponseExecuted = true
         Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
-        await trx.rollback
+        await trx.rollback()
+        histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
         Logger.error('savePayeeTransferResponse::failure')
         throw err
       }
     })
+    histTimerSavePayeeTranferResponsedEnd({success: true, queryName: 'facade_savePayeeTransferResponse'})
     return result
   } catch (err) {
+    histTimerSavePayeeTranferResponsedEnd({success: false, queryName: 'facade_savePayeeTransferResponse'})
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

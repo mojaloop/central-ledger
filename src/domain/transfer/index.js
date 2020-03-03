@@ -58,10 +58,19 @@ const prepare = async (payload, stateReason = null, hasPassedValidation = true) 
 }
 
 const handlePayeeResponse = async (transferId, payload, action, fspiopError) => {
+  const histTimerTransferServiceHandlePayeeResponseEnd = Metrics.getHistogram(
+    'domain_transfer',
+    'prepare - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+
   try {
     const transfer = await TransferFacade.savePayeeTransferResponse(transferId, payload, action, fspiopError)
-    return TransferObjectTransform.toTransfer(transfer)
+    const result = TransferObjectTransform.toTransfer(transfer)
+    histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handlePayeeResponse'})
+    return result
   } catch (err) {
+    histTimerTransferServiceHandlePayeeResponseEnd({ success: false, funcName: 'handlePayeeResponse'})
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
