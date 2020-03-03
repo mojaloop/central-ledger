@@ -57,7 +57,7 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY = (process.env.PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY === 'true')
-const PRODUCE_TO_POSITION_ENABLED = (process.env.PRODUCE_TO_POSITION_ENABLED === 'true')
+const PRODUCE_TO_POSITION_ENABLED = !(process.env.PRODUCE_TO_POSITION_DISABLED === 'true')
 
 // ### START: PERF_TEST kafka.proceed
 const { proceedToPosition } = require('../../../test/perf/src/util/prepare')
