@@ -45,8 +45,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
 
   try {
     let participant
-    if (Cache.isCacheEnabled())
-    {
+    if (Cache.isCacheEnabled()) {
       /* Cached version - fetch data from Models (which we trust are cached) */
       /* find paricipant id by name */
       participant = await ParticipantModelCached.getByName(name)
@@ -318,7 +317,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
           'pl.value AS value'
         ).first()
     })
-    histGetParticipantLimitEnd({success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit'})
+    histGetParticipantLimitEnd({ success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit' })
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

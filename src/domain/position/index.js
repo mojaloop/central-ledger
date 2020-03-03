@@ -19,7 +19,7 @@
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
 
- * Gates Foundation 
+ * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Shashikant Hirugade <shashikant.hirugade@modusbox.com>

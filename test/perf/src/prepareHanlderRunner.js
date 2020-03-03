@@ -76,7 +76,7 @@ module.exports.prepareHanlderRunner = async (numberOfMessages = 0, durationSecon
     }
   } else if (durationSeconds) {
     const startTime = Date.now()
-    while ((Date.now() - startTime) < (durationSeconds * 1000) ) {
+    while ((Date.now() - startTime) < (durationSeconds * 1000)) {
       const [payerFsp, payeeFsp] = _.sampleSize(dfspList, 2)
       await prepareHanler(null, [generateProtocolMessage(payerFsp, payeeFsp)])
       await setImmediatePromise()

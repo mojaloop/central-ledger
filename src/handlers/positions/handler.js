@@ -54,11 +54,6 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const decodeMessages = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodeMessages
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const apm = require('elastic-apm-node').start({
-  "serviceName": "central-ledger-perf",
-  "serverUrl": "http://dev1-apm.mojaloop.live:80"
-})
-
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
 
 const consumerCommit = true
@@ -240,7 +235,7 @@ const positions = async (error, messages) => {
     await span.finish(fspiopError.message, state)
     return true
   } finally {
-      if (!span.isFinished) {
+    if (!span.isFinished) {
       await span.finish()
     }
   }

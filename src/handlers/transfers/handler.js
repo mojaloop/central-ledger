@@ -58,7 +58,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY = (process.env.PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY === 'true')
 
-// ### START: PERF_TEST kafka.proceed   
+// ### START: PERF_TEST kafka.proceed
 const { proceedToPosition } = require('../../../test/perf/src/util/prepare')
 // PERF_TEST
 

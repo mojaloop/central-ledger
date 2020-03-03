@@ -64,7 +64,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         'model_position',
         'facade_prepareChangeParticipantPositionTransaction_transaction - Metrics for position model',
         ['success', 'queryName']
-      ).startTimer()  
+      ).startTimer()
       try {
         const transactionTimestamp = Time.getUTCString(new Date())
         for (const transfer of transferList) {
@@ -118,7 +118,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         const abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
         Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
-        histTimerTransferStateChangePrepareAndBatchInsertEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_transferStateChangeBatchInsert'})
+        histTimerTransferStateChangePrepareAndBatchInsertEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_transferStateChangeBatchInsert' })
         // Get the effective position for this participantCurrency at the start of processing the Batch
         // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
         const histTimerUpdateEffectivePositionEnd = Metrics.getHistogram(
@@ -165,7 +165,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           const runningReservedValue = new MLNumber(sumTransfersInBatch).subtract(sumReserved).toFixed(Config.AMOUNT.SCALE)
           processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
         }
-        histTimerValidatePositionBatchEnd({success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_ValidatePositionBatch'})
+        histTimerValidatePositionBatchEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_ValidatePositionBatch' })
         const histTimerUpdateParticipantPositionEnd = Metrics.getHistogram(
           'model_position',
           'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition - Metrics for position model',
@@ -186,7 +186,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         if (processedPositionValue.toNumber() > new MLNumber(participantLimit.value).multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
           limitAlarms.push(participantLimit)
         }
-        histTimerUpdateParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition'})
+        histTimerUpdateParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition' })
         /*
           Persist the transferStateChanges and associated participantPositionChange entry to record the running position
           The transferStateChanges need to be persisted first (by INSERTing) to have the PK reference
@@ -214,12 +214,12 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         }
         histTimerPersistTransferStateChangeEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_PersistTransferState' })
         batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
-        histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction'})
+        histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
         await trx.commit()
       } catch (err) {
         Logger.error(err)
         await trx.rollback()
-        histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction'})
+        histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })

@@ -49,4 +49,3 @@ const produceToPosition = async (defaultKafkaConfig, kafkaProducer, functionalit
 module.exports = {
   proceedToPosition
 }
-
