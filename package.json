@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "9.2.4",
+  "version": "9.3.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -83,7 +83,7 @@
     "@mojaloop/central-services-health": "9.2.0",
     "@mojaloop/central-services-logger": "9.1.0",
     "@mojaloop/central-services-metrics": "9.1.0",
-    "@mojaloop/central-services-shared": "9.2.0",
+    "@mojaloop/central-services-shared": "9.3.0",
     "@mojaloop/central-services-stream": "9.2.0",
     "@mojaloop/event-sdk": "9.3.0",
     "@mojaloop/forensic-logging-client": "8.3.0",
@@ -105,7 +105,7 @@
     "knex": "0.20.10",
     "lodash": "4.17.15",
     "moment": "2.24.0",
-    "mongoose": "5.9.2",
+    "mongoose": "5.9.3",
     "npm-run-all": "4.1.5",
     "rc": "1.2.8",
     "require-glob": "3.2.0",
@@ -129,7 +129,7 @@
     "sinon": "9.0.0",
     "standard": "14.3.1",
     "tap-xunit": "2.4.1",
-    "tape": "4.13.0",
+    "tape": "4.13.2",
     "tapes": "4.1.0"
   }
 }
