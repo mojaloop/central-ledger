@@ -27,6 +27,7 @@
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const ParticipantModel = require('../../models/participant/participant')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 let cacheClient
 let participantsAllCacheKey
@@ -62,6 +63,11 @@ const buildUnifiedParticipantsData = (allParticipants) => {
 }
 
 const getParticipantsCached = async () => {
+  const histTimer = Metrics.getHistogram(
+    'model_participant',
+    'model_getParticipantsCached - Metrics for participant model',
+    ['success', 'queryName', 'hit']
+  ).startTimer()
   // Do we have valid participants list in the cache ?
   let cachedParticipants = cacheClient.get(participantsAllCacheKey)
   if (!cachedParticipants) {
@@ -71,9 +77,11 @@ const getParticipantsCached = async () => {
 
     // store in cache
     cacheClient.set(participantsAllCacheKey, cachedParticipants)
+    histTimer({ success: true, queryName: 'model_getParticipantsCached', hit: false })
   } else {
     // unwrap participants list from catbox structure
     cachedParticipants = cachedParticipants.item
+    histTimer({ success: true, queryName: 'model_getParticipantsCached', hit: true })
   }
   return cachedParticipants
 }

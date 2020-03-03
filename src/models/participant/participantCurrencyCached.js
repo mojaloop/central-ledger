@@ -28,6 +28,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Cache = require('../../lib/cache')
 const Config = require('../../../src/lib/config')
 const ParticipantCurrencyModel = require('../../models/participant/participantCurrency')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 let cacheClient
 let participantCurrencyAllCacheKey
@@ -59,6 +60,11 @@ const buildUnifiedParticipantsCurrencyData = (allCurrencyParticipants) => {
 }
 
 const getParticipantCurrencyCached = async () => {
+  const histTimer = Metrics.getHistogram(
+    'model_participant',
+    'model_getParticipantCurrencyCached - Metrics for participant model',
+    ['success', 'queryName', 'hit']
+  ).startTimer()
   // Do we have valid participantsCurrency list in the cache ?
   let cachedCurrencyParticipants = cacheClient.get(participantCurrencyAllCacheKey)
   if (!cachedCurrencyParticipants) {
@@ -68,9 +74,11 @@ const getParticipantCurrencyCached = async () => {
 
     // store in cache
     cacheClient.set(participantCurrencyAllCacheKey, cachedCurrencyParticipants)
+    histTimer({ success: true, queryName: 'model_getParticipantCurrencyCached', hit: false })
   } else {
     // unwrap participants list from catbox structure
     cachedCurrencyParticipants = cachedCurrencyParticipants.item
+    histTimer({ success: true, queryName: 'model_getParticipantCurrencyCached', hit: true })
   }
   return cachedCurrencyParticipants
 }
