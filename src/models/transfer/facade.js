@@ -335,6 +335,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     await knex.transaction(async (trx) => {
       try {
         if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
+
           const res = await Db.settlementWindow.query(builder => {
             return builder
               .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
@@ -357,9 +358,11 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           Logger.debug('savePayeeTransferResponse::transferFulfilment')
         }
         if (transferExtensionRecordsList.length > 0) {
+          // ###! CAN BE DONE THROUGH A BATCH
           for (const transferExtension of transferExtensionRecordsList) {
             await knex('transferExtension').transacting(trx).insert(transferExtension)
           }
+          // ###!
           result.transferExtensionRecordsList = transferExtensionRecordsList
           Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
         }
