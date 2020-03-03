@@ -1,0 +1,1 @@
+helm install --namespace testcss --name css-htpos ./chart-handler-transfer-position -f ./chart-handler-transfer-position/values.yaml
