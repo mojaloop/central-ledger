@@ -56,6 +56,8 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+const PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY = (process.env.PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY === 'true')
+
 // ### START: PERF_TEST kafka.proceed   
 const { proceedToPosition } = require('../../../test/perf/src/util/prepare')
 // PERF_TEST
@@ -144,19 +146,29 @@ const prepare = async (error, messages) => {
 
     // ### Following has been commented out to test the Insert only algorithm for duplicate-checks
     // const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
-    // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
-    const generatedHash = generateSha256(payload) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
     let { hasDuplicateId, hasDuplicateHash } = { hasDuplicateId: true, hasDuplicateHash: true } // lets assume the worst case
-    try {
-      await TransferService.saveTransferDuplicateCheck(transferId, generatedHash) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
-      hasDuplicateId = false // overriding results to golden path successful use-case only for testing purposes
-      hasDuplicateHash = false // overriding results to golden path successful use-case only for testing purposes
-    } catch (err) {
-      Logger.error(err)
-      hasDuplicateId = true // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
-      hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
+    // Logger.warn(`PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY=${PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY}`)
+    if (PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY) {
+      // Logger.warn(`PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY=${PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY} - YES`)
+      // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+      const generatedHash = generateSha256(payload) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+      try {
+        await TransferService.saveTransferDuplicateCheck(transferId, generatedHash) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+        hasDuplicateId = false // overriding results to golden path successful use-case only for testing purposes
+        hasDuplicateHash = false // overriding results to golden path successful use-case only for testing purposes
+      } catch (err) {
+        Logger.error(err)
+        hasDuplicateId = true // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+        hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
+      }
+      // ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+    } else {
+      // Logger.warn(`PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY=${PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY} - NO`)
+      // ### Following has been commented out to test the Insert only algorithm for duplicate-checks
+      const { tempHasDuplicateId, tempHasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+      hasDuplicateId = tempHasDuplicateId // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+      hasDuplicateHash = tempHasDuplicateHash // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
     }
-    // ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
 
     histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator' })
     if (hasDuplicateId && hasDuplicateHash) {

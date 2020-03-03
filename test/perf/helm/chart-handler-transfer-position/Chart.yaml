@@ -1,0 +1,14 @@
+apiVersion: v1
+description: Central-Ledger Transfer Position Handler Helm chart for Kubernetes
+name: centralledger-handler-transfer-position
+version: 9.2.0
+appVersion: "9.2.1"
+home: http://mojaloop.io
+icon: http://mojaloop.io/images/logo.png
+sources:
+  - https://github.com/mojaloop/mojaloop
+  - https://github.com/mojaloop/helm
+  - https://github.com/mojaloop/central-ledger
+maintainers:
+  - name: Miguel de Barros
+    email: miguel.debarros@modusbox.com

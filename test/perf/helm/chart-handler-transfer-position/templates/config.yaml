@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "centralledger-handler-transfer-position.fullname" . }}-config
+  labels:
+    app.kubernetes.io/name: {{ include "centralledger-handler-transfer-position.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+data:
+  default.json: {{ (tpl (.Files.Get "configs/default.json") . ) | quote }}
+  knexfile.js: {{ (tpl (.Files.Get "configs/knexfile.js") . ) | quote }}
+
+{{- if .Values.sidecar.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "centralledger-handler-transfer-position.fullname" . }}-sidecar
+  labels:
+    app.kubernetes.io/name: {{ include "centralledger-handler-transfer-position.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+data:
+  default.json: {{ (tpl (.Files.Get "configs/default-sidecar.json") . ) | quote }}
+{{- end }}
