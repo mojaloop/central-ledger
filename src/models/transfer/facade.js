@@ -258,7 +258,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   ).startTimer()
 
   let state
-  let isFulfilment = false  
+  let isFulfilment = false
   let isError = false
   const errorCode = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorCode
   const errorDescription = fspiopError && fspiopError.errorInformation && fspiopError.errorInformation.errorDescription
@@ -335,7 +335,6 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     await knex.transaction(async (trx) => {
       try {
         if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
-
           const res = await Db.settlementWindow.query(builder => {
             return builder
               .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
@@ -390,10 +389,10 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
         throw err
       }
     })
-    histTimerSavePayeeTranferResponsedEnd({success: true, queryName: 'facade_savePayeeTransferResponse'})
+    histTimerSavePayeeTranferResponsedEnd({ success: true, queryName: 'facade_savePayeeTransferResponse' })
     return result
   } catch (err) {
-    histTimerSavePayeeTranferResponsedEnd({success: false, queryName: 'facade_savePayeeTransferResponse'})
+    histTimerSavePayeeTranferResponsedEnd({ success: false, queryName: 'facade_savePayeeTransferResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

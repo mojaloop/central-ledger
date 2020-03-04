@@ -40,7 +40,7 @@ const changeParticipantPosition = (participantCurrencyId, isReversal, amount, tr
     ['success', 'funcName']
   ).startTimer()
   const result = PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
-  histTimerChangeParticipantPositionEnd({success: true, funcName: 'changeParticipantPosition'})
+  histTimerChangeParticipantPositionEnd({ success: true, funcName: 'changeParticipantPosition' })
   return result
 }
 

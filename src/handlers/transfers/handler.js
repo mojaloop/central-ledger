@@ -56,7 +56,7 @@ const decodePayload = require('@mojaloop/central-services-shared').Util.Streamin
 const Comparators = require('@mojaloop/central-services-shared').Util.Comparators
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY = (process.env.PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY === 'true')
+const PREPARE_DUPLICATE_INSERT_MODE = process.env.PREPARE_DUPLICATE_INSERT_MODE
 const PREPARE_SEND_POSITION_TO_KAFKA = !(process.env.PREPARE_SEND_POSITION_TO_KAFKA_DISABLED === 'true')
 
 // ### START: PERF_TEST kafka.proceed
@@ -142,14 +142,16 @@ const prepare = async (error, messages) => {
     const histTimerDuplicateCheckEnd = Metrics.getHistogram(
       'handler_transfers',
       'prepare_duplicateCheckComparator - Metrics for transfer handler',
-      ['success', 'funcName']
+      ['success', 'funcName', 'mode']
     ).startTimer()
 
     // ### Following has been commented out to test the Insert only algorithm for duplicate-checks
     // const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
     let { hasDuplicateId, hasDuplicateHash } = { hasDuplicateId: true, hasDuplicateHash: true } // lets assume the worst case
+    let prepare_duplicateCheckComparator_mode = 'UNDEFINED'
     // Logger.warn(`PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY=${PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY}`)
-    if (PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY) {
+    if (PREPARE_DUPLICATE_INSERT_MODE === 'INSERT_ONLY') {
+      prepare_duplicateCheckComparator_mode = 'INSERT_ONLY'
       // Logger.warn(`PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY=${PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY} - YES`)
       // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
       const generatedHash = generateSha256(payload) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
@@ -163,7 +165,12 @@ const prepare = async (error, messages) => {
         hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
       }
       // ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+    } else if (PREPARE_DUPLICATE_INSERT_MODE === 'DISABLED') {
+      prepare_duplicateCheckComparator_mode = 'DISABLED'
+      hasDuplicateId = false // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+      hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
     } else {
+      prepare_duplicateCheckComparator_mode = 'DEFAULT'
       // Logger.warn(`PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY=${PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY} - NO`)
       // ### Following has been commented out to test the Insert only algorithm for duplicate-checks
       const { tempHasDuplicateId, tempHasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
@@ -171,7 +178,7 @@ const prepare = async (error, messages) => {
       hasDuplicateHash = tempHasDuplicateHash // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
     }
 
-    histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator' })
+    histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator', mode: prepare_duplicateCheckComparator_mode })
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
       const transfer = await TransferService.getByIdLight(transferId)

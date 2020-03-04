@@ -35,6 +35,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -297,28 +298,65 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
   ).startTimer()
 
   try {
-    const result = await Db.participant.query(async (builder) => {
-      return builder
-        .where({
-          'participant.participantId': participantId,
-          'pc.currencyId': currencyId,
-          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
-          'pl.participantLimitTypeId': participantLimitTypeId,
-          'participant.isActive': 1,
-          'pc.IsActive': 1,
-          'pl.isActive': 1
-        })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
-        .select(
-          'participant.participantID AS participantId',
-          'pc.currencyId AS currencyId',
-          'pl.participantLimitTypeId as participantLimitTypeId',
-          'pl.value AS value'
-        ).first()
-    })
+    let participantLimit
+    if (Cache.isCacheEnabled()) {
+      /* Cached version - fetch data from Models (which we trust are cached) */
+      const participant = await ParticipantModelCached.getById(participantId)
+
+      /* Checkpoint #1: participant found and is active */
+      if ((participant) && (participant.isActive)) {
+        /* use the paricipant id and incoming params to prepare the filter */
+        const searchFilter = {
+          participantId: participant.participantId,
+          currencyId,
+          ledgerAccountTypeId,
+          isActive: 1
+        }
+
+        /* find the participantCurrency by prepared filter */
+        const participantCurrency = await ParticipantCurrencyModelCached.findOneByParams(searchFilter)
+
+        /* Checkpoint #2: participantCurrency found and is active */
+        if ((participantCurrency) && (participantCurrency.isActive)) {
+          const participantLimitRow = await ParticipantLimitCached.getByParticipantCurrencyId(participantCurrency.participantCurrencyId)
+
+          /* Checkpoint #3: participantLimit found */
+          if ((participantLimitRow) && (participantLimitRow.isActive)) {
+            /* combine all needed info */
+            participantLimit = {
+              participantId,
+              currencyId: participantCurrency.currencyId,
+              participantLimitTypeId: participantLimitRow.participantLimitTypeId,
+              value: participantLimitRow.value
+            }
+          }
+        }
+      }
+    } else {
+      /* Non-cached version - direct call to DB */
+      participantLimit = await Db.participant.query(async (builder) => {
+        return builder
+          .where({
+            'participant.participantId': participantId,
+            'pc.currencyId': currencyId,
+            'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+            'pl.participantLimitTypeId': participantLimitTypeId,
+            'participant.isActive': 1,
+            'pc.IsActive': 1,
+            'pl.isActive': 1
+          })
+          .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+          .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
+          .select(
+            'participant.participantID AS participantId',
+            'pc.currencyId AS currencyId',
+            'pl.participantLimitTypeId as participantLimitTypeId',
+            'pl.value AS value'
+          ).first()
+      })
+    }
     histGetParticipantLimitEnd({ success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit' })
-    return result
+    return participantLimit
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -403,6 +441,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
           await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
           await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+          await ParticipantLimitCached.invalidateParticipantLimitCache()
         }
         await trx.commit
         return {
