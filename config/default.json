@@ -263,6 +263,52 @@
               "auto.offset.reset": "earliest"
             }
           }
+        },
+        "POSITION_PREPARE": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-transfer-position-prepare",
+              "group.id": "cl-group-transfer-position-prepare",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "POSITION_FULFIL": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-transfer-position-fulfil",
+              "group.id": "cl-group-transfer-position-fulfil",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
         }
       },
       "ADMIN": {
@@ -360,6 +406,44 @@
             "rdkafkaConf": {
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-position",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
+            }
+          }
+        },
+        "POSITION_PREPARE": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "cl-prod-transfer-position-prepare",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
+            }
+          }
+        },
+        "POSITION_FULFIL": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "cl-prod-transfer-position-fulfil",
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,

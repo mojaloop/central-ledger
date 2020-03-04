@@ -150,7 +150,7 @@ const createHandlers = async (handlers) => {
           break
         }
         case 'position': {
-          await RegisterHandlers.positions.registerPositionHandler()
+          await RegisterHandlers.positions.registerPositionHandler(handler.flow)
           // if (!Config.HANDLERS_CRON_DISABLED) {
           //   Logger.info('Starting Kafka Cron Jobs...')
           //   await KafkaCron.start('position')
