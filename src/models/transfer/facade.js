@@ -977,9 +977,20 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       ).startTimer()
       return await knex.transaction(async (trx) => {
         try {
-          await knex('transfer').transacting(trx).insert(transferRecord)
-          await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
-          await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+          if (false) {
+            const t1 = knex('transfer').insert(transferRecord)
+            const t2 = knex('transferParticipant').insert(payerTransferParticipantRecord)
+            const t3 = knex('transferParticipant').insert(payeeTransferParticipantRecord)
+            const rawTxt = t1.toString() + '; ' + t2.toString() + '; ' + t3.toString()
+            console.log('XXXX:', rawTxt)
+            await knex().raw(rawTxt).transacting(trx)
+
+          } else {
+            await knex('transfer').transacting(trx).insert(transferRecord)
+            await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+            await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+          }
+
           payerTransferParticipantRecord.name = payload.payerFsp
           payeeTransferParticipantRecord.name = payload.payeeFsp
           let transferExtensionsRecordList = []
@@ -1674,4 +1685,4 @@ const TransferFacade = {
   saveTransferPreparedChangePosition
 }
 
-module.exports = TransferFacade
+module.exports = require('../../lib/SeriesTool').mangleExports('TransferFacade', TransferFacade)

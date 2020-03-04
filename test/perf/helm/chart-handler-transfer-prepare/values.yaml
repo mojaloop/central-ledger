@@ -36,12 +36,13 @@ containers:
   api:
     image:
       repository: mojaloop/central-ledger-perf
-      tag: v1.01
+      tag: y1
       pullPolicy: Always
       # command: "node src/index.js perf-prepare"
       # command: '["node", "src/index.js", "perf-prepare"]'
-      command: '["node", "src/index.js", "perf-prepare", "--runDurationSec", "60"]'
+      # command: '["node", "src/index.js", "perf-prepare", "--runDurationSec", "600"]'
       # command: '["node", "src/index.js", "perf-prepare", "--numberOfMsgs", "10"]'
+      command: '["sleep", "1000000"]'
       # command:
       #   - sh
       #   - -c
@@ -53,13 +54,13 @@ containers:
           externalPort: 80
           internalPort: 3001
     readinessProbe:
-      enabled: true
+      enabled: false
       httpGet:
         path: /health
       initialDelaySeconds: 60
       periodSeconds: 15
     livenessProbe:
-      enabled: true
+      enabled: false
       httpGet:
         path: /health
       initialDelaySeconds: 60

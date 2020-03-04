@@ -108,3 +108,5 @@ module.exports = {
   destroyByParticipantCurrencyId,
   destroyByParticipantId
 }
+
+module.exports = require('../../lib/SeriesTool').mangleExports('ParticipantPosition', module.exports)

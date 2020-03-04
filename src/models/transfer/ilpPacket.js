@@ -69,3 +69,5 @@ exports.destroyByTransferId = async (record) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
+module.exports = require('../../lib/SeriesTool').mangleExports('ilpPacket', exports)

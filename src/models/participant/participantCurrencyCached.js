@@ -165,3 +165,5 @@ const withInvalidate = (theFunctionName) => {
 exports.create = withInvalidate('create')
 exports.update = withInvalidate('update')
 exports.destroyByParticipantId = withInvalidate('destroyByParticipantId')
+
+module.exports = require('../../lib/SeriesTool').mangleExports('ParticipantCurrencyCached', exports)

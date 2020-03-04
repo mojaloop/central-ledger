@@ -31,6 +31,7 @@
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
 const Logger = require('@mojaloop/central-services-logger')
+const { mangleExports } = require('../../lib/SeriesTool')
 
 const insert = async (participantLimit) => {
   try {
@@ -134,3 +135,5 @@ module.exports = {
   destroyByParticipantCurrencyId,
   destroyByParticipantId
 }
+
+module.exports = mangleExports('participanLimit', module.exports)

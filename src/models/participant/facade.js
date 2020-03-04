@@ -36,6 +36,7 @@ const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
+const { mangleExports } = require('../../lib/SeriesTool')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -675,7 +676,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
   }
 }
 
-module.exports = {
+module.exports = mangleExports('ParticipantFacade', {
   addHubAccountAndInitPosition,
   getByNameAndCurrency,
   getParticipantLimitByParticipantIdAndCurrencyId,
@@ -690,4 +691,4 @@ module.exports = {
   getParticipantLimitsByParticipantId,
   getAllAccountsByNameAndCurrency,
   getLimitsForAllParticipants
-}
+})

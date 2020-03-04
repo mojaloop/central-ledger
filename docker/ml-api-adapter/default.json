@@ -1,8 +1,8 @@
 {
   "PORT": 3000,
   "HOSTNAME": "http://ml-api-adapter",
-  "ENDPOINT_SOURCE_URL": "http://host.docker.internal:3001",
-  "ENDPOINT_HEALTH_URL": "http://host.docker.internal:3001/health",
+  "ENDPOINT_SOURCE_URL": "http://192.168.0.3:3001",
+  "ENDPOINT_HEALTH_URL": "http://192.168.0.3:3001/health",
   "ENDPOINT_CACHE_CONFIG": {
     "expiresIn": 180000,
     "generateTimeout": 30000

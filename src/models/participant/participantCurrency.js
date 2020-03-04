@@ -26,6 +26,7 @@
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { mangleExports } = require('../../lib/SeriesTool')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
@@ -85,11 +86,4 @@ exports.destroyByParticipantId = async (id) => {
   }
 }
 
-exports.getByName = async (accountParams) => {
-  try {
-    const participantCurrency = await Db.participantCurrency.findOne(accountParams)
-    return participantCurrency
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
+module.exports = mangleExports('ParticipantCurrency', exports)

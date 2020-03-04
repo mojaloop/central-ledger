@@ -746,3 +746,5 @@ module.exports = {
   hubAccountExists: ParticipantCurrencyModel.hubAccountExists,
   getLimitsForAllParticipants
 }
+
+module.exports = require('../../lib/SeriesTool').mangleExports('DomainParticipant', module.exports)
