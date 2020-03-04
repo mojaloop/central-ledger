@@ -57,8 +57,7 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY = (process.env.PREPARE_ENABLED_DUPLCIATE_INSERT_ONLY === 'true')
-const PREPARE_PRODUCE_TO_POSITION_ENABLED = (process.env.PREPARE_PRODUCE_TO_POSITION_ENABLED === 'true')
-const FULFIL_PRODUCE_TO_POSITION_ENABLED = (process.env.FULFIL_PRODUCE_TO_POSITION_ENABLED === 'true')
+const PREPARE_SEND_POSITION_TO_KAFKA = !(process.env.PREPARE_SEND_POSITION_TO_KAFKA_DISABLED === 'true')
 
 // ### START: PERF_TEST kafka.proceed
 const { proceedToPosition } = require('../../../test/perf/src/util/prepare')
@@ -184,7 +183,7 @@ const prepare = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, `callback--${actionLetter}1`))
           message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
           message.value.content.uriParams = { id: transferId }
-          if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+          if (PREPARE_SEND_POSITION_TO_KAFKA) {
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
           } else {
             await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
@@ -194,7 +193,7 @@ const prepare = async (error, messages) => {
         } else if (action === TransferEventAction.BULK_PREPARE) {
           Logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
-          if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+          if (PREPARE_SEND_POSITION_TO_KAFKA) {
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           } else {
             await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -206,7 +205,7 @@ const prepare = async (error, messages) => {
         if (action === TransferEventAction.BULK_PREPARE) {
           Logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
-          if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+          if (PREPARE_SEND_POSITION_TO_KAFKA) {
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           } else {
             await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -214,7 +213,7 @@ const prepare = async (error, messages) => {
           throw fspiopError
         } else { // action === TransferEventAction.PREPARE
           Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
-          if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+          if (PREPARE_SEND_POSITION_TO_KAFKA) {
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
           } else {
             await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit })
@@ -227,7 +226,7 @@ const prepare = async (error, messages) => {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}5`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality, action }
-      if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+      if (PREPARE_SEND_POSITION_TO_KAFKA) {
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       } else {
         await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -250,7 +249,7 @@ const prepare = async (error, messages) => {
            * HOWTO: Stop execution at the `TransferService.prepare`, stop mysql,
            * continue execution to catch block, start mysql
            */
-          if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+          if (PREPARE_SEND_POSITION_TO_KAFKA) {
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch }) /// <--- needs to be replaced with call to positionHandler            
           } else {
             await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -260,7 +259,7 @@ const prepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
         functionality = TransferEventType.POSITION
         const eventDetail = { functionality, action }
-        if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+        if (PREPARE_SEND_POSITION_TO_KAFKA) {
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
         } else {
           await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
@@ -284,7 +283,7 @@ const prepare = async (error, messages) => {
            * mysql at `TransferService.prepare` and starting it after entring catch.
            * Not sure if it will work for bulk, because of the BulkPrepareHandler.
            */
-          if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+          if (PREPARE_SEND_POSITION_TO_KAFKA) {
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           } else {
             await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -301,7 +300,7 @@ const prepare = async (error, messages) => {
          * a tansfer in a currency not supported by either dfsp. Not sure if it
          * will be triggered for bulk, because of the BulkPrepareHandler.
          */
-        if (PREPARE_PRODUCE_TO_POSITION_ENABLED) {
+        if (PREPARE_SEND_POSITION_TO_KAFKA) {
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         } else {
           proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -379,11 +378,7 @@ const fulfil = async (error, messages) => {
        * HOWTO: The list of individual transfers being committed should contain
        * non-existing transferId
        */
-      if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      } else {
-        await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      }
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else if (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase()) {
       /**
@@ -401,11 +396,7 @@ const fulfil = async (error, messages) => {
        * Not sure if it will apply to bulk, as it could/should be captured
        * at BulkPrepareHander. To be verified as part of future story.
        */
-      if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, toDestination })
-      } else {
-        await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, toDestination })
-      }
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, toDestination })
       throw fspiopError
     }
     // If execution continues after this point we are sure transfer exists and source matches payee fsp
@@ -429,21 +420,13 @@ const fulfil = async (error, messages) => {
           /**
            * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
            */
-          if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          } else {
-            await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         } else {
           Logger.info(Util.breadcrumb(location, `callbackFinilized3--${actionLetter}4`))
           const eventDetail = { functionality, action: TransferEventAction.ABORT_DUPLICATE }
-          if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          } else {
-            await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
@@ -456,11 +439,7 @@ const fulfil = async (error, messages) => {
          *
          * TODO: find a way to trigger this code branch and handle it at BulkProcessingHandler (not in scope of #967)
          */
-        if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
-        } else {
-          await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
-        }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
@@ -471,11 +450,7 @@ const fulfil = async (error, messages) => {
         /**
          * HOWTO: Impossible to trigger for individual transfer in a bulk? (not in scope of #967)
          */
-        if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
-        } else {
-          await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
-        }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       }
@@ -493,11 +468,7 @@ const fulfil = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorModified3--${actionLetter}8`))
         eventDetail = { functionality, action: TransferEventAction.ABORT_DUPLICATE }
       }
-      if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      } else {
-        await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-      }
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
       if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
@@ -511,11 +482,7 @@ const fulfil = async (error, messages) => {
           /**
            * TODO: BulkProcessingHandler (not in scope of #967) The individual transfer is ABORTED by notification is never sent.
            */
-          if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
-          } else {
-            await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
-          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFspiopError, eventDetail, toDestination })
           throw fspiopError
         } else if (transfer.transferState !== TransferState.RESERVED) {
           Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
@@ -524,11 +491,7 @@ const fulfil = async (error, messages) => {
           /**
            * TODO: BulkProcessingHandler (not in scope of #967)
            */
-          if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          } else {
-            await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         } else if (transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
           Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
@@ -537,11 +500,7 @@ const fulfil = async (error, messages) => {
           /**
            * TODO: BulkProcessingHandler (not in scope of #967)
            */
-          if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          } else {
-            await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-          }
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         } else { // validations success
           Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
@@ -549,11 +508,7 @@ const fulfil = async (error, messages) => {
             Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
             await TransferService.handlePayeeResponse(transferId, payload, action)
             const eventDetail = { functionality: TransferEventType.POSITION, action }
-            if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-              await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
-            } else {
-              await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
-            }
+            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
             histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
             return true
           } else {
@@ -561,11 +516,7 @@ const fulfil = async (error, messages) => {
               Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
               await TransferService.handlePayeeResponse(transferId, payload, action)
               const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
-              if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-                await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
-              } else {
-                await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
-              }
+              await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
             } else { // action === TransferEventAction.ABORT // error-callback request to be processed
@@ -582,20 +533,12 @@ const fulfil = async (error, messages) => {
                 fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
                 await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
                 const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
-                if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-                  await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-                } else {
-                  await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-                }
+                await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
                 throw fspiopError
               }
               await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
               const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
-              if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-                await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-              } else {
-                await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
-              }
+              await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
               throw fspiopError
             }
           }
@@ -607,11 +550,7 @@ const fulfil = async (error, messages) => {
         /**
          * TODO: BulkProcessingHandler (not in scope of #967)
          */
-        if (FULFIL_PRODUCE_TO_POSITION_ENABLED) {
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-        } else {
-          await proceedToPosition(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
-        }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       }
     }

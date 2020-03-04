@@ -34,7 +34,13 @@ const PositionFacade = require('../../models/position/facade')
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const changeParticipantPosition = (participantCurrencyId, isReversal, amount, transferStateChange) => {
+  const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
+    'domain_position',
+    'changeParticipantPosition - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
   const result = PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
+  histTimerChangeParticipantPositionEnd({success: true, funcName: 'changeParticipantPosition'})
   return result
 }
 

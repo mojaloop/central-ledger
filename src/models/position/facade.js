@@ -238,6 +238,11 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
 }
 
 const changeParticipantPositionTransaction = async (participantCurrencyId, isReversal, amount, transferStateChange) => {
+  const histTimerChangeParticipantPositionTransactionEnd = Metrics.getHistogram(
+    'model_position',
+    'facade_changeParticipantPositionTransaction - Metrics for position model',
+    ['success', 'queryName']
+  ).startTimer()
   try {
     const knex = await Db.getKnex()
     await knex.transaction(async (trx) => {
@@ -266,7 +271,8 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
           createdDate: transactionTimestamp
         }
         await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
-        await trx.commit
+        await trx.commit()
+        histTimerChangeParticipantPositionTransactionEnd( {success: true, queryName: 'facade_changeParticipantPositionTransaction'})
       } catch (err) {
         await trx.rollback
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
