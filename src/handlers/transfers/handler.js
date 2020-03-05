@@ -57,6 +57,7 @@ const Comparators = require('@mojaloop/central-services-shared').Util.Comparator
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const PREPARE_DUPLICATE_INSERT_MODE = process.env.PREPARE_DUPLICATE_INSERT_MODE
+const FULFIL_DUPLICATE_INSERT_MODE = process.env.FULFIL_DUPLICATE_INSERT_MODE
 const PREPARE_SEND_POSITION_TO_KAFKA = !(process.env.PREPARE_SEND_POSITION_TO_KAFKA_DISABLED === 'true')
 
 // ### START: PERF_TEST kafka.proceed
@@ -409,13 +410,62 @@ const fulfil = async (error, messages) => {
     // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    let dupCheckResult
-    if (!isTransferError) {
-      dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
+
+    Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    const histTimerDuplicateCheckEnd = Metrics.getHistogram(
+      'handler_transfers',
+      'fulfil_duplicateCheckComparator - Metrics for transfer handler',
+      ['success', 'funcName', 'mode']
+    ).startTimer()
+
+    // ### Following has been commented out to test the Insert only algorithm for duplicate-checks
+    // const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+    let { hasDuplicateId, hasDuplicateHash } = { hasDuplicateId: true, hasDuplicateHash: true } // lets assume the worst case
+    let fulfil_duplicateCheckComparator_mode = 'UNDEFINED'
+    if (FULFIL_DUPLICATE_INSERT_MODE === 'INSERT_ONLY') {
+      fulfil_duplicateCheckComparator_mode = 'INSERT_ONLY'
+      // ### START: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+      const generatedHash = generateSha256(payload) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+      try {
+        if (!isTransferError) {
+          await TransferService.saveTransferFulfilmentDuplicateCheck(transferId, generatedHash) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+        } else {
+          await TransferService.saveTransferErrorDuplicateCheck(transferId, generatedHash) // modified from @mojaloop/central-services-shared/src/util/comparators/duplicateCheckComparator.js
+        }
+        hasDuplicateId = false // overriding results to golden path successful use-case only for testing purposes
+        hasDuplicateHash = false // overriding results to golden path successful use-case only for testing purposes
+      } catch (err) {
+        Logger.error(err)
+        hasDuplicateId = true // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+        hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
+      }
+      // ### END: Placeholder for modifing Comparators.duplicateCheckComparator algorithm to use an insert only method for duplicate checking
+    } else if (FULFIL_DUPLICATE_INSERT_MODE === 'DISABLED') {
+      fulfil_duplicateCheckComparator_mode = 'DISABLED'
+      hasDuplicateId = false // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+      hasDuplicateHash = false // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
     } else {
-      dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferErrorDuplicateCheck, TransferService.saveTransferErrorDuplicateCheck)
+      fulfil_duplicateCheckComparator_mode = 'DEFAULT'
+      let dupCheckResult
+      if (!isTransferError) {
+        dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
+      } else {
+        dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferErrorDuplicateCheck, TransferService.saveTransferErrorDuplicateCheck)
+      }
+      hasDuplicateId = dupCheckResult.hasDuplicateId // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
+      hasDuplicateHash = dupCheckResult.hasDuplicateHash // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
     }
-    const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
+
+    // let dupCheckResult
+    // if (!isTransferError) {
+    //   dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
+    // } else {
+    //   dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferErrorDuplicateCheck, TransferService.saveTransferErrorDuplicateCheck)
+    // }
+    // const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
+
+    histTimerDuplicateCheckEnd({ success: true, funcName: 'fulfil_duplicateCheckComparator', mode: fulfil_duplicateCheckComparator_mode })
+
 
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
@@ -479,7 +529,7 @@ const fulfil = async (error, messages) => {
       throw fspiopError
     } else { // !hasDuplicateId
       if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
-        Util.breadcrumb(location, { path: 'validationFailed' })
+        Util.breadcrumb(location, { path: 'validationCheck' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
