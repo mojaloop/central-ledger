@@ -54,6 +54,7 @@ const TimeoutHandlers = require('./timeouts/handler')
 const AdminHandlers = require('./admin/handler')
 const BulkHandlers = require('./bulk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const CombinedHandlers = require('./combined/handler.js')
 
 const registerAllHandlers = async () => {
   try {
@@ -79,6 +80,7 @@ const registerAllHandlers = async () => {
   }
 }
 
+
 module.exports = {
   registerAllHandlers,
   transfers: {
@@ -102,5 +104,8 @@ module.exports = {
     registerBulkPrepareHandler: BulkHandlers.registerBulkPrepareHandler,
     registerBulkFulfilHandler: BulkHandlers.registerBulkFulfilHandler,
     registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler
+  },
+  combined: {
+    registerPreparePositionHandler: CombinedHandlers.registerPreparePositionHandler
   }
 }
