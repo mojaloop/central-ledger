@@ -60,6 +60,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--bulkprepare', 'Start the Bulk Prepare Handler')
   .option('--bulkfulfil', 'Start the Bulk Fulfil Handler')
   .option('--bulkprocessing', 'Start the Bulk Processing Handler')
+  .option('--preparePosition', 'Start the combined prepare and position handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
@@ -77,6 +78,14 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       Logger.debug('CLI: Executing --position')
       const handler = {
         type: 'position',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.preparePosition) {
+      Logger.debug('CLI: Executing --preparePosition')
+      const handler = {
+        type: 'preparePosition',
         enabled: true
       }
       handlerList.push(handler)
@@ -142,7 +151,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       service: 'handler',
       port: Config.PORT,
       modules: [Plugin, MetricPlugin],
-      runMigrations: false,
+      runMigrations: true,
       handlers: handlerList,
       runHandlers: true
     })
