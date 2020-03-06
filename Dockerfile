@@ -21,6 +21,7 @@ COPY src /opt/central-ledger/src
 COPY config /opt/central-ledger/config
 COPY migrations /opt/central-ledger/migrations
 COPY seeds /opt/central-ledger/seeds
+COPY test /opt/central-ledger/test
 
 # Create empty log file & link stdout to the application log file
 RUN mkdir ./logs && touch ./logs/combined.log

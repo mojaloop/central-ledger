@@ -37,29 +37,29 @@ services:
       retries: 10
       interval: 30s
 
-#  ml-api-adapter:
-#    image: mojaloop/ml-api-adapter:latest
-#    container_name: cl_ml-api-adapter
-#    command:
-#      - "sh"
-#      - "-c"
-#      - "sh /opt/wait-for/wait-for-ml-api-adapter.sh && node src/api/index.js"
-#    ports:
-#      - "3000:3000"
-#    volumes:
-#      - ./docker/ml-api-adapter/default.json:/opt/ml-api-adapter/config/default.json
-#      - ./docker/wait-for:/opt/wait-for
-#    environment:
-#      - LOG_LEVEL=info
-#    networks:
-#      - cl-mojaloop-net
-#    depends_on:
-#      - kafka
-#    healthcheck:
-#      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3000/health"]
-#      timeout: 20s
-#      retries: 10
-#      interval: 30s
+  ml-api-adapter:
+    image: mojaloop/ml-api-adapter:latest
+    container_name: cl_ml-api-adapter
+    command:
+      - "sh"
+      - "-c"
+      - "sh /opt/wait-for/wait-for-ml-api-adapter.sh && node src/api/index.js"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./docker/ml-api-adapter/default.json:/opt/ml-api-adapter/config/default.json
+      - ./docker/wait-for:/opt/wait-for
+    environment:
+      - LOG_LEVEL=info
+    networks:
+      - cl-mojaloop-net
+    depends_on:
+      - kafka
+    healthcheck:
+      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3000/health"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
 
   mysql:
     image: mysql/mysql-server
