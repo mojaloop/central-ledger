@@ -65,6 +65,7 @@ module.exports = {
       createRetryIntervalMillis: RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS
       // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
     },
-    debug: RC.DATABASE.DEBUG
+    debug: RC.DATABASE.DEBUG,
+    retries: RC.DATABASE.RETRIES
   }
 }

@@ -64,7 +64,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
         await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit
+        await trx.commit()
         return state
       } catch (err) {
         await trx.rollback
@@ -109,7 +109,7 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
         await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord)
-        await trx.commit
+        await trx.commit()
         return state
       } catch (err) {
         await trx.rollback

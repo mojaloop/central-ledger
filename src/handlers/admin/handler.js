@@ -61,7 +61,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
         await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
         await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
         await TransferService.reconciliationTransferCommit(payload, transactionTimestamp, enums, trx)
-        await trx.commit
+        await trx.commit()
       } catch (err) {
         await trx.rollback
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -73,7 +73,7 @@ const createRecordFundsInOut = async (payload, transactionTimestamp, enums) => {
       try {
         await TransferService.reconciliationTransferPrepare(payload, transactionTimestamp, enums, trx)
         await TransferService.reconciliationTransferReserve(payload, transactionTimestamp, enums, trx)
-        await trx.commit
+        await trx.commit()
       } catch (err) {
         await trx.rollback
         throw ErrorHandler.Factory.reformatFSPIOPError(err)

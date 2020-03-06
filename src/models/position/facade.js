@@ -38,6 +38,7 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('../../lib/config')
+const ER_LOCK_DEADLOCK = 'ER_LOCK_DEADLOCK'
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
   try {
@@ -45,134 +46,157 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-    const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
-    const reservedTransfers = []
-    const abortedTransfers = []
-    const initialTransferStateChangePromises = []
-    const transferIdList = []
-    const limitAlarms = []
-    let sumTransfersInBatch = 0
-    await knex.transaction(async (trx) => {
-      try {
-        const transactionTimestamp = Time.getUTCString(new Date())
-        for (const transfer of transferList) {
-          // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
-          // ^^^^^ this is how we want to get this later to reduce the DB queries into one.
-
-          /*
-          TODO Possibly the commented block of validations in this comment block will be validated with message validations for each topic
-          (are they valid or not LIME messages and are they valid for the given topic)
-           ====
-           Since iterating over the list of transfers, validate here that each transfer is for the PayerFSP and Currency
-           if (participantName !== transfer.value.content.payload.payerFSP)
-             {} // log error for particular transfer because it should not be in this topic (and might be injected)
-           if (currencyId != transfer.value.content.payload.payerFSP)
-             {} // log error for particular transfer because it should not be in this topic (and might be injected)
-           ====
-           */
-
-          const id = transfer.value.content.payload.transferId
-          transferIdList.push(id)
-          initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
-        }
-        const initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
-        for (const id in initialTransferStateChangeList) {
-          const transferState = initialTransferStateChangeList[id]
-          const transfer = transferList[id].value.content.payload
-          const rawMessage = transferList[id]
-          if (transferState.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
-            transferState.transferStateChangeId = null
-            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
-            const transferAmount = new MLNumber(transfer.amount.amount) /* Just do this once, so add to reservedTransfers */
-            reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
-            sumTransfersInBatch = new MLNumber(sumTransfersInBatch).add(transferAmount).toFixed(Config.AMOUNT.SCALE)
-          } else {
-            transferState.transferStateChangeId = null
-            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-            transferState.reason = 'Transfer in incorrect state'
-            abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
-          }
-        }
-        const abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
-        Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
-        // Get the effective position for this participantCurrency at the start of processing the Batch
-        // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
-        const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId: participantCurrency.participantCurrencyId }).forUpdate().select('*').first()
-        const currentPosition = new MLNumber(initialParticipantPosition.value)
-        const reservedPosition = new MLNumber(initialParticipantPosition.reservedValue)
-        const effectivePosition = currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE)
-        initialParticipantPosition.reservedValue = new MLNumber(initialParticipantPosition.reservedValue).add(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE)
-        initialParticipantPosition.changedDate = transactionTimestamp
-        await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
-        // Get the actual position limit and calculate the available position for the transfers to use in this batch
-        // Note: see optimisation decision notes to understand the justification for the algorithm
-        const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
-        let availablePosition = new MLNumber(participantLimit.value).subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
-        /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
-           since further rules are expected we do not do this at this point
-           As we enter this next step the order in which the transfer is processed against the Position is critical.
-           Both positive and failure cases need to recorded in processing order
-           This means that they should not be removed from the list, and the participantPosition
-        */
-        let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
-        for (const transferId in reservedTransfers) {
-          const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
-          if (new MLNumber(availablePosition).toNumber() >= transferAmount.toNumber()) {
-            availablePosition = new MLNumber(availablePosition).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
-            transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
-            sumReserved = new MLNumber(sumReserved).add(transferAmount).toFixed(Config.AMOUNT.SCALE) /* actually used */
-          } else {
-            transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-            transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
-            rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
-          }
-          const runningPosition = new MLNumber(currentPosition).add(sumReserved).toFixed(Config.AMOUNT.SCALE) /* effective position */
-          const runningReservedValue = new MLNumber(sumTransfersInBatch).subtract(sumReserved).toFixed(Config.AMOUNT.SCALE)
-          processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
-        }
-        /*
-          Update the participantPosition with the eventual impact of the Batch
-          So the position moves forward by the sum of the transfers actually reserved (sumReserved)
-          and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
-        */
-        const processedPositionValue = new MLNumber(initialParticipantPosition.value).add(sumReserved)
-        await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
-          value: processedPositionValue.toFixed(Config.AMOUNT.SCALE),
-          reservedValue: new MLNumber(initialParticipantPosition.reservedValue).subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE),
-          changedDate: transactionTimestamp
-        })
-        // TODO this limit needs to be clarified
-        if (processedPositionValue.toNumber() > new MLNumber(participantLimit.value).multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
-          limitAlarms.push(participantLimit)
-        }
-        /*
-          Persist the transferStateChanges and associated participantPositionChange entry to record the running position
-          The transferStateChanges need to be persisted first (by INSERTing) to have the PK reference
-        */
-        await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
-        const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
-        const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
-        const processedTransfersKeysList = Object.keys(processedTransfers)
-        const batchParticipantPositionChange = []
-        for (const keyIndex in processedTransfersKeysList) {
-          const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
-          const participantPositionChange = {
-            participantPositionId: initialParticipantPosition.participantPositionId,
-            transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
-            value: runningPosition,
-            // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
-            reservedValue: runningReservedValue
-          }
-          batchParticipantPositionChange.push(participantPositionChange)
-        }
-        batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
-        await trx.commit
-      } catch (err) {
-        Logger.error(err)
-        await trx.rollback
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    let retryCount = 0
+    let transferIdList
+    let processedTransfers
+    let reservedTransfers
+    let abortedTransfers
+    let initialTransferStateChangePromises
+    let limitAlarms
+    let sumTransfersInBatch
+    const changePreparePositionTransaction = async () => {
+      processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
+      reservedTransfers = []
+      abortedTransfers = []
+      initialTransferStateChangePromises = []
+      limitAlarms = []
+      sumTransfersInBatch = 0
+      transferIdList = []
+      if (retryCount > 0) {
+        Logger.info(`Current retrying changePreparePositionTransaction ${retryCount} times`)
       }
-    })
+      await knex.transaction(async (trx) => {
+        try {
+          const transactionTimestamp = Time.getUTCString(new Date())
+          for (const transfer of transferList) {
+            // const initialTransferStateChangeList = await knex('transferStateChange').transacting(trx).whereIn('transferId', transferIdList).forUpdate().orderBy('transferStateChangeId', 'desc')
+            // ^^^^^ this is how we want to get this later to reduce the DB queries into one.
+
+            /*
+            TODO Possibly the commented block of validations in this comment block will be validated with message validations for each topic
+            (are they valid or not LIME messages and are they valid for the given topic)
+             ====
+             Since iterating over the list of transfers, validate here that each transfer is for the PayerFSP and Currency
+             if (participantName !== transfer.value.content.payload.payerFSP)
+               {} // log error for particular transfer because it should not be in this topic (and might be injected)
+             if (currencyId != transfer.value.content.payload.payerFSP)
+               {} // log error for particular transfer because it should not be in this topic (and might be injected)
+             ====
+             */
+
+            const id = transfer.value.content.payload.transferId
+            transferIdList.push(id)
+            initialTransferStateChangePromises.push(await knex('transferStateChange').transacting(trx).where('transferId', id).orderBy('transferStateChangeId', 'desc').first())
+          }
+          const initialTransferStateChangeList = await Promise.all(initialTransferStateChangePromises)
+          for (const id in initialTransferStateChangeList) {
+            const transferState = initialTransferStateChangeList[id]
+            const transfer = transferList[id].value.content.payload
+            const rawMessage = transferList[id]
+            if (transferState.transferStateId === Enum.Transfers.TransferInternalState.RECEIVED_PREPARE) {
+              transferState.transferStateChangeId = null
+              transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
+              const transferAmount = new MLNumber(transfer.amount.amount) /* Just do this once, so add to reservedTransfers */
+              reservedTransfers[transfer.transferId] = { transferState, transfer, rawMessage, transferAmount }
+              sumTransfersInBatch = new MLNumber(sumTransfersInBatch).add(transferAmount).toFixed(Config.AMOUNT.SCALE)
+            } else {
+              transferState.transferStateChangeId = null
+              transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+              transferState.reason = 'Transfer in incorrect state'
+              abortedTransfers[transfer.transferId] = { transferState, transfer, rawMessage }
+            }
+          }
+          const abortedTransferStateChangeList = Object.keys(abortedTransfers).length && Array.from(transferIdList.map(transferId => abortedTransfers[transferId].transferState))
+          Object.keys(abortedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', abortedTransferStateChangeList).transacting(trx)
+          // Get the effective position for this participantCurrency at the start of processing the Batch
+          // and reserved the total value of the transfers in the batch (sumTransfersInBatch)
+          const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId: participantCurrency.participantCurrencyId }).forUpdate().select('*').first()
+          const currentPosition = new MLNumber(initialParticipantPosition.value)
+          const reservedPosition = new MLNumber(initialParticipantPosition.reservedValue)
+          const effectivePosition = currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE)
+          initialParticipantPosition.reservedValue = new MLNumber(initialParticipantPosition.reservedValue).add(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE)
+          initialParticipantPosition.changedDate = transactionTimestamp
+          await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update(initialParticipantPosition)
+          // Get the actual position limit and calculate the available position for the transfers to use in this batch
+          // Note: see optimisation decision notes to understand the justification for the algorithm
+          const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
+          let availablePosition = new MLNumber(participantLimit.value).subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+          /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
+             since further rules are expected we do not do this at this point
+             As we enter this next step the order in which the transfer is processed against the Position is critical.
+             Both positive and failure cases need to recorded in processing order
+             This means that they should not be removed from the list, and the participantPosition
+          */
+          let sumReserved = 0 // Record the sum of the transfers we allow to progress to RESERVED
+          for (const transferId in reservedTransfers) {
+            const { transfer, transferState, rawMessage, transferAmount } = reservedTransfers[transferId]
+            if (new MLNumber(availablePosition).toNumber() >= transferAmount.toNumber()) {
+              availablePosition = new MLNumber(availablePosition).subtract(transferAmount).toFixed(Config.AMOUNT.SCALE)
+              transferState.transferStateId = Enum.Transfers.TransferState.RESERVED
+              sumReserved = new MLNumber(sumReserved).add(transferAmount).toFixed(Config.AMOUNT.SCALE) /* actually used */
+            } else {
+              transferState.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
+              transferState.reason = ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY.message
+              rawMessage.value.content.payload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_INSUFFICIENT_LIQUIDITY, null, null, null, rawMessage.value.content.payload.extensionList).toApiErrorObject(Config.ERROR_HANDLING)
+            }
+            const runningPosition = new MLNumber(currentPosition).add(sumReserved).toFixed(Config.AMOUNT.SCALE) /* effective position */
+            const runningReservedValue = new MLNumber(sumTransfersInBatch).subtract(sumReserved).toFixed(Config.AMOUNT.SCALE)
+            processedTransfers[transferId] = { transferState, transfer, rawMessage, transferAmount, runningPosition, runningReservedValue }
+          }
+          /*
+            Update the participantPosition with the eventual impact of the Batch
+            So the position moves forward by the sum of the transfers actually reserved (sumReserved)
+            and the reserved amount is cleared of the we reserved in the first instance (sumTransfersInBatch)
+          */
+          const processedPositionValue = new MLNumber(initialParticipantPosition.value).add(sumReserved)
+          await knex('participantPosition').transacting(trx).where({ participantPositionId: initialParticipantPosition.participantPositionId }).update({
+            value: processedPositionValue.toFixed(Config.AMOUNT.SCALE),
+            reservedValue: new MLNumber(initialParticipantPosition.reservedValue).subtract(sumTransfersInBatch).toFixed(Config.AMOUNT.SCALE),
+            changedDate: transactionTimestamp
+          })
+          // TODO this limit needs to be clarified
+          if (processedPositionValue.toNumber() > new MLNumber(participantLimit.value).multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+            limitAlarms.push(participantLimit)
+          }
+          /*
+            Persist the transferStateChanges and associated participantPositionChange entry to record the running position
+            The transferStateChanges need to be persisted first (by INSERTing) to have the PK reference
+          */
+          await knex('transfer').transacting(trx).forUpdate().whereIn('transferId', transferIdList).select('*')
+          const processedTransferStateChangeList = Object.keys(processedTransfers).length && Array.from(transferIdList.map(transferId => processedTransfers[transferId].transferState))
+          const processedTransferStateChangeIdList = processedTransferStateChangeList && Object.keys(processedTransferStateChangeList).length && await knex.batchInsert('transferStateChange', processedTransferStateChangeList).transacting(trx)
+          const processedTransfersKeysList = Object.keys(processedTransfers)
+          const batchParticipantPositionChange = []
+          for (const keyIndex in processedTransfersKeysList) {
+            const { runningPosition, runningReservedValue } = processedTransfers[processedTransfersKeysList[keyIndex]]
+            const participantPositionChange = {
+              participantPositionId: initialParticipantPosition.participantPositionId,
+              transferStateChangeId: processedTransferStateChangeIdList[keyIndex],
+              value: runningPosition,
+              // processBatch: <uuid> - a single value uuid for this entire batch to make sure the set of transfers in this batch can be clearly grouped
+              reservedValue: runningReservedValue
+            }
+            batchParticipantPositionChange.push(participantPositionChange)
+          }
+          batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
+          await trx.commit()
+        } catch (err) {
+          Logger.error(err)
+          Logger.error('Rolling back transaction changePreparePositionTransaction')
+          await trx.rollback()
+          throw err
+        }
+      }).catch(async (err) => {
+        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+          retryCount++
+          Logger.info(`retrying changePreparePositionTransaction ${retryCount} times`)
+          await changePreparePositionTransaction() // need to catch specific error and validate against retries
+        } else {
+          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        }
+      })
+    }
+    await changePreparePositionTransaction()
     const preparedMessagesList = Array.from(transferIdList.map(transferId =>
       transferId in processedTransfers
         ? reservedTransfers[transferId]
@@ -188,40 +212,62 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
 const changeParticipantPositionTransaction = async (participantCurrencyId, isReversal, amount, transferStateChange) => {
   try {
     const knex = await Db.getKnex()
-    await knex.transaction(async (trx) => {
-      try {
-        const transactionTimestamp = Time.getUTCString(new Date())
-        transferStateChange.createdDate = transactionTimestamp
-        const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
-        let latestPosition
-        if (isReversal) {
-          latestPosition = new MLNumber(participantPosition.value).subtract(amount)
-        } else {
-          latestPosition = new MLNumber(participantPosition.value).add(amount)
-        }
-        latestPosition = latestPosition.toFixed(Config.AMOUNT.SCALE)
-        await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({
-          value: latestPosition,
-          changedDate: transactionTimestamp
-        })
-        await knex('transferStateChange').transacting(trx).insert(transferStateChange)
-        const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChange.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
-        const participantPositionChange = {
-          participantPositionId: participantPosition.participantPositionId,
-          transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-          value: latestPosition,
-          reservedValue: participantPosition.reservedValue,
-          createdDate: transactionTimestamp
-        }
-        await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
-        await trx.commit
-      } catch (err) {
-        await trx.rollback
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    let retryCount = 0
+    const changeFulfilPositionTransaction = async () => {
+      if (retryCount > 0) {
+        Logger.info(`Current retrying changeFulfilPositionTransaction ${retryCount} times`)
       }
-    }).catch((err) => {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    })
+      await knex.transaction(async (trx) => {
+        try {
+          const transactionTimestamp = Time.getUTCString(new Date())
+          transferStateChange.createdDate = transactionTimestamp
+          const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
+          let latestPosition
+          if (isReversal) {
+            latestPosition = new MLNumber(participantPosition.value).subtract(amount)
+          } else {
+            latestPosition = new MLNumber(participantPosition.value).add(amount)
+          }
+          latestPosition = latestPosition.toFixed(Config.AMOUNT.SCALE)
+          await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({
+            value: latestPosition,
+            changedDate: transactionTimestamp
+          })
+          await knex('transferStateChange').transacting(trx).insert(transferStateChange)
+          const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChange.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
+          const participantPositionChange = {
+            participantPositionId: participantPosition.participantPositionId,
+            transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
+            value: latestPosition,
+            reservedValue: participantPosition.reservedValue,
+            createdDate: transactionTimestamp
+          }
+          await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
+          return await trx.commit()
+        } catch (err) {
+          if (isReversal) {
+            if (transferStateChange.reason === ErrorHandler.FSPIOPErrorCodes.TRANSFER_EXPIRED.message) {
+              Logger.error('Rolling back transaction changeTimeoutPositionTransaction')
+            } else {
+              Logger.error('Rolling back transaction changeAbortPositionTransaction')
+            }
+          } else {
+            Logger.error('Rolling back transaction changeFulfilPositionTransaction')
+          }
+          await trx.rollback()
+          throw err
+        }
+      }).catch(async (err) => {
+        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+          retryCount++
+          Logger.info(`retrying changeFulfilPositionTransaction ${retryCount} times`)
+          await changeFulfilPositionTransaction() // need to catch specific error and validate against retries
+        } else {
+          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        }
+      })
+    }
+    await changeFulfilPositionTransaction()
   } catch (err) {
     Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

@@ -235,7 +235,7 @@ const addEndpoint = async (participantId, endpoint) => {
         }
         const result = await knex('participantEndpoint').transacting(trx).insert(newEndpoint)
         newEndpoint.participantEndpointId = result[0]
-        await trx.commit
+        await trx.commit()
         return newEndpoint
       } catch (err) {
         await trx.rollback
@@ -354,7 +354,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
           await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
         }
-        await trx.commit
+        await trx.commit()
         return {
           participantLimit,
           participantPosition,
@@ -420,7 +420,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         const result = await knex('participantLimit').transacting(trx).insert(newLimit)
         newLimit.participantLimitId = result[0]
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return {
           participantLimit: newLimit
@@ -544,7 +544,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
         }
         result = await knex('participantPosition').transacting(trx).insert(participantPosition)
         participantPosition.participantPositionId = result[0]
-        await trx.commit
+        await trx.commit()
         return {
           participantCurrency,
           participantPosition

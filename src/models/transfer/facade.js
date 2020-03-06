@@ -46,6 +46,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 
 // Alphabetically ordered list of error texts used below
+const ER_LOCK_DEADLOCK = 'ER_LOCK_DEADLOCK'
 const UnsupportedActionText = 'Unsupported action'
 
 const getById = async (id) => {
@@ -319,59 +320,75 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   try {
     /** @namespace Db.getKnex **/
     const knex = await Db.getKnex()
-    await knex.transaction(async (trx) => {
-      try {
-        if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
-          const res = await Db.settlementWindow.query(builder => {
-            return builder
-              .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
-              .select(
-                'settlementWindow.settlementWindowId',
-                'swsc.settlementWindowStateId as state',
-                'swsc.reason as reason',
-                'settlementWindow.createdDate as createdDate',
-                'swsc.createdDate as changedDate'
-              )
-              .where('swsc.settlementWindowStateId', 'OPEN')
-              .orderBy('changedDate', 'desc')
-          })
-          transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
-          Logger.debug('savePayeeTransferResponse::settlementWindowId')
-        }
-        if (isFulfilment) {
-          await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
-          result.transferFulfilmentRecord = transferFulfilmentRecord
-          Logger.debug('savePayeeTransferResponse::transferFulfilment')
-        }
-        if (transferExtensionRecordsList.length > 0) {
-          for (const transferExtension of transferExtensionRecordsList) {
-            await knex('transferExtension').transacting(trx).insert(transferExtension)
+    let retryCount = 0
+    const saveResponse = async () => {
+      await knex.transaction(async (trx) => {
+        try {
+          if (retryCount > 0) {
+            Logger.info(`Current retrying saveResponse ${retryCount} times`)
           }
-          result.transferExtensionRecordsList = transferExtensionRecordsList
-          Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
+          if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
+            const res = await Db.settlementWindow.query(builder => {
+              return builder
+                .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
+                .select(
+                  'settlementWindow.settlementWindowId',
+                  'swsc.settlementWindowStateId as state',
+                  'swsc.reason as reason',
+                  'settlementWindow.createdDate as createdDate',
+                  'swsc.createdDate as changedDate'
+                )
+                .where('swsc.settlementWindowStateId', 'OPEN')
+                .orderBy('changedDate', 'desc')
+            })
+            transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
+            Logger.debug('savePayeeTransferResponse::settlementWindowId')
+          }
+          if (isFulfilment) {
+            await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
+            result.transferFulfilmentRecord = transferFulfilmentRecord
+            Logger.debug('savePayeeTransferResponse::transferFulfilment')
+          }
+          if (transferExtensionRecordsList.length > 0) {
+            for (const transferExtension of transferExtensionRecordsList) {
+              await knex('transferExtension').transacting(trx).insert(transferExtension)
+            }
+            result.transferExtensionRecordsList = transferExtensionRecordsList
+            Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
+          }
+          await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+          result.transferStateChangeRecord = transferStateChangeRecord
+          Logger.debug('savePayeeTransferResponse::transferStateChange')
+          if (fspiopError) {
+            const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
+              .where({ transferId })
+              .forUpdate().first().orderBy('transferStateChangeId', 'desc')
+            transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+            transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+            await knex('transferError').transacting(trx).insert(transferErrorRecord)
+            result.transferErrorRecord = transferErrorRecord
+            Logger.debug('savePayeeTransferResponse::transferError')
+          }
+          await trx.commit()
+          result.savePayeeTransferResponseExecuted = true
+          Logger.debug('savePayeeTransferResponse::success')
+        } catch (err) {
+          await trx.rollback()
+          Logger.error('Rolling back transaction saveResponse')
+          Logger.error('savePayeeTransferResponse::failure')
+          throw err
         }
-        await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-        result.transferStateChangeRecord = transferStateChangeRecord
-        Logger.debug('savePayeeTransferResponse::transferStateChange')
-        if (fspiopError) {
-          const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
-            .where({ transferId })
-            .forUpdate().first().orderBy('transferStateChangeId', 'desc')
-          transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
-          transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
-          await knex('transferError').transacting(trx).insert(transferErrorRecord)
-          result.transferErrorRecord = transferErrorRecord
-          Logger.debug('savePayeeTransferResponse::transferError')
+      }).catch(async (err) => {
+        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+          retryCount++
+          Logger.info(`retrying saveResponse ${retryCount} times`)
+          await saveResponse() // need to catch specific error and validate against retries
+        } else {
+          throw err
         }
-        await trx.commit
-        result.savePayeeTransferResponseExecuted = true
-        Logger.debug('savePayeeTransferResponse::success')
-      } catch (err) {
-        await trx.rollback
-        Logger.error('savePayeeTransferResponse::failure')
-        throw err
-      }
-    })
+      })
+    }
+    await saveResponse()
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -433,32 +450,50 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 
     const knex = await Db.getKnex()
     if (hasPassedValidation) {
-      return await knex.transaction(async (trx) => {
-        try {
-          await knex('transfer').transacting(trx).insert(transferRecord)
-          await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
-          await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
-          payerTransferParticipantRecord.name = payload.payerFsp
-          payeeTransferParticipantRecord.name = payload.payeeFsp
-          let transferExtensionsRecordList = []
-          if (payload.extensionList && payload.extensionList.extension) {
-            transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
-              return {
-                transferId: payload.transferId,
-                key: ext.key,
-                value: ext.value
-              }
-            })
-            await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
-          }
-          await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
-          await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
-          await trx.commit
-        } catch (err) {
-          await trx.rollback
-          throw err
+      let retryCount = 0
+      const savePrepare = async () => {
+        if (retryCount > 0) {
+          Logger.info(`Current retrying savePrepare ${retryCount} times`)
         }
-      })
+        await knex.transaction(async (trx) => {
+          try {
+            await knex('transfer').transacting(trx).insert(transferRecord)
+            await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
+            await knex('transferParticipant').transacting(trx).insert(payeeTransferParticipantRecord)
+            payerTransferParticipantRecord.name = payload.payerFsp
+            payeeTransferParticipantRecord.name = payload.payeeFsp
+            let transferExtensionsRecordList = []
+            if (payload.extensionList && payload.extensionList.extension) {
+              transferExtensionsRecordList = payload.extensionList.extension.map(ext => {
+                return {
+                  transferId: payload.transferId,
+                  key: ext.key,
+                  value: ext.value
+                }
+              })
+              await knex.batchInsert('transferExtension', transferExtensionsRecordList).transacting(trx)
+            }
+            await knex('ilpPacket').transacting(trx).insert(ilpPacketRecord)
+            await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
+            await trx.commit()
+          } catch (err) {
+            Logger.error('Rolling back transaction savePrepare')
+            await trx.rollback()
+            throw err
+          }
+        }).catch(async (err) => {
+          if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+            retryCount++
+            Logger.info(`retrying savePrepare ${retryCount} times`)
+            delete payerTransferParticipantRecord.name
+            delete payeeTransferParticipantRecord.name
+            await savePrepare() // need to catch specific error and validate against retries
+          } else {
+            throw err
+          }
+        })
+      }
+      await savePrepare()
     } else {
       await knex('transfer').insert(transferRecord)
       try {
@@ -549,78 +584,92 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
   try {
     const transactionTimestamp = Time.getUTCString(new Date())
     const knex = await Db.getKnex()
-    await knex.transaction(async (trx) => {
-      try {
-        await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
-          .insert(function () {
-            this.from('transfer AS t')
-              .innerJoin(knex('transferStateChange')
-                .select('transferId')
-                .max('transferStateChangeId AS maxTransferStateChangeId')
-                .where('transferStateChangeId', '>', intervalMin)
-                .andWhere('transferStateChangeId', '<=', intervalMax)
-                .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
-              )
-              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-              .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
-              .whereNull('tt.transferId')
-              .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`])
-              .select('t.transferId', 't.expirationDate')
-          })// .toSQL().sql
-        // console.log('SQL: ' + q)
-
-        await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
-          .insert(function () {
-            this.from('transferTimeout AS tt')
-              .innerJoin(knex('transferStateChange AS tsc1')
-                .select('tsc1.transferId')
-                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
-              )
-              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-              .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
-              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
-          })// .toSQL().sql
-        // console.log('SQL: ' + q)
-
-        await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
-          .insert(function () {
-            this.from('transferTimeout AS tt')
-              .innerJoin(knex('transferStateChange AS tsc1')
-                .select('tsc1.transferId')
-                .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
-                .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
-                .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
-              )
-              .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
-              .where('tt.expirationDate', '<', transactionTimestamp)
-              .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
-              .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
-          })// .toSQL().sql
-        // console.log('SQL: ' + q)
-
-        if (segmentId === 0) {
-          const segment = {
-            segmentType: 'timeout',
-            enumeration: 0,
-            tableName: 'transferStateChange',
-            value: intervalMax
+    let retryCount = 0
+    const timeoutExpRes = async () => {
+      await knex.transaction(async (trx) => {
+        try {
+          if (retryCount > 0) {
+            Logger.info(`Current retrying changePreparePositionTransaction ${retryCount} times`)
           }
-          await knex('segment').transacting(trx).insert(segment)
-        } else {
-          await knex('segment').transacting(trx).where({ segmentId }).update({ value: intervalMax })
-        }
-        await trx.commit
-      } catch (err) {
-        await trx.rollback
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
-      }
-    }).catch((err) => {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    })
+          await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
+            .insert(function () {
+              this.from('transfer AS t')
+                .innerJoin(knex('transferStateChange')
+                  .select('transferId')
+                  .max('transferStateChangeId AS maxTransferStateChangeId')
+                  .where('transferStateChangeId', '>', intervalMin)
+                  .andWhere('transferStateChangeId', '<=', intervalMax)
+                  .groupBy('transferId').as('ts'), 'ts.transferId', 't.transferId'
+                )
+                .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+                .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
+                .whereNull('tt.transferId')
+                .whereIn('tsc.transferStateId', [`${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, `${Enum.Transfers.TransferState.RESERVED}`])
+                .select('t.transferId', 't.expirationDate')
+            })// .toSQL().sql
+          // console.log('SQL: ' + q)
 
+          await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
+            .insert(function () {
+              this.from('transferTimeout AS tt')
+                .innerJoin(knex('transferStateChange AS tsc1')
+                  .select('tsc1.transferId')
+                  .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                  .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                  .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+                )
+                .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+                .where('tt.expirationDate', '<', transactionTimestamp)
+                .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`)
+                .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.EXPIRED_PREPARED), knex.raw('?', 'Aborted by Timeout Handler'))
+            })// .toSQL().sql
+          // console.log('SQL: ' + q)
+
+          await knex.from(knex.raw('transferStateChange (transferId, transferStateId, reason)')).transacting(trx)
+            .insert(function () {
+              this.from('transferTimeout AS tt')
+                .innerJoin(knex('transferStateChange AS tsc1')
+                  .select('tsc1.transferId')
+                  .max('tsc1.transferStateChangeId AS maxTransferStateChangeId')
+                  .innerJoin('transferTimeout AS tt1', 'tt1.transferId', 'tsc1.transferId')
+                  .groupBy('tsc1.transferId').as('ts'), 'ts.transferId', 'tt.transferId'
+                )
+                .innerJoin('transferStateChange AS tsc', 'tsc.transferStateChangeId', 'ts.maxTransferStateChangeId')
+                .where('tt.expirationDate', '<', transactionTimestamp)
+                .andWhere('tsc.transferStateId', `${Enum.Transfers.TransferState.RESERVED}`)
+                .select('tt.transferId', knex.raw('?', Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT), knex.raw('?', 'Marked for expiration by Timeout Handler'))
+            })// .toSQL().sql
+          // console.log('SQL: ' + q)
+
+          if (segmentId === 0) {
+            const segment = {
+              segmentType: 'timeout',
+              enumeration: 0,
+              tableName: 'transferStateChange',
+              value: intervalMax
+            }
+            await knex('segment').transacting(trx).insert(segment)
+          } else {
+            await knex('segment').transacting(trx).where({ segmentId }).update({ value: intervalMax })
+          }
+          await trx.commit()
+        } catch (err) {
+          await trx.rollback()
+          Logger.error('Rolling back transaction timeoutExpRes')
+          throw err
+        }
+      }).catch(async (err) => {
+        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+          Logger.error(err)
+          retryCount++
+          Logger.info(`retrying timeoutExpRes ${retryCount} times`)
+          await timeoutExpRes() // need to catch specific error and validate against retries
+        } else {
+          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+        }
+      })
+    }
+    await timeoutExpRes()
     return knex('transferTimeout AS tt')
       .innerJoin(knex('transferStateChange AS tsc1')
         .select('tsc1.transferId')
@@ -766,7 +815,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
@@ -888,7 +937,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
@@ -933,7 +982,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
@@ -995,7 +1044,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
@@ -1056,7 +1105,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
         }
 
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
       } catch (err) {
         if (doCommit) {
