@@ -157,6 +157,10 @@ const createHandlers = async (handlers) => {
           // }
           break
         }
+        case 'preparePosition': {
+          await RegisterHandlers.combined.registerPreparePositionHandler()
+          break
+        }
         case 'fulfil': {
           await RegisterHandlers.transfers.registerFulfilHandler()
           break
