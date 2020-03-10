@@ -55,23 +55,29 @@ const AdminHandlers = require('./admin/handler')
 const BulkHandlers = require('./bulk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CombinedHandlers = require('./combined/handler.js')
+const Config = require('../lib/config')
 
 const registerAllHandlers = async () => {
   try {
     const modules = await requireGlob(['./**/handler.js'])
     Logger.info(JSON.stringify(modules))
     for (const key in modules) {
-      Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
-      if (Object.prototype.hasOwnProperty.call(modules[key], 'handler')) {
-        const handlerObject = modules[key]
-        Logger.info(JSON.stringify(handlerObject.handler))
-        await handlerObject.handler.registerAllHandlers()
-      } else {
-        for (const i in modules[key]) {
-          const handlerObject = modules[key][i]
-          Logger.info(JSON.stringify(handlerObject.handler))
+      if (Config.HANDLERS_OVERRIDE_DISABLED[key] === undefined || Config.HANDLERS_OVERRIDE_DISABLED[key] === false ) {
+        Logger.info(`Registering handler module[${key}]: ${JSON.stringify(modules[key])}`)
+        if (Object.prototype.hasOwnProperty.call(modules[key], 'handler')) {
+          const handlerObject = modules[key]
+          // Logger.info(JSON.stringify(handlerObject.handler))
           await handlerObject.handler.registerAllHandlers()
+        } else {
+          for (const i in modules[key]) {
+            const handlerObject = modules[key][i]
+            // Logger.info(JSON.stringify(handlerObject.handler))
+            Logger.info(`Registering handler submodule[${key}][${i}]: ${JSON.stringify(modules[key][i])}`)
+            await handlerObject.handler.registerAllHandlers()
+          }
         }
+      } else {
+        Logger.info(`Registeration disabled for handler module[${key}]: ${JSON.stringify(modules[key])}`)
       }
     }
     return true
