@@ -63,9 +63,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
       sumTransfersInBatch = 0
       transferIdList = []
       if (retryCount > 0) {
-        Logger.info(`Current retrying changePreparePositionTransaction ${retryCount} times`)
+        Logger.debug(`Current retrying changePreparePositionTransaction ${retryCount} times`)
       }
-      await knex.transaction(async (trx) => {
+      return knex.transaction(async (trx) => {
         try {
           const transactionTimestamp = Time.getUTCString(new Date())
           for (const transfer of transferList) {
@@ -181,15 +181,16 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           batchParticipantPositionChange.length && await knex.batchInsert('participantPositionChange', batchParticipantPositionChange).transacting(trx)
           await trx.commit()
         } catch (err) {
-          Logger.error(err)
-          Logger.error('Rolling back transaction changePreparePositionTransaction')
-          await trx.rollback()
+          Logger.debug('Rolling back transaction changePreparePositionTransaction')
+          if (!trx.isCompleted()) {
+            await trx.rollback(err)
+          }
           throw err
         }
       }).catch(async (err) => {
-        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) &&
+          (retryCount < Config.DATABASE.retries)) {
           retryCount++
-          Logger.info(`retrying changePreparePositionTransaction ${retryCount} times`)
           await changePreparePositionTransaction() // need to catch specific error and validate against retries
         } else {
           throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -215,9 +216,9 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
     let retryCount = 0
     const changeFulfilPositionTransaction = async () => {
       if (retryCount > 0) {
-        Logger.info(`Current retrying changeFulfilPositionTransaction ${retryCount} times`)
+        Logger.debug(`Current retrying changeFulfilPositionTransaction ${retryCount} times`)
       }
-      await knex.transaction(async (trx) => {
+      return knex.transaction(async (trx) => {
         try {
           const transactionTimestamp = Time.getUTCString(new Date())
           transferStateChange.createdDate = transactionTimestamp
@@ -243,24 +244,25 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
             createdDate: transactionTimestamp
           }
           await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
-          return await trx.commit()
+          await trx.commit()
         } catch (err) {
           if (isReversal) {
             if (transferStateChange.reason === ErrorHandler.FSPIOPErrorCodes.TRANSFER_EXPIRED.message) {
-              Logger.error('Rolling back transaction changeTimeoutPositionTransaction')
+              Logger.debug('Rolling back transaction changeTimeoutPositionTransaction')
             } else {
-              Logger.error('Rolling back transaction changeAbortPositionTransaction')
+              Logger.debug('Rolling back transaction changeAbortPositionTransaction')
             }
           } else {
-            Logger.error('Rolling back transaction changeFulfilPositionTransaction')
+            Logger.debug('Rolling back transaction changeFulfilPositionTransaction')
           }
-          await trx.rollback()
+          if (!trx.isCompleted()) {
+            await trx.rollback(err)
+          }
           throw err
         }
       }).catch(async (err) => {
-        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) && (retryCount < Config.DATABASE.retries)) {
           retryCount++
-          Logger.info(`retrying changeFulfilPositionTransaction ${retryCount} times`)
           await changeFulfilPositionTransaction() // need to catch specific error and validate against retries
         } else {
           throw ErrorHandler.Factory.reformatFSPIOPError(err)

@@ -322,10 +322,10 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     const knex = await Db.getKnex()
     let retryCount = 0
     const saveResponse = async () => {
-      await knex.transaction(async (trx) => {
+      return knex.transaction(async (trx) => {
         try {
           if (retryCount > 0) {
-            Logger.info(`Current retrying saveResponse ${retryCount} times`)
+            Logger.debug(`Current retrying saveResponse ${retryCount} times`)
           }
           if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
             const res = await Db.settlementWindow.query(builder => {
@@ -373,15 +373,16 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           result.savePayeeTransferResponseExecuted = true
           Logger.debug('savePayeeTransferResponse::success')
         } catch (err) {
-          await trx.rollback()
-          Logger.error('Rolling back transaction saveResponse')
+          if (!trx.isCompleted()) {
+            await trx.rollback(err)
+          }
           Logger.error('savePayeeTransferResponse::failure')
           throw err
         }
       }).catch(async (err) => {
-        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) &&
+          (retryCount < Config.DATABASE.retries)) {
           retryCount++
-          Logger.info(`retrying saveResponse ${retryCount} times`)
           await saveResponse() // need to catch specific error and validate against retries
         } else {
           throw err
@@ -453,9 +454,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       let retryCount = 0
       const savePrepare = async () => {
         if (retryCount > 0) {
-          Logger.info(`Current retrying savePrepare ${retryCount} times`)
+          Logger.debug(`Current retrying savePrepare ${retryCount} times`)
         }
-        await knex.transaction(async (trx) => {
+        return knex.transaction(async (trx) => {
           try {
             await knex('transfer').transacting(trx).insert(transferRecord)
             await knex('transferParticipant').transacting(trx).insert(payerTransferParticipantRecord)
@@ -477,14 +478,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
             await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
             await trx.commit()
           } catch (err) {
-            Logger.error('Rolling back transaction savePrepare')
-            await trx.rollback()
+            if (!trx.isCompleted()) {
+              await trx.rollback(err)
+            }
             throw err
           }
         }).catch(async (err) => {
-          if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
+          if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) && (retryCount < Config.DATABASE.retries)) {
             retryCount++
-            Logger.info(`retrying savePrepare ${retryCount} times`)
             delete payerTransferParticipantRecord.name
             delete payeeTransferParticipantRecord.name
             await savePrepare() // need to catch specific error and validate against retries
@@ -586,10 +587,10 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
     const knex = await Db.getKnex()
     let retryCount = 0
     const timeoutExpRes = async () => {
-      await knex.transaction(async (trx) => {
+      return knex.transaction(async (trx) => {
         try {
           if (retryCount > 0) {
-            Logger.info(`Current retrying changePreparePositionTransaction ${retryCount} times`)
+            Logger.debug(`Current retrying changePreparePositionTransaction ${retryCount} times`)
           }
           await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
             .insert(function () {
@@ -654,15 +655,14 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
           }
           await trx.commit()
         } catch (err) {
-          await trx.rollback()
-          Logger.error('Rolling back transaction timeoutExpRes')
+          if (!trx.isCompleted()) {
+            await trx.rollback(err)
+          }
           throw err
         }
       }).catch(async (err) => {
-        if (err.message.includes(ER_LOCK_DEADLOCK) && (retryCount < Config.DATABASE.retries)) {
-          Logger.error(err)
+        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) && (retryCount < Config.DATABASE.retries)) {
           retryCount++
-          Logger.info(`retrying timeoutExpRes ${retryCount} times`)
           await timeoutExpRes() // need to catch specific error and validate against retries
         } else {
           throw ErrorHandler.Factory.reformatFSPIOPError(err)
