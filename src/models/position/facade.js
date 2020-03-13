@@ -30,14 +30,17 @@
  * @module src/models/position/
  */
 
-const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const participantFacade = require('../participant/facade')
 const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const retry = require('async-retry')
+
+const Db = require('../../lib/db')
 const Config = require('../../lib/config')
+const participantFacade = require('../participant/facade')
+
 const ER_LOCK_DEADLOCK = 'ER_LOCK_DEADLOCK'
 
 const prepareChangeParticipantPositionTransaction = async (transferList) => {
@@ -46,7 +49,6 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-    let retryCount = 0
     let transferIdList
     let processedTransfers
     let reservedTransfers
@@ -54,7 +56,8 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     let initialTransferStateChangePromises
     let limitAlarms
     let sumTransfersInBatch
-    const changePreparePositionTransaction = async () => {
+    let retryCount = 0
+    await retry(async bail => {
       processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
       reservedTransfers = []
       abortedTransfers = []
@@ -62,9 +65,6 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
       limitAlarms = []
       sumTransfersInBatch = 0
       transferIdList = []
-      if (retryCount > 0) {
-        Logger.debug(`Current retrying changePreparePositionTransaction ${retryCount} times`)
-      }
       return knex.transaction(async (trx) => {
         try {
           const transactionTimestamp = Time.getUTCString(new Date())
@@ -188,16 +188,17 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           throw err
         }
       }).catch(async (err) => {
-        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) &&
-          (retryCount < Config.DATABASE.retries)) {
+        if ((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) {
           retryCount++
-          await changePreparePositionTransaction() // need to catch specific error and validate against retries
+          Logger.info(`Current retrying prepareChangeParticipantPositionTransaction ${retryCount} times`)
+          throw err
         } else {
-          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+          bail(err)
         }
       })
-    }
-    await changePreparePositionTransaction()
+    }, {
+      retries: Config.DATABASE.retries
+    })
     const preparedMessagesList = Array.from(transferIdList.map(transferId =>
       transferId in processedTransfers
         ? reservedTransfers[transferId]
@@ -214,10 +215,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
   try {
     const knex = await Db.getKnex()
     let retryCount = 0
-    const changeFulfilPositionTransaction = async () => {
-      if (retryCount > 0) {
-        Logger.debug(`Current retrying changeFulfilPositionTransaction ${retryCount} times`)
-      }
+    await retry(async bail => {
       return knex.transaction(async (trx) => {
         try {
           const transactionTimestamp = Time.getUTCString(new Date())
@@ -261,15 +259,17 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
           throw err
         }
       }).catch(async (err) => {
-        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) && (retryCount < Config.DATABASE.retries)) {
+        if ((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) {
           retryCount++
-          await changeFulfilPositionTransaction() // need to catch specific error and validate against retries
+          Logger.info(`Current retrying changeParticipantPositionTransaction ${retryCount} times`)
+          throw err
         } else {
-          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+          bail(err)
         }
       })
-    }
-    await changeFulfilPositionTransaction()
+    }, {
+      retries: Config.DATABASE.retries
+    })
   } catch (err) {
     Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

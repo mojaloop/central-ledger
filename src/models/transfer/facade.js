@@ -32,18 +32,20 @@
  * @module src/models/transfer/facade/
  */
 
-const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
 const TransferInternalState = Enum.Transfers.TransferInternalState
-const TransferExtensionModel = require('./transferExtension')
-const ParticipantFacade = require('../participant/facade')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
-const Config = require('../../lib/config')
 const _ = require('lodash')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
+const retry = require('async-retry')
+
+const Db = require('../../lib/db')
+const TransferExtensionModel = require('./transferExtension')
+const ParticipantFacade = require('../participant/facade')
+const Config = require('../../lib/config')
 
 // Alphabetically ordered list of error texts used below
 const ER_LOCK_DEADLOCK = 'ER_LOCK_DEADLOCK'
@@ -321,12 +323,9 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     /** @namespace Db.getKnex **/
     const knex = await Db.getKnex()
     let retryCount = 0
-    const saveResponse = async () => {
+    await retry(async bail => {
       return knex.transaction(async (trx) => {
         try {
-          if (retryCount > 0) {
-            Logger.debug(`Current retrying saveResponse ${retryCount} times`)
-          }
           if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
             const res = await Db.settlementWindow.query(builder => {
               return builder
@@ -380,16 +379,17 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           throw err
         }
       }).catch(async (err) => {
-        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) &&
-          (retryCount < Config.DATABASE.retries)) {
+        if ((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) {
           retryCount++
-          await saveResponse() // need to catch specific error and validate against retries
-        } else {
+          Logger.info(`Current retrying savePayeeTransferResponse ${retryCount} times`)
           throw err
+        } else {
+          bail(err)
         }
       })
-    }
-    await saveResponse()
+    }, {
+      retries: Config.DATABASE.retries
+    })
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -452,10 +452,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
     const knex = await Db.getKnex()
     if (hasPassedValidation) {
       let retryCount = 0
-      const savePrepare = async () => {
-        if (retryCount > 0) {
-          Logger.debug(`Current retrying savePrepare ${retryCount} times`)
-        }
+      await retry(async bail => {
         return knex.transaction(async (trx) => {
           try {
             await knex('transfer').transacting(trx).insert(transferRecord)
@@ -484,17 +481,19 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
             throw err
           }
         }).catch(async (err) => {
-          if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) && (retryCount < Config.DATABASE.retries)) {
+          if ((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) {
             retryCount++
+            Logger.info(`Current retrying saveTransferPrepared ${retryCount} times`)
             delete payerTransferParticipantRecord.name
             delete payeeTransferParticipantRecord.name
-            await savePrepare() // need to catch specific error and validate against retries
-          } else {
             throw err
+          } else {
+            bail(err)
           }
         })
-      }
-      await savePrepare()
+      }, {
+        retries: Config.DATABASE.retries
+      })
     } else {
       await knex('transfer').insert(transferRecord)
       try {
@@ -586,12 +585,9 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
     const transactionTimestamp = Time.getUTCString(new Date())
     const knex = await Db.getKnex()
     let retryCount = 0
-    const timeoutExpRes = async () => {
+    await retry(async bail => {
       return knex.transaction(async (trx) => {
         try {
-          if (retryCount > 0) {
-            Logger.debug(`Current retrying changePreparePositionTransaction ${retryCount} times`)
-          }
           await knex.from(knex.raw('transferTimeout (transferId, expirationDate)')).transacting(trx)
             .insert(function () {
               this.from('transfer AS t')
@@ -661,15 +657,17 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax) => {
           throw err
         }
       }).catch(async (err) => {
-        if (((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) && (retryCount < Config.DATABASE.retries)) {
+        if ((typeof err === 'string' && err.includes(ER_LOCK_DEADLOCK)) || err.message.includes(ER_LOCK_DEADLOCK) || err.stack.includes(ER_LOCK_DEADLOCK)) {
           retryCount++
-          await timeoutExpRes() // need to catch specific error and validate against retries
+          Logger.info(`Current retrying timeoutExpireReserved ${retryCount} times`)
+          throw err
         } else {
-          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+          bail(err)
         }
       })
-    }
-    await timeoutExpRes()
+    }, {
+      retries: Config.DATABASE.retries
+    })
     return knex('transferTimeout AS tt')
       .innerJoin(knex('transferStateChange AS tsc1')
         .select('tsc1.transferId')
