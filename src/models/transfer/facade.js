@@ -819,7 +819,7 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback(err)
         }
         throw err
       }
@@ -941,7 +941,7 @@ const reconciliationTransferPrepare = async function (payload, transactionTimest
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback(err)
         }
         throw err
       }
@@ -986,7 +986,7 @@ const reconciliationTransferReserve = async function (payload, transactionTimest
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback(err)
         }
         throw err
       }
@@ -1048,7 +1048,7 @@ const reconciliationTransferCommit = async function (payload, transactionTimesta
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback(err)
         }
         throw err
       }
@@ -1109,7 +1109,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback(err)
         }
         throw err
       }

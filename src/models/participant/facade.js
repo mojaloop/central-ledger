@@ -238,7 +238,7 @@ const addEndpoint = async (participantId, endpoint) => {
         await trx.commit()
         return newEndpoint
       } catch (err) {
-        await trx.rollback
+        await trx.rollback(err)
         throw err
       }
     })
@@ -361,7 +361,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           settlementPosition
         }
       } catch (err) {
-        await trx.rollback
+        await trx.rollback(err)
         throw err
       }
     })
@@ -427,7 +427,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback(err)
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
@@ -550,7 +550,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
           participantPosition
         }
       } catch (err) {
-        await trx.rollback
+        await trx.rollback(err)
         throw err
       }
     })

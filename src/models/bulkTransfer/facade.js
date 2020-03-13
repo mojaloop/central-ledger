@@ -67,7 +67,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
         await trx.commit()
         return state
       } catch (err) {
-        await trx.rollback
+        await trx.rollback(err)
         throw err
       }
     })
@@ -112,7 +112,7 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
         await trx.commit()
         return state
       } catch (err) {
-        await trx.rollback
+        await trx.rollback(err)
         throw err
       }
     })
