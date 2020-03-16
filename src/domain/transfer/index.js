@@ -264,7 +264,8 @@ const saveTransferPreparedChangePosition = async (payload, stateReason = null, h
       value: payload.ilpPacket
     }
 
-    const state = ((hasPassedValidation) ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE : Enum.Transfers.TransferInternalState.INVALID)
+    //const state = ((hasPassedValidation) ? Enum.Transfers.TransferInternalState.RECEIVED_PREPARE : Enum.Transfers.TransferInternalState.INVALID)
+    const state = Enum.Transfers.TransferInternalState.RESERVED
 
     const transferStateChangeRecord = {
       transferId: payload.transferId,
