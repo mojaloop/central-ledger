@@ -5,7 +5,13 @@
  The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
  http://www.apache.org/licenses/LICENSE-2.0
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
- Contributors
+ 
+ Initial contribution
+ --------------------
+ The initial functionality and code base was donated by the Mowali project working in conjunction with MTN and Orange as service provides.
+ * Project: Mowali
+
+Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
  Names of the original copyright holders (individuals or organizations)
@@ -18,22 +24,27 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-exports.up = function (knex) {
-  return knex.schema.table('settlementWindowStateChange', (t) => {
-    t.index('settlementWindowId')
-    t.index('settlementWindowStateId')
+exports.up = (knex, Promise) => {
+  return knex.schema.hasTable('settlementGranularity').then((exists) => {
+    if (!exists) {
+      return knex.schema.createTable('settlementGranularity', (t) => {
+        t.increments('settlementGranularityId').primary().notNullable()
+        t.string('name', 50).notNullable()
+        t.string('description', 512).defaultTo(null).nullable()
+        t.boolean('isActive').defaultTo(true).notNullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable().comment('System dateTime stamp pertaining to the inserted record')
+      })
+    }
   })
 }
 
-exports.down = function (knex) {
-  return knex.schema.table('settlementWindowStateChange', (t) => {
-    t.dropIndex('settlementWindowId')
-    t.dropIndex('settlementWindowStateId')
-  })
+exports.down = (knex, Promise) => {
+  return knex.schema.dropTableIfExists('settlementGranularity')
 }

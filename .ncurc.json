@@ -1,11 +1,5 @@
 {
   "reject": [
-    "@hapi/joi",
-    "@hapi/inert",
-    "@hapi/hapi",
-    "@hapi/vision",
-    "@hapi/good",
-    "hapi-swagger",
-    "@mojaloop/central-services-shared"
+    "@mojaloop/event-sdk"
   ]
 }
