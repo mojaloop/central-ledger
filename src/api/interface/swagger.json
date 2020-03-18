@@ -7,7 +7,7 @@
   ],
   "info": {
     "title": "Central Ledger API Documentation",
-    "version": "7.2.0"
+    "version": "9.3.0"
   },
   "tags": [],
   "paths": {
@@ -1151,6 +1151,88 @@
               "type": "string"
             },
             "description": "Successful"
+          }
+        }
+      }
+    },
+    "/settlementModels" : {
+      "get" : {
+        "tags" : [ "settlementModels" ],
+        "operationId" : "getSettlementmodels",
+        "parameters" : [ ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "settlementModels" ],
+        "operationId" : "postSettlementmodels",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Model%2012"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        }
+      }
+    },
+    "/settlementModels/{name}" : {
+      "get" : {
+        "tags" : [ "settlementModels" ],
+        "operationId" : "getSettlementmodelsName",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "description" : "SettlementModel name",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "settlementModels" ],
+        "operationId" : "putSettlementmodelsName",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "description" : "settlementModel name",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Model%2013"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
+            }
           }
         }
       }
@@ -2309,6 +2391,64 @@
       "required": [
         "reason"
       ]
+    },
+    "Model 12" : {
+      "type" : "object",
+      "required" : [ "autoPositionReset", "ledgerAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
+      "properties" : {
+        "name" : {
+          "type" : "string",
+          "description" : "Name of the settlement model",
+          "minLength" : 2,
+          "maxLength" : 30,
+          "x-format" : {
+            "alphanum" : true
+          }
+        },
+        "settlementGranularity" : {
+          "type" : "string",
+          "description" : "Granularity type for the settlement model GROSS or NET",
+          "enum" : [ "GROSS", "NET" ]
+        },
+        "settlementInterchange" : {
+          "type" : "string",
+          "description" : "Interchange type for the settlement model BILATERAL or MULTILATERAL",
+          "enum" : [ "BILATERAL", "MULTILATERAL" ]
+        },
+        "settlementDelay" : {
+          "type" : "string",
+          "description" : "Delay type for the settlement model IMMEDIATE or DEFERRED",
+          "enum" : [ "DEFERRED", "IMMEDIATE" ]
+        },
+        "currency" : {
+          "type" : "string",
+          "description" : "Currency code",
+          "enum" : [ "AED", "AFA", "AFN", "ALL", "AMD", "ANG", "AOA", "AOR", "ARS", "AUD", "AWG", "AZN", "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND", "BOB", "BOV", "BRL", "BSD", "BTN", "BWP", "BYN", "BYR", "BZD", "CAD", "CDF", "CHE", "CHF", "CHW", "CLF", "CLP", "CNY", "COP", "COU", "CRC", "CUC", "CUP", "CVE", "CZK", "DJF", "DKK", "DOP", "DZD", "EEK", "EGP", "ERN", "ETB", "EUR", "FJD", "FKP", "GBP", "GEL", "GGP", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL", "HRK", "HTG", "HUF", "IDR", "ILS", "IMP", "INR", "IQD", "IRR", "ISK", "JEP", "JMD", "JOD", "JPY", "KES", "KGS", "KHR", "KMF", "KPW", "KRW", "KWD", "KYD", "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LTL", "LVL", "LYD", "MAD", "MDL", "MGA", "MKD", "MMK", "MNT", "MOP", "MRO", "MUR", "MVR", "MWK", "MXN", "MXV", "MYR", "MZN", "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "OMR", "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "PYG", "QAR", "RON", "RSD", "RUB", "RWF", "SAR", "SBD", "SCR", "SDG", "SEK", "SGD", "SHP", "SLL", "SOS", "SPL", "SRD", "SSP", "STD", "SVC", "SYP", "SZL", "THB", "TJS", "TMT", "TND", "TOP", "TRY", "TTD", "TVD", "TWD", "TZS", "UAH", "UGX", "USD", "USN", "UYI", "UYU", "UZS", "VEF", "VND", "VUV", "WST", "XAF", "XAG", "XAU", "XCD", "XDR", "XFO", "XFU", "XOF", "XPD", "XPF", "XPT", "XSU", "XTS", "XUA", "XXX", "YER", "ZAR", "ZMK", "ZMW", "ZWD", "ZWL", "ZWN", "ZWR" ]
+        },
+        "requireLiquidityCheck" : {
+          "type" : "boolean",
+          "description" : "Liquidity Check boolean"
+        },
+        "ledgerAccountType" : {
+          "type" : "string",
+          "description" : "Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE",
+          "enum" : [ "INTERCHANGE_FEE", "POSITION" ]
+        },
+        "autoPositionReset" : {
+          "type" : "boolean",
+          "description" : "Automatic position reset setting, which determines whether to execute the settlement transfer or not"
+        }
+      }
+    },
+    "Model 13" : {
+      "type" : "object",
+      "required" : [ "isActive" ],
+      "properties" : {
+        "isActive" : {
+          "type" : "boolean",
+          "description" : "settlementModel isActive boolean"
+        }
+      }
     }
   }
 }
