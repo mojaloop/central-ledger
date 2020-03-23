@@ -13,5 +13,6 @@ module.exports = Setup.initialize({
   port: Config.PORT,
   modules: [Routes],
   runMigrations: Config.RUN_MIGRATIONS,
-  runHandlers: !Config.HANDLERS_DISABLED
+  runHandlers: !Config.HANDLERS_DISABLED,
+  handlers: [{ enabled: true, type: 'preparePosition' }, { enabled: true, type: 'fulfilPosition' }, { enabled: true, type: 'admin' }, { enabled: true, type: 'get' }]
 })

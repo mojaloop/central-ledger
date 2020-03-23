@@ -86,6 +86,25 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
   }
 }
 
+const handleResponseAdjustPosition = async (transferId, payload, action, fspiopError) => {
+  const histTimerTransferServiceHandlePayeeResponseEnd = Metrics.getHistogram(
+    'domain_transfer',
+    'fulfilPosition - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+
+  try {
+    const transfer = await TransferFacade.fulfilPosition(transferId, payload, action, fspiopError)
+    const result = TransferObjectTransform.toTransfer(transfer)
+    histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handlePayeeResponse' })
+    return result
+  } catch (err) {
+    histTimerTransferServiceHandlePayeeResponseEnd({ success: false, funcName: 'handlePayeeResponse' })
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+
 /**
  * @function LogTransferError
  *
@@ -151,7 +170,6 @@ const cacheOptions = {
 
 const participantCache = new NodeCache(cacheOptions)
 
-
 const cachedParticipantGetByNameAndCurrency = async (name, currency, acctType) => {
   const cacheKey = `part_${name}-${currency}-${acctType}`
   let val = participantCache.get(cacheKey)
@@ -209,7 +227,7 @@ const cachedGetParticipantNDCLimitId = async (participantCurrencyId) => {
     participantCache.set(cacheKey, val)
   }
 
-  return val  
+  return val
 }
 
 /**
@@ -289,7 +307,7 @@ const saveTransferPreparedChangePosition = async (payload, stateReason = null, h
 
       let transferStateChangeId
 
-      //first transaction - this is to "save" the transfer details. This should happend and persist even on further errors
+      // first transaction - this is to "save" the transfer details. This should happend and persist even on further errors
       await knex.transaction(async (trx) => {
         try {
           let transferExtensionsRecordList = []
@@ -365,8 +383,8 @@ const saveTransferPreparedChangePosition = async (payload, stateReason = null, h
 
           const positionChangeInsertResult = await trx.raw(positionChangeSql)
 
-          //now, in the same transaction (assuming READ COMMITTED isolation!) we insert a new row in
-          //participantPositionChange to record the update
+          // now, in the same transaction (assuming READ COMMITTED isolation!) we insert a new row in
+          // participantPositionChange to record the update
           if (positionChangeInsertResult[0].affectedRows !== 1) {
             // we should have exactly one row here!
             Logger.error(`Updated position read failed for transfer ${payload.transferId}. rolling back.`)
@@ -425,7 +443,8 @@ const TransferService = {
   getTransferFulfilmentDuplicateCheck: TransferFulfilmentDuplicateCheckModel.getTransferFulfilmentDuplicateCheck,
   saveTransferFulfilmentDuplicateCheck: TransferFulfilmentDuplicateCheckModel.saveTransferFulfilmentDuplicateCheck,
   getTransferErrorDuplicateCheck: TransferErrorDuplicateCheckModel.getTransferErrorDuplicateCheck,
-  saveTransferErrorDuplicateCheck: TransferErrorDuplicateCheckModel.saveTransferErrorDuplicateCheck
+  saveTransferErrorDuplicateCheck: TransferErrorDuplicateCheckModel.saveTransferErrorDuplicateCheck,
+  handleResponseAdjustPosition
 }
 
 module.exports = TransferService

@@ -74,6 +74,7 @@ const fromSwitch = true
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
+
 const positions = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_position',
