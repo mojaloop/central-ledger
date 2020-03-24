@@ -107,7 +107,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       }
       handlerList.push(handler)
     }
-    if (args.fulfiPosition) {
+    if (args.fulfilPosition) {
       Logger.debug('CLI: Executing --fulfilPosition')
       const handler = {
         type: 'fulfilPosition',
