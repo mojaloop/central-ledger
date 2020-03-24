@@ -201,7 +201,9 @@ const preparePosition = async (error, messages) => {
         Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
         Logger.error(`validation failures not supported in combined handler for transfer ${transferId}`)
         Logger.error(`Validation failures: ${util.inspect(reasons)}`)
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return
+        // TODO should throw exception and remove metric (handled in the catch)
       }
 
       Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
@@ -217,6 +219,9 @@ const preparePosition = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}6`))
         Logger.error(`${Util.breadcrumb(location)}::${err.message}`)
         Logger.error(`transfer save failures not handled in combined handler for transfer ${transferId}`)
+        histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return
+        // TODO should throw exception and remove metric (handled in the catch)
       }
 
       // next step is prepare->notification (notification to payee dfsp for prepare)
@@ -476,11 +481,18 @@ const fulfilPosition = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
           if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
             await TransferService.handleResponseAdjustPosition(transferId, payload, action)
-            // <^^<- here do that -> await PositionService.changeParticipantPosition(participantCurrencyId, isReversal, amount, transferStateChange)
             Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
 
             // ### Insert position notification handling here
 
+            const eventDetail = { action }
+            if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
+              eventDetail.functionality = Enum.Events.Event.Type.NOTIFICATION
+            } else {
+              eventDetail.functionality = Enum.Events.Event.Type.BULK_PROCESSING
+            }
+            
+            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
             histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
             return true
           } else {
