@@ -666,6 +666,49 @@ const saveTransferPreparedChangePosition = async (payload, stateReason = null, h
 
 // fufil-position
 
+async function calculateFulfilPositionRawQuery (participantCurrencyId, amount, transactionTimestamp, insertedTransferStateChange, payload, trx) {
+  const participantPositionId = await cachedGetParticipantPositionId(participantCurrencyId)
+  const positionSql = `UPDATE participantPosition SET value = (value + ${amount}), changedDate = '${transactionTimestamp}' ` +
+    `WHERE participantPositionId = ${participantPositionId} `
+  const positionChangeSql = 'INSERT INTO participantPositionChange ' +
+    '(participantPositionId, transferStateChangeId, value, reservedValue, createdDate) ' +
+    `SELECT ${participantPositionId}, ${insertedTransferStateChange.transferStateChangeId}, value, reservedValue, '${transactionTimestamp}' ` +
+    `FROM participantPosition WHERE participantPositionId = ${participantPositionId}`
+  try {
+    // try to change the position of the payee dfsp. This is done in a single statement that will either
+    // alter 1 row on success or 0 rows if the NDC limit is exceeded by the update
+    const positionUpdateResult = await trx.raw(positionSql)
+    Logger.info(`Position update result for transfer ${payload.transferId}: ${util.inspect(positionUpdateResult, { depth: Infinity })})`)
+    if (positionUpdateResult[0].affectedRows !== 1) {
+      Logger.error(`Position update failed for transfer ${payload.transferId}.`)
+      const e = new Error(`Position update failed for transfer ${payload.transferId}.`)
+      // await trx.rollback(e)
+      throw e
+    }
+    const positionChangeInsertResult = await trx.raw(positionChangeSql)
+    // now, in the same transaction (assuming READ COMMITTED isolation!) we insert a new row in
+    // participantPositionChange to record the update
+    if (positionChangeInsertResult[0].affectedRows !== 1) {
+      // we should have exactly one row here!
+      Logger.error(`Updated position read failed for transfer ${payload.transferId}. rolling back.`)
+      // we would spit out an internal error notification event here but
+      // as this is just a performance proof of concept, dont bother.
+      const e = new Error('Position change insert did not affect 1 row')
+      // await trx.rollback(e)
+      throw e
+    }
+    // all good, commit the db transaction
+    await trx.commit()
+    // histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
+  } catch (err) {
+    // TODO: handle this error gracefully, update transfer state to errored, send error callback etc...
+    // await trx.rollback(err)
+    // histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
+    Logger.error(`Error executing position update query for transfer ${payload.transferId}: ${err.stack || util.inspect(err)}`)
+    throw err
+  }
+}
+
 const fulfilPosition = async (transferId, payload, action, fspiopError) => {
   const histTimerSavePayeeTranferResponsedEnd = Metrics.getHistogram(
     'model_transfer',
@@ -735,13 +778,13 @@ const fulfilPosition = async (transferId, payload, action, fspiopError) => {
       }
     })
   }
-  // const transferErrorRecord = {
-  //   transferId,
-  //   transferStateChangeId: null,
-  //   errorCode,
-  //   errorDescription,
-  //   createdDate: transactionTimestamp
-  // }
+  const transferErrorRecord = {
+    transferId,
+    transferStateChangeId: null,
+    errorCode,
+    errorDescription,
+    createdDate: transactionTimestamp
+  }
 
   try {
     /** @namespace Db.getKnex **/
@@ -793,20 +836,6 @@ const fulfilPosition = async (transferId, payload, action, fspiopError) => {
         // position part
         transferStateChangePosition.createdDate = transactionTimestamp
 
-        // ### TODO ### flag to fork for that approach and direct query
-        // const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
-        // let latestPosition
-        // if (isReversal) {
-        //   latestPosition = new MLNumber(participantPosition.value).subtract(amount)
-        // } else {
-        //   latestPosition = new MLNumber(participantPosition.value).add(amount)
-        // }
-        // latestPosition = latestPosition.toFixed(Config.AMOUNT.SCALE)
-        // await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({
-        //   value: latestPosition,
-        //   changedDate: transactionTimestamp
-        // })
-
         await knex('transferStateChange').transacting(trx).insert(transferStateChangePosition)
         const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
           .where({ transferId })
@@ -817,82 +846,49 @@ const fulfilPosition = async (transferId, payload, action, fspiopError) => {
         // Logger.debug('savePayeeTransferResponse::transferStateChange')
         // const insertedTransferStateChange = await knex('transferStateChange').transacting(trx).where({ transferId: transferStateChangePosition.transferId }).forUpdate().first().orderBy('transferStateChangeId', 'desc')
 
-        // ### TODO ### flag to fork for that approach and direct query
-        // const participantPositionChange = {
-        //   participantPositionId: participantPosition.participantPositionId,
-        //   transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
-        //   value: latestPosition,
-        //   reservedValue: participantPosition.reservedValue,
-        //   createdDate: transactionTimestamp
-        // }
-        // await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
-        // position part
-
         // ### DIRECT RAW QUERY
-        const participantPositionId = await cachedGetParticipantPositionId(participantCurrencyId)
-
-        const positionSql = `UPDATE participantPosition SET value = (value + ${amount}), changedDate = '${transactionTimestamp}' ` +
-          `WHERE participantPositionId = ${participantPositionId} `
-
-        const positionChangeSql = 'INSERT INTO participantPositionChange ' +
-          '(participantPositionId, transferStateChangeId, value, reservedValue, createdDate) ' +
-          `SELECT ${participantPositionId}, ${insertedTransferStateChange.transferStateChangeId}, value, reservedValue, '${transactionTimestamp}' ` +
-          `FROM participantPosition WHERE participantPositionId = ${participantPositionId}`
-
-        try {
-          // try to change the position of the payee dfsp. This is done in a single statement that will either
-          // alter 1 row on success or 0 rows if the NDC limit is exceeded by the update
-          const positionUpdateResult = await trx.raw(positionSql)
-
-          Logger.info(`Position update result for transfer ${payload.transferId}: ${util.inspect(positionUpdateResult, { depth: Infinity })})`)
-
-          if (positionUpdateResult[0].affectedRows !== 1) {
-            Logger.error(`Position update failed for transfer ${payload.transferId}.`)
-            const e = new Error(`Position update failed for transfer ${payload.transferId}.`)
-            // await trx.rollback(e)
-            throw e
+        if (process.env.RAW_FULFILPOSITION === 'true') {
+          await calculateFulfilPositionRawQuery(participantCurrencyId, amount, transactionTimestamp, insertedTransferStateChange, payload, trx)
+        } else {
+          // ### TODO ### flag to fork for that approach and direct query
+          const participantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).forUpdate().select('*').first()
+          let latestPosition
+          if (isReversal) {
+            latestPosition = new MLNumber(participantPosition.value).subtract(amount)
+          } else {
+            latestPosition = new MLNumber(participantPosition.value).add(amount)
           }
+          latestPosition = latestPosition.toFixed(Config.AMOUNT.SCALE)
+          await knex('participantPosition').transacting(trx).where({ participantCurrencyId }).update({
+            value: latestPosition,
+            changedDate: transactionTimestamp
+          })
 
-          const positionChangeInsertResult = await trx.raw(positionChangeSql)
-
-          // now, in the same transaction (assuming READ COMMITTED isolation!) we insert a new row in
-          // participantPositionChange to record the update
-          if (positionChangeInsertResult[0].affectedRows !== 1) {
-            // we should have exactly one row here!
-            Logger.error(`Updated position read failed for transfer ${payload.transferId}. rolling back.`)
-            // we would spit out an internal error notification event here but
-            // as this is just a performance proof of concept, dont bother.
-            const e = new Error('Position change insert did not affect 1 row')
-            // await trx.rollback(e)
-            throw e
+          const participantPositionChange = {
+            participantPositionId: participantPosition.participantPositionId,
+            transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
+            value: latestPosition,
+            reservedValue: participantPosition.reservedValue,
+            createdDate: transactionTimestamp
           }
+          await knex('participantPositionChange').transacting(trx).insert(participantPositionChange)
 
-          // all good, commit the db transaction
-          await trx.commit()
-          histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
-        } catch (err) {
-          // TODO: handle this error gracefully, update transfer state to errored, send error callback etc...
-          // await trx.rollback(err)
-          histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-          Logger.error(`Error executing position update query for transfer ${payload.transferId}: ${err.stack || util.inspect(err)}`)
-          throw err
+          if (fspiopError) {
+            const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
+              .where({ transferId })
+              .forUpdate().first().orderBy('transferStateChangeId', 'desc')
+            transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+            transferStateChangePosition.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_ERROR
+            await knex('transferError').transacting(trx).insert(transferErrorRecord)
+            result.transferErrorRecord = transferErrorRecord
+            Logger.debug('savePayeeTransferResponse::transferError')
+          }
+          // position part
         }
-
-        // ### TODO ### flag to fork for that approach and direct query
-        //   if (fspiopError) {
-        //     const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
-        //       .where({ transferId })
-        //       .forUpdate().first().orderBy('transferStateChangeId', 'desc')
-        //     transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
-        //     transferStateChangePosition.transferStateId = Enum.Transfers.TransferInternalState.ABORTED_ERROR
-        //     await knex('transferError').transacting(trx).insert(transferErrorRecord)
-        //     result.transferErrorRecord = transferErrorRecord
-        //     Logger.debug('savePayeeTransferResponse::transferError')
-        //   }
-        //   await trx.commit()
-        //   histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         result.savePayeeTransferResponseExecuted = true
-        //   Logger.debug('savePayeeTransferResponse::success')
+        await trx.commit()
+        histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
+        Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
         await trx.rollback(err)
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })

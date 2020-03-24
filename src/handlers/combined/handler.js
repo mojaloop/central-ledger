@@ -491,7 +491,6 @@ const fulfilPosition = async (error, messages) => {
             } else {
               eventDetail.functionality = Enum.Events.Event.Type.BULK_PROCESSING
             }
-            
             await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
             histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
             return true
