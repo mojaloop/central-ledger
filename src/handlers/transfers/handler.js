@@ -134,6 +134,7 @@ const prepare = async (error, messages) => {
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.Events.ActionLetter.prepare
       : (action === TransferEventAction.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
         : Enum.Events.ActionLetter.unknown)
+
     let functionality = action === TransferEventAction.PREPARE ? TransferEventType.NOTIFICATION
       : (action === TransferEventAction.BULK_PREPARE ? TransferEventType.BULK_PROCESSING
         : Enum.Events.ActionLetter.unknown)
@@ -455,7 +456,7 @@ const fulfil = async (error, messages) => {
       hasDuplicateId = dupCheckResult.hasDuplicateId // overriding results to false in the advent there is any errors since we cant have duplicate transferIds
       hasDuplicateHash = dupCheckResult.hasDuplicateHash // overriding results to false in the advent there is any errors since we have not compared against any existing hashes
     }
-
+  
     // let dupCheckResult
     // if (!isTransferError) {
     //   dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
@@ -465,7 +466,6 @@ const fulfil = async (error, messages) => {
     // const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
 
     histTimerDuplicateCheckEnd({ success: true, funcName: 'fulfil_duplicateCheckComparator', mode: fulfil_duplicateCheckComparator_mode })
-
 
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))

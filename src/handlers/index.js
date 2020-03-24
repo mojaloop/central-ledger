@@ -61,6 +61,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--bulkfulfil', 'Start the Bulk Fulfil Handler')
   .option('--bulkprocessing', 'Start the Bulk Processing Handler')
   .option('--preparePosition', 'Start the combined prepare and position handler')
+  .option('--fulfilPosition', 'Start the combined fulfil and position handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
@@ -102,6 +103,14 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       Logger.debug('CLI: Executing --fulfil')
       const handler = {
         type: 'fulfil',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.fulfiPosition) {
+      Logger.debug('CLI: Executing --fulfilPosition')
+      const handler = {
+        type: 'fulfilPosition',
         enabled: true
       }
       handlerList.push(handler)

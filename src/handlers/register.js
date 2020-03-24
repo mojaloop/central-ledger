@@ -112,6 +112,7 @@ module.exports = {
     registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler
   },
   combined: {
-    registerPreparePositionHandler: CombinedHandlers.registerPreparePositionHandler
+    registerPreparePositionHandler: CombinedHandlers.registerPreparePositionHandler,
+    registerFulfilPositionHandler: CombinedHandlers.registerFulfilPositionHandler
   }
 }

@@ -275,7 +275,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
         await trx.commit()
         histTimerChangeParticipantPositionTransactionEnd({ success: true, queryName: 'facade_changeParticipantPositionTransaction' })
       } catch (err) {
-        await trx.rollback
+        await trx.rollback()
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     }).catch((err) => {
