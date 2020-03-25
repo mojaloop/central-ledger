@@ -39,7 +39,7 @@ exports.up = (knex) => {
         t.bigIncrements('quoteExtensionId').primary().notNullable()
         t.string('quoteId', 36).notNullable().comment('Common ID between the FSPs for the quote object, decided by the Payer FSP')
         t.foreign('quoteId').references('quoteId').inTable('quote')
-        t.bigInteger('quoteResponseId').unsigned().notNullable().comment('The response to the intial quote')
+        t.bigInteger('quoteResponseId').unsigned().nullable().comment('The response to the intial quote')
         t.foreign('quoteResponseId').references('quoteResponseId').inTable('quoteResponse')
         t.string('transactionId', 36).notNullable().comment('The transaction reference that is part of the initial quote')
         t.foreign('transactionId').references('transactionReferenceId').inTable('transactionReference')
