@@ -183,48 +183,14 @@
       "expiresAt": 1585140205323
     },
     "1179|hapi-swagger>handlebars>optimist>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
+      "decision": "ignore",
+      "madeAt": 1584535470041,
+      "expiresAt": 1585140205323
     },
     "1179|faucet>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>00unidentified>00unidentified>grpc>node-pre-gyp>mkdirp>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>00unidentified>grpc>node-pre-gyp>mkdirp>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>grpc>node-pre-gyp>mkdirp>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>00unidentified>00unidentified>grpc>node-pre-gyp>tar>mkdirp>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>00unidentified>grpc>node-pre-gyp>tar>mkdirp>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>grpc>node-pre-gyp>tar>mkdirp>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>00unidentified>00unidentified>grpc>node-pre-gyp>rc>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>00unidentified>grpc>node-pre-gyp>rc>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
-    },
-    "1179|00unidentified>grpc>node-pre-gyp>rc>minimist": {
-      "decision": "postpone",
-      "madeAt": 1585161374405
+      "decision": "ignore",
+      "madeAt": 1584535470041,
+      "expiresAt": 1585140205323
     }
   },
   "rules": {},
