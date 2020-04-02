@@ -1,7 +1,14 @@
 # CircleCI v2.1 Config
 version: 2.1
+
+##
+# orbs
+#
+# Orbs used in this pipeline
+##
 orbs:
   anchore: anchore/anchore-engine@1.6.0
+  deploy-kube: mojaloop/deployment@0.1.6
 
 ##
 # defaults
@@ -27,106 +34,11 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
     pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
     apk -v --purge del py-pip
 
-defaults_build_docker_build: &defaults_build_docker_build
-  name: Build Docker $CIRCLE_TAG image
-  command: |
-    echo "Building Docker image: $CIRCLE_TAG"
-    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
-
-defaults_build_docker_login: &defaults_build_docker_login
-  name: Login to Docker Hub
-  command: |
-    docker login -u $DOCKER_USER -p $DOCKER_PASS
-
-defaults_build_docker_publish: &defaults_build_docker_publish
-  name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
-  command: |
-    echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
-    docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-    echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
-    docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
-
-
-defaults_deploy_config_kubernetes_cluster: &defaults_deploy_config_kubernetes_cluster
-  name: Configure Kubernetes cluster
-  command: |
-    echo "Configure Kubernetes cluster ${K8_CLUSTER_NAME}"
-    kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
-
-defaults_deploy_config_kubernetes_context: &defaults_deploy_config_kubernetes_context
-  name: Confi gure Kubernetes context
-  command: |
-    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
-    kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$K8_NAMESPACE
-
-defaults_deploy_config_kubernetes_credentials: &defaults_deploy_config_kubernetes_credentials
-  name: Configure Kubernetes credentails
-  command: |
-    echo "Configure Kubernetes credentials ${K8_USER_NAME}"
-    if [ ! -z "$K8_USER_TOKEN" ];
-    then
-        echo "Configure Kubernetes credentials ${K8_USER_NAME} using Token"
-        kubectl config set-credentials $K8_USER_NAME --token=$K8_USER_TOKEN
-    else
-        echo "Configure Kubernetes credentials ${K8_USER_NAME} using Certs"
-        kubectl config set-credentials $K8_USER_NAME --client-certificate=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME --client-key=$CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME
-    fi
-
-defaults_deploy_configure_helm: &defaults_deploy_configure_helm
-  name: Configure Helm
-  command: |
-    helm init --client-only
-
-defaults_deploy_install_or_upgrade_helm_chart: &defaults_deploy_install_or_upgrade_helm_chart
-  name: Install or Upgrade Helm Chart
-  command: |
-    echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
-    if [ -z "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")"  ] && [ "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")" != "Error: Unauthorized" ];
-    then
-        echo "Installing ${K8_RELEASE_NAME} new release"
-        helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
-    else
-        echo "Upgrading ${K8_RELEASE_NAME} release"
-        helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION --reuse-values $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
-    fi
-
-defaults_deploy_prequisites: &defaults_deploy_prequisites
-  name: Copy deployment pre-requisites from S3 bucket
-  command: |
-    if [ -z "$K8_USER_TOKEN" ];
-    then
-        echo "Copying K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
-        mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS
-        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_KEY_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
-        aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/$K8_USER_PEM_CERT_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS/
-    else
-        echo "Skipping K8 keys into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_KEYS folder"
-    fi
-
-    echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $K8_RELEASE_NAME release"
-    mkdir $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
-    aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
-
-defaults_deploy_set_kubernetes_context: &defaults_deploy_set_kubernetes_context
-  name: Set Kubernetes context
-  command: |
-    echo "Configure Kubernetes context ${K8_CLUSTER_NAME}"
-    kubectl config use-context $K8_CLUSTER_NAME
-
 defaults_license_scanner: &defaults_license_scanner
   name: Install and set up license-scanner
   command: |
     git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
     cd /tmp/license-scanner && make build default-files set-up
-
-defaults_slack_announcement: &defaults_slack_announcement
-  name: Slack announcement for tag releases
-  command: |
-    curl -X POST \
-      $SLACK_WEBHOOK_ANNOUNCEMENT \
-      -H 'Content-type: application/json' \
-      -H 'cache-control: no-cache' \
-      -d "{\"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"}"
 
 ##
 # Executors
@@ -137,16 +49,11 @@ executors:
   default-docker:
     working_directory: /home/circleci/project
     docker:
-      - image: node:12.16.0-alpine
+      - image: node:12.16.1-alpine
 
   default-machine:
     machine:
       image: ubuntu-1604:201903-01
-
-  helm-kube:
-    working_directory: /home/circleci/project
-    docker:
-      - image: hypnoglow/kubernetes-helm
 
 ##
 # Jobs
@@ -166,7 +73,7 @@ jobs:
           command: cd $(npm root -g)/npm
       - run:
           name: Update NPM install
-          command: npm install
+          command: npm ci
       - run:
           name: Delete build dependencies
           command: apk del build-dependencies
@@ -296,7 +203,10 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *defaults_build_docker_build
+          name: Build Docker $CIRCLE_TAG image
+          command: |
+            echo "Building Docker image: $CIRCLE_TAG"
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
       - run:
           name: Save docker image to workspace
           command: docker save -o /tmp/docker-image.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
@@ -307,7 +217,6 @@ jobs:
 
   license-scan:
     executor: default-machine
-    # <<: *defaults_test_env
     steps:
       - attach_workspace:
           at: /tmp
@@ -318,7 +227,7 @@ jobs:
           <<: *defaults_license_scanner
       - run:
           name: Run the license-scanner
-          command: cd /tmp/license-scanner && mode=docker dockerImage=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG make run
+          command: cd /tmp/license-scanner && mode=docker dockerImages=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG make run
       - store_artifacts:
           path: /tmp/license-scanner/results
           prefix: licenses
@@ -383,43 +292,55 @@ jobs:
           name: Load the pre-built docker image from workspace
           command: docker load -i /tmp/docker-image.tar
       - run:
-          <<: *defaults_build_docker_login
-      - run:
-          name: setup environment vars for release/snapshot
-          command: ./.circleci/_set_up_deploy_envs.sh
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run:
           name: Re-tag pre built image
           command: |
             docker tag $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
       - run:
-          <<: *defaults_build_docker_publish
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
+          command: |
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
       - run:
-          <<: *defaults_slack_announcement
+          name: Slack announcement for tag releases
+          command: |
+            curl -X POST \
+              $SLACK_WEBHOOK_ANNOUNCEMENT \
+              -H 'Content-type: application/json' \
+              -H 'cache-control: no-cache' \
+              -d "{\"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"}"
 
   deploy:
-    executor: helm-kube
+    executor: deploy-kube/helm-kube
     steps:
       - checkout
-      - run:
-          name: Install AWS CLI dependencies
-          command: *defaults_awsCliDependencies
-      - run:
-          name: setup environment vars for release/snapshot
-          command: ./.circleci/_set_up_deploy_envs.sh
-      - run:
-          <<: *defaults_deploy_prequisites
-      - run:
-          <<: *defaults_deploy_config_kubernetes_cluster
-      - run:
-          <<: *defaults_deploy_config_kubernetes_credentials
-      - run:
-          <<: *defaults_deploy_config_kubernetes_context
-      - run:
-          <<: *defaults_deploy_set_kubernetes_context
-      - run:
-          <<: *defaults_deploy_configure_helm
-      - run:
-          <<: *defaults_deploy_install_or_upgrade_helm_chart
+      - deploy-kube/setup_and_run:
+          helm_set_values: |
+            --set central.centralledger.centralledger-service.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-service.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-admin-transfer.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-admin-transfer.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-position.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-position.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-get.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-get.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
+            --set central.centralledger.centralledger-handler-timeout.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set central.centralledger.centralledger-handler-timeout.containers.api.image.tag=$CIRCLE_TAG \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.tag=$CIRCLE_TAG
+
 
 ##
 # Workflows
