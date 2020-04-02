@@ -37,7 +37,7 @@ exports.up = (knex) => {
     if (!exists) {
       return knex.schema.createTable('quotePartyIdInfoExtension', (t) => {
         t.bigIncrements('quotePartyIdInfoExtensionId').primary().notNullable()
-        t.integer('quotePartyId').unsigned().notNullable().comment('quotePartyId: a common id between the tables quotePartyIdInfoExtension and quoteParty')
+        t.bigInteger('quotePartyId').unsigned().notNullable().comment('quotePartyId: a common id between the tables quotePartyIdInfoExtension and quoteParty')
         t.foreign('quotePartyId').references('quotePartyId').inTable('quoteParty')
         t.string('key', 128).notNullable()
         t.text('value').notNullable()
