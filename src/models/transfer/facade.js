@@ -599,6 +599,12 @@ const saveTransferPreparedChangePosition = async (payload, stateReason = null, h
       const participantPositionId = await cachedGetParticipantPositionId(participantCurrencyIds[payload.payerFsp])
       const participantLimitId = await cachedGetParticipantNDCLimitId(participantCurrencyIds[payload.payerFsp])
 
+      //
+      // TODO: 
+      //  1. Investigate Indefinite Precision Math plugin available for MySQL?
+      //  2. Branching logic for in-Application calculation vs in-DB calculation?
+      //
+
       const positionSql = `UPDATE participantPosition SET value = (value + ${payload.amount.amount}), changedDate = '${Time.getUTCString(now)}' ` +
         `WHERE participantPositionId = ${participantPositionId} ` +
         `AND (value + ${payload.amount.amount}) < (SELECT value FROM participantLimit WHERE participantLimitId = ${participantLimitId})`
