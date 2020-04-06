@@ -31,31 +31,43 @@
 const Db = require('../../lib/db')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
+  const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
+    'model_participant',
+    'facade_getByNameAndCurrency - Metrics for participant model',
+    ['success', 'queryName']
+  ).startTimer()
+
   try {
     return await Db.participant.query(async (builder) => {
-      let b = builder
-        .where({ 'participant.name': name })
-        .andWhere({ 'pc.currencyId': currencyId })
-        .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .select(
-          'participant.*',
-          'pc.participantCurrencyId',
-          'pc.currencyId',
-          'pc.isActive AS currencyIsActive'
-        )
-        .first()
+        let b = builder
+          .where({ 'participant.name': name })
+          .andWhere({ 'pc.currencyId': currencyId })
+          .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
+          .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+          .select(
+            'participant.*',
+            'pc.participantCurrencyId',
+            'pc.currencyId',
+            'pc.isActive AS currencyIsActive'
+          )
+          .first()
 
-      if (isCurrencyActive !== undefined) {
-        b = b.andWhere({ 'pc.isActive': isCurrencyActive })
-      }
+        if (isCurrencyActive !== undefined) {
+          b = b.andWhere({ 'pc.isActive': isCurrencyActive })
+        }
+        return b
+      })
+    }
 
-      return b
-    })
+    histTimerParticipantGetByNameAndCurrencyEnd({ success: true, queryName: 'facade_getByNameAndCurrency' })
+
+    return participant
   } catch (err) {
+    histTimerParticipantGetByNameAndCurrencyEnd({ success: false, queryName: 'facade_getByNameAndCurrency' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -248,27 +260,35 @@ const addEndpoint = async (participantId, endpoint) => {
 }
 
 const getParticipantLimitByParticipantCurrencyLimit = async (participantId, currencyId, ledgerAccountTypeId, participantLimitTypeId) => {
+  const histGetParticipantLimitEnd = Metrics.getHistogram(
+    'model_participant',
+    'facade_getParticipantLimitByParticipantCurrencyLimit - Metrics for participant model',
+    ['success', 'queryName']
+  ).startTimer()
+
   try {
     return await Db.participant.query(async (builder) => {
-      return builder
-        .where({
-          'participant.participantId': participantId,
-          'pc.currencyId': currencyId,
-          'pc.ledgerAccountTypeId': ledgerAccountTypeId,
-          'pl.participantLimitTypeId': participantLimitTypeId,
-          'participant.isActive': 1,
-          'pc.IsActive': 1,
-          'pl.isActive': 1
-        })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
-        .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
-        .select(
-          'participant.participantID AS participantId',
-          'pc.currencyId AS currencyId',
-          'pl.participantLimitTypeId as participantLimitTypeId',
-          'pl.value AS value'
-        ).first()
-    })
+        return builder
+          .where({
+            'participant.participantId': participantId,
+            'pc.currencyId': currencyId,
+            'pc.ledgerAccountTypeId': ledgerAccountTypeId,
+            'pl.participantLimitTypeId': participantLimitTypeId,
+            'participant.isActive': 1,
+            'pc.IsActive': 1,
+            'pl.isActive': 1
+          })
+          .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+          .innerJoin('participantLimit AS pl', 'pl.participantCurrencyId', 'pc.participantCurrencyId')
+          .select(
+            'participant.participantID AS participantId',
+            'pc.currencyId AS currencyId',
+            'pl.participantLimitTypeId as participantLimitTypeId',
+            'pl.value AS value'
+          ).first()
+      })
+    }
+    histGetParticipantLimitEnd({ success: true, queryName: 'facade_getParticipantLimitByParticipantCurrencyLimit' })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

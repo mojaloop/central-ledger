@@ -114,14 +114,21 @@ const prepare = async (error, messages) => {
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.Events.ActionLetter.prepare
       : (action === TransferEventAction.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
         : Enum.Events.ActionLetter.unknown)
+
     let functionality = action === TransferEventAction.PREPARE ? TransferEventType.NOTIFICATION
       : (action === TransferEventAction.BULK_PREPARE ? TransferEventType.BULK_PROCESSING
         : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    const histTimerDuplicateCheckEnd = Metrics.getHistogram(
+      'handler_transfers',
+      'prepare_duplicateCheckComparator - Metrics for transfer handler',
+      ['success', 'funcName', 'mode']
+    ).startTimer()
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+    histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator', mode: prepare_duplicateCheckComparator_mode })
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
       const transfer = await TransferService.getByIdLight(transferId)
@@ -133,13 +140,13 @@ const prepare = async (error, messages) => {
           Logger.info(Util.breadcrumb(location, `callback--${actionLetter}1`))
           message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
           message.value.content.uriParams = { id: transferId }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         } else if (action === TransferEventAction.BULK_PREPARE) {
           Logger.info(Util.breadcrumb(location, `validationError1--${actionLetter}2`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
       } else {
@@ -147,11 +154,11 @@ const prepare = async (error, messages) => {
         if (action === TransferEventAction.BULK_PREPARE) {
           Logger.info(Util.breadcrumb(location, `validationError2--${actionLetter}4`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, 'Individual transfer prepare duplicate')
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         } else { // action === TransferEventAction.PREPARE
           Logger.info(Util.breadcrumb(location, `ignore--${actionLetter}3`))
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
+            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
           return true
         }
@@ -160,7 +167,7 @@ const prepare = async (error, messages) => {
       Logger.error(Util.breadcrumb(location, `callbackErrorModified1--${actionLetter}5`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality, action }
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
       const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
@@ -185,7 +192,7 @@ const prepare = async (error, messages) => {
         Logger.info(Util.breadcrumb(location, `positionTopic1--${actionLetter}7`))
         functionality = TransferEventType.POSITION
         const eventDetail = { functionality, action }
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         return true
       } else {
@@ -205,7 +212,7 @@ const prepare = async (error, messages) => {
            * mysql at `TransferService.prepare` and starting it after entring catch.
            * Not sure if it will work for bulk, because of the BulkPrepareHandler.
            */
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+            await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
           throw fspiopError
         }
         Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}9`))
@@ -218,7 +225,7 @@ const prepare = async (error, messages) => {
          * a tansfer in a currency not supported by either dfsp. Not sure if it
          * will be triggered for bulk, because of the BulkPrepareHandler.
          */
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
         throw fspiopError
       }
     }
@@ -316,14 +323,20 @@ const fulfil = async (error, messages) => {
     // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
-    let dupCheckResult
-    if (!isTransferError) {
-      dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
-    } else {
-      dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferErrorDuplicateCheck, TransferService.saveTransferErrorDuplicateCheck)
-    }
-    const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
+    const histTimerDuplicateCheckEnd = Metrics.getHistogram(
+      'handler_transfers',
+      'fulfil_duplicateCheckComparator - Metrics for transfer handler',
+      ['success', 'funcName', 'mode']
+    ).startTimer()
 
+      let dupCheckResult
+      if (!isTransferError) {
+        dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
+      } else {
+        dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferErrorDuplicateCheck, TransferService.saveTransferErrorDuplicateCheck)
+      }
+    const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
+  
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
       if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
@@ -386,7 +399,7 @@ const fulfil = async (error, messages) => {
       throw fspiopError
     } else { // !hasDuplicateId
       if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
-        Util.breadcrumb(location, { path: 'validationFailed' })
+        Util.breadcrumb(location, { path: 'validationCheck' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
