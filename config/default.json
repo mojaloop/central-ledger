@@ -34,7 +34,7 @@
     "RECONNECT_INTERVAL": 5000
   },
   "MONGODB": {
-    "DISABLED": false,
+    "DISABLED": true,
     "URI": "mongodb://localhost:27017/mlos"
   },
   "ERROR_HANDLING": {
@@ -307,7 +307,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         }
@@ -327,7 +328,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         },
@@ -345,7 +347,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         },
@@ -363,7 +366,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         }
@@ -383,7 +387,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         }
@@ -403,7 +408,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         }

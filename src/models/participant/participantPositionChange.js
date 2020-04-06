@@ -30,6 +30,7 @@
 
 const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 /**
  * @function getByParticipantPositionId
@@ -44,6 +45,11 @@ const Logger = require('@mojaloop/central-services-logger')
  */
 
 const getByParticipantPositionId = async (participantPositionId) => {
+  const histTimer = Metrics.getHistogram(
+    'model_participant',
+    'model_getByParticipantPositionId - Metrics for participant model',
+    ['success', 'queryName', 'hit']
+  ).startTimer()
   try {
     return await Db.participantPositionChange.query(async (builder) => {
       const result = builder
@@ -51,10 +57,12 @@ const getByParticipantPositionId = async (participantPositionId) => {
         .select('participantPositionChange.*')
         .orderBy('participantPositionChangeId', 'desc')
         .first()
+      histTimer({ success: true, queryName: 'model_getByParticipantPositionId', hit: false })
       return result
     })
   } catch (err) {
     Logger.error(err)
+    histTimer({ success: false, queryName: 'model_getByParticipantPositionId', hit: false })
     throw err
   }
 }

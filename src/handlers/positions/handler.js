@@ -74,21 +74,23 @@ const fromSwitch = true
  *
  * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
  */
+
 const positions = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_position',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',
-    ['success', 'fspId']
+    ['success', 'fspId', 'action']
   ).startTimer()
 
   if (error) {
-    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action: 'error' })
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
   }
   let message = {}
   let prepareBatch = []
   let contextFromMessage
   let span
+  let action
   try {
     if (Array.isArray(messages)) {
       prepareBatch = Array.from(messages)
@@ -102,7 +104,7 @@ const positions = async (error, messages) => {
     await span.audit(message, EventSdk.AuditEventAction.start)
     const payload = decodePayload(message.value.content.payload)
     const eventType = message.value.metadata.event.type
-    const action = message.value.metadata.event.action
+    action = message.value.metadata.event.action
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     if (!transferId) {
       const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError('transferId is null or undefined')
@@ -142,7 +144,7 @@ const positions = async (error, messages) => {
         if (transferState.transferStateId === Enum.Transfers.TransferState.RESERVED) {
           Logger.info(Utility.breadcrumb(location, `payer--${actionLetter}1`))
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
           return true
         } else {
           Logger.info(Utility.breadcrumb(location, `payerNotifyInsufficientLiquidity--${actionLetter}2`))
@@ -170,7 +172,7 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
-        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
         return true
       }
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT].includes(action)) {
@@ -193,7 +195,7 @@ const positions = async (error, messages) => {
       }
       await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
-      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
       return true
     } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
       Logger.info(Utility.breadcrumb(location, { path: 'timeout' }))
@@ -227,7 +229,7 @@ const positions = async (error, messages) => {
     }
   } catch (err) {
     Logger.error(`${Utility.breadcrumb(location)}::${err.message}--0`)
-    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)

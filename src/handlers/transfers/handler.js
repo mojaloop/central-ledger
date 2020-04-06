@@ -114,14 +114,21 @@ const prepare = async (error, messages) => {
     const actionLetter = action === TransferEventAction.PREPARE ? Enum.Events.ActionLetter.prepare
       : (action === TransferEventAction.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
         : Enum.Events.ActionLetter.unknown)
+
     let functionality = action === TransferEventAction.PREPARE ? TransferEventType.NOTIFICATION
       : (action === TransferEventAction.BULK_PREPARE ? TransferEventType.BULK_PROCESSING
         : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    const histTimerDuplicateCheckEnd = Metrics.getHistogram(
+      'handler_transfers',
+      'prepare_duplicateCheckComparator - Metrics for transfer handler',
+      ['success', 'funcName']
+    ).startTimer()
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferDuplicateCheck, TransferService.saveTransferDuplicateCheck)
+    histTimerDuplicateCheckEnd({ success: true, funcName: 'prepare_duplicateCheckComparator' })
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
       const transfer = await TransferService.getByIdLight(transferId)
@@ -316,6 +323,12 @@ const fulfil = async (error, messages) => {
     // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
     Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    const histTimerDuplicateCheckEnd = Metrics.getHistogram(
+      'handler_transfers',
+      'fulfil_duplicateCheckComparator - Metrics for transfer handler',
+      ['success', 'funcName']
+    ).startTimer()
+
     let dupCheckResult
     if (!isTransferError) {
       dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferFulfilmentDuplicateCheck, TransferService.saveTransferFulfilmentDuplicateCheck)
@@ -323,7 +336,7 @@ const fulfil = async (error, messages) => {
       dupCheckResult = await Comparators.duplicateCheckComparator(transferId, payload, TransferService.getTransferErrorDuplicateCheck, TransferService.saveTransferErrorDuplicateCheck)
     }
     const { hasDuplicateId, hasDuplicateHash } = dupCheckResult
-
+    histTimerDuplicateCheckEnd({ success: true, funcName: 'fulfil_duplicateCheckComparator' })
     if (hasDuplicateId && hasDuplicateHash) {
       Logger.info(Util.breadcrumb(location, 'handleResend'))
       if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
@@ -386,7 +399,7 @@ const fulfil = async (error, messages) => {
       throw fspiopError
     } else { // !hasDuplicateId
       if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
-        Util.breadcrumb(location, { path: 'validationFailed' })
+        Util.breadcrumb(location, { path: 'validationCheck' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
           const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'invalid fulfilment')
