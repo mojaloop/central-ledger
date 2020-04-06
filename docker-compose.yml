@@ -150,7 +150,7 @@ services:
       start_period: 40s
 
   simulator:
-    image: mojaloop/simulator-perf:m9.2.1-perf4.1.2
+    image: mojaloop/simulator:latest
     container_name: cl_simulator
     ports:
       - "8444:8444"
