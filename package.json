@@ -1,17 +1,18 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "9.4.0",
+  "version": "9.5.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
     "Henk Kodde <henkkodde@modusbox.com>",
+    "Lazola Lucas <lazola.lucas@modusbox.com>",
     "Lewis Daly <lewisd@crosslaketech.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
     "Steven Oderayi <steven.oderayi@modusbox.com>",
-    "Lazola Lucas <lazola.lucas@modusbox.com>"
+    "Valentin Genev <valentin.genev@modusbox.com>"
   ],
   "repository": {
     "type": "git",
