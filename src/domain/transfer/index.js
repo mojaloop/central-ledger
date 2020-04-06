@@ -74,11 +74,6 @@ const handlePayeeResponse = async (transferId, payload, action, fspiopError) => 
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-    return TransferObjectTransform.toTransfer(transfer)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
 
 /**
  * @function LogTransferError

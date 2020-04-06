@@ -32,7 +32,6 @@
  * @module src/models/transfer/facade/
  */
 
-const util = require('util')
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const TransferEventAction = Enum.Events.Event.Action
@@ -397,26 +396,6 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   }
 }
 
-        await trx.commit
-        result.savePayeeTransferResponseExecuted = true
-        await trx.commit()
-        histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
-        Logger.debug('savePayeeTransferResponse::success')
-      } catch (err) {
-        await trx.rollback(err)
-        histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-        Logger.error('savePayeeTransferResponse::failure')
-        throw err
-      }
-    })
-    histTimerSavePayeeTranferResponsedEnd({ success: true, queryName: 'facade_savePayeeTransferResponse' })
-    return result
-  } catch (err) {
-    histTimerSavePayeeTranferResponsedEnd({ success: false, queryName: 'facade_savePayeeTransferResponse' })
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
 const saveTransferPrepared = async (payload, stateReason = null, hasPassedValidation = true) => {
   const histTimerSaveTransferPreparedEnd = Metrics.getHistogram(
     'model_transfer',
@@ -744,9 +723,9 @@ const transferStateAndPositionUpdate = async function (param1, enums, trx = null
           .join('transferStateChange AS tsc', 'tsc.transferId', 't.transferId')
           .where('t.transferId', param1.transferId)
           .whereIn('drpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .whereIn('crpc.ledgerAccountTypeId', [enums.ledgerAccountType.POSITION, enums.ledgerAccountType.SETTLEMENT,
-          enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
+            enums.ledgerAccountType.HUB_RECONCILIATION, enums.ledgerAccountType.HUB_MULTILATERAL_SETTLEMENT])
           .select('dr.participantCurrencyId AS drAccountId', 'dr.amount AS drAmount', 'drp.participantPositionId AS drPositionId',
             'drp.value AS drPositionValue', 'drp.reservedValue AS drReservedValue', 'cr.participantCurrencyId AS crAccountId',
             'cr.amount AS crAmount', 'crp.participantPositionId AS crPositionId', 'crp.value AS crPositionValue',
@@ -1176,9 +1155,7 @@ const TransferFacade = {
   reconciliationTransferReserve,
   reconciliationTransferCommit,
   reconciliationTransferAbort,
-  getTransferParticipant,
-  fulfilPosition,
-  saveTransferPreparedChangePosition
+  getTransferParticipant
 }
 
 module.exports = TransferFacade

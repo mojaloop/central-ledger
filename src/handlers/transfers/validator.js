@@ -135,7 +135,7 @@ const fulfilmentToCondition = (fulfilment) => {
 // TODO: The following function should be moved into a re-usable common-shared-service at a later point
 // NOTE: This logic is based on v1.0 of the Mojaloop Specification as described in section 6.5.1.2
 const validateFulfilCondition = (fulfilment, condition) => {
-  const histTimerValidateTimer= Metrics.getHistogram(
+  const histTimerValidateTimer = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validateFulfilCondition - Metrics for transfer handler',
     ['success', 'funcName']
@@ -146,7 +146,7 @@ const validateFulfilCondition = (fulfilment, condition) => {
 }
 
 const validateConditionAndExpiration = async (payload) => {
-  const histTimerValidateTimer= Metrics.getHistogram(
+  const histTimerValidateTimer = Metrics.getHistogram(
     'handlers_transfer_validator',
     'validateConditionAndExpiration - Metrics for transfer handler',
     ['success', 'funcName']
