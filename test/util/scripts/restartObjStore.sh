@@ -25,7 +25,7 @@ docker rm $OBJ_ID
 docker volume rm ${OBJ_ID}data
 
 echo "Starting Docker ${OBJ_ID}"
-docker run --name ${OBJ_ID} -p 27017:27017 -v ${DB_ID}data:/etc/mongo -d mongo:latest
+docker run --name ${OBJ_ID} -p 27017:27017 -v ${OBJ_ID}data:/etc/mongo -d mongo:latest
 
 sleep $DB_SLEEPTIME;
 
