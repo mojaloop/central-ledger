@@ -121,7 +121,7 @@
     "get-port": "5.1.1",
     "jsdoc": "3.6.4",
     "jsonpath": "1.0.2",
-    "nodemon": "2.0.2",
+    "nodemon": "2.0.3",
     "npm-audit-resolver": "2.2.0",
     "npm-check-updates": "4.1.1",
     "nyc": "15.0.1",
