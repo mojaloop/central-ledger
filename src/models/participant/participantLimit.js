@@ -36,7 +36,7 @@ const insert = async (participantLimit) => {
   try {
     return await Db.participantLimit.insert(participantLimit)
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -45,7 +45,7 @@ const update = async (participantLimit) => {
   try {
     return await Db.participantLimit.update({ participantCurrencyId: participantLimit.participantCurrencyId }, { value: participantLimit.value, isActive: participantLimit.isActive })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -54,7 +54,7 @@ const getLimitByCurrencyId = async (participantCurrencyId) => {
   try {
     return await Db.participantLimit.findOne({ participantCurrencyId })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -75,7 +75,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.participantLimit.findOne({ participantCurrencyId, isActive: 1 })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -96,7 +96,7 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.participantLimit.destroy({ participantCurrencyId })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -121,7 +121,7 @@ const destroyByParticipantId = async (participantId) => {
       .whereIn('participantCurrencyId', participantCurrencyIdList)
       .del()
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

@@ -218,7 +218,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
         await trx.commit()
         histTimerChangeParticipantPositionTransEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
       } catch (err) {
-        Logger.error(err)
+        Logger.isErrorEnabled && Logger.error(err)
         await trx.rollback()
         histTimerChangeParticipantPositionTransEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction' })
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -232,7 +232,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     histTimerChangeParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction' })
     return { preparedMessagesList, limitAlarms }
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     histTimerChangeParticipantPositionEnd({ success: false, queryName: 'facade_prepareChangeParticipantPositionTransaction' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -282,7 +282,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

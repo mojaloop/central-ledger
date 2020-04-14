@@ -30,11 +30,11 @@ const Db = require('../../lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 
 const saveTransferStateChange = async (stateChange) => {
-  Logger.debug('save transferStateChange' + stateChange.toString())
+  Logger.isDebugEnabled && Logger.debug('save transferStateChange' + stateChange.toString())
   try {
     return Db.transferStateChange.insert(stateChange)
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -50,7 +50,7 @@ const getByTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -63,7 +63,7 @@ const getByTransferIdList = async (transfersIdList) => {
       return result
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -77,7 +77,7 @@ const getLatest = async () => {
         .first()
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -86,7 +86,7 @@ const truncate = async () => {
   try {
     return await Db.transferStateChange.truncate()
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

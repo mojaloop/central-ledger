@@ -51,7 +51,7 @@ const registerAllHandlers = async () => {
     await BulkProcessingHandlers.registerAllHandlers()
     return true
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

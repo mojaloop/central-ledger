@@ -29,7 +29,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByTransferId = async (transferId) => {
-  Logger.debug('getByTransferId ' + transferId.toString())
+  Logger.isDebugEnabled && Logger.debug('getByTransferId ' + transferId.toString())
   try {
     return await Db.transferFulfilment.find({ transferId: transferId })
   } catch (err) {
@@ -38,11 +38,11 @@ const getByTransferId = async (transferId) => {
 }
 
 const saveTransferFulfilment = async (record) => {
-  Logger.debug('save transferFulfilment ' + record.toString())
+  Logger.isDebugEnabled && Logger.debug('save transferFulfilment ' + record.toString())
   try {
     return await Db.transferFulfilment.insert(record)
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
