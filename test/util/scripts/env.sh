@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-export KAFKA_ID=cl_kafka
+export KAFKA_ID=kafka
 export MOCKSERVER_ID=mockserver
-export MOCK_SIM_PORT=1080 #DO NOT COMMIT
-export DB_ID=cl_mysql
+export MOCK_SIM_PORT=8444
+export DB_ID=mysql
 export DBUSER=central_ledger
 export DBPASS=password
 export DBNAME=central_ledger
 export DB_SLEEPTIME=15
-export OBJ_ID=cl_objstore
+export OBJ_ID=objstore
 export SLEEP_FACTOR_IN_SECONDS=5
 export MESSAGES_BATCH_SIZE=1000
 export SCRIPT_DIR=scripts
