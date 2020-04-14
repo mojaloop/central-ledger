@@ -6,15 +6,21 @@ const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 const Plugin = require('../../../src/handlers/api/plugin')
 const MetricsPlugin = require('../../../src/api/metrics/plugin')
+const Logger = require('@mojaloop/central-services-logger')
 
 Test('cli', async (cliTest) => {
+  let sandbox
+
   cliTest.beforeEach(test => {
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     console.log('start')
     test.end()
   })
 
   cliTest.afterEach(test => {
     console.log('end')
+    sandbox.restore()
     test.end()
   })
 

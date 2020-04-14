@@ -29,6 +29,7 @@ const Sinon = require('sinon')
 const Uuid = require('uuid4')
 const TransformService = require('../../../../src/domain/transfer/transform')
 const Util = require('@mojaloop/central-services-shared').Util
+const Logger = require('@mojaloop/central-services-logger')
 
 Test('Transform Service', transformTest => {
   let sandbox
@@ -36,6 +37,7 @@ Test('Transform Service', transformTest => {
   transformTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     // sandbox.stub(TransferObjectTransform)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     t.end()
   })
 
