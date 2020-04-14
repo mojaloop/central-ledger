@@ -39,6 +39,8 @@ Test('logger', loggerTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger, 'info')
     sandbox.stub(Logger, 'debug')
+    sandbox.stub(Logger, 'isInfoEnabled').value(true)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     sandbox.stub(Util, 'inspect')
 
     test.end()
