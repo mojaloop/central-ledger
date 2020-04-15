@@ -36,6 +36,7 @@ const { statusEnum, serviceName } = require('@mojaloop/central-services-shared')
 
 const MigrationLockModel = require('../../../../src/models/misc/migrationLock')
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
+const Logger = require('@mojaloop/central-services-logger')
 
 const {
   getSubServiceHealthBroker,
@@ -49,6 +50,7 @@ Test('SubServiceHealth test', subServiceHealthTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Consumer, 'getListOfTopics')
     sandbox.stub(Consumer, 'isConnected')
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
 
     t.end()
   })

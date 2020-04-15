@@ -64,7 +64,7 @@ const connectMongoose = async () => {
     } catch (err) {
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
       // TODO: review as code is being changed from returning null to returning a FSPIOPError
-      // Logger.error(`error - ${err}`)
+      // Logger.isErrorEnabled && Logger.error(`error - ${err}`)
       // return null
     }
   } else {
@@ -107,7 +107,7 @@ const createServer = (port, modules) => {
     await Plugins.registerPlugins(server)
     await server.register(modules)
     await server.start()
-    Logger.info('Server running at: ', server.info.uri)
+    Logger.isInfoEnabled && Logger.info('Server running at: ', server.info.uri)
     return server
   })()
 }
@@ -138,12 +138,12 @@ const createHandlers = async (handlers) => {
 
   for (const handler of handlers) {
     if (handler.enabled) {
-      Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
+      Logger.isInfoEnabled && Logger.info(`Handler Setup - Registering ${JSON.stringify(handler)}!`)
       switch (handler.type) {
         case 'prepare': {
           await RegisterHandlers.transfers.registerPrepareHandler()
           // if (!Config.HANDLERS_CRON_DISABLED) {
-          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
           //   await KafkaCron.start('prepare')
           // }
           break
@@ -151,7 +151,7 @@ const createHandlers = async (handlers) => {
         case 'position': {
           await RegisterHandlers.positions.registerPositionHandler()
           // if (!Config.HANDLERS_CRON_DISABLED) {
-          //   Logger.info('Starting Kafka Cron Jobs...')
+          //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
           //   await KafkaCron.start('position')
           // }
           break
@@ -186,7 +186,7 @@ const createHandlers = async (handlers) => {
         }
         default: {
           const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
-          Logger.error(error)
+          Logger.isErrorEnabled && Logger.error(error)
           throw new Error(error)
         }
       }
@@ -248,7 +248,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       break
     }
     default: {
-      Logger.error(`No valid service type ${service} found!`)
+      Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
     }
   }
@@ -259,7 +259,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
     } else {
       await RegisterHandlers.registerAllHandlers()
       // if (!Config.HANDLERS_CRON_DISABLED) {
-      //   Logger.info('Starting Kafka Cron Jobs...')
+      //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
       //   // await KafkaCron.start('prepare')
       //   await KafkaCron.start('position')
       // }

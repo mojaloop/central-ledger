@@ -4,12 +4,12 @@ const Logger = require('@mojaloop/central-services-logger')
 
 class NullClient {
   connect () {
-    Logger.debug('Sidecar disabled: connecting in NullClient')
+    Logger.isDebugEnabled && Logger.debug('Sidecar disabled: connecting in NullClient')
     return Promise.resolve(this)
   }
 
   write (msg) {
-    Logger.debug(`Sidecar disabled: writing message ${msg} in NullClient`)
+    Logger.isDebugEnabled && Logger.debug(`Sidecar disabled: writing message ${msg} in NullClient`)
   }
 }
 

@@ -35,7 +35,7 @@ const getByBulkTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

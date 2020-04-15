@@ -108,6 +108,7 @@ Test('Transfer Service', transferIndexTest => {
     sandbox.stub(TransferDuplicateCheckModel)
     sandbox.stub(TransferFulfilmentDuplicateCheckModel)
     sandbox.stub(TransferErrorDuplicateCheckModel)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     t.end()
   })
 

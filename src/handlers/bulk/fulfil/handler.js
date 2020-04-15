@@ -90,20 +90,20 @@ const bulkFulfil = async (error, messages) => {
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
-    Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
     const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit : Enum.Events.ActionLetter.unknown
     let params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
-    Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload.hash, BulkTransferService.getBulkTransferFulfilmentDuplicateCheck, BulkTransferService.saveBulkTransferFulfilmentDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
-      Logger.error(Util.breadcrumb(location, 'notImplemented'))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) {
-      Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
@@ -114,17 +114,17 @@ const bulkFulfil = async (error, messages) => {
     const { isValid, reasons } = await Validator.validateBulkTransferFulfilment(payload, headers)
     if (isValid) {
       let state
-      Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
-        Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
         state = await BulkTransferService.bulkFulfil(payload)
       } catch (err) { // TODO: handle insert errors
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
+        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       try {
-        Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
         // stream initialization
         const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
         const indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
@@ -159,14 +159,14 @@ const bulkFulfil = async (error, messages) => {
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
     } else { // TODO: handle validation failure
-      Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
-        Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         /**
          * TODO: Following the example for regular transfers, the folloing should ABORT the
          * entire bulk. CAUTION: As of 20191111 this code would also execute when failure
@@ -175,16 +175,16 @@ const bulkFulfil = async (error, messages) => {
          */
         await BulkTransferService.bulkFulfil(payload, reasons.toString(), false)
       } catch (err) { // TODO: handle insert error
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
+        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
-      Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.error(Util.breadcrumb(location, 'notImplemented'))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
     }
   } catch (err) {
-    Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
+    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw err
   }
@@ -209,7 +209,7 @@ const registerBulkFulfilHandler = async () => {
     await Consumer.createHandler(bulkFulfilHandler.topicName, bulkFulfilHandler.config, bulkFulfilHandler.command)
     return true
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -227,7 +227,7 @@ const registerAllHandlers = async () => {
     await registerBulkFulfilHandler()
     return true
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

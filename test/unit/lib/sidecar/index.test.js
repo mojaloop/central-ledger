@@ -7,6 +7,7 @@ const EventEmitter = require('events')
 const Moment = require('moment')
 const Config = require(`${src}/lib/config`)
 const Proxyquire = require('proxyquire')
+const Logger = require('@mojaloop/central-services-logger')
 
 Test('Sidecar', sidecarTest => {
   let oldSidecar
@@ -19,6 +20,7 @@ Test('Sidecar', sidecarTest => {
   sidecarTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Moment, 'utc')
+    sandbox.stub(Logger, 'isErrorEnabled').value(true)
 
     oldSidecar = Config.SIDECAR
     Config.SIDECAR = sidecarSettings

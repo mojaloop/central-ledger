@@ -52,7 +52,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.participantPosition.findOne({ participantCurrencyId })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -73,7 +73,7 @@ const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
     return Db.participantPosition.destroy({ participantCurrencyId })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -98,7 +98,7 @@ const destroyByParticipantId = async (participantId) => {
       .whereIn('participantCurrencyId', participantCurrencyIdList)
       .del()
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
