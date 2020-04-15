@@ -3,7 +3,7 @@
   "HOSTNAME": "http://central-ledger",
   "DATABASE": {
     "DIALECT": "mysql",
-    "HOST": "localhost",
+    "HOST": "mysql",
     "PORT": 3306,
     "USER": "central_ledger",
     "PASSWORD": "password",
