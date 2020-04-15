@@ -19,7 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- - Lazola Lucas <georgi.georgiev@modusbox.com>
+ - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
 
