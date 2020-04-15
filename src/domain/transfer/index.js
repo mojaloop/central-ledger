@@ -39,19 +39,38 @@ const TransferErrorDuplicateCheckModel = require('../../models/transfer/transfer
 const TransferObjectTransform = require('./transform')
 const TransferError = require('../../models/transfer/transferError')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const prepare = async (payload, stateReason = null, hasPassedValidation = true) => {
+  const histTimerTransferServicePrepareEnd = Metrics.getHistogram(
+    'domain_transfer',
+    'prepare - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
   try {
-    return await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    const result = await TransferFacade.saveTransferPrepared(payload, stateReason, hasPassedValidation)
+    histTimerTransferServicePrepareEnd({ success: true, funcName: 'prepare' })
+    return result
   } catch (err) {
+    histTimerTransferServicePrepareEnd({ success: false, funcName: 'prepare' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
 const handlePayeeResponse = async (transferId, payload, action, fspiopError) => {
+  const histTimerTransferServiceHandlePayeeResponseEnd = Metrics.getHistogram(
+    'domain_transfer',
+    'prepare - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+
   try {
     const transfer = await TransferFacade.savePayeeTransferResponse(transferId, payload, action, fspiopError)
-    return TransferObjectTransform.toTransfer(transfer)
+    const result = TransferObjectTransform.toTransfer(transfer)
+    histTimerTransferServiceHandlePayeeResponseEnd({ success: true, funcName: 'handlePayeeResponse' })
+    return result
   } catch (err) {
+    histTimerTransferServiceHandlePayeeResponseEnd({ success: false, funcName: 'handlePayeeResponse' })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

@@ -31,7 +31,7 @@ const insert = async (participantPosition) => {
   try {
     return await Db.participantPosition.insert(participantPosition)
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -40,7 +40,7 @@ const update = async (participantPosition) => {
   try {
     return await Db.participantPosition.update({ participantCurrencyId: participantPosition.participantCurrencyId }, { value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date() })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -49,7 +49,7 @@ const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
     return await Db.participantPosition.findOne({ participantCurrencyId })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

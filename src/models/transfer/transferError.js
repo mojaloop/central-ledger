@@ -47,7 +47,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
  */
 
 const insert = async (transferId, transferStateChangeId, errorCode, errorDescription) => {
-  Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
+  Logger.isDebugEnabled && Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
   try {
     return Db.transferError.insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
@@ -117,7 +117,7 @@ const getByTransferId = async (id) => {
     transferError.errorCode = transferError.errorCode.toString()
     return transferError
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

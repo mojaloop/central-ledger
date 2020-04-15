@@ -42,7 +42,7 @@ const getById = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -65,7 +65,7 @@ const getByTransferId = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -82,7 +82,7 @@ const getParticipantsById = async (id) => {
       return result
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

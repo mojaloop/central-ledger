@@ -97,21 +97,21 @@ const bulkPrepare = async (error, messages) => {
     const action = message.value.metadata.event.action
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
-    Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkPrepare' }))
 
     const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare : Enum.Events.ActionLetter.unknown
     let params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
-    Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload, BulkTransferService.getBulkTransferDuplicateCheck, BulkTransferService.saveBulkTransferDuplicateCheck)
     if (hasDuplicateId && hasDuplicateHash) { // TODO: handle resend :: GET /bulkTransfer
-      Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
-      Logger.error(Util.breadcrumb(location, 'notImplemented'))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `resend--${actionLetter}1`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true
     }
     if (hasDuplicateId && !hasDuplicateHash) { // TODO: handle modified request
-      Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorModified--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST)
       const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
       params.message.value.content.uriParams = { id: bulkTransferId }
@@ -121,18 +121,18 @@ const bulkPrepare = async (error, messages) => {
 
     const { isValid, reasons, payerParticipantId, payeeParticipantId } = await Validator.validateBulkTransfer(payload, headers)
     if (isValid) {
-      Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
-        Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
         const participants = { payerParticipantId, payeeParticipantId }
         await BulkTransferService.bulkPrepare(payload, participants)
       } catch (err) { // TODO: handle insert error
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
-        Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
+        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
       try {
-        Logger.info(Util.breadcrumb(location, 'individualTransfers'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransfers'))
         // stream initialization
         const IndividualTransferModel = BulkTransferModels.getIndividualTransferModel()
         const indvidualTransfersStream = IndividualTransferModel.find({ messageId }).cursor()
@@ -164,26 +164,26 @@ const bulkPrepare = async (error, messages) => {
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
-        Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
+        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
     } else { // TODO: handle validation failure
-      Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, { path: 'validationFailed' }))
       try {
-        Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         await BulkTransferService.bulkPrepare(payload, { payerParticipantId, payeeParticipantId }, reasons.toString(), false)
       } catch (err) { // TODO: handle insert error
-        Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
-        Logger.error(Util.breadcrumb(location, 'notImplemented'))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}7`))
+        Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
         return true
       }
-      Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
-      Logger.error(Util.breadcrumb(location, 'notImplemented'))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorGeneric--${actionLetter}8`))
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
       return true // TODO: store invalid bulk transfer to database and produce callback notification to payer
     }
   } catch (err) {
-    Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
+    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw err
   }
@@ -208,7 +208,7 @@ const registerBulkPrepareHandler = async () => {
     await Consumer.createHandler(bulkPrepareHandler.topicName, bulkPrepareHandler.config, bulkPrepareHandler.command)
     return true
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -226,7 +226,7 @@ const registerAllHandlers = async () => {
     await registerBulkPrepareHandler()
     return true
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

@@ -129,7 +129,7 @@ const getBulkTransferById = async (id) => {
       payeeBulkTransfer
     }
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -157,7 +157,7 @@ const getBulkTransferExtensionListById = async (id, completedTimestamp) => {
     }
     return extensionList
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

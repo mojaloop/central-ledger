@@ -30,7 +30,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const TS = Enum.Transfers.TransferInternalState
 
 const cleanup = async () => {
-  Logger.debug('cleanup transferTimeout')
+  Logger.isDebugEnabled && Logger.debug('cleanup transferTimeout')
   try {
     const knex = await Db.getKnex()
 
@@ -58,7 +58,7 @@ const cleanup = async () => {
     })
     return ttIdList
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

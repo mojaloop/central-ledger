@@ -18,28 +18,23 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Neal Donnan <neal.donnan@modusbox.com>
  --------------
  ******/
+
 'use strict'
 
-const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
-
-const getByBulkTransferId = async (id) => {
-  try {
-    return await Db.bulkTransferExtension.query(async (builder) => {
-      const result = builder
-        .where({ bulkTransferId: id })
-        .select('key', 'value', 'isFulfilment')
-      return result
-    })
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
-  }
+exports.up = async (knex) => {
+  return knex.schema.alterTable('settlementContentAggregation', (t) => {
+    // Scale should be 4 as per other money columns, otherwise MySQL rounds to 2 decimal places.
+    t.decimal('amount', 18, 4).notNullable().alter()
+  })
 }
 
-module.exports = {
-  getByBulkTransferId
+exports.down = function (knex) {
+  return knex.schema.alterTable('settlementContentAggregation', (t) => {
+    // Set the scale back to 2
+    t.decimal('amount', 18, 2).notNullable().alter()
+  })
 }

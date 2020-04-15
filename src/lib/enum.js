@@ -41,7 +41,7 @@ const endpointType = async function () {
     }
     return endpointType
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -49,7 +49,7 @@ const hubParticipant = async function () {
   try {
     return (await Db.participant.find({ participantId: Config.HUB_ID }))[0]
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -61,7 +61,7 @@ const ledgerAccountType = async function () {
     }
     return ledgerAccountType
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -73,7 +73,7 @@ const ledgerEntryType = async function () {
     }
     return ledgerEntryType
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -85,7 +85,7 @@ const participantLimitType = async function () {
     }
     return participantLimitType
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -97,7 +97,7 @@ const transferParticipantRoleType = async function () {
     }
     return transferParticipantRoleType
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -109,7 +109,7 @@ const transferState = async function () {
     }
     return transferState
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -121,7 +121,7 @@ const transferStateEnum = async function () {
     }
     return transferStateEnum
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -133,7 +133,7 @@ const bulkProcessingState = async function () {
     }
     return bulkProcessingState
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -145,7 +145,7 @@ const bulkTransferState = async function () {
     }
     return bulkTransferState
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -157,7 +157,7 @@ const bulkTransferStateEnum = async function () {
     }
     return bulkTransferStateEnum
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

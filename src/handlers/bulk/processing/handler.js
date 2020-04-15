@@ -72,7 +72,7 @@ const bulkProcessing = async (error, messages) => {
     ['success', 'fspId']
   ).startTimer()
   if (error) {
-    // Logger.error(error)
+    // Logger.isErrorEnabled && Logger.error(error)
     throw error
   }
   let message = {}
@@ -89,7 +89,7 @@ const bulkProcessing = async (error, messages) => {
     const state = message.value.metadata.event.state
     const transferId = payload.transferId || (message.value.content.uriParams && message.value.content.uriParams.id)
     const kafkaTopic = message.topic
-    Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
 
     const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
       : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
@@ -239,17 +239,17 @@ const bulkProcessing = async (error, messages) => {
 
     let getBulkTransferByIdResult
     if (produceNotification) {
-      Logger.info(Util.breadcrumb(location, { path: 'produceNotification' }))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'produceNotification' }))
       getBulkTransferByIdResult = await BulkTransferService.getBulkTransferById(bulkTransferInfo.bulkTransferId)
     } else {
-      Logger.info(Util.breadcrumb(location, { path: 'awaitAllTransfers' }))
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'awaitAllTransfers' }))
       criteriaState = null // debugging breakpoint line
       return true
     }
 
     if (produceNotification) {
       if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && action === Enum.Events.Event.Action.BULK_PREPARE) {
-        Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}2`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `bulkPrepare--${actionLetter}2`))
         const payeeBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payeeBulkTransfer)
         const payeeIndividualTransfers = payeeBulkResponse.individualTransferResults.filter(individualTransfer => {
           return !individualTransfer.errorInformation
@@ -275,12 +275,12 @@ const bulkProcessing = async (error, messages) => {
           // TODO: handle use case when no individual transfer has been accepted:
           // Switch to finilize bulk state and notify payer with PUT /bulkTransfers/{id}
           // const payerBulkResponse = Object.assign({}, { messageId: message.value.id, headers }, getBulkTransferByIdResult.payerBulkTransfer)
-          Logger.info(Util.breadcrumb(location, `noTransfers--${actionLetter}1`))
-          Logger.error(Util.breadcrumb(location, 'notImplemented'))
+          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `noTransfers--${actionLetter}1`))
+          Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
           return true
         }
       } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
-        Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}3`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}3`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
         const normalizedKeys = Object.keys(headers).reduce((keys, k) => { keys[k.toLowerCase()] = k; return keys }, {})
         const payeeBulkResponseHeaders = Util.Headers.transformHeaders(headers, { httpMethod: headers[normalizedKeys[Enum.Http.Headers.FSPIOP.HTTP_METHOD]], sourceFsp: Enum.Http.Headers.FSPIOP.SWITCH.value, destinationFsp: participants.payeeFsp })
@@ -326,7 +326,7 @@ const bulkProcessing = async (error, messages) => {
       } else {
         // TODO: For the following (Internal Server Error) scenario a notification is produced for each individual transfer.
         // It also needs to be processed first in order to accumulate transfers and send the callback notification at bulk level.
-        Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}4`))
+        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `invalidEventTypeOrAction--${actionLetter}4`))
         const fspiopError = ErrorHandler.Factory.createInternalServerFSPIOPError(`Invalid event action:(${action}) and/or type:(${eventType})`).toApiErrorObject(Config.ERROR_HANDLING)
         const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_PROCESSING }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError, eventDetail, fromSwitch })
@@ -335,7 +335,7 @@ const bulkProcessing = async (error, messages) => {
       }
     }
   } catch (err) {
-    Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
+    Logger.isErrorEnabled && Logger.error(`${Util.breadcrumb(location)}::${err.message}--BP0`)
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

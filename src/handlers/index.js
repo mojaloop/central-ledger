@@ -65,7 +65,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .action(async (args) => {
     const handlerList = []
     if (args.prepare) {
-      Logger.debug('CLI: Executing --prepare')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --prepare')
       const handler = {
         type: 'prepare',
         enabled: true
@@ -73,7 +73,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.position) {
-      Logger.debug('CLI: Executing --position')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --position')
       const handler = {
         type: 'position',
         enabled: true
@@ -81,7 +81,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.get) {
-      Logger.debug('CLI: Executing --get')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --get')
       const handler = {
         type: 'get',
         enabled: true
@@ -89,7 +89,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.fulfil) {
-      Logger.debug('CLI: Executing --fulfil')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --fulfil')
       const handler = {
         type: 'fulfil',
         enabled: true
@@ -97,7 +97,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.timeout) {
-      Logger.debug('CLI: Executing --timeout')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --timeout')
       const handler = {
         type: 'timeout',
         enabled: true
@@ -105,7 +105,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.admin) {
-      Logger.debug('CLI: Executing --admin')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --admin')
       const handler = {
         type: 'admin',
         enabled: true
@@ -113,7 +113,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.bulkprepare) {
-      Logger.debug('CLI: Executing --bulkprepare')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --bulkprepare')
       const handler = {
         type: 'bulkprepare',
         enabled: true
@@ -121,7 +121,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.bulkfulfil) {
-      Logger.debug('CLI: Executing --bulkfulfil')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --bulkfulfil')
       const handler = {
         type: 'bulkfulfil',
         enabled: true
@@ -129,7 +129,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       handlerList.push(handler)
     }
     if (args.bulkprocessing) {
-      Logger.debug('CLI: Executing --bulkprocessing')
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --bulkprocessing')
       const handler = {
         type: 'bulkprocessing',
         enabled: true

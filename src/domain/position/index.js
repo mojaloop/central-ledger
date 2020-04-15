@@ -31,12 +31,28 @@
 
 const PositionFacade = require('../../models/position/facade')
 
+const Metrics = require('@mojaloop/central-services-metrics')
+
 const changeParticipantPosition = (participantCurrencyId, isReversal, amount, transferStateChange) => {
-  return PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
+  const histTimerChangeParticipantPositionEnd = Metrics.getHistogram(
+    'domain_position',
+    'changeParticipantPosition - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  const result = PositionFacade.changeParticipantPositionTransaction(participantCurrencyId, isReversal, amount, transferStateChange)
+  histTimerChangeParticipantPositionEnd({ success: true, funcName: 'changeParticipantPosition' })
+  return result
 }
 
 const calculatePreparePositionsBatch = async (transferList) => {
-  return PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  const histTimerPositionBatchDomainEnd = Metrics.getHistogram(
+    'domain_position',
+    'calculatePreparePositionsBatch - Metrics for transfer domain',
+    ['success', 'funcName']
+  ).startTimer()
+  const result = PositionFacade.prepareChangeParticipantPositionTransaction(transferList)
+  histTimerPositionBatchDomainEnd({ success: true, funcName: 'calculatePreparePositionsBatch' })
+  return result
 }
 
 module.exports = {

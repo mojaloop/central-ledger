@@ -37,11 +37,11 @@ const getById = async (transferId) => {
 }
 
 const saveTransfer = async (record) => {
-  Logger.debug('save transfer' + record.toString())
+  Logger.isDebugEnabled && Logger.debug('save transfer' + record.toString())
   try {
     return Db.transfer.insert(record)
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -58,7 +58,7 @@ const truncateTransfer = async () => {
   try {
     return await Db.transfer.truncate()
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

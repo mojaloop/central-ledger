@@ -44,7 +44,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
  */
 
 const getTransferErrorDuplicateCheck = async (transferId) => {
-  Logger.debug(`get transferErrorDuplicateCheck (transferId=${transferId})`)
+  Logger.isDebugEnabled && Logger.debug(`get transferErrorDuplicateCheck (transferId=${transferId})`)
   try {
     return Db.transferErrorDuplicateCheck.findOne({ transferId })
   } catch (err) {
@@ -65,7 +65,7 @@ const getTransferErrorDuplicateCheck = async (transferId) => {
  */
 
 const saveTransferErrorDuplicateCheck = async (transferId, hash) => {
-  Logger.debug(`save transferErrorDuplicateCheck (transferId=${transferId}, hash=${hash})`)
+  Logger.isDebugEnabled && Logger.debug(`save transferErrorDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
     return Db.transferErrorDuplicateCheck.insert({ transferId, hash })
   } catch (err) {

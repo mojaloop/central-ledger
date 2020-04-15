@@ -38,6 +38,7 @@ Test('Null SidecarClient', nullSidecarTest => {
   nullSidecarTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     t.end()
   })
 
