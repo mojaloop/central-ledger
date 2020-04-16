@@ -44,7 +44,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
  */
 
 const getBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId) => {
-  Logger.debug(`get BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId})`)
+  Logger.isDebugEnabled && Logger.debug(`get BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId})`)
   try {
     return Db.bulkTransferFulfilmentDuplicateCheck.findOne({ bulkTransferId })
   } catch (err) {
@@ -65,7 +65,7 @@ const getBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId) => {
  */
 
 const saveBulkTransferFulfilmentDuplicateCheck = async (bulkTransferId, hash) => {
-  Logger.debug(`save BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId}, hash=${hash})`)
+  Logger.isDebugEnabled && Logger.debug(`save BulkTransferFulfilmentDuplicateCheck (bulkTransferId=${bulkTransferId}, hash=${hash})`)
   try {
     return Db.bulkTransferFulfilmentDuplicateCheck.insert({ bulkTransferId, hash })
   } catch (err) {

@@ -61,7 +61,7 @@ const getByParticipantPositionId = async (participantPositionId) => {
       return result
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     histTimer({ success: false, queryName: 'model_getByParticipantPositionId', hit: false })
     throw err
   }

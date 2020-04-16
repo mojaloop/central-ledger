@@ -42,8 +42,10 @@ Test('Transfer model', async (transfer) => {
     createdDate: new Date()
   }
 
-  await transfer.test('setup', async (assert) => {
+  transfer.test('setup', async (assert) => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(Logger, 'isErrorEnabled').value(true)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     Db.transfer = {
       insert: sandbox.stub(),
       findOne: sandbox.stub(),

@@ -72,7 +72,7 @@ const saveBulkTransferReceived = async (payload, participants, stateReason = nul
       }
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }
@@ -117,7 +117,7 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
       }
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 }

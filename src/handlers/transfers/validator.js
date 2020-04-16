@@ -126,9 +126,9 @@ const fulfilmentToCondition = (fulfilment) => {
   }
 
   const calculatedConditionDigest = hashSha256.update(preimage).digest('base64')
-  Logger.debug(`calculatedConditionDigest=${calculatedConditionDigest}`)
+  Logger.isDebugEnabled && Logger.debug(`calculatedConditionDigest=${calculatedConditionDigest}`)
   const calculatedConditionUrlEncoded = base64url.fromBase64(calculatedConditionDigest)
-  Logger.debug(`calculatedConditionUrlEncoded=${calculatedConditionUrlEncoded}`)
+  Logger.isDebugEnabled && Logger.debug(`calculatedConditionUrlEncoded=${calculatedConditionUrlEncoded}`)
   return calculatedConditionUrlEncoded
 }
 

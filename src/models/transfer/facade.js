@@ -349,12 +349,12 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
               .orderBy('changedDate', 'desc')
           })
           transferFulfilmentRecord.settlementWindowId = res[0].settlementWindowId
-          Logger.debug('savePayeeTransferResponse::settlementWindowId')
+          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::settlementWindowId')
         }
         if (isFulfilment) {
           await knex('transferFulfilment').transacting(trx).insert(transferFulfilmentRecord)
           result.transferFulfilmentRecord = transferFulfilmentRecord
-          Logger.debug('savePayeeTransferResponse::transferFulfilment')
+          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferFulfilment')
         }
         if (transferExtensionRecordsList.length > 0) {
           // ###! CAN BE DONE THROUGH A BATCH
@@ -363,11 +363,11 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           }
           // ###!
           result.transferExtensionRecordsList = transferExtensionRecordsList
-          Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
+          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferExtensionRecordsList')
         }
         await knex('transferStateChange').transacting(trx).insert(transferStateChangeRecord)
         result.transferStateChangeRecord = transferStateChangeRecord
-        Logger.debug('savePayeeTransferResponse::transferStateChange')
+        Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferStateChange')
         if (fspiopError) {
           const insertedTransferStateChange = await knex('transferStateChange').transacting(trx)
             .where({ transferId })
@@ -376,15 +376,15 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
           transferErrorRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
           await knex('transferError').transacting(trx).insert(transferErrorRecord)
           result.transferErrorRecord = transferErrorRecord
-          Logger.debug('savePayeeTransferResponse::transferError')
+          Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::transferError')
         }
         histTPayeeResponseValidationPassedEnd({ success: true, queryName: 'facade_saveTransferPrepared_transaction' })
         result.savePayeeTransferResponseExecuted = true
-        Logger.debug('savePayeeTransferResponse::success')
+        Logger.isDebugEnabled && Logger.debug('savePayeeTransferResponse::success')
       } catch (err) {
         await trx.rollback()
         histTPayeeResponseValidationPassedEnd({ success: false, queryName: 'facade_saveTransferPrepared_transaction' })
-        Logger.error('savePayeeTransferResponse::failure')
+        Logger.isErrorEnabled && Logger.error('savePayeeTransferResponse::failure')
         throw err
       }
     })
@@ -499,14 +499,14 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       try {
         await knex('transferParticipant').insert(payerTransferParticipantRecord)
       } catch (err) {
-        Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`Payer transferParticipant insert error: ${err.message}`)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferParticipant').insert(payeeTransferParticipantRecord)
       } catch (err) {
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
-        Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`Payee transferParticipant insert error: ${err.message}`)
       }
       payerTransferParticipantRecord.name = payload.payerFsp
       payeeTransferParticipantRecord.name = payload.payeeFsp
@@ -522,21 +522,21 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
         try {
           await knex.batchInsert('transferExtension', transferExtensionsRecordList)
         } catch (err) {
-          Logger.warn(`batchInsert transferExtension error: ${err.message}`)
+          Logger.isWarnEnabled && Logger.warn(`batchInsert transferExtension error: ${err.message}`)
           histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
         }
       }
       try {
         await knex('ilpPacket').insert(ilpPacketRecord)
       } catch (err) {
-        Logger.warn(`ilpPacket insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`ilpPacket insert error: ${err.message}`)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
       try {
         await knex('transferStateChange').insert(transferStateChangeRecord)
         histTimerSaveTranferNoValidationEnd({ success: true, queryName: 'facade_saveTransferPrepared_no_validation' })
       } catch (err) {
-        Logger.warn(`transferStateChange insert error: ${err.message}`)
+        Logger.isWarnEnabled && Logger.warn(`transferStateChange insert error: ${err.message}`)
         histTimerSaveTranferNoValidationEnd({ success: false, queryName: 'facade_saveTransferPrepared_no_validation' })
       }
     }

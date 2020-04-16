@@ -18,28 +18,29 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
+
 'use strict'
 
-const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
-
-const getByBulkTransferId = async (id) => {
-  try {
-    return await Db.bulkTransferExtension.query(async (builder) => {
-      const result = builder
-        .where({ bulkTransferId: id })
-        .select('key', 'value', 'isFulfilment')
-      return result
-    })
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
-  }
+exports.up = async (knex) => {
+  return await knex.schema.hasTable('transferParticipantStateChange').then(function(exists) {
+    if (!exists) {
+      return knex.schema.createTable('transferParticipantStateChange', (t) => {
+        t.bigIncrements('transferParticipantStateChangeId').primary().notNullable()
+        t.bigInteger('transferParticipantId').notNullable().unsigned()
+        t.foreign('transferParticipantId','tt_transferParticipantId_fk').references('transferParticipantId').inTable('transferParticipant')
+        t.string('settlementWindowStateId', 50)
+        t.foreign('settlementWindowStateId').references('settlementWindowStateId').inTable('settlementWindowState')
+        t.string('reason', 512).defaultTo(null).nullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+      })
+    }
+  })
 }
 
-module.exports = {
-  getByBulkTransferId
+exports.down = function (knex) {
+  return knex.schema.dropTableIfExists('transferParticipantStateChange')
 }

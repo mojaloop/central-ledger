@@ -18,28 +18,25 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Lazola Lucas <lazola.lucas@modusbox.com>
  --------------
  ******/
+
 'use strict'
 
-const Db = require('../../lib/db')
-const Logger = require('@mojaloop/central-services-logger')
-
-const getByBulkTransferId = async (id) => {
-  try {
-    return await Db.bulkTransferExtension.query(async (builder) => {
-      const result = builder
-        .where({ bulkTransferId: id })
-        .select('key', 'value', 'isFulfilment')
-      return result
-    })
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
-  }
+exports.up = async (knex) => {
+  return await knex.schema.hasTable('settlementModel').then(function(exists) {
+    if (exists) {
+      return knex.schema.alterTable('settlementModel', (t) => {
+        t.boolean('adjustPosition').defaultTo(false).notNullable()
+      })
+    }
+  })
 }
 
-module.exports = {
-  getByBulkTransferId
+exports.down = function (knex) {
+  return knex.schema.alterTable('settlementModel',(t) => {
+    t.dropColumn('adjustPosition')
+  })
 }

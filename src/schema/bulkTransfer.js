@@ -116,12 +116,12 @@ bulkTransferSchema.pre('save', function () {
         })
         await individualTransfer.save()
       } catch (err) {
-        Logger.error(err)
+        Logger.isErrorEnabled && Logger.error(err)
         throw err
       }
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 })
@@ -202,12 +202,12 @@ bulkTransferResponseSchema.pre('save', function () {
         })
         await individualTransferResult.save()
       } catch (err) {
-        Logger.error(err)
+        Logger.isErrorEnabled && Logger.error(err)
         throw err
       }
     })
   } catch (err) {
-    Logger.error(err)
+    Logger.isErrorEnabled && Logger.error(err)
     throw err
   }
 })
