@@ -15,10 +15,10 @@ fi
 echo "Loading env vars..."
 source $CWD/env.sh
 
-sh $CWD/killDb.sh ;
+$CWD/killDb.sh;
 
-sh $CWD/killKafka-johnnypark.sh;
+$CWD/killKafka-johnnypark.sh;
 
-sh $CWD/killMockServer.sh
+$CWD/killMockServer.sh;
 
-sh $CWD/killObjStore.sh
+$CWD/killObjStore.sh;
