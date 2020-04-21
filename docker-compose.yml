@@ -127,7 +127,7 @@ services:
     networks:
       - cl-mojaloop-net
     healthcheck:
-      test: ["CMD" ,"/opt/kafka_2.12-2.3.0/bin/kafka-broker-api-versions.sh","--bootstrap-server","localhost:9092"]
+      test: ["CMD" ,"/opt/kafka_2.12-2.3.0/bin/kafka-broker-api-versions.sh","--bootstrap-server","host.docker.internal:9092"]
       timeout: 20s
       retries: 10
       start_period: 40s
