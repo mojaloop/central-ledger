@@ -33,7 +33,7 @@ services:
       - kafka
       - objstore
     healthcheck:
-      test: ["CMD", "bash", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3001/health"]
+      test: ["CMD", "sh", "-c" ,"apk --no-cache add curl", ";", "curl", "http://localhost:3001/health"]
       timeout: 20s
       retries: 10
       interval: 30s
