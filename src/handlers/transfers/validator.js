@@ -23,9 +23,9 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Georgi Logodazhki <georgi.logodazhki@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
- * Georgi Logodazhki <georgi.logodazhki@modusbox.com>
 
  --------------
  ******/

@@ -24,11 +24,11 @@
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Georgi Logodazhki <georgi.logodazhki@modusbox.com>
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  - Miguel de Barros <miguel.debarros@modusbox.com>
  - Deon Botha <deon.botha@modusbox.com>
  - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
- - Georgi Logodazhki <georgi.logodazhki@modusbox.com>
 
  --------------
  ******/
