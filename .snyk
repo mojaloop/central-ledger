@@ -1,0 +1,32 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.14.1
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-567746:
+    - lodash:
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-shared > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - knex > lodash:
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-database > knex > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-health > @mojaloop/central-services-shared > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/event-sdk > winston > async > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-health > @mojaloop/central-services-shared > @mojaloop/event-sdk > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/forensic-logging-client > @mojaloop/central-services-logger > winston > async > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-error-handling > @mojaloop/sdk-standard-components > request-promise-native > request-promise-core > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-health > @mojaloop/central-services-shared > @mojaloop/event-sdk > winston > async > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-stream > @mojaloop/central-services-error-handling > @mojaloop/sdk-standard-components > request-promise-native > request-promise-core > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-health > @mojaloop/central-services-shared > @mojaloop/event-sdk > @mojaloop/central-services-logger > winston > async > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
+    - '@mojaloop/central-services-health > @mojaloop/central-services-shared > @mojaloop/central-services-error-handling > @mojaloop/sdk-standard-components > request-promise-native > request-promise-core > lodash':
+        patched: '2020-04-30T22:04:23.557Z'
