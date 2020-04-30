@@ -2,8 +2,9 @@ var request = require('request');
 var uuid = require('uuid');
 
 /* CONFIG for a run */
-const centralLedgerURL = 'http://localhost:3001'
-const fspMaxIdx = 80
+//const centralLedgerURL = 'http://localhost:3001'
+const centralLedgerURL = 'http://perf1-central-ledger.mojaloop.live'
+const fspMaxIdx = 8
 
 const FspAdd = async (fspName) => {
   const addFspURL = `${centralLedgerURL}/participants`
@@ -107,19 +108,22 @@ const startAdding = async () => {
     console.log(`Adding new FSP with name: ${fspName}`)
     await FspAdd(fspName)
     await FspAddLimit(fspName)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT', `http://simulator:8444/payerfsp/participants/{{partyIdType}}/{{partyIdentifier}}`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR', `http://simulator:8444/payerfsp/participants/{{partyIdType}}/{{partyIdentifier}}/error`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT', `http://simulator:8444/payerfsp/participants/{{requestId}}`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT_ERROR', `http://simulator:8444/payerfsp/participants/{{requestId}}/error`)
 
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTIES_GET', `http://simulator:8444/payerfsp/parties/{{partyIdType}}/{{partyIdentifier}}`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTIES_PUT', `http://simulator:8444/payerfsp/parties/{{partyIdType}}/{{partyIdentifier}}`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR', `http://simulator:8444/payerfsp/parties/{{partyIdType}}/{{partyIdentifier}}/error`)
+    //const fspUrl = 'simulator:8444'
+    const fspUrl = '10.43.226.39'
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT', `http://${fspUrl}/payerfsp/participants/{{partyIdType}}/{{partyIdentifier}}`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR', `http://${fspUrl}/payerfsp/participants/{{partyIdType}}/{{partyIdentifier}}/error`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT', `http://${fspUrl}/payerfsp/participants/{{requestId}}`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT_ERROR', `http://${fspUrl}/payerfsp/participants/{{requestId}}/error`)
 
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_QUOTES', `http://simulator:8444/payerfsp/`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `http://simulator:8444/payeefsp/transfers`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `http://simulator:8444/payerfsp/transfers/{{transferId}}`)
-    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `http://simulator:8444/payerfsp/transfers/{{transferId}}/error`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTIES_GET', `http://${fspUrl}/payerfsp/parties/{{partyIdType}}/{{partyIdentifier}}`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTIES_PUT', `http://${fspUrl}/payerfsp/parties/{{partyIdType}}/{{partyIdentifier}}`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR', `http://${fspUrl}/payerfsp/parties/{{partyIdType}}/{{partyIdentifier}}/error`)
+
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_QUOTES', `http://${fspUrl}/payerfsp/`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `http://${fspUrl}/payeefsp/transfers`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `http://${fspUrl}/payerfsp/transfers/{{transferId}}`)
+    await FspAddCallbackURL(fspName, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `http://${fspUrl}/payerfsp/transfers/{{transferId}}/error`)
 
     console.log(`...added ${fspName}`)
     console.log('')
