@@ -87,8 +87,8 @@
       "madeAt": 1588329357868
     },
     "1500|npm-audit-resolver>yargs-unparser>yargs>yargs-parser": {
-      "decision": "fix",
-      "madeAt": 1588329362144
+      "decision": "postpone",
+      "madeAt": 1588330230090
     },
     "1500|npm-audit-resolver>audit-resolve-core>yargs-parser": {
       "decision": "postpone",
