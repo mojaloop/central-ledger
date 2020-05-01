@@ -28,6 +28,7 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
+const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/transfer/transferTimeout')
 
 Test('Transfer Timeout', async (transferTimeoutTest) => {
@@ -35,6 +36,8 @@ Test('Transfer Timeout', async (transferTimeoutTest) => {
 
   transferTimeoutTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(Logger, 'isErrorEnabled').value(true)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     Db.transferTimeout = {
       query: sandbox.stub()
     }
