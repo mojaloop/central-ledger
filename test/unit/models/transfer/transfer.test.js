@@ -24,7 +24,7 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
@@ -42,7 +42,7 @@ Test('Transfer model', async (transfer) => {
     createdDate: new Date()
   }
 
-  transfer.test('setup', async (assert) => {
+  transfer.beforeEach(beforeTest => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Logger, 'isErrorEnabled').value(true)
     sandbox.stub(Logger, 'isDebugEnabled').value(true)
@@ -52,8 +52,12 @@ Test('Transfer model', async (transfer) => {
       destroy: sandbox.stub(),
       truncate: sandbox.stub()
     }
-    assert.pass('setup OK')
-    assert.end()
+    beforeTest.end()
+  })
+
+  transfer.afterEach(afterTest => {
+    sandbox.restore()
+    afterTest.end()
   })
 
   await transfer.test('getById should', async (assert) => {
