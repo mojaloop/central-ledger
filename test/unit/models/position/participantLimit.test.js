@@ -47,6 +47,7 @@ Test('Participant Limit model', async (participantLimitTest) => {
   Db.participantLimit = {
     insert: sandbox.stub(),
     update: sandbox.stub(),
+    find: sandbox.stub(),
     findOne: sandbox.stub()
   }
 
@@ -104,27 +105,27 @@ Test('Participant Limit model', async (participantLimitTest) => {
     }
   })
 
-  await participantLimitTest.test('getLimitByCurrencyId participant limit', async (assert) => {
+  await participantLimitTest.test('getAll participants limit', async (assert) => {
     try {
-      Db.participantLimit.findOne.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }).returns(1)
-      const result = await Model.getLimitByCurrencyId(participantLimit1.participantCurrencyId)
+      Db.participantLimit.find.withArgs({}).returns(1)
+      const result = await Model.getAll()
       assert.equal(result, 1, `returns ${result}`)
       assert.end()
     } catch (err) {
-      Logger.error(`getLimitByCurrencyId participant limit failed with error - ${err}`)
+      Logger.error(`getAll participant limit failed with error - ${err}`)
       assert.fail()
       assert.end()
     }
   })
 
-  await participantLimitTest.test('getLimitByCurrencyId participant limit should throw an error', async (assert) => {
+  await participantLimitTest.test('getAll participant limit should throw an error', async (assert) => {
     try {
-      Db.participantLimit.findOne.withArgs({ participantCurrencyId: participantLimit1.participantCurrencyId }).throws(new Error('message'))
-      await Model.getLimitByCurrencyId(participantLimit1.participantCurrencyId)
+      Db.participantLimit.find.withArgs({}).throws(new Error('message'))
+      await Model.getAll()
       assert.fail('Error not thrown!')
       assert.end()
     } catch (err) {
-      Logger.error(`getLimitByCurrencyId participant limit failed with error - ${err}`)
+      Logger.error(`getAll participant limit failed with error - ${err}`)
       assert.assert(err instanceof Error, 'instance of Error')
       assert.pass('Error thrown')
       assert.end()

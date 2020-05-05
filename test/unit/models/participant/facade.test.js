@@ -30,10 +30,12 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
+const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/participant/facade')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
+const ParticipantLimitModel = require('../../../../src/models/participant/participantLimitCached')
 
 Test('Participant facade', async (facadeTest) => {
   let sandbox
@@ -41,6 +43,8 @@ Test('Participant facade', async (facadeTest) => {
   facadeTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(ParticipantCurrencyModel, 'invalidateParticipantCurrencyCache')
+    sandbox.stub(ParticipantLimitModel, 'invalidateParticipantLimitCache')
+    sandbox.stub(Cache)
     Db.participant = {
       query: sandbox.stub()
     }
