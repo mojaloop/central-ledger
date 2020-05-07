@@ -9,6 +9,7 @@ version: 2.1
 orbs:
   anchore: anchore/anchore-engine@1.6.0
   deploy-kube: mojaloop/deployment@0.1.6
+  slack: circleci/slack@3.4.2
 
 ##
 # defaults
@@ -238,6 +239,13 @@ jobs:
       - setup_remote_docker
       - checkout
       - run:
+          name: Install docker dependencies for anchore
+          command: |
+            apk add --update py-pip docker python-dev libffi-dev openssl-dev gcc libc-dev make jq npm
+      - run:
+          name: Install general dependencies
+          command: *defaults_Dependencies
+      - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
       - attach_workspace:
@@ -245,40 +253,39 @@ jobs:
       - run:
           name: Load the pre-built docker image from workspace
           command: docker load -i /tmp/docker-image.tar
+      - run:
+          name: Download the mojaloop/ci-config repo
+          command: |
+            git clone https://github.com/mojaloop/ci-config /tmp/ci-config
+            # Generate the mojaloop anchore-policy
+            cd /tmp/ci-config/container-scanning && ./mojaloop-policy-generator.js /tmp/mojaloop-policy.json
+      - run:
+          name: Pull base image locally
+          command: |
+            docker pull node:12.16.1-alpine
+      # Analyze the base and derived image
+      # Note: It seems images are scanned in parallel, so preloading the base image result doesn't give us any real performance gain
       - anchore/analyze_local_image:
-          dockerfile_path: ./Dockerfile
-          image_name: ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}
-          # Anchore bug: if policy_failure is `true`, reports don't get written - we manually check for failures below
+          # Force the older version, version 0.7.0 was just published, and is broken
+          anchore_version: v0.6.1
+          image_name: "docker.io/node:12.16.1-alpine $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
           policy_failure: false
           timeout: '500'
-      - run:
-          name: Evaluate Failures.
-          command: |
-            if [[ ! $(which jq) ]]; then
-              (set +o pipefail; apk add jq || apt-get install -y jq || yum install -y jq)
-            fi
-            if [[ $(ls anchore-reports/*content-os*.json 2> /dev/null) ]]; then
-              printf "\n%s\n" "The following OS packages are installed:"
-              jq '[.content | sort_by(.package) | .[] | {package: .package, version: .version}]' anchore-reports/*content-os*.json
-            fi
-            if [[ $(ls anchore-reports/*vuln*.json 2> /dev/null) ]]; then
-              printf "\n%s\n" "The following vulnerabilities were found:"
-              jq '[.vulnerabilities | group_by(.package) | .[] | {package: .[0].package, vuln: [.[].vuln]}]' anchore-reports/*vuln*.json
-            fi
+          # Note: if the generated policy is invalid, this will fallback to the default policy, which we don't want!
+          policy_bundle_file_path: /tmp/mojaloop-policy.json
       - run:
           name: Upload Anchore reports to s3
           command: |
             aws s3 cp anchore-reports ${AWS_S3_DIR_ANCHORE_REPORTS}/${CIRCLE_PROJECT_REPONAME}/ --recursive
             aws s3 rm ${AWS_S3_DIR_ANCHORE_REPORTS}/latest/ --recursive --exclude "*" --include "${CIRCLE_PROJECT_REPONAME}*"
             aws s3 cp anchore-reports ${AWS_S3_DIR_ANCHORE_REPORTS}/latest/ --recursive
-
-            # TODO: Enable this when we want to increase the strictness of our security policies
-            # failCount=$(cat anchore-reports/*policy*.json | grep 'fail' | wc -l)
-            # echo "FailCount is: ${failCount}"
-            # if [ $failCount -gt 0 ]; then
-            #   printf "Failed with a policy failure count of: ${failCount}"
-            #   exit 1
-            # fi
+      - run:
+          name: Evaluate failures
+          command: /tmp/ci-config/container-scanning/anchore-result-diff.js anchore-reports/node_12.16.1-alpine-policy.json anchore-reports/${CIRCLE_PROJECT_REPONAME}*-policy.json
+      - slack/status:
+          fail_only: true
+          webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
+          failure_message: 'Anchore Image Scan failed  for: \`"${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"\`'
       - store_artifacts:
           path: anchore-reports
 
@@ -305,15 +312,10 @@ jobs:
             docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
             echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
             docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
-      - run:
-          name: Slack announcement for tag releases
-          command: |
-            curl -X POST \
-              $SLACK_WEBHOOK_ANNOUNCEMENT \
-              -H 'Content-type: application/json' \
-              -H 'cache-control: no-cache' \
-              -d "{\"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"}"
-
+      - slack/status:
+          webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
+          success_message: '*"${CIRCLE_PROJECT_REPONAME}"* - Release \`"${CIRCLE_TAG}"\` \nhttps://github.com/mojaloop/"${CIRCLE_PROJECT_REPONAME}"/releases/tag/"${CIRCLE_TAG}"'
+      
   deploy:
     executor: deploy-kube/helm-kube
     steps:
@@ -340,6 +342,10 @@ jobs:
             --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
             --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
             --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.tag=$CIRCLE_TAG
+      - slack/status:
+          fail_only: true
+          webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
+          failure_message: 'Deployment failed for: \`"${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"\`'
 
 
 ##
