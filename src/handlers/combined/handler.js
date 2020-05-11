@@ -118,7 +118,7 @@ const preparePosition = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_prepare',
     'Consume a prepare transfer message from the kafka topic and process it accordingly',
-    ['success', 'fspId']
+    ['success', 'fspId', 'error']
   ).startTimer()
 
   if (error) {
@@ -237,12 +237,32 @@ const preparePosition = async (error, messages) => {
       return true
     }
   } catch (err) {
-    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--P0`)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)
+
+    const getRecursiveCause = (error) => {
+      if (error.cause instanceof ErrorHandler.Factory.FSPIOPError) {
+        return getRecursiveCause(error.cause)
+      } else if (error.cause instanceof Error) {
+        if (error.cause) {
+          return error.cause
+        } else {
+          return error.message
+        }
+      } else if (error.cause) {
+        return error.cause
+      } else if (error.message) {
+        return error.message
+      } else {
+        return error
+      }
+    }
+    const errCause = getRecursiveCause(err)
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, error: errCause })
+
     return true
   } finally {
     if (!span.isFinished) {
@@ -256,7 +276,7 @@ const fulfilPosition = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
     'transfer_fulfil',
     'Consume a fulfil transfer message from the kafka topic and process it accordingly',
-    ['success', 'fspId']
+    ['success', 'fspId', 'error']
   ).startTimer()
   if (error) {
     throw ErrorHandler.Factory.reformatFSPIOPError(error)
@@ -538,12 +558,32 @@ const fulfilPosition = async (error, messages) => {
       }
     }
   } catch (err) {
-    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(err)
     Logger.error(`${Util.breadcrumb(location)}::${err.message}--F0`)
     const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
     await span.error(fspiopError, state)
     await span.finish(fspiopError.message, state)
+
+    const getRecursiveCause = (error) => {
+      if (error.cause instanceof ErrorHandler.Factory.FSPIOPError) {
+        return getRecursiveCause(error.cause)
+      } else if (error.cause instanceof Error) {
+        if (error.cause) {
+          return error.cause
+        } else {
+          return error.message
+        }
+      } else if (error.cause) {
+        return error.cause
+      } else if (error.message) {
+        return error.message
+      } else {
+        return error
+      }
+    }
+    const errCause = getRecursiveCause(err)
+    histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, error: errCause })
+
     return true
   } finally {
     if (!span.isFinished) {
