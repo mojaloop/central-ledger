@@ -2,7 +2,6 @@
 
 const CatboxMemory = require('catbox-memory')
 const Config = require('../lib/config')
-const Enums = require('../lib/enum')
 
 let enabled = true
 let ttl
@@ -70,9 +69,6 @@ const initCache = async function () {
   })
   catboxMemoryClient.start()
 
-  // Preload data
-  await _getAllEnums()
-
   for (const clientId in cacheClients) {
     const clientMeta = cacheClients[clientId].getMeta()
     await clientMeta.preloadCache()
@@ -88,35 +84,6 @@ const isCacheEnabled = function () {
   return enabled
 }
 
-const _getAllEnums = async function () {
-  const allEnums = {}
-  for (const enumId of Enums.enumsIds) {
-    allEnums[enumId] = await getEnums(enumId)
-  }
-  return allEnums
-}
-
-const getEnums = async (id) => {
-  let enums = null
-  if (id === 'all') {
-    enums = await _getAllEnums()
-  } else {
-    const key = {
-      segment: 'enums',
-      id
-    }
-    const enumsFromCache = catboxMemoryClient.get(key)
-    if (enumsFromCache === null) {
-      enums = await Enums[id]()
-      catboxMemoryClient.set(key, enums, ttl)
-    } else {
-      // unwrap from catbox structure
-      enums = enumsFromCache.item
-    }
-  }
-  return enums
-}
-
 module.exports = {
   // Clients registration
   registerCacheClient,
@@ -125,9 +92,6 @@ module.exports = {
   initCache,
   destroyCache,
   isCacheEnabled,
-
-  // enums
-  getEnums,
 
   // exposed for tests
   CatboxMemory
