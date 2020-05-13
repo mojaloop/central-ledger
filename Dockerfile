@@ -23,11 +23,7 @@ WORKDIR /opt/central-ledger
 RUN mkdir ./logs && touch ./logs/combined.log
 RUN ln -sf /dev/stdout ./logs/combined.log
 
-# Create a non-root user: ml-user
-RUN adduser -D ml-user 
-USER ml-user
-
-COPY --chown=ml-user --from=builder /opt/central-ledger .
+COPY --from=builder /opt/central-ledger .
 RUN npm prune --production
 
 EXPOSE 3001
