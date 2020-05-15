@@ -87,12 +87,14 @@
       "madeAt": 1588329357868
     },
     "1500|npm-audit-resolver>yargs-unparser>yargs>yargs-parser": {
-      "decision": "postpone",
-      "madeAt": 1588869168403
+      "decision": "ignore",
+      "madeAt": 1589473631805,
+      "expiresAt": 1590078418847
     },
     "1500|npm-audit-resolver>audit-resolve-core>yargs-parser": {
-      "decision": "postpone",
-      "madeAt": 1588869159226
+      "decision": "ignore",
+      "madeAt": 1589473634423,
+      "expiresAt": 1590078418847
     }
   },
   "rules": {},
