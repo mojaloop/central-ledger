@@ -28,7 +28,7 @@ const Test = require('tape')
 const Base = require('../../base')
 const AdminRoutes = require('../../../../src/api/routes')
 const Sinon = require('sinon')
-const Cache = require('../../../../src/lib/cache')
+const Enums = require('../../../../src/lib/enumCached')
 
 Test('test root routes - health', async function (assert) {
   const req = Base.buildRequest({ url: '/health', method: 'GET' })
@@ -41,7 +41,7 @@ Test('test root routes - health', async function (assert) {
 
 Test('test root routes - enums', async function (assert) {
   const sandbox = Sinon.createSandbox()
-  sandbox.stub(Cache, 'getEnums').returns(Promise.resolve({}))
+  sandbox.stub(Enums, 'getEnums').returns(Promise.resolve({}))
   const req = Base.buildRequest({ url: '/enums', method: 'GET' })
   const server = await Base.setup(AdminRoutes)
   const res = await server.inject(req)

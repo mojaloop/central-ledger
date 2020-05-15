@@ -48,7 +48,7 @@ class CacheClient {
       this will be called to preload data
   }
 */
-const cacheClients = {}
+let cacheClients = {}
 
 const registerCacheClient = (clientMeta) => {
   const newClient = new CacheClient(clientMeta)
@@ -80,6 +80,10 @@ const destroyCache = async function () {
   catboxMemoryClient = null
 }
 
+const dropClients = function () {
+  cacheClients = {}
+}
+
 const isCacheEnabled = function () {
   return enabled
 }
@@ -94,5 +98,6 @@ module.exports = {
   isCacheEnabled,
 
   // exposed for tests
-  CatboxMemory
+  CatboxMemory,
+  dropClients
 }

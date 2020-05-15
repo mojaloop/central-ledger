@@ -71,6 +71,6 @@ exports.initialize = async () => {
   enumAllCacheKey = cacheClient.createKey('all')
 }
 
-exports.invalidateParticipantCurrencyCache = async () => {
+exports.invalidateEnumCache = async () => {
   cacheClient.drop(enumAllCacheKey)
 }
