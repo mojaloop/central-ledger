@@ -12,15 +12,12 @@ services:
         - mojaloop/central-ledger
         - central-ledger
     container_name: cl_central-ledger
-    command:
-      - "sh"
-      - "-c"
-      - "sh /opt/wait-for/wait-for-central-ledger.sh && node src/api/index.js"
+    command: sh -c "/opt/central-ledger/wait4/wait4.js central-ledger && node src/api/index.js"
     ports:
       - "3001:3001"
     volumes:
        - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
-       - ./docker/wait-for:/opt/wait-for
+       - ./docker/wait4:/opt/central-ledger/wait4
     environment:
       - LOG_LEVEL=info
       - CSL_LOG_TRANSPORT=file

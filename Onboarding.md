@@ -85,7 +85,6 @@ This will do the following:
 ### 3.2 Configure the DB environment variable and run the server
 
 > Note: Ensure that the `sidecar` has been disabled (`SIDECAR.DISABLED=true` is disabled in the `./config/default.json`) or set environment var `export CLEDG_SIDECAR__DISABLED=true`).
-> Note: If you do disable Mongodb (i.e. `CLEDG_MONGODB__DISABLED=true`), please ensure that you comment out the following line `sh /opt/wait-for/wait-for-objstore.sh` from the following file: `docker/wait-for/wait-for-central-ledger.sh`.
 
 ```bash
 # disable SIDECAR in config/default.json temporary by setting 
