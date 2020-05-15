@@ -28,7 +28,7 @@
 const SettlementService = require('../../domain/settlement')
 const Sidecar = require('../../lib/sidecar')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Cache = require('../../lib/cache')
+const Enums = require('../../lib/enumCached')
 const Util = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 const Logger = require('@mojaloop/central-services-logger')
@@ -58,7 +58,7 @@ const handleMissingRecord = (entity) => {
 const getByName = async function (request) {
   const entity = await SettlementService.getByName(request.params.name)
   handleMissingRecord(entity)
-  const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
+  const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
   const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
   const settlementGranularityIds = Util.transpose(Enum.SettlementGranularity)
   const settlementInterchangeIds = Util.transpose(Enum.SettlementInterchange)
@@ -68,7 +68,7 @@ const getByName = async function (request) {
 }
 const getAll = async function () {
   const results = await SettlementService.getAll()
-  const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
+  const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
   const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
   const settlementGranularityIds = Util.transpose(Enum.SettlementGranularity)
   const settlementInterchangeIds = Util.transpose(Enum.SettlementInterchange)
@@ -85,7 +85,7 @@ const update = async function (request) {
       const changeLog = JSON.stringify(Object.assign({}, request.params, { isActive: request.payload.isActive }))
       Logger.isInfoEnabled && Logger.info(`Settlement Model has been ${isActiveText} :: ${changeLog}`)
     }
-    const ledgerAccountTypes = await Cache.getEnums('ledgerAccountType')
+    const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     const settlementGranularityIds = Util.transpose(Enum.SettlementGranularity)
     const settlementInterchangeIds = Util.transpose(Enum.SettlementInterchange)
