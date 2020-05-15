@@ -8,7 +8,7 @@ const Handler = require('../../../../src/api/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const Cache = require('../../../../src/lib/cache')
+const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
 
 const createRequest = ({ payload, params, query }) => {
@@ -115,8 +115,8 @@ Test('Participant', participantHandlerTest => {
     sandbox.stub(Sidecar)
     sandbox.stub(Logger)
     sandbox.stub(Participant)
-    sandbox.stub(Cache)
-    Cache.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
+    sandbox.stub(EnumCached)
+    EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
     test.end()
   })
 
