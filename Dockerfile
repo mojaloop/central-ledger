@@ -30,7 +30,5 @@ USER ml-user
 COPY --chown=ml-user --from=builder /opt/central-ledger .
 RUN npm prune --production
 
-RUN npm prune --production
-
 EXPOSE 3001
 CMD ["npm", "run", "start"]
