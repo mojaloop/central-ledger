@@ -35,6 +35,7 @@ exports.up = async (knex) => {
     if (exists) {
       return knex.schema.alterTable('quoteExtension', (t) => {
         t.bigInteger('quoteResponseId').unsigned().nullable().alter()
+        t.string('transactionId', 36).nullable().comment('The transaction reference that is part of the initial quote').alter()
       })
     }
   })
