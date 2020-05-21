@@ -50,9 +50,9 @@ const update = async (participantLimit) => {
   }
 }
 
-const getLimitByCurrencyId = async (participantCurrencyId) => {
+const getAll = async () => {
   try {
-    return await Db.participantLimit.findOne({ participantCurrencyId })
+    return await Db.participantLimit.find({})
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -129,8 +129,8 @@ const destroyByParticipantId = async (participantId) => {
 module.exports = {
   insert,
   update,
-  getLimitByCurrencyId,
   getByParticipantCurrencyId,
+  getAll,
   destroyByParticipantCurrencyId,
   destroyByParticipantId
 }

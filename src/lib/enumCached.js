@@ -18,23 +18,59 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * ModusBox
- - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Roman Pietrzak <roman.pietrzak@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-exports.up = function (knex) {
-  return knex.schema.table('settlementWindowStateChange', (t) => {
-    t.index('settlementWindowId')
-    t.index('settlementWindowStateId')
-  })
+const Cache = require('../lib/cache')
+const Enums = require('./enum')
+
+let cacheClient
+let enumAllCacheKey
+
+/*
+  Private API
+*/
+const _getAllEnums = async function () {
+  let allEnums
+  const allEnumsFromCache = cacheClient.get(enumAllCacheKey)
+  if (allEnumsFromCache === null) {
+    allEnums = {}
+    for (const enumId of Enums.enumsIds) {
+      allEnums[enumId] = await Enums[enumId]()
+    }
+    cacheClient.set(enumAllCacheKey, allEnums)
+  } else {
+    // unwrap from catbox structure
+    allEnums = allEnumsFromCache.item
+  }
+  return allEnums
 }
 
-exports.down = function (knex) {
-  return knex.schema.table('settlementWindowStateChange', (t) => {
-    t.dropIndex('settlementWindowId')
-    t.dropIndex('settlementWindowStateId')
-  })
+/*
+  Public API
+*/
+exports.getEnums = async (id) => {
+  let enums = await _getAllEnums()
+  if (id !== 'all') {
+    enums = enums[id]
+  }
+  return enums
+}
+
+exports.initialize = async () => {
+  /* Register as cache client */
+  const enumCacheClientMeta = {
+    id: 'enum',
+    preloadCache: _getAllEnums
+  }
+
+  cacheClient = Cache.registerCacheClient(enumCacheClientMeta)
+  enumAllCacheKey = cacheClient.createKey('all')
+}
+
+exports.invalidateEnumCache = async () => {
+  cacheClient.drop(enumAllCacheKey)
 }
