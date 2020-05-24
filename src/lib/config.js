@@ -41,7 +41,8 @@ module.exports = {
       port: RC.DATABASE.PORT,
       user: RC.DATABASE.USER,
       password: RC.DATABASE.PASSWORD,
-      database: RC.DATABASE.SCHEMA
+      database: RC.DATABASE.SCHEMA,
+      timezone: RC.DATABASE.TIMEZONE
     },
     pool: {
       // minimum size
