@@ -49,6 +49,8 @@ Test('TransferError model', async (TransferErrorTest) => {
 
   TransferErrorTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(Logger, 'isErrorEnabled').value(true)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     Db.transferError = {
       insert: sandbox.stub(),
       find: sandbox.stub(),

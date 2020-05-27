@@ -40,6 +40,7 @@ Test('TransferErrorDuplicateCheck model', async (TransferErrorDuplicateCheckTest
   }]
   TransferErrorDuplicateCheckTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
     Db.transferErrorDuplicateCheck = {
       findOne: sandbox.stub(),
       insert: sandbox.stub()

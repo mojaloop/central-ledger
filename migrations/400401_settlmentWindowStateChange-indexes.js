@@ -26,10 +26,15 @@
 'use strict'
 
 exports.up = function (knex) {
-  return Promise.resolve(true)
+  return knex.schema.table('settlementWindowStateChange', (t) => {
+    t.index('settlementWindowId')
+    t.index('settlementWindowStateId')
+  })
 }
 
 exports.down = function (knex) {
-  return Promise.resolve(true)
+  return knex.schema.table('settlementWindowStateChange', (t) => {
+    t.dropIndex('settlementWindowId')
+    t.dropIndex('settlementWindowStateId')
+  })
 }
-

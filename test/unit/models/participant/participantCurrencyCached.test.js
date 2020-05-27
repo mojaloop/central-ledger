@@ -190,7 +190,7 @@ Test('ParticipantCurrency cached model', async (participantCurrencyCachedTest) =
     Cache.registerCacheClient.returns(cacheClient)
     await Model.initialize()
 
-    // test same things for 4 different functions
+    // test same things for 3 different functions
     const functionsToTest = ['create', 'update', 'destroyByParticipantId']
     for (const functionToTestIdx in functionsToTest) {
       const functionName = functionsToTest[functionToTestIdx]
