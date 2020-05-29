@@ -114,7 +114,7 @@
     "rc": "1.2.8",
     "require-glob": "3.2.0",
     "uuid4": "1.1.4",
-    "snyk": "^1.332.0"
+    "snyk": "1.332.0"
   },
   "optionalDependencies": {
     "mysql": "2.18.1"
