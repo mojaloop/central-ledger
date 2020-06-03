@@ -26,7 +26,7 @@
 
 const Handler = require('./handler')
 const Joi = require('@hapi/joi')
-const tags = ['api', 'ilpPacket']
+const tags = ['api', 'transaction']
 
 module.exports = [
   {
