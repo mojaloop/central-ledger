@@ -87,7 +87,7 @@
   },
   "INTERNAL_TRANSFER_VALIDITY_SECONDS": "432000",
   "CACHE": {
-    "CACHE_ENABLED": true,
+    "CACHE_ENABLED": false,
     "MAX_BYTE_SIZE": 10000000,
     "EXPIRES_IN_MS": 1000
   },
@@ -120,9 +120,7 @@
               "client.id": "cl-con-bulk-prepare",
               "group.id": "cl-group-bulk-prepare",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -145,9 +143,7 @@
               "client.id": "cl-con-bulk-processing",
               "group.id": "cl-group-bulk-processing",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -170,9 +166,7 @@
               "client.id": "cl-con-bulk-fulfil",
               "group.id": "cl-group-bulk-fulfil",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -197,9 +191,7 @@
               "client.id": "cl-con-transfer-prepare",
               "group.id": "cl-group-transfer-prepare",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -222,9 +214,7 @@
               "client.id": "cl-con-transfer-get",
               "group.id": "cl-group-transfer-get",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -247,9 +237,7 @@
               "client.id": "cl-con-transfer-fulfil",
               "group.id": "cl-group-transfer-fulfil",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -272,9 +260,7 @@
               "client.id": "cl-con-transfer-position",
               "group.id": "cl-group-transfer-position",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -299,9 +285,7 @@
               "client.id": "cl-con-transfer-admin",
               "group.id": "cl-group-transfer-admin",
               "metadata.broker.list": "localhost:9092",
-              "socket.keepalive.enable": true,
-              "event_cb": true,
-              "statistics.interval.ms": 3000
+              "socket.keepalive.enable": true
             },
             "topicConf": {
               "auto.offset.reset": "earliest"
@@ -321,7 +305,6 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-bulk-processing",
               "event_cb": true,
-              "statistics.interval.ms": 3000,
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000
@@ -343,7 +326,6 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-prepare",
               "event_cb": true,
-              "statistics.interval.ms": 3000,
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000
@@ -363,7 +345,6 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-fulfil",
               "event_cb": true,
-              "statistics.interval.ms": 3000,
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000
@@ -383,7 +364,6 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-position",
               "event_cb": true,
-              "statistics.interval.ms": 3000,
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000
@@ -405,7 +385,6 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-notification-event",
               "event_cb": true,
-              "statistics.interval.ms": 3000,
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000
@@ -427,7 +406,6 @@
               "metadata.broker.list": "localhost:9092",
               "client.id": "cl-prod-transfer-admin",
               "event_cb": true,
-              "statistics.interval.ms": 3000,
               "dr_cb": true,
               "socket.keepalive.enable": true,
               "queue.buffering.max.messages": 10000000
