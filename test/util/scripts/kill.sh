@@ -7,10 +7,10 @@ echo
 
 CWD="${0%/*}"
 
-if [[ "$CWD" =~ ^(.*)\.sh$ ]];
-then
-    CWD="."
-fi
+# if [[ "$CWD" =~ ^(.*)\.sh$ ]];
+# then
+#     CWD="."
+# fi
 
 echo "Loading env vars..."
 source $CWD/env.sh
