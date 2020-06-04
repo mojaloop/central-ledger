@@ -23,6 +23,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Georgi Logodazhki <georgi.logodazhki@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
 
@@ -165,8 +166,8 @@ const validateConditionAndExpiration = async (payload) => {
     return false
   }
   if (payload.expiration) {
-    if (Date.parse(payload.expiration) < Date.parse(new Date().toDateString())) {
-      reasons.push(`Expiration date ${new Date(payload.expiration.toString()).toISOString()} is already in the past`)
+    if (Date.parse(payload.expiration) < Date.parse(new Date().toISOString())) {
+      reasons.push(`Expiration date ${new Date(payload.expiration).toISOString()} is already in the past`)
       histTimerValidateTimer({ success: false, funcName: 'validateConditionAndExpiration' })
       return false
     }
@@ -179,10 +180,10 @@ const validateConditionAndExpiration = async (payload) => {
   return true
 }
 
-const validateByName = async (payload, headers) => {
-  const histTimerValidateByNameEnd = Metrics.getHistogram(
+const validatePrepare = async (payload, headers) => {
+  const histTimerValidatePrepareEnd = Metrics.getHistogram(
     'handlers_transfer_validator',
-    'validateByName - Metrics for transfer handler',
+    'validatePrepare - Metrics for transfer handler',
     ['success', 'funcName']
   ).startTimer()
 
@@ -201,7 +202,7 @@ const validateByName = async (payload, headers) => {
     validateAmount(payload.amount) &&
     await validateConditionAndExpiration(payload) &&
     validateDifferentDfsp(payload))
-  histTimerValidateByNameEnd({ success: true, funcName: 'validateByName' })
+  histTimerValidatePrepareEnd({ success: true, funcName: 'validatePrepare' })
   return {
     validationPassed,
     reasons
@@ -236,7 +237,7 @@ const validateParticipantTransferId = async function (participantName, transferI
 }
 
 module.exports = {
-  validateByName,
+  validatePrepare,
   validateById,
   validateFulfilCondition,
   validateParticipantByName,

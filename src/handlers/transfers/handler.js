@@ -24,6 +24,7 @@
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Georgi Logodazhki <georgi.logodazhki@modusbox.com>
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  - Miguel de Barros <miguel.debarros@modusbox.com>
  - Deon Botha <deon.botha@modusbox.com>
@@ -70,7 +71,7 @@ const toDestination = true
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
  * INVALID status. For any duplicate requests we will send appropriate callback based on the transfer state and the hash validation
  *
- * Validator.validateByName called to validate the payload of the message
+ * Validator.validatePrepare called to validate the payload of the message
  * TransferService.getById called to get the details of the existing transfer
  * TransferObjectTransform.toTransfer called to transform the transfer object
  * TransferService.prepare called and creates new entries in transfer tables for successful prepare transfer
@@ -170,7 +171,7 @@ const prepare = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       if (validationPassed) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
