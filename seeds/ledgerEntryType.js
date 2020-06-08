@@ -68,8 +68,11 @@ const ledgerEntryTypes = [
     description: 'Settlement account funds out'
   }
 ]
+const ledgerEntryList = ledgerEntryTypes.map(ledgerEntryTypesValue => {
+  return ledgerEntryTypesValue.name
+}).sort()
 
-exports.seed = async function (knex) {
+const seed = async function (knex) {
   try {
     return await knex('ledgerEntryType').insert(ledgerEntryTypes)
   } catch (err) {
@@ -79,4 +82,8 @@ exports.seed = async function (knex) {
       return -1000
     }
   }
+}
+module.exports = {
+  ledgerEntryList,
+  seed
 }
