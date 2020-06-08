@@ -50,43 +50,42 @@ Test('Transactions Service', async (transactionsTest) => {
 
   const ilpPacket = {
     transferId: '6d3e964e-9a25-4ff5-a365-2cc5af348321',
-    value: 'AQAAAAAAAADIEHByaXZhdGUucGF5ZWVmc3CCAiB7InRyYW5zYWN0aW9uSWQiOiIyZGY3NzRlMi1mMWRiLTRmZjctYTQ5NS0yZGRkMzdhZjdjMmMiLCJxdW90ZUlkIjoiMDNhNjA1NTAtNmYyZi00NTU2LThlMDQtMDcwM2UzOWI4N2ZmIiwicGF5ZWUiOnsicGFydHlJZEluZm8iOnsicGFydHlJZFR5cGUiOiJNU0lTRE4iLCJwYXJ0eUlkZW50aWZpZXIiOiIyNzcxMzgwMzkxMyIsImZzcElkIjoicGF5ZWVmc3AifSwicGVyc29uYWxJbmZvIjp7ImNvbXBsZXhOYW1lIjp7fX19LCJwYXllciI6eyJwYXJ0eUlkSW5mbyI6eyJwYXJ0eUlkVHlwZSI6Ik1TSVNETiIsInBhcnR5SWRlbnRpZmllciI6IjI3NzEzODAzOTExIiwiZnNwSWQiOiJwYXllcmZzcCJ9LCJwZXJzb25hbEluZm8iOnsiY29tcGxleE5hbWUiOnt9fX0sImFtb3VudCI6eyJjdXJyZW5jeSI6IlVTRCIsImFtb3VudCI6IjIwMCJ9LCJ0cmFuc2FjdGlvblR5cGUiOnsic2NlbmFyaW8iOiJERVBPU0lUIiwic3ViU2NlbmFyaW8iOiJERVBPU0lUIiwiaW5pdGlhdG9yIjoiUEFZRVIiLCJpbml0aWF0b3JUeXBlIjoiQ09OU1VNRVIiLCJyZWZ1bmRJbmZvIjp7fX19',
+    value: 'AYIC-AAAAAAAAeIfHWcucGF5ZWVmc3AubXNpc2RuLjIyNTU2OTk5MTI1ggLOZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTlRWa09ESXdObVV0T0RCaU55MDBPR00wTFRrNU5HTXRaREEyTmpRd01XRXdZbU00SWl3aWNYVnZkR1ZKWkNJNklqRmtPVGhpTkdReExXWmpOVFV0TkRaa09DMDROV1EyTFRnNVl6TXdZMkZoWWpRME5pSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpJMU5UWTVPVGt4TWpVaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpJeU5UQTNNREE0TVRneElpd2labk53U1dRaU9pSndZWGxsY21aemNDSjlMQ0p3WlhKemIyNWhiRWx1Wm04aU9uc2lZMjl0Y0d4bGVFNWhiV1VpT25zaVptbHljM1JPWVcxbElqb2lUV0YwY3lJc0lteGhjM1JPWVcxbElqb2lTR0ZuYldGdUluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazRNeTB4TUMweU5TSjlmU3dpWVcxdmRXNTBJanA3SW1OMWNuSmxibU41SWpvaVZWTkVJaXdpWVcxdmRXNTBJam94TWpNMExqSXpmU3dpZEhKaGJuTmhZM1JwYjI1VWVYQmxJanA3SW5OalpXNWhjbWx2SWpvaVZGSkJUbE5HUlZJaUxDSnBibWwwYVdGMGIzSWlPaUpRUVZsRlVpSXNJbWx1YVhScFlYUnZjbFI1Y0dVaU9pSkRUMDVUVlUxRlVpSjlmUQA',
     createdDate: '2020-05-23T17:31:29.000Z'
   }
-  const base64Value = 'eyJ0cmFuc2FjdGlvbklkIjoiMmRmNzc0ZTItZjFkYi00ZmY3LWE0OTUtMmRkZDM3YWY3YzJjIiwicXVvdGVJZCI6IjAzYTYwNTUwLTZmMmYtNDU1Ni04ZTA0LTA3MDNlMzliODdmZiIsInBheWVlIjp7InBhcnR5SWRJbmZvIjp7InBhcnR5SWRUeXBlIjoiTVNJU0ROIiwicGFydHlJZGVudGlmaWVyIjoiMjc3MTM4MDM5MTMiLCJmc3BJZCI6InBheWVlZnNwIn0sInBlcnNvbmFsSW5mbyI6eyJjb21wbGV4TmFtZSI6e319fSwicGF5ZXIiOnsicGFydHlJZEluZm8iOnsicGFydHlJZFR5cGUiOiJNU0lTRE4iLCJwYXJ0eUlkZW50aWZpZXIiOiIyNzcxMzgwMzkxMSIsImZzcElkIjoicGF5ZXJmc3AifSwicGVyc29uYWxJbmZvIjp7ImNvbXBsZXhOYW1lIjp7fX19LCJhbW91bnQiOnsiY3VycmVuY3kiOiJVU0QiLCJhbW91bnQiOiIyMDAifSwidHJhbnNhY3Rpb25UeXBlIjp7InNjZW5hcmlvIjoiREVQT1NJVCIsInN1YlNjZW5hcmlvIjoiREVQT1NJVCIsImluaXRpYXRvciI6IlBBWUVSIiwiaW5pdGlhdG9yVHlwZSI6IkNPTlNVTUVSIiwicmVmdW5kSW5mbyI6e319fQ=='
+  const base64Value = 'AYIC-AAAAAAAAeIfHWcucGF5ZWVmc3AubXNpc2RuLjIyNTU2OTk5MTI1ggLOZXlKMGNtRnVjMkZqZEdsdmJrbGtJam9pTlRWa09ESXdObVV0T0RCaU55MDBPR00wTFRrNU5HTXRaREEyTmpRd01XRXdZbU00SWl3aWNYVnZkR1ZKWkNJNklqRmtPVGhpTkdReExXWmpOVFV0TkRaa09DMDROV1EyTFRnNVl6TXdZMkZoWWpRME5pSXNJbkJoZVdWbElqcDdJbkJoY25SNVNXUkpibVp2SWpwN0luQmhjblI1U1dSVWVYQmxJam9pVFZOSlUwUk9JaXdpY0dGeWRIbEpaR1Z1ZEdsbWFXVnlJam9pTWpJMU5UWTVPVGt4TWpVaUxDSm1jM0JKWkNJNkluQmhlV1ZsWm5Od0luMTlMQ0p3WVhsbGNpSTZleUp3WVhKMGVVbGtTVzVtYnlJNmV5SndZWEowZVVsa1ZIbHdaU0k2SWsxVFNWTkVUaUlzSW5CaGNuUjVTV1JsYm5ScFptbGxjaUk2SWpJeU5UQTNNREE0TVRneElpd2labk53U1dRaU9pSndZWGxsY21aemNDSjlMQ0p3WlhKemIyNWhiRWx1Wm04aU9uc2lZMjl0Y0d4bGVFNWhiV1VpT25zaVptbHljM1JPWVcxbElqb2lUV0YwY3lJc0lteGhjM1JPWVcxbElqb2lTR0ZuYldGdUluMHNJbVJoZEdWUFprSnBjblJvSWpvaU1UazRNeTB4TUMweU5TSjlmU3dpWVcxdmRXNTBJanA3SW1OMWNuSmxibU41SWpvaVZWTkVJaXdpWVcxdmRXNTBJam94TWpNMExqSXpmU3dpZEhKaGJuTmhZM1JwYjI1VWVYQmxJanA3SW5OalpXNWhjbWx2SWpvaVZGSkJUbE5HUlZJaUxDSnBibWwwYVdGMGIzSWlPaUpRUVZsRlVpSXNJbWx1YVhScFlYUnZjbFI1Y0dVaU9pSkRUMDVUVlUxRlVpSjlmUQA=='
   const transactionObject = {
-    transactionId: '2df774e2-f1db-4ff7-a495-2ddd37af7c2c',
-    quoteId: '03a60550-6f2f-4556-8e04-0703e39b87ff',
+    transactionId: '55d8206e-80b7-48c4-994c-d066401a0bc8',
+    quoteId: '1d98b4d1-fc55-46d8-85d6-89c30caab446',
     payee: {
       partyIdInfo: {
         partyIdType: 'MSISDN',
-        partyIdentifier: '27713803913',
+        partyIdentifier: '22556999125',
         fspId: 'payeefsp'
-      },
-      personalInfo: {
-        complexName: {}
       }
     },
     payer: {
       partyIdInfo: {
         partyIdType: 'MSISDN',
-        partyIdentifier: '27713803911',
+        partyIdentifier: '22507008181',
         fspId: 'payerfsp'
       },
       personalInfo: {
-        complexName: {}
+        complexName: {
+          firstName: 'Mats',
+          lastName: 'Hagman'
+        },
+        dateOfBirth: '1983-10-25'
       }
     },
     amount: {
       currency: 'USD',
-      amount: '200'
+      amount: 1234.23
     },
     transactionType: {
-      scenario: 'DEPOSIT',
-      subScenario: 'DEPOSIT',
+      scenario: 'TRANSFER',
       initiator: 'PAYER',
-      initiatorType: 'CONSUMER',
-      refundInfo: {}
+      initiatorType: 'CONSUMER'
     }
   }
 

@@ -27,6 +27,9 @@
 const IlpPacket = require('../../models/ilpPackets/ilpPacket')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
+const ilpPacket = require('ilp-packet')
+const base64url = require('base64url')
+
 const getById = async (id) => {
   try {
     return await IlpPacket.getById(id)
@@ -34,24 +37,23 @@ const getById = async (id) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
+const decodeIlpPacket = async (inputIlpPacket) => {
+  const binaryPacket = Buffer.from(inputIlpPacket, 'base64')
+  return ilpPacket.deserializeIlpPayment(binaryPacket)
+}
 /**
  * Get the transaction object in the data field of an Ilp packet
  *
  * @returns {object} - Transaction Object
  */
 const getTransactionObject = async function (inputIlpPacket) {
-  const jsonPacket = await decodeIlpPacket(inputIlpPacket)
-  return JSON.parse(jsonPacket)
-}
-/**
- * Decodes an Ilp Packet
- *
- * @returns {object} - Ilp packet as JSON object
- */
-const decodeIlpPacket = async function (inputIlpPacket) {
-  const binaryPacket = Buffer.from(inputIlpPacket, 'base64')
-  return binaryPacket.toString('ascii')
+  try {
+    const jsonPacket = await decodeIlpPacket(inputIlpPacket)
+    const decodedData = base64url.decode(jsonPacket.data.toString())
+    return JSON.parse(decodedData)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
 }
 module.exports = {
   getById,

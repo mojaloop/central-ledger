@@ -31,7 +31,7 @@ const tags = ['api', 'transaction']
 module.exports = [
   {
     method: 'GET',
-    path: '/transaction/{id}',
+    path: '/transactions/{id}',
     handler: Handler.getById,
     options: {
       tags,

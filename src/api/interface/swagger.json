@@ -1241,7 +1241,7 @@
         }
       }
     },
-    "/transaction/{id}": {
+    "/transactions/{id}": {
       "get": {
         "summary": "Retrieve transaction details by a transferId",
         "tags": [
@@ -1262,29 +1262,6 @@
             "description": "Successful",
             "schema": {
               "$ref": "#/definitions/GetTransactionResponse"
-            }
-          }
-        }
-      }
-    },
-    "/ledgerEntry" : {
-      "post" : {
-        "summary": "Record a ledger entry movement",
-        "tags" : [ "ledger" ],
-        "operationId" : "postLedgerEntry",
-        "parameters" : [ {
-          "in" : "body",
-          "name" : "body",
-          "required" : false,
-          "schema" : {
-            "$ref" : "#/definitions/PostLedgerEntryRequest"
-          }
-        } ],
-        "responses" : {
-          "default" : {
-            "description" : "Successful",
-            "schema" : {
-              "type" : "string"
             }
           }
         }
@@ -1635,13 +1612,6 @@
       "minLength": 1,
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
       "description": "Quote Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of 1 has been specified due to the regex not being validated on empty strings, this should be removed once the enjoi module has been fixed."
-    },
-    "TransfareId": {
-      "title": "TransfareId",
-      "type": "string",
-      "minLength": 1,
-      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-      "description": "Trnasfer Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of 1 has been specified due to the regex not being validated on empty strings, this should be removed once the enjoi module has been fixed."
     },
     "TransactionId": {
       "title": "TransactionId",
@@ -2050,50 +2020,6 @@
       "type": "string",
       "pattern": "^([0]|([1-9][0-9]{0,17}))([.][0-9]{0,3}[1-9])?$",
       "description": "The API data type Amount is a JSON String in a canonical format that is restricted by a regular expression for interoperability reasons. This pattern does not allow any trailing zeroes at all, but allows an amount without a minor currency unit. It also only allows four digits in the minor currency unit; a negative value is not allowed. Using more than 18 digits in the major currency unit is not allowed."
-    },
-    "PostLedgerEntryRequest": {
-      "title": "PostLedgerEntryRequest",
-      "type": "object",
-      "description": "POST /ledgerEntry request object",
-      "properties": {
-        "transferId": {
-          "$ref": "#/definitions/TransfareId",
-          "description": "Id of the transfer."
-        },
-        "payeeParticipantName": {
-          "type": "string",
-          "description": "Information about the Payee in the proposed financial transaction."
-        },
-        "payerParticipantName": {
-          "type": "string",
-          "description": "Information about the Payer in the proposed financial transaction."
-        },
-        "amount": {
-          "$ref": "#/definitions/Money",
-          "description": "Depending on amountType. If SEND - The amount the Payer would like to send, that is, the amount that should be withdrawn from the Payer account including any fees. The amount is updated by each participating entity in the transaction. If RECEIVE - The amount the Payee should receive, that is, the amount that should be sent to the receiver exclusive any fees. The amount is not updated by any of the participating entities."
-        },
-        "ledgerEntryType": {
-          "$ref": "#/definitions/LedgerEntryType",
-          "description": "Type of ledger account for which the ledger is being created."
-        }
-      }
-    },
-    "LedgerEntryType": {
-      "title": "ledgerEntryTypeEnum",
-      "type": "string",
-      "enum": [
-        "PRINCIPLE_VALUE",
-        "INTERCHANGE_FEE",
-        "HUB_FEE",
-        "POSITION_DEPOSIT",
-        "POSITION_WITHDRAWAL",
-        "SETTLEMENT_NET_RECIPIENT",
-        "SETTLEMENT_NET_SENDER",
-        "SETTLEMENT_NET_ZERO",
-        "RECORD_FUNDS_IN",
-        "RECORD_FUNDS_OUT"
-      ],
-      "description": "Below are the allowed values for the enumeration - SETTLEMENT, HUB_RECONCILIATION , HUB_MULTILATERAL_SETTLEMENT , HUB_FEE and INTERCHANGE_FEE."
     }
   }
 }
