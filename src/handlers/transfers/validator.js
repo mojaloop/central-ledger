@@ -86,10 +86,12 @@ const validatePositionAccountByNameAndCurrency = async function (participantName
 }
 
 const validateDifferentDfsp = (payload) => {
-  const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
-  if (!isPayerAndPayeeDifferent) {
-    reasons.push('Payer and Payee should be different')
-    return false
+  if (!Config.ENABLE_ON_US_TRANSFERS) {
+    const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
+    if (!isPayerAndPayeeDifferent) {
+      reasons.push('Payer and Payee should be different')
+      return false
+    }
   }
   return true
 }
