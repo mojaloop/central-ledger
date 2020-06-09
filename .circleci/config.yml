@@ -414,7 +414,7 @@ workflows:
             - setup
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)?/
             branches:
               ignore:
                 - /feature*/
@@ -441,7 +441,7 @@ workflows:
             - audit-licenses
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)?/
             branches:
               ignore:
                 - /.*/
@@ -451,7 +451,7 @@ workflows:
             - build
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)?/
             branches:
               ignore:
                 - /.*/
@@ -461,7 +461,7 @@ workflows:
             - build
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)?/
             branches:
               ignore:
                 - /.*/
@@ -472,7 +472,7 @@ workflows:
             - image-scan
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-pisp)?/
             branches:
               ignore:
                 - /.*/
