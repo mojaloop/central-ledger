@@ -442,9 +442,10 @@ const fulfil = async (error, messages) => {
           } else {
             if (action === TransferEventAction.REJECT) {
               Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
-              await TransferService.handlePayeeResponse(transferId, payload, action)
-              const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
-              await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
+              Logger.isErrorEnabled && Logger.error('Action not allowed')
+              // await TransferService.handlePayeeResponse(transferId, payload, action)
+              // const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
+              // await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
             } else { // action === TransferEventAction.ABORT // error-callback request to be processed
