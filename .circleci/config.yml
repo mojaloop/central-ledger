@@ -240,7 +240,7 @@ jobs:
       - run:
           name: Install docker dependencies for anchore
           command: |
-            apk add --update py-pip docker python-dev libffi-dev openssl-dev gcc libc-dev make jq npm
+            apk add --update py-pip docker python3-dev libffi-dev openssl-dev gcc libc-dev make jq npm
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
