@@ -26,13 +26,14 @@ defaults_Dependencies: &defaults_Dependencies |
     npm install -g node-gyp
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
+    apk upgrade --no-cache
     apk --no-cache add \
             python3 \
             py3-pip \
             groff \
             less \
             mailcap
-    pip3 install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
+    pip3 install --upgrade pip awscli==1.14.5 s3cmd==2.0.1 python-magic
 
 defaults_license_scanner: &defaults_license_scanner
   name: Install and set up license-scanner
@@ -54,7 +55,6 @@ executors:
   default-machine:
     machine:
       image: ubuntu-1604:201903-01
-
 ##
 # Jobs
 #
@@ -243,7 +243,14 @@ jobs:
             apk add --update py-pip docker python3-dev libffi-dev openssl-dev gcc libc-dev make jq npm
       - run:
           name: Install general dependencies
-          command: *defaults_Dependencies
+          command: |
+            apk --no-cache add git
+            apk --no-cache add ca-certificates
+            apk --no-cache add curl
+            apk --no-cache add openssh-client
+            apk add --no-cache -t build-dependencies make gcc g++ python3 libtool autoconf automake
+            npm config set unsafe-perm true
+            npm install -g node-gyp
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
