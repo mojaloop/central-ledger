@@ -32,69 +32,57 @@ const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
 const NullClient = require(`${src}/lib/sidecar/nullClient`)
 
-Test('Null SidecarClient', async nullSidecarTest => {
+Test('Null SidecarClient', nullSidecarTest => {
   let sandbox
-  try {
-    nullSidecarTest.beforeEach(t => {
-      sandbox = Sinon.createSandbox()
-      sandbox.stub(Logger)
-      sandbox.stub(Logger, 'isDebugEnabled').value(true)
-      t.end()
+
+  nullSidecarTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    sandbox.stub(Logger)
+    sandbox.stub(Logger, 'isDebugEnabled').value(true)
+    t.end()
+  })
+
+  nullSidecarTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
+
+  nullSidecarTest.test('create should', createTest => {
+    createTest.test('create new null client', test => {
+      const client = NullClient.create()
+      test.ok(client)
+      test.end()
     })
 
-    nullSidecarTest.afterEach(t => {
-      sandbox.restore()
-      t.end()
-    })
+    createTest.end()
+  })
 
-    await nullSidecarTest.test('create should', async createTest => {
-      await createTest.test('create new null client', async test => {
-        try {
-          const client = await NullClient.create()
-          await test.ok(client)
-          await test.end()
-        } catch (e) {
-          console.log(e)
-        }
-      })
-      await createTest.end()
-    })
+  nullSidecarTest.test('connect should', connectTest => {
+    connectTest.test('log and return resolved promise immediately', test => {
+      const client = NullClient.create()
 
-    await nullSidecarTest.test('connect should', async connectTest => {
-      await connectTest.test('log and return resolved promise immediately', test => {
-        const client = NullClient.create()
-
-        client.connect()
-          .then(() => {
-            test.ok(Logger.debug.calledWith('Sidecar disabled: connecting in NullClient'))
-            test.end()
-          }).catch(e => {
-            console.log(e)
-          })
-      })
-
-      await connectTest.end()
-    })
-
-    await nullSidecarTest.test('write should', async writeTest => {
-      await writeTest.test('log message', test => {
-        try {
-          const client = NullClient.create()
-
-          const msg = 'This is a test'
-          client.write(msg)
-          test.ok(Logger.debug.calledWith(`Sidecar disabled: writing message ${msg} in NullClient`))
+      client.connect()
+        .then(() => {
+          test.ok(Logger.debug.calledWith('Sidecar disabled: connecting in NullClient'))
           test.end()
-        } catch (e) {
-          console.log(e)
-        }
-      })
-
-      await writeTest.end()
+        })
     })
 
-    await nullSidecarTest.end()
-  } catch (e) {
-    console.log(e)
-  }
+    connectTest.end()
+  })
+
+  nullSidecarTest.test('write should', writeTest => {
+    writeTest.test('log message', test => {
+      const client = NullClient.create()
+
+      const msg = 'This is a test'
+      client.write(msg)
+      test.ok(Logger.debug.calledWith(`Sidecar disabled: writing message ${msg} in NullClient`))
+      test.end()
+    })
+
+    writeTest.end()
+  })
+
+  nullSidecarTest.end()
 })
