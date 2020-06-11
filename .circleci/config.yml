@@ -26,14 +26,14 @@ defaults_Dependencies: &defaults_Dependencies |
     npm install -g node-gyp
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
+    apk upgrade --no-cache
     apk --no-cache add \
-            python \
-            py-pip \
+            python3 \
+            py3-pip \
             groff \
             less \
             mailcap
-    pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
-    apk -v --purge del py-pip
+    pip3 install --upgrade pip awscli==1.14.5 s3cmd==2.0.1 python-magic
 
 defaults_license_scanner: &defaults_license_scanner
   name: Install and set up license-scanner
@@ -241,10 +241,7 @@ jobs:
       - run:
           name: Install docker dependencies for anchore
           command: |
-            apk add --update py-pip docker python-dev libffi-dev openssl-dev gcc libc-dev make jq npm
-      - run:
-          name: Install general dependencies
-          command: *defaults_Dependencies
+            apk add --update python3 py3-pip docker python3-dev libffi-dev openssl-dev gcc libc-dev make jq npm
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
