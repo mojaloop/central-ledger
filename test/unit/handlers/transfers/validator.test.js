@@ -55,165 +55,165 @@ Test('transfer validator', validatorTest => {
     test.end()
   })
 
-  validatorTest.test('validateByName should', validateByNameTest => {
-    validateByNameTest.test('pass validation for valid payload', async (test) => {
+  validatorTest.test('validatePrepare should', validatePrepareTest => {
+    validatePrepareTest.test('pass validation for valid payload', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
 
-      const { validationPassed } = await Validator.validateByName(payload, headers)
+      const { validationPassed } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, true)
       test.end()
     })
 
-    validateByNameTest.test('fail validation for no payload', async (test) => {
-      const { validationPassed, reasons } = await Validator.validateByName(null)
+    validatePrepareTest.test('fail validation for no payload', async (test) => {
+      const { validationPassed, reasons } = await Validator.validatePrepare(null)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Transfer must be provided'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation when FSPIOP-Source doesnt match Payer', async (test) => {
+    validatePrepareTest.test('fail validation when FSPIOP-Source doesnt match Payer', async (test) => {
       const headersModified = { 'fspiop-source': 'dfsp2' }
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headersModified)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headersModified)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['FSPIOP-Source header should match Payer'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for invalid condition', async (test) => {
+    validatePrepareTest.test('fail validation for invalid condition', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.throws(new Error())
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Condition validation failed'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for no condition', async (test) => {
+    validatePrepareTest.test('fail validation for no condition', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       payload.condition = null
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Condition is required for a conditional transfer'])
       test.end()
     })
 
-    validateByNameTest.test('Fail validation for invalid expiration date', async (test) => {
+    validatePrepareTest.test('Fail validation for invalid expiration date', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.expiration = '1971-11-24T08:38:08.699-04:00'
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Expiration date 1971-11-24T12:38:08.699Z is already in the past'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for no expiration date', async (test) => {
+    validatePrepareTest.test('fail validation for no expiration date', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.expiration = null
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Expiration is required for conditional transfer'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for invalid participant', async (test) => {
+    validatePrepareTest.test('fail validation for invalid participant', async (test) => {
       Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
       Participant.getByName.withArgs('dfsp2').returns(Promise.resolve(null))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 not found'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for inactive participant', async (test) => {
+    validatePrepareTest.test('fail validation for inactive participant', async (test) => {
       Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
       Participant.getByName.withArgs('dfsp2').returns(Promise.resolve({ isActive: false }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 is inactive'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for invalid account', async (test) => {
+    validatePrepareTest.test('fail validation for invalid account', async (test) => {
       Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
       Participant.getByName.withArgs('dfsp2').returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: true }))
       Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve(null))
       CryptoConditions.validateCondition.returns(true)
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 USD account not found'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for inactive account', async (test) => {
+    validatePrepareTest.test('fail validation for inactive account', async (test) => {
       Participant.getByName.withArgs('dfsp1').returns(Promise.resolve({ isActive: true }))
       Participant.getByName.withArgs('dfsp2').returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.withArgs('dfsp1', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: true }))
       Participant.getAccountByNameAndCurrency.withArgs('dfsp2', 'USD', Enum.Accounts.LedgerAccountType.POSITION).returns(Promise.resolve({ currencyIsActive: false }))
       CryptoConditions.validateCondition.returns(true)
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Participant dfsp2 USD account is inactive'])
       test.end()
     })
 
-    validateByNameTest.test('pass validation for valid payload', async (test) => {
+    validatePrepareTest.test('pass validation for valid payload', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.amount.amount = '123.12345'
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Amount 123.12345 exceeds allowed scale of 4'])
       test.end()
     })
 
-    validateByNameTest.test('fail validation for same payer and payee', async (test) => {
+    validatePrepareTest.test('fail validation for same payer and payee', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.payeeFsp = payload.payerFsp
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Payer and Payee should be different'])
       test.end()
     })
 
-    validateByNameTest.test('pass validation for valid payload', async (test) => {
+    validatePrepareTest.test('pass validation for valid payload', async (test) => {
       Participant.getByName.returns(Promise.resolve({ isActive: true }))
       Participant.getAccountByNameAndCurrency.returns(Promise.resolve({ currencyIsActive: true }))
       CryptoConditions.validateCondition.returns(true)
       payload.amount.amount = '123456789012345.6789'
 
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
       test.deepEqual(reasons, ['Amount 123456789012345.6789 exceeds allowed precision of 18'])
       test.end()
     })
 
-    validateByNameTest.end()
+    validatePrepareTest.end()
   })
 
   validatorTest.test('validateById should', validateByIdTest => {

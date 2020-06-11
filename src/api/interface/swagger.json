@@ -7,7 +7,7 @@
   ],
   "info": {
     "title": "Central Ledger API Documentation",
-    "version": "9.3.0"
+    "version": "10.3.0"
   },
   "tags": [],
   "paths": {
@@ -82,7 +82,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%201"
+              "$ref": "#/definitions/PostParticipantsRequest"
             }
           }
         ],
@@ -348,7 +348,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%207"
+              "$ref": "#/definitions/ParticipantIsActive"
             }
           }
         ],
@@ -415,7 +415,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%202"
+              "$ref": "#/definitions/PostParticipantsNameEndpointsRequest"
             }
           }
         ],
@@ -674,7 +674,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%209"
+              "$ref": "#/definitions/PutParticipantsNameLimitsRequest"
             }
           }
         ],
@@ -952,7 +952,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%204"
+              "$ref": "#/definitions/PostParticipantsNameAccountsRequest"
             }
           }
         ],
@@ -990,7 +990,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%203"
+              "$ref": "#/definitions/PostInitialPositionAndLimitsRequest"
             }
           }
         ],
@@ -1037,7 +1037,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%206"
+              "$ref": "#/definitions/Participants"
             }
           }
         ],
@@ -1082,7 +1082,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%2010"
+              "$ref": "#/definitions/CurrencyIsActive"
             }
           }
         ],
@@ -1138,7 +1138,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/Model%2011"
+              "$ref": "#/definitions/RecordFundsOut"
             }
           }
         ],
@@ -1157,6 +1157,7 @@
     },
     "/settlementModels" : {
       "get" : {
+        "summary": "View all settlement models",
         "tags" : [ "settlementModels" ],
         "operationId" : "getSettlementmodels",
         "parameters" : [ ],
@@ -1170,6 +1171,7 @@
         }
       },
       "post" : {
+        "summary": "Create a settlement model",
         "tags" : [ "settlementModels" ],
         "operationId" : "postSettlementmodels",
         "parameters" : [ {
@@ -1177,7 +1179,7 @@
           "name" : "body",
           "required" : false,
           "schema" : {
-            "$ref" : "#/definitions/Model%2012"
+            "$ref" : "#/definitions/SettlementModel"
           }
         } ],
         "responses" : {
@@ -1192,6 +1194,7 @@
     },
     "/settlementModels/{name}" : {
       "get" : {
+        "summary": "View settlement model by name",
         "tags" : [ "settlementModels" ],
         "operationId" : "getSettlementmodelsName",
         "parameters" : [ {
@@ -1211,6 +1214,7 @@
         }
       },
       "put" : {
+        "summary": "Update a settlement model",
         "tags" : [ "settlementModels" ],
         "operationId" : "putSettlementmodelsName",
         "parameters" : [ {
@@ -1224,7 +1228,7 @@
           "name" : "body",
           "required" : false,
           "schema" : {
-            "$ref" : "#/definitions/Model%2013"
+            "$ref" : "#/definitions/SettlementModelIsActive"
           }
         } ],
         "responses" : {
@@ -1236,10 +1240,36 @@
           }
         }
       }
+    },
+    "/transactions/{id}": {
+      "get": {
+        "summary": "Retrieve transaction details by a transferId",
+        "tags": [
+          "transaction"
+        ],
+        "operationId": "getTransfer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Transfer Id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful",
+            "schema": {
+              "$ref": "#/definitions/GetTransactionResponse"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
-    "Model 1": {
+    "PostParticipantsRequest": {
       "type": "object",
       "properties": {
         "name": {
@@ -1254,192 +1284,15 @@
         "currency": {
           "type": "string",
           "description": "Currency code",
-          "enum": [
-            "AED",
-            "AFA",
-            "AFN",
-            "ALL",
-            "AMD",
-            "ANG",
-            "AOA",
-            "AOR",
-            "ARS",
-            "AUD",
-            "AWG",
-            "AZN",
-            "BAM",
-            "BBD",
-            "BDT",
-            "BGN",
-            "BHD",
-            "BIF",
-            "BMD",
-            "BND",
-            "BOB",
-            "BRL",
-            "BSD",
-            "BTN",
-            "BWP",
-            "BYN",
-            "BZD",
-            "CAD",
-            "CDF",
-            "CHF",
-            "CLP",
-            "CNY",
-            "COP",
-            "CRC",
-            "CUC",
-            "CUP",
-            "CVE",
-            "CZK",
-            "DJF",
-            "DKK",
-            "DOP",
-            "DZD",
-            "EEK",
-            "EGP",
-            "ERN",
-            "ETB",
-            "EUR",
-            "FJD",
-            "FKP",
-            "GBP",
-            "GEL",
-            "GGP",
-            "GHS",
-            "GIP",
-            "GMD",
-            "GNF",
-            "GTQ",
-            "GYD",
-            "HKD",
-            "HNL",
-            "HRK",
-            "HTG",
-            "HUF",
-            "IDR",
-            "ILS",
-            "IMP",
-            "INR",
-            "IQD",
-            "IRR",
-            "ISK",
-            "JEP",
-            "JMD",
-            "JOD",
-            "JPY",
-            "KES",
-            "KGS",
-            "KHR",
-            "KMF",
-            "KPW",
-            "KRW",
-            "KWD",
-            "KYD",
-            "KZT",
-            "LAK",
-            "LBP",
-            "LKR",
-            "LRD",
-            "LSL",
-            "LTL",
-            "LVL",
-            "LYD",
-            "MAD",
-            "MDL",
-            "MGA",
-            "MKD",
-            "MMK",
-            "MNT",
-            "MOP",
-            "MRO",
-            "MUR",
-            "MVR",
-            "MWK",
-            "MXN",
-            "MYR",
-            "MZN",
-            "NAD",
-            "NGN",
-            "NIO",
-            "NOK",
-            "NPR",
-            "NZD",
-            "OMR",
-            "PAB",
-            "PEN",
-            "PGK",
-            "PHP",
-            "PKR",
-            "PLN",
-            "PYG",
-            "QAR",
-            "RON",
-            "RSD",
-            "RUB",
-            "RWF",
-            "SAR",
-            "SBD",
-            "SCR",
-            "SDG",
-            "SEK",
-            "SGD",
-            "SHP",
-            "SLL",
-            "SOS",
-            "SPL",
-            "SRD",
-            "STD",
-            "SVC",
-            "SYP",
-            "SZL",
-            "THB",
-            "TJS",
-            "TMT",
-            "TND",
-            "TOP",
-            "TRY",
-            "TTD",
-            "TVD",
-            "TWD",
-            "TZS",
-            "UAH",
-            "UGX",
-            "USD",
-            "UYU",
-            "UZS",
-            "VEF",
-            "VND",
-            "VUV",
-            "WST",
-            "XAF",
-            "XAG",
-            "XAU",
-            "XCD",
-            "XDR",
-            "XFO",
-            "XFU",
-            "XOF",
-            "XPD",
-            "XPF",
-            "XPT",
-            "YER",
-            "ZAR",
-            "ZMK",
-            "ZMW",
-            "ZWD",
-            "ZWL",
-            "ZWN",
-            "ZWR"
-          ]
+          "$ref" : "#/definitions/Currency"
+
         }
       },
       "required": [
         "name"
       ]
     },
-    "Model 2": {
+    "PostParticipantsNameEndpointsRequest": {
       "type": "object",
       "properties": {
         "type": {
@@ -1456,7 +1309,7 @@
         "value"
       ]
     },
-    "limit": {
+    "Limit": {
       "type": "object",
       "description": "Participant Limit",
       "properties": {
@@ -1480,194 +1333,16 @@
         "value"
       ]
     },
-    "Model 3": {
+    "PostInitialPositionAndLimitsRequest": {
       "type": "object",
       "properties": {
         "currency": {
           "type": "string",
           "description": "Currency code",
-          "enum": [
-            "AED",
-            "AFA",
-            "AFN",
-            "ALL",
-            "AMD",
-            "ANG",
-            "AOA",
-            "AOR",
-            "ARS",
-            "AUD",
-            "AWG",
-            "AZN",
-            "BAM",
-            "BBD",
-            "BDT",
-            "BGN",
-            "BHD",
-            "BIF",
-            "BMD",
-            "BND",
-            "BOB",
-            "BRL",
-            "BSD",
-            "BTN",
-            "BWP",
-            "BYN",
-            "BZD",
-            "CAD",
-            "CDF",
-            "CHF",
-            "CLP",
-            "CNY",
-            "COP",
-            "CRC",
-            "CUC",
-            "CUP",
-            "CVE",
-            "CZK",
-            "DJF",
-            "DKK",
-            "DOP",
-            "DZD",
-            "EEK",
-            "EGP",
-            "ERN",
-            "ETB",
-            "EUR",
-            "FJD",
-            "FKP",
-            "GBP",
-            "GEL",
-            "GGP",
-            "GHS",
-            "GIP",
-            "GMD",
-            "GNF",
-            "GTQ",
-            "GYD",
-            "HKD",
-            "HNL",
-            "HRK",
-            "HTG",
-            "HUF",
-            "IDR",
-            "ILS",
-            "IMP",
-            "INR",
-            "IQD",
-            "IRR",
-            "ISK",
-            "JEP",
-            "JMD",
-            "JOD",
-            "JPY",
-            "KES",
-            "KGS",
-            "KHR",
-            "KMF",
-            "KPW",
-            "KRW",
-            "KWD",
-            "KYD",
-            "KZT",
-            "LAK",
-            "LBP",
-            "LKR",
-            "LRD",
-            "LSL",
-            "LTL",
-            "LVL",
-            "LYD",
-            "MAD",
-            "MDL",
-            "MGA",
-            "MKD",
-            "MMK",
-            "MNT",
-            "MOP",
-            "MRO",
-            "MUR",
-            "MVR",
-            "MWK",
-            "MXN",
-            "MYR",
-            "MZN",
-            "NAD",
-            "NGN",
-            "NIO",
-            "NOK",
-            "NPR",
-            "NZD",
-            "OMR",
-            "PAB",
-            "PEN",
-            "PGK",
-            "PHP",
-            "PKR",
-            "PLN",
-            "PYG",
-            "QAR",
-            "RON",
-            "RSD",
-            "RUB",
-            "RWF",
-            "SAR",
-            "SBD",
-            "SCR",
-            "SDG",
-            "SEK",
-            "SGD",
-            "SHP",
-            "SLL",
-            "SOS",
-            "SPL",
-            "SRD",
-            "STD",
-            "SVC",
-            "SYP",
-            "SZL",
-            "THB",
-            "TJS",
-            "TMT",
-            "TND",
-            "TOP",
-            "TRY",
-            "TTD",
-            "TVD",
-            "TWD",
-            "TZS",
-            "UAH",
-            "UGX",
-            "USD",
-            "UYU",
-            "UZS",
-            "VEF",
-            "VND",
-            "VUV",
-            "WST",
-            "XAF",
-            "XAG",
-            "XAU",
-            "XCD",
-            "XDR",
-            "XFO",
-            "XFU",
-            "XOF",
-            "XPD",
-            "XPF",
-            "XPT",
-            "YER",
-            "ZAR",
-            "ZMK",
-            "ZMW",
-            "ZWD",
-            "ZWL",
-            "ZWN",
-            "ZWR"
-          ]
+          "$ref": "#/definitions/Currency"
         },
         "limit": {
-          "$ref": "#/definitions/limit"
+          "$ref": "#/definitions/Limit"
         },
         "initialPosition": {
           "type": "number",
@@ -1678,191 +1353,11 @@
         "limit"
       ]
     },
-    "Model 4": {
+    "PostParticipantsNameAccountsRequest": {
       "type": "object",
       "properties": {
         "currency": {
-          "type": "string",
-          "description": "Currency code",
-          "enum": [
-            "AED",
-            "AFA",
-            "AFN",
-            "ALL",
-            "AMD",
-            "ANG",
-            "AOA",
-            "AOR",
-            "ARS",
-            "AUD",
-            "AWG",
-            "AZN",
-            "BAM",
-            "BBD",
-            "BDT",
-            "BGN",
-            "BHD",
-            "BIF",
-            "BMD",
-            "BND",
-            "BOB",
-            "BRL",
-            "BSD",
-            "BTN",
-            "BWP",
-            "BYN",
-            "BZD",
-            "CAD",
-            "CDF",
-            "CHF",
-            "CLP",
-            "CNY",
-            "COP",
-            "CRC",
-            "CUC",
-            "CUP",
-            "CVE",
-            "CZK",
-            "DJF",
-            "DKK",
-            "DOP",
-            "DZD",
-            "EEK",
-            "EGP",
-            "ERN",
-            "ETB",
-            "EUR",
-            "FJD",
-            "FKP",
-            "GBP",
-            "GEL",
-            "GGP",
-            "GHS",
-            "GIP",
-            "GMD",
-            "GNF",
-            "GTQ",
-            "GYD",
-            "HKD",
-            "HNL",
-            "HRK",
-            "HTG",
-            "HUF",
-            "IDR",
-            "ILS",
-            "IMP",
-            "INR",
-            "IQD",
-            "IRR",
-            "ISK",
-            "JEP",
-            "JMD",
-            "JOD",
-            "JPY",
-            "KES",
-            "KGS",
-            "KHR",
-            "KMF",
-            "KPW",
-            "KRW",
-            "KWD",
-            "KYD",
-            "KZT",
-            "LAK",
-            "LBP",
-            "LKR",
-            "LRD",
-            "LSL",
-            "LTL",
-            "LVL",
-            "LYD",
-            "MAD",
-            "MDL",
-            "MGA",
-            "MKD",
-            "MMK",
-            "MNT",
-            "MOP",
-            "MRO",
-            "MUR",
-            "MVR",
-            "MWK",
-            "MXN",
-            "MYR",
-            "MZN",
-            "NAD",
-            "NGN",
-            "NIO",
-            "NOK",
-            "NPR",
-            "NZD",
-            "OMR",
-            "PAB",
-            "PEN",
-            "PGK",
-            "PHP",
-            "PKR",
-            "PLN",
-            "PYG",
-            "QAR",
-            "RON",
-            "RSD",
-            "RUB",
-            "RWF",
-            "SAR",
-            "SBD",
-            "SCR",
-            "SDG",
-            "SEK",
-            "SGD",
-            "SHP",
-            "SLL",
-            "SOS",
-            "SPL",
-            "SRD",
-            "STD",
-            "SVC",
-            "SYP",
-            "SZL",
-            "THB",
-            "TJS",
-            "TMT",
-            "TND",
-            "TOP",
-            "TRY",
-            "TTD",
-            "TVD",
-            "TWD",
-            "TZS",
-            "UAH",
-            "UGX",
-            "USD",
-            "UYU",
-            "UZS",
-            "VEF",
-            "VND",
-            "VUV",
-            "WST",
-            "XAF",
-            "XAG",
-            "XAU",
-            "XCD",
-            "XDR",
-            "XFO",
-            "XFU",
-            "XOF",
-            "XPD",
-            "XPF",
-            "XPT",
-            "YER",
-            "ZAR",
-            "ZMK",
-            "ZMW",
-            "ZWD",
-            "ZWL",
-            "ZWN",
-            "ZWR"
-          ]
+          "$ref": "#/definitions/Currency"
         },
         "type": {
           "type": "string",
@@ -1873,7 +1368,7 @@
         "type"
       ]
     },
-    "No amount provided": {
+    "NoAmountProvided": {
       "type": "object",
       "properties": {
         "amount": {
@@ -1886,217 +1381,14 @@
         "currency": {
           "type": "string",
           "description": "Currency code",
-          "enum": [
-            "AED",
-            "AFA",
-            "AFN",
-            "ALL",
-            "AMD",
-            "ANG",
-            "AOA",
-            "AOR",
-            "ARS",
-            "AUD",
-            "AWG",
-            "AZN",
-            "BAM",
-            "BBD",
-            "BDT",
-            "BGN",
-            "BHD",
-            "BIF",
-            "BMD",
-            "BND",
-            "BOB",
-            "BRL",
-            "BSD",
-            "BTN",
-            "BWP",
-            "BYN",
-            "BZD",
-            "CAD",
-            "CDF",
-            "CHF",
-            "CLP",
-            "CNY",
-            "COP",
-            "CRC",
-            "CUC",
-            "CUP",
-            "CVE",
-            "CZK",
-            "DJF",
-            "DKK",
-            "DOP",
-            "DZD",
-            "EEK",
-            "EGP",
-            "ERN",
-            "ETB",
-            "EUR",
-            "FJD",
-            "FKP",
-            "GBP",
-            "GEL",
-            "GGP",
-            "GHS",
-            "GIP",
-            "GMD",
-            "GNF",
-            "GTQ",
-            "GYD",
-            "HKD",
-            "HNL",
-            "HRK",
-            "HTG",
-            "HUF",
-            "IDR",
-            "ILS",
-            "IMP",
-            "INR",
-            "IQD",
-            "IRR",
-            "ISK",
-            "JEP",
-            "JMD",
-            "JOD",
-            "JPY",
-            "KES",
-            "KGS",
-            "KHR",
-            "KMF",
-            "KPW",
-            "KRW",
-            "KWD",
-            "KYD",
-            "KZT",
-            "LAK",
-            "LBP",
-            "LKR",
-            "LRD",
-            "LSL",
-            "LTL",
-            "LVL",
-            "LYD",
-            "MAD",
-            "MDL",
-            "MGA",
-            "MKD",
-            "MMK",
-            "MNT",
-            "MOP",
-            "MRO",
-            "MUR",
-            "MVR",
-            "MWK",
-            "MXN",
-            "MYR",
-            "MZN",
-            "NAD",
-            "NGN",
-            "NIO",
-            "NOK",
-            "NPR",
-            "NZD",
-            "OMR",
-            "PAB",
-            "PEN",
-            "PGK",
-            "PHP",
-            "PKR",
-            "PLN",
-            "PYG",
-            "QAR",
-            "RON",
-            "RSD",
-            "RUB",
-            "RWF",
-            "SAR",
-            "SBD",
-            "SCR",
-            "SDG",
-            "SEK",
-            "SGD",
-            "SHP",
-            "SLL",
-            "SOS",
-            "SPL",
-            "SRD",
-            "STD",
-            "SVC",
-            "SYP",
-            "SZL",
-            "THB",
-            "TJS",
-            "TMT",
-            "TND",
-            "TOP",
-            "TRY",
-            "TTD",
-            "TVD",
-            "TWD",
-            "TZS",
-            "UAH",
-            "UGX",
-            "USD",
-            "UYU",
-            "UZS",
-            "VEF",
-            "VND",
-            "VUV",
-            "WST",
-            "XAF",
-            "XAG",
-            "XAU",
-            "XCD",
-            "XDR",
-            "XFO",
-            "XFU",
-            "XOF",
-            "XPD",
-            "XPF",
-            "XPT",
-            "YER",
-            "ZAR",
-            "ZMK",
-            "ZMW",
-            "ZWD",
-            "ZWL",
-            "ZWN",
-            "ZWR"
-          ]
+          "$ref": "#/definitions/Currency"
         }
       },
       "required": [
         "amount"
       ]
     },
-    "Model 5": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        }
-      }
-    },
-    "extension": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Model%205"
-      }
-    },
-    "extensionList": {
-      "type": "object",
-      "properties": {
-        "extension": {
-          "$ref": "#/definitions/extension"
-        }
-      }
-    },
-    "Model 6": {
+    "Participants": {
       "type": "object",
       "properties": {
         "transferId": {
@@ -2119,10 +1411,10 @@
           "type": "string"
         },
         "amount": {
-          "$ref": "#/definitions/No%20amount%20provided"
+          "$ref": "#/definitions/NoAmountProvided"
         },
         "extensionList": {
-          "$ref": "#/definitions/extensionList"
+          "$ref": "#/definitions/ExtensionList"
         }
       },
       "required": [
@@ -2133,7 +1425,7 @@
         "amount"
       ]
     },
-    "Model 7": {
+    "ParticipantIsActive": {
       "type": "object",
       "properties": {
         "isActive": {
@@ -2145,7 +1437,7 @@
         "isActive"
       ]
     },
-    "Model 8": {
+    "ParticipantLimit": {
       "type": "object",
       "description": "Participant Limit",
       "properties": {
@@ -2168,201 +1460,23 @@
         "alarmPercentage"
       ]
     },
-    "Model 9": {
+    "PutParticipantsNameLimitsRequest": {
       "type": "object",
       "properties": {
         "currency": {
           "type": "string",
           "description": "Currency code",
-          "enum": [
-            "AED",
-            "AFA",
-            "AFN",
-            "ALL",
-            "AMD",
-            "ANG",
-            "AOA",
-            "AOR",
-            "ARS",
-            "AUD",
-            "AWG",
-            "AZN",
-            "BAM",
-            "BBD",
-            "BDT",
-            "BGN",
-            "BHD",
-            "BIF",
-            "BMD",
-            "BND",
-            "BOB",
-            "BRL",
-            "BSD",
-            "BTN",
-            "BWP",
-            "BYN",
-            "BZD",
-            "CAD",
-            "CDF",
-            "CHF",
-            "CLP",
-            "CNY",
-            "COP",
-            "CRC",
-            "CUC",
-            "CUP",
-            "CVE",
-            "CZK",
-            "DJF",
-            "DKK",
-            "DOP",
-            "DZD",
-            "EEK",
-            "EGP",
-            "ERN",
-            "ETB",
-            "EUR",
-            "FJD",
-            "FKP",
-            "GBP",
-            "GEL",
-            "GGP",
-            "GHS",
-            "GIP",
-            "GMD",
-            "GNF",
-            "GTQ",
-            "GYD",
-            "HKD",
-            "HNL",
-            "HRK",
-            "HTG",
-            "HUF",
-            "IDR",
-            "ILS",
-            "IMP",
-            "INR",
-            "IQD",
-            "IRR",
-            "ISK",
-            "JEP",
-            "JMD",
-            "JOD",
-            "JPY",
-            "KES",
-            "KGS",
-            "KHR",
-            "KMF",
-            "KPW",
-            "KRW",
-            "KWD",
-            "KYD",
-            "KZT",
-            "LAK",
-            "LBP",
-            "LKR",
-            "LRD",
-            "LSL",
-            "LTL",
-            "LVL",
-            "LYD",
-            "MAD",
-            "MDL",
-            "MGA",
-            "MKD",
-            "MMK",
-            "MNT",
-            "MOP",
-            "MRO",
-            "MUR",
-            "MVR",
-            "MWK",
-            "MXN",
-            "MYR",
-            "MZN",
-            "NAD",
-            "NGN",
-            "NIO",
-            "NOK",
-            "NPR",
-            "NZD",
-            "OMR",
-            "PAB",
-            "PEN",
-            "PGK",
-            "PHP",
-            "PKR",
-            "PLN",
-            "PYG",
-            "QAR",
-            "RON",
-            "RSD",
-            "RUB",
-            "RWF",
-            "SAR",
-            "SBD",
-            "SCR",
-            "SDG",
-            "SEK",
-            "SGD",
-            "SHP",
-            "SLL",
-            "SOS",
-            "SPL",
-            "SRD",
-            "STD",
-            "SVC",
-            "SYP",
-            "SZL",
-            "THB",
-            "TJS",
-            "TMT",
-            "TND",
-            "TOP",
-            "TRY",
-            "TTD",
-            "TVD",
-            "TWD",
-            "TZS",
-            "UAH",
-            "UGX",
-            "USD",
-            "UYU",
-            "UZS",
-            "VEF",
-            "VND",
-            "VUV",
-            "WST",
-            "XAF",
-            "XAG",
-            "XAU",
-            "XCD",
-            "XDR",
-            "XFO",
-            "XFU",
-            "XOF",
-            "XPD",
-            "XPF",
-            "XPT",
-            "YER",
-            "ZAR",
-            "ZMK",
-            "ZMW",
-            "ZWD",
-            "ZWL",
-            "ZWN",
-            "ZWR"
-          ]
+          "$ref": "#/definitions/Currency"
         },
         "limit": {
-          "$ref": "#/definitions/Model%208"
+          "$ref": "#/definitions/ParticipantLimit"
         }
       },
       "required": [
         "limit"
       ]
     },
-    "Model 10": {
+    "CurrencyIsActive": {
       "type": "object",
       "properties": {
         "isActive": {
@@ -2374,7 +1488,7 @@
         "isActive"
       ]
     },
-    "Model 11": {
+    "RecordFundsOut": {
       "type": "object",
       "properties": {
         "action": {
@@ -2392,7 +1506,7 @@
         "reason"
       ]
     },
-    "Model 12" : {
+    "SettlementModel" : {
       "type" : "object",
       "required" : [ "autoPositionReset", "ledgerAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
       "properties" : {
@@ -2421,9 +1535,8 @@
           "enum" : [ "DEFERRED", "IMMEDIATE" ]
         },
         "currency" : {
-          "type" : "string",
-          "description" : "Currency code",
-          "enum" : [ "AED", "AFA", "AFN", "ALL", "AMD", "ANG", "AOA", "AOR", "ARS", "AUD", "AWG", "AZN", "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND", "BOB", "BOV", "BRL", "BSD", "BTN", "BWP", "BYN", "BYR", "BZD", "CAD", "CDF", "CHE", "CHF", "CHW", "CLF", "CLP", "CNY", "COP", "COU", "CRC", "CUC", "CUP", "CVE", "CZK", "DJF", "DKK", "DOP", "DZD", "EEK", "EGP", "ERN", "ETB", "EUR", "FJD", "FKP", "GBP", "GEL", "GGP", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL", "HRK", "HTG", "HUF", "IDR", "ILS", "IMP", "INR", "IQD", "IRR", "ISK", "JEP", "JMD", "JOD", "JPY", "KES", "KGS", "KHR", "KMF", "KPW", "KRW", "KWD", "KYD", "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LTL", "LVL", "LYD", "MAD", "MDL", "MGA", "MKD", "MMK", "MNT", "MOP", "MRO", "MUR", "MVR", "MWK", "MXN", "MXV", "MYR", "MZN", "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "OMR", "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "PYG", "QAR", "RON", "RSD", "RUB", "RWF", "SAR", "SBD", "SCR", "SDG", "SEK", "SGD", "SHP", "SLL", "SOS", "SPL", "SRD", "SSP", "STD", "SVC", "SYP", "SZL", "THB", "TJS", "TMT", "TND", "TOP", "TRY", "TTD", "TVD", "TWD", "TZS", "UAH", "UGX", "USD", "USN", "UYI", "UYU", "UZS", "VEF", "VND", "VUV", "WST", "XAF", "XAG", "XAU", "XCD", "XDR", "XFO", "XFU", "XOF", "XPD", "XPF", "XPT", "XSU", "XTS", "XUA", "XXX", "YER", "ZAR", "ZMK", "ZMW", "ZWD", "ZWL", "ZWN", "ZWR" ]
+          "$ref": "#/definitions/Currency",
+          "description" : "Currency code"
         },
         "requireLiquidityCheck" : {
           "type" : "boolean",
@@ -2440,7 +1553,7 @@
         }
       }
     },
-    "Model 13" : {
+    "SettlementModelIsActive" : {
       "type" : "object",
       "required" : [ "isActive" ],
       "properties" : {
@@ -2449,6 +1562,464 @@
           "description" : "settlementModel isActive boolean"
         }
       }
+    },
+    "GetTransactionResponse": {
+      "title": "GetTransactionResponse",
+      "type": "object",
+      "description": "GET /transaction/{id} response object",
+      "properties": {
+        "quoteId": {
+          "$ref": "#/definitions/QuoteId",
+          "description": "Common id between the FSPs for the quote object, decided by the Payer FSP. The id should be reused for resends of the same quote for a transaction. A new id should be generated for each new quote for a transaction."
+        },
+        "transactionId": {
+          "$ref": "#/definitions/TransactionId",
+          "description": "Common id (decided by the Payer FSP) between the FSPs for the future transaction object. The actual transaction will be created as part of a successful transfer process. The id should be reused for resends of the same quote for a transaction. A new id should be generated for each new quote for a transaction."
+        },
+        "transactionRequestId": {
+          "type": "string",
+          "description": "Identifies an optional previously-sent transaction request."
+        },
+        "payee": {
+          "$ref": "#/definitions/Party",
+          "description": "Information about the Payee in the proposed financial transaction."
+        },
+        "payer": {
+          "$ref": "#/definitions/Party",
+          "description": "Information about the Payer in the proposed financial transaction."
+        },
+        "amount": {
+          "$ref": "#/definitions/Money",
+          "description": "Depending on amountType. If SEND - The amount the Payer would like to send, that is, the amount that should be withdrawn from the Payer account including any fees. The amount is updated by each participating entity in the transaction. If RECEIVE - The amount the Payee should receive, that is, the amount that should be sent to the receiver exclusive any fees. The amount is not updated by any of the participating entities."
+        },
+        "transactionType": {
+          "$ref": "#/definitions/TransactionType",
+          "description": "Type of transaction for which the quote is requested."
+        },
+        "note": {
+          "type": "string",
+          "description": "A memo that will be attached to the transaction."
+        },
+        "extensionList": {
+          "$ref": "#/definitions/ExtensionList",
+          "description": "Optional extension, specific to deployment."
+        }
+      }
+    },
+    "QuoteId": {
+      "title": "QuoteId",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Quote Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of 1 has been specified due to the regex not being validated on empty strings, this should be removed once the enjoi module has been fixed."
+    },
+    "TransactionId": {
+      "title": "TransactionId",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Transaction Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of 1 has been specified due to the regex not being validated on empty strings, this should be removed once the enjoi module has been fixed."
+    },
+    "Party": {
+      "title": "Party",
+      "type": "object",
+      "description": "Data model for the complex type Party.",
+      "properties": {
+        "partyIdInfo": {
+          "$ref": "#/definitions/PartyIdInfo",
+          "description": "Party Id type, id, sub id or type, and FSP Id."
+        },
+        "merchantClassificationCode": {
+          "type": "string",
+          "description": "Used in the context of Payee Information, where the Payee happens to be a merchant accepting merchant payments."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the Party, could be a real name or a nick name."
+        },
+        "personalInfo": {
+          "$ref": "#/definitions/PartyPersonalInfo",
+          "description": "Personal information used to verify identity of Party such as first, middle, last name and date of birth."
+        }
+      },
+      "required": [
+        "partyIdInfo"
+      ]
+    },
+    "PartyIdInfo": {
+      "title": "PartyIdInfo",
+      "type": "object",
+      "description": "Data model for the complex type PartyIdInfo.",
+      "properties": {
+        "partyIdType": {
+          "$ref": "#/definitions/PartyIdType",
+          "description": "Type of the identifier."
+        },
+        "partyIdentifier": {
+          "$ref": "#/definitions/PartyIdentifier",
+          "description": "An identifier for the Party."
+        },
+        "partySubIdOrType": {
+          "type": "string",
+          "description": "A sub-identifier or sub-type for the Party."
+        },
+        "fspId": {
+          "type": "string",
+          "description": "FSP id (if known)"
+        },
+        "extensionList": {
+          "$ref": "#/definitions/ExtensionList",
+          "description": "Optional extension, specific to deployment."
+        }
+      },
+      "required": [
+        "partyIdType",
+        "partyIdentifier"
+      ]
+    },
+    "PartyIdType": {
+      "title": "PartyIdTypeEnum",
+      "type": "string",
+      "enum": [
+        "MSISDN",
+        "EMAIL",
+        "PERSONAL_ID",
+        "BUSINESS",
+        "DEVICE",
+        "ACCOUNT_ID",
+        "IBAN",
+        "ALIAS"
+      ],
+      "description": "Below are the allowed values for the enumeration - MSISDN An MSISDN (Mobile Station International Subscriber Directory Number, that is, the phone number) is used as reference to a participant. The MSISDN identifier should be in international format according to the ITU-T E.164 standard. Optionally, the MSISDN may be prefixed by a single plus sign, indicating the international prefix. - EMAIL An email is used as reference to a participant. The format of the email should be according to the informational RFC 3696. - PERSONAL_ID A personal identifier is used as reference to a participant. Examples of personal identification are passport number, birth certificate number, and national registration number. The identifier number is added in the PartyIdentifier element. The personal identifier type is added in the PartySubIdOrType element. - BUSINESS A specific Business (for example, an organization or a company) is used as reference to a participant. The BUSINESS identifier can be in any format. To make a transaction connected to a specific username or bill number in a Business, the PartySubIdOrType element should be used. - DEVICE A specific device (for example, a POS or ATM) id connected to a specific business or organization is used as reference to a Party. For referencing a specific device under a specific business or organization, use the PartySubIdOrType element. - ACCOUNT_ID A bank account number or FSP account id should be used as reference to a participant. The ACCOUNT_ID identifier can be in any format, as formats can greatly differ depending on country and FSP. - IBAN A bank account number or FSP account id is used as reference to a participant. The IBAN identifier can consist of up to 34 alphanumeric characters and should be entered without whitespace. - ALIAS An alias is used as reference to a participant. The alias should be created in the FSP as an alternative reference to an account owner. Another example of an alias is a username in the FSP system. The ALIAS identifier can be in any format. It is also possible to use the PartySubIdOrType element for identifying an account under an Alias defined by the PartyIdentifier."
+    },
+    "PartyIdentifier": {
+      "title": "PartyIdentifier",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Identifier of the Party."
+    },
+    "ExtensionList": {
+      "title": "ExtensionList",
+      "type": "object",
+      "description": "Data model for the complex type ExtensionList",
+      "properties": {
+        "extension": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "minItems": 1,
+          "maxItems": 16,
+          "description": "Number of Extension elements"
+        }
+      },
+      "required": [
+        "extension"
+      ]
+    },
+    "Extension": {
+      "title": "Extension",
+      "type": "object",
+      "description": "Data model for the complex type Extension",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Extension key."
+        },
+        "value": {
+          "type": "string",
+          "description": "Extension value."
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ]
+    },
+    "PartyPersonalInfo": {
+      "title": "PartyPersonalInfo",
+      "type": "object",
+      "description": "Data model for the complex type PartyPersonalInfo.",
+      "properties": {
+        "complexName": {
+          "$ref": "#/definitions/PartyComplexName",
+          "description": "First, middle and last name for the Party."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "Date of birth for the Party."
+        }
+      }
+    },
+    "PartyComplexName": {
+      "title": "PartyComplexName",
+      "type": "object",
+      "description": "Data model for the complex type PartyComplexName.",
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "description": "Party’s first name."
+        },
+        "middleName": {
+          "type": "string",
+          "description": "Party’s middle name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Party’s last name."
+        }
+      }
+    },
+    "TransactionType": {
+      "title": "TransactionType",
+      "type": "object",
+      "description": "Data model for the complex type TransactionType.",
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "description": "Deposit, withdrawal, refund, …"
+        },
+        "subScenario": {
+          "type": "string",
+          "description": "Possible sub-scenario, defined locally within the scheme."
+        },
+        "initiator": {
+          "type": "string",
+          "description": "Who is initiating the transaction - Payer or Payee"
+        },
+        "initiatorType": {
+          "type": "string",
+          "description": "Consumer, agent, business, …"
+        },
+        "refundInfo": {
+          "$ref": "#/definitions/Refund",
+          "description": "Extra information specific to a refund scenario. Should only be populated if scenario is REFUND"
+        },
+        "balanceOfPayments": {
+          "type": "string",
+          "description": "Balance of Payments code."
+        }
+      },
+      "required": [
+        "scenario",
+        "initiator",
+        "initiatorType"
+      ]
+    },
+    "Refund": {
+      "title": "Refund",
+      "type": "object",
+      "description": "Data model for the complex type Refund.",
+      "properties": {
+        "originalTransactionId": {
+          "type": "string",
+          "description": "Reference to the original transaction id that is requested to be refunded."
+        },
+        "refundReason": {
+          "type": "string",
+          "description": "Free text indicating the reason for the refund."
+        }
+      },
+      "required": [
+        "originalTransactionId"
+      ]
+    },
+    "Money": {
+      "title": "Money",
+      "type": "object",
+      "description": "Data model for the complex type Money.",
+      "properties": {
+        "currency": {
+          "$ref": "#/definitions/Currency",
+          "description": "Currency of the amount."
+        },
+        "amount": {
+          "$ref": "#/definitions/Amount",
+          "description": "Amount of Money."
+        }
+      },
+      "required": [
+        "currency",
+        "amount"
+      ]
+    },
+    "Currency": {
+      "title": "CurrencyEnum",
+      "description": "The currency codes defined in ISO 4217 as three-letter alphabetic codes are used as the standard naming representation for currencies.",
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 3,
+      "enum": [
+        "AED",
+        "AFN",
+        "ALL",
+        "AMD",
+        "ANG",
+        "AOA",
+        "ARS",
+        "AUD",
+        "AWG",
+        "AZN",
+        "BAM",
+        "BBD",
+        "BDT",
+        "BGN",
+        "BHD",
+        "BIF",
+        "BMD",
+        "BND",
+        "BOB",
+        "BRL",
+        "BSD",
+        "BTN",
+        "BWP",
+        "BYN",
+        "BZD",
+        "CAD",
+        "CDF",
+        "CHF",
+        "CLP",
+        "CNY",
+        "COP",
+        "CRC",
+        "CUC",
+        "CUP",
+        "CVE",
+        "CZK",
+        "DJF",
+        "DKK",
+        "DOP",
+        "DZD",
+        "EGP",
+        "ERN",
+        "ETB",
+        "EUR",
+        "FJD",
+        "FKP",
+        "GBP",
+        "GEL",
+        "GGP",
+        "GHS",
+        "GIP",
+        "GMD",
+        "GNF",
+        "GTQ",
+        "GYD",
+        "HKD",
+        "HNL",
+        "HRK",
+        "HTG",
+        "HUF",
+        "IDR",
+        "ILS",
+        "IMP",
+        "INR",
+        "IQD",
+        "IRR",
+        "ISK",
+        "JEP",
+        "JMD",
+        "JOD",
+        "JPY",
+        "KES",
+        "KGS",
+        "KHR",
+        "KMF",
+        "KPW",
+        "KRW",
+        "KWD",
+        "KYD",
+        "KZT",
+        "LAK",
+        "LBP",
+        "LKR",
+        "LRD",
+        "LSL",
+        "LYD",
+        "MAD",
+        "MDL",
+        "MGA",
+        "MKD",
+        "MMK",
+        "MNT",
+        "MOP",
+        "MRO",
+        "MUR",
+        "MVR",
+        "MWK",
+        "MXN",
+        "MYR",
+        "MZN",
+        "NAD",
+        "NGN",
+        "NIO",
+        "NOK",
+        "NPR",
+        "NZD",
+        "OMR",
+        "PAB",
+        "PEN",
+        "PGK",
+        "PHP",
+        "PKR",
+        "PLN",
+        "PYG",
+        "QAR",
+        "RON",
+        "RSD",
+        "RUB",
+        "RWF",
+        "SAR",
+        "SBD",
+        "SCR",
+        "SDG",
+        "SEK",
+        "SGD",
+        "SHP",
+        "SLL",
+        "SOS",
+        "SPL",
+        "SRD",
+        "STD",
+        "SVC",
+        "SYP",
+        "SZL",
+        "THB",
+        "TJS",
+        "TMT",
+        "TND",
+        "TOP",
+        "TRY",
+        "TTD",
+        "TVD",
+        "TWD",
+        "TZS",
+        "UAH",
+        "UGX",
+        "USD",
+        "UYU",
+        "UZS",
+        "VEF",
+        "VND",
+        "VUV",
+        "WST",
+        "XAF",
+        "XCD",
+        "XDR",
+        "XOF",
+        "XPF",
+        "YER",
+        "ZAR",
+        "ZMW",
+        "ZWD"
+      ]
+    },
+    "Amount": {
+      "title": "Amount",
+      "type": "string",
+      "pattern": "^([0]|([1-9][0-9]{0,17}))([.][0-9]{0,3}[1-9])?$",
+      "description": "The API data type Amount is a JSON String in a canonical format that is restricted by a regular expression for interoperability reasons. This pattern does not allow any trailing zeroes at all, but allows an amount without a minor currency unit. It also only allows four digits in the minor currency unit; a negative value is not allowed. Using more than 18 digits in the major currency unit is not allowed."
     }
   }
 }
