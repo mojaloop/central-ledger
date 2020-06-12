@@ -55,6 +55,7 @@ executors:
   default-machine:
     machine:
       image: ubuntu-1604:201903-01
+
 ##
 # Jobs
 #
@@ -240,7 +241,7 @@ jobs:
       - run:
           name: Install docker dependencies for anchore
           command: |
-            apk add --update py-pip docker python3-dev libffi-dev openssl-dev gcc libc-dev make jq npm
+            apk add --update python3 py3-pip docker python3-dev libffi-dev openssl-dev gcc libc-dev make jq npm
       - run:
           name: Install general dependencies
           command: |
