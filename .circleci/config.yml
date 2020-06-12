@@ -34,6 +34,7 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
             less \
             mailcap
     pip3 install --upgrade pip awscli==1.14.5 s3cmd==2.0.1 python-magic
+    apk -v --purge del py-pip
 
 defaults_license_scanner: &defaults_license_scanner
   name: Install and set up license-scanner
@@ -55,6 +56,7 @@ executors:
   default-machine:
     machine:
       image: ubuntu-1604:201903-01
+
 ##
 # Jobs
 #
