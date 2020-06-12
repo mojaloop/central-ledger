@@ -442,9 +442,9 @@ const fulfil = async (error, messages) => {
           } else {
             if (action === TransferEventAction.REJECT) {
               Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
-              await TransferService.handlePayeeResponse(transferId, payload, action)
-              const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
-              await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
+              const errorMessage = 'action REJECT is not allowed into fulfil handler'
+              Logger.isErrorEnabled && Logger.error(errorMessage)
+              !!span && span.error(errorMessage)
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
             } else { // action === TransferEventAction.ABORT // error-callback request to be processed

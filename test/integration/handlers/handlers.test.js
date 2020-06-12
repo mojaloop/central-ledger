@@ -381,46 +381,46 @@ Test('Handlers test', async handlersTest => {
       test.end()
     })
 
-    await transferFulfilReject.test('update transfer state to ABORTED_REJECTED by ABORT request', async (test) => {
-      const config = Utility.getKafkaConfig(
-        Config.KAFKA_CONFIG,
-        Enum.Kafka.Config.PRODUCER,
-        TransferEventType.TRANSFER.toUpperCase(),
-        TransferEventType.FULFIL.toUpperCase())
-      config.logger = Logger
+    // await transferFulfilReject.test('update transfer state to ABORTED_REJECTED by ABORT request', async (test) => {
+    //   const config = Utility.getKafkaConfig(
+    //     Config.KAFKA_CONFIG,
+    //     Enum.Kafka.Config.PRODUCER,
+    //     TransferEventType.TRANSFER.toUpperCase(),
+    //     TransferEventType.FULFIL.toUpperCase())
+    //   config.logger = Logger
 
-      const producerResponse = await Producer.produceMessage(td.messageProtocolReject, td.topicConfTransferFulfil, config)
+    //   const producerResponse = await Producer.produceMessage(td.messageProtocolReject, td.topicConfTransferFulfil, config)
 
-      const tests = async () => {
-        const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-        const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
-        const payerExpectedPosition = testData.amount.amount - td.transferPayload.amount.amount
-        const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
-        test.equal(producerResponse, true, 'Producer for fulfil published message')
-        test.equal(transfer.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
-        test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Reject ilpFulfilment saved')
-        test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
-        test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
-        test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
-      }
+    //   const tests = async () => {
+    //     const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+    //     const payerCurrentPosition = await ParticipantService.getPositionByParticipantCurrencyId(td.payer.participantCurrencyId) || {}
+    //     const payerExpectedPosition = testData.amount.amount - td.transferPayload.amount.amount
+    //     const payerPositionChange = await ParticipantService.getPositionChangeByParticipantPositionId(payerCurrentPosition.participantPositionId) || {}
+    //     test.equal(producerResponse, true, 'Producer for fulfil published message')
+    //     test.equal(transfer.transferState, TransferInternalState.ABORTED_REJECTED, `Transfer state changed to ${TransferInternalState.ABORTED_REJECTED}`)
+    //     test.equal(transfer.fulfilment, td.fulfilPayload.fulfilment, 'Reject ilpFulfilment saved')
+    //     test.equal(payerCurrentPosition.value, payerExpectedPosition, 'Payer position decremented by transfer amount and updated in participantPosition')
+    //     test.equal(payerPositionChange.value, payerCurrentPosition.value, 'Payer position change value inserted and matches the updated participantPosition value')
+    //     test.equal(payerPositionChange.transferStateChangeId, transfer.transferStateChangeId, 'Payer position change record is bound to the corresponding transfer state change')
+    //   }
 
-      try {
-        await retry(async () => { // use bail(new Error('to break before max retries'))
-          const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
-          if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
-            if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
-          }
-          return tests()
-        }, retryOpts)
-      } catch (err) {
-        Logger.error(err)
-        test.fail(err.message)
-      }
-      test.end()
-    })
+    //   try {
+    //     await retry(async () => { // use bail(new Error('to break before max retries'))
+    //       const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
+    //       if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
+    //         if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
+    //         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+    //       }
+    //       return tests()
+    //     }, retryOpts)
+    //   } catch (err) {
+    //     Logger.error(err)
+    //     test.fail(err.message)
+    //   }
+    //   test.end()
+    // })
 
-    transferFulfilReject.end()
+    // transferFulfilReject.end()
   })
 
   await handlersTest.test('transferPrepareExceedLimit should', async transferPrepareExceedLimit => {
