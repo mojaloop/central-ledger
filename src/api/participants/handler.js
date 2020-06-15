@@ -280,6 +280,8 @@ const getLimitsForAllParticipants = async function (request) {
 
 const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`adjustLimits: params - ${JSON.stringify(request.params)}`)
+  Logger.isDebugEnabled && Logger.debug(`adjustLimits: payload - ${JSON.stringify(request.payload)}`)
   try {
     const result = await ParticipantService.adjustLimits(request.params.name, request.payload)
     const { participantLimit } = result
@@ -294,6 +296,7 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
