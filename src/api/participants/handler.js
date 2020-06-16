@@ -71,6 +71,7 @@ const handleMissingRecord = (entity) => {
 
 const create = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`create: request - ${JSON.stringify(request)}`)
   try {
     const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
     const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
@@ -99,12 +100,14 @@ const create = async function (request, h) {
     participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const createHubAccount = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`createHubAccount: request - ${JSON.stringify(request)}`)
   try {
     // start - To Do move to domain
     const participant = await ParticipantService.getByName(request.params.name)
@@ -144,11 +147,13 @@ const createHubAccount = async function (request, h) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getAll = async function (request) {
+  Logger.isDebugEnabled && Logger.debug(`getAll: request - ${JSON.stringify(request)}`)
   const results = await ParticipantService.getAll()
   const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
   const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
@@ -156,6 +161,7 @@ const getAll = async function (request) {
 }
 
 const getByName = async function (request) {
+  Logger.isDebugEnabled && Logger.debug(`getByName: request - ${JSON.stringify(request)}`)
   const entity = await ParticipantService.getByName(request.params.name)
   handleMissingRecord(entity)
   const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
@@ -165,6 +171,7 @@ const getByName = async function (request) {
 
 const update = async function (request) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`update: request - ${JSON.stringify(request)}`)
   try {
     const updatedEntity = await ParticipantService.update(request.params.name, request.payload)
     if (request.payload.isActive !== undefined) {
@@ -176,22 +183,26 @@ const update = async function (request) {
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
     return entityItem(updatedEntity, ledgerAccountIds)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const addEndpoint = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`addEndpoint: request - ${JSON.stringify(request)}`)
   try {
     await ParticipantService.addEndpoint(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getEndpoint = async function (request) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`getEndpoint: request - ${JSON.stringify(request)}`)
   try {
     if (request.query.type) {
       const result = await ParticipantService.getEndpoint(request.params.name, request.query.type)
@@ -217,22 +228,26 @@ const getEndpoint = async function (request) {
       return endpoints
     }
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const addLimitAndInitialPosition = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`addLimitAndInitialPosition: request - ${JSON.stringify(request)}`)
   try {
     await ParticipantService.addLimitAndInitialPosition(request.params.name, request.payload)
     return h.response().code(201)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getLimits = async function (request) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`getLimits: request - ${JSON.stringify(request)}`)
   try {
     const result = await ParticipantService.getLimits(request.params.name, request.query)
     const limits = []
@@ -250,12 +265,14 @@ const getLimits = async function (request) {
     }
     return limits
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getLimitsForAllParticipants = async function (request) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`getLimitsForAllParticipants: request - ${JSON.stringify(request)}`)
   try {
     const result = await ParticipantService.getLimitsForAllParticipants(request.query)
     const limits = []
@@ -274,12 +291,14 @@ const getLimitsForAllParticipants = async function (request) {
     }
     return limits
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const adjustLimits = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`adjustLimits: request - ${JSON.stringify(request)}`)
   try {
     const result = await ParticipantService.adjustLimits(request.params.name, request.payload)
     const { participantLimit } = result
@@ -294,30 +313,36 @@ const adjustLimits = async function (request, h) {
     }
     return h.response(updatedLimit).code(200)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getPositions = async function (request) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`getPositions: request - ${JSON.stringify(request)}`)
   try {
     return await ParticipantService.getPositions(request.params.name, request.query)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const getAccounts = async function (request) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`getAccounts: request - ${JSON.stringify(request)}`)
   try {
     return await ParticipantService.getAccounts(request.params.name, request.query)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const updateAccount = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`updateAccount: request - ${JSON.stringify(request)}`)
   try {
     const enums = {
       ledgerAccountType: await Enums.getEnums('ledgerAccountType')
@@ -330,17 +355,20 @@ const updateAccount = async function (request, h) {
     }
     return h.response().code(200)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 const recordFunds = async function (request, h) {
   Sidecar.logRequest(request)
+  Logger.isDebugEnabled && Logger.debug(`recordFunds: request - ${JSON.stringify(request)}`)
   try {
     const enums = await Enums.getEnums('all')
     await ParticipantService.recordFundsInOut(request.payload, request.params, enums)
     return h.response().code(202)
   } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }

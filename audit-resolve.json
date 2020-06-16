@@ -69,8 +69,9 @@
       "madeAt": 1591810711608
     },
     "1179|faucet>minimist": {
-      "decision": "postpone",
-      "madeAt": 1591810696982
+      "decision": "ignore",
+      "madeAt": 1592265351417,
+      "expiresAt": 1594857330586
     },
     "1500|npm-audit-resolver>yargs-parser": {
       "decision": "fix",
