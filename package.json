@@ -71,7 +71,9 @@
     "audit:resolve": "SHELL=sh resolve-audit",
     "audit:check": "SHELL=sh check-audit",
     "dep:check": "npx ncu -e 2",
-    "dep:update": "npx ncu -u"
+    "dep:update": "npx ncu -u",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "dependencies": {
     "@hapi/good": "9.0.0",
@@ -112,7 +114,8 @@
     "rc": "1.2.8",
     "require-glob": "3.2.0",
     "uuid4": "2.0.2",
-    "ilp-packet": "2.2.0"
+    "ilp-packet": "2.2.0",
+    "snyk": "^1.342.2"
   },
   "optionalDependencies": {
     "mysql": "2.18.1"
@@ -134,5 +137,6 @@
     "tap-xunit": "2.4.1",
     "tape": "4.13.2",
     "tapes": "4.1.0"
-  }
+  },
+  "snyk": true
 }
