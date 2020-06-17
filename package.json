@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "10.4.4",
+  "version": "10.4.5",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -68,8 +68,8 @@
     "docker:down": "docker-compose -f docker-compose.yml down -v",
     "docker:clean": "docker-compose -f docker-compose.yml down --rmi local",
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json",
-    "audit:resolve": "SHELL=sh resolve-audit",
-    "audit:check": "SHELL=sh check-audit",
+    "audit:resolve": "SHELL=sh resolve-audit --production",
+    "audit:check": "SHELL=sh check-audit --production",
     "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u"
   },
@@ -85,7 +85,7 @@
     "@mojaloop/central-services-health": "10.4.0",
     "@mojaloop/central-services-logger": "10.4.0",
     "@mojaloop/central-services-metrics": "9.5.0",
-    "@mojaloop/central-services-shared": "10.4.3",
+    "@mojaloop/central-services-shared": "10.4.4",
     "@mojaloop/central-services-stream": "9.5.0",
     "@mojaloop/event-sdk": "10.4.0",
     "@mojaloop/forensic-logging-client": "8.3.0",
