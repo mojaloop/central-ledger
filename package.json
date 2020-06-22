@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "10.4.5",
+  "version": "10.5.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -12,6 +12,7 @@
     "Lewis Daly <lewisd@crosslaketech.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
+    "Sam Kummary <sam@modusbox.com>",
     "Steven Oderayi <steven.oderayi@modusbox.com>",
     "Valentin Genev <valentin.genev@modusbox.com>"
   ],
