@@ -89,7 +89,7 @@ const validateDifferentDfsp = (payload) => {
   if (!Config.ENABLE_ON_US_TRANSFERS) {
     const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
     if (!isPayerAndPayeeDifferent) {
-      reasons.push('Payer and Payee should be different')
+      reasons.push('Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme')
       return false
     }
   }
