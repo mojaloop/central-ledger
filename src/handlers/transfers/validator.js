@@ -26,6 +26,8 @@
  * Georgi Logodazhki <georgi.logodazhki@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Sam Kummary <sam@modusbox.com>
+ * Vijaya Kumar Guthi <vijay.guthi@modusbox.com>
 
  --------------
  ******/
