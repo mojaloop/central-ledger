@@ -129,7 +129,7 @@ const endpointTypes = [
   {
     name: 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR',
     description: 'Participant callback URL to which bulk transfer error notifications can be sent'
-  },``
+  },
   {
     name: 'FSPIOP_CALLBACK_URL_AUTHORIZATIONS',
     description: 'Participant callback URL to which authorization requests can be sent'
