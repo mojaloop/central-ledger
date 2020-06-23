@@ -68,8 +68,8 @@
     "docker:down": "docker-compose -f docker-compose.yml down -v",
     "docker:clean": "docker-compose -f docker-compose.yml down --rmi local",
     "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json",
-    "audit:resolve": "SHELL=sh resolve-audit",
-    "audit:check": "SHELL=sh check-audit",
+    "audit:resolve": "SHELL=sh resolve-audit --production",
+    "audit:check": "SHELL=sh check-audit --production",
     "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u"
   },
