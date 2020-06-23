@@ -137,6 +137,10 @@ const endpointTypes = [
   {
     name: 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE',
     description: 'Participant callback URL to which transaction requests can be sent'
+  },
+  {
+    name: 'THIRDPARTY_CALLBACK_URL_TRX_REQ_POST',
+    description: 'Participant callback URL where POST thirdpartyRequests/transactions can be sent'
   }
 ]
 
