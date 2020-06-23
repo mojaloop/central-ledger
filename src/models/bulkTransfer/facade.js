@@ -151,8 +151,8 @@ const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isVa
           })
           await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
         }
-        // TODO: Need to confirm if the bulkTransferStateChangeId is actually returned by knex/mysql
-        const bulkTransferStateChangeId = (await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord).returning('bulkTransferStateChangeId')).pop()
+        const returnedInsertIds = await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord).returning('bulkTransferStateChangeId')
+        const bulkTransferStateChangeId = returnedInsertIds[0]
         const bulkTransferErrorRecord = {
           bulkTransferStateChangeId,
           errorCode: payload.errorInformation.errorCode,

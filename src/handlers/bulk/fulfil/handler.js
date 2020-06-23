@@ -133,7 +133,12 @@ const bulkFulfil = async (error, messages) => {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
         // stream initialization
         const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
-        const indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
+        let indvidualTransfersFulfilStream
+        if (payload.errorInformation) {
+          indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ bulkTransferId }).cursor()
+        } else {
+          indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
+        }
         // enable async/await operations for the stream
         const streamReader = AwaitifyStream.createReader(indvidualTransfersFulfilStream)
         let doc
@@ -144,9 +149,12 @@ const bulkFulfil = async (error, messages) => {
           const bulkTransferAssociationRecord = {
             transferId,
             bulkTransferId: payload.bulkTransferId,
-            bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING
+            bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING,
+            errorCode: payload.errorInformation ? payload.errorInformation.errorCode : undefined,
+            errorDescription: payload.errorInformation ? payload.errorInformation.errorDescription : undefined
           }
           await BulkTransferService.bulkTransferAssociationUpdate(transferId, bulkTransferId, bulkTransferAssociationRecord)
+
           let eventDetail
           if (state === Enum.Transfers.BulkTransferState.INVALID ||
             individualTransferFulfil.errorInformation ||

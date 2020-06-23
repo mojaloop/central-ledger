@@ -47,12 +47,12 @@
       "DISABLED": false
     },
     "CRON": {
-      "DISABLED": false,
+      "DISABLED": true,
       "TIMEXP": "*/10 * * * * *",
       "TIMEZONE": "UTC"
     },
     "TIMEOUT": {
-      "DISABLED": false,
+      "DISABLED": true,
       "TIMEXP": "*/15 * * * * *",
       "TIMEZONE": "UTC"
     }
