@@ -277,12 +277,14 @@ const fulfil = async (error, messages) => {
       : (action === TransferEventAction.REJECT ? Enum.Events.ActionLetter.reject
         : (action === TransferEventAction.ABORT ? Enum.Events.ActionLetter.abort
           : (action === TransferEventAction.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-            : Enum.Events.ActionLetter.unknown)))
+            : (action === TransferEventAction.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
+              : Enum.Events.ActionLetter.unknown))))
     const functionality = action === TransferEventAction.COMMIT ? TransferEventType.NOTIFICATION
       : (action === TransferEventAction.REJECT ? TransferEventType.NOTIFICATION
         : (action === TransferEventAction.ABORT ? TransferEventType.NOTIFICATION
           : (action === TransferEventAction.BULK_COMMIT ? TransferEventType.BULK_PROCESSING
-            : Enum.Events.ActionLetter.unknown)))
+            : (action === TransferEventAction.BULK_ABORT ? TransferEventType.BULK_PROCESSING
+              : Enum.Events.ActionLetter.unknown))))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
@@ -447,7 +449,7 @@ const fulfil = async (error, messages) => {
               !!span && span.error(errorMessage)
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
-            } else { // action === TransferEventAction.ABORT // error-callback request to be processed
+            } else { // action === TransferEventAction.ABORT || action === TransferEventAction.BULK_ABORT // error-callback request to be processed
               Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
               let fspiopError
               const eInfo = payload.errorInformation

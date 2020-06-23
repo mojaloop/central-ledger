@@ -91,7 +91,9 @@ const bulkFulfil = async (error, messages) => {
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
-    const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit : Enum.Events.ActionLetter.unknown
+    const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
+      : (action === Enum.Events.Event.Action.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
+        : Enum.Events.ActionLetter.unknown)
     let params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
@@ -117,7 +119,11 @@ const bulkFulfil = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveBulkTransfer'))
-        state = await BulkTransferService.bulkFulfil(payload)
+        if (payload.errorInformation) {
+          state = await BulkTransferService.bulkFulfilError(payload, payload.errorInformation.errorDescription)
+        } else {
+          state = await BulkTransferService.bulkFulfil(payload)
+        }
       } catch (err) { // TODO: handle insert errors
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal1--${actionLetter}5`))
         Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
@@ -141,12 +147,15 @@ const bulkFulfil = async (error, messages) => {
             bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING
           }
           await BulkTransferService.bulkTransferAssociationUpdate(transferId, bulkTransferId, bulkTransferAssociationRecord)
+          let eventDetail
           if (state === Enum.Transfers.BulkTransferState.INVALID ||
             individualTransferFulfil.errorInformation ||
             !individualTransferFulfil.fulfilment) {
             individualTransferFulfil.transferState = Enum.Transfers.TransferState.ABORTED
+            eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_ABORT }
           } else {
             individualTransferFulfil.transferState = Enum.Transfers.TransferState.COMMITTED
+            eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_COMMIT }
           }
           const dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers[Enum.Http.Headers.GENERAL.CONTENT_TYPE.value])
           const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEventState(message.value.metadata.event.id, Enum.Events.Event.Type.FULFIL, Enum.Events.Event.Action.COMMIT, Enum.Events.EventStatus.SUCCESS.status, Enum.Events.EventStatus.SUCCESS.code, Enum.Events.EventStatus.SUCCESS.description) // TODO: switch action to 'bulk-fulfil' flow
@@ -154,7 +163,6 @@ const bulkFulfil = async (error, messages) => {
             value: Util.StreamingProtocol.createMessage(messageId, headers[Enum.Http.Headers.FSPIOP.DESTINATION], headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, headers, dataUri, { id: transferId })
           }
           params = { message: msg, kafkaTopic, consumer: Consumer, producer: Producer }
-          const eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_COMMIT }
           await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, eventDetail })
           histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
