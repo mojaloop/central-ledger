@@ -94,7 +94,7 @@ const bulkFulfil = async (error, messages) => {
     const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
       : (action === Enum.Events.Event.Action.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
         : Enum.Events.ActionLetter.unknown)
-    let params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
+    const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
@@ -132,47 +132,21 @@ const bulkFulfil = async (error, messages) => {
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'individualTransferFulfils'))
         // stream initialization
-        const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
-        let indvidualTransfersFulfilStream
         if (payload.errorInformation) {
-          indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ bulkTransferId }).cursor()
+          const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
+          for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {
+            individualTransferFulfil.errorInformation = payload.errorInformation
+            await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd)
+          }
         } else {
-          indvidualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
-        }
-        // enable async/await operations for the stream
-        const streamReader = AwaitifyStream.createReader(indvidualTransfersFulfilStream)
-        let doc
-        while ((doc = await streamReader.readAsync()) !== null) {
-          const individualTransferFulfil = doc.payload
-          const transferId = individualTransferFulfil.transferId
-          delete individualTransferFulfil.transferId
-          const bulkTransferAssociationRecord = {
-            transferId,
-            bulkTransferId: payload.bulkTransferId,
-            bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING,
-            errorCode: payload.errorInformation ? payload.errorInformation.errorCode : undefined,
-            errorDescription: payload.errorInformation ? payload.errorInformation.errorDescription : undefined
+          const IndividualTransferFulfilModel = BulkTransferModels.getIndividualTransferFulfilModel()
+          const individualTransfersFulfilStream = IndividualTransferFulfilModel.find({ messageId }).cursor()
+          // enable async/await operations for the stream
+          const streamReader = AwaitifyStream.createReader(individualTransfersFulfilStream)
+          let doc
+          while ((doc = await streamReader.readAsync()) !== null) {
+            await sendIndividualTransfer(message, messageId, kafkaTopic, headers, payload, state, params, doc.payload, histTimerEnd)
           }
-          await BulkTransferService.bulkTransferAssociationUpdate(transferId, bulkTransferId, bulkTransferAssociationRecord)
-
-          let eventDetail
-          if (state === Enum.Transfers.BulkTransferState.INVALID ||
-            individualTransferFulfil.errorInformation ||
-            !individualTransferFulfil.fulfilment) {
-            individualTransferFulfil.transferState = Enum.Transfers.TransferState.ABORTED
-            eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_ABORT }
-          } else {
-            individualTransferFulfil.transferState = Enum.Transfers.TransferState.COMMITTED
-            eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_COMMIT }
-          }
-          const dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers[Enum.Http.Headers.GENERAL.CONTENT_TYPE.value])
-          const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEventState(message.value.metadata.event.id, Enum.Events.Event.Type.FULFIL, Enum.Events.Event.Action.COMMIT, Enum.Events.EventStatus.SUCCESS.status, Enum.Events.EventStatus.SUCCESS.code, Enum.Events.EventStatus.SUCCESS.description) // TODO: switch action to 'bulk-fulfil' flow
-          const msg = {
-            value: Util.StreamingProtocol.createMessage(messageId, headers[Enum.Http.Headers.FSPIOP.DESTINATION], headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, headers, dataUri, { id: transferId })
-          }
-          params = { message: msg, kafkaTopic, consumer: Consumer, producer: Producer }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, eventDetail })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
         }
       } catch (err) { // TODO: handle individual transfers streaming error
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInternal2--${actionLetter}6`))
@@ -184,7 +158,7 @@ const bulkFulfil = async (error, messages) => {
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
         /**
-         * TODO: Following the example for regular transfers, the folloing should ABORT the
+         * TODO: Following the example for regular transfers, the following should ABORT the
          * entire bulk. CAUTION: As of 20191111 this code would also execute when failure
          * reason is "FSPIOP-Source header should match Payee". In this case we should not
          * abort the bulk as we would have accepted non-legitimate source.
@@ -204,6 +178,44 @@ const bulkFulfil = async (error, messages) => {
     histTimerEnd({ success: false, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     throw err
   }
+}
+
+/**
+ * @function sendIndividualTransfer
+ *
+ * @async
+ * @description sends individual transfers to the fulfil handler
+ */
+const sendIndividualTransfer = async (message, messageId, kafkaTopic, headers, payload, state, params, individualTransferFulfil, histTimerEnd) => {
+  const transferId = individualTransferFulfil.transferId
+  delete individualTransferFulfil.transferId
+  const bulkTransferAssociationRecord = {
+    transferId,
+    bulkTransferId: payload.bulkTransferId,
+    bulkProcessingStateId: Enum.Transfers.BulkProcessingState.PROCESSING,
+    errorCode: payload.errorInformation ? payload.errorInformation.errorCode : undefined,
+    errorDescription: payload.errorInformation ? payload.errorInformation.errorDescription : undefined
+  }
+  await BulkTransferService.bulkTransferAssociationUpdate(transferId, payload.bulkTransferId, bulkTransferAssociationRecord)
+
+  let eventDetail
+  if (state === Enum.Transfers.BulkTransferState.INVALID ||
+    individualTransferFulfil.errorInformation ||
+    !individualTransferFulfil.fulfilment) {
+    individualTransferFulfil.transferState = Enum.Transfers.TransferState.ABORTED
+    eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_ABORT }
+  } else {
+    individualTransferFulfil.transferState = Enum.Transfers.TransferState.COMMITTED
+    eventDetail = { functionality: Enum.Events.Event.Type.FULFIL, action: Enum.Events.Event.Action.BULK_COMMIT }
+  }
+  const dataUri = encodePayload(JSON.stringify(individualTransferFulfil), headers[Enum.Http.Headers.GENERAL.CONTENT_TYPE.value])
+  const metadata = Util.StreamingProtocol.createMetadataWithCorrelatedEventState(message.value.metadata.event.id, Enum.Events.Event.Type.FULFIL, Enum.Events.Event.Action.COMMIT, Enum.Events.EventStatus.SUCCESS.status, Enum.Events.EventStatus.SUCCESS.code, Enum.Events.EventStatus.SUCCESS.description) // TODO: switch action to 'bulk-fulfil' flow
+  const msg = {
+    value: Util.StreamingProtocol.createMessage(messageId, headers[Enum.Http.Headers.FSPIOP.DESTINATION], headers[Enum.Http.Headers.FSPIOP.SOURCE], metadata, headers, dataUri, { id: transferId })
+  }
+  params = { message: msg, kafkaTopic, consumer: Consumer, producer: Producer }
+  await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd, eventDetail })
+  histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
 }
 
 /**

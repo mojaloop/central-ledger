@@ -275,6 +275,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
       extensionList = payload.extensionList
       isFulfilment = true
       break
+    case TransferEventAction.BULK_ABORT:
     case TransferEventAction.ABORT:
       state = TransferInternalState.RECEIVED_ERROR
       extensionList = payload.errorInformation.extensionList
