@@ -179,6 +179,9 @@ const bulkProcessing = async (error, messages) => {
       } else if (action === Enum.Events.Event.Action.BULK_ABORT) {
         // TODO: Need to validate `state.status`
         processingStateId = Enum.Transfers.BulkProcessingState.REJECTED
+        completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
         throw fspiopError
@@ -237,7 +240,8 @@ const bulkProcessing = async (error, messages) => {
     if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
       await BulkTransferService.createBulkTransferState({
         bulkTransferId: bulkTransferInfo.bulkTransferId,
-        bulkTransferStateId: bulkTransferState
+        bulkTransferStateId: bulkTransferState,
+        reason: errorDescription || null
       })
     }
 
@@ -315,6 +319,8 @@ const bulkProcessing = async (error, messages) => {
         payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
         if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
           eventDetail.action = Enum.Events.Event.Action.BULK_COMMIT
+        } else if ([Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
+          eventDetail.action = Enum.Events.Event.Action.BULK_ABORT
         }
         await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
