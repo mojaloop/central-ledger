@@ -1133,7 +1133,7 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.test('produce message to position topic when BULK_ABORT validations pass', async (test) => {
+    fulfilTest.test('produce message to position topic when BULK_ABORT message is received', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
