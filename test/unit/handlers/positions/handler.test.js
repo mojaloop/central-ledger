@@ -797,7 +797,7 @@ Test('Position handler', transferHandlerTest => {
       const isReversal = true
       const transferStateChange = {
         transferId: transferInfo.transferId,
-        transferStateId: TransferState.ABORTED
+        transferStateId: TransferState.ABORTED_ERROR
       }
 
       await Consumer.createHandler(topicName, config, command)
