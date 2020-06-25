@@ -277,12 +277,14 @@ const fulfil = async (error, messages) => {
       : (action === TransferEventAction.REJECT ? Enum.Events.ActionLetter.reject
         : (action === TransferEventAction.ABORT ? Enum.Events.ActionLetter.abort
           : (action === TransferEventAction.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-            : Enum.Events.ActionLetter.unknown)))
+            : (action === TransferEventAction.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
+              : Enum.Events.ActionLetter.unknown))))
     const functionality = action === TransferEventAction.COMMIT ? TransferEventType.NOTIFICATION
       : (action === TransferEventAction.REJECT ? TransferEventType.NOTIFICATION
         : (action === TransferEventAction.ABORT ? TransferEventType.NOTIFICATION
           : (action === TransferEventAction.BULK_COMMIT ? TransferEventType.BULK_PROCESSING
-            : Enum.Events.ActionLetter.unknown)))
+            : (action === TransferEventAction.BULK_ABORT ? TransferEventType.BULK_PROCESSING
+              : Enum.Events.ActionLetter.unknown))))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
@@ -399,7 +401,7 @@ const fulfil = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
-      if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
+      if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT, TransferEventAction.BULK_ABORT].includes(action)) {
         Util.breadcrumb(location, { path: 'validationCheck' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
@@ -447,7 +449,7 @@ const fulfil = async (error, messages) => {
               !!span && span.error(errorMessage)
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
-            } else { // action === TransferEventAction.ABORT // error-callback request to be processed
+            } else { // action === TransferEventAction.ABORT || action === TransferEventAction.BULK_ABORT // error-callback request to be processed
               Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
               let fspiopError
               const eInfo = payload.errorInformation
@@ -460,12 +462,12 @@ const fulfil = async (error, messages) => {
                  */
                 fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
                 await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-                const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+                const eventDetail = { functionality: TransferEventType.POSITION, action }
                 await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
                 throw fspiopError
               }
               await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-              const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+              const eventDetail = { functionality: TransferEventType.POSITION, action }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
               throw fspiopError
             }

@@ -122,10 +122,11 @@ const positions = async (error, messages) => {
               : (action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
                 : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
                   : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
-                    : Enum.Events.ActionLetter.unknown)))))))
+                    : (action === Enum.Events.Event.Action.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
+                      : Enum.Events.ActionLetter.unknown))))))))
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
     const eventDetail = { action }
-    if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
+    if (![Enum.Events.Event.Action.BULK_PREPARE, Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
       eventDetail.functionality = Enum.Events.Event.Type.NOTIFICATION
     } else {
       eventDetail.functionality = Enum.Events.Event.Type.BULK_PROCESSING
@@ -175,7 +176,7 @@ const positions = async (error, messages) => {
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
         return true
       }
-    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT].includes(action)) {
+    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.REJECT, Enum.Events.Event.Action.ABORT, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       let transferStateId
@@ -183,7 +184,7 @@ const positions = async (error, messages) => {
       if (action === Enum.Events.Event.Action.REJECT) {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `receivedReject--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED
-      } else { // action === Enum.Events.Event.Action.ABORT
+      } else { // action === Enum.Events.Event.Action.ABORT || action === Enum.Events.Event.Action.BULK_ABORT
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `receivedError--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_ERROR
       }
