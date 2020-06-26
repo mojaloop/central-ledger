@@ -266,6 +266,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
   switch (action) {
     case TransferEventAction.COMMIT:
     case TransferEventAction.BULK_COMMIT:
+    case TransferEventAction.RESERVE:
       state = TransferInternalState.RECEIVED_FULFIL
       extensionList = payload.extensionList
       isFulfilment = true

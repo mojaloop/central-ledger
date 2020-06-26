@@ -41,6 +41,7 @@
 const Logger = require('@mojaloop/central-services-logger')
 const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
+const TransferObjectTransform = require('../../domain/transfer/transform')
 const PositionService = require('../../domain/position')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
@@ -155,7 +156,7 @@ const positions = async (error, messages) => {
           throw fspiopError
         }
       }
-    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
+    } else if (eventType === Enum.Events.Event.Type.POSITION && [Enum.Events.Event.Action.COMMIT, Enum.Events.Event.Action.RESERVE, Enum.Events.Event.Action.BULK_COMMIT].includes(action)) {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: 'commit' }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       if (transferInfo.transferStateId !== Enum.Transfers.TransferInternalState.RECEIVED_FULFIL) {
@@ -171,6 +172,10 @@ const positions = async (error, messages) => {
           transferStateId: Enum.Transfers.TransferState.COMMITTED
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
+        if (action === Enum.Events.Event.Action.RESERVE) {
+          const transfer = await TransferService.getById(transferInfo.transferId)
+          message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
+        }
         await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
         return true
