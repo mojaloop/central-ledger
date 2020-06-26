@@ -449,7 +449,7 @@ const fulfil = async (error, messages) => {
               !!span && span.error(errorMessage)
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
-            } else { // action === TransferEventAction.ABORT // error-callback request to be processed
+            } else { // action === TransferEventAction.ABORT || action === TransferEventAction.BULK_ABORT // error-callback request to be processed
               Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
               let fspiopError
               const eInfo = payload.errorInformation
@@ -462,12 +462,12 @@ const fulfil = async (error, messages) => {
                  */
                 fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
                 await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-                const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+                const eventDetail = { functionality: TransferEventType.POSITION, action }
                 await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
                 throw fspiopError
               }
               await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-              const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+              const eventDetail = { functionality: TransferEventType.POSITION, action }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
               throw fspiopError
             }

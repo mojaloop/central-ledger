@@ -793,6 +793,30 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
+    positionsTest.test('update transferStateChange for BULK_ABORT action', async (test) => {
+      const isReversal = true
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId: TransferState.ABORTED_ERROR
+      }
+
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+
+      const m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      TransferStateChange.saveTransferStateChange.resolves(true)
+      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange).resolves(true)
+      m.value.metadata.event.action = transferEventAction.BULK_ABORT
+      Kafka.proceed.returns(true)
+
+      const result = await allTransferHandlers.positions(null, m)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
     positionsTest.test('Throw error when invalid action is received', async (test) => {
       try {
         await Consumer.createHandler(topicName, config, command)
