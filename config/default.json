@@ -52,7 +52,7 @@
       "TIMEZONE": "UTC"
     },
     "TIMEOUT": {
-      "DISABLED": true,
+      "DISABLED": false,
       "TIMEXP": "*/15 * * * * *",
       "TIMEZONE": "UTC"
     }
