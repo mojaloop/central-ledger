@@ -274,17 +274,19 @@ const fulfil = async (error, messages) => {
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 
     const actionLetter = action === TransferEventAction.COMMIT ? Enum.Events.ActionLetter.commit
-      : (action === TransferEventAction.REJECT ? Enum.Events.ActionLetter.reject
-        : (action === TransferEventAction.ABORT ? Enum.Events.ActionLetter.abort
-          : (action === TransferEventAction.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-            : (action === TransferEventAction.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
-              : Enum.Events.ActionLetter.unknown))))
+      : (action === TransferEventAction.RESERVE ? Enum.Events.ActionLetter.reserve
+        : (action === TransferEventAction.REJECT ? Enum.Events.ActionLetter.reject
+          : (action === TransferEventAction.ABORT ? Enum.Events.ActionLetter.abort
+            : (action === TransferEventAction.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
+              : (action === TransferEventAction.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
+                : Enum.Events.ActionLetter.unknown)))))
     const functionality = action === TransferEventAction.COMMIT ? TransferEventType.NOTIFICATION
-      : (action === TransferEventAction.REJECT ? TransferEventType.NOTIFICATION
-        : (action === TransferEventAction.ABORT ? TransferEventType.NOTIFICATION
-          : (action === TransferEventAction.BULK_COMMIT ? TransferEventType.BULK_PROCESSING
-            : (action === TransferEventAction.BULK_ABORT ? TransferEventType.BULK_PROCESSING
-              : Enum.Events.ActionLetter.unknown))))
+      : (action === TransferEventAction.RESERVE ? TransferEventType.NOTIFICATION
+        : (action === TransferEventAction.REJECT ? TransferEventType.NOTIFICATION
+          : (action === TransferEventAction.ABORT ? TransferEventType.NOTIFICATION
+            : (action === TransferEventAction.BULK_COMMIT ? TransferEventType.BULK_PROCESSING
+              : (action === TransferEventAction.BULK_ABORT ? TransferEventType.BULK_PROCESSING
+                : Enum.Events.ActionLetter.unknown)))))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
@@ -344,22 +346,22 @@ const fulfil = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'handleResend'))
       if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-        if (!isTransferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized2--${actionLetter}3`))
-          const eventDetail = { functionality, action: TransferEventAction.FULFIL_DUPLICATE }
-          /**
-           * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
-           */
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        } else {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized3--${actionLetter}4`))
-          const eventDetail = { functionality, action: TransferEventAction.ABORT_DUPLICATE }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
+        const eventDetail = { functionality, action }
+        if (action !== TransferEventAction.RESERVE) {
+          if (!isTransferError) {
+            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized2--${actionLetter}3`))
+            eventDetail.action = TransferEventAction.FULFIL_DUPLICATE
+            /**
+             * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
+             */
+          } else {
+            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized3--${actionLetter}4`))
+            eventDetail.action = TransferEventAction.ABORT_DUPLICATE
+          }
         }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
       } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
         /**
@@ -401,7 +403,7 @@ const fulfil = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
-      if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT, TransferEventAction.BULK_ABORT].includes(action)) {
+      if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.RESERVE, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT, TransferEventAction.BULK_ABORT].includes(action)) {
         Util.breadcrumb(location, { path: 'validationCheck' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
@@ -434,7 +436,7 @@ const fulfil = async (error, messages) => {
           throw fspiopError
         } else { // validations success
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-          if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
+          if ([TransferEventAction.COMMIT, TransferEventAction.RESERVE, TransferEventAction.BULK_COMMIT].includes(action)) {
             Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
             await TransferService.handlePayeeResponse(transferId, payload, action)
             const eventDetail = { functionality: TransferEventType.POSITION, action }
