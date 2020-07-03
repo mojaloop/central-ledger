@@ -197,7 +197,7 @@ Test('transfer validator', validatorTest => {
 
       const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       test.equal(validationPassed, false)
-      test.deepEqual(reasons, ['Payer and Payee should be different'])
+      test.deepEqual(reasons, ['Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme'])
       test.end()
     })
 
