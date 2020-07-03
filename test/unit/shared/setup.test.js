@@ -5,6 +5,17 @@ const Sinon = require('sinon')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
 
+// run only this test:
+// npx tape test/unit/shared/setup.test.js
+// analyse the output
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\n\n*****************************************************\n')
+  console.error('PROMISE REJECTION BUBBLED OUT FROM THE UNIT TEST')
+  console.error('reason', reason)
+  console.error('promise', promise)
+  console.error('\n\n*****************************************************\n\n')
+})
+
 Test('setup', setupTest => {
   let sandbox
   let uuidStub
@@ -180,7 +191,10 @@ Test('setup', setupTest => {
         test.fail('Should not have successfully created server')
         test.end()
       }).catch(err => {
+        // here we are testing that we got `some` Error
         test.ok(err instanceof Error)
+        // here we are testing is error expected `errorToThrow`
+        test.equal(err, errorToThrow)
         test.end()
       })
     })
