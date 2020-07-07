@@ -26,6 +26,8 @@
  * Georgi Logodazhki <georgi.logodazhki@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Sam Kummary <sam@modusbox.com>
+ * Vijaya Kumar Guthi <vijay.guthi@modusbox.com>
 
  --------------
  ******/
@@ -86,10 +88,12 @@ const validatePositionAccountByNameAndCurrency = async function (participantName
 }
 
 const validateDifferentDfsp = (payload) => {
-  const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
-  if (!isPayerAndPayeeDifferent) {
-    reasons.push('Payer and Payee should be different')
-    return false
+  if (!Config.ENABLE_ON_US_TRANSFERS) {
+    const isPayerAndPayeeDifferent = (payload.payerFsp.toLowerCase() !== payload.payeeFsp.toLowerCase())
+    if (!isPayerAndPayeeDifferent) {
+      reasons.push('Payer FSP and Payee FSP should be different, unless on-us tranfers are allowed by the Scheme')
+      return false
+    }
   }
   return true
 }

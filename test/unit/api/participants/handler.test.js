@@ -117,6 +117,7 @@ Test('Participant', participantHandlerTest => {
     sandbox.stub(Participant)
     sandbox.stub(EnumCached)
     EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
+    Logger.isDebugEnabled = true
     test.end()
   })
 

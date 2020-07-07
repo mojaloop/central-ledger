@@ -169,6 +169,7 @@ const BulkTransferService = {
   getParticipantsById: BulkTransferModel.getParticipantsById,
   bulkPrepare: BulkTransferFacade.saveBulkTransferReceived,
   bulkFulfil: BulkTransferFacade.saveBulkTransferProcessing,
+  bulkFulfilError: BulkTransferFacade.saveBulkTransferErrorProcessing,
   bulkTransferAssociationCreate: BulkTransferAssociationModel.create,
   bulkTransferAssociationUpdate: BulkTransferAssociationModel.update,
   bulkTransferAssociationExists: BulkTransferAssociationModel.exists,

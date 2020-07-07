@@ -97,7 +97,8 @@ const bulkProcessing = async (error, messages) => {
           : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
             : (action === Enum.Events.Event.Action.PREPARE_DUPLICATE ? Enum.Events.ActionLetter.bulkPrepareDuplicate
               : (action === Enum.Events.Event.Action.FULFIL_DUPLICATE ? Enum.Events.ActionLetter.bulkFulfilDuplicate
-                : Enum.Events.ActionLetter.unknown)))))
+                : (action === Enum.Events.Event.Action.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
+                  : Enum.Events.ActionLetter.unknown))))))
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
     const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
@@ -175,6 +176,12 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
+      } else if (action === Enum.Events.Event.Action.BULK_ABORT) {
+        // TODO: Need to validate `state.status`
+        processingStateId = Enum.Transfers.BulkProcessingState.REJECTED
+        completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
         throw fspiopError
@@ -233,7 +240,8 @@ const bulkProcessing = async (error, messages) => {
     if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
       await BulkTransferService.createBulkTransferState({
         bulkTransferId: bulkTransferInfo.bulkTransferId,
-        bulkTransferStateId: bulkTransferState
+        bulkTransferStateId: bulkTransferState,
+        reason: errorDescription || null
       })
     }
 
@@ -279,7 +287,7 @@ const bulkProcessing = async (error, messages) => {
           Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
           return true
         }
-      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
+      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}3`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
         const normalizedKeys = Object.keys(headers).reduce((keys, k) => { keys[k.toLowerCase()] = k; return keys }, {})
@@ -311,6 +319,8 @@ const bulkProcessing = async (error, messages) => {
         payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
         if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
           eventDetail.action = Enum.Events.Event.Action.BULK_COMMIT
+        } else if ([Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
+          eventDetail.action = Enum.Events.Event.Action.BULK_ABORT
         }
         await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

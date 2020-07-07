@@ -122,9 +122,60 @@ const saveBulkTransferProcessing = async (payload, stateReason = null, isValid =
   }
 }
 
+const saveBulkTransferErrorProcessing = async (payload, stateReason = null, isValid = true) => {
+  try {
+    const bulkTransferFulfilmentRecord = {
+      bulkTransferId: payload.bulkTransferId,
+      completedDate: Time.getUTCString(new Date())
+    }
+
+    const state = (isValid ? Enum.Transfers.BulkTransferState.PROCESSING : Enum.Transfers.BulkTransferState.INVALID)
+    const bulkTransferStateChangeRecord = {
+      bulkTransferId: payload.bulkTransferId,
+      bulkTransferStateId: state,
+      reason: stateReason
+    }
+
+    const knex = await Db.getKnex()
+    return await knex.transaction(async (trx) => {
+      try {
+        await knex('bulkTransferFulfilment').transacting(trx).insert(bulkTransferFulfilmentRecord)
+        if (payload.errorInformation.extensionList && payload.errorInformation.extensionList.extension) {
+          const bulkTransferExtensionsRecordList = payload.errorInformation.extensionList.extension.map(ext => {
+            return {
+              bulkTransferId: payload.bulkTransferId,
+              isFulfilment: true,
+              key: ext.key,
+              value: ext.value
+            }
+          })
+          await knex.batchInsert('bulkTransferExtension', bulkTransferExtensionsRecordList).transacting(trx)
+        }
+        const returnedInsertIds = await knex('bulkTransferStateChange').transacting(trx).insert(bulkTransferStateChangeRecord).returning('bulkTransferStateChangeId')
+        const bulkTransferStateChangeId = returnedInsertIds[0]
+        const bulkTransferErrorRecord = {
+          bulkTransferStateChangeId,
+          errorCode: payload.errorInformation.errorCode,
+          errorDescription: payload.errorInformation.errorDescription
+        }
+        await knex('bulkTransferError').transacting(trx).insert(bulkTransferErrorRecord)
+        await trx.commit
+        return state
+      } catch (err) {
+        await trx.rollback
+        throw err
+      }
+    })
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(err)
+    throw err
+  }
+}
+
 const TransferFacade = {
   saveBulkTransferReceived,
-  saveBulkTransferProcessing
+  saveBulkTransferProcessing,
+  saveBulkTransferErrorProcessing
 }
 
 module.exports = TransferFacade
