@@ -134,6 +134,32 @@ Test('SettlementModel', settlementModelHandlerTest => {
       await Handler.create({ payload }, reply)
     })
 
+    handlerTest.test('create should create a continual gross bilateral settlement model and return a 201', async function (test) {
+      const payload = {
+        name: 'CONTINUAL_GROSS',
+        settlementGranularity: 'GROSS',
+        settlementInterchange: 'BILATERAL',
+        settlementDelay: 'CONTINUAL',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true
+      }
+      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(ledgerAccountType))
+      SettlementService.getByName.returns(Promise.resolve(false))
+      const reply = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.equal(statusCode, 201)
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.create({ payload }, reply)
+    })
+
     handlerTest.test('create should fail if the settlement model exists', async function (test) {
       const payload = {
         name: 'IMMEDIATE_GROSS',
