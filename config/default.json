@@ -34,7 +34,7 @@
     "RECONNECT_INTERVAL": 5000
   },
   "MONGODB": {
-    "DISABLED": false,
+    "DISABLED": true,
     "URI": "mongodb://localhost:27017/mlos"
   },
   "ERROR_HANDLING": {
