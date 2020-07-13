@@ -321,7 +321,7 @@ jobs:
       - slack/status:
           webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
           success_message: '*"${CIRCLE_PROJECT_REPONAME}"* - Release \`"${CIRCLE_TAG}"\` \nhttps://github.com/mojaloop/"${CIRCLE_PROJECT_REPONAME}"/releases/tag/"${CIRCLE_TAG}"'
-      
+
   deploy:
     executor: deploy-kube/helm-kube
     steps:
@@ -438,38 +438,39 @@ workflows:
             - audit-licenses
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-versioning-poc-v[0-9]+(\.[0-9]+)*)/
             branches:
               ignore:
                 - /.*/
-      - license-scan:
-          context: org-global
-          requires:
-            - build
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
-            branches:
-              ignore:
-                - /.*/
-      - image-scan:
-          context: org-global
-          requires:
-            - build
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
-            branches:
-              ignore:
-                - /.*/
+      # - license-scan:
+      #     context: org-global
+      #     requires:
+      #       - build
+      #     filters:
+      #       tags:
+      #         only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
+      #       branches:
+      #         ignore:
+      #           - /.*/
+      # - image-scan:
+      #     context: org-global
+      #     requires:
+      #       - build
+      #     filters:
+      #       tags:
+      #         only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
+      #       branches:
+      #         ignore:
+      #           - /.*/
       - publish:
           context: org-global
           requires:
-            - license-scan
-            - image-scan
+            # TODO: reenable - not important for versioning POC
+            # - license-scan
+            # - image-scan
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
+              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-versioning-poc-v[0-9]+(\.[0-9]+)*)/
             branches:
               ignore:
                 - /.*/
