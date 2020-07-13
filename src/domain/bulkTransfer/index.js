@@ -90,7 +90,7 @@ const getBulkTransferById = async (id) => {
         if ((bulkTransfer.bulkTransferStateId === Enum.Transfers.BulkTransferState.ACCEPTED &&
           transfer.bulkProcessingStateId === Enum.Transfers.BulkProcessingState.ACCEPTED) ||
           (bulkTransfer.bulkTransferStateId === Enum.Transfers.BulkTransferState.COMPLETED &&
-          transfer.bulkProcessingStateId > Enum.Transfers.BulkProcessingState.PROCESSING)) {
+            transfer.bulkProcessingStateId > Enum.Transfers.BulkProcessingState.PROCESSING)) {
           payeeIndividualTransfers.push(result)
         }
         return resolve(result)

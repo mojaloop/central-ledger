@@ -38,7 +38,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const Metrics = require('@mojaloop/central-services-metrics')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const BulkTransferService = require('../../../domain/bulkTransfer')
-const TransferObjectTransform = require('../../../domain/transfer/transform')
+const BulkTransferModel = require('../../../models/bulkTransfer/bulkTransfer')
 const Validator = require('../shared/validator')
 const Config = require('../../../lib/config')
 
@@ -52,16 +52,16 @@ const fromSwitch = true
  * @async
  * @description Gets a bulk transfer by id. Gets Kafka config from default.json
  *
- * Calls createHandler to register the handler against the Stream Processing API
+ * Calls createHandler to register the handler against the Stream Processing API.
  *
  * @param {error} error - error thrown if something fails within Kafka
  * @param {array} messages - a list of messages to consume for the relevant topic
  *
- * @returns {object} - Returns a boolean: true if successful, or throws and error if failed
+ * @returns {object} - Returns a boolean: true if successful, or throws an error if failed
  */
 const getBulkTransfer = async (error, messages) => {
   const histTimerEnd = Metrics.getHistogram(
-    'transfer_bulk_get',
+    'bulk_transfer_get',
     'Consume a get bulk transfer message from the kafka topic and process it accordingly',
     ['success', 'fspId']
   ).startTimer()
@@ -84,28 +84,46 @@ const getBulkTransfer = async (error, messages) => {
     const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action: Enum.Events.Event.Action.BULK_GET }
 
     Util.breadcrumb(location, { path: 'validationFailed' })
-    if (!await Validator.validateParticipantByName(message.value.from)) {
+
+    if (!(await Validator.validateParticipantByName(message.value.from)).isValid) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `breakParticipantDoesntExist--${actionLetter}1`))
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, histTimerEnd })
       histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
       return true
     }
-    const bulkTransfer = await BulkTransferService.getByIdLight(bulkTransferId)
-    if (!bulkTransfer) {
+    // TODO: Validate this. Is this sufficient for checking existence of bulk transfer?
+    const bulkTransferLight = await BulkTransferModel.getById(bulkTransferId)
+    if (!bulkTransferLight) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorBulkTransferNotFound--${actionLetter}3`))
-      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_ID_NOT_FOUND, 'Provided Bulk Transfer ID was not found on the server.')
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.BULK_TRANSFER_ID_NOT_FOUND, 'Provided Bulk Transfer ID was not found on the server.')
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
-    if (!await Validator.validateParticipantTransferId(message.value.from, bulkTransferId)) {
+    // The SD says this should be 404 response which I think will not be constent with single transfers
+    // which responds with CLIENT_ERROR instead
+    const participants = BulkTransferService.getParticipantsById(bulkTransferId)
+    if (![participants.payeeFsp, participants.payerFsp].includes(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
+    const isPayeeRequest = participants.payeeFsp === message.value.from
     Util.breadcrumb(location, { path: 'validationPassed' })
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
-    message.value.content.payload = TransferObjectTransform.toFulfil(bulkTransfer)
+    const bulkTransfer = await BulkTransferService.getBulkTransferById(bulkTransferId)
+    let payload = {
+      bulkTransferState: bulkTransfer.bulkTransferStateId
+    }
+    if (bulkTransfer.bulkTransferStateId !== Enum.Transfers.BulkProcessingState.PROCESSING) {
+      payload = {
+        ...payload,
+        completedTimestamp: bulkTransfer.completedDate,
+        individualTransferResults: isPayeeRequest ? bulkTransfer.payeeBulkTransfer.individualTransferResults : bulkTransfer.payerBulkTransfer.individualTransferResults,
+        extensionList: isPayeeRequest ? bulkTransfer.payeeBulkTransfer.extensionList : bulkTransfer.payerBulkTransfer.extensionList
+      }
+    }
+    message.value.content.payload = payload
     await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     return true
