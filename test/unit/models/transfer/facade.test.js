@@ -961,6 +961,92 @@ Test('Transfer facade', async (transferFacadeTest) => {
         }
       })
 
+      await savePayeeTransferResponse.test('return transfer in RECEIVED_ERROR state', async (test) => {
+        try {
+          action = TransferEventAction.BULK_ABORT
+          const record = [{ settlementWindowId: 1 }]
+          transferStateChangeRecord.transferStateId = Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+          const fspiopError = {
+            errorInformation: {
+              errorCode: 1000,
+              errorDescription: 'descr'
+            }
+          }
+          const payload2 = cloneDeep(fspiopError)
+
+          sandbox.stub(Db, 'getKnex')
+          const trxStub = sandbox.stub()
+          trxStub.commit = sandbox.stub()
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+          Db.getKnex.returns(knexStub)
+
+          const builderStub = sandbox.stub()
+          const selectStub = sandbox.stub()
+          const whereStub = sandbox.stub()
+          const orderByStub = sandbox.stub()
+          const firstStub = sandbox.stub()
+
+          builderStub.leftJoin = sandbox.stub()
+          Db.settlementWindow.query.callsArgWith(0, builderStub)
+          Db.settlementWindow.query.returns(record)
+
+          builderStub.leftJoin.returns({
+            select: selectStub.returns({
+              where: whereStub.returns({
+                orderBy: orderByStub.returns({
+                  first: firstStub.returns(record)
+                })
+              })
+            })
+          })
+
+          const insertedTransferStateChange = cloneDeep(transferStateChangeRecord)
+          insertedTransferStateChange.transferStateChangeId = 1
+          const transactingStub = sandbox.stub()
+          const insertStub = sandbox.stub()
+          knexStub.returns({
+            transacting: transactingStub.returns({
+              insert: insertStub,
+              where: whereStub.returns({
+                forUpdate: sandbox.stub().returns({
+                  first: sandbox.stub().returns({
+                    orderBy: sandbox.stub().returns(insertedTransferStateChange)
+                  })
+                })
+              })
+            })
+          })
+
+          const expected = cloneDeep(savePayeeTransferResponseResult)
+          delete expected.transferExtensionRecordsList
+          delete expected.transferFulfilmentRecord
+          expected.transferErrorRecord = {
+            transferId,
+            transferStateChangeId: insertedTransferStateChange.transferStateChangeId,
+            errorCode: fspiopError.errorInformation.errorCode,
+            errorDescription: fspiopError.errorInformation.errorDescription,
+            createdDate: insertedTransferStateChange.createdDate
+          }
+          expected.transferStateChangeRecord.reason = fspiopError.errorInformation.errorDescription
+          expected.transferStateChangeRecord.transferStateChangeId = insertedTransferStateChange.transferStateChangeId
+
+          const response = await TransferFacade.savePayeeTransferResponse(transferId, payload2, action, fspiopError)
+          test.deepEqual(response, expected, 'response matches expected result')
+          test.ok(knexStub.withArgs('transferFulfilment').notCalled, 'knex not called with transferFulfilment')
+          test.ok(knexStub.withArgs('transferExtension').notCalled, 'knex not called with transferExtension')
+          test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
+          test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
+          test.ok(insertStub.withArgs(transferFulfilmentRecord).notCalled, 'insert transferFulfilmentRecord not called')
+          test.ok(insertStub.withArgs(transferStateChangeRecord).notCalled, 'insert transferStateChangeRecord not called')
+          test.end()
+        } catch (err) {
+          Logger.error(`savePayeeTransferResponse failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
       await savePayeeTransferResponse.test('throw an error and rollback', async (test) => {
         try {
           action = TransferEventAction.ABORT
