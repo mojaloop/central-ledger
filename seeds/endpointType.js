@@ -137,6 +137,10 @@ const endpointTypes = [
   {
     name: 'FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE',
     description: 'Participant callback URL to which transaction requests can be sent'
+  },
+  {
+    name: 'FSPIOP_CALLBACK_URL_BULK_QUOTES',
+    description: 'Bulk Quotes callback URL to which put bulkQuotes requests can be sent'
   }
 ]
 

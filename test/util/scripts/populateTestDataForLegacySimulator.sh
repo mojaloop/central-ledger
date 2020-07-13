@@ -102,7 +102,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_POST\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers\"
+    \"value\": \"http://localhost:8444/${FSP}/transfers\"
   }'"
 
   sh -c "curl -X POST \
@@ -111,7 +111,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}\"
+    \"value\": \"http://localhost:8444/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -120,7 +120,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_GET\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+    \"value\": \"http://localhost:8444/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -129,7 +129,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_PUT_ERROR\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}/error\"
+    \"value\": \"http://localhost:8444/${FSP}/participants/{{partyIdType}}/{{partyIdentifier}}/error\"
   }'"
 
   sh -c "curl -X POST \
@@ -138,7 +138,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/participants/{{requestId}}\"
+    \"value\": \"http://localhost:8444/${FSP}/participants/{{requestId}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -147,7 +147,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTICIPANT_BATCH_PUT_ERROR\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}\/participants/{{requestId}}/error\"
+    \"value\": \"http://localhost:8444/${FSP}\/participants/{{requestId}}/error\"
    }'"
 
   sh -c "curl -X POST \
@@ -156,7 +156,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+    \"value\": \"http://localhost:8444/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -165,7 +165,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_PARTIES_PUT_ERROR\",
-    \"value\": \"http://localhost:1080/fsp/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
+    \"value\": \"http://localhost:8444/${FSP}/parties/{{partyIdType}}/{{partyIdentifier}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -174,7 +174,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_PUT\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}\"
+    \"value\": \"http://localhost:8444/${FSP}/transfers/{{transferId}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -183,7 +183,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRANSFER_ERROR\",
-    \"value\": \"http://localhost:1080/${FSP}/transfers/{{transferId}}/error\"
+    \"value\": \"http://localhost:8444/${FSP}/transfers/{{transferId}}/error\"
   }'"
 
   sh -c "curl -X POST \
@@ -192,7 +192,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST\",
-    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers\"
+    \"value\": \"http://localhost:8444/${FSP}/bulkTransfers\"
   }'"
 
   sh -c "curl -X POST \
@@ -201,7 +201,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT\",
-    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}\"
+    \"value\": \"http://localhost:8444/${FSP}/bulkTransfers/{{id}}\"
   }'"
 
   sh -c "curl -X POST \
@@ -210,7 +210,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR\",
-    \"value\": \"http://localhost:1080/${FSP}/bulkTransfers/{{id}}/error\"
+    \"value\": \"http://localhost:8444/${FSP}/bulkTransfers/{{id}}/error\"
   }'"
 
   sh -c "curl -X POST \
@@ -219,7 +219,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_QUOTES\",
-    \"value\": \"http://localhost:1080/${FSP}\"
+    \"value\": \"http://localhost:8444/${FSP}\"
   }'"
 
   sh -c "curl -X POST \
@@ -228,7 +228,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_AUTHORIZATIONS\",
-    \"value\": \"http://localhost:1080/${FSP}\"
+    \"value\": \"http://localhost:8444/${FSP}\"
   }'"
 
   sh -c "curl -X POST \
@@ -237,7 +237,7 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_TRX_REQ_SERVICE\",
-    \"value\": \"http://localhost:1080/${FSP}\"
+    \"value\": \"http://localhost:8444/${FSP}\"
   }'"
 
   sh -c "curl -X POST \
@@ -246,9 +246,8 @@ do
     -H 'Content-Type: application/json' \
     -d '{
     \"type\": \"FSPIOP_CALLBACK_URL_BULK_QUOTES\",
-    \"value\": \"http://localhost:1080\"
+    \"value\": \"http://localhost:8444\"
   }'"
-
 
   echo
   echo "Retrieving EndPoints for '$FSP'"
