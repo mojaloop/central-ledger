@@ -30,7 +30,7 @@ const Joi = require('@hapi/joi')
 const currencyList = require('../../../seeds/currency.js').currencyList
 const settlementGranularityList = require('../../../seeds/settlementGranularity.js').settlementGranularityList
 const settlementInterchangeList = require('../../../seeds/settlementInterchange.js').settlementInterchangeList
-const settlementDelayList = require('../../../seeds/settlementDelay.js').settlementDelayList
+const settlementDelayList = ['IMMEDIATE', 'DEFERRED', 'CONTINUAL']
 const ledgerAccountList = require('../../../seeds/ledgerAccountType.js').ledgerAccountList
 const tags = ['api', 'settlement']
 

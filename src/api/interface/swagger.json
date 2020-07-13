@@ -1532,7 +1532,7 @@
         "settlementDelay" : {
           "type" : "string",
           "description" : "Delay type for the settlement model IMMEDIATE or DEFERRED",
-          "enum" : [ "DEFERRED", "IMMEDIATE" ]
+          "enum" : [ "DEFERRED", "IMMEDIATE", "CONTINUAL" ]
         },
         "currency" : {
           "$ref": "#/definitions/Currency",
