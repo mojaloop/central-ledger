@@ -465,6 +465,7 @@ workflows:
       - publish:
           context: org-global
           requires:
+            - build
             # TODO: reenable - not important for versioning POC
             # - license-scan
             # - image-scan
@@ -472,15 +473,15 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?(\-versioning-poc-v[0-9]+(\.[0-9]+)*)/
             branches:
-              ignore:
+              only:
                 - /.*/
-      - deploy:
-          context: org-global
-          requires:
-            - publish
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?/
-            branches:
-              ignore:
-                - /.*/
+      # - deploy:
+      #     context: org-global
+      #     requires:
+      #       - publish
+      #     filters:
+      #       tags:
+      #         only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?/
+      #       branches:
+      #         ignore:
+      #           - /.*/
