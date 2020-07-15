@@ -423,6 +423,9 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
+      // VERSIONING POC
+      // TODO: make this actually come from the payload
+      quoteId: '12345',
       expirationDate: Time.getUTCString(new Date(payload.expiration))
     }
 

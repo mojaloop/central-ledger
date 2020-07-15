@@ -39,6 +39,10 @@ const getById = async (transferId) => {
 const saveTransfer = async (record) => {
   Logger.isDebugEnabled && Logger.debug('save transfer' + record.toString())
   try {
+    // TODO: remove this hack - this is for demo purposes only!
+    if (!record.quoteId) {
+      record.quoteId = '123456'
+    }
     return Db.transfer.insert(record)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
