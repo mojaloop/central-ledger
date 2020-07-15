@@ -21,6 +21,7 @@
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Lazola Lucas <lazola.lucas@modusbox.com>
+ - Deon Botha <deon.botha@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -75,7 +76,8 @@ module.exports = [
           currency: Joi.string().valid(...currencyList).description('Currency code'),
           requireLiquidityCheck: Joi.boolean().required().description('Liquidity Check boolean'),
           ledgerAccountType: Joi.string().required().valid(...ledgerAccountList).description('Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE'),
-          autoPositionReset: Joi.boolean().required().description('Automatic position reset setting, which determines whether to execute the settlement transfer or not')
+          autoPositionReset: Joi.boolean().required().description('Automatic position reset setting, which determines whether to execute the settlement transfer or not'),
+          settlementAccountType: Joi.string().required().valid(...ledgerAccountList).description('Settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE linked to the settlement account type')
         })
       }
     }
