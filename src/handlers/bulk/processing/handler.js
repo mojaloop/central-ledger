@@ -300,21 +300,30 @@ const bulkProcessing = async (error, messages) => {
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
         const payerParams = Util.clone(params)
         const payeeParams = Util.clone(params)
+        let payerPayload
+        let payeePayload
 
-        const payerPayload = Util.omitNil({
-          bulkTransferId: payerBulkResponse.bulkTransferId,
-          bulkTransferState: payerBulkResponse.bulkTransferState,
-          completedTimestamp: payerBulkResponse.completedTimestamp,
-          extensionList: payerBulkResponse.extensionList
-        })
+        if (action === Enum.Events.Event.Action.BULK_ABORT && params.decodedPayload.errorInformation) {
+          payerPayload = { bulkTransferId: payerBulkResponse.bulkTransferId, errorInformation: params.decodedPayload.errorInformation }
+          payeePayload = { bulkTransferId: payeeBulkResponse.bulkTransferId, errorInformation: params.decodedPayload.errorInformation }
+        } else {
+          payerPayload = Util.omitNil({
+            bulkTransferId: payerBulkResponse.bulkTransferId,
+            bulkTransferState: payerBulkResponse.bulkTransferState,
+            completedTimestamp: payerBulkResponse.completedTimestamp,
+            extensionList: payerBulkResponse.extensionList
+          })
+          payeePayload = Util.omitNil({
+            bulkTransferId: payeeBulkResponse.bulkTransferId,
+            bulkTransferState: payeeBulkResponse.bulkTransferState,
+            completedTimestamp: payeeBulkResponse.completedTimestamp,
+            extensionList: payeeBulkResponse.extensionList
+          })
+        }
+
         const payerMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payerParams.message.value.metadata.type, payerParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         payerParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payerFsp, payerBulkResponse.headers[normalizedKeys[Enum.Http.Headers.FSPIOP.SOURCE]], payerMetadata, payerBulkResponse.headers, payerPayload)
-        const payeePayload = Util.omitNil({
-          bulkTransferId: payeeBulkResponse.bulkTransferId,
-          bulkTransferState: payeeBulkResponse.bulkTransferState,
-          completedTimestamp: payeeBulkResponse.completedTimestamp,
-          extensionList: payeeBulkResponse.extensionList
-        })
+
         const payeeMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payeeParams.message.value.metadata.type, payeeParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
         if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {

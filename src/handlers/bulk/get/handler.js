@@ -101,7 +101,7 @@ const getBulkTransfer = async (error, messages) => {
     }
     // The SD says this should be 404 response which I think will not be constent with single transfers
     // which responds with CLIENT_ERROR instead
-    const participants = BulkTransferService.getParticipantsById(bulkTransferId)
+    const participants = await BulkTransferService.getParticipantsById(bulkTransferId)
     if (![participants.payeeFsp, participants.payerFsp].includes(message.value.from)) {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNotBulkTransferParticipant--${actionLetter}2`))
       const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR)
@@ -111,16 +111,17 @@ const getBulkTransfer = async (error, messages) => {
     const isPayeeRequest = participants.payeeFsp === message.value.from
     Util.breadcrumb(location, { path: 'validationPassed' })
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
-    const bulkTransfer = await BulkTransferService.getBulkTransferById(bulkTransferId)
+    const bulkTransferResult = await BulkTransferService.getBulkTransferById(bulkTransferId)
+    const bulkTransfer = isPayeeRequest ? bulkTransferResult.payeeBulkTransfer : bulkTransferResult.payerBulkTransfer
     let payload = {
-      bulkTransferState: bulkTransfer.bulkTransferStateId
+      bulkTransferState: bulkTransfer.bulkTransferState
     }
-    if (bulkTransfer.bulkTransferStateId !== Enum.Transfers.BulkProcessingState.PROCESSING) {
+    if (bulkTransfer.bulkTransferState !== Enum.Transfers.BulkTransferState.PROCESSING) {
       payload = {
         ...payload,
-        completedTimestamp: bulkTransfer.completedDate,
-        individualTransferResults: isPayeeRequest ? bulkTransfer.payeeBulkTransfer.individualTransferResults : bulkTransfer.payerBulkTransfer.individualTransferResults,
-        extensionList: isPayeeRequest ? bulkTransfer.payeeBulkTransfer.extensionList : bulkTransfer.payerBulkTransfer.extensionList
+        completedTimestamp: bulkTransfer.completedTimestamp,
+        individualTransferResults: bulkTransfer.individualTransferResults,
+        extensionList: bulkTransfer.extensionList
       }
     }
     message.value.content.payload = payload
