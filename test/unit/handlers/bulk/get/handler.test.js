@@ -369,7 +369,19 @@ Test('Bulk Transfer GET handler', getHandlerTest => {
       bulkTransferResult.bulkTransferStateId = Enum.Transfers.BulkProcessingState.PROCESSING
       bulkTransferResult.extensionList = []
       BulkTransferModel.getById.withArgs(bulkTransfer.bulkTransferId).returns(Promise.resolve(bulkTransferResult))
-      BulkTransferService.getBulkTransferById.withArgs(bulkTransfer.bulkTransferId).returns(Promise.resolve(bulkTransferResult))
+      const bulkTransferResult2 = {
+        ...bulkTransferResult,
+        bulkTransferState: 'COMPLETED',
+        payerBulkTransfer: {
+          bulkTransferState: 'COMPLETED',
+          individualTransferResults: []
+        },
+        payeeBulkTransfer: {
+          bulkTransferState: 'COMPLETED',
+          individualTransferResults: []
+        }
+      }
+      BulkTransferService.getBulkTransferById.withArgs(bulkTransfer.bulkTransferId).returns(Promise.resolve(bulkTransferResult2))
 
       try {
         await allBulkTransferHandlers.getBulkTransfer(null, localMessages)
