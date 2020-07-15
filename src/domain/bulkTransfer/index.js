@@ -54,7 +54,7 @@ const getBulkTransferById = async (id) => {
         }
         if (transfer.errorCode) {
           result.errorInformation = {
-            errorCode: transfer.errorCode,
+            errorCode: transfer.errorCode.toString(),
             errorDescription: transfer.errorDescription
           }
         } else {
