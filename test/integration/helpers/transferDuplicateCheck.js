@@ -54,7 +54,8 @@ exports.prepareData = async () => {
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
-      expirationDate: Time.getUTCString(payload.expiration)
+      expirationDate: Time.getUTCString(payload.expiration),
+      quoteId: Uuid(),
     }
 
     const hashSha256 = Crypto.createHash('sha256')
