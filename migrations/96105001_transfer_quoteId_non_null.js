@@ -4,7 +4,7 @@
  * Add an optional quoteId field to the transfer table
  */
 exports.up = async (knex) => {
-  return await knex.schema.hasTable('transfer')
+  return knex.schema.hasTable('transfer')
   .then((exists) =>  {
     if (!exists) {
       return;
@@ -12,10 +12,11 @@ exports.up = async (knex) => {
 
     // TODO: get the proper values for the quoteId from the ilpPacket
     // for demo purposes let's just set them to 12345
-    await knex('transfer')
-      .where({quoteId: null})
-      .update({quoteId: '12345'})
-
+    return knex('transfer')
+      .where({ quoteId: null })
+      .update({ quoteId: '12345' })
+  })
+  .then(() => {
     return knex.schema.table('transfer', t => {
       t.string('quoteId', 36).notNullable().alter()
     })
