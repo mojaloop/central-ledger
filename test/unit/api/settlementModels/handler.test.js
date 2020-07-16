@@ -190,12 +190,14 @@ Test('SettlementModel', settlementModelHandlerTest => {
         requireLiquidityCheck: true,
         type: 'POSITION',
         autoPositionReset: true,
-        ledgerAccountType: 'INVALID',
-        settlementAccountType: 'INVALID'
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
       }
 
-      SettlementService.getLedgerAccountTypeName.withArgs(payload.ledgerAccountType).returns(Promise.resolve(true))
-      SettlementService.getLedgerAccountTypeName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
+      // await SettlementService.getLedgerAccountTypeName.withArgs(payload.ledgerAccountType).returns(Promise.resolve(true))
+      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(true))
+      await SettlementService.getLedgerAccountTypeName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
+
       try {
         await Handler.create({ payload })
         test.fail('Error not thrown')
