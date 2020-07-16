@@ -190,16 +190,18 @@ Test('SettlementModel', settlementModelHandlerTest => {
         requireLiquidityCheck: true,
         type: 'POSITION',
         autoPositionReset: true,
-        ledgerAccountType: 'INVALID'
+        ledgerAccountType: 'INVALID',
+        settlementAccountType: 'INVALID'
       }
 
       SettlementService.getLedgerAccountTypeName.withArgs(payload.ledgerAccountType).returns(Promise.resolve(true))
+      SettlementService.getLedgerAccountTypeName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
       try {
         await Handler.create({ payload })
         test.fail('Error not thrown')
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'Settlement account typeundefined was not found')
+        test.equal(e.message, 'Ledger account type was not found')
         test.end()
       }
     })

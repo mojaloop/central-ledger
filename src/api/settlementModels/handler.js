@@ -111,7 +111,7 @@ const create = async function (request, h) {
     }
     const settlementAccountType = await SettlementService.getLedgerAccountTypeName(request.payload.settlementAccountType)
     if (!settlementAccountType) {
-      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Settlement account type' + request.payload.settlementAccountType + ' was not found')
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found')
     }
     const settlementModelExist = await SettlementService.getByName(request.payload.name)
     if (settlementModelExist) {
