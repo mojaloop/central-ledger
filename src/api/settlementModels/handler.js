@@ -117,7 +117,7 @@ const create = async function (request, h) {
     if (settlementModelExist) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Settlement Model already exists')
     } else {
-      await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId, settlementAccountType.settlementAccountTypeId, request.payload.autoPositionReset)
+      await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, request.payload.autoPositionReset)
       return h.response().code(201)
     }
   } catch (err) {
