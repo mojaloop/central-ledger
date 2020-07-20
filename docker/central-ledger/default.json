@@ -170,6 +170,29 @@
               "auto.offset.reset": "earliest"
             }
           }
+        },
+        "GET": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-bulk-get",
+              "group.id": "cl-group-bulk-get",
+              "metadata.broker.list": "localhost:29092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
         }
       },
       "TRANSFER": {
