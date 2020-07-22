@@ -62,6 +62,7 @@ const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
 }).map(currentValue => {
   return currentValue.name
 }).sort()
+
 const seed = async function (knex) {
   try {
     return await knex('ledgerAccountType').insert(ledgerAccountTypes)

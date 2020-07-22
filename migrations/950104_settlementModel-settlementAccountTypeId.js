@@ -31,34 +31,39 @@
 'use strict'
 
 exports.up = async (knex) => {
-  await knex.schema.hasTable('settlementModel').then(async function(exists) {
-    if (exists) {
-      await knex.schema.alterTable('settlementModel', (t) => {
-        t.integer('settlementAccountTypeId').defaultTo(null)
-      })
-      await knex.transaction(async (trx) => {
-        try {
-          await knex.select('s.settlementModelId', 's.name', 'lat.name AS latName')
-            .from('settlementModel AS s')
-            .transacting(trx)
-            .innerJoin('ledgerAccountType as lat', 's.ledgerAccountTypeId', 'lat.ledgerAccountTypeId')
-            .then(async (models) => {
-              for (const model of models) {
-                let settlementAccountName
-                if (model.latName === 'POSITION') {
-                  settlementAccountName = 'SETTLEMENT'
-                } else {
-                  settlementAccountName = model.latName + '_SETTLEMENT'
-                }
-                await knex('settlementModel').transacting(trx).update({ settlementAccountTypeId: knex('ledgerAccountType').select('ledgerAccountTypeId').where('name', settlementAccountName) })
-                  .where('settlementModelId', model.settlementModelId)
+  await knex.schema.hasTable('settlementModel').then(async function(tableExists) {
+    if (tableExists) {
+      await knex.schema.hasColumn('settlementModel', 'settlementAccountTypeId')
+        .then(async (columnExists) => {
+          if (!columnExists){
+            await knex.schema.alterTable('settlementModel', (t) => {
+              t.integer('settlementAccountTypeId').defaultTo(null)
+            })
+            await knex.transaction(async (trx) => {
+              try {
+                await knex.select('s.settlementModelId', 's.name', 'lat.name AS latName')
+                  .from('settlementModel AS s')
+                  .transacting(trx)
+                  .innerJoin('ledgerAccountType as lat', 's.ledgerAccountTypeId', 'lat.ledgerAccountTypeId')
+                  .then(async (models) => {
+                    for (const model of models) {
+                      let settlementAccountName
+                      if (model.latName === 'POSITION') {
+                        settlementAccountName = 'SETTLEMENT'
+                      } else {
+                        settlementAccountName = model.latName + '_SETTLEMENT'
+                      }
+                      await knex('settlementModel').transacting(trx).update({ settlementAccountTypeId: knex('ledgerAccountType').select('ledgerAccountTypeId').where('name', settlementAccountName) })
+                        .where('settlementModelId', model.settlementModelId)
+                    }
+                  })
+                await trx.commit
+              } catch (e) {
+                await trx.rollback
               }
             })
-          await trx.commit
-        } catch (e) {
-          await trx.rollback
-        }
-      })
+          }
+        })
       await knex.schema.alterTable('settlementModel', (t) => {
         t.integer('settlementAccountTypeId').alter().notNullable()
       })
