@@ -27,8 +27,6 @@
 const LedgerAccountTypesService = require('../../domain/ledgerAccountTypes')
 const Sidecar = require('../../lib/sidecar')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Util = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
 
 const getAll = async function () {
   return LedgerAccountTypesService.getAll()
@@ -53,6 +51,6 @@ async function create (request, h) {
 module.exports = {
   create,
   // getByName,
-  getAll,
+  getAll
   // update
 }

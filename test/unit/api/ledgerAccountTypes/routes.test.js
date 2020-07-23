@@ -24,40 +24,30 @@
  ******/
 'use strict'
 
-const Handler = require('./handler')
-const Joi = require('@hapi/joi')
-const tags = ['api', 'ledgerAccountTypes']
+const Test = require('tapes')(require('tape'))
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/api/routes')
 
-module.exports = [
-  {
-    method: 'GET',
-    path: '/ledgerAccountTypes',
-    handler: Handler.getAll,
-    options: {
-      tags,
-      description: 'Get all ledger Account types'
+Test('/ledgerAccountTypes router ', async ledgerAccountTypesRoutesTest => {
+  ledgerAccountTypesRoutesTest.test('should have the routes', async function (test) {
+    const server = await Base.setup(AdminRoutes)
 
-    }
-  },
-  {
-    method: 'POST',
-    path: '/ledgerAccountTypes',
-    handler: Handler.create,
-    options: {
-      tags,
-      description: 'Create a new ledger account type',
-      payload: {
-        allow: ['application/json'],
-        failAction: 'error'
-      },
-      validate: {
-        payload: Joi.object({
-          name: Joi.string().alphanum().min(2).max(30).required().description('Name of the ledger account type'),
-          description: Joi.string().required().description('The description of the ledger account type'),
-          isActive: Joi.boolean().required().description('Determines whether this ledger account type is active or not'),
-          isSettleable: Joi.boolean().required().description('Determines whether this ledger account type is settleable or not')
-        })
-      }
-    }
-  }
-]
+    let req = Base.buildRequest({
+      url: '/ledgerAccountTypes',
+      method: 'POST'
+    })
+    let res = await server.inject(req)
+    test.ok(res.statusCode, 400, 'should have POST /ledgerAccountTypes route')
+    req = Base.buildRequest({
+      url: '/ledgerAccountTypes',
+      method: 'GET'
+    })
+    res = await server.inject(req)
+    test.ok(res.statusCode, 500, 'should have GET /ledgerAccountTypes route')
+
+    await server.stop()
+    test.end()
+  })
+
+  ledgerAccountTypesRoutesTest.end()
+})
