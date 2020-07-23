@@ -19,7 +19,11 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- - Claudio Viola <claudio.viola@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Valentin Genev <valentin.genev@modusbox.com>
+ * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
 'use strict'
