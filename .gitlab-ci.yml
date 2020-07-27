@@ -32,7 +32,6 @@ Build:
 # Execute unit tests
 Unit Test:
   stage: test
-  when: manual
   image: node:12.16.0-alpine
   script:
     - *defaults_Dependencies
