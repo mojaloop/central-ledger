@@ -36,20 +36,20 @@ Unit Test:
   image: node:12.16.0-alpine
   script:
     - *defaults_Dependencies
-    - cd $(npm root -g)/npm
-    - npm install --no-save github:interledgerjs/five-bells-ledger-api-tests
+    # - cd $(npm root -g)/npm
+    # - npm install --no-save github:interledgerjs/five-bells-ledger-api-tests
     - npm install
-    - apk del build-dependencies
-    - mkdir -p ./test/results
-    - npm install -g tape tap-xunit
-    - npm install -g tapes
-    - npm -s run test:xunit > ./test/results/tape.xml
-  artifacts:
-    paths:
-      - ./test/results/*.*
-    reports:
-      junit:
-        - ./test/results/tape.xml
+    # - apk del build-dependencies
+    # - mkdir -p ./test/results
+    # - npm install -g tape tap-xunit
+    # - npm install -g tapes
+    - npm -s run test:coverage-check
+  # artifacts:
+  #   paths:
+  #     - ./test/results/*.*
+  #   reports:
+  #     junit:
+  #       - ./test/results/tape.xml
 
 
 # Add an imagepullsecret and configure the service account to use it
@@ -139,4 +139,4 @@ Deploy to Dev:
 
   only:
     refs:
-      - feature/OTC
+      - feature/OTC-736-gitlab-ci-cd-central-settlement
