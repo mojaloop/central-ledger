@@ -138,4 +138,4 @@ Deploy to Dev:
 
   only:
     refs:
-      - feature/OTC-736-gitlab-ci-cd-central-settlement
+      - feature/OTC
