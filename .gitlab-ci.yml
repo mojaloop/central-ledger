@@ -116,8 +116,6 @@ Deploy to Dev:
     - |
       helm upgrade mojaloop ./tips-helm-repo/tips/ \
       --reuse-values \
-      --set centralsettlement.image.repository=$CI_REGISTRY_IMAGE \
-      --set centralsettlement.image.tag=$IMAGE_TAG
       --set central.centralledger.centralledger-service.containers.api.image.repository=$CI_REGISTRY_IMAGE \
       --set central.centralledger.centralledger-service.containers.api.image.tag=$IMAGE_TAG \
       --set central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.repository=$CI_REGISTRY_IMAGE \
