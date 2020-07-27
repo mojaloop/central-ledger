@@ -28,6 +28,7 @@
  - Deon Botha <deon.botha@modusbox.com>
  --------------
  ******/
+
 'use strict'
 
 exports.up = async (knex) => {
@@ -62,11 +63,12 @@ exports.up = async (knex) => {
                 await trx.rollback
               }
             })
+            await knex.schema.alterTable('settlementModel', (t) => {
+              t.integer('settlementAccountTypeId').alter().notNullable()
+              t.foreign('settlementAccountTypeId').references('ledgerAccountTypeId').inTable('ledgerAccountType')
+            })
           }
         })
-      await knex.schema.alterTable('settlementModel', (t) => {
-        t.integer('settlementAccountTypeId').alter().notNullable()
-      })
     }
   })
 }

@@ -26,10 +26,22 @@
  'use strict'
 
 /* transferParticipantStatechange has been deprecated */
-exports.up = async (knex, Promise) => {
+exports.up = async (knex) => {
   return knex.schema.dropTableIfExists('transferParticipantStateChange')
 }
 
-exports.down = function(knex, Promise) {
-  return knex.schema.dropTableIfExists('transferParticipantStateChange')
+exports.down = async function(knex, Promise) {
+  return await knex.schema.hasTable('transferParticipantStateChange').then(function(exists) {
+    if (!exists) {
+      return knex.schema.createTable('transferParticipantStateChange', (t) => {
+        t.bigIncrements('transferParticipantStateChangeId').primary().notNullable()
+        t.bigInteger('transferParticipantId').notNullable().unsigned()
+        t.foreign('transferParticipantId','tt_transferParticipantId_fk').references('transferParticipantId').inTable('transferParticipant')
+        t.string('settlementWindowStateId', 50)
+        t.foreign('settlementWindowStateId').references('settlementWindowStateId').inTable('settlementWindowState')
+        t.string('reason', 512).defaultTo(null).nullable()
+        t.dateTime('createdDate').defaultTo(knex.fn.now()).notNullable()
+      })
+    }
+  })
 }

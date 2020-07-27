@@ -53,7 +53,7 @@ const ledgerAccountTypes = [
     isSettleable: 1
   },
   {
-    name: 'INTERCHANGE_FEE_SETTLEMENT',
+    name: 'INTERCHANGE_FEE_SETTLEMENT.',
     description: 'Settlement account linked to the interchange fees account'
   }
 ]
