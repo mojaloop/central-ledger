@@ -19,43 +19,45 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
- * Claudio Viola <claudio.viola@modusbox.com>
+ - Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
 'use strict'
 
-const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Handler = require('./handler')
+const Joi = require('@hapi/joi')
+const tags = ['api', 'ledgerAccountTypes']
 
-exports.getLedgerAccountByName = async (name) => {
-  try {
-    return await Db.ledgerAccountType.findOne({ name })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
+module.exports = [
+  {
+    method: 'GET',
+    path: '/ledgerAccountTypes',
+    handler: Handler.getAll,
+    options: {
+      tags,
+      description: 'Get all ledger Account types'
 
-exports.create = async (name, description, isActive, isSettleable) => {
-  try {
-    return await Db.ledgerAccountType.insert({
-      name,
-      description,
-      isActive,
-      isSettleable
-    })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  },
+  {
+    method: 'POST',
+    path: '/ledgerAccountTypes',
+    handler: Handler.create,
+    options: {
+      tags,
+      description: 'Create a new ledger account type',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: Joi.object({
+          name: Joi.string().alphanum().min(2).max(30).required().description('Name of the ledger account type'),
+          description: Joi.string().required().description('The description of the ledger account type'),
+          isActive: Joi.boolean().required().description('Determines whether this ledger account type is active or not'),
+          isSettleable: Joi.boolean().required().description('Determines whether this ledger account type is settleable or not')
+        })
+      }
+    }
   }
-}
-
-exports.getAll = async () => {
-  try {
-    return await Db.ledgerAccountType.find({ })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
+]

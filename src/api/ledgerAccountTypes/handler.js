@@ -19,43 +19,38 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
- * Claudio Viola <claudio.viola@modusbox.com>
+ - Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
 'use strict'
 
-const Db = require('../../lib/db')
+const LedgerAccountTypesService = require('../../domain/ledgerAccountTypes')
+const Sidecar = require('../../lib/sidecar')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.getLedgerAccountByName = async (name) => {
+const getAll = async function () {
+  return LedgerAccountTypesService.getAll()
+}
+
+async function create (request, h) {
+  Sidecar.logRequest(request)
   try {
-    return await Db.ledgerAccountType.findOne({ name })
+    const ledgerAccountTypeExist = await LedgerAccountTypesService.getByName(request.payload.name)
+    if (ledgerAccountTypeExist) {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Ledger Account Type already exists')
+    } else {
+      const body = request.payload
+      await LedgerAccountTypesService.create(body.name, body.description, body.isActive, body.isSettleable)
+      return h.response().code(201)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-exports.create = async (name, description, isActive, isSettleable) => {
-  try {
-    return await Db.ledgerAccountType.insert({
-      name,
-      description,
-      isActive,
-      isSettleable
-    })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-exports.getAll = async () => {
-  try {
-    return await Db.ledgerAccountType.find({ })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
+module.exports = {
+  create,
+  // getByName,
+  getAll
+  // update
 }

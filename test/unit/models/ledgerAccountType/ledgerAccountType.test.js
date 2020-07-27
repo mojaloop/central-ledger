@@ -68,7 +68,9 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     sandbox = Sinon.createSandbox()
     Db.ledgerAccountType = {
       findOne: sandbox.stub(),
-      destroy: sandbox.stub()
+      destroy: sandbox.stub(),
+      insert: sandbox.stub(),
+      find: sandbox.stub()
     }
     Db.participantCurrency = {
       findOne: sandbox.stub(),
@@ -126,6 +128,86 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       assert.end()
     } catch (err) {
       assert.fail('Error is thrown' + err)
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('create a ledger Account type', async (assert) => {
+    const ledgerAccountType = {
+      name: 'POSITION',
+      description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+      isActive: 1,
+      isSettleable: true
+    }
+
+    try {
+      Db.ledgerAccountType.insert.resolves(ledgerAccountType)
+      const result = await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
+      assert.equal(Db.ledgerAccountType.insert.callCount, 1, 'should call the model create function')
+      assert.deepEqual(Db.ledgerAccountType.insert.lastCall.args[0], ledgerAccountType, 'should call the model with the right arguments')
+      assert.deepEqual(result, ledgerAccountType)
+      assert.end()
+    } catch (err) {
+      assert.fail('should not have thrown an error: ' + err)
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('create a ledger Account type when the db fails', async (assert) => {
+    const ledgerAccountType = {
+      name: 'POSITION',
+      description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+      isActive: 1,
+      isSettelable: true
+    }
+    try {
+      Db.ledgerAccountType.insert.throws(new Error())
+      await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
+      assert.fail('should have thrown an error')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error, 'should throw an error')
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('getAll', async (assert) => {
+    const ledgerAccountTypes = [
+      {
+        name: 'POSITION',
+        description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+        isActive: 1,
+        isSettleable: true
+      },
+      {
+        name: 'INTERCHANGE_FEE_SETTLEMENT',
+        description: 'settlement account for interchange fees',
+        isActive: 1,
+        isSettleable: true
+      }
+    ]
+
+    try {
+      Db.ledgerAccountType.find.resolves(ledgerAccountTypes)
+      const result = await Model.getAll()
+      assert.equal(Db.ledgerAccountType.find.callCount, 1, 'should call the model create function')
+      assert.deepEqual(Db.ledgerAccountType.find.lastCall.args[0], {}, 'should call the model with the right arguments: empty object')
+      assert.deepEqual(result, ledgerAccountTypes)
+      assert.end()
+    } catch (err) {
+      assert.fail('should not have thrown an error: ' + err)
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('getAll when the db fails', async (assert) => {
+    try {
+      Db.ledgerAccountType.find.throws(new Error())
+      await Model.getAll()
+      assert.fail('should have thrown an error')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error, 'should throw an error')
       assert.end()
     }
   })

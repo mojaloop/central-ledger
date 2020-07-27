@@ -19,43 +19,35 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
- * Claudio Viola <claudio.viola@modusbox.com>
+ - Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
 'use strict'
 
-const Db = require('../../lib/db')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Test = require('tapes')(require('tape'))
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/api/routes')
 
-exports.getLedgerAccountByName = async (name) => {
-  try {
-    return await Db.ledgerAccountType.findOne({ name })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
+Test('/ledgerAccountTypes router ', async ledgerAccountTypesRoutesTest => {
+  ledgerAccountTypesRoutesTest.test('should have the routes', async function (test) {
+    const server = await Base.setup(AdminRoutes)
 
-exports.create = async (name, description, isActive, isSettleable) => {
-  try {
-    return await Db.ledgerAccountType.insert({
-      name,
-      description,
-      isActive,
-      isSettleable
+    let req = Base.buildRequest({
+      url: '/ledgerAccountTypes',
+      method: 'POST'
     })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
+    let res = await server.inject(req)
+    test.ok(res.statusCode, 400, 'should have POST /ledgerAccountTypes route')
+    req = Base.buildRequest({
+      url: '/ledgerAccountTypes',
+      method: 'GET'
+    })
+    res = await server.inject(req)
+    test.ok(res.statusCode, 500, 'should have GET /ledgerAccountTypes route')
 
-exports.getAll = async () => {
-  try {
-    return await Db.ledgerAccountType.find({ })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
+    await server.stop()
+    test.end()
+  })
+
+  ledgerAccountTypesRoutesTest.end()
+})

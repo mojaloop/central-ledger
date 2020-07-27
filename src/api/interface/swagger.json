@@ -1155,6 +1155,46 @@
         }
       }
     },
+    "/ledgerAccountTypes" : {
+      "get" : {
+        "summary": "View all ledger account types",
+        "tags" : [ "ledgerAccountTypes" ],
+        "operationId" : "getLedgerAccountTypes",
+        "parameters" : [ ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "array",
+              "items": {
+                "$ref" : "#/definitions/LedgerAccountType"
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "summary": "Create a ledgerAccount type model",
+        "tags" : [ "ledgerAccountType" ],
+        "operationId" : "postLedgerAccountType",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/LedgerAccountType"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        }
+      }
+    },
     "/settlementModels" : {
       "get" : {
         "summary": "View all settlement models",
@@ -1505,6 +1545,33 @@
       "required": [
         "reason"
       ]
+    },
+    "LedgerAccountType": {
+      "type" : "object",
+      "required" : [ "name", "description", "isActive", "isSettleable" ],
+      "properties" : {
+        "name" : {
+          "type" : "string",
+          "description" : "Name of the ledger account type",
+          "minLength" : 2,
+          "maxLength" : 30,
+          "x-format" : {
+            "alphanum" : true
+          }
+        },
+        "description" : {
+          "type" : "string",
+          "description" : "Description of the ledger account type"
+        },
+        "isActive" : {
+          "type" : "boolean",
+          "description" : "Determines whether the ledger account is active"
+        },
+        "isSettleable" : {
+          "type" : "boolean",
+          "description" : "Determines whether the ledger account is settleable"
+        }
+      }
     },
     "SettlementModel" : {
       "type" : "object",

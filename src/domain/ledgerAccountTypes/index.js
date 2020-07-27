@@ -19,43 +19,40 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
- * Valentin Genev <valentin.genev@modusbox.com>
- * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
- * Miguel de Barros <miguel.debarros@modusbox.com>
- * Claudio Viola <claudio.viola@modusbox.com>
+ - Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
 'use strict'
 
-const Db = require('../../lib/db')
+const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.getLedgerAccountByName = async (name) => {
+async function create (name, description, isActive = false, isSettleable = false) {
   try {
-    return await Db.ledgerAccountType.findOne({ name })
+    await LedgerAccountTypeModel.create(name, description, isActive, isSettleable)
+    return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-exports.create = async (name, description, isActive, isSettleable) => {
+async function getAll () {
   try {
-    return await Db.ledgerAccountType.insert({
-      name,
-      description,
-      isActive,
-      isSettleable
-    })
+    return await LedgerAccountTypeModel.getAll()
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+async function getByName (name) {
+  try {
+    return await LedgerAccountTypeModel.getLedgerAccountByName(name)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-exports.getAll = async () => {
-  try {
-    return await Db.ledgerAccountType.find({ })
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
+module.exports = {
+  getByName,
+  create,
+  getAll
 }
