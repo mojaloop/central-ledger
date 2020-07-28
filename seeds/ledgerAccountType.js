@@ -51,10 +51,6 @@ const ledgerAccountTypes = [
     name: 'INTERCHANGE_FEE',
     description: 'Fees charged per transfer via the HUB',
     isSettleable: 1
-  },
-  {
-    name: 'INTERCHANGE_FEE_SETTLEMENT.',
-    description: 'Settlement account linked to the interchange fees account'
   }
 ]
 const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {

@@ -20,7 +20,6 @@
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
- - Deon Botha <deon.botha@modusbox.com>
  --------------
  ******/
 
