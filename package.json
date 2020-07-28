@@ -47,6 +47,7 @@
     "standard": "standard",
     "test:unit": "tape 'test/unit/**/*.test.js'",
     "test:int": "tape 'test/integration/**/*.test.js'",
+    "test:int2": "nyc --nycrc-path .nycrc.integration.yml --reporter=lcov --reporter=text-summary tapes -- tape 'test/int/**.test.js'",
     "test:all": "run-s test test:integration test:functional test:spec",
     "test:xunit": "tape 'test/unit/**/*.test.js' | tap-xunit",
     "test:coverage": "nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
@@ -132,6 +133,7 @@
     "proxyquire": "2.1.3",
     "sinon": "9.0.2",
     "standard": "14.3.4",
+    "supertest": "^4.0.2",
     "tap-xunit": "2.4.1",
     "tape": "4.13.2",
     "tapes": "4.1.0"

@@ -675,6 +675,40 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
   }
 }
 
+const getAllNonHubParticipantsWithCurrencies = async (trx) => {
+  try {
+    const HUB_ACCOUNT_NAME = 'Hub'
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+    try {
+      const res = await knex.distinct('participant.participantId', 'pc.participantId', 'pc.currencyId')
+        .from('participant')
+        .innerJoin('participantCurrency as pc', 'participant.participantId', 'pc.participantId')
+        .whereNot('participant.name', HUB_ACCOUNT_NAME)
+
+      return res
+      if (doCommit) {
+        await trx.commit
+      }
+      return res;
+    } catch (err) {
+      if (doCommit) {
+        await trx.rollback
+      }
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+  if (trx) {
+    return trxFunction(trx, false)
+  } else {
+    return knex.transaction(trxFunction)
+  }
+ } catch (err) {
+  throw ErrorHandler.Factory.reformatFSPIOPError(err)
+ }
+}
+
+
 module.exports = {
   addHubAccountAndInitPosition,
   getByNameAndCurrency,
@@ -689,5 +723,6 @@ module.exports = {
   getParticipantLimitsByCurrencyId,
   getParticipantLimitsByParticipantId,
   getAllAccountsByNameAndCurrency,
-  getLimitsForAllParticipants
+  getLimitsForAllParticipants,
+  getAllNonHubParticipantsWithCurrencies,
 }

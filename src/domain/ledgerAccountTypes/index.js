@@ -26,10 +26,41 @@
 
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const ParticipantFacade = require('../../models/participant/facade')
+const ParticipantPosition = require('../../models/participant/participantPosition')
+const ParticipantCurrency = require('../../models/participant/participantCurrency')
+
+const Db = require('../../lib/db')
 
 async function create (name, description, isActive = false, isSettleable = false) {
   try {
-    await LedgerAccountTypeModel.create(name, description, isActive, isSettleable)
+    const knex = Db.getKnex()
+    await knex.transaction(async trx => {
+      try {
+        const ledgerAccountTypeId = await LedgerAccountTypeModel.create(name, description, isActive, isSettleable, trx)
+        console.log('LedgerId', ledgerAccountTypeId)
+        const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
+        const participantCurrencies = nonHubParticipantWithCurrencies.map(nonHubParticipantWithCurrency => ({
+          participantId: nonHubParticipantWithCurrency.participantId,
+          currencyId: nonHubParticipantWithCurrency.currencyId,
+          ledgerAccountTypeId: ledgerAccountTypeId,
+          isActive: true,
+          createdBy: 'ledgerAccountType'
+        }))
+        const participantCurrencyCreatedRecordIds = await ParticipantCurrency.createParticipantCurrencyRecords(participantCurrencies, trx)
+        const participantPositionRecords = participantCurrencyCreatedRecordIds.map(currencyId => ({
+          participantCurrencyId: currencyId.participantCurrencyId,
+          value: 0.0000,
+          reservedValue: 0.0000
+        }))
+        await ParticipantPosition.createParticipantPositionRecords(participantPositionRecords, trx)
+        await trx.commit
+      } catch (err) {
+        await trx.rollback
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    })
+
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
