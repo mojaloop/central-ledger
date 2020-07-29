@@ -29,6 +29,11 @@ const Sinon = require('sinon')
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
 
 const LedgerAccountTypeService = require('../../../../src/domain/ledgerAccountTypes/index')
+const Db = require('../../../../src/lib/db')
+const ParticipantFacade = require('../../../../src/models/participant/facade')
+const ParticipantPosition = require('../../../../src/models/participant/participantPosition')
+const ParticipantCurrency = require('../../../../src/models/participant/participantCurrency')
+const ParticipantCurrencyCached = require('../../../../src/models/participant/participantCurrencyCached')
 
 Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
   let sandbox
@@ -36,6 +41,12 @@ Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
   ledgerAccountTypeServiceTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(LedgerAccountTypeModel)
+    sandbox.stub(Db)
+    sandbox.stub(ParticipantFacade)
+    sandbox.stub(ParticipantPosition)
+    sandbox.stub(ParticipantCurrency)
+    sandbox.stub(ParticipantCurrencyCached)
+
     t.end()
   })
 
@@ -45,6 +56,11 @@ Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
   })
 
   await ledgerAccountTypeServiceTest.test('create when everything is ok', async (assert) => {
+    const knexStub = sandbox.stub()
+    const trxStub = sandbox.stub()
+    trxStub.commit = sandbox.stub()
+    Db.getKnex.returns(knexStub)
+    knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
     try {
       const payload = {
         name: 'INTERCHANGE_FEE_SETTLEMENT',
@@ -53,17 +69,70 @@ Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
         isSettleable: true,
         createdDate: '2018-10-11T11:45:00.000Z'
       }
-      LedgerAccountTypeModel.create.resolves(payload)
-      const expected = await LedgerAccountTypeService.create(payload.name, payload.description, payload.isActive, payload.isSettleable)
+      const ledgerAccountTypeId = 127
+      LedgerAccountTypeModel.create.resolves(ledgerAccountTypeId)
+      const existingParticipantWithCurrencies = [
+        {
+          participantCurrencyId: 1,
+          participantId: '1',
+          currencyId: 'TZX'
+        },
+        {
+          participantCurrencyId: 2,
+          participantId: '2',
+          currencyId: 'USD'
+        }
+      ]
+      ParticipantFacade.getAllNonHubParticipantsWithCurrencies.resolves(existingParticipantWithCurrencies)
+      const createdParticipantCurrenciesRecords = [
+        {
+          participantCurrencyId: 1
+        },
+        {
+          participantCurrencyId: 2
+        }
+      ]
+      ParticipantCurrency.createParticipantCurrencyRecords.resolves(createdParticipantCurrenciesRecords)
+      ParticipantCurrencyCached.invalidateParticipantCurrencyCache.resolves()
+      const expected = await LedgerAccountTypeService.create(payload.name, payload.description, payload.isActive, payload.isSettleable, trxStub)
       assert.equal(LedgerAccountTypeModel.create.callCount, 1, 'should call the model create function')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[0], payload.name, 'should call the model with the right argument: name')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[1], payload.description, 'should call the model with the right argument: description')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[2], payload.isActive, 'should call the model with the right argument: isActive')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[3], payload.isSettleable, 'should call the model with the right argument: isSettleable')
+      assert.equal(LedgerAccountTypeModel.create.lastCall.args[4], trxStub, 'should call the model with the right argument: trx')
+      assert.equal(ParticipantFacade.getAllNonHubParticipantsWithCurrencies.callCount, 1, 'should retrieve non HUB Participants with currencies')
+      assert.equal(ParticipantFacade.getAllNonHubParticipantsWithCurrencies.lastCall.args[0], trxStub, 'should call the model with the right argument: trx')
+      assert.deepEqual(ParticipantCurrency.createParticipantCurrencyRecords.callCount, 1, 'should call the create partipant currency record function')
+      const expectedParticipantCurrencyArg = [
+        {
+          participantId: '1',
+          currencyId: 'TZX',
+          ledgerAccountTypeId: 127,
+          isActive: true,
+          createdBy: 'ledgerAccountType'
+        },
+        {
+          participantId: '2',
+          currencyId: 'USD',
+          ledgerAccountTypeId: 127,
+          isActive: true,
+          createdBy: 'ledgerAccountType'
+        }
+      ]
+      assert.deepEqual(ParticipantCurrency.createParticipantCurrencyRecords.lastCall.args[0], expectedParticipantCurrencyArg, 'should call the create partipant position records function')
+      assert.equal(ParticipantPosition.createParticipantPositionRecords.callCount, 1, 'should call the model create function')
+      const expectedParticipantPositionArg = [
+        { participantCurrencyId: 1, value: 0, reservedValue: 0 },
+        { participantCurrencyId: 2, value: 0, reservedValue: 0 }
+      ]
+      assert.deepEqual(ParticipantPosition.createParticipantPositionRecords.lastCall.args[0], expectedParticipantPositionArg, 'should call the create partipant position records function with the right arguments')
+      assert.equal(ParticipantCurrencyCached.invalidateParticipantCurrencyCache.callCount, 1, 'should invalidate the participant currency cache')
+      assert.equal(trxStub.commit.callCount, 1, 'should commit the transaction')
       assert.equal(expected, true, 'should return true')
       assert.end()
     } catch (err) {
-      assert.fail('Error thrown', 'should have not thrown an error')
+      assert.fail(`Error thrown ${err}`, 'should have not thrown an error')
       assert.end()
     }
   })
@@ -84,6 +153,7 @@ Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[1], payload.description, 'should call the model with the right argument: description')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[2], false, 'should call the model with the right default argument: isActive: false')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[3], false, 'should call the model with the right default argument: isSettleable: false')
+
       assert.equal(expected, true, 'should return true')
       assert.end()
     } catch (err) {

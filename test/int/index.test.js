@@ -11,10 +11,14 @@ Test('setup', async setupTest => {
 
   await setupTest.test('setup handlers', async (test) => {
     // const knex = await Db.getKnex()
+
+    const knex = await Db.getKnex()
+    await knex('participantPosition').where('changedDate', '>', '2020-07-27').del()
+    await knex('participantCurrency').where('createdDate', '>', '2020-07-27').del()
     await Db.ledgerAccountType.destroy({
       name: 'testAccount2'
     })
-
+    const res = await request.get('/participants')
     const result = await request.post(
       '/ledgerAccountTypes'
     ).send({
@@ -26,6 +30,11 @@ Test('setup', async setupTest => {
     .set('Accept', 'application/json')
 
     console.log(result.body)
+    let resp = await request.get('/participants')
+    console.log('particpants2', JSON.stringify(resp.body));
+    resp = await request.get('/ledgerAccountTypes')
+    console.log('ledgerAccountTypes', JSON.stringify(resp.body));
+
     console.log('OK')
     test.pass('done')
     test.end()
