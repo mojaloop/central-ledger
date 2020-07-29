@@ -29,6 +29,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const ParticipantFacade = require('../../models/participant/facade')
 const ParticipantPosition = require('../../models/participant/participantPosition')
 const ParticipantCurrency = require('../../models/participant/participantCurrency')
+const ParticipantCurrencyCached = require('../../models/participant/participantCurrencyCached')
 
 const Db = require('../../lib/db')
 
@@ -38,7 +39,6 @@ async function create (name, description, isActive = false, isSettleable = false
     await knex.transaction(async trx => {
       try {
         const ledgerAccountTypeId = await LedgerAccountTypeModel.create(name, description, isActive, isSettleable, trx)
-        console.log('LedgerId', ledgerAccountTypeId)
         const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
         const participantCurrencies = nonHubParticipantWithCurrencies.map(nonHubParticipantWithCurrency => ({
           participantId: nonHubParticipantWithCurrency.participantId,
@@ -54,6 +54,7 @@ async function create (name, description, isActive = false, isSettleable = false
           reservedValue: 0.0000
         }))
         await ParticipantPosition.createParticipantPositionRecords(participantPositionRecords, trx)
+        await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
         await trx.commit
       } catch (err) {
         await trx.rollback
