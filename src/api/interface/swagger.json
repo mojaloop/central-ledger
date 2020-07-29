@@ -1155,102 +1155,127 @@
         }
       }
     },
-    "/settlementModels": {
-      "get": {
-        "summary": "View all settlement models",
-        "tags": [
-          "settlementModels"
-        ],
-        "operationId": "getSettlementmodels",
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "Successful",
-            "schema": {
-              "type": "string"
+    "/ledgerAccountTypes" : {
+      "get" : {
+        "summary": "View all ledger account types",
+        "tags" : [ "ledgerAccountTypes" ],
+        "operationId" : "getLedgerAccountTypes",
+        "parameters" : [ ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "array",
+              "items": {
+                "$ref" : "#/definitions/LedgerAccountType"
+              }
             }
           }
         }
       },
-      "post": {
-        "summary": "Create a settlement model",
-        "tags": [
-          "settlementModels"
-        ],
-        "operationId": "postSettlementmodels",
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "required": false,
-            "schema": {
-              "$ref": "#/definitions/SettlementModel"
-            }
+      "post" : {
+        "summary": "Create a ledgerAccount type model",
+        "tags" : [ "ledgerAccountType" ],
+        "operationId" : "postLedgerAccountType",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/LedgerAccountType"
           }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful",
-            "schema": {
-              "type": "string"
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
             }
           }
         }
       }
     },
-    "/settlementModels/{name}": {
-      "get": {
-        "summary": "View settlement model by name",
-        "tags": [
-          "settlementModels"
-        ],
-        "operationId": "getSettlementmodelsName",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "SettlementModel name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful",
-            "schema": {
-              "type": "string"
+    "/settlementModels" : {
+      "get" : {
+        "summary": "View all settlement models",
+        "tags" : [ "settlementModels" ],
+        "operationId" : "getSettlementmodels",
+        "parameters" : [ ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
             }
           }
         }
       },
-      "put": {
-        "summary": "Update a settlement model",
-        "tags": [
-          "settlementModels"
-        ],
-        "operationId": "putSettlementmodelsName",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "settlementModel name",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "body",
-            "name": "body",
-            "required": false,
-            "schema": {
-              "$ref": "#/definitions/SettlementModelIsActive"
+      "post" : {
+        "summary": "Create a settlement model",
+        "tags" : [ "settlementModels" ],
+        "operationId" : "postSettlementmodels",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/SettlementModel"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
             }
           }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful",
-            "schema": {
-              "type": "string"
+        }
+      }
+    },
+    "/settlementModels/{name}" : {
+      "get" : {
+        "summary": "View settlement model by name",
+        "tags" : [ "settlementModels" ],
+        "operationId" : "getSettlementmodelsName",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "description" : "SettlementModel name",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "put" : {
+        "summary": "Update a settlement model",
+        "tags" : [ "settlementModels" ],
+        "operationId" : "putSettlementmodelsName",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "description" : "settlementModel name",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/SettlementModelIsActive"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
             }
           }
         }
@@ -1299,7 +1324,8 @@
         "currency": {
           "type": "string",
           "description": "Currency code",
-          "$ref": "#/definitions/Currency"
+          "$ref" : "#/definitions/Currency"
+
         }
       },
       "required": [
@@ -1520,88 +1546,87 @@
         "reason"
       ]
     },
-    "SettlementModel": {
-      "type": "object",
-      "required": [
-        "autoPositionReset",
-        "ledgerAccountType",
-        "name",
-        "requireLiquidityCheck",
-        "settlementDelay",
-        "settlementGranularity",
-        "settlementInterchange",
-        "settlementAccountType"
-      ],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Name of the settlement model",
-          "minLength": 2,
-          "maxLength": 30,
-          "x-format": {
-            "alphanum": true
+    "LedgerAccountType": {
+      "type" : "object",
+      "required" : [ "name", "description", "isActive", "isSettleable" ],
+      "properties" : {
+        "name" : {
+          "type" : "string",
+          "description" : "Name of the ledger account type",
+          "minLength" : 2,
+          "maxLength" : 30,
+          "x-format" : {
+            "alphanum" : true
           }
         },
-        "settlementGranularity": {
-          "type": "string",
-          "description": "Granularity type for the settlement model GROSS or NET",
-          "enum": [
-            "GROSS",
-            "NET"
-          ]
+        "description" : {
+          "type" : "string",
+          "description" : "Description of the ledger account type"
         },
-        "settlementAccountType": {
-          "type": "string",
-          "description": "The name of the ledger account used in the settlement model",
-          "example": "POSITION"
+        "isActive" : {
+          "type" : "boolean",
+          "description" : "Determines whether the ledger account is active"
         },
-        "settlementInterchange": {
-          "type": "string",
-          "description": "Interchange type for the settlement model BILATERAL or MULTILATERAL",
-          "enum": [
-            "BILATERAL",
-            "MULTILATERAL"
-          ]
-        },
-        "settlementDelay": {
-          "type": "string",
-          "description": "Delay type for the settlement model IMMEDIATE or DEFERRED",
-          "enum": [
-            "DEFERRED",
-            "IMMEDIATE"
-          ]
-        },
-        "currency": {
-          "$ref": "#/definitions/Currency",
-          "description": "Currency code"
-        },
-        "requireLiquidityCheck": {
-          "type": "boolean",
-          "description": "Liquidity Check boolean"
-        },
-        "ledgerAccountType": {
-          "type": "string",
-          "description": "Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE",
-          "enum": [
-            "INTERCHANGE_FEE",
-            "POSITION"
-          ]
-        },
-        "autoPositionReset": {
-          "type": "boolean",
-          "description": "Automatic position reset setting, which determines whether to execute the settlement transfer or not"
+        "isSettleable" : {
+          "type" : "boolean",
+          "description" : "Determines whether the ledger account is settleable"
         }
       }
     },
-    "SettlementModelIsActive": {
-      "type": "object",
-      "required": [
-        "isActive"
-      ],
-      "properties": {
-        "isActive": {
-          "type": "boolean",
-          "description": "settlementModel isActive boolean"
+    "SettlementModel" : {
+      "type" : "object",
+      "required" : [ "autoPositionReset", "ledgerAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
+      "properties" : {
+        "name" : {
+          "type" : "string",
+          "description" : "Name of the settlement model",
+          "minLength" : 2,
+          "maxLength" : 30,
+          "x-format" : {
+            "alphanum" : true
+          }
+        },
+        "settlementGranularity" : {
+          "type" : "string",
+          "description" : "Granularity type for the settlement model GROSS or NET",
+          "enum" : [ "GROSS", "NET" ]
+        },
+        "settlementInterchange" : {
+          "type" : "string",
+          "description" : "Interchange type for the settlement model BILATERAL or MULTILATERAL",
+          "enum" : [ "BILATERAL", "MULTILATERAL" ]
+        },
+        "settlementDelay" : {
+          "type" : "string",
+          "description" : "Delay type for the settlement model IMMEDIATE or DEFERRED",
+          "enum" : [ "DEFERRED", "IMMEDIATE" ]
+        },
+        "currency" : {
+          "$ref": "#/definitions/Currency",
+          "description" : "Currency code"
+        },
+        "requireLiquidityCheck" : {
+          "type" : "boolean",
+          "description" : "Liquidity Check boolean"
+        },
+        "ledgerAccountType" : {
+          "type" : "string",
+          "description" : "Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE",
+          "enum" : [ "INTERCHANGE_FEE", "POSITION" ]
+        },
+        "autoPositionReset" : {
+          "type" : "boolean",
+          "description" : "Automatic position reset setting, which determines whether to execute the settlement transfer or not"
+        }
+      }
+    },
+    "SettlementModelIsActive" : {
+      "type" : "object",
+      "required" : [ "isActive" ],
+      "properties" : {
+        "isActive" : {
+          "type" : "boolean",
+          "description" : "settlementModel isActive boolean"
         }
       }
     },

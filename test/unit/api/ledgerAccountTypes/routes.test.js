@@ -1,14 +1,10 @@
 /*****
- * @file This registers all handlers for the central-ledger API
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
  The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
-
  http://www.apache.org/licenses/LICENSE-2.0
-
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -19,49 +15,39 @@
  Gates Foundation organization for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
-
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- - Miguel de Barros <miguel.debarros@modusbox.com>
-
+ - Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
-const BulkPrepareHandlers = require('./prepare/handler')
-const BulkFulfilHandlers = require('./fulfil/handler')
-const BulkProcessingHandlers = require('./processing/handler')
-const GetBulkTransferHandlers = require('./get/handler')
-const Logger = require('@mojaloop/central-services-logger')
+const Test = require('tapes')(require('tape'))
+const Base = require('../../base')
+const AdminRoutes = require('../../../../src/api/routes')
 
-/**
- * @function RegisterAllHandlers
- *
- * @async
- * @description Registers all module handlers
- *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const registerAllHandlers = async () => {
-  try {
-    await BulkPrepareHandlers.registerAllHandlers()
-    await BulkFulfilHandlers.registerAllHandlers()
-    await BulkProcessingHandlers.registerAllHandlers()
-    await GetBulkTransferHandlers.registerAllHandlers()
-    return true
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
-  }
-}
+Test('/ledgerAccountTypes router ', async ledgerAccountTypesRoutesTest => {
+  ledgerAccountTypesRoutesTest.test('should have the routes', async function (test) {
+    const server = await Base.setup(AdminRoutes)
 
-module.exports = {
-  registerBulkPrepareHandler: BulkPrepareHandlers.registerBulkPrepareHandler,
-  registerBulkFulfilHandler: BulkFulfilHandlers.registerBulkFulfilHandler,
-  registerBulkProcessingHandler: BulkProcessingHandlers.registerBulkProcessingHandler,
-  registerGetBulkTransferHandler: GetBulkTransferHandlers.registerGetBulkTransferHandler,
-  registerAllHandlers
-}
+    let req = Base.buildRequest({
+      url: '/ledgerAccountTypes',
+      method: 'POST'
+    })
+    let res = await server.inject(req)
+    test.ok(res.statusCode, 400, 'should have POST /ledgerAccountTypes route')
+    req = Base.buildRequest({
+      url: '/ledgerAccountTypes',
+      method: 'GET'
+    })
+    res = await server.inject(req)
+    test.ok(res.statusCode, 500, 'should have GET /ledgerAccountTypes route')
+
+    await server.stop()
+    test.end()
+  })
+
+  ledgerAccountTypesRoutesTest.end()
+})

@@ -1,14 +1,10 @@
 /*****
- * @file This registers all handlers for the central-ledger API
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
  The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
-
  http://www.apache.org/licenses/LICENSE-2.0
-
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
  Contributors
  --------------
  This is the official list of the Mojaloop project contributors for this file.
@@ -19,49 +15,49 @@
  Gates Foundation organization for an example). Those individuals should have
  their names indented and be marked with a '-'. Email address can be added
  optionally within square brackets <email>.
-
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- - Miguel de Barros <miguel.debarros@modusbox.com>
-
+ - Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
-const BulkPrepareHandlers = require('./prepare/handler')
-const BulkFulfilHandlers = require('./fulfil/handler')
-const BulkProcessingHandlers = require('./processing/handler')
-const GetBulkTransferHandlers = require('./get/handler')
-const Logger = require('@mojaloop/central-services-logger')
+const Handler = require('./handler')
+const Joi = require('@hapi/joi')
+const tags = ['api', 'ledgerAccountTypes']
 
-/**
- * @function RegisterAllHandlers
- *
- * @async
- * @description Registers all module handlers
- *
- * @returns {boolean} - Returns a boolean: true if successful, or throws and error if failed
- */
-const registerAllHandlers = async () => {
-  try {
-    await BulkPrepareHandlers.registerAllHandlers()
-    await BulkFulfilHandlers.registerAllHandlers()
-    await BulkProcessingHandlers.registerAllHandlers()
-    await GetBulkTransferHandlers.registerAllHandlers()
-    return true
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(err)
-    throw err
+module.exports = [
+  {
+    method: 'GET',
+    path: '/ledgerAccountTypes',
+    handler: Handler.getAll,
+    options: {
+      tags,
+      description: 'Get all ledger Account types'
+
+    }
+  },
+  {
+    method: 'POST',
+    path: '/ledgerAccountTypes',
+    handler: Handler.create,
+    options: {
+      tags,
+      description: 'Create a new ledger account type',
+      payload: {
+        allow: ['application/json'],
+        failAction: 'error'
+      },
+      validate: {
+        payload: Joi.object({
+          name: Joi.string().alphanum().min(2).max(30).required().description('Name of the ledger account type'),
+          description: Joi.string().required().description('The description of the ledger account type'),
+          isActive: Joi.boolean().required().description('Determines whether this ledger account type is active or not'),
+          isSettleable: Joi.boolean().required().description('Determines whether this ledger account type is settleable or not')
+        })
+      }
+    }
   }
-}
-
-module.exports = {
-  registerBulkPrepareHandler: BulkPrepareHandlers.registerBulkPrepareHandler,
-  registerBulkFulfilHandler: BulkFulfilHandlers.registerBulkFulfilHandler,
-  registerBulkProcessingHandler: BulkProcessingHandlers.registerBulkProcessingHandler,
-  registerGetBulkTransferHandler: GetBulkTransferHandlers.registerGetBulkTransferHandler,
-  registerAllHandlers
-}
+]

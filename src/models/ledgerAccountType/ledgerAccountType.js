@@ -18,13 +18,14 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
 const Db = require('../../lib/db')
@@ -33,6 +34,27 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 exports.getLedgerAccountByName = async (name) => {
   try {
     return await Db.ledgerAccountType.findOne({ name })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+exports.create = async (name, description, isActive, isSettleable) => {
+  try {
+    return await Db.ledgerAccountType.insert({
+      name,
+      description,
+      isActive,
+      isSettleable
+    })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+exports.getAll = async () => {
+  try {
+    return await Db.ledgerAccountType.find({ })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
