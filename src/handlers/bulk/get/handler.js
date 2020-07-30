@@ -41,6 +41,7 @@ const BulkTransferService = require('../../../domain/bulkTransfer')
 const BulkTransferModel = require('../../../models/bulkTransfer/bulkTransfer')
 const Validator = require('../shared/validator')
 const Config = require('../../../lib/config')
+const { ERROR_HANDLING } = require('../../../lib/config')
 
 const location = { module: 'BulkGetHandler', method: '', path: '' }
 const consumerCommit = true
@@ -116,7 +117,13 @@ const getBulkTransfer = async (error, messages) => {
     let payload = {
       bulkTransferState: bulkTransfer.bulkTransferState
     }
-    if (bulkTransfer.bulkTransferState !== Enum.Transfers.BulkTransferState.PROCESSING) {
+    let fspiopError
+    if (bulkTransfer.bulkTransferState === Enum.Transfers.BulkTransferState.REJECTED) {
+      payload = {
+        errorInformation: bulkTransfer.individualTransferResults[0].errorInformation
+      }
+      fspiopError = ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(payload.errorInformation)
+    } else if (bulkTransfer.bulkTransferState !== Enum.Transfers.BulkTransferState.PROCESSING) {
       payload = {
         ...payload,
         completedTimestamp: bulkTransfer.completedTimestamp,
@@ -125,7 +132,11 @@ const getBulkTransfer = async (error, messages) => {
       }
     }
     message.value.content.payload = payload
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+    if (fspiopError) {
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(ERROR_HANDLING), eventDetail, fromSwitch })
+    } else {
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+    }
     histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
     return true
   } catch (err) {
