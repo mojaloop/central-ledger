@@ -57,7 +57,7 @@ async function create (name, description, isActive = false, isSettleable = false
         await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
         await trx.commit()
       } catch (err) {
-        await trx.rollback
+        await trx.rollback()
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
     })
