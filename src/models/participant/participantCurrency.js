@@ -115,17 +115,17 @@ exports.createParticipantCurrencyRecords = async (participantCurrencies, trx) =>
 
         const res = await knex.select('participantCurrencyId')
           .from('participantCurrency')
-          .whereIn('participantId', Array.from(participantIds))
-          .whereIn('ledgerAccountTypeId', Array.from(ledgerAccountTypeIds))
-          .whereIn('currencyId', Array.from(currenciesIds))
+          .whereIn('participantId', participantIds)
+          .whereIn('ledgerAccountTypeId', ledgerAccountTypeIds)
+          .whereIn('currencyId', currenciesIds)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return res
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback()
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }

@@ -36,6 +36,7 @@ const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
+const Config = require('../../lib/config')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -677,37 +678,36 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
 
 const getAllNonHubParticipantsWithCurrencies = async (trx) => {
   try {
-    const HUB_ACCOUNT_NAME = 'Hub'
+    const HUB_ACCOUNT_NAME = Config.HUB_PARTICIPANT.name
     const knex = Db.getKnex()
     const trxFunction = async (trx, doCommit = true) => {
-    try {
-      const res = await knex.distinct('participant.participantId', 'pc.participantId', 'pc.currencyId')
-        .from('participant')
-        .innerJoin('participantCurrency as pc', 'participant.participantId', 'pc.participantId')
-        .whereNot('participant.name', HUB_ACCOUNT_NAME)
+      try {
+        const res = await knex.distinct('participant.participantId', 'pc.participantId', 'pc.currencyId')
+          .from('participant')
+          .innerJoin('participantCurrency as pc', 'participant.participantId', 'pc.participantId')
+          .whereNot('participant.name', HUB_ACCOUNT_NAME)
+          .transacting(trx)
 
-      return res
-      if (doCommit) {
-        await trx.commit
+        if (doCommit) {
+          await trx.commit()
+        }
+        return res
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback()
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
-      return res;
-    } catch (err) {
-      if (doCommit) {
-        await trx.rollback
-      }
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
-  if (trx) {
-    return trxFunction(trx, false)
-  } else {
-    return knex.transaction(trxFunction)
-  }
- } catch (err) {
-  throw ErrorHandler.Factory.reformatFSPIOPError(err)
- }
 }
-
 
 module.exports = {
   addHubAccountAndInitPosition,
@@ -724,5 +724,5 @@ module.exports = {
   getParticipantLimitsByParticipantId,
   getAllAccountsByNameAndCurrency,
   getLimitsForAllParticipants,
-  getAllNonHubParticipantsWithCurrencies,
+  getAllNonHubParticipantsWithCurrencies
 }

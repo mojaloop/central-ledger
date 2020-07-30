@@ -3,10 +3,10 @@ const Test = require('tapes')(require('tape'))
 const Db = require('../../src/lib/db')
 
 var supertest = require('supertest')
-
+let request
 Test('setup', async setupTest => {
   // setupTest.plan(1)
-  let app = await require('../../src/api/index')
+  const app = await require('../../src/api/index')
   request = supertest.agent(app.listener)
 
   await setupTest.test('setup handlers', async (test) => {
@@ -27,13 +27,13 @@ Test('setup', async setupTest => {
       isActive: true,
       isSettleable: true
     })
-    .set('Accept', 'application/json')
+      .set('Accept', 'application/json')
 
     console.log(result.body)
     let resp = await request.get('/participants')
-    console.log('particpants2', JSON.stringify(resp.body));
+    console.log('particpants2', JSON.stringify(resp.body))
     resp = await request.get('/ledgerAccountTypes')
-    console.log('ledgerAccountTypes', JSON.stringify(resp.body));
+    console.log('ledgerAccountTypes', JSON.stringify(resp.body))
 
     console.log('OK')
     test.pass('done')
@@ -42,5 +42,4 @@ Test('setup', async setupTest => {
   })
   console.log('ENDING')
   await setupTest.end()
-
 })
