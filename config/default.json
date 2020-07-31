@@ -7,7 +7,7 @@
     "PORT": 3306,
     "USER": "central_ledger",
     "PASSWORD": "password",
-    "SCHEMA": "central_ledger_integration",
+    "SCHEMA": "central_ledger",
     "POOL_MIN_SIZE": 10,
     "POOL_MAX_SIZE": 10,
     "ACQUIRE_TIMEOUT_MILLIS": 30000,

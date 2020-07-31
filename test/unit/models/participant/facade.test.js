@@ -32,7 +32,14 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
-const Model = require('../../../../src/models/participant/facade')
+const Proxyquire = require('proxyquire').callThru()
+const Model = Proxyquire('../../../../src/models/participant/facade', {
+  '../../lib/config': {
+    HUB_PARTICIPANT: {
+      name: 'Hub'
+    }
+  }
+})
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantModel = require('../../../../src/models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')

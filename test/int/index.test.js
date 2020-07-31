@@ -19,6 +19,7 @@ Test('setup', async setupTest => {
       name: 'testAccount2'
     })
     const res = await request.get('/participants')
+    console.log('Existing Participants', res)
     const result = await request.post(
       '/ledgerAccountTypes'
     ).send({
