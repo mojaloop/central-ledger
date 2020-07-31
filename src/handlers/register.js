@@ -101,6 +101,7 @@ module.exports = {
   bulk: {
     registerBulkPrepareHandler: BulkHandlers.registerBulkPrepareHandler,
     registerBulkFulfilHandler: BulkHandlers.registerBulkFulfilHandler,
-    registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler
+    registerBulkProcessingHandler: BulkHandlers.registerBulkProcessingHandler,
+    registerBulkGetHandler: BulkHandlers.registerGetBulkTransferHandler
   }
 }
