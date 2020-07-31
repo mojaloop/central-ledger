@@ -678,7 +678,7 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
 
 const getAllNonHubParticipantsWithCurrencies = async (trx) => {
   try {
-    const HUB_ACCOUNT_NAME = Config.HUB_PARTICIPANT.name
+    const HUB_ACCOUNT_NAME = Config.HUB_NAME
     const knex = Db.getKnex()
     const trxFunction = async (trx, doCommit = true) => {
       try {

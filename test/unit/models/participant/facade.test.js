@@ -35,9 +35,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const Proxyquire = require('proxyquire').callThru()
 const Model = Proxyquire('../../../../src/models/participant/facade', {
   '../../lib/config': {
-    HUB_PARTICIPANT: {
-      name: 'Hub'
-    }
+    HUB_NAME: 'Hub'
   }
 })
 const Enum = require('@mojaloop/central-services-shared').Enum
