@@ -45,7 +45,7 @@
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "test": "npm run test:unit | faucet",
     "standard": "standard",
-    "test:unit": "tape 'test/unit/**/*.test.js'",
+    "test:unit": "tape 'test/unit/**/**.test.js'",
     "test:int": "tape 'test/integration/**/*.test.js'",
     "test:int:new": "nyc --nycrc-path .nycrc.integration.yml --reporter=lcov --reporter=text-summary tapes -- tape 'test/int/**.test.js'",
     "test:all": "run-s test test:integration test:functional test:spec",
