@@ -57,12 +57,12 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
           .where('name', name)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit
+          await trx.commit()
         }
         return createdId[0].ledgerAccountTypeId
       } catch (err) {
         if (doCommit) {
-          await trx.rollback
+          await trx.rollback()
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
