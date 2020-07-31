@@ -32,7 +32,12 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Cache = require('../../../../src/lib/cache')
 const Logger = require('@mojaloop/central-services-logger')
-const Model = require('../../../../src/models/participant/facade')
+const Proxyquire = require('proxyquire').callThru()
+const Model = Proxyquire('../../../../src/models/participant/facade', {
+  '../../lib/config': {
+    HUB_NAME: 'Hub'
+  }
+})
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantModel = require('../../../../src/models/participant/participantCached')
 const ParticipantCurrencyModel = require('../../../../src/models/participant/participantCurrencyCached')
@@ -1663,6 +1668,124 @@ Test('Participant facade', async (facadeTest) => {
     } catch (err) {
       Logger.error(`getLimitsForAllParticipants failed with error - ${err}`)
       test.pass('Error thrown')
+      test.end()
+    }
+  })
+  await facadeTest.test('getAllNonHubParticipantsWithCurrencies should', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const distinctStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const innerJoinStub = sandbox.stub()
+      const whereNotStub = sandbox.stub()
+      const participantsWithCurrencies = [{
+        participantId: 1,
+        currencyId: 'USD'
+      }]
+      transactingStub.resolves(participantsWithCurrencies)
+      whereNotStub.returns({ transacting: transactingStub })
+      innerJoinStub.returns({ whereNot: whereNotStub })
+      fromStub.returns({ innerJoin: innerJoinStub })
+      knexStub.distinct = distinctStub.returns({ from: fromStub })
+
+      const response = await Model.getAllNonHubParticipantsWithCurrencies(trxStub)
+      test.equal(whereNotStub.lastCall.args[0], 'participant.name', 'filter on participants name')
+      test.equal(whereNotStub.lastCall.args[1], 'Hub', 'filter out the Hub')
+      test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
+      test.equal(trxStub.commit.callCount, 0, 'not commit the transaction if transaction is passed')
+      test.deepEqual(response, participantsWithCurrencies, 'return participants with currencies')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllNonHubParticipantsWithCurrencies failed with error - ${err}`)
+      test.fail('Error thrown')
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getAllNonHubParticipantsWithCurrencies should', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const distinctStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const innerJoinStub = sandbox.stub()
+      const whereNotStub = sandbox.stub()
+      const participantsWithCurrencies = [{
+        participantId: 1,
+        currencyId: 'USD'
+      }]
+      transactingStub.resolves(participantsWithCurrencies)
+      whereNotStub.returns({ transacting: transactingStub })
+      innerJoinStub.returns({ whereNot: whereNotStub })
+      fromStub.returns({ innerJoin: innerJoinStub })
+      knexStub.distinct = distinctStub.returns({ from: fromStub })
+
+      const response = await Model.getAllNonHubParticipantsWithCurrencies()
+      test.equal(whereNotStub.lastCall.args[0], 'participant.name', 'filter on participants name')
+      test.equal(whereNotStub.lastCall.args[1], 'Hub', 'filter out the Hub')
+      test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
+      test.equal(trxStub.commit.callCount, 1, 'commit the transaction if no transaction is passed')
+
+      test.deepEqual(response, participantsWithCurrencies, 'return participants with currencies')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllNonHubParticipantsWithCurrencies failed with error - ${err}`)
+      test.fail('Error thrown')
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getAllNonHubParticipantsWithCurrencies should', async (test) => {
+    let trxStub
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      trxStub.rollback = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const distinctStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const innerJoinStub = sandbox.stub()
+      const whereNotStub = sandbox.stub()
+
+      transactingStub.rejects(new Error())
+      whereNotStub.returns({ transacting: transactingStub })
+      innerJoinStub.returns({ whereNot: whereNotStub })
+      fromStub.returns({ innerJoin: innerJoinStub })
+      knexStub.distinct = distinctStub.returns({ from: fromStub })
+      await Model.getAllNonHubParticipantsWithCurrencies()
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.equal(trxStub.rollback.callCount, 1, 'rollback the transaction if no transaction is passed')
+      test.end()
+    }
+  })
+
+  await facadeTest.test('getAllNonHubParticipantsWithCurrencies should', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      Db.getKnex.throws(new Error())
+      await Model.getAllNonHubParticipantsWithCurrencies()
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
       test.end()
     }
   })
