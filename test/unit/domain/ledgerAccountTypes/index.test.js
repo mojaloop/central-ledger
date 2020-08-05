@@ -163,7 +163,9 @@ Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[1], payload.description, 'should call the model with the right argument: description')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[2], false, 'should call the model with the right default argument: isActive: false')
       assert.equal(LedgerAccountTypeModel.create.lastCall.args[3], false, 'should call the model with the right default argument: isSettleable: false')
-
+      assert.equal(ParticipantFacade.getAllNonHubParticipantsWithCurrencies.callCount, 0, 'should not retrieve all non hub participants')
+      assert.equal(ParticipantCurrency.createParticipantCurrencyRecords.callCount, 0, 'should not create participant currencies records')
+      assert.equal(ParticipantCurrencyCached.invalidateParticipantCurrencyCache.callCount, 0, 'should not invalidate participant currency cache')
       assert.equal(expected, true, 'should return true')
       assert.end()
     } catch (err) {
