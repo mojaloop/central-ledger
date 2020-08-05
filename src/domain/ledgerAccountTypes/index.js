@@ -39,22 +39,24 @@ async function create (name, description, isActive = false, isSettleable = false
     await knex.transaction(async trx => {
       try {
         const ledgerAccountTypeId = await LedgerAccountTypeModel.create(name, description, isActive, isSettleable, trx)
-        const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
-        const participantCurrencies = nonHubParticipantWithCurrencies.map(nonHubParticipantWithCurrency => ({
-          participantId: nonHubParticipantWithCurrency.participantId,
-          currencyId: nonHubParticipantWithCurrency.currencyId,
-          ledgerAccountTypeId: ledgerAccountTypeId,
-          isActive: true,
-          createdBy: 'ledgerAccountType'
-        }))
-        const participantCurrencyCreatedRecordIds = await ParticipantCurrency.createParticipantCurrencyRecords(participantCurrencies, trx)
-        const participantPositionRecords = participantCurrencyCreatedRecordIds.map(currencyId => ({
-          participantCurrencyId: currencyId.participantCurrencyId,
-          value: 0.0000,
-          reservedValue: 0.0000
-        }))
-        await ParticipantPosition.createParticipantPositionRecords(participantPositionRecords, trx)
-        await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
+        if (isSettleable === true) {
+          const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
+          const participantCurrencies = nonHubParticipantWithCurrencies.map(nonHubParticipantWithCurrency => ({
+            participantId: nonHubParticipantWithCurrency.participantId,
+            currencyId: nonHubParticipantWithCurrency.currencyId,
+            ledgerAccountTypeId: ledgerAccountTypeId,
+            isActive: true,
+            createdBy: 'ledgerAccountType'
+          }))
+          const participantCurrencyCreatedRecordIds = await ParticipantCurrency.createParticipantCurrencyRecords(participantCurrencies, trx)
+          const participantPositionRecords = participantCurrencyCreatedRecordIds.map(currencyId => ({
+            participantCurrencyId: currencyId.participantCurrencyId,
+            value: 0.0000,
+            reservedValue: 0.0000
+          }))
+          await ParticipantPosition.createParticipantPositionRecords(participantPositionRecords, trx)
+          await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
+        }
         await trx.commit()
       } catch (err) {
         await trx.rollback()
