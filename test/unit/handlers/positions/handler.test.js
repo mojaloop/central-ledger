@@ -304,6 +304,32 @@ Test('Position handler', transferHandlerTest => {
       }
     })
 
+    positionsTest.test('log error when RESERVED transfer state is received from v1.0 clients', async (test) => {
+      const isIncrease = false
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId: TransferState.RESERVED
+      }
+
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+
+      const m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYEE_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      TransferStateChange.saveTransferStateChange.resolves(true)
+      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
+      m.value.metadata.event.action = transferEventAction.RESERVE
+      m.value.content.headers = { 'content-type': 'application/vnd.interoperability.transfers+json;version=1.0' }
+      Kafka.proceed.returns(true)
+
+      const result = await allTransferHandlers.positions(null, m)
+      Logger.info(result)
+      test.ok(SpanStub.error.calledWith('action "RESERVE" is not allowed into position handler for v1.0 clients.'))
+      test.equal(result, true)
+      test.end()
+    })
+
     positionsTest.end()
   })
 
