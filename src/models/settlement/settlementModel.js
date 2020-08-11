@@ -28,7 +28,7 @@
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset) => {
+exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset) => {
   try {
     return await Db.settlementModel.insert({
       name,
@@ -39,7 +39,6 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
       currencyId,
       requireLiquidityCheck,
       ledgerAccountTypeId,
-      settlementAccountTypeId,
       autoPositionReset
     })
   } catch (err) {

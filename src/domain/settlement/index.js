@@ -30,9 +30,9 @@ const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAcc
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const createSettlementModel = async (name, isActive = true, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId = null, requireLiquidityCheck = true, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset = false) => {
+const createSettlementModel = async (name, isActive = true, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId = null, requireLiquidityCheck = true, ledgerAccountTypeId, autoPositionReset = false) => {
   try {
-    await SettlementModelModel.create(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset)
+    await SettlementModelModel.create(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
