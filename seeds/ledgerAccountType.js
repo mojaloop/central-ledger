@@ -49,7 +49,7 @@ const ledgerAccountTypes = [
   },
   {
     name: 'INTERCHANGE_FEE',
-    description: 'Fees charged per transfer via the HUB',
+    description: null,
     isSettleable: 1
   }
 ]
@@ -58,7 +58,6 @@ const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
 }).map(currentValue => {
   return currentValue.name
 }).sort()
-
 const seed = async function (knex) {
   try {
     return await knex('ledgerAccountType').insert(ledgerAccountTypes)
