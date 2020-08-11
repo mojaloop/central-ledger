@@ -175,6 +175,14 @@ const positions = async (error, messages) => {
         }
         await PositionService.changeParticipantPosition(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange)
         if (action === Enum.Events.Event.Action.RESERVE) {
+          if (message.value.content.headers['content-type'].split('=')[1] === '1.0') {
+            Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `reserve--v1.0--${actionLetter}4.1`))
+            const errorMessage = 'action "RESERVE" is not allowed into position handler for v1.0 clients.'
+            Logger.isErrorEnabled && Logger.error(errorMessage)
+            !!span && span.error(errorMessage)
+            histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+            return true
+          }
           const transfer = await TransferService.getById(transferInfo.transferId)
           message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
         }
