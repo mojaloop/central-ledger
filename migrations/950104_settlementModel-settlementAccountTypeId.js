@@ -38,7 +38,7 @@ exports.up = async (knex) => {
         .then(async (columnExists) => {
           if (!columnExists){
             await knex.schema.alterTable('settlementModel', (t) => {
-              t.integer('settlementAccountTypeId').defaultTo(null)
+              t.integer('settlementAccountTypeId').unsigned().defaultTo(null)
             })
             await knex.transaction(async (trx) => {
               try {
@@ -65,7 +65,7 @@ exports.up = async (knex) => {
             })
             await knex.schema.alterTable('settlementModel', (t) => {
               t.integer('settlementAccountTypeId').alter().notNullable()
-              t.foreign('settlementAccountTypeId').references('ledgerAccountTypeId').inTable('ledgerAccountType')
+              // t.foreign('settlementAccountTypeId').references('ledgerAccountTypeId').inTable('ledgerAccountType')
             })
           }
         })
