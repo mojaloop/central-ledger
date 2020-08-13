@@ -109,11 +109,15 @@ const create = async function (request, h) {
     if (!ledgerAccountType) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found')
     }
+    const settlementAccountType = await SettlementService.getLedgerAccountTypeName(request.payload.settlementAccountType)
+    if (!settlementAccountType) {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Settlement account type account type was not found')
+    }
     const settlementModelExist = await SettlementService.getByName(request.payload.name)
     if (settlementModelExist) {
       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Settlement Model already exists')
     } else {
-      await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId, request.payload.autoPositionReset)
+      await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, request.payload.autoPositionReset)
       return h.response().code(201)
     }
   } catch (err) {

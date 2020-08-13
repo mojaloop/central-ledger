@@ -1575,7 +1575,7 @@
     },
     "SettlementModel" : {
       "type" : "object",
-      "required" : [ "autoPositionReset", "ledgerAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
+      "required" : [ "autoPositionReset", "ledgerAccountType", "settlementAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
       "properties" : {
         "name" : {
           "type" : "string",
@@ -1613,6 +1613,10 @@
           "type" : "string",
           "description" : "Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE",
           "enum" : [ "INTERCHANGE_FEE", "POSITION" ]
+        },
+        "settlementAccountType" : {
+          "type" : "string",
+          "description" : "Account type into which the settlement should be settled into :  POSITION, SETTLEMENT or INTERCHANGE_FEE_SETTLEMENT"
         },
         "autoPositionReset" : {
           "type" : "boolean",
