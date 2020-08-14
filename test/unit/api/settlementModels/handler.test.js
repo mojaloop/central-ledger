@@ -157,7 +157,7 @@ Test('SettlementModel', settlementModelHandlerTest => {
       }
     })
 
-    handlerTest.test('create should fail if account type does not exists', async function (test) {
+    handlerTest.test('create should fail if ledger account type does not exists', async function (test) {
       const payload = {
         name: 'DEFERRED_NET',
         settlementGranularity: 'NET',
@@ -176,6 +176,33 @@ Test('SettlementModel', settlementModelHandlerTest => {
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Ledger account type was not found')
+        test.end()
+      }
+    })
+
+    handlerTest.test('create should fail if settlement account type does not exists', async function (test) {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }
+
+      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(true))
+      await SettlementService.getLedgerAccountTypeName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
+
+      try {
+        await Handler.create({ payload })
+        test.fail('Error not thrown')
+      } catch (e) {
+        test.ok(e instanceof Error)
+        test.equal(e.message, 'Settlement account type account type was not found')
         test.end()
       }
     })
