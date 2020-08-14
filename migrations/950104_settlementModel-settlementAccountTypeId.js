@@ -65,7 +65,6 @@ exports.up = async (knex) => {
             })
             await knex.schema.alterTable('settlementModel', (t) => {
               t.integer('settlementAccountTypeId').alter().notNullable()
-              // t.foreign('settlementAccountTypeId').references('ledgerAccountTypeId').inTable('ledgerAccountType')
             })
           }
         })

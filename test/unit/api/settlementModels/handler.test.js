@@ -194,7 +194,6 @@ Test('SettlementModel', settlementModelHandlerTest => {
         settlementAccountType: 'POSITION'
       }
 
-      // await SettlementService.getLedgerAccountTypeName.withArgs(payload.ledgerAccountType).returns(Promise.resolve(true))
       SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(true))
       await SettlementService.getLedgerAccountTypeName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
 
