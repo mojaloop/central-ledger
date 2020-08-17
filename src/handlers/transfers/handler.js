@@ -292,6 +292,18 @@ const fulfil = async (error, messages) => {
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'getById' }))
+
+    // We fail early and silently to allow timeout handler abort transfer
+    // if 'RESERVED' transfer state is sent in with v1.0 content-type
+    if (headers['content-type'].split('=')[1] === '1.0' && payload.transferState === TransferState.RESERVED) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `failSilentlyforReservedStateWith1.0ContentType--${actionLetter}0`))
+      const errorMessage = 'action "RESERVE" is not allowed in fulfil handler for v1.0 clients.'
+      Logger.isErrorEnabled && Logger.error(errorMessage)
+      !!span && span.error(errorMessage)
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
+    }
+
     const transfer = await TransferService.getById(transferId)
     const transferStateEnum = transfer && transfer.transferStateEnumeration
 

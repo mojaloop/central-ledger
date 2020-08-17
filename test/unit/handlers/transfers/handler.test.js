@@ -131,7 +131,7 @@ const messageProtocol = {
   to: transfer.payeeFsp,
   type: 'application/json',
   content: {
-    headers: { 'fspiop-destination': transfer.payerFsp },
+    headers: { 'fspiop-destination': transfer.payerFsp, 'content-type': 'application/vnd.interoperability.transfers+json;version=1.1' },
     uriParams: { id: transfer.transferId },
     payload: transfer
   },
@@ -177,7 +177,8 @@ const fulfilMessages = [
         uriParams: { id: messageProtocol.content.uriParams.id },
         headers: {
           'fspiop-source': 'dfsp1',
-          'fspiop-destination': 'dfsp2'
+          'fspiop-destination': 'dfsp2',
+          'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
         }
       },
       metadata: {
@@ -196,7 +197,8 @@ const fulfilMessages = [
         uriParams: { id: messageProtocolBulkCommit.content.uriParams.id },
         headers: {
           'fspiop-source': 'dfsp1',
-          'fspiop-destination': 'dfsp2'
+          'fspiop-destination': 'dfsp2',
+          'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
         }
       },
       metadata: {
@@ -957,6 +959,20 @@ Test('Transfer handler', transferHandlerTest => {
   })
 
   transferHandlerTest.test('fulfil should', fulfilTest => {
+    fulfilTest.test('fail validation when when RESERVED transfer state is received from v1.0 clients', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      localfulfilMessages[0].value.content.headers['content-type'] = 'application/vnd.interoperability.transfers+json;version=1.0'
+      localfulfilMessages[0].value.content.payload.transferState = 'RESERVED'
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve(null))
+      Kafka.proceed.returns(true)
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      test.equal(result, true)
+      test.end()
+    })
+
     fulfilTest.test('fail validation when invalid event action is provided', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
