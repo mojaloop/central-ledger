@@ -143,11 +143,13 @@ const prepareTestData = async (dataObj) => {
 
   const prepareHeaders = {
     'fspiop-source': payer.participant.name,
-    'fspiop-destination': payee.participant.name
+    'fspiop-destination': payee.participant.name,
+    'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
   }
   const fulfilAbortRejectHeaders = {
     'fspiop-source': payee.participant.name,
-    'fspiop-destination': payer.participant.name
+    'fspiop-destination': payer.participant.name,
+    'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
   }
 
   const fulfilPayload = {
