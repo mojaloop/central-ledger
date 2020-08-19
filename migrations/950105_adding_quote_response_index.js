@@ -33,12 +33,11 @@
 
 exports.up = function (knex) {
   return knex.schema.table('quoteResponse', (t) => {
-    t.index('ilpCondition')
+    t.unique('ilpCondition')
   })
 }
-
 exports.down = function (knex) {
-  return knex.schema.table('quoteResponse', (t) => {
-    t.dropIndex('ilpCondition')
+  return knex.schema.table('participantContact', (t) => {
+    t.dropUnique('ilpCondition')
   })
 }
