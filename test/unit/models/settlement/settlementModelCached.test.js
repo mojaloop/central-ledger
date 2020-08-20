@@ -75,7 +75,7 @@ Test('SettlementModel cached model', async (settlementModelCachedTest) => {
     test.end()
   })
 
-  await settlementModelCachedTest.test('getById(), getByName() and getAll() work', async (test) => {
+  await settlementModelCachedTest.test('getById(), getByName(), getByLedgerAccountTypeId() and getAll() work', async (test) => {
     let cache = null
     const cacheClient = {
       createKey: sandbox.stub().returns({}),
@@ -95,6 +95,10 @@ Test('SettlementModel cached model', async (settlementModelCachedTest) => {
     const settlementModelByName = await Model.getByName(settlementModelFixtures[1].name)
     test.equal(JSON.stringify(settlementModelByName), JSON.stringify(settlementModelFixtures[1]), 'getByName() works')
 
+    // check getByLedgerAccountTypeId()
+    const settlementModelByLedgerAccountTypeId = await Model.getByLedgerAccountTypeId(settlementModelFixtures[1].ledgerAccountTypeId)
+    test.equal(JSON.stringify(settlementModelByLedgerAccountTypeId), JSON.stringify(settlementModelFixtures[1]), 'getByLedgerAccountTypeId() works')
+
     // check getAll()
     const participantsAll = await Model.getAll()
     test.equal(JSON.stringify(participantsAll), JSON.stringify(settlementModelFixtures), 'getAll() works')
@@ -102,7 +106,7 @@ Test('SettlementModel cached model', async (settlementModelCachedTest) => {
     test.end()
   })
 
-  await settlementModelCachedTest.test('getById(), getByName() and getAll() fail when error thrown', async (test) => {
+  await settlementModelCachedTest.test('getById(), getByName(), getByLedgerAccountTypeId() and getAll() fail when error thrown', async (test) => {
     const cacheClient = {
       createKey: sandbox.stub().returns({}),
       get: () => null
@@ -122,6 +126,14 @@ Test('SettlementModel cached model', async (settlementModelCachedTest) => {
     // check getByName()
     try {
       await Model.getByName(settlementModelFixtures[1].name)
+      test.fail('Error not thrown')
+    } catch (err) {
+      test.pass('Error thrown')
+    }
+
+    // check getByLedgerAccountTypeId()
+    try {
+      await Model.getByLedgerAccountTypeId(settlementModelFixtures[1].ledgerAccountTypeId)
       test.fail('Error not thrown')
     } catch (err) {
       test.pass('Error thrown')
