@@ -137,18 +137,3 @@ exports.getAll = async () => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
-const withInvalidate = (theFunctionName) => {
-  return async (...args) => {
-    try {
-      const result = await SettlementModel[theFunctionName](...args)
-      await exports.invalidateSettlementModelsCache()
-      return result
-    } catch (err) {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    }
-  }
-}
-
-exports.create = withInvalidate('create')
-exports.update = withInvalidate('update')
