@@ -6,6 +6,7 @@ const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const PositionService = require('../../../../src/domain/position')
+const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaConsumer = Consumer.Consumer
@@ -177,6 +178,7 @@ Test('Position handler', transferHandlerTest => {
     sandbox.stub(TransferService)
     sandbox.stub(PositionService)
     sandbox.stub(TransferStateChange)
+    sandbox.stub(SettlementModelCached)
     Kafka.transformAccountToTopicName.returns(topicName)
     Kafka.produceGeneralMessage.resolves()
     test.end()
