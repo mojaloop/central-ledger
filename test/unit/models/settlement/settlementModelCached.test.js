@@ -75,6 +75,23 @@ Test('SettlementModel cached model', async (settlementModelCachedTest) => {
     test.end()
   })
 
+  await settlementModelCachedTest.test('calls drop() for invalidateSettlementModelsCache', async (test) => {
+    // initialize
+    const cacheClient = {
+      createKey: sandbox.stub().returns({}),
+      drop: sandbox.stub()
+    }
+    Cache.registerCacheClient.returns(cacheClient)
+    await Model.initialize()
+
+    // check
+    test.notOk(cacheClient.drop.calledOnce)
+    await Model.invalidateSettlementModelsCache()
+    test.ok(cacheClient.drop.calledOnce)
+
+    test.end()
+  })
+
   await settlementModelCachedTest.test('getById(), getByName(), getByLedgerAccountTypeId() and getAll() work', async (test) => {
     let cache = null
     const cacheClient = {
