@@ -167,7 +167,7 @@ const endpointTypes = [
     description: 'Participant callback URL where POST /consentRequests can be sent'
   },
   {
-    name: 'TP_CALLBACL_URL_CONSENT_REQUEST_PUT',
+    name: 'TP_CB_URL_CONSENT_REQUEST_PUT',
     description: 'Participant callback URL where PUT /consentRequests/{ID} can be sent'
   },
   {
