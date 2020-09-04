@@ -139,6 +139,10 @@ const endpointTypes = [
     description: 'Participant callback URL to which transaction requests can be sent'
   },
   {
+    name: 'FSPIOP_CALLBACK_URL_BULK_QUOTES',
+    description: 'Bulk Quotes callback URL to which put bulkQuotes requests can be sent'
+  },
+  {
     name: 'TP_CB_URL_TRANSACTION_REQUEST_POST',
     description: 'Participant callback URL where POST /thirdpartyRequests/transactions can be sent'
   },

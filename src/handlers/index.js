@@ -59,6 +59,7 @@ Program.command('handler') // sub-command name, coffeeType = type, required
   .option('--bulkprepare', 'Start the Bulk Prepare Handler')
   .option('--bulkfulfil', 'Start the Bulk Fulfil Handler')
   .option('--bulkprocessing', 'Start the Bulk Processing Handler')
+  .option('--bulkget', 'Start the Bulk Get Handler')
   // .option('--reject', 'Start the Reject Handler')
 
   // function to execute when command is uses
@@ -132,6 +133,14 @@ Program.command('handler') // sub-command name, coffeeType = type, required
       Logger.isDebugEnabled && Logger.debug('CLI: Executing --bulkprocessing')
       const handler = {
         type: 'bulkprocessing',
+        enabled: true
+      }
+      handlerList.push(handler)
+    }
+    if (args.bulkget) {
+      Logger.isDebugEnabled && Logger.debug('CLI: Executing --bulkget')
+      const handler = {
+        type: 'bulkget',
         enabled: true
       }
       handlerList.push(handler)

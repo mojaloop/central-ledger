@@ -24,7 +24,7 @@
 'use strict'
 
 /**
- * @module src/domain/transfer/
+ * @module src/domain/bulkTransfer/
  */
 
 const Enum = require('@mojaloop/central-services-shared').Enum
@@ -54,7 +54,7 @@ const getBulkTransferById = async (id) => {
         }
         if (transfer.errorCode) {
           result.errorInformation = {
-            errorCode: transfer.errorCode,
+            errorCode: transfer.errorCode.toString(),
             errorDescription: transfer.errorDescription
           }
         } else {
@@ -124,7 +124,7 @@ const getBulkTransferById = async (id) => {
       payerFsp: bulkTransfer.payerFsp,
       payeeFsp: bulkTransfer.payeeFsp,
       expiration: bulkTransfer.expirationDate,
-      completedDate: bulkTransfer.completedDate,
+      completedDate: bulkTransfer.completedTimestamp,
       payerBulkTransfer,
       payeeBulkTransfer
     }

@@ -25,6 +25,7 @@
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Steven Oderayi <steven.oderayi@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -130,7 +131,18 @@ const validateBulkTransferFulfilment = async (payload, headers) => {
   return { isValid, reasons }
 }
 
+const validateParticipantBulkTransferId = async function (participantName, bulkTransferId) {
+  const bulkTransferParticipant = await BulkTransferService.getBulkTransferParticipant(participantName, bulkTransferId)
+  let validationPassed = false
+  if (Array.isArray(bulkTransferParticipant) && bulkTransferParticipant.length > 0) {
+    validationPassed = true
+  }
+  return validationPassed
+}
+
 module.exports = {
   validateBulkTransfer,
-  validateBulkTransferFulfilment
+  validateBulkTransferFulfilment,
+  validateParticipantByName,
+  validateParticipantBulkTransferId
 }

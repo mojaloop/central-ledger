@@ -34,6 +34,7 @@
 const BulkPrepareHandlers = require('./prepare/handler')
 const BulkFulfilHandlers = require('./fulfil/handler')
 const BulkProcessingHandlers = require('./processing/handler')
+const GetBulkTransferHandlers = require('./get/handler')
 const Logger = require('@mojaloop/central-services-logger')
 
 /**
@@ -49,6 +50,7 @@ const registerAllHandlers = async () => {
     await BulkPrepareHandlers.registerAllHandlers()
     await BulkFulfilHandlers.registerAllHandlers()
     await BulkProcessingHandlers.registerAllHandlers()
+    await GetBulkTransferHandlers.registerAllHandlers()
     return true
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
@@ -60,5 +62,6 @@ module.exports = {
   registerBulkPrepareHandler: BulkPrepareHandlers.registerBulkPrepareHandler,
   registerBulkFulfilHandler: BulkFulfilHandlers.registerBulkFulfilHandler,
   registerBulkProcessingHandler: BulkProcessingHandlers.registerBulkProcessingHandler,
+  registerGetBulkTransferHandler: GetBulkTransferHandlers.registerGetBulkTransferHandler,
   registerAllHandlers
 }
