@@ -1,5 +1,6 @@
 const RC = require('rc')('CLEDG', require('../../config/default.json'))
 
+// load configuration from env here
 module.exports = {
   HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
   PORT: RC.PORT,
@@ -67,5 +68,6 @@ module.exports = {
       // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
     },
     debug: RC.DATABASE.DEBUG
-  }
+  },
+  ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES: RC.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES
 }
