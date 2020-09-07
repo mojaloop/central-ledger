@@ -20,75 +20,51 @@
 
  * Claudio Viola <claudio.viola@modusbox.com>
  --------------
- ******/
- 'use strict'
+******/
+'use strict'
 
-// const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
-// const ErrorHandler = require('@mojaloop/central-services-error-handling')
-// const ParticipantFacade = require('../../models/participant/facade')
-// const ParticipantPosition = require('../../models/participant/participantPosition')
-// const ParticipantCurrency = require('../../models/participant/participantCurrency')
-// const ParticipantCurrencyCached = require('../../models/participant/participantCurrencyCached')
-// const Config = require('../../lib/config')
+const LedgerAccountTypeModel = require('../models/ledgerAccountType/ledgerAccountType')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Config = require('./config')
 const Logger = require('@mojaloop/central-services-logger')
-
-// const Db = require('../../lib/db')
-const ConfigValidator = require('./configValidator');
-
+const LedgerAccountTypesService = require('../domain/ledgerAccountTypes')
+const Db = require('./db')
+const ConfigValidator = require('./configValidator')
 
 /**
- * [initializeConfigurableSeeds Adds configurable seeds data]
+ * [initializeSeedData Adds configurable seeds data]
  */
 async function initializeSeedData () {
-  // try {
-    await ConfigValidator.validateConfig()
-  //   if (validationResult.error) {
-  //     Logger.isErrorEnabled && Logger.error(validationResult.error)
-  //     throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Configured seed data schema is not valid: ${validationResult.error}`)
-  //   }
-  // // }
-  // catch (err) {
-  //   Logger.isErrorEnabled && Logger.error(err)
-  //   // throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Configured seed data schema is not valid: ${validationResult.error}`)
-  // }
+  await ConfigValidator.validateConfig()
+  const ledgerAccountTypesNamesToCreate = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.map(item => item.name)
+  console.log(ledgerAccountTypesNamesToCreate)
+  const knex = Db.getKnex()
+  return knex.transaction(async trx => {
+    try {
+      let existingAccountTypes = await LedgerAccountTypeModel.getLedgerAccountsByName(ledgerAccountTypesNamesToCreate, trx)
+      existingAccountTypes = existingAccountTypes.map(record => record.name)
+      if (existingAccountTypes.length !== ledgerAccountTypesNamesToCreate.length) {
+        const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
+        const recordsToCreate = missingAccountTypes.map(item => ({
+          name: item.name,
+          description: item.description,
+          isSettleable: true,
+          isActive: true
+        }))
+        console.log(recordsToCreate)
+        const ledgerAccountTypesIds = await LedgerAccountTypeModel.bulkInsert(recordsToCreate, trx)
+        await Promise.all(ledgerAccountTypesIds.map(async ledgerAccountTypeId => {
+          await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountTypeId, 'configSeeder', trx)
+        }))
+      }
+      await trx.commit
+    } catch (err) {
+      await trx.rollback
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  })
 }
 
 module.exports = {
   initializeSeedData
 }
-//     try {
-//
-//       const knex = Db.getKnex()
-//       await knex.transaction(async trx => {
-//         try {
-//           const ledgerAccountTypeId = await LedgerAccountTypeModel.create(name, description, isActive, isSettleable, trx)
-//           if (isSettleable === true) {
-//             const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
-//             const participantCurrencies = nonHubParticipantWithCurrencies.map(nonHubParticipantWithCurrency => ({
-//               participantId: nonHubParticipantWithCurrency.participantId,
-//               currencyId: nonHubParticipantWithCurrency.currencyId,
-//               ledgerAccountTypeId: ledgerAccountTypeId,
-//               isActive: true,
-//               createdBy: 'ledgerAccountType'
-//             }))
-//             const participantCurrencyCreatedRecordIds = await ParticipantCurrency.createParticipantCurrencyRecords(participantCurrencies, trx)
-//             const participantPositionRecords = participantCurrencyCreatedRecordIds.map(currencyId => ({
-//               participantCurrencyId: currencyId.participantCurrencyId,
-//               value: 0.0000,
-//               reservedValue: 0.0000
-//             }))
-//             await ParticipantPosition.createParticipantPositionRecords(participantPositionRecords, trx)
-//             await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
-//           }
-//           await trx.commit()
-//         } catch (err) {
-//           await trx.rollback()
-//           throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//         }
-//       })
-//       return true
-//     } catch (err) {
-//       throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//     }
-//   }
-// }
