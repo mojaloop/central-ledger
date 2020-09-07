@@ -1,10 +1,10 @@
 
 const Joi = require('@hapi/joi')
 const Config = require('./config')
-const currencyList = require('../../../seeds/currency.js').currencyList
-const settlementGranularityList = require('../../../seeds/settlementGranularity.js').settlementGranularityList
-const settlementInterchangeList = require('../../../seeds/settlementInterchange.js').settlementInterchangeList
-const settlementDelayList = require('../../../seeds/settlementDelay.js').settlementDelayList
+const currencyList = require('../../seeds/currency.js').currencyList
+const settlementGranularityList = require('../../seeds/settlementGranularity.js').settlementGranularityList
+const settlementInterchangeList = require('../../seeds/settlementInterchange.js').settlementInterchangeList
+const settlementDelayList = require('../../seeds/settlementDelay.js').settlementDelayList
 
 const additionalParticipantLedgerAccountTypeSchema = Joi.array().items(Joi.object({
   name: Joi.string()
