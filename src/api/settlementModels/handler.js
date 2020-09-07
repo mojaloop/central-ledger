@@ -98,36 +98,13 @@ const update = async function (request) {
 const create = async function (request, h) {
   Sidecar.logRequest(request)
   try {
-    const settlementGranularity = Enum.SettlementGranularity[request.payload.settlementGranularity]
-    const settlementInterchange = Enum.SettlementInterchange[request.payload.settlementInterchange]
-    const settlementDelay = Enum.SettlementDelay[request.payload.settlementDelay]
-    const [ledgerAccountType, settlementAccountType] = await validateSettlementModel(request.payload)
-    await SettlementService.createSettlementModel(request.payload.name, true, settlementGranularity, settlementInterchange, settlementDelay, request.payload.currency, request.payload.requireLiquidityCheck, ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, request.payload.autoPositionReset)
+    await SettlementService.createSettlementModel(request.payload)
     return h.response().code(201)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
-const validateSettlementModel = async function (settlementModel, settlementGranularity, settlementInterchange, settlementDelay) {
-  const { isValid, reasons } = Util.Settlement.validateSettlementModel(settlementDelay, settlementGranularity, settlementInterchange)
-  if (!isValid) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, reasons.join('. '))
-  }
-  const ledgerAccountType = await SettlementService.getLedgerAccountTypeName(settlementModel.ledgerAccountType)
-  if (!ledgerAccountType) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Ledger account type, ${ledgerAccountType} was not found`)
-  }
-  const settlementAccountType = await SettlementService.getLedgerAccountTypeName(settlementModel.settlementAccountType)
-  if (!settlementAccountType) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Settlement account type, ${settlementAccountType} was not found`)
-  }
-  const settlementModelExist = await SettlementService.getByName(settlementModel.name)
-  if (settlementModelExist) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, `The Settlement Model, ${settlementModelExist} already exists`)
-  }
-  return [ledgerAccountType, settlementAccountType]
-}
 module.exports = {
   create,
   getByName,

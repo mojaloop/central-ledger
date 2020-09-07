@@ -29,6 +29,7 @@ const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset) => {
+  console.log(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset)
   try {
     return await Db.settlementModel.insert({
       name,
@@ -64,6 +65,36 @@ exports.getAll = async () => {
 exports.update = async (settlementModel, isActive) => {
   try {
     return await Db.settlementModel.update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+exports.getSettlementModelsByName = async (names, trx = null) => {
+  try {
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const settlementModelNames = knex('settlementModel')
+          .select('name')
+          .whereIn('name', names)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return settlementModelNames
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

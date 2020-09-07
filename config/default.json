@@ -449,5 +449,9 @@
       "name": "INTERCHANGE_FEE_SETTLEMENT",
       "description": "Interchange fees settlement account"
     }
+  ],
+  "SETTLEMENT_MODELS": [
+    "CGS",
+    "MULTILATERALDEFERREDNET"
   ]
 }

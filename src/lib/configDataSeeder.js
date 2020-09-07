@@ -27,36 +27,47 @@ const LedgerAccountTypeModel = require('../models/ledgerAccountType/ledgerAccoun
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('./config')
 const Logger = require('@mojaloop/central-services-logger')
+const SettlementService = require('../domain/settlement')
+const SettlementModel = require('../models/settlement/settlementModel')
+
 const LedgerAccountTypesService = require('../domain/ledgerAccountTypes')
 const Db = require('./db')
 const ConfigValidator = require('./configValidator')
 
+
+const SETTLEMENT_MODELS_ALIASES = {
+  "CGS": {
+    "name": "ContinousGross",
+    "settlementGranularity": "GROSS",
+    "settlementInterchange": "BILATERAL",
+    "settlementDelay": "IMMEDIATE",
+    "requireLiquidityCheck": true,
+    "ledgerAccountType": "POSITION",
+    "autoPositionReset": false,
+    "settlementAccountType": "SETTLEMENT"
+  },
+  "MULTILATERALDEFERREDNET": {
+    "name": "MultilateralDeferredNet",
+    "settlementGranularity": "NET",
+    "settlementInterchange": "MULTILATERAL",
+    "settlementDelay": "DEFERRED",
+    "requireLiquidityCheck": true,
+    "ledgerAccountType": "POSITION",
+    "autoPositionReset": false,
+    "settlementAccountType": "SETTLEMENT"
+  }
+}
 /**
  * [initializeSeedData Adds configurable seeds data]
  */
 async function initializeSeedData () {
   await ConfigValidator.validateConfig()
-  const ledgerAccountTypesNamesToCreate = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.map(item => item.name)
-  console.log(ledgerAccountTypesNamesToCreate)
   const knex = Db.getKnex()
   return knex.transaction(async trx => {
     try {
-      let existingAccountTypes = await LedgerAccountTypeModel.getLedgerAccountsByName(ledgerAccountTypesNamesToCreate, trx)
-      existingAccountTypes = existingAccountTypes.map(record => record.name)
-      if (existingAccountTypes.length !== ledgerAccountTypesNamesToCreate.length) {
-        const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
-        const recordsToCreate = missingAccountTypes.map(item => ({
-          name: item.name,
-          description: item.description,
-          isSettleable: true,
-          isActive: true
-        }))
-        console.log(recordsToCreate)
-        const ledgerAccountTypesIds = await LedgerAccountTypeModel.bulkInsert(recordsToCreate, trx)
-        await Promise.all(ledgerAccountTypesIds.map(async ledgerAccountTypeId => {
-          await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountTypeId, 'configSeeder', trx)
-        }))
-      }
+      await initializeLedgerAccountTypes(trx)
+      await initializeSettlementModels(trx)
+
       await trx.commit
     } catch (err) {
       await trx.rollback
@@ -65,6 +76,55 @@ async function initializeSeedData () {
   })
 }
 
+async function initializeSettlementModels (trx) {
+  const settlementModelNamesToCreate = Config.SETTLEMENT_MODELS.map(item => {
+    if (typeof item === 'string') {
+      return SETTLEMENT_MODELS_ALIASES[item].name
+    }
+    return item.name
+  })
+  console.log(settlementModelNamesToCreate)
+  let existingSettlementModelsNames = await SettlementModel.getSettlementModelsByName(settlementModelNamesToCreate, trx)
+  console.log(existingSettlementModelsNames)
+  if (existingSettlementModelsNames.length !== settlementModelNamesToCreate.length) {
+    const missingAccountTypes = Config.SETTLEMENT_MODELS.filter(item => {
+      if (typeof item === 'string') {
+        return !existingSettlementModelsNames.includes(SETTLEMENT_MODELS_ALIASES[item].name)
+      }
+      return !existingSettlementModelsNames.includes(item.name)
+    })
+    console.log(missingAccountTypes)
+    const recordsToCreate = missingAccountTypes.map(item => {
+      if (typeof item === 'string') {
+        return SETTLEMENT_MODELS_ALIASES[item]
+      }
+      return item
+    })
+    console.log('RECORDSTO CREATE', recordsToCreate)
+    await Promise.all(recordsToCreate.map(async record => {
+      return SettlementService.createSettlementModel(record)
+    }))
+  }
+}
+async function initializeLedgerAccountTypes (trx) {
+  const ledgerAccountTypesNamesToCreate = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.map(item => item.name)
+  let existingAccountTypes = await LedgerAccountTypeModel.getLedgerAccountsByName(ledgerAccountTypesNamesToCreate, trx)
+  existingAccountTypes = existingAccountTypes.map(record => record.name)
+  if (existingAccountTypes.length !== ledgerAccountTypesNamesToCreate.length) {
+    const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
+    const recordsToCreate = missingAccountTypes.map(item => ({
+      name: item.name,
+      description: item.description,
+      isSettleable: true,
+      isActive: true
+    }))
+    console.log(recordsToCreate)
+    const ledgerAccountTypesIds = await LedgerAccountTypeModel.bulkInsert(recordsToCreate, trx)
+    await Promise.all(ledgerAccountTypesIds.map(async ledgerAccountTypeId => {
+      await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountTypeId, 'configSeeder', trx)
+    }))
+  }
+}
 module.exports = {
   initializeSeedData
 }
