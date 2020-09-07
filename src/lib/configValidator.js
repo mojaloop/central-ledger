@@ -6,6 +6,7 @@ const settlementGranularityList = require('../../seeds/settlementGranularity.js'
 const settlementInterchangeList = require('../../seeds/settlementInterchange.js').settlementInterchangeList
 const settlementDelayList = require('../../seeds/settlementDelay.js').settlementDelayList
 
+
 const additionalParticipantLedgerAccountTypeSchema = Joi.array().items(Joi.object({
   name: Joi.string()
     .min(2)
@@ -37,12 +38,8 @@ const additionalSettlementModelsSchema = Joi.array().items(
  * @return {[Joi.validationResult]} [ ]
  */
 async function validateConfig () {
-  console.log('validating')
   const res = await additionalParticipantLedgerAccountTypeSchema.validateAsync(Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES)
-  console.log('validating', res)
-
   const res2 = await additionalSettlementModelsSchema.validateAsync(Config.SETTLEMENT_MODELS)
-  console.log('validating2', res2)
 }
 
 module.exports = {

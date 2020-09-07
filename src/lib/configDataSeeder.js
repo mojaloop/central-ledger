@@ -57,6 +57,7 @@ const SETTLEMENT_MODELS_ALIASES = {
     "settlementAccountType": "SETTLEMENT"
   }
 }
+
 /**
  * [initializeSeedData Adds configurable seeds data]
  */
