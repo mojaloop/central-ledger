@@ -120,12 +120,12 @@ exports.createParticipantCurrencyRecords = async (participantCurrencies, trx) =>
           .whereIn('currencyId', currenciesIds)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit()
+          await trx.commit
         }
         return res
       } catch (err) {
         if (doCommit) {
-          await trx.rollback()
+          await trx.rollback
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }

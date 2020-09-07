@@ -277,9 +277,8 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
       }
     }
 
-  return server
-  }
-  catch (err) {
+    return server
+  } catch (err) {
     Logger.isErrorEnabled && Logger.error(`An error occured during initialization ${err} found!`)
     await Db.disconnect()
     process.exit(1)

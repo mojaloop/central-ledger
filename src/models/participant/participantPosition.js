@@ -113,11 +113,11 @@ const createParticipantPositionRecords = async (participantPositions, trx) => {
           .batchInsert('participantPosition', participantPositions)
           .transacting(trx)
         if (doCommit) {
-          await trx.commit()
+          await trx.commit
         }
       } catch (err) {
         if (doCommit) {
-          await trx.rollback()
+          await trx.rollback
         }
         throw ErrorHandler.Factory.reformatFSPIOPError(err)
       }
