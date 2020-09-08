@@ -7,7 +7,7 @@
     "PORT": 3306,
     "USER": "central_ledger",
     "PASSWORD": "password",
-    "SCHEMA": "central_ledger_integration_1",
+    "SCHEMA": "central_ledger",
     "POOL_MIN_SIZE": 10,
     "POOL_MAX_SIZE": 10,
     "ACQUIRE_TIMEOUT_MILLIS": 30000,
@@ -442,11 +442,11 @@
   },
   "ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES":  [
     {
-      "name": "INTERCHANGEFEE",
+      "name": "INTERCHANGE_FEE",
       "description": "Interchange fees chargeable to DFSPs"
     },
     {
-      "name": "INTERCHANGEFEESETTLEMENT",
+      "name": "INTERCHANGE_FEE_SETTLEMENT",
       "description": "Interchange fees settlement account"
     }
   ],
