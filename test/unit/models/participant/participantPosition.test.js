@@ -199,8 +199,16 @@ Test('Participant Position model', async (participantPositionTest) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      const trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
+      const trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
@@ -227,7 +235,8 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.deepEqual(batchInsertStub.lastCall.args[1], participantPositions, 'all records should be inserted')
       test.equal(transactingStub.callCount, 1, 'make the database calls as transaction')
       test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
-      test.equal(trxStub.commit.callCount, 1, 'commit the transaction if no transaction is passed')
+      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
+
       test.end()
     } catch (err) {
       Logger.error(`createParticipantPositionRecords failed with error - ${err}`)
@@ -238,12 +247,20 @@ Test('Participant Position model', async (participantPositionTest) => {
 
   await participantPositionTest.test('createParticipantPositionRecords should', async (test) => {
     let trxStub
+    let trxSpyRollBack
+
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -271,19 +288,27 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 1, 'rollback the transaction if no transaction is passed')
+      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
       test.end()
     }
   })
 
   await participantPositionTest.test('createParticipantCurrencyRecords should', async (test) => {
     let trxStub
+    let trxSpyRollBack
+
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, [trxStub, true])
       Db.getKnex.returns(knexStub)
@@ -311,7 +336,7 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 0, 'not rollback the transaction if transaction is passed')
+      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if  transaction is passed')
       test.end()
     }
   })

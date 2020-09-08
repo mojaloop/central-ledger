@@ -26,7 +26,6 @@
 const LedgerAccountTypeModel = require('../models/ledgerAccountType/ledgerAccountType')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('./config')
-const Logger = require('@mojaloop/central-services-logger')
 const SettlementService = require('../domain/settlement')
 const SettlementModel = require('../models/settlement/settlementModel')
 
@@ -34,29 +33,50 @@ const LedgerAccountTypesService = require('../domain/ledgerAccountTypes')
 const Db = require('./db')
 const ConfigValidator = require('./configValidator')
 
-
 const SETTLEMENT_MODELS_ALIASES = {
-  "CGS": {
-    "name": "ContinousGross",
-    "settlementGranularity": "GROSS",
-    "settlementInterchange": "BILATERAL",
-    "settlementDelay": "IMMEDIATE",
-    "requireLiquidityCheck": true,
-    "ledgerAccountType": "POSITION",
-    "autoPositionReset": false,
-    "settlementAccountType": "SETTLEMENT"
+  CGS: {
+    name: 'ContinousGross',
+    settlementGranularity: 'GROSS',
+    settlementInterchange: 'BILATERAL',
+    settlementDelay: 'IMMEDIATE',
+    requireLiquidityCheck: true,
+    ledgerAccountType: 'POSITION',
+    autoPositionReset: false,
+    settlementAccountType: 'SETTLEMENT'
   },
-  "MULTILATERALDEFERREDNET": {
-    "name": "MultilateralDeferredNet",
-    "settlementGranularity": "NET",
-    "settlementInterchange": "MULTILATERAL",
-    "settlementDelay": "DEFERRED",
-    "requireLiquidityCheck": true,
-    "ledgerAccountType": "POSITION",
-    "autoPositionReset": false,
-    "settlementAccountType": "SETTLEMENT"
+  MULTILATERALDEFERREDNET: {
+    name: 'MultilateralDeferredNet',
+    settlementGranularity: 'NET',
+    settlementInterchange: 'MULTILATERAL',
+    settlementDelay: 'DEFERRED',
+    requireLiquidityCheck: true,
+    ledgerAccountType: 'POSITION',
+    autoPositionReset: false,
+    settlementAccountType: 'SETTLEMENT'
+  },
+  INTERCHANGEFEE: {
+    name: 'InterchangeFee',
+    settlementGranularity: 'NET',
+    settlementInterchange: 'MULTILATERAL',
+    settlementDelay: 'DEFERRED',
+    requireLiquidityCheck: false,
+    ledgerAccountType: 'INTERCHANGE_FEE',
+    autoPositionReset: true,
+    settlementAccountType: 'SETTLEMENT'
   }
 }
+
+// ALLOWED COMBINATION
+//   [
+//   CGS,
+//   INTERCHANGEFEES
+//  ],
+//  [ CGS ],
+//  [ MULTILATERAL ]
+//
+// INSERT INTO `settlementModel` VALUES (
+//   1,'InterchangeFee',1,2,2,2,'TZS',0,6,1,0),
+//   (2,'ContinuousGross',1,1,2,1,'TZS',1,1,0,0);
 
 /**
  * [initializeSeedData Adds configurable seeds data]
@@ -79,47 +99,36 @@ async function initializeSeedData () {
 
 async function initializeSettlementModels (trx) {
   const settlementModelNamesToCreate = Config.SETTLEMENT_MODELS.map(item => {
-    if (typeof item === 'string') {
-      return SETTLEMENT_MODELS_ALIASES[item].name
-    }
-    return item.name
+    return SETTLEMENT_MODELS_ALIASES[item].name
   })
-  console.log(settlementModelNamesToCreate)
   let existingSettlementModelsNames = await SettlementModel.getSettlementModelsByName(settlementModelNamesToCreate, trx)
-  console.log(existingSettlementModelsNames)
-  if (existingSettlementModelsNames.length !== settlementModelNamesToCreate.length) {
-    const missingAccountTypes = Config.SETTLEMENT_MODELS.filter(item => {
-      if (typeof item === 'string') {
-        return !existingSettlementModelsNames.includes(SETTLEMENT_MODELS_ALIASES[item].name)
-      }
-      return !existingSettlementModelsNames.includes(item.name)
-    })
-    console.log(missingAccountTypes)
+  existingSettlementModelsNames = existingSettlementModelsNames.map(record => record.name)
+  const missingAccountTypes = Config.SETTLEMENT_MODELS.filter(item => {
+    return !existingSettlementModelsNames.includes(SETTLEMENT_MODELS_ALIASES[item].name)
+  })
+  if (missingAccountTypes.length > 0) {
     const recordsToCreate = missingAccountTypes.map(item => {
-      if (typeof item === 'string') {
-        return SETTLEMENT_MODELS_ALIASES[item]
-      }
-      return item
+      return SETTLEMENT_MODELS_ALIASES[item]
     })
-    console.log('RECORDSTO CREATE', recordsToCreate)
     await Promise.all(recordsToCreate.map(async record => {
-      return SettlementService.createSettlementModel(record)
+      return SettlementService.createSettlementModel(record, trx)
     }))
   }
 }
+
 async function initializeLedgerAccountTypes (trx) {
   const ledgerAccountTypesNamesToCreate = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.map(item => item.name)
   let existingAccountTypes = await LedgerAccountTypeModel.getLedgerAccountsByName(ledgerAccountTypesNamesToCreate, trx)
   existingAccountTypes = existingAccountTypes.map(record => record.name)
-  if (existingAccountTypes.length !== ledgerAccountTypesNamesToCreate.length) {
-    const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
+
+  const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
+  if (missingAccountTypes.length > 0) {
     const recordsToCreate = missingAccountTypes.map(item => ({
       name: item.name,
       description: item.description,
       isSettleable: true,
       isActive: true
     }))
-    console.log(recordsToCreate)
     const ledgerAccountTypesIds = await LedgerAccountTypeModel.bulkInsert(recordsToCreate, trx)
     await Promise.all(ledgerAccountTypesIds.map(async ledgerAccountTypeId => {
       await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountTypeId, 'configSeeder', trx)

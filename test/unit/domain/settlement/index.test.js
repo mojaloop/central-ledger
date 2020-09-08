@@ -71,15 +71,137 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
     }
   ]
 
-  await settlementModelTest.test('create settlement model', async (assert) => {
+  //
+  await settlementModelTest.test('create should fail if ledger account type does not exists', async function (test) {
     try {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true
+      }
       sandbox.stub(SettlementModel, 'create')
-      const expected = await SettlementService.createSettlementModel('IMMEDIATE_GROSS', true, 1, 1, 1, 'USD', true, 'POSITION', true)
-      assert.equal(expected, true)
-      assert.end()
+      await SettlementService.createSettlementModel(payload)
+      test.fail('should have thrown an error')
+      test.end()
     } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
-      assert.end()
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Ledger account type was not found', 'throws Ledger account type was not found')
+      test.end()
+    }
+  })
+  await settlementModelTest.test('create should fail if settlement account type does not exists', async function (test) {
+    try {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }
+      sandbox.stub(SettlementModel, 'create')
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves(true)
+      LedgerAccountTypeModel.getLedgerAccountByName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
+
+      await SettlementService.createSettlementModel(payload)
+      test.fail('should have thrown an error')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Settlement account type was not found', 'throws Settlement account type was not found')
+      test.end()
+    }
+  })
+
+  await settlementModelTest.test('create should fail if definition is not supported', async function (test) {
+    try {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'GROSS',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true
+      }
+      sandbox.stub(SettlementModel, 'create')
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves(false)
+      // LedgerAccountTypeModel.getLedgerAccountByName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
+
+      await SettlementService.createSettlementModel(payload)
+      test.fail('should have thrown an error')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Invalid settlement model definition - delay-granularity-interchange combination is not supported', 'throws definition not supported error')
+      test.end()
+    }
+  })
+
+  await settlementModelTest.test('create should not create a settlementModel if it already exists', async function (test) {
+    try {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }
+      sandbox.stub(SettlementModel, 'create')
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
+      sandbox.stub(SettlementModel, 'getByName').returns(true)
+
+      const expected = await SettlementService.createSettlementModel(payload)
+      test.equal(expected, true, 'should return true')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Settlement Model already exists', 'throws Settlement Model already exists')
+      test.end()
+    }
+  })
+  await settlementModelTest.test('create should create a settlementModel if it does not exists', async function (test) {
+    try {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }
+      sandbox.stub(SettlementModel, 'create')
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
+      sandbox.stub(SettlementModel, 'getByName').returns(null)
+
+      const expected = await SettlementService.createSettlementModel(payload)
+      test.equal(expected, true, 'should return true')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Settlement account type was not found', 'throws Settlement account type was not found')
+      test.end()
     }
   })
 
@@ -94,6 +216,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       assert.end()
     }
   })
+
   await settlementModelTest.test('getLedgerAccountType by name name should return ledgerAccountType', async (assert) => {
     const name = {
       currency: 'AFA',

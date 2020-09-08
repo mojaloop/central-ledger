@@ -38,6 +38,8 @@ exports.getLedgerAccountByName = async (name) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
+/* istanbul ignore next */
 exports.getLedgerAccountsByName = async (names, trx = null) => {
   try {
     const knex = Db.getKnex()
@@ -68,6 +70,7 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
   }
 }
 
+/* istanbul ignore next */
 exports.bulkInsert = async (records, trx = null) => {
   try {
     const knex = Db.getKnex()

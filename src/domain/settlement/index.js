@@ -32,8 +32,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
 
-const createSettlementModel = async (settlementModel) => {
-  console.log(settlementModel)
+const createSettlementModel = async (settlementModel, trx) => {
   try {
     const settlementGranularityId = Enum.SettlementGranularity[settlementModel.settlementGranularity]
     const settlementInterchangeId = Enum.SettlementInterchange[settlementModel.settlementInterchange]
@@ -43,7 +42,7 @@ const createSettlementModel = async (settlementModel) => {
     await SettlementModelModel.create(settlementModel.name, true, settlementGranularityId,
       settlementInterchangeId, settlementDelayId, settlementModel.currencyId,
       settlementModel.requireLiquidityCheck,
-      ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset)
+      ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -97,15 +96,15 @@ const validateSettlementModel = async function (settlementModel, settlementDelay
   }
   const ledgerAccountType = await getLedgerAccountTypeName(settlementModel.ledgerAccountType)
   if (!ledgerAccountType) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Ledger account type, ${settlementModel.ledgerAccountType} was not found`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found')
   }
   const settlementAccountType = await getLedgerAccountTypeName(settlementModel.settlementAccountType)
   if (!settlementAccountType) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Settlement account type, ${settlementModel.settlementAccountType} was not found`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Settlement account type was not found')
   }
   const settlementModelExist = await getByName(settlementModel.name)
   if (settlementModelExist) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, `The Settlement Model, ${settlementModel.name} already exists`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Settlement Model already exists')
   }
   return [ledgerAccountType, settlementAccountType]
 }

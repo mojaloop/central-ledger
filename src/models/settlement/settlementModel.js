@@ -28,25 +28,46 @@
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset) => {
-  console.log(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset)
+/* istanbul ignore next */
+exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset, trx) => {
   try {
-    return await Db.settlementModel.insert({
-      name,
-      isActive,
-      settlementGranularityId,
-      settlementInterchangeId,
-      settlementDelayId,
-      currencyId,
-      requireLiquidityCheck,
-      ledgerAccountTypeId,
-      settlementAccountTypeId,
-      autoPositionReset
-    })
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        knex('settlementModel')
+          .insert({
+            name,
+            isActive,
+            settlementGranularityId,
+            settlementInterchangeId,
+            settlementDelayId,
+            currencyId,
+            requireLiquidityCheck,
+            ledgerAccountTypeId,
+            settlementAccountTypeId,
+            autoPositionReset
+          })
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
 exports.getByName = async (name) => {
   try {
     const result = await Db.settlementModel.find({ name: name })
@@ -70,6 +91,7 @@ exports.update = async (settlementModel, isActive) => {
   }
 }
 
+/* istanbul ignore next */
 exports.getSettlementModelsByName = async (names, trx = null) => {
   try {
     const knex = Db.getKnex()
