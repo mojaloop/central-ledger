@@ -42,15 +42,6 @@ const ledgerAccountTypes = [
   {
     name: 'HUB_MULTILATERAL_SETTLEMENT',
     description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
-  },
-  {
-    name: 'HUB_FEE',
-    description: 'An account to which fees will be charged or collected'
-  },
-  {
-    name: 'INTERCHANGE_FEE',
-    description: null,
-    isSettleable: 1
   }
 ]
 const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {

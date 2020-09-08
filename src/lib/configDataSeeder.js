@@ -62,7 +62,7 @@ const SETTLEMENT_MODELS_ALIASES = {
     requireLiquidityCheck: false,
     ledgerAccountType: 'INTERCHANGE_FEE',
     autoPositionReset: true,
-    settlementAccountType: 'SETTLEMENT'
+    settlementAccountType: 'INTERCHANGE_FEE_SETTLEMENT'
   }
 }
 
@@ -94,12 +94,10 @@ async function initializeSettlementModels (trx) {
   const missingAccountTypes = Config.SETTLEMENT_MODELS.filter(item => {
     return !existingSettlementModelsNames.includes(SETTLEMENT_MODELS_ALIASES[item].name)
   })
-  console.log('missingAccountTypes', missingAccountTypes)
   if (missingAccountTypes.length > 0) {
     const recordsToCreate = missingAccountTypes.map(item => {
       return SETTLEMENT_MODELS_ALIASES[item]
     })
-    console.log('recordsToCreate', recordsToCreate)
     await Promise.all(recordsToCreate.map(async record => {
       return SettlementService.createSettlementModel(record, trx)
     }))
