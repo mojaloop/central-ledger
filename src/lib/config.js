@@ -1,6 +1,5 @@
 const RC = require('rc')('CLEDG', require('../../config/default.json'))
 
-// load configuration from env here
 module.exports = {
   HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
   PORT: RC.PORT,

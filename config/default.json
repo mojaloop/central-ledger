@@ -442,16 +442,17 @@
   },
   "ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES":  [
     {
-      "name": "INTERCHANGE_FEE",
+      "name": "INTERCHANGEFEE",
       "description": "Interchange fees chargeable to DFSPs"
     },
     {
-      "name": "INTERCHANGE_FEE_SETTLEMENT",
+      "name": "INTERCHANGEFEESETTLEMENT",
       "description": "Interchange fees settlement account"
     }
   ],
   "SETTLEMENT_MODELS": [
     "CGS",
-    "MULTILATERALDEFERREDNET"
+    "MULTILATERALDEFERREDNET",
+    "INTERCHANGEFEE"
   ]
 }

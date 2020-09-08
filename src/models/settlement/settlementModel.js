@@ -29,12 +29,12 @@ const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /* istanbul ignore next */
-exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset, trx) => {
+exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset, trx = null) => {
   try {
     const knex = Db.getKnex()
     const trxFunction = async (trx, doCommit = true) => {
       try {
-        knex('settlementModel')
+        await knex('settlementModel')
           .insert({
             name,
             isActive,

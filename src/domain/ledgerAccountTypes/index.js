@@ -59,7 +59,6 @@ async function create (name, description, isActive = false, isSettleable = false
 async function createAssociatedParticipantAccounts (ledgerAccountTypeId, createdBy, trx = null) {
   try {
     const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
-    console.log('nonHubParticipantWithCurrencies', nonHubParticipantWithCurrencies)
     const participantCurrencies = nonHubParticipantWithCurrencies.map(nonHubParticipantWithCurrency => ({
       participantId: nonHubParticipantWithCurrency.participantId,
       currencyId: nonHubParticipantWithCurrency.currencyId,

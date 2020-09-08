@@ -136,7 +136,6 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       }
       sandbox.stub(SettlementModel, 'create')
       LedgerAccountTypeModel.getLedgerAccountByName.resolves(false)
-      // LedgerAccountTypeModel.getLedgerAccountByName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
 
       await SettlementService.createSettlementModel(payload)
       test.fail('should have thrown an error')

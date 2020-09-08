@@ -66,18 +66,6 @@ const SETTLEMENT_MODELS_ALIASES = {
   }
 }
 
-// ALLOWED COMBINATION
-//   [
-//   CGS,
-//   INTERCHANGEFEES
-//  ],
-//  [ CGS ],
-//  [ MULTILATERAL ]
-//
-// INSERT INTO `settlementModel` VALUES (
-//   1,'InterchangeFee',1,2,2,2,'TZS',0,6,1,0),
-//   (2,'ContinuousGross',1,1,2,1,'TZS',1,1,0,0);
-
 /**
  * [initializeSeedData Adds configurable seeds data]
  */
@@ -106,10 +94,12 @@ async function initializeSettlementModels (trx) {
   const missingAccountTypes = Config.SETTLEMENT_MODELS.filter(item => {
     return !existingSettlementModelsNames.includes(SETTLEMENT_MODELS_ALIASES[item].name)
   })
+  console.log('missingAccountTypes', missingAccountTypes)
   if (missingAccountTypes.length > 0) {
     const recordsToCreate = missingAccountTypes.map(item => {
       return SETTLEMENT_MODELS_ALIASES[item]
     })
+    console.log('recordsToCreate', recordsToCreate)
     await Promise.all(recordsToCreate.map(async record => {
       return SettlementService.createSettlementModel(record, trx)
     }))
