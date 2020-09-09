@@ -237,52 +237,46 @@ const initializeCache = async () => {
  * @returns {object} Returns HTTP Server object
  */
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
-  try {
-    await migrate(runMigrations)
-    await connectDatabase()
-    await ConfigDataSeeder.initializeSeedData()
-    await connectMongoose()
-    await initializeCache()
-    await Sidecar.connect(service)
-    initializeInstrumentation()
-    let server
-    switch (service) {
-      case 'api':
-      case 'admin': {
+  await migrate(runMigrations)
+  await connectDatabase()
+  await ConfigDataSeeder.initializeSeedData()
+  await connectMongoose()
+  await initializeCache()
+  await Sidecar.connect(service)
+  initializeInstrumentation()
+  let server
+  switch (service) {
+    case 'api':
+    case 'admin': {
+      server = await createServer(port, modules)
+      break
+    }
+    case 'handler': {
+      if (!Config.HANDLERS_API_DISABLED) {
         server = await createServer(port, modules)
-        break
       }
-      case 'handler': {
-        if (!Config.HANDLERS_API_DISABLED) {
-          server = await createServer(port, modules)
-        }
-        break
-      }
-      default: {
-        Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
-      }
+      break
     }
-
-    if (runHandlers) {
-      if (Array.isArray(handlers) && handlers.length > 0) {
-        await createHandlers(handlers)
-      } else {
-        await RegisterHandlers.registerAllHandlers()
-        // if (!Config.HANDLERS_CRON_DISABLED) {
-        //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-        //   // await KafkaCron.start('prepare')
-        //   await KafkaCron.start('position')
-        // }
-      }
+    default: {
+      Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
+      throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
     }
-
-    return server
-  } catch (err) {
-    Logger.isErrorEnabled && Logger.error(`An error occured during initialization ${err} found!`)
-    await Db.disconnect()
-    process.exit(1)
   }
+
+  if (runHandlers) {
+    if (Array.isArray(handlers) && handlers.length > 0) {
+      await createHandlers(handlers)
+    } else {
+      await RegisterHandlers.registerAllHandlers()
+      // if (!Config.HANDLERS_CRON_DISABLED) {
+      //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
+      //   // await KafkaCron.start('prepare')
+      //   await KafkaCron.start('position')
+      // }
+    }
+  }
+
+  return server
 }
 
 module.exports = {
