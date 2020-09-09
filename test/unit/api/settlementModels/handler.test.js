@@ -212,6 +212,21 @@ Test('SettlementModel', settlementModelHandlerTest => {
       }
     })
 
+    handlerTest.test('update should update, return settlement model if settlement model when inactive and utilize', async function (test) {
+      SettlementService.update.withArgs(settlementModel[0].name, { }).returns(Promise.resolve(settlementModelService[0]))
+      try {
+        const result = await Handler.update(createRequest({
+          params: { name: settlementModel[0].name },
+          payload: { }
+        }))
+        test.deepEqual(result, settlementModel[0], 'The results match')
+        test.end()
+      } catch (err) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
     handlerTest.test('update should throw error', async function (test) {
       SettlementService.update.withArgs(settlementModel[0].name, { isActive: 1 }).throws(new Error('Test error'))
       try {

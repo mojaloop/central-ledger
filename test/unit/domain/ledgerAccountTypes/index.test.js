@@ -193,6 +193,56 @@ Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
       assert.end()
     }
   })
+  await ledgerAccountTypeServiceTest.test('create when createParticipantCurrencyRecords service fails', async (assert) => {
+    try {
+      const payload = {
+        name: 'INTERCHANGE_FEE_SETTLEMENT',
+        description: 'settlement account type for interchange fees',
+        isActive: true,
+        isSettleable: true
+      }
+      LedgerAccountTypeModel.create.resolves(payload)
+      ParticipantFacade.getAllNonHubParticipantsWithCurrencies.resolves(existingParticipantWithCurrencies)
+      ParticipantCurrency.createParticipantCurrencyRecords.throws(new Error())
+      await LedgerAccountTypeService.create(payload.name, payload.description, payload.isActive, payload.isSettleable)
+      assert.fail('Error not thrown', 'should have thrown an error')
+      assert.end()
+    } catch (err) {
+      assert.equal(LedgerAccountTypeModel.create.callCount, 1, 'should call the model create function')
+      assert.equal(ParticipantCurrency.createParticipantCurrencyRecords.callCount, 1, 'should call the model createParticipantCurrencyRecords function')
+
+      assert.equal(trxStub.rollback.callCount, 1, 'should revert the transaction')
+      assert.ok(err instanceof Error, 'should throw an error')
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeServiceTest.test('create when no transaction is passed', async (assert) => {
+    try {
+      knexStub.transaction = sandbox.stub().callsArgWith(0, undefined)
+
+      const payload = {
+        name: 'INTERCHANGE_FEE_SETTLEMENT',
+        description: 'settlement account type for interchange fees',
+        isActive: true,
+        isSettleable: true
+      }
+      LedgerAccountTypeModel.create.resolves(payload)
+      ParticipantFacade.getAllNonHubParticipantsWithCurrencies.resolves(existingParticipantWithCurrencies)
+      ParticipantCurrency.createParticipantCurrencyRecords.throws(new Error())
+      await LedgerAccountTypeService.create(payload.name, payload.description, payload.isActive, payload.isSettleable)
+      assert.fail('Error not thrown', 'should have thrown an error')
+      assert.end()
+    } catch (err) {
+      assert.equal(LedgerAccountTypeModel.create.callCount, 1, 'should call the model create function')
+      assert.equal(ParticipantCurrency.createParticipantCurrencyRecords.callCount, 1, 'should call the model createParticipantCurrencyRecords function')
+      assert.equal(ParticipantCurrency.createParticipantCurrencyRecords.lastCall.args[1], null, 'should call the model createParticipantCurrencyRecords with null transaction')
+
+      // assert.equal(trxStub.rollback.callCount, 1, 'should revert the transaction')
+      assert.ok(err instanceof Error, 'should throw an error')
+      assert.end()
+    }
+  })
   await ledgerAccountTypeServiceTest.test('getAll should return all ledgerAccountTypes model', async (assert) => {
     const payload = [
       {
