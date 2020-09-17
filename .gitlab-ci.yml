@@ -51,12 +51,11 @@ Unit Test:
   #       - ./test/results/tape.xml
 
 
-# Add an imagepullsecret and configure the service account to use it
-# This allows the cluster to pull images from the private repo
-# without needing to modify the upstream OSS helm chart to allow specifying image pull credentials
-# NOTE: This step requires a deploy token to be created in this project called gitlab-deploy-token
-# See https://docs.gitlab.com/ee/user/project/deploy_tokens/index.html#gitlab-deploy-token for details
-Configure Service Account:
+
+# Deployment requires the mojaloop cluster to be configured in gitlab
+# as per https://gitlab.com/help/user/project/clusters/add_remove_clusters.md#add-existing-cluster
+# Note: Disable the 'Gitlab-managed cluster' option
+Deploy to Dev:
   stage: deploy
   image: dtzar/helm-kubectl:2.16.1
   variables:
@@ -66,6 +65,12 @@ Configure Service Account:
     kubernetes:
       namespace: mojaloop
   script:
+    - *env_vars
+    # Add an imagepullsecret and configure the service account to use it
+    # This allows the cluster to pull images from the private repo
+    # without needing to modify the upstream OSS helm chart to allow specifying image pull credentials
+    # NOTE: This step requires a deploy token to be created in this project called gitlab-deploy-token
+    # See https://docs.gitlab.com/ee/user/project/deploy_tokens/index.html#gitlab-deploy-token for details
     # Install coreutils so that we can use the GNU version of base64 and disable line wrapping (-w)
     - apk update && apk add coreutils
     # Set the required variables and base64 them
@@ -87,25 +92,6 @@ Configure Service Account:
     # Patch the service account to use the secret above for image pull
     - |
       kubectl -n mojaloop patch serviceaccount default -p "{\"imagePullSecrets\": [{\"name\": \"${CI_PROJECT_NAME}-imagepullsecret\"}]}"
-  only:
-    refs:
-      - feature/OTC
-
-
-# Deployment requires the mojaloop cluster to be configured in gitlab
-# as per https://gitlab.com/help/user/project/clusters/add_remove_clusters.md#add-existing-cluster
-# Note: Disable the 'Gitlab-managed cluster' option
-Deploy to Dev:
-  stage: deploy
-  image: dtzar/helm-kubectl:2.16.1
-  variables:
-    KUBE_NAMESPACE: mojaloop # override the generated namespace that gitlab tries to use
-  environment:
-    name: dev
-    kubernetes:
-      namespace: mojaloop
-  script:
-    - *env_vars
     # Gitlab doesn't have support for storing helm charts in it's internal registry,
     # so instead we will checkout the tips chart locally and deploy from that
     # Check https://gitlab.com/gitlab-org/gitlab/-/issues/30669 and related issues to see if this has changed
