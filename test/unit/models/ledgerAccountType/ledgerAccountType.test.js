@@ -191,8 +191,16 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      const trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
+      const trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
@@ -216,7 +224,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       knexStub.select = selectStub
 
       await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
-      test.equal(trxStub.commit.callCount, 1, 'commit the transaction if no transaction is passed')
+      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
       test.end()
     } catch (err) {
       test.fail(`should not have thrown an error ${err}`)
@@ -225,6 +233,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
   })
   await ledgerAccountTypeTest.test('create should', async (test) => {
     let trxStub
+    let trxSpyRollBack
     const ledgerAccountType = {
       name: 'POSITION',
       description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
@@ -234,9 +243,16 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
@@ -256,13 +272,14 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 1, 'rollback the transaction if no transaction is passed')
+      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
       test.end()
     }
   })
 
   await ledgerAccountTypeTest.test('create should', async (test) => {
     let trxStub
+    let trxSpyRollBack
 
     const ledgerAccountType = {
       name: 'POSITION',
@@ -273,9 +290,16 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
@@ -295,7 +319,7 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 0, 'not rollback the transaction if transaction is passed')
+      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if transaction is passed')
       test.end()
     }
   })

@@ -27,12 +27,22 @@
 
 const SettlementModelModel = require('../../models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
+const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Util = require('@mojaloop/central-services-shared').Util
 
-const createSettlementModel = async (name, isActive = true, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId = null, requireLiquidityCheck = true, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset = false) => {
+const createSettlementModel = async (settlementModel, trx = null) => {
   try {
-    await SettlementModelModel.create(name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset)
+    const settlementGranularityId = Enum.SettlementGranularity[settlementModel.settlementGranularity]
+    const settlementInterchangeId = Enum.SettlementInterchange[settlementModel.settlementInterchange]
+    const settlementDelayId = Enum.SettlementDelay[settlementModel.settlementDelay]
+
+    const [ledgerAccountType, settlementAccountType] = await validateSettlementModel(settlementModel, settlementModel.settlementDelay, settlementModel.settlementGranularity, settlementModel.settlementInterchange)
+    await SettlementModelModel.create(settlementModel.name, true, settlementGranularityId,
+      settlementInterchangeId, settlementDelayId, settlementModel.currencyId,
+      settlementModel.requireLiquidityCheck,
+      ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -78,10 +88,32 @@ const settlementModeExists = (settlementModel) => {
   }
   throw ErrorHandler.Factory.createInternalServerFSPIOPError('Settlement Model does not exist')
 }
+
+const validateSettlementModel = async function (settlementModel, settlementDelay, settlementGranularity, settlementInterchange) {
+  const { isValid, reasons } = Util.Settlement.validateSettlementModel(settlementDelay, settlementGranularity, settlementInterchange)
+  if (!isValid) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, reasons.join('. '))
+  }
+  const ledgerAccountType = await getLedgerAccountTypeName(settlementModel.ledgerAccountType)
+  if (!ledgerAccountType) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Ledger account type was not found`)
+  }
+  const settlementAccountType = await getLedgerAccountTypeName(settlementModel.settlementAccountType)
+  if (!settlementAccountType) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Settlement account type was not found`)
+  }
+  const settlementModelExist = await getByName(settlementModel.name)
+  if (settlementModelExist) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, `Settlement Model already exists`)
+  }
+  return [ledgerAccountType, settlementAccountType]
+}
+
 module.exports = {
   createSettlementModel,
   getLedgerAccountTypeName,
   getByName,
   getAll,
-  update
+  update,
+  validateSettlementModel
 }

@@ -67,5 +67,8 @@ module.exports = {
       // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
     },
     debug: RC.DATABASE.DEBUG
-  }
+  },
+  ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES: RC.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES,
+  SETTLEMENT_MODELS: RC.SETTLEMENT_MODELS
+
 }

@@ -341,8 +341,16 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      const trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
+      const trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
       const transactingStub = sandbox.stub()
@@ -382,7 +390,7 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       const response = await Model.createParticipantCurrencyRecords(participantCurrencies)
       const expectedResponse = [{ participantCurrencyId: 1 }, { participantCurrencyId: 2 }]
       test.deepEqual(response, expectedResponse, 'should return the array of created currencyIds')
-      test.equal(trxStub.commit.callCount, 1, 'commit the transaction if no transaction is passed')
+      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
       test.end()
     } catch (err) {
       Logger.error(`getAllNonHubParticipantsWithCurrencies failed with error - ${err}`)
@@ -393,12 +401,20 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
 
   await participantCurrencyTest.test('createParticipantCurrencyRecords should', async (test) => {
     let trxStub
+    let trxSpyRollBack
+
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
       Db.getKnex.returns(knexStub)
@@ -424,19 +440,27 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 1, 'rollback the transaction if no transaction is passed')
+      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
       test.end()
     }
   })
 
   await participantCurrencyTest.test('createParticipantCurrencyRecords should', async (test) => {
     let trxStub
+    let trxSpyRollBack
+
     try {
       sandbox.stub(Db, 'getKnex')
       const knexStub = sandbox.stub()
-      trxStub = sandbox.stub()
-      trxStub.commit = sandbox.stub()
-      trxStub.rollback = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
       knexStub.transaction = sandbox.stub().callsArgWith(0, [trxStub, true])
       Db.getKnex.returns(knexStub)
@@ -462,7 +486,8 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       test.end()
     } catch (err) {
       test.pass('throw an error')
-      test.equal(trxStub.rollback.callCount, 0, 'not rollback the transaction if transaction is passed')
+      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if transaction is passed')
+
       test.end()
     }
   })

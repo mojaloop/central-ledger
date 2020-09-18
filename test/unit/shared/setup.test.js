@@ -25,11 +25,13 @@ Test('setup', setupTest => {
   let HapiStub
   let UrlParserStub
   let serverStub
+  let ConfigDataSeederStub
+  let processExitStub
   // let KafkaCronStub
 
   setupTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
-
+    processExitStub = sandbox.stub(process, 'exit')
     PluginsStub = {
       registerPlugins: sandbox.stub().returns(Promise.resolve())
     }
@@ -112,6 +114,9 @@ Test('setup', setupTest => {
         registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve())
       }
     }
+    ConfigDataSeederStub = {
+      initializeSeedData: sandbox.stub().resolves()
+    }
     const ConfigStub = Config
     ConfigStub.HANDLERS_API_DISABLED = false
     ConfigStub.HANDLERS_CRON_DISABLED = false
@@ -129,7 +134,8 @@ Test('setup', setupTest => {
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
       '@hapi/hapi': HapiStub,
-      '../lib/config': ConfigStub
+      '../lib/config': ConfigStub,
+      '../lib/configDataSeeder': ConfigDataSeederStub
       // '../handlers/lib/kafka': KafkaCronStub
     })
 
@@ -172,7 +178,9 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStubThrowError,
-        '../lib/config': Config
+        '../lib/config': Config,
+        '../lib/configDataSeeder': ConfigDataSeederStub
+
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -223,7 +231,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': ConfigStub
+        '../lib/config': ConfigStub,
+        '../lib/configDataSeeder': ConfigDataSeederStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -285,17 +294,17 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('return throw an exception for server "undefined"', async (test) => {
+    initializeTest.test('exit the process when service is "undefined"', async (test) => {
       const service = 'undefined'
 
       Setup.initialize({ service }).then(s => {
         test.ok(DbStub.connect.calledWith(Config.DATABASE))
         test.ok(ObjStoreStub.Db.connect.calledWith(mongoDbUri))
         test.notOk(MigratorStub.migrate.called)
-        test.equal(s, serverStub)
+        test.ok(processExitStub.called)
         test.end()
       }).catch(err => {
-        test.ok(err.message === `No valid service type ${service} found!`)
+        test.fail(`Should have exited the process: ${err.message}`)
         test.end()
       })
     })
@@ -314,6 +323,17 @@ Test('setup', setupTest => {
       })
     })
 
+    initializeTest.test('initialize configurable seeded data', async (test) => {
+      const service = 'api'
+
+      Setup.initialize({ service, runMigrations: true }).then(() => {
+        test.ok(ConfigDataSeederStub.initializeSeedData.called)
+        test.end()
+      }).catch(err => {
+        test.fail(`Should have not received an error: ${err}`)
+        test.end()
+      })
+    })
     initializeTest.test('run Handlers if runHandlers flag enabled and start API', async (test) => {
       const service = 'handler'
 
@@ -340,7 +360,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': Config
+        '../lib/config': Config,
+        '../lib/configDataSeeder': ConfigDataSeederStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -372,7 +393,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': ConfigStub
+        '../lib/config': ConfigStub,
+        '../lib/configDataSeeder': ConfigDataSeederStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -405,7 +427,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': ConfigStub
+        '../lib/config': ConfigStub,
+        '../lib/configDataSeeder': ConfigDataSeederStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -440,7 +463,8 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': Config
+        '../lib/config': Config,
+        '../lib/configDataSeeder': ConfigDataSeederStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -530,10 +554,6 @@ Test('setup', setupTest => {
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
-        test.fail('Expected exception to be thrown')
-        test.end()
-      }).catch(err => {
-        console.log(err)
         test.ok(RegisterHandlersStub.transfers.registerPrepareHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandler.called)
@@ -543,7 +563,10 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.bulk.registerBulkPrepareHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkFulfilHandler.called)
         test.ok(RegisterHandlersStub.bulk.registerBulkProcessingHandler.called)
-        test.ok(err.message === `Handler Setup - ${JSON.stringify(unknownHandler)} is not a valid handler to register!`)
+        test.ok(processExitStub.called)
+        test.end()
+      }).catch(err => {
+        test.fail(`should have exited the process ${err}`)
         test.end()
       })
     })
@@ -674,7 +697,9 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': Config
+        '../lib/config': Config,
+        '../lib/configDataSeeder': ConfigDataSeederStub
+
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
