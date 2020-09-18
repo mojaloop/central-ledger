@@ -112,6 +112,7 @@ Deploy to Dev:
     - git clone --branch feature/OTC https://${CI_REGISTRY_USER}:${CI_JOB_TOKEN}@gitlab.tips-lab.live/tips/tiger/tips-helm-repo.git
     - helm init --client-only
     - helm dependency update ./tips-helm-repo/tips/
+    - helm dependency update ./tips-helm-repo/centralledger/
     - |
       helm upgrade mojaloop ./tips-helm-repo/tips/ \
       --reuse-values \
