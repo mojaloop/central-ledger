@@ -115,20 +115,20 @@ Deploy to Dev:
     - |
       helm upgrade mojaloop ./tips-helm-repo/tips/ \
       --reuse-values \
-      --set mojaloop.central.centralledger.centralledger-service.containers.api.image.repository=$CI_REGISTRY_IMAGE \
-      --set mojaloop.central.centralledger.centralledger-service.containers.api.image.tag=$IMAGE_TAG \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.repository=$CI_REGISTRY_IMAGE \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.tag=$IMAGE_TAG \
-      --set mojaloop.central.centralledger.centralledger-handler-admin-transfer.containers.api.image.repository=$CI_REGISTRY_IMAGE \
-      --set mojaloop.central.centralledger.centralledger-handler-admin-transfer.containers.api.image.tag=$IMAGE_TAG \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-position.containers.api.image.repository=$CI_REGISTRY_IMAGE \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-position.containers.api.image.tag=$IMAGE_TAG \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-get.containers.api.image.repository=$CI_REGISTRY_IMAGE \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-get.containers.api.image.tag=$IMAGE_TAG \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.repository=$CI_REGISTRY_IMAGE \
-      --set mojaloop.central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.tag=$IMAGE_TAG \
-      --set mojaloop.central.centralledger.centralledger-handler-timeout.containers.api.image.repository=$CI_REGISTRY_IMAGE \
-      --set mojaloop.central.centralledger.centralledger-handler-timeout.containers.api.image.tag=$IMAGE_TAG \
+      --set centralledger.centralledger-service.containers.api.image.repository=$CI_REGISTRY_IMAGE \
+      --set centralledger.centralledger-service.containers.api.image.tag=$IMAGE_TAG \
+      --set centralledger.centralledger-handler-transfer-prepare.containers.api.image.repository=$CI_REGISTRY_IMAGE \
+      --set centralledger.centralledger-handler-transfer-prepare.containers.api.image.tag=$IMAGE_TAG \
+      --set centralledger.centralledger-handler-admin-transfer.containers.api.image.repository=$CI_REGISTRY_IMAGE \
+      --set centralledger.centralledger-handler-admin-transfer.containers.api.image.tag=$IMAGE_TAG \
+      --set centralledger.centralledger-handler-transfer-position.containers.api.image.repository=$CI_REGISTRY_IMAGE \
+      --set centralledger.centralledger-handler-transfer-position.containers.api.image.tag=$IMAGE_TAG \
+      --set centralledger.centralledger-handler-transfer-get.containers.api.image.repository=$CI_REGISTRY_IMAGE \
+      --set centralledger.centralledger-handler-transfer-get.containers.api.image.tag=$IMAGE_TAG \
+      --set centralledger.centralledger-handler-transfer-fulfil.containers.api.image.repository=$CI_REGISTRY_IMAGE \
+      --set centralledger.centralledger-handler-transfer-fulfil.containers.api.image.tag=$IMAGE_TAG \
+      --set centralledger.centralledger-handler-timeout.containers.api.image.repository=$CI_REGISTRY_IMAGE \
+      --set centralledger.centralledger-handler-timeout.containers.api.image.tag=$IMAGE_TAG \
       --set mojaloop.mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.repository=$CI_REGISTRY_IMAGE \
       --set mojaloop.mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.tag=$IMAGE_TAG \
       --set mojaloop.mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.repository=$CI_REGISTRY_IMAGE \
