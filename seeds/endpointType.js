@@ -167,6 +167,10 @@ const endpointTypes = [
     description: 'Participant callback URL where PATCH /thirdpartyRequests/transactions/{ID} can be sent'
   },
   {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_PATCH',
+    description: 'Participant callback URL where PATCH /thirdpartyRequests/transactions/{ID} can be sent'
+  },
+  {
     name: 'TP_CB_URL_TRANSACTION_REQUEST_AUTH_POST',
     description: 'Participant callback URL where POST /thirdpartyRequests/transactions/{ID}/authorizations can be sent'
   },
