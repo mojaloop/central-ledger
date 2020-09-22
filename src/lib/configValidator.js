@@ -36,7 +36,7 @@ const additionalParticipantLedgerAccountTypeSchema = Joi.array().items(Joi.objec
 }))
 
 const additionalSettlementModelsSchema = Joi.array().items(
-  Joi.string().valid('CGS', 'MULTILATERALDEFERREDNET', 'INTERCHANGEFEE')
+  Joi.string().valid('CGS', 'DEFERREDNET', 'INTERCHANGEFEE')
 )
 
 /**

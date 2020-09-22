@@ -76,7 +76,7 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
 
   await configDataSeederTest.test('initializeSeedData when everything is ok', async (assert) => {
     try {
-      Config.SETTLEMENT_MODELS = ['CGS', 'MULTILATERALDEFERREDNET']
+      Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET']
       Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
         {
           name: 'INTERCHANGE_FEE',
@@ -123,12 +123,12 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
       assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.secondCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
 
       assert.equal(SettlementModel.getSettlementModelsByName.callCount, 1, 'should call the model getSettlementModelsByName function')
-      assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['ContinousGross', 'MultilateralDeferredNet'], 'should call the model getSettlementModelsByName with the right arguments')
+      assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['CGS', 'DEFERREDNET'], 'should call the model getSettlementModelsByName with the right arguments')
       assert.equal(SettlementModel.getSettlementModelsByName.lastCall.args[1], trxStub, 'should call getSettlementModelsByName  the right argument: trx')
 
       assert.equal(SettlementService.createSettlementModel.callCount, 2, 'should call the model createSettlementModel function')
       assert.deepEqual(SettlementService.createSettlementModel.firstCall.args[0], {
-        name: 'ContinousGross',
+        name: 'CGS',
         settlementGranularity: 'GROSS',
         settlementInterchange: 'BILATERAL',
         settlementDelay: 'IMMEDIATE',
@@ -140,7 +140,7 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
       assert.equal(SettlementService.createSettlementModel.firstCall.args[1], trxStub, 'should call createSettlementModel  the right argument: trx')
 
       assert.deepEqual(SettlementService.createSettlementModel.secondCall.args[0], {
-        name: 'MultilateralDeferredNet',
+        name: 'DEFERREDNET',
         settlementGranularity: 'NET',
         settlementInterchange: 'MULTILATERAL',
         settlementDelay: 'DEFERRED',
@@ -175,7 +175,7 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
       LedgerAccountTypeModel.getLedgerAccountsByName.resolves([{ name: 'INTERCHANGE_FEE' }])
       LedgerAccountTypeModel.bulkInsert.resolves([10])
       LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
-      SettlementModel.getSettlementModelsByName.resolves([{ name: 'MultilateralDeferredNet' }])
+      SettlementModel.getSettlementModelsByName.resolves([{ name: 'DEFERREDNET' }])
       SettlementService.createSettlementModel.resolves()
       const expectedLedgerAccountRecords = [
         {
@@ -199,12 +199,12 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
       assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
 
       assert.equal(SettlementModel.getSettlementModelsByName.callCount, 1, 'should call the model getSettlementModelsByName function')
-      assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['ContinousGross'], 'should call the model getSettlementModelsByName with the right arguments')
+      assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['CGS'], 'should call the model getSettlementModelsByName with the right arguments')
       assert.equal(SettlementModel.getSettlementModelsByName.lastCall.args[1], trxStub, 'should call getSettlementModelsByName  the right argument: trx')
 
       assert.equal(SettlementService.createSettlementModel.callCount, 1, 'should call the model createSettlementModel function')
       assert.deepEqual(SettlementService.createSettlementModel.firstCall.args[0], {
-        name: 'ContinousGross',
+        name: 'CGS',
         settlementGranularity: 'GROSS',
         settlementInterchange: 'BILATERAL',
         settlementDelay: 'IMMEDIATE',
@@ -239,7 +239,7 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
       LedgerAccountTypeModel.getLedgerAccountsByName.resolves([{ name: 'INTERCHANGE_FEE' }, { name: 'INTERCHANGE_FEE_SETTLEMENT' }])
       LedgerAccountTypeModel.bulkInsert.resolves([10])
       LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
-      SettlementModel.getSettlementModelsByName.resolves([{ name: 'MultilateralDeferredNet' }, { name: 'ContinousGross' }])
+      SettlementModel.getSettlementModelsByName.resolves([{ name: 'DEFERREDNET' }, { name: 'CGS' }])
       SettlementService.createSettlementModel.resolves()
       await ConfigDataSeeder.initializeSeedData()
       assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')
@@ -249,7 +249,7 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
       assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.callCount, 0, 'should call createAssociated participant accounts for the ledger accounts')
 
       assert.equal(SettlementModel.getSettlementModelsByName.callCount, 1, 'should call the model getSettlementModelsByName function')
-      assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['ContinousGross'], 'should call the model getSettlementModelsByName with the right arguments')
+      assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['CGS'], 'should call the model getSettlementModelsByName with the right arguments')
       assert.equal(SettlementModel.getSettlementModelsByName.lastCall.args[1], trxStub, 'should call getSettlementModelsByName  the right argument: trx')
 
       assert.equal(SettlementService.createSettlementModel.callCount, 0, 'should not call the model createSettlementModel function')

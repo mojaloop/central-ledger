@@ -47,7 +47,7 @@ Test('ConfigValidator', async (configValidatorTest) => {
 
   await configValidatorTest.test('initializeSeedData when everything is ok', async (assert) => {
     try {
-      Config.SETTLEMENT_MODELS = ['CGS', 'MULTILATERALDEFERREDNET', 'INTERCHANGEFEE']
+      Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET', 'INTERCHANGEFEE']
       Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
         {
           name: 'INTERCHANGE_FEE',
@@ -69,12 +69,12 @@ Test('ConfigValidator', async (configValidatorTest) => {
 
   await configValidatorTest.test('initializeSeedData should throw for invalid settlementModels aliases', async (assert) => {
     try {
-      Config.SETTLEMENT_MODELS = ['CGSss', 'MULTILATERALDEFERREDNETs', 'INTERCHANGEFEEs']
+      Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET', 'INTERCHANGEFEE']
 
       await ConfigValidator.validateConfig()
       assert.fail()
     } catch (err) {
-      assert.equal(err.message, '"[0]" must be one of [CGS, MULTILATERALDEFERREDNET, INTERCHANGEFEE]', 'should thrown a validation error')
+      assert.equal(err.message, '"[0]" must be one of [CGS, DEFERREDNET, INTERCHANGEFEE]', 'should thrown a validation error')
       assert.end()
     }
   })

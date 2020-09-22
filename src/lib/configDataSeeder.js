@@ -35,7 +35,7 @@ const ConfigValidator = require('./configValidator')
 
 const SETTLEMENT_MODELS_ALIASES = {
   CGS: {
-    name: 'ContinousGross',
+    name: 'CGS',
     settlementGranularity: 'GROSS',
     settlementInterchange: 'BILATERAL',
     settlementDelay: 'IMMEDIATE',
@@ -44,8 +44,8 @@ const SETTLEMENT_MODELS_ALIASES = {
     autoPositionReset: false,
     settlementAccountType: 'SETTLEMENT'
   },
-  MULTILATERALDEFERREDNET: {
-    name: 'MultilateralDeferredNet',
+  DEFERREDNET: {
+    name: 'DEFERREDNET',
     settlementGranularity: 'NET',
     settlementInterchange: 'MULTILATERAL',
     settlementDelay: 'DEFERRED',
@@ -55,7 +55,7 @@ const SETTLEMENT_MODELS_ALIASES = {
     settlementAccountType: 'SETTLEMENT'
   },
   INTERCHANGEFEE: {
-    name: 'InterchangeFee',
+    name: 'INTERCHANGEFEE',
     settlementGranularity: 'NET',
     settlementInterchange: 'MULTILATERAL',
     settlementDelay: 'DEFERRED',
