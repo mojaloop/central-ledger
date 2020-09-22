@@ -69,7 +69,7 @@ Test('ConfigValidator', async (configValidatorTest) => {
 
   await configValidatorTest.test('initializeSeedData should throw for invalid settlementModels aliases', async (assert) => {
     try {
-      Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET', 'INTERCHANGEFEE']
+      Config.SETTLEMENT_MODELS = ['CGSss', 'DEFERREDNET', 'INTERCHANGEFEEs']
 
       await ConfigValidator.validateConfig()
       assert.fail()
