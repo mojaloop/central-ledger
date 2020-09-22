@@ -96,15 +96,15 @@ const validateSettlementModel = async function (settlementModel, settlementDelay
   }
   const ledgerAccountType = await getLedgerAccountTypeName(settlementModel.ledgerAccountType)
   if (!ledgerAccountType) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Ledger account type was not found`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found')
   }
   const settlementAccountType = await getLedgerAccountTypeName(settlementModel.settlementAccountType)
   if (!settlementAccountType) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, `Settlement account type was not found`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Settlement account type was not found')
   }
   const settlementModelExist = await getByName(settlementModel.name)
   if (settlementModelExist) {
-    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, `Settlement Model already exists`)
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Settlement Model already exists')
   }
   return [ledgerAccountType, settlementAccountType]
 }
