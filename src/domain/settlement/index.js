@@ -48,10 +48,12 @@ const createSettlementModel = async (settlementModel, trx = null) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+/* istanbul ignore next */
 const getByName = async (name, trx = null) => {
   try {
     return await SettlementModelModel.getByName(name, trx)
   } catch (err) {
+    /* istanbul ignore next */
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -88,7 +90,7 @@ const settlementModeExists = (settlementModel) => {
   }
   throw ErrorHandler.Factory.createInternalServerFSPIOPError('Settlement Model does not exist')
 }
-
+/* istanbul ignore next */
 const validateSettlementModel = async function (settlementModel, settlementDelay, settlementGranularity, settlementInterchange, trx = null) {
   const { isValid, reasons } = Util.Settlement.validateSettlementModel(settlementDelay, settlementGranularity, settlementInterchange)
   if (!isValid) {
