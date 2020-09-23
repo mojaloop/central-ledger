@@ -67,11 +67,32 @@ exports.create = async (name, isActive, settlementGranularityId, settlementInter
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
-exports.getByName = async (name) => {
+/* istanbul ignore next */
+exports.getByName = async (name, trx = null) => {
   try {
-    const result = await Db.settlementModel.find({ name: name })
-    return result[0]
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const result = await knex('settlementModel')
+          .select()
+          .where('name', name)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return result.length > 0 ? result[0] : null
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

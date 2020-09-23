@@ -120,18 +120,6 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     }
   })
 
-  await ledgerAccountTypeTest.test('ledger account name', async (assert) => {
-    try {
-      Db.ledgerAccountType.findOne.withArgs(name).returns(ledgerAccountType)
-      const result = await Model.getLedgerAccountByName(name.name)
-      assert.equal(JSON.stringify(result), JSON.stringify(ledgerAccountType))
-      assert.end()
-    } catch (err) {
-      assert.fail('Error is thrown' + err)
-      assert.end()
-    }
-  })
-
   await ledgerAccountTypeTest.test('create should', async (test) => {
     const ledgerAccountType = {
       name: 'POSITION',

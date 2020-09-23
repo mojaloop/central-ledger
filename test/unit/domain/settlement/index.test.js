@@ -85,7 +85,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
         autoPositionReset: true
       }
       sandbox.stub(SettlementModel, 'create')
-      await SettlementService.createSettlementModel(payload)
+      await SettlementService.createSettlementModel(payload, {})
       test.fail('should have thrown an error')
       test.end()
     } catch (err) {
@@ -112,7 +112,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       LedgerAccountTypeModel.getLedgerAccountByName.resolves(true)
       LedgerAccountTypeModel.getLedgerAccountByName.withArgs(payload.settlementAccountType).returns(Promise.resolve(false))
 
-      await SettlementService.createSettlementModel(payload)
+      await SettlementService.createSettlementModel(payload, {})
       test.fail('should have thrown an error')
       test.end()
     } catch (err) {
@@ -137,7 +137,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       sandbox.stub(SettlementModel, 'create')
       LedgerAccountTypeModel.getLedgerAccountByName.resolves(false)
 
-      await SettlementService.createSettlementModel(payload)
+      await SettlementService.createSettlementModel(payload, {})
       test.fail('should have thrown an error')
       test.end()
     } catch (err) {
@@ -166,7 +166,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
       sandbox.stub(SettlementModel, 'getByName').returns(true)
 
-      const expected = await SettlementService.createSettlementModel(payload)
+      const expected = await SettlementService.createSettlementModel(payload, {})
       test.equal(expected, true, 'should return true')
       test.end()
     } catch (err) {
@@ -194,7 +194,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
       sandbox.stub(SettlementModel, 'getByName').returns(null)
 
-      const expected = await SettlementService.createSettlementModel(payload)
+      const expected = await SettlementService.createSettlementModel(payload, {})
       test.equal(expected, true, 'should return true')
       test.end()
     } catch (err) {
@@ -260,29 +260,6 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       assert.end()
     } catch (err) {
       assert.assert(err instanceof Error, ` throws ${err} `)
-      assert.end()
-    }
-  })
-  await settlementModelTest.test('get settlement model by name', async (assert) => {
-    try {
-      sandbox.stub(SettlementModel, 'getByName').returns(settlementModel)
-      const expected = await SettlementService.getByName('test')
-      assert.equal(expected, settlementModel)
-      assert.end()
-    } catch (err) {
-      assert.assert(err instanceof Error, ` throws ${err} `)
-      assert.end()
-    }
-  })
-
-  await settlementModelTest.test('get settlement model by name should throw an error', async (assert) => {
-    try {
-      sandbox.stub(SettlementModel, 'getByName').throws(new Error())
-      await SettlementService.getByName('test')
-      assert.fail('Error not thrown')
-      assert.end()
-    } catch (err) {
-      assert.ok(err instanceof Error)
       assert.end()
     }
   })

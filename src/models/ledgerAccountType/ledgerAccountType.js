@@ -31,9 +31,32 @@
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.getLedgerAccountByName = async (name) => {
+/* istanbul ignore next */
+exports.getLedgerAccountByName = async (name, trx = null) => {
   try {
-    return await Db.ledgerAccountType.findOne({ name })
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const ledgerAccountType = await knex('ledgerAccountType')
+          .select()
+          .where('name', name)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return ledgerAccountType.length > 0 ? ledgerAccountType[0] : null
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -45,7 +68,7 @@ exports.getLedgerAccountsByName = async (names, trx = null) => {
     const knex = Db.getKnex()
     const trxFunction = async (trx, doCommit = true) => {
       try {
-        const ledgerAccountTypes = knex('ledgerAccountType')
+        const ledgerAccountTypes = await knex('ledgerAccountType')
           .select('name')
           .whereIn('name', names)
           .transacting(trx)

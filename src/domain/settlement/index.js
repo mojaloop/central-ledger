@@ -38,7 +38,7 @@ const createSettlementModel = async (settlementModel, trx = null) => {
     const settlementInterchangeId = Enum.SettlementInterchange[settlementModel.settlementInterchange]
     const settlementDelayId = Enum.SettlementDelay[settlementModel.settlementDelay]
 
-    const [ledgerAccountType, settlementAccountType] = await validateSettlementModel(settlementModel, settlementModel.settlementDelay, settlementModel.settlementGranularity, settlementModel.settlementInterchange)
+    const [ledgerAccountType, settlementAccountType] = await validateSettlementModel(settlementModel, settlementModel.settlementDelay, settlementModel.settlementGranularity, settlementModel.settlementInterchange, trx)
     await SettlementModelModel.create(settlementModel.name, true, settlementGranularityId,
       settlementInterchangeId, settlementDelayId, settlementModel.currencyId,
       settlementModel.requireLiquidityCheck,
@@ -48,10 +48,12 @@ const createSettlementModel = async (settlementModel, trx = null) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-const getByName = async (name) => {
+/* istanbul ignore next */
+const getByName = async (name, trx = null) => {
   try {
-    return await SettlementModelModel.getByName(name)
+    return await SettlementModelModel.getByName(name, trx)
   } catch (err) {
+    /* istanbul ignore next */
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
@@ -88,21 +90,21 @@ const settlementModeExists = (settlementModel) => {
   }
   throw ErrorHandler.Factory.createInternalServerFSPIOPError('Settlement Model does not exist')
 }
-
-const validateSettlementModel = async function (settlementModel, settlementDelay, settlementGranularity, settlementInterchange) {
+/* istanbul ignore next */
+const validateSettlementModel = async function (settlementModel, settlementDelay, settlementGranularity, settlementInterchange, trx = null) {
   const { isValid, reasons } = Util.Settlement.validateSettlementModel(settlementDelay, settlementGranularity, settlementInterchange)
   if (!isValid) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, reasons.join('. '))
   }
-  const ledgerAccountType = await getLedgerAccountTypeName(settlementModel.ledgerAccountType)
+  const ledgerAccountType = await LedgerAccountTypeModel.getLedgerAccountByName(settlementModel.ledgerAccountType, trx)
   if (!ledgerAccountType) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Ledger account type was not found')
   }
-  const settlementAccountType = await getLedgerAccountTypeName(settlementModel.settlementAccountType)
+  const settlementAccountType = await LedgerAccountTypeModel.getLedgerAccountByName(settlementModel.settlementAccountType, trx)
   if (!settlementAccountType) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Settlement account type was not found')
   }
-  const settlementModelExist = await getByName(settlementModel.name)
+  const settlementModelExist = await getByName(settlementModel.name, trx)
   if (settlementModelExist) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Settlement Model already exists')
   }
