@@ -106,21 +106,29 @@ async function initializeSettlementModels (trx) {
 
 async function initializeLedgerAccountTypes (trx) {
   const ledgerAccountTypesNamesToCreate = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.map(item => item.name)
-  let existingAccountTypes = await LedgerAccountTypeModel.getLedgerAccountsByName(ledgerAccountTypesNamesToCreate, trx)
-  existingAccountTypes = existingAccountTypes.map(record => record.name)
+  try {
+    console.log('here')
 
-  const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
-  if (missingAccountTypes.length > 0) {
-    const recordsToCreate = missingAccountTypes.map(item => ({
-      name: item.name,
-      description: item.description,
-      isSettleable: true,
-      isActive: true
-    }))
-    const ledgerAccountTypesIds = await LedgerAccountTypeModel.bulkInsert(recordsToCreate, trx)
-    await Promise.all(ledgerAccountTypesIds.map(async ledgerAccountTypeId => {
-      await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountTypeId, 'configSeeder', trx)
-    }))
+    let existingAccountTypes = await LedgerAccountTypeModel.getLedgerAccountsByName(ledgerAccountTypesNamesToCreate, trx)
+    console.log('here2')
+
+    existingAccountTypes = existingAccountTypes.map(record => record.name)
+
+    const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
+    if (missingAccountTypes.length > 0) {
+      const recordsToCreate = missingAccountTypes.map(item => ({
+        name: item.name,
+        description: item.description,
+        isSettleable: true,
+        isActive: true
+      }))
+      const ledgerAccountTypesIds = await LedgerAccountTypeModel.bulkInsert(recordsToCreate, trx)
+      await Promise.all(ledgerAccountTypesIds.map(async ledgerAccountTypeId => {
+        await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountTypeId, 'configSeeder', trx)
+      }))
+    }
+  } catch (err) {
+    console.log('error', err)
   }
 }
 module.exports = {
