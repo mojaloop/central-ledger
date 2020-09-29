@@ -103,7 +103,7 @@
     "five-bells-condition": "5.0.1",
     "glob": "7.1.6",
     "hapi-auth-basic": "5.0.0",
-    "hapi-auth-bearer-token": "6.2.1",
+    "hapi-auth-bearer-token": "8.0.0",
     "hapi-swagger": "13.1.0",
     "ilp-packet": "2.2.0",
     "knex": "0.21.5",
