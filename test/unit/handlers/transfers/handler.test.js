@@ -933,6 +933,28 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    transformTransfer.test('log an error when the transfer state is EXPIRED_RESERVED', async (test) => {
+      const localMessages = MainUtil.clone(messages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.proceed.returns(Promise.resolve(true))
+      Validator.validateParticipantByName.returns(true)
+      Validator.validateParticipantTransferId.returns(true)
+      const transferResult = MainUtil.clone(transferReturn)
+      transferResult.transferState = 'EXPIRED_RESERVED'
+      transferResult.extensionList = []
+      TransferService.getByIdLight.withArgs(transfer.transferId).returns(Promise.resolve(transferResult))
+
+      try {
+        await allTransferHandlers.getTransfer(null, localMessages)
+        const expectedState = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, '3303', 'Transfer expired')
+        test.ok(SpanStub.finish.calledWith('', expectedState))
+        test.end()
+      } catch (e) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
     transformTransfer.test('log an error when general message cannot be produced', async (test) => {
       const localMessages = MainUtil.clone(messages)
       await Consumer.createHandler(topicName, config, command)

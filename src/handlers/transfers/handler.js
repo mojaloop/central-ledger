@@ -572,6 +572,13 @@ const getTransfer = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
+    if (transfer.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackTransferExpired--${actionLetter}3`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    }
+
     // ============================================================================================
     Util.breadcrumb(location, { path: 'validationPassed' })
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))
