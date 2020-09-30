@@ -146,7 +146,7 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
         settlementDelay: 'DEFERRED',
         requireLiquidityCheck: true,
         ledgerAccountType: 'POSITION',
-        autoPositionReset: false,
+        autoPositionReset: true,
         settlementAccountType: 'SETTLEMENT'
       }, 'should call the model createSettlementModel with the right arguments')
       assert.equal(SettlementService.createSettlementModel.secondCall.args[1], trxStub, 'should call createSettlementModel  the right argument: trx')

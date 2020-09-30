@@ -51,7 +51,7 @@ const SETTLEMENT_MODELS_ALIASES = {
     settlementDelay: 'DEFERRED',
     requireLiquidityCheck: true,
     ledgerAccountType: 'POSITION',
-    autoPositionReset: false,
+    autoPositionReset: true,
     settlementAccountType: 'SETTLEMENT'
   },
   INTERCHANGEFEE: {
