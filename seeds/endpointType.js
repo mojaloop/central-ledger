@@ -152,7 +152,7 @@ const endpointTypes = [
   },
   {
     name: 'TP_CB_URL_TRANSACTION_REQUEST_PUT_ERROR',
-    description: 'Participant callback URL to which PUT /thirdpartyRequests/transactions/{ID}/error can be sent error information can be sent'
+    description: 'Participant callback URL to which PUT /thirdpartyRequests/transactions/{ID}/error error information can be sent'
   },
   {
     name: 'TP_CB_URL_TRANSACTION_REQUEST_PATCH',
@@ -180,7 +180,7 @@ const endpointTypes = [
   },
   {
     name: 'TP_CB_URL_CONSENT_REQUEST_PUT_ERROR',
-    description: 'Participant callback URL where PUT /consentRequests/{ID}/error can be sent error information can be sent'
+    description: 'Participant callback URL where PUT /consentRequests/{ID}/error error information can be sent'
   },
   {
     name: 'TP_CB_URL_CREATE_CREDENTIAL_POST',
@@ -200,7 +200,7 @@ const endpointTypes = [
   },
   {
     name: 'TP_CB_URL_CONSENT_PUT_ERROR',
-    description: 'Participant callback URL where PUT /consents/{ID}/error can be sent error information can be sent'
+    description: 'Participant callback URL where PUT /consents/{ID}/error error information can be sent'
   },
   {
     name: 'TP_CB_URL_CONSENT_GENERATE_CHALLENGE_POST',
@@ -208,7 +208,7 @@ const endpointTypes = [
   },
   {
     name: 'TP_CB_URL_CONSENT_GENERATE_CHALLENGE_PUT_ERROR',
-    description: 'Participant callback URL where PUT /consents/{ID}/generateChallenge/error can be sent error information can be sent'
+    description: 'Participant callback URL where PUT /consents/{ID}/generateChallenge/error error information can be sent'
   }
 ]
 
