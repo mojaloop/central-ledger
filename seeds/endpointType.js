@@ -192,15 +192,23 @@ const endpointTypes = [
   },
   {
     name: 'TP_CB_URL_CONSENT_GET',
-    description: 'Participant callback URL where GET /consent/{ID} can be sent'
+    description: 'Participant callback URL where GET /consents/{ID} can be sent'
   },
   {
     name: 'TP_CB_URL_CONSENT_PUT',
-    description: 'Participant callback URL where PUT /consent/{ID} can be sent'
+    description: 'Participant callback URL where PUT /consents/{ID} can be sent'
   },
   {
     name: 'TP_CB_URL_CONSENT_PUT_ERROR',
-    description: 'Participant callback URL where PUT consent/{ID}/error can be sent error information can be sent'
+    description: 'Participant callback URL where PUT /consents/{ID}/error can be sent error information can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_GENERATE_CHALLENGE_POST',
+    description: 'Participant callback URL where POST /consents/{ID}/generateChallenge can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_GENERATE_CHALLENGE_PUT_ERROR',
+    description: 'Participant callback URL where PUT /consents/{ID}/generateChallenge/error can be sent error information can be sent'
   }
 ]
 
