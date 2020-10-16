@@ -143,6 +143,10 @@ const endpointTypes = [
     description: 'Bulk Quotes callback URL to which put bulkQuotes requests can be sent'
   },
   {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_GET',
+    description: 'Participant callback URL where GET /thirdpartyRequests/transactions/{ID} can be sent'
+  },
+  {
     name: 'TP_CB_URL_TRANSACTION_REQUEST_POST',
     description: 'Participant callback URL where POST /thirdpartyRequests/transactions can be sent'
   },
