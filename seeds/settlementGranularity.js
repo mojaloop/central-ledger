@@ -20,6 +20,7 @@
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -41,13 +42,10 @@ const settlementGranularityList = settlementGranularityTypes.map(currentValue =>
 
 const seed = async function (knex) {
   try {
-    return await knex('settlementGranularity').insert(settlementGranularityTypes)
+    return await knex('settlementGranularity').insert(settlementGranularityTypes).onConflict('name').ignore()
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for settlementGranularity has failed with the following error: ${err}`)
-      return -1000
-    }
+    console.log(`Uploading seeds for settlementGranularity has failed with the following error: ${err}`)
+    return -1000
   }
 }
 
