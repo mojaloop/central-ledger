@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -32,12 +33,9 @@ const participantLimitTypes = [
 
 exports.seed = async function (knex) {
   try {
-    return await knex('participantLimitType').insert(participantLimitTypes)
+    return await knex('participantLimitType').insert(participantLimitTypes).onConflict('name').ignore()
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for participantLimitType has failed with the following error: ${err}`)
-      return -1000
-    }
+    console.log(`Uploading seeds for participantLimitType has failed with the following error: ${err}`)
+    return -1000
   }
 }

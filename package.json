@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/central-ledger",
-  "version": "11.2.3",
+  "version": "11.3.0",
   "description": "Central ledger hosted by a scheme to record and settle transfers",
   "license": "Apache-2.0",
   "author": "ModusBox",
@@ -14,7 +14,8 @@
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
     "Sam Kummary <sam@modusbox.com>",
     "Steven Oderayi <steven.oderayi@modusbox.com>",
-    "Valentin Genev <valentin.genev@modusbox.com>"
+    "Valentin Genev <valentin.genev@modusbox.com>",
+    "Shashikant Hirugade <shashikant.hirugade@modusbox.com>"
   ],
   "repository": {
     "type": "git",
@@ -89,7 +90,7 @@
     "@mojaloop/central-services-stream": "10.6.0",
     "@mojaloop/event-sdk": "10.6.0",
     "@mojaloop/forensic-logging-client": "8.3.0",
-    "@mojaloop/ml-number": "8.2.0",
+    "@mojaloop/ml-number": "11.0.0",
     "@now-ims/hapi-now-auth": "2.0.2",
     "awaitify-stream": "1.0.2",
     "base64url": "3.0.1",
@@ -106,7 +107,7 @@
     "hapi-swagger": "13.1.0",
     "ilp-packet": "2.2.0",
     "joi": "17.2.1",
-    "knex": "0.21.6",
+    "knex": "0.21.12",
     "lodash": "4.17.20",
     "moment": "2.29.0",
     "mongoose": "5.10.7",
@@ -126,7 +127,7 @@
     "jsonpath": "1.0.2",
     "nodemon": "2.0.4",
     "npm-audit-resolver": "2.2.1",
-    "npm-check-updates": "9.0.3",
+    "npm-check-updates": "10.2.1",
     "nyc": "15.1.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
