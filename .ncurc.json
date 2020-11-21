@@ -2,8 +2,7 @@
   "reject": [
     "hapi-swagger",
     "tape",
-    "ilp-packet",
-    "standard"
+    "ilp-packet"
   ]
 }
 

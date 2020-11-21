@@ -91,9 +91,11 @@ const bulkFulfil = async (error, messages) => {
     const bulkTransferId = payload.bulkTransferId
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkFulfil' }))
-    const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-      : (action === Enum.Events.Event.Action.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
-        : Enum.Events.ActionLetter.unknown)
+    const actionLetter = action === Enum.Events.Event.Action.BULK_COMMIT
+      ? Enum.Events.ActionLetter.bulkCommit
+      : (action === Enum.Events.Event.Action.BULK_ABORT
+          ? Enum.Events.ActionLetter.bulkAbort
+          : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
