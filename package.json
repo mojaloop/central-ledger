@@ -100,6 +100,7 @@
     "cron": "1.8.2",
     "decimal.js": "10.2.1",
     "docdash": "1.2.0",
+    "event-stream": "4.0.1",
     "five-bells-condition": "5.0.1",
     "glob": "7.1.6",
     "hapi-auth-basic": "5.0.0",
