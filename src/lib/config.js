@@ -67,5 +67,6 @@ module.exports = {
       // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
     },
     debug: RC.DATABASE.DEBUG
-  }
+  },
+  API_DOCUMENTATION_ENDPOINTS: RC.API_DOCUMENTATION_ENDPOINTS || false
 }
