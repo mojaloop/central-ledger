@@ -39,7 +39,7 @@ Test('registerPlugins should', pluginsTest => {
 
   pluginsTest.test('not register API documentation plugin if disabled in config', async function (test) {
     const ConfigStub = { ...Config }
-    ConfigStub.API_DOCUMENTATION_ENDPOINTS = false
+    ConfigStub.API_DOC_ENDPOINTS_ENABLED = false
 
     Plugins = Proxyquire('../../../src/shared/plugins', {
       '../lib/config': ConfigStub
@@ -52,7 +52,7 @@ Test('registerPlugins should', pluginsTest => {
 
   pluginsTest.test('register API documentation plugin if enabled in config', async function (test) {
     const ConfigStub = { ...Config }
-    ConfigStub.API_DOCUMENTATION_ENDPOINTS = true
+    ConfigStub.API_DOC_ENDPOINTS_ENABLED = true
 
     Plugins = Proxyquire('../../../src/shared/plugins', {
       '../lib/config': ConfigStub

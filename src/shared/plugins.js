@@ -9,7 +9,7 @@ const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.
 const Config = require('../lib/config')
 
 const registerPlugins = async (server) => {
-  if (Config.API_DOCUMENTATION_ENDPOINTS) {
+  if (Config.API_DOC_ENDPOINTS_ENABLED) {
     await server.register({
       plugin: APIDocumentation,
       options: {
