@@ -110,7 +110,7 @@
     "knex": "0.21.12",
     "lodash": "4.17.20",
     "moment": "2.29.1",
-    "mongoose": "5.11.6",
+    "mongoose": "5.11.7",
     "npm-run-all": "4.1.5",
     "rc": "1.2.8",
     "require-glob": "3.2.0",
