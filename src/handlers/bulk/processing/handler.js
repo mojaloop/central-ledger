@@ -91,14 +91,21 @@ const bulkProcessing = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
 
-    const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
-      : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-        : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED ? Enum.Events.ActionLetter.bulkTimeoutReceived
-          : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
-            : (action === Enum.Events.Event.Action.PREPARE_DUPLICATE ? Enum.Events.ActionLetter.bulkPrepareDuplicate
-              : (action === Enum.Events.Event.Action.FULFIL_DUPLICATE ? Enum.Events.ActionLetter.bulkFulfilDuplicate
-                : (action === Enum.Events.Event.Action.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
-                  : Enum.Events.ActionLetter.unknown))))))
+    const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE
+      ? Enum.Events.ActionLetter.bulkPrepare
+      : (action === Enum.Events.Event.Action.BULK_COMMIT
+          ? Enum.Events.ActionLetter.bulkCommit
+          : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED
+              ? Enum.Events.ActionLetter.bulkTimeoutReceived
+              : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED
+                  ? Enum.Events.ActionLetter.bulkTimeoutReserved
+                  : (action === Enum.Events.Event.Action.PREPARE_DUPLICATE
+                      ? Enum.Events.ActionLetter.bulkPrepareDuplicate
+                      : (action === Enum.Events.Event.Action.FULFIL_DUPLICATE
+                          ? Enum.Events.ActionLetter.bulkFulfilDuplicate
+                          : (action === Enum.Events.Event.Action.BULK_ABORT
+                              ? Enum.Events.ActionLetter.bulkAbort
+                              : Enum.Events.ActionLetter.unknown))))))
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
     const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 

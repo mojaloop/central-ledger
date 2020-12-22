@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -64,12 +65,9 @@ const settlementWindowStates = [
 
 exports.seed = async function (knex) {
   try {
-    return await knex('settlementWindowState').insert(settlementWindowStates)
+    return await knex('settlementWindowState').insert(settlementWindowStates).onConflict('settlementWindowStateId').ignore()
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for settlementWindowState has failed with the following error: ${err}`)
-      return -1000
-    }
+    console.log(`Uploading seeds for settlementWindowState has failed with the following error: ${err}`)
+    return -1000
   }
 }

@@ -112,13 +112,17 @@ const prepare = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
 
-    const actionLetter = action === TransferEventAction.PREPARE ? Enum.Events.ActionLetter.prepare
-      : (action === TransferEventAction.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
-        : Enum.Events.ActionLetter.unknown)
+    const actionLetter = action === TransferEventAction.PREPARE
+      ? Enum.Events.ActionLetter.prepare
+      : (action === TransferEventAction.BULK_PREPARE
+          ? Enum.Events.ActionLetter.bulkPrepare
+          : Enum.Events.ActionLetter.unknown)
 
-    let functionality = action === TransferEventAction.PREPARE ? TransferEventType.NOTIFICATION
-      : (action === TransferEventAction.BULK_PREPARE ? TransferEventType.BULK_PROCESSING
-        : Enum.Events.ActionLetter.unknown)
+    let functionality = action === TransferEventAction.PREPARE
+      ? TransferEventType.NOTIFICATION
+      : (action === TransferEventAction.BULK_PREPARE
+          ? TransferEventType.BULK_PROCESSING
+          : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
@@ -273,20 +277,32 @@ const fulfil = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 
-    const actionLetter = action === TransferEventAction.COMMIT ? Enum.Events.ActionLetter.commit
-      : (action === TransferEventAction.RESERVE ? Enum.Events.ActionLetter.reserve
-        : (action === TransferEventAction.REJECT ? Enum.Events.ActionLetter.reject
-          : (action === TransferEventAction.ABORT ? Enum.Events.ActionLetter.abort
-            : (action === TransferEventAction.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-              : (action === TransferEventAction.BULK_ABORT ? Enum.Events.ActionLetter.bulkAbort
-                : Enum.Events.ActionLetter.unknown)))))
-    const functionality = action === TransferEventAction.COMMIT ? TransferEventType.NOTIFICATION
-      : (action === TransferEventAction.RESERVE ? TransferEventType.NOTIFICATION
-        : (action === TransferEventAction.REJECT ? TransferEventType.NOTIFICATION
-          : (action === TransferEventAction.ABORT ? TransferEventType.NOTIFICATION
-            : (action === TransferEventAction.BULK_COMMIT ? TransferEventType.BULK_PROCESSING
-              : (action === TransferEventAction.BULK_ABORT ? TransferEventType.BULK_PROCESSING
-                : Enum.Events.ActionLetter.unknown)))))
+    const actionLetter = action === TransferEventAction.COMMIT
+      ? Enum.Events.ActionLetter.commit
+      : (action === TransferEventAction.RESERVE
+          ? Enum.Events.ActionLetter.reserve
+          : (action === TransferEventAction.REJECT
+              ? Enum.Events.ActionLetter.reject
+              : (action === TransferEventAction.ABORT
+                  ? Enum.Events.ActionLetter.abort
+                  : (action === TransferEventAction.BULK_COMMIT
+                      ? Enum.Events.ActionLetter.bulkCommit
+                      : (action === TransferEventAction.BULK_ABORT
+                          ? Enum.Events.ActionLetter.bulkAbort
+                          : Enum.Events.ActionLetter.unknown)))))
+    const functionality = action === TransferEventAction.COMMIT
+      ? TransferEventType.NOTIFICATION
+      : (action === TransferEventAction.RESERVE
+          ? TransferEventType.NOTIFICATION
+          : (action === TransferEventAction.REJECT
+              ? TransferEventType.NOTIFICATION
+              : (action === TransferEventAction.ABORT
+                  ? TransferEventType.NOTIFICATION
+                  : (action === TransferEventAction.BULK_COMMIT
+                      ? TransferEventType.BULK_PROCESSING
+                      : (action === TransferEventAction.BULK_ABORT
+                          ? TransferEventType.BULK_PROCESSING
+                          : Enum.Events.ActionLetter.unknown)))))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
@@ -572,6 +588,13 @@ const getTransfer = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
+    if (transfer.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackTransferExpired--${actionLetter}3`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    }
+
     // ============================================================================================
     Util.breadcrumb(location, { path: 'validationPassed' })
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))

@@ -27,22 +27,22 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
-const Model = require('../../../seeds/ledgerAccountType')
+const Model = require('../../../seeds/bulkProcessingState')
 
-Test('Ledger Account type', async (ledgerAccountTypeTest) => {
+Test('BulkProcessingState', async (bulkProcessingStateSeedTest) => {
   let sandbox
 
-  ledgerAccountTypeTest.beforeEach(t => {
+  bulkProcessingStateSeedTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     t.end()
   })
 
-  ledgerAccountTypeTest.afterEach(t => {
+  bulkProcessingStateSeedTest.afterEach(t => {
     sandbox.restore()
     t.end()
   })
 
-  await ledgerAccountTypeTest.test('seed should', async (test) => {
+  await bulkProcessingStateSeedTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
       insert: sandbox.stub().returns({
@@ -55,16 +55,16 @@ Test('Ledger Account type', async (ledgerAccountTypeTest) => {
     try {
       const result = await Model.seed(knexStub)
       test.equal(result, true, 'call insert')
-      test.ok(knexStub.withArgs('ledgerAccountType').calledOnce, 'knex called with ledgerAccountType once')
+      test.ok(knexStub.withArgs('bulkProcessingState').calledOnce, 'knex called with bulkProcessingState once')
       test.end()
     } catch (err) {
-      Logger.error(`ledgerAccountType seed failed with error - ${err}`)
+      Logger.error(`bulkProcessingState seed failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await ledgerAccountTypeTest.test('seed should', async (test) => {
+  await bulkProcessingStateSeedTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
       insert: sandbox.stub().throws(new Error())
@@ -74,11 +74,11 @@ Test('Ledger Account type', async (ledgerAccountTypeTest) => {
       test.equal(result, -1000, 'Generic error intercepted and logged')
       test.end()
     } catch (err) {
-      Logger.error(`ledgerAccountType seed failed with error - ${err}`)
+      Logger.error(`bulkProcessingState seed failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await ledgerAccountTypeTest.end()
+  await bulkProcessingStateSeedTest.end()
 })
