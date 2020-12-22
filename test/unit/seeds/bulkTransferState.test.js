@@ -27,22 +27,22 @@
 const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Logger = require('@mojaloop/central-services-logger')
-const Model = require('../../../seeds/ledgerAccountType')
+const Model = require('../../../seeds/bulkTransferState')
 
-Test('Ledger Account type', async (ledgerAccountTypeTest) => {
+Test('BulkTransferState', async (bulkTransferStateSeedTest) => {
   let sandbox
 
-  ledgerAccountTypeTest.beforeEach(t => {
+  bulkTransferStateSeedTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     t.end()
   })
 
-  ledgerAccountTypeTest.afterEach(t => {
+  bulkTransferStateSeedTest.afterEach(t => {
     sandbox.restore()
     t.end()
   })
 
-  await ledgerAccountTypeTest.test('seed should', async (test) => {
+  await bulkTransferStateSeedTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
       insert: sandbox.stub().returns({
@@ -55,16 +55,16 @@ Test('Ledger Account type', async (ledgerAccountTypeTest) => {
     try {
       const result = await Model.seed(knexStub)
       test.equal(result, true, 'call insert')
-      test.ok(knexStub.withArgs('ledgerAccountType').calledOnce, 'knex called with ledgerAccountType once')
+      test.ok(knexStub.withArgs('bulkTransferState').calledOnce, 'knex called with bulkTransferState once')
       test.end()
     } catch (err) {
-      Logger.error(`ledgerAccountType seed failed with error - ${err}`)
+      Logger.error(`bulkTransferState seed failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await ledgerAccountTypeTest.test('seed should', async (test) => {
+  await bulkTransferStateSeedTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
       insert: sandbox.stub().throws(new Error())
@@ -74,11 +74,11 @@ Test('Ledger Account type', async (ledgerAccountTypeTest) => {
       test.equal(result, -1000, 'Generic error intercepted and logged')
       test.end()
     } catch (err) {
-      Logger.error(`ledgerAccountType seed failed with error - ${err}`)
+      Logger.error(`bulkTransferState seed failed with error - ${err}`)
       test.fail()
       test.end()
     }
   })
 
-  await ledgerAccountTypeTest.end()
+  await bulkTransferStateSeedTest.end()
 })
