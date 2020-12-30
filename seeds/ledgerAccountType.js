@@ -53,11 +53,13 @@ const ledgerAccountTypes = [
     description: null
   }
 ]
+
 const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
   return currentValue.isSettleable
 }).map(currentValue => {
   return currentValue.name
 }).sort()
+
 const seed = async function (knex) {
   try {
     return await knex('ledgerAccountType').insert(ledgerAccountTypes)
@@ -69,6 +71,7 @@ const seed = async function (knex) {
     }
   }
 }
+
 module.exports = {
   ledgerAccountList,
   seed
