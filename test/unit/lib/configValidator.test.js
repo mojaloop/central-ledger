@@ -48,16 +48,16 @@ Test('ConfigValidator', async (configValidatorTest) => {
   await configValidatorTest.test('initializeSeedData when everything is ok', async (assert) => {
     try {
       Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET', 'INTERCHANGEFEE']
-      Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-        {
-          name: 'INTERCHANGE_FEE',
-          description: 'Interchange fees chargeable to DFSPs'
-        },
-        {
-          name: 'INTERCHANGE_FEE_SETTLEMENT',
-          description: 'Interchange fees settlement account'
-        }
-      ]
+      // Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
+      //   {
+      //     name: 'INTERCHANGE_FEE',
+      //     description: 'Interchange fees chargeable to DFSPs'
+      //   },
+      //   {
+      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
+      //     description: 'Interchange fees settlement account'
+      //   }
+      // ]
 
       await ConfigValidator.validateConfig()
       assert.end()
@@ -79,27 +79,27 @@ Test('ConfigValidator', async (configValidatorTest) => {
     }
   })
 
-  await configValidatorTest.test('initializeSeedData should throw for invalid ledgerAccount configuration ', async (assert) => {
-    try {
-      Config.SETTLEMENT_MODELS = ['CGS']
+  // await configValidatorTest.test('initializeSeedData should throw for invalid ledgerAccount configuration ', async (assert) => {
+  //   try {
+  //     Config.SETTLEMENT_MODELS = ['CGS']
 
-      Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-        {
-          namespace: 'INTERCHANGE_FEE',
-          descriptions: 'Interchange fees chargeable to DFSPs'
-        },
-        {
-          name: 'INTERCHANGE_FEE_SETTLEMENT',
-          description: 'Interchange fees settlement account'
-        }
-      ]
-      await ConfigValidator.validateConfig()
-      assert.fail()
-    } catch (err) {
-      assert.equal(err.message, '"[0].name" is required')
-      assert.end()
-    }
-  })
+  //     Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
+  //       {
+  //         namespace: 'INTERCHANGE_FEE',
+  //         descriptions: 'Interchange fees chargeable to DFSPs'
+  //       },
+  //       {
+  //         name: 'INTERCHANGE_FEE_SETTLEMENT',
+  //         description: 'Interchange fees settlement account'
+  //       }
+  //     ]
+  //     await ConfigValidator.validateConfig()
+  //     assert.fail()
+  //   } catch (err) {
+  //     assert.equal(err.message, '"[0].name" is required')
+  //     assert.end()
+  //   }
+  // })
 
   await configValidatorTest.end()
 })

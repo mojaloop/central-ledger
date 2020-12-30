@@ -47,6 +47,10 @@ const ledgerAccountTypes = [
     name: 'INTERCHANGE_FEE',
     description: null,
     isSettleable: 1
+  },
+  {
+    name: 'INTERCHANGE_FEE_SETTLEMENT',
+    description: null
   }
 ]
 const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
