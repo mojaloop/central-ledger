@@ -2,7 +2,7 @@ const Test = require('tapes')(require('tape'))
 // let app = require('./app')
 const Db = require('../../src/lib/db')
 
-const supertest = require('supertest')
+var supertest = require('supertest')
 let request
 Test('setup', async setupTest => {
   // setupTest.plan(1)
