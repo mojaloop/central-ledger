@@ -31,10 +31,10 @@ const Sinon = require('sinon')
 const ConfigDataSeeder = require('../../../src/lib/configDataSeeder')
 const SettlementService = require('../../../src/domain/settlement')
 const SettlementModel = require('../../../src/models/settlement/settlementModel')
-// const LedgerAccountTypeModel = require('../../../src/models/ledgerAccountType/ledgerAccountType')
+const LedgerAccountTypeModel = require('../../../src/models/ledgerAccountType/ledgerAccountType')
 const Db = require('../../../src/lib/db')
 const ConfigValidator = require('../../../src/lib/configValidator')
-// const LedgerAccountTypesService = require('../../../src/domain/ledgerAccountTypes')
+const LedgerAccountTypesService = require('../../../src/domain/ledgerAccountTypes')
 
 const Config = require('../../../src/lib/config')
 
@@ -58,12 +58,12 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
     trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
     trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
 
-    // sandbox.stub(LedgerAccountTypeModel)
+    sandbox.stub(LedgerAccountTypeModel)
     sandbox.stub(Db)
     sandbox.stub(SettlementService)
     sandbox.stub(SettlementModel)
     sandbox.stub(ConfigValidator)
-    // sandbox.stub(LedgerAccountTypesService)
+    sandbox.stub(LedgerAccountTypesService)
     Db.getKnex.returns(knexStub)
     knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
     t.end()
@@ -77,50 +77,50 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
   await configDataSeederTest.test('initializeSeedData when everything is ok', async (assert) => {
     try {
       Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET']
-      // Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-      //   {
-      //     name: 'INTERCHANGE_FEE',
-      //     description: 'Interchange fees chargeable to DFSPs'
-      //   },
-      //   {
-      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-      //     description: 'Interchange fees settlement account'
-      //   }
-      // ]
-      // LedgerAccountTypeModel.getLedgerAccountsByName.resolves([])
-      // LedgerAccountTypeModel.bulkInsert.resolves([10, 11])
-      // LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
+      Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
+        {
+          name: 'INTERCHANGE_FEE',
+          description: 'Interchange fees chargeable to DFSPs'
+        },
+        {
+          name: 'INTERCHANGE_FEE_SETTLEMENT',
+          description: 'Interchange fees settlement account'
+        }
+      ]
+      LedgerAccountTypeModel.getLedgerAccountsByName.resolves([])
+      LedgerAccountTypeModel.bulkInsert.resolves([10, 11])
+      LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
       SettlementModel.getSettlementModelsByName.resolves([])
       SettlementService.createSettlementModel.resolves()
-      // const expectedLedgerAccountRecords = [
-      //   {
-      //     name: 'INTERCHANGE_FEE',
-      //     description: 'Interchange fees chargeable to DFSPs',
-      //     isSettleable: true,
-      //     isActive: true
-      //   },
-      //   {
-      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-      //     description: 'Interchange fees settlement account',
-      //     isSettleable: true,
-      //     isActive: true
-      //   }
-      // ]
+      const expectedLedgerAccountRecords = [
+        {
+          name: 'INTERCHANGE_FEE',
+          description: 'Interchange fees chargeable to DFSPs',
+          isSettleable: true,
+          isActive: true
+        },
+        {
+          name: 'INTERCHANGE_FEE_SETTLEMENT',
+          description: 'Interchange fees settlement account',
+          isSettleable: true,
+          isActive: true
+        }
+      ]
 
       await ConfigDataSeeder.initializeSeedData()
-      // assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')
-      // assert.deepEqual(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[0], ['INTERCHANGE_FEE', 'INTERCHANGE_FEE_SETTLEMENT'], 'should call getLedgerAccountsByNamewith with the right arguments')
-      // assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[1], trxStub, 'should call getLedgerAccountsByNamewith  the right argument: trx')
-      // assert.equal(LedgerAccountTypeModel.bulkInsert.callCount, 1, 'should call bulkInsert')
-      // assert.deepEqual(LedgerAccountTypeModel.bulkInsert.lastCall.args[0], expectedLedgerAccountRecords, 'should call bulkInsert with the right records ')
-      // assert.equal(LedgerAccountTypeModel.bulkInsert.lastCall.args[1], trxStub, 'should call bulkInsert with the transaction argument')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.callCount, 2, 'should call createAssociated participant accounts for the ledger accounts')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[0], 10, 'should call createAssociated participant accounts with the right argument ')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[1], 'configSeeder', 'should call createAssociated participant accounts with the right argument')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.secondCall.args[0], 11, 'should call createAssociated participant accounts with the right argument')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.secondCall.args[1], 'configSeeder', 'should call createAssociated participant with the right argument')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.secondCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
+      assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')
+      assert.deepEqual(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[0], ['INTERCHANGE_FEE', 'INTERCHANGE_FEE_SETTLEMENT'], 'should call getLedgerAccountsByNamewith with the right arguments')
+      assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[1], trxStub, 'should call getLedgerAccountsByNamewith  the right argument: trx')
+      assert.equal(LedgerAccountTypeModel.bulkInsert.callCount, 1, 'should call bulkInsert')
+      assert.deepEqual(LedgerAccountTypeModel.bulkInsert.lastCall.args[0], expectedLedgerAccountRecords, 'should call bulkInsert with the right records ')
+      assert.equal(LedgerAccountTypeModel.bulkInsert.lastCall.args[1], trxStub, 'should call bulkInsert with the transaction argument')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.callCount, 2, 'should call createAssociated participant accounts for the ledger accounts')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[0], 10, 'should call createAssociated participant accounts with the right argument ')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[1], 'configSeeder', 'should call createAssociated participant accounts with the right argument')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.secondCall.args[0], 11, 'should call createAssociated participant accounts with the right argument')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.secondCall.args[1], 'configSeeder', 'should call createAssociated participant with the right argument')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.secondCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
 
       assert.equal(SettlementModel.getSettlementModelsByName.callCount, 1, 'should call the model getSettlementModelsByName function')
       assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['CGS', 'DEFERREDNET'], 'should call the model getSettlementModelsByName with the right arguments')
@@ -162,41 +162,41 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
   await configDataSeederTest.test('initializeSeedData when an existing ledgerAccount exist but some are missing', async (assert) => {
     try {
       Config.SETTLEMENT_MODELS = ['CGS']
-      // Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-      //   {
-      //     name: 'INTERCHANGE_FEE',
-      //     description: 'Interchange fees chargeable to DFSPs'
-      //   },
-      //   {
-      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-      //     description: 'Interchange fees settlement account'
-      //   }
-      // ]
-      // LedgerAccountTypeModel.getLedgerAccountsByName.resolves([{ name: 'INTERCHANGE_FEE' }])
-      // LedgerAccountTypeModel.bulkInsert.resolves([10])
-      // LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
+      Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
+        {
+          name: 'INTERCHANGE_FEE',
+          description: 'Interchange fees chargeable to DFSPs'
+        },
+        {
+          name: 'INTERCHANGE_FEE_SETTLEMENT',
+          description: 'Interchange fees settlement account'
+        }
+      ]
+      LedgerAccountTypeModel.getLedgerAccountsByName.resolves([{ name: 'INTERCHANGE_FEE' }])
+      LedgerAccountTypeModel.bulkInsert.resolves([10])
+      LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
       SettlementModel.getSettlementModelsByName.resolves([{ name: 'DEFERREDNET' }])
       SettlementService.createSettlementModel.resolves()
-      // const expectedLedgerAccountRecords = [
-      //   {
-      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-      //     description: 'Interchange fees settlement account',
-      //     isSettleable: true,
-      //     isActive: true
-      //   }
-      // ]
+      const expectedLedgerAccountRecords = [
+        {
+          name: 'INTERCHANGE_FEE_SETTLEMENT',
+          description: 'Interchange fees settlement account',
+          isSettleable: true,
+          isActive: true
+        }
+      ]
 
       await ConfigDataSeeder.initializeSeedData()
-      // assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')
-      // assert.deepEqual(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[0], ['INTERCHANGE_FEE', 'INTERCHANGE_FEE_SETTLEMENT'], 'should call getLedgerAccountsByNamewith with the right arguments')
-      // assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[1], trxStub, 'should call getLedgerAccountsByNamewith  the right argument: trx')
-      // assert.equal(LedgerAccountTypeModel.bulkInsert.callCount, 1, 'should call bulkInsert')
-      // assert.deepEqual(LedgerAccountTypeModel.bulkInsert.lastCall.args[0], expectedLedgerAccountRecords, 'should call bulkInsert with the right records ')
-      // assert.equal(LedgerAccountTypeModel.bulkInsert.lastCall.args[1], trxStub, 'should call bulkInsert with the transaction argument')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.callCount, 1, 'should call createAssociated participant accounts for the ledger accounts')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[0], 10, 'should call createAssociated participant accounts with the right argument ')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[1], 'configSeeder', 'should call createAssociated participant accounts with the right argument')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
+      assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')
+      assert.deepEqual(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[0], ['INTERCHANGE_FEE', 'INTERCHANGE_FEE_SETTLEMENT'], 'should call getLedgerAccountsByNamewith with the right arguments')
+      assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[1], trxStub, 'should call getLedgerAccountsByNamewith  the right argument: trx')
+      assert.equal(LedgerAccountTypeModel.bulkInsert.callCount, 1, 'should call bulkInsert')
+      assert.deepEqual(LedgerAccountTypeModel.bulkInsert.lastCall.args[0], expectedLedgerAccountRecords, 'should call bulkInsert with the right records ')
+      assert.equal(LedgerAccountTypeModel.bulkInsert.lastCall.args[1], trxStub, 'should call bulkInsert with the transaction argument')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.callCount, 1, 'should call createAssociated participant accounts for the ledger accounts')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[0], 10, 'should call createAssociated participant accounts with the right argument ')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[1], 'configSeeder', 'should call createAssociated participant accounts with the right argument')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.firstCall.args[2], trxStub, 'should call createAssociated participant with a transaction')
 
       assert.equal(SettlementModel.getSettlementModelsByName.callCount, 1, 'should call the model getSettlementModelsByName function')
       assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['CGS'], 'should call the model getSettlementModelsByName with the right arguments')
@@ -226,27 +226,27 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
   await configDataSeederTest.test('initializeSeedData when existing ledgerAccounts exist but none are missing', async (assert) => {
     try {
       Config.SETTLEMENT_MODELS = ['CGS']
-      // Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-      //   {
-      //     name: 'INTERCHANGE_FEE',
-      //     description: 'Interchange fees chargeable to DFSPs'
-      //   },
-      //   {
-      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-      //     description: 'Interchange fees settlement account'
-      //   }
-      // ]
-      // LedgerAccountTypeModel.getLedgerAccountsByName.resolves([{ name: 'INTERCHANGE_FEE' }, { name: 'INTERCHANGE_FEE_SETTLEMENT' }])
-      // LedgerAccountTypeModel.bulkInsert.resolves([10])
-      // LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
+      Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
+        {
+          name: 'INTERCHANGE_FEE',
+          description: 'Interchange fees chargeable to DFSPs'
+        },
+        {
+          name: 'INTERCHANGE_FEE_SETTLEMENT',
+          description: 'Interchange fees settlement account'
+        }
+      ]
+      LedgerAccountTypeModel.getLedgerAccountsByName.resolves([{ name: 'INTERCHANGE_FEE' }, { name: 'INTERCHANGE_FEE_SETTLEMENT' }])
+      LedgerAccountTypeModel.bulkInsert.resolves([10])
+      LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves()
       SettlementModel.getSettlementModelsByName.resolves([{ name: 'DEFERREDNET' }, { name: 'CGS' }])
       SettlementService.createSettlementModel.resolves()
       await ConfigDataSeeder.initializeSeedData()
-      // assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')
-      // assert.deepEqual(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[0], ['INTERCHANGE_FEE', 'INTERCHANGE_FEE_SETTLEMENT'], 'should call getLedgerAccountsByNamewith with the right arguments')
-      // assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[1], trxStub, 'should call getLedgerAccountsByNamewith  the right argument: trx')
-      // assert.equal(LedgerAccountTypeModel.bulkInsert.callCount, 0, 'should not call bulkInsert')
-      // assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.callCount, 0, 'should call createAssociated participant accounts for the ledger accounts')
+      assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.callCount, 1, 'should call the model getLedgerAccountsByName function')
+      assert.deepEqual(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[0], ['INTERCHANGE_FEE', 'INTERCHANGE_FEE_SETTLEMENT'], 'should call getLedgerAccountsByNamewith with the right arguments')
+      assert.equal(LedgerAccountTypeModel.getLedgerAccountsByName.lastCall.args[1], trxStub, 'should call getLedgerAccountsByNamewith  the right argument: trx')
+      assert.equal(LedgerAccountTypeModel.bulkInsert.callCount, 0, 'should not call bulkInsert')
+      assert.equal(LedgerAccountTypesService.createAssociatedParticipantAccounts.callCount, 0, 'should call createAssociated participant accounts for the ledger accounts')
 
       assert.equal(SettlementModel.getSettlementModelsByName.callCount, 1, 'should call the model getSettlementModelsByName function')
       assert.deepEqual(SettlementModel.getSettlementModelsByName.lastCall.args[0], ['CGS'], 'should call the model getSettlementModelsByName with the right arguments')
@@ -265,18 +265,17 @@ Test('ConfigDataSeeder', async (configDataSeederTest) => {
   await configDataSeederTest.test('initializeSeedData when an error occurs', async (assert) => {
     try {
       Config.SETTLEMENT_MODELS = ['CGS']
-      // Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-      //   {
-      //     name: 'INTERCHANGE_FEE',
-      //     description: 'Interchange fees chargeable to DFSPs'
-      //   },
-      //   {
-      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-      //     description: 'Interchange fees settlement account'
-      //   }
-      // ]
-      // LedgerAccountTypeModel.getLedgerAccountsByName.rejects(new Error())
-      SettlementModel.getSettlementModelsByName.rejects(new Error())
+      Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
+        {
+          name: 'INTERCHANGE_FEE',
+          description: 'Interchange fees chargeable to DFSPs'
+        },
+        {
+          name: 'INTERCHANGE_FEE_SETTLEMENT',
+          description: 'Interchange fees settlement account'
+        }
+      ]
+      LedgerAccountTypeModel.getLedgerAccountsByName.rejects(new Error())
 
       await ConfigDataSeeder.initializeSeedData()
       assert.fail()
