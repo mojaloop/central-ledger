@@ -25,7 +25,7 @@
 'use strict'
 
 const Handler = require('./handler')
-const Joi = require('@hapi/joi')
+// const Joi = require('@hapi/joi')
 const tags = ['api', 'ledgerAccountTypes']
 
 module.exports = [
@@ -38,26 +38,26 @@ module.exports = [
       description: 'Get all ledger Account types'
 
     }
-  },
-  {
-    method: 'POST',
-    path: '/ledgerAccountTypes',
-    handler: Handler.create,
-    options: {
-      tags,
-      description: 'Create a new ledger account type',
-      payload: {
-        allow: ['application/json'],
-        failAction: 'error'
-      },
-      validate: {
-        payload: Joi.object({
-          name: Joi.string().alphanum().min(2).max(30).required().description('Name of the ledger account type'),
-          description: Joi.string().required().description('The description of the ledger account type'),
-          isActive: Joi.boolean().required().description('Determines whether this ledger account type is active or not'),
-          isSettleable: Joi.boolean().required().description('Determines whether this ledger account type is settleable or not')
-        })
-      }
-    }
-  }
+  } //,
+  // {
+  //   method: 'POST',
+  //   path: '/ledgerAccountTypes',
+  //   handler: Handler.create,
+  //   options: {
+  //     tags,
+  //     description: 'Create a new ledger account type',
+  //     payload: {
+  //       allow: ['application/json'],
+  //       failAction: 'error'
+  //     },
+  //     validate: {
+  //       payload: Joi.object({
+  //         name: Joi.string().alphanum().min(2).max(30).required().description('Name of the ledger account type'),
+  //         description: Joi.string().required().description('The description of the ledger account type'),
+  //         isActive: Joi.boolean().required().description('Determines whether this ledger account type is active or not'),
+  //         isSettleable: Joi.boolean().required().description('Determines whether this ledger account type is settleable or not')
+  //       })
+  //     }
+  //   }
+  // }
 ]
