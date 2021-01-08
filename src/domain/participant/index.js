@@ -285,7 +285,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
     if (existingLimit || existingPosition || existingSettlementPosition) {
       throw ErrorHandler.Factory.createInternalServerFSPIOPError(ParticipantInitialPositionExistsText)
     }
-    const limitAndInitialPosition = limitAndInitialPositionObj
+    const limitAndInitialPosition = Object.assign({}, limitAndInitialPositionObj, { name: participantName })
     if (!limitAndInitialPosition.initialPosition) {
       limitAndInitialPosition.initialPosition = Config.PARTICIPANT_INITIAL_POSITION
     }

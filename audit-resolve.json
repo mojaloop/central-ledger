@@ -94,6 +94,21 @@
       "decision": "ignore",
       "madeAt": 1609286190947,
       "expiresAt": 1611878178540
+    },
+    "1500|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1610083784603,
+      "expiresAt": 1612675767235
+    },
+    "1594|@mojaloop/central-services-health>@mojaloop/central-services-shared>axios": {
+      "decision": "ignore",
+      "madeAt": 1610083790377,
+      "expiresAt": 1612675767235
+    },
+    "1594|@mojaloop/central-services-shared>axios": {
+      "decision": "ignore",
+      "madeAt": 1610083790377,
+      "expiresAt": 1612675767235
     }
   },
   "rules": {},

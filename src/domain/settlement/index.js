@@ -31,6 +31,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
+const LedgerAccountTypesService = require('../ledgerAccountTypes')
 
 const createSettlementModel = async (settlementModel, trx = null) => {
   try {
@@ -43,6 +44,11 @@ const createSettlementModel = async (settlementModel, trx = null) => {
       settlementInterchangeId, settlementDelayId, settlementModel.currencyId,
       settlementModel.requireLiquidityCheck,
       ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
+
+    // create the accounts required for the settlementModel for existing participants
+    await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountType.ledgerAccountTypeId, 'configSeeder', trx)
+    await LedgerAccountTypesService.createAssociatedParticipantAccounts(settlementAccountType.ledgerAccountTypeId, 'configSeeder', trx)
+
     return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

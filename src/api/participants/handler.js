@@ -32,6 +32,7 @@ const Sidecar = require('../../lib/sidecar')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Enums = require('../../lib/enumCached')
+const SettlementService = require('../../domain/settlement')
 
 const LocalEnum = {
   activated: 'activated',
@@ -95,9 +96,23 @@ const create = async function (request, h) {
       participant = await ParticipantService.getById(participantId)
     }
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
-    const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
-    const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
-    participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
+    const settlementModels = await SettlementService.getAll()
+
+    if (Array.isArray(settlementModels) && settlementModels.length > 0) {
+      for (const settlementModel of settlementModels) {
+        const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false)
+        const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.settlementAccountTypeId, false)
+        if (Array.isArray(participant.currencyList)) {
+          participant.currencyList = participant.currencyList.concat([await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)])
+        } else {
+          participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
+        }
+      }
+    } else {
+      const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.POSITION, false)
+      const participantCurrencyId2 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, ledgerAccountTypes.SETTLEMENT, false)
+      participant.currencyList = [await ParticipantService.getParticipantCurrencyById(participantCurrencyId1), await ParticipantService.getParticipantCurrencyById(participantCurrencyId2)]
+    }
     return h.response(entityItem(participant, ledgerAccountIds)).code(201)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)

@@ -641,6 +641,7 @@ Test('Participant service', async (participantTest) => {
       const settlementAccount = {
         participantCurrencyId: 2
       }
+      payload.name = participant.name
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
@@ -687,6 +688,7 @@ Test('Participant service', async (participantTest) => {
       const settlementAccount = {
         participantCurrencyId: 2
       }
+      limitPositionObj.name = participant.name
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)

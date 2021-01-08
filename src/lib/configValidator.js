@@ -21,32 +21,28 @@
  * Claudio Viola <claudio.viola@modusbox.com>
  --------------
 ******/
-const Joi = require('@hapi/joi')
 const Config = require('./config')
+const _ = require('lodash')
 
-// const additionalParticipantLedgerAccountTypeSchema = Joi.array().items(Joi.object({
-//   name: Joi.string()
-//     .min(2)
-//     .max(30)
-//     .required()
-//     .description('Name of the ledger account type'),
-//   description: Joi.string()
-//     .required()
-//     .description('The description of the ledger account type')
-// }))
+const validateSettlementModelCombinations = async (settlementModels) => {
+  let isValid = false
 
-const additionalSettlementModelsSchema = Joi.array().items(
-  Joi.string().valid('CGS', 'DEFERREDNET', 'INTERCHANGEFEE')
-)
-
+  Config.VALID_SETTLEMENT_MODEL_COMBINATIONS.forEach(element => {
+    if (_.isEqual(_.sortBy(element), _.sortBy(settlementModels))) {
+      isValid = true
+    }
+  })
+  if (!isValid) {
+    throw new Error('The settlement model is not valid')
+  }
+}
 /**
  * [validateConfig Validates startup configuration against schema]
  * @return {} [ ]
  */
 async function validateConfig () {
   await Promise.all([
-    // additionalParticipantLedgerAccountTypeSchema.validateAsync(Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES),
-    additionalSettlementModelsSchema.validateAsync(Config.SETTLEMENT_MODELS)
+    validateSettlementModelCombinations(Config.SETTLEMENT_MODELS)
   ])
 }
 

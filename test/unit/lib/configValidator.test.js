@@ -45,21 +45,12 @@ Test('ConfigValidator', async (configValidatorTest) => {
     t.end()
   })
 
-  await configValidatorTest.test('initializeSeedData when everything is ok', async (assert) => {
+  await configValidatorTest.test('initializeSeedData when valid settlement model is passed', async (assert) => {
     try {
-      Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET', 'INTERCHANGEFEE']
-      // Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-      //   {
-      //     name: 'INTERCHANGE_FEE',
-      //     description: 'Interchange fees chargeable to DFSPs'
-      //   },
-      //   {
-      //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-      //     description: 'Interchange fees settlement account'
-      //   }
-      // ]
+      Config.SETTLEMENT_MODELS = ['DEFERREDNET']
 
       await ConfigValidator.validateConfig()
+      assert.pass('Should pass')
       assert.end()
     } catch (err) {
       assert.fail(`Error thrown ${err}`, 'should have not thrown an error')
@@ -67,39 +58,40 @@ Test('ConfigValidator', async (configValidatorTest) => {
     }
   })
 
-  await configValidatorTest.test('initializeSeedData should throw for invalid settlementModels aliases', async (assert) => {
+  await configValidatorTest.test('initializeSeedData when correct combinaion is passed', async (assert) => {
     try {
-      Config.SETTLEMENT_MODELS = ['CGSss', 'DEFERREDNET', 'INTERCHANGEFEEs']
+      Config.SETTLEMENT_MODELS = ['DEFERREDNET', 'INTERCHANGEFEE']
 
       await ConfigValidator.validateConfig()
-      assert.fail()
+      assert.pass('Should pass')
+      assert.end()
     } catch (err) {
-      assert.equal(err.message, '"[0]" must be one of [CGS, DEFERREDNET, INTERCHANGEFEE]', 'should thrown a validation error')
+      assert.fail(`Error thrown ${err}`, 'should have not thrown an error')
       assert.end()
     }
   })
 
-  // await configValidatorTest.test('initializeSeedData should throw for invalid ledgerAccount configuration ', async (assert) => {
-  //   try {
-  //     Config.SETTLEMENT_MODELS = ['CGS']
+  await configValidatorTest.test('initializeSeedData should throw for invalid settlementModels combinations', async (assert) => {
+    try {
+      Config.SETTLEMENT_MODELS = ['CGS', 'DEFERREDNET']
+      await ConfigValidator.validateConfig()
+      assert.fail()
+    } catch (err) {
+      assert.equal(err.message, 'The settlement model is not valid', 'should thrown a validation error')
+      assert.end()
+    }
+  })
 
-  //     Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES = [
-  //       {
-  //         namespace: 'INTERCHANGE_FEE',
-  //         descriptions: 'Interchange fees chargeable to DFSPs'
-  //       },
-  //       {
-  //         name: 'INTERCHANGE_FEE_SETTLEMENT',
-  //         description: 'Interchange fees settlement account'
-  //       }
-  //     ]
-  //     await ConfigValidator.validateConfig()
-  //     assert.fail()
-  //   } catch (err) {
-  //     assert.equal(err.message, '"[0].name" is required')
-  //     assert.end()
-  //   }
-  // })
+  await configValidatorTest.test('initializeSeedData should throw for invalid settlementModels aliases', async (assert) => {
+    try {
+      Config.SETTLEMENT_MODELS = ['CGSss']
+      await ConfigValidator.validateConfig()
+      assert.fail()
+    } catch (err) {
+      assert.equal(err.message, 'The settlement model is not valid', 'should thrown a validation error')
+      assert.end()
+    }
+  })
 
   await configValidatorTest.end()
 })

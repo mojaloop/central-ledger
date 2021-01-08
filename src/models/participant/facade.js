@@ -37,6 +37,8 @@ const ParticipantModelCached = require('../../models/participant/participantCach
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
 const Config = require('../../lib/config')
+const SettlementModelModel = require('../settlement/settlementModel')
+const { Enum } = require('@mojaloop/central-services-shared')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -412,7 +414,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
-        let result
+        // let returnValue = {}
         const limitType = await knex('participantLimitType').where({ name: limitPositionObj.limit.type, isActive: 1 }).select('participantLimitTypeId').first()
         //  let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPositionObj.limit.type, 'isActive': 1 })
         const participantLimit = {
@@ -422,34 +424,83 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           isActive: 1,
           createdBy: 'unknown'
         }
-        result = await knex('participantLimit').transacting(trx).insert(participantLimit)
+        const result = await knex('participantLimit').transacting(trx).insert(participantLimit)
         participantLimit.participantLimitId = result[0]
-        const participantPosition = {
-          participantCurrencyId,
-          value: limitPositionObj.initialPosition,
-          reservedValue: 0
+
+        const settlementModels = await SettlementModelModel.getAll()
+        if (Array.isArray(settlementModels) && settlementModels.length > 0) {
+          for (const settlementModel of settlementModels) {
+            const positionAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.ledgerAccountTypeId)
+            const settlementAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.settlementAccountTypeId)
+
+            const participantPosition = {
+              participantCurrencyId: positionAccount.participantCurrencyId,
+              value: (settlementModel.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION ? limitPositionObj.initialPosition : 0),
+              reservedValue: 0
+            }
+            await knex('participantPosition').transacting(trx).insert(participantPosition)
+            // const participantPositionResult = await knex('participantPosition').transacting(trx).insert(participantPosition)
+            // participantPosition.participantPositionId = participantPositionResult[0]
+
+            const settlementPosition = {
+              participantCurrencyId: settlementAccount.participantCurrencyId,
+              value: 0,
+              reservedValue: 0
+            }
+            await knex('participantPosition').transacting(trx).insert(settlementPosition)
+            // const participantSettlementResult = await knex('participantPosition').transacting(trx).insert(settlementPosition)
+            // settlementPosition.participantPositionId = participantSettlementResult[0]
+            if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
+              await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', positionAccount.participantCurrencyId)
+              await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccount.participantCurrencyId)
+              await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+              await ParticipantLimitCached.invalidateParticipantLimitCache()
+            }
+            // returnValue.participantLimit = participantLimit
+            // if(Array.isArray(returnValue.participantPosition)){
+            //   returnValue.participantPositions.push(...[
+            //     participantPosition,
+            //     settlementPosition
+            //   ])
+            // } else {
+            //   returnValue.participantPositions = [
+            //     participantPosition,
+            //     settlementPosition
+            //   ]
+            // }
+          }
+        } else {
+          const participantPosition = {
+            participantCurrencyId,
+            value: limitPositionObj.initialPosition,
+            reservedValue: 0
+          }
+          const participantPositionResult = await knex('participantPosition').transacting(trx).insert(participantPosition)
+          participantPosition.participantPositionId = participantPositionResult[0]
+          const settlementPosition = {
+            participantCurrencyId: settlementAccountId,
+            value: 0,
+            reservedValue: 0
+          }
+          await knex('participantPosition').transacting(trx).insert(settlementPosition)
+          // const participantSettlementResult = await knex('participantPosition').transacting(trx).insert(settlementPosition)
+          // settlementPosition.participantPositionId = participantSettlementResult[0]
+          if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
+            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
+            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
+            await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+            await ParticipantLimitCached.invalidateParticipantLimitCache()
+          }
+          // returnValue.participantLimit = participantLimit
+          // returnValue.participantPositions = [
+          //   participantPosition,
+          //   settlementPosition
+          // ]
         }
-        result = await knex('participantPosition').transacting(trx).insert(participantPosition)
-        participantPosition.participantPositionId = result[0]
-        const settlementPosition = {
-          participantCurrencyId: settlementAccountId,
-          value: 0,
-          reservedValue: 0
-        }
-        result = await knex('participantPosition').transacting(trx).insert(settlementPosition)
-        settlementPosition.participantPositionId = result[0]
-        if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
-          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
-          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
-          await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
-          await ParticipantLimitCached.invalidateParticipantLimitCache()
-        }
+
         await trx.commit
-        return {
-          participantLimit,
-          participantPosition,
-          settlementPosition
-        }
+        // return returnValue
+        return true
       } catch (err) {
         await trx.rollback
         throw err

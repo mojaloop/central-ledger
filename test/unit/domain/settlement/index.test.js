@@ -33,6 +33,7 @@ const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType
 const Logger = require('@mojaloop/central-services-logger')
 
 const SettlementService = require('../../../../src/domain/settlement/index')
+const LedgerAccountTypesService = require('../../../../src/domain/ledgerAccountTypes')
 
 Test('SettlementModel SettlementService', async (settlementModelTest) => {
   let sandbox
@@ -40,6 +41,7 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
   settlementModelTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(LedgerAccountTypeModel, 'getLedgerAccountByName')
+    sandbox.stub(LedgerAccountTypesService, 'createAssociatedParticipantAccounts')
 
     Db.settlementModel = {
       insert: sandbox.stub(),
@@ -193,6 +195,9 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
       LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
       sandbox.stub(SettlementModel, 'getByName').returns(null)
+
+      await LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves(true)
+      await LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves(true)
 
       const expected = await SettlementService.createSettlementModel(payload, {})
       test.equal(expected, true, 'should return true')

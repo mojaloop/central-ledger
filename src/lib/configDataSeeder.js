@@ -23,13 +23,11 @@
 ******/
 'use strict'
 
-// const LedgerAccountTypeModel = require('../models/ledgerAccountType/ledgerAccountType')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Config = require('./config')
 const SettlementService = require('../domain/settlement')
 const SettlementModel = require('../models/settlement/settlementModel')
 
-// const LedgerAccountTypesService = require('../domain/ledgerAccountTypes')
 const Db = require('./db')
 const ConfigValidator = require('./configValidator')
 
@@ -74,7 +72,6 @@ async function initializeSeedData () {
   const knex = Db.getKnex()
   return knex.transaction(async trx => {
     try {
-      // await initializeLedgerAccountTypes(trx)
       await initializeSettlementModels(trx)
 
       await trx.commit
@@ -104,33 +101,6 @@ async function initializeSettlementModels (trx) {
   }
 }
 
-// async function initializeLedgerAccountTypes (trx) {
-//   const ledgerAccountTypesNamesToCreate = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.map(item => item.name)
-//   try {
-//     console.log('here')
-
-//     let existingAccountTypes = await LedgerAccountTypeModel.getLedgerAccountsByName(ledgerAccountTypesNamesToCreate, trx)
-//     console.log('here2')
-
-//     existingAccountTypes = existingAccountTypes.map(record => record.name)
-
-//     const missingAccountTypes = Config.ADDITIONAL_PARTICIPANT_LEDGER_ACCOUNT_TYPES.filter(item => !existingAccountTypes.includes(item.name))
-//     if (missingAccountTypes.length > 0) {
-//       const recordsToCreate = missingAccountTypes.map(item => ({
-//         name: item.name,
-//         description: item.description,
-//         isSettleable: true,
-//         isActive: true
-//       }))
-//       const ledgerAccountTypesIds = await LedgerAccountTypeModel.bulkInsert(recordsToCreate, trx)
-//       await Promise.all(ledgerAccountTypesIds.map(async ledgerAccountTypeId => {
-//         await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountTypeId, 'configSeeder', trx)
-//       }))
-//     }
-//   } catch (err) {
-//     console.log('error', err)
-//   }
-// }
 module.exports = {
   initializeSeedData
 }

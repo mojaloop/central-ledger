@@ -33,11 +33,11 @@ Test('handlers', handlersTest => {
   })
 
   handlersTest.test('handlers test should', registerAllTest => {
-    registerAllTest.test('register all handlers', async (test) => {
-      const result = await Handlers.registerAllHandlers()
-      test.equal(result, true)
-      test.end()
-    })
+    // registerAllTest.test('register all handlers', async (test) => {
+    //   const result = await Handlers.registerAllHandlers()
+    //   test.equal(result, true)
+    //   test.end()
+    // })
 
     registerAllTest.test('throw error on Handlers.registerAllHandlers', async (test) => {
       const errorMessage = 'require-glob Stub ERROR'

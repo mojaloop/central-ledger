@@ -29,32 +29,32 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const ParticipantFacade = require('../../models/participant/facade')
 const ParticipantPosition = require('../../models/participant/participantPosition')
 const ParticipantCurrency = require('../../models/participant/participantCurrency')
-const ParticipantCurrencyCached = require('../../models/participant/participantCurrencyCached')
+// const ParticipantCurrencyCached = require('../../models/participant/participantCurrencyCached')
 
-const Db = require('../../lib/db')
+// const Db = require('../../lib/db')
 
-async function create (name, description, isActive = false, isSettleable = false) {
-  try {
-    const knex = Db.getKnex()
-    await knex.transaction(async trx => {
-      try {
-        const ledgerAccountTypeId = await LedgerAccountTypeModel.create(name, description, isActive, isSettleable, trx)
-        if (isSettleable === true) {
-          await createAssociatedParticipantAccounts(ledgerAccountTypeId, 'ledgerAccountType', trx)
-          await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
-        }
-        await trx.commit()
-      } catch (err) {
-        await trx.rollback()
-        throw ErrorHandler.Factory.reformatFSPIOPError(err)
-      }
-    })
+// async function create (name, description, isActive = false, isSettleable = false) {
+//   try {
+//     const knex = Db.getKnex()
+//     await knex.transaction(async trx => {
+//       try {
+//         const ledgerAccountTypeId = await LedgerAccountTypeModel.create(name, description, isActive, isSettleable, trx)
+//         if (isSettleable === true) {
+//           await createAssociatedParticipantAccounts(ledgerAccountTypeId, 'ledgerAccountType', trx)
+//           await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
+//         }
+//         await trx.commit()
+//       } catch (err) {
+//         await trx.rollback()
+//         throw ErrorHandler.Factory.reformatFSPIOPError(err)
+//       }
+//     })
 
-    return true
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
+//     return true
+//   } catch (err) {
+//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
+//   }
+// }
 
 async function createAssociatedParticipantAccounts (ledgerAccountTypeId, createdBy, trx = null) {
   try {
@@ -95,6 +95,6 @@ async function getByName (name) {
 module.exports = {
   getByName,
   createAssociatedParticipantAccounts,
-  create,
+  // create,
   getAll
 }
