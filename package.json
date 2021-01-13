@@ -107,7 +107,7 @@
     "glob": "7.1.6",
     "hapi-auth-basic": "5.0.0",
     "hapi-auth-bearer-token": "8.0.0",
-    "hapi-swagger": "13.1.0",
+    "hapi-swagger": "14.1.0",
     "ilp-packet": "2.2.0",
     "knex": "0.21.15",
     "lodash": "4.17.20",
