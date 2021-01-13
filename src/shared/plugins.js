@@ -1,21 +1,22 @@
 'use strict'
 
-const Package = require('../../package')
+const Path = require('path')
 const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
 const Blipp = require('blipp')
 const ErrorHandling = require('@mojaloop/central-services-error-handling')
+const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
+const Config = require('../lib/config')
 
 const registerPlugins = async (server) => {
-  await server.register({
-    plugin: require('hapi-swagger'),
-    options: {
-      info: {
-        title: 'Central Ledger API Documentation',
-        version: Package.version
+  if (Config.API_DOC_ENDPOINTS_ENABLED) {
+    await server.register({
+      plugin: APIDocumentation,
+      options: {
+        documentPath: Path.resolve(__dirname, '../api/interface/swagger.json')
       }
-    }
-  })
+    })
+  }
 
   await server.register({
     plugin: require('@hapi/good'),
