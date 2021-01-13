@@ -35,42 +35,42 @@ const ParticipantPosition = require('../../../../src/models/participant/particip
 const ParticipantCurrency = require('../../../../src/models/participant/participantCurrency')
 const ParticipantCurrencyCached = require('../../../../src/models/participant/participantCurrencyCached')
 
-// const expectedParticipantCurrencyArg = [
-//   {
-//     participantId: '1',
-//     currencyId: 'TZX',
-//     ledgerAccountTypeId: 127,
-//     isActive: true,
-//     createdBy: 'ledgerAccountType'
-//   },
-//   {
-//     participantId: '2',
-//     currencyId: 'USD',
-//     ledgerAccountTypeId: 127,
-//     isActive: true,
-//     createdBy: 'ledgerAccountType'
-//   }
-// ]
-// const existingParticipantWithCurrencies = [
-//   {
-//     participantCurrencyId: 1,
-//     participantId: '1',
-//     currencyId: 'TZX'
-//   },
-//   {
-//     participantCurrencyId: 2,
-//     participantId: '2',
-//     currencyId: 'USD'
-//   }
-// ]
-// const createdParticipantCurrenciesRecords = [
-//   {
-//     participantCurrencyId: 1
-//   },
-//   {
-//     participantCurrencyId: 2
-//   }
-// ]
+const expectedParticipantCurrencyArg = [
+  {
+    participantId: '1',
+    currencyId: 'TZX',
+    ledgerAccountTypeId: 127,
+    isActive: true,
+    createdBy: 'ledgerAccountType'
+  },
+  {
+    participantId: '2',
+    currencyId: 'USD',
+    ledgerAccountTypeId: 127,
+    isActive: true,
+    createdBy: 'ledgerAccountType'
+  }
+]
+const existingParticipantWithCurrencies = [
+  {
+    participantCurrencyId: 1,
+    participantId: '1',
+    currencyId: 'TZX'
+  },
+  {
+    participantCurrencyId: 2,
+    participantId: '2',
+    currencyId: 'USD'
+  }
+]
+const createdParticipantCurrenciesRecords = [
+  {
+    participantCurrencyId: 1
+  },
+  {
+    participantCurrencyId: 2
+  }
+]
 
 Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
   let sandbox
@@ -314,6 +314,51 @@ Test('LedgerAccountTypeService', async (ledgerAccountTypeServiceTest) => {
       LedgerAccountTypeModel.getLedgerAccountByName.rejects(new Error('Error message'))
 
       await LedgerAccountTypeService.getByName('settlement')
+      assert.fail('Error not thrown', 'should have thrown an error')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, 'should throw an error')
+      assert.ok(err.message, 'Error message', 'should throw the right error message')
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeServiceTest.test('createAssociatedParticipantAccounts should create ParticipantPositionRecords records', async (assert) => {
+    try {
+      ParticipantFacade.getAllNonHubParticipantsWithCurrencies.resolves(existingParticipantWithCurrencies)
+      ParticipantCurrency.createParticipantCurrencyRecords.resolves(createdParticipantCurrenciesRecords)
+
+      const ledgerAccountTypeId = 127
+      const createdBy = 'ledgerAccountType'
+
+      await LedgerAccountTypeService.createAssociatedParticipantAccounts(ledgerAccountTypeId, createdBy)
+      assert.equal(ParticipantFacade.getAllNonHubParticipantsWithCurrencies.callCount, 1, 'should retrieve non HUB Participants with currencies')
+      assert.equal(ParticipantFacade.getAllNonHubParticipantsWithCurrencies.lastCall.args[0], null, 'should call the model with the right argument: null')
+      assert.deepEqual(ParticipantCurrency.createParticipantCurrencyRecords.callCount, 1, 'should call the create partipant currency record function')
+      assert.deepEqual(ParticipantCurrency.createParticipantCurrencyRecords.lastCall.args[0], expectedParticipantCurrencyArg, 'should call the create partipant position records function')
+
+      assert.equal(ParticipantPosition.createParticipantPositionRecords.callCount, 1, 'should call the model create function')
+      const expectedParticipantPositionArg = [
+        { participantCurrencyId: 1, value: 0, reservedValue: 0 },
+        { participantCurrencyId: 2, value: 0, reservedValue: 0 }
+      ]
+      assert.deepEqual(ParticipantPosition.createParticipantPositionRecords.lastCall.args[0], expectedParticipantPositionArg, 'should call the create partipant position records function with the right arguments')
+
+      assert.end()
+    } catch (err) {
+      console.log(err)
+      assert.fail(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeServiceTest.test('createAssociatedParticipantAccounts should throw an error if the LedgerAccountTypeModel service fails', async (assert) => {
+    try {
+      ParticipantFacade.getAllNonHubParticipantsWithCurrencies.rejects(new Error('Error message'))
+      const ledgerAccountTypeId = 127
+      const createdBy = 'ledgerAccountType'
+
+      await LedgerAccountTypeService.createAssociatedParticipantAccounts(ledgerAccountTypeId, createdBy)
       assert.fail('Error not thrown', 'should have thrown an error')
       assert.end()
     } catch (err) {
