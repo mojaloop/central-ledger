@@ -22,18 +22,11 @@
  --------------
 ******/
 const Config = require('./config')
-const _ = require('lodash')
 
 const validateSettlementModelCombinations = async (settlementModels) => {
-  let isValid = false
-
-  Config.VALID_SETTLEMENT_MODEL_COMBINATIONS.forEach(element => {
-    if (_.isEqual(_.sortBy(element), _.sortBy(settlementModels))) {
-      isValid = true
-    }
-  })
-  if (!isValid) {
-    throw new Error('The settlement model is not valid')
+  // check if CGS and DEFERREDNET is used together
+  if (settlementModels.includes('CGS') && settlementModels.includes('DEFERREDNET')) {
+    throw new Error('The settlement models: \'CGS\' and \'DEFERREDNET\' can\'t be used together')
   }
 }
 /**

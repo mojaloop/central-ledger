@@ -35,6 +35,18 @@ const LedgerAccountTypesService = require('../ledgerAccountTypes')
 
 const createSettlementModel = async (settlementModel, trx = null) => {
   try {
+    // Make sure DEFERREDNET and CGS can't be used together
+    const existingSettlementModels = await getAll()
+    if (Array.isArray(existingSettlementModels) && existingSettlementModels.length > 0) {
+      for (const item of existingSettlementModels) {
+        if (item.name === settlementModel.name) {
+          throw new Error(`Settlement model: '${settlementModel.name}' already exists`)
+        }
+        if ((item.name === 'CGS' && settlementModel.name === 'DEFERREDNET') || (item.name === 'DEFERREDNET' && settlementModel.name === 'CGS')) {
+          throw new Error(`Settlement model: '${settlementModel.name}' can't be used with the existing settlement model '${item.name}'`)
+        }
+      }
+    }
     const settlementGranularityId = Enum.SettlementGranularity[settlementModel.settlementGranularity]
     const settlementInterchangeId = Enum.SettlementInterchange[settlementModel.settlementInterchange]
     const settlementDelayId = Enum.SettlementDelay[settlementModel.settlementDelay]

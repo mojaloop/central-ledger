@@ -77,18 +77,7 @@ Test('ConfigValidator', async (configValidatorTest) => {
       await ConfigValidator.validateConfig()
       assert.fail()
     } catch (err) {
-      assert.equal(err.message, 'The settlement model is not valid', 'should thrown a validation error')
-      assert.end()
-    }
-  })
-
-  await configValidatorTest.test('initializeSeedData should throw for invalid settlementModels aliases', async (assert) => {
-    try {
-      Config.SETTLEMENT_MODELS = ['CGSss']
-      await ConfigValidator.validateConfig()
-      assert.fail()
-    } catch (err) {
-      assert.equal(err.message, 'The settlement model is not valid', 'should thrown a validation error')
+      assert.equal(err.message, 'The settlement models: \'CGS\' and \'DEFERREDNET\' can\'t be used together', 'should thrown a validation error')
       assert.end()
     }
   })

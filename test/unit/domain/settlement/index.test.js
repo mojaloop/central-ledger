@@ -177,7 +177,8 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       test.end()
     }
   })
-  await settlementModelTest.test('create should create a settlementModel if it does not exists', async function (test) {
+
+  await settlementModelTest.test('create should not create a settlementModel if it already exists', async function (test) {
     try {
       const payload = {
         name: 'DEFERRED_NET',
@@ -194,6 +195,130 @@ Test('SettlementModel SettlementService', async (settlementModelTest) => {
       sandbox.stub(SettlementModel, 'create')
       LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
       LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
+      sandbox.stub(SettlementModel, 'getAll').returns([payload])
+
+      const expected = await SettlementService.createSettlementModel(payload, {})
+      test.equal(expected, true, 'should return true')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Settlement model: \'DEFERRED_NET\' already exists', 'throws Settlement Model already exists')
+      test.end()
+    }
+  })
+
+  await settlementModelTest.test('create should not create the settlementModel CGS if DEFERREDNET exists', async function (test) {
+    try {
+      const payload = {
+        name: 'CGS',
+        settlementGranularity: 'GROSS',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'IMMEDIATE',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }
+      const existingModels = [{
+        name: 'DEFERREDNET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }]
+      sandbox.stub(SettlementModel, 'create')
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
+      sandbox.stub(SettlementModel, 'getAll').returns(existingModels)
+
+      const expected = await SettlementService.createSettlementModel(payload, {})
+      test.equal(expected, true, 'should return true')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Settlement model: \'CGS\' can\'t be used with the existing settlement model \'DEFERREDNET\'', 'throws Settlement model: \'CGS\' can\'t be used with the existing settlement model \'DEFERREDNET\'')
+      test.end()
+    }
+  })
+
+  await settlementModelTest.test('create should not create the settlementModel DEFERREDNET if CGS exists', async function (test) {
+    try {
+      const existingModels = [{
+        name: 'CGS',
+        settlementGranularity: 'GROSS',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'IMMEDIATE',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }]
+      const payload = {
+        name: 'DEFERREDNET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }
+      sandbox.stub(SettlementModel, 'create')
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
+      sandbox.stub(SettlementModel, 'getAll').returns(existingModels)
+
+      const expected = await SettlementService.createSettlementModel(payload, {})
+      test.equal(expected, true, 'should return true')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof Error, 'should throw an error')
+      test.equal(err.message, 'Settlement model: \'DEFERREDNET\' can\'t be used with the existing settlement model \'CGS\'', 'throws Settlement model: \'DEFERREDNET\' can\'t be used with the existing settlement model \'CGS\'')
+      test.end()
+    }
+  })
+
+  await settlementModelTest.test('create should create a settlementModel if it does not exists', async function (test) {
+    try {
+      const payload = {
+        name: 'DEFERRED_NET',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }
+      const existingModels = [{
+        name: 'DEFERRED_NET_EXISTING',
+        settlementGranularity: 'NET',
+        settlementInterchange: 'MULTILATERAL',
+        settlementDelay: 'DEFERRED',
+        settlementCurrency: 'USD',
+        requireLiquidityCheck: true,
+        type: 'POSITION',
+        autoPositionReset: true,
+        ledgerAccountType: 'SETTLEMENT',
+        settlementAccountType: 'POSITION'
+      }]
+      sandbox.stub(SettlementModel, 'create')
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 1 })
+      LedgerAccountTypeModel.getLedgerAccountByName.resolves({ ledgerAccountTypeId: 2 })
+      sandbox.stub(SettlementModel, 'getAll').returns(existingModels)
       sandbox.stub(SettlementModel, 'getByName').returns(null)
 
       await LedgerAccountTypesService.createAssociatedParticipantAccounts.resolves(true)
