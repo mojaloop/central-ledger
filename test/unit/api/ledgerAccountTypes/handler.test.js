@@ -48,6 +48,9 @@ Test('LedgerAccountTypes', ledgerAccountTypesHandlerTest => {
   })
 
   ledgerAccountTypesHandlerTest.test('Handler Test', async handlerTest => {
+    // TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
+    //  uncomment it when such requirement arises
+
     // handlerTest.test('create should create a new ledgerAccountType model', async function (test) {
     //   const payload = {
     //     name: 'INTERCHANGE_FEE_SETTLEMENT',

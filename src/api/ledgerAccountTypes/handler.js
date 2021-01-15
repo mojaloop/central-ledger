@@ -31,7 +31,8 @@ const LedgerAccountTypesService = require('../../domain/ledgerAccountTypes')
 const getAll = async function () {
   return LedgerAccountTypesService.getAll()
 }
-
+// TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
+//  uncomment it when such requirement arises
 // async function create (request, h) {
 //   Sidecar.logRequest(request)
 //   try {

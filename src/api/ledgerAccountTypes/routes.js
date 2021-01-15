@@ -38,7 +38,10 @@ module.exports = [
       description: 'Get all ledger Account types'
 
     }
-  } //,
+  }
+  // TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
+  //  uncomment it when such requirement arises
+  //,
   // {
   //   method: 'POST',
   //   path: '/ledgerAccountTypes',

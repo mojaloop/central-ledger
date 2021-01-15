@@ -33,6 +33,9 @@ const ParticipantCurrency = require('../../models/participant/participantCurrenc
 
 // const Db = require('../../lib/db')
 
+// TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
+//  uncomment it when such requirement arises
+
 // async function create (name, description, isActive = false, isSettleable = false) {
 //   try {
 //     const knex = Db.getKnex()
