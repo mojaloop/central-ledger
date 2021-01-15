@@ -27,21 +27,31 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/participant/participantCurrency')
 
 Test('Participant Currency model', async (participantCurrencyTest) => {
-  const sandbox = Sinon.createSandbox()
-  Db.participantCurrency = {
-    insert: sandbox.stub(),
-    findOne: sandbox.stub(),
-    find: sandbox.stub(),
-    destroy: sandbox.stub(),
-    update: sandbox.stub()
-  }
+  let sandbox
+
+  participantCurrencyTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    Db.participantCurrency = {
+      insert: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub(),
+      destroy: sandbox.stub(),
+      update: sandbox.stub()
+    }
+    t.end()
+  })
+
+  participantCurrencyTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
 
   await participantCurrencyTest.test('create currency for fake participant', async (assert) => {
     Db.participantCurrency.insert.withArgs({ participantId: 3, currencyId: 'FAKE', createdBy: 'unknown' }).throws(new Error('message'))
@@ -263,6 +273,246 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       Logger.error(`destroy participant failed with error - ${err}`)
       test.pass('Error thrown')
       sandbox.restore()
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('createParticipantCurrencyRecords should', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.resolves()
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+      const selectStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const whereInStub = sandbox.stub()
+      const whereInSecondStub = sandbox.stub()
+      const whereInThirdStub = sandbox.stub()
+      transactingStub.resolves([
+        {
+          participantCurrencyId: 1
+        },
+        {
+          participantCurrencyId: 2
+        }
+      ])
+      whereInThirdStub.returns({ transacting: transactingStub })
+      whereInSecondStub.returns({ whereIn: whereInThirdStub })
+      whereInStub.returns({ whereIn: whereInSecondStub })
+      fromStub.returns({ whereIn: whereInStub })
+      knexStub.select = selectStub.returns({ from: fromStub })
+      const participantCurrencies = [
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 1
+        },
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 2
+        }
+      ]
+      const response = await Model.createParticipantCurrencyRecords(participantCurrencies, trxStub)
+      const expectedResponse = [{ participantCurrencyId: 1 }, { participantCurrencyId: 2 }]
+      test.deepEqual(response, expectedResponse, 'return the array of created currencyIds')
+      test.equal(batchInsertStub.callCount, 1, 'call batch insert')
+      test.equal(batchInsertStub.lastCall.args[0], 'participantCurrency', 'write to the participantCurrency table')
+      test.deepEqual(batchInsertStub.lastCall.args[1], participantCurrencies, 'all records should be inserted')
+      test.equal(selectStub.callCount, 1, 'retrieve the created records')
+      test.equal(transactingStub.callCount, 2, 'make the database calls as transaction')
+      test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
+      test.equal(trxStub.commit.callCount, 0, 'not commit the transaction if transaction is passed')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllNonHubParticipantsWithCurrencies failed with error - ${err}`)
+      test.fail('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('createParticipantCurrencyRecords should', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.resolves()
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+      const selectStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const whereInStub = sandbox.stub()
+      const whereInSecondStub = sandbox.stub()
+      const whereInThirdStub = sandbox.stub()
+      transactingStub.resolves([
+        {
+          participantCurrencyId: 1
+        },
+        {
+          participantCurrencyId: 2
+        }
+      ])
+      whereInThirdStub.returns({ transacting: transactingStub })
+      whereInSecondStub.returns({ whereIn: whereInThirdStub })
+      whereInStub.returns({ whereIn: whereInSecondStub })
+      fromStub.returns({ whereIn: whereInStub })
+      knexStub.select = selectStub.returns({ from: fromStub })
+      const participantCurrencies = [
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 1
+        },
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 2
+        }
+      ]
+      const response = await Model.createParticipantCurrencyRecords(participantCurrencies)
+      const expectedResponse = [{ participantCurrencyId: 1 }, { participantCurrencyId: 2 }]
+      test.deepEqual(response, expectedResponse, 'should return the array of created currencyIds')
+      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
+      test.end()
+    } catch (err) {
+      Logger.error(`getAllNonHubParticipantsWithCurrencies failed with error - ${err}`)
+      test.fail('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('createParticipantCurrencyRecords should', async (test) => {
+    let trxStub
+    let trxSpyRollBack
+
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.rejects(new Error())
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+
+      const participantCurrencies = [
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 1
+        },
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 2
+        }
+      ]
+      await Model.createParticipantCurrencyRecords(participantCurrencies)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('createParticipantCurrencyRecords should', async (test) => {
+    let trxStub
+    let trxSpyRollBack
+
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, [trxStub, true])
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.rejects(new Error())
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+
+      const participantCurrencies = [
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 1
+        },
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 2
+        }
+      ]
+      await Model.createParticipantCurrencyRecords(participantCurrencies)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if transaction is passed')
+
+      test.end()
+    }
+  })
+
+  await participantCurrencyTest.test('createParticipantCurrencyRecords should', async (test) => {
+    try {
+      const participantCurrencies = [
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 1
+        },
+        {
+          currencyId: 1,
+          ledgerAccountTypeId: 1,
+          participantId: 2
+        }
+      ]
+      sandbox.stub(Db, 'getKnex')
+      Db.getKnex.throws(new Error())
+      await Model.createParticipantCurrencyRecords(participantCurrencies)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
       test.end()
     }
   })

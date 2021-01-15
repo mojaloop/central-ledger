@@ -1,9 +1,119 @@
 {
   "decisions": {
+    "1589|@mojaloop/central-object-store>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-health>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-health>@mojaloop/central-services-shared>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-health>@mojaloop/central-services-shared>@mojaloop/event-sdk>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-shared>@mojaloop/event-sdk>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/event-sdk>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-shared>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-stream>@mojaloop/central-services-logger>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-health>@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/event-sdk>grpc>node-pre-gyp>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-health>@mojaloop/central-services-shared>@mojaloop/event-sdk>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-shared>@mojaloop/event-sdk>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/event-sdk>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-shared>rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|rc>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|@mojaloop/central-services-database>knex>liftoff>findup-sync>resolve-dir>global-modules>global-prefix>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
+    "1589|knex>liftoff>findup-sync>resolve-dir>global-modules>global-prefix>ini": {
+      "decision": "ignore",
+      "madeAt": 1609286190947,
+      "expiresAt": 1611878178540
+    },
     "1500|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
       "decision": "ignore",
-      "madeAt": 1607524629783,
-      "expiresAt": 1608129418895
+      "madeAt": 1610664669906,
+      "expiresAt": 1613256658927
+    },
+    "1594|@mojaloop/central-services-health>@mojaloop/central-services-shared>axios": {
+      "decision": "ignore",
+      "madeAt": 1610083790377,
+      "expiresAt": 1612675767235
+    },
+    "1594|@mojaloop/central-services-shared>axios": {
+      "decision": "ignore",
+      "madeAt": 1610083790377,
+      "expiresAt": 1612675767235
+    },
+    "1500|@mojaloop/central-services-health>@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1610664669906,
+      "expiresAt": 1613256658927
     }
   },
   "rules": {},

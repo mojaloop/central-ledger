@@ -42,6 +42,7 @@ const ParticipantHelper = require('../../helpers/participant')
 const ParticipantEndpointHelper = require('../../helpers/participantEndpoint')
 const ParticipantLimitHelper = require('../../helpers/participantLimit')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const ConfigDataSeeder = require('../../../../src/lib/configDataSeeder')
 
 const debug = false
 
@@ -81,6 +82,8 @@ Test('Participant service', async (participantTest) => {
 
   await participantTest.test('check if Hub accounts exist and create them if not', async (assert) => {
     try {
+      // Create SettlementModel before everything else
+      await ConfigDataSeeder.initializeSeedData()
       const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(testData.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
       if (!hubReconciliationAccountExists) {
         const newCurrencyAccount = await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)

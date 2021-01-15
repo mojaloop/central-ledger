@@ -52,6 +52,7 @@ const EnumCached = require('../lib/enumCached')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
+const ConfigDataSeeder = require('../lib/configDataSeeder')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -236,45 +237,53 @@ const initializeCache = async () => {
  * @returns {object} Returns HTTP Server object
  */
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
-  await migrate(runMigrations)
-  await connectDatabase()
-  await connectMongoose()
-  await initializeCache()
-  await Sidecar.connect(service)
-  initializeInstrumentation()
-  let server
-  switch (service) {
-    case 'api':
-    case 'admin': {
-      server = await createServer(port, modules)
-      break
-    }
-    case 'handler': {
-      if (!Config.HANDLERS_API_DISABLED) {
+  try {
+    await migrate(runMigrations)
+    await connectDatabase()
+    await ConfigDataSeeder.initializeSeedData()
+    await connectMongoose()
+    await initializeCache()
+    await Sidecar.connect(service)
+    initializeInstrumentation()
+    let server
+    switch (service) {
+      case 'api':
+      case 'admin': {
         server = await createServer(port, modules)
+        break
       }
-      break
+      case 'handler': {
+        if (!Config.HANDLERS_API_DISABLED) {
+          server = await createServer(port, modules)
+        }
+        break
+      }
+      default: {
+        Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
+      }
     }
-    default: {
-      Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
-      throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
-    }
-  }
 
-  if (runHandlers) {
-    if (Array.isArray(handlers) && handlers.length > 0) {
-      await createHandlers(handlers)
-    } else {
-      await RegisterHandlers.registerAllHandlers()
-      // if (!Config.HANDLERS_CRON_DISABLED) {
-      //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-      //   // await KafkaCron.start('prepare')
-      //   await KafkaCron.start('position')
-      // }
+    if (runHandlers) {
+      if (Array.isArray(handlers) && handlers.length > 0) {
+        await createHandlers(handlers)
+      } else {
+        await RegisterHandlers.registerAllHandlers()
+        // if (!Config.HANDLERS_CRON_DISABLED) {
+        //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
+        //   // await KafkaCron.start('prepare')
+        //   await KafkaCron.start('position')
+        // }
+      }
     }
-  }
 
-  return server
+    return server
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`)
+
+    await Db.disconnect()
+    process.exit(1)
+  }
 }
 
 module.exports = {

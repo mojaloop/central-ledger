@@ -93,3 +93,49 @@ exports.getByName = async (accountParams) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
+exports.createParticipantCurrencyRecords = async (participantCurrencies, trx) => {
+  try {
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        await knex.batchInsert('participantCurrency', participantCurrencies)
+          .transacting(trx)
+        const currenciesIdsSet = new Set()
+        const ledgerAccountTypeIdsSet = new Set()
+        const participantIdsSet = new Set()
+        participantCurrencies.forEach(participantCurrency => {
+          currenciesIdsSet.add(participantCurrency.currencyId)
+          ledgerAccountTypeIdsSet.add(participantCurrency.ledgerAccountTypeId)
+          participantIdsSet.add(participantCurrency.participantId)
+        })
+        const currenciesIds = Array.from(currenciesIdsSet)
+        const participantIds = Array.from(participantIdsSet)
+        const ledgerAccountTypeIds = Array.from(ledgerAccountTypeIdsSet)
+
+        const res = await knex.select('participantCurrencyId')
+          .from('participantCurrency')
+          .whereIn('participantId', participantIds)
+          .whereIn('ledgerAccountTypeId', ledgerAccountTypeIds)
+          .whereIn('currencyId', currenciesIds)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return res
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}

@@ -80,41 +80,6 @@ Test('Settlement model', async (settlementTest) => {
     assert.end()
   })
 
-  await settlementTest.test('get settlement model', async (assert) => {
-    try {
-      Db.settlementModel.find.withArgs({ name: 'test' }).returns([
-        {
-          settlementModelId: 106,
-          name: 'testingSevennnnN91',
-          isActive: 1,
-          settlementGranularityId: 1,
-          settlementInterchangeId: 1,
-          settlementDelayId: 2,
-          currencyId: null,
-          requireLiquidityCheck: 1,
-          ledgerAccountTypeId: 6
-        }])
-      const expected = {
-        settlementModelId: 106,
-        name: 'testingSevennnnN91',
-        isActive: 1,
-        settlementGranularityId: 1,
-        settlementInterchangeId: 1,
-        settlementDelayId: 2,
-        currencyId: null,
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 6
-      }
-      const result = await SettlementModelModel.getByName('test')
-      assert.equal(JSON.stringify(result), JSON.stringify(expected))
-      assert.end()
-    } catch (err) {
-      Logger.error(`get settlement model by name failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
-  })
-
   await settlementTest.test('get with empty name', async (assert) => {
     Db.settlementModel.find.withArgs({ name: '' }).throws(new Error())
     try {

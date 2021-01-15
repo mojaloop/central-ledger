@@ -43,6 +43,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const TransferService = require('../../domain/transfer')
 const TransferObjectTransform = require('../../domain/transfer/transform')
 const PositionService = require('../../domain/position')
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Utility = require('@mojaloop/central-services-shared').Util
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Producer = require('@mojaloop/central-services-stream').Util.Producer
@@ -267,6 +268,7 @@ const positions = async (error, messages) => {
  */
 const registerPositionHandler = async () => {
   try {
+    await SettlementModelCached.initialize()
     const positionHandler = {
       command: positions,
       topicName: Kafka.transformGeneralTopicName(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, Enum.Events.Event.Type.POSITION, Enum.Events.Event.Action.PREPARE),

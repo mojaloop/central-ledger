@@ -1155,6 +1155,46 @@
         }
       }
     },
+    "/ledgerAccountTypes" : {
+      "get" : {
+        "summary": "View all ledger account types",
+        "tags" : [ "ledgerAccountTypes" ],
+        "operationId" : "getLedgerAccountTypes",
+        "parameters" : [ ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "array",
+              "items": {
+                "$ref" : "#/definitions/LedgerAccountType"
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "summary": "Create a ledgerAccount type model. NOTE: This has been disabled and requires some rework to make it work properly",
+        "tags" : [ "ledgerAccountType" ],
+        "operationId" : "postLedgerAccountType",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/LedgerAccountType"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "description" : "Successful",
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        }
+      }
+    },
     "/settlementModels" : {
       "get" : {
         "summary": "View all settlement models",
@@ -1506,9 +1546,36 @@
         "reason"
       ]
     },
+    "LedgerAccountType": {
+      "type" : "object",
+      "required" : [ "name", "description", "isActive", "isSettleable" ],
+      "properties" : {
+        "name" : {
+          "type" : "string",
+          "description" : "Name of the ledger account type",
+          "minLength" : 2,
+          "maxLength" : 30,
+          "x-format" : {
+            "alphanum" : true
+          }
+        },
+        "description" : {
+          "type" : "string",
+          "description" : "Description of the ledger account type"
+        },
+        "isActive" : {
+          "type" : "boolean",
+          "description" : "Determines whether the ledger account is active"
+        },
+        "isSettleable" : {
+          "type" : "boolean",
+          "description" : "Determines whether the ledger account is settleable"
+        }
+      }
+    },
     "SettlementModel" : {
       "type" : "object",
-      "required" : [ "autoPositionReset", "ledgerAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
+      "required" : [ "autoPositionReset", "ledgerAccountType", "settlementAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
       "properties" : {
         "name" : {
           "type" : "string",
@@ -1546,6 +1613,10 @@
           "type" : "string",
           "description" : "Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE",
           "enum" : [ "INTERCHANGE_FEE", "POSITION" ]
+        },
+        "settlementAccountType" : {
+          "type" : "string",
+          "description" : "Account type into which the settlement should be settled into :  POSITION, SETTLEMENT or INTERCHANGE_FEE_SETTLEMENT"
         },
         "autoPositionReset" : {
           "type" : "boolean",

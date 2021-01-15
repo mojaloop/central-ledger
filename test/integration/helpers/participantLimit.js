@@ -47,7 +47,12 @@ exports.prepareLimitAndInitialPosition = async (participantName, limitAndInitial
       },
       initialPosition: limitAndInitialPositionObj.initialPosition || limitAndInitialPositionSampleData.initialPosition
     }
-    return await Model.addLimitAndInitialPosition(participantName, limitAndInitialPosition)
+    await Model.addLimitAndInitialPosition(participantName, limitAndInitialPosition)
+    return {
+      participantPosition: {
+        value: limitAndInitialPositionObj.initialPosition || limitAndInitialPositionSampleData.initialPosition
+      }
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

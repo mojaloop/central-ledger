@@ -90,6 +90,11 @@ const transferStates = [
     transferStateId: 'INVALID',
     enumeration: 'ABORTED',
     description: 'The switch has aborted the transfer due to validation failure.'
+  },
+  {
+    transferStateId: 'SETTLED',
+    enumeration: 'SETTLED',
+    description: 'The switch has settled the transfer.'
   }
 ]
 

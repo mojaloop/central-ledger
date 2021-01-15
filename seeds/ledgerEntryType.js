@@ -34,7 +34,7 @@ const ledgerEntryTypes = [
   {
     name: 'INTERCHANGE_FEE',
     description: 'Fees to be paid between DFSP',
-    ledgerAccountTypeId: 6 // INTERCHANGE_FEE
+    ledgerAccountTypeId: 5 // INTERCHANGE_FEE
   },
   {
     name: 'HUB_FEE',
