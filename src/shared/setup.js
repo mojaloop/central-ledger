@@ -52,7 +52,6 @@ const EnumCached = require('../lib/enumCached')
 const ParticipantCached = require('../models/participant/participantCached')
 const ParticipantCurrencyCached = require('../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../models/participant/participantLimitCached')
-const ConfigDataSeeder = require('../lib/configDataSeeder')
 
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
@@ -240,7 +239,6 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
   try {
     await migrate(runMigrations)
     await connectDatabase()
-    await ConfigDataSeeder.initializeSeedData()
     await connectMongoose()
     await initializeCache()
     await Sidecar.connect(service)

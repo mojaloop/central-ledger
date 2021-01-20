@@ -74,7 +74,7 @@ module.exports = [
           settlementDelay: Joi.string().required().valid(...settlementDelayList).description('Delay type for the settlement model IMMEDIATE or DEFERRED'),
           currency: Joi.string().valid(...currencyList).description('Currency code'),
           requireLiquidityCheck: Joi.boolean().required().description('Liquidity Check boolean'),
-          ledgerAccountType: Joi.string().required().valid(...ledgerAccountList).description('Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE'),
+          ledgerAccountType: Joi.string().required().description('Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE'),
           autoPositionReset: Joi.boolean().required().description('Automatic position reset setting, which determines whether to execute the settlement transfer or not'),
           settlementAccountType: Joi.string().valid('SETTLEMENT', 'INTERCHANGE_FEE_SETTLEMENT').required().description('Settlement account linked to the ledger account')
         })

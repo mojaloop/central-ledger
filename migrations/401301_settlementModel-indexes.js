@@ -29,6 +29,7 @@ exports.up = function (knex, Promise) {
   return knex.schema.table('settlementModel', (t) => {
     t.unique('name')
     t.unique(['settlementGranularityId', 'settlementInterchangeId', 'settlementDelayId', 'ledgerAccountTypeId', 'currencyId'], 'settlementmodel_unique')
+    t.unique(['ledgerAccountTypeId', 'currencyId'], 'settlementmodel_uniqueAccountCurrency')
     t.index('settlementGranularityId')
     t.index('settlementInterchangeId')
     t.index('settlementDelayId')
@@ -41,6 +42,7 @@ exports.down = function (knex, Promise) {
   return knex.schema.table('settlementModel', (t) => {
     t.dropUnique('name')
     t.dropUnique(['settlementGranularityId', 'settlementInterchangeId', 'settlementDelayId', 'ledgerAccountTypeId', 'currencyId'], 'settlementmodel_unique')
+    t.dropUnique(['ledgerAccountTypeId', 'currencyId'], 'settlementmodel_uniqueAccountCurrency')
     t.dropIndex('settlementGranularityId')
     t.dropIndex('settlementInterchangeId')
     t.dropIndex('settlementDelayId')

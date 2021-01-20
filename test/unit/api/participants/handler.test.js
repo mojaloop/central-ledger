@@ -127,6 +127,17 @@ Test('Participant', participantHandlerTest => {
     }
   ]
 
+  {
+    name: 'DEFERREDNET',
+    settlementGranularity: 'NET',
+    settlementInterchange: 'MULTILATERAL',
+    settlementDelay: 'DEFERRED',
+    ledgerAccountType: 'POSITION',
+    autoPositionReset: true,
+    requireLiquidityCheck: true,
+    settlementAccountType: 'SETTLEMENT'
+  }
+
   participantHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
     sandbox.stub(Sidecar)
