@@ -72,7 +72,7 @@ module.exports = [
           settlementGranularity: Joi.string().required().valid(...settlementGranularityList).description('Granularity type for the settlement model GROSS or NET'),
           settlementInterchange: Joi.string().required().valid(...settlementInterchangeList).description('Interchange type for the settlement model BILATERAL or MULTILATERAL'),
           settlementDelay: Joi.string().required().valid(...settlementDelayList).description('Delay type for the settlement model IMMEDIATE or DEFERRED'),
-          currency: Joi.string().valid(...currencyList).description('Currency code'),
+          currency: Joi.string().required().valid(...currencyList).description('Currency code'),
           requireLiquidityCheck: Joi.boolean().required().description('Liquidity Check boolean'),
           ledgerAccountType: Joi.string().required().description('Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE'),
           autoPositionReset: Joi.boolean().required().description('Automatic position reset setting, which determines whether to execute the settlement transfer or not'),

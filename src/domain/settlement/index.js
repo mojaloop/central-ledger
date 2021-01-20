@@ -35,15 +35,15 @@ const LedgerAccountTypesService = require('../ledgerAccountTypes')
 
 const createSettlementModel = async (settlementModel, trx = null) => {
   try {
-    // Make sure names doesn't exist
-    const existingSettlementModels = await getAll()
-    if (Array.isArray(existingSettlementModels) && existingSettlementModels.length > 0) {
-      for (const item of existingSettlementModels) {
-        if (item.name === settlementModel.name) {
-          throw new Error(`Settlement model: '${settlementModel.name}' already exists`)
-        }
-      }
-    }
+    // // Make sure names doesn't exist
+    // const existingSettlementModels = await getAll()
+    // if (Array.isArray(existingSettlementModels) && existingSettlementModels.length > 0) {
+    //   for (const item of existingSettlementModels) {
+    //     if (item.name === settlementModel.name) {
+    //       throw new Error(`Settlement model: '${settlementModel.name}' already exists`)
+    //     }
+    //   }
+    // }
 
     const settlementGranularityId = Enum.SettlementGranularity[settlementModel.settlementGranularity]
     const settlementInterchangeId = Enum.SettlementInterchange[settlementModel.settlementInterchange]
@@ -51,7 +51,7 @@ const createSettlementModel = async (settlementModel, trx = null) => {
 
     const [ledgerAccountType, settlementAccountType] = await validateSettlementModel(settlementModel, settlementModel.settlementDelay, settlementModel.settlementGranularity, settlementModel.settlementInterchange, trx)
     await SettlementModelModel.create(settlementModel.name, true, settlementGranularityId,
-      settlementInterchangeId, settlementDelayId, settlementModel.currencyId,
+      settlementInterchangeId, settlementDelayId, settlementModel.currency,
       settlementModel.requireLiquidityCheck,
       ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
 

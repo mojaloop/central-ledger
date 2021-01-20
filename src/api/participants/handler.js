@@ -96,8 +96,10 @@ const create = async function (request, h) {
       participant = await ParticipantService.getById(participantId)
     }
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
-    const settlementModels = await SettlementService.getAll()
-
+    const allSettlementModels = await SettlementService.getAll()
+    const settlementModels = allSettlementModels.filter((model) => {
+      return model.currencyId === request.payload.currency
+    })
     if (Array.isArray(settlementModels) && settlementModels.length > 0) {
       for (const settlementModel of settlementModels) {
         const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false)
