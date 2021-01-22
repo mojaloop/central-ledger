@@ -1174,7 +1174,7 @@
         }
       },
       "post" : {
-        "summary": "Create a ledgerAccount type model. NOTE: This has been disabled and requires some rework to make it work properly",
+        "summary": "Create a ledgerAccount type",
         "tags" : [ "ledgerAccountType" ],
         "operationId" : "postLedgerAccountType",
         "parameters" : [ {
@@ -1555,9 +1555,7 @@
           "description" : "Name of the ledger account type",
           "minLength" : 2,
           "maxLength" : 30,
-          "x-format" : {
-            "alphanum" : true
-          }
+          "pattern" : "^\\w+$"
         },
         "description" : {
           "type" : "string",

@@ -41,6 +41,7 @@ const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const KafkaProducer = require('@mojaloop/central-services-stream').Util.Producer
 const Uuid = require('uuid4')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const Enums = require('../../lib/enumCached')
 
 // Alphabetically ordered list of error texts used below
 const AccountInactiveErrorText = 'Account is currently set inactive'
@@ -715,6 +716,52 @@ const recordFundsInOut = async (payload, params, enums) => {
   }
 }
 
+const validateHubAccounts = async (currency) => {
+  const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
+  const hubReconciliationAccountExists = await ParticipantCurrencyModel.hubAccountExists(currency, ledgerAccountTypes.HUB_RECONCILIATION)
+  if (!hubReconciliationAccountExists) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub reconciliation account for the specified currency does not exist')
+  }
+  const hubMlnsAccountExists = await ParticipantCurrencyModel.hubAccountExists(currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
+  if (!hubMlnsAccountExists) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub multilateral net settlement account for the specified currency does not exist')
+  }
+  return true
+}
+
+const createAssociatedParticipantAccounts = async (currency, ledgerAccountTypeId, trx) => {
+  try {
+    const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
+
+    const participantCurrencies = nonHubParticipantWithCurrencies.map(item => ({
+      participantId: item.participantId,
+      currencyId: currency,
+      ledgerAccountTypeId: ledgerAccountTypeId,
+      isActive: true
+    }))
+
+    const participantPositionRecords = []
+    for( const participantCurrency of participantCurrencies ) {
+      // create account only if it doesn't exist
+      const existingParticipant = await getById(participantCurrency.participantId)
+      const currencyExists = existingParticipant.currencyList.find(curr => {
+          return curr.currencyId === currency && curr.ledgerAccountTypeId === ledgerAccountTypeId
+      })
+      if (!currencyExists) {
+        const participantCurrencyId =  await createParticipantCurrency(participantCurrency.participantId, participantCurrency.currencyId, participantCurrency.ledgerAccountTypeId, participantCurrency.isActive)
+        participantPositionRecords.push({
+          participantCurrencyId,
+          value: 0.0000,
+          reservedValue: 0.0000
+        })
+      }     
+    }
+    await ParticipantPositionModel.createParticipantPositionRecords(participantPositionRecords, trx)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
   create,
   getAll,
@@ -744,5 +791,7 @@ module.exports = {
   recordFundsInOut,
   getAccountByNameAndCurrency: ParticipantFacade.getByNameAndCurrency,
   hubAccountExists: ParticipantCurrencyModel.hubAccountExists,
-  getLimitsForAllParticipants
+  getLimitsForAllParticipants,
+  validateHubAccounts,
+  createAssociatedParticipantAccounts
 }

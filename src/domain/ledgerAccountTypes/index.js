@@ -26,60 +26,16 @@
 
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const ParticipantFacade = require('../../models/participant/facade')
-const ParticipantPosition = require('../../models/participant/participantPosition')
-const ParticipantCurrency = require('../../models/participant/participantCurrency')
-// const ParticipantCurrencyCached = require('../../models/participant/participantCurrencyCached')
 
-// const Db = require('../../lib/db')
-
-// TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
-//  uncomment it when such requirement arises
-
-// async function create (name, description, isActive = false, isSettleable = false) {
-//   try {
-//     const knex = Db.getKnex()
-//     await knex.transaction(async trx => {
-//       try {
-//         const ledgerAccountTypeId = await LedgerAccountTypeModel.create(name, description, isActive, isSettleable, trx)
-//         if (isSettleable === true) {
-//           await createAssociatedParticipantAccounts(ledgerAccountTypeId, 'ledgerAccountType', trx)
-//           await ParticipantCurrencyCached.invalidateParticipantCurrencyCache()
-//         }
-//         await trx.commit()
-//       } catch (err) {
-//         await trx.rollback()
-//         throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//       }
-//     })
-
-//     return true
-//   } catch (err) {
-//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//   }
-// }
-
-async function createAssociatedParticipantAccounts (ledgerAccountTypeId, createdBy, trx = null) {
+async function create (name, description, isActive = false, isSettleable = false) {
   try {
-    const nonHubParticipantWithCurrencies = await ParticipantFacade.getAllNonHubParticipantsWithCurrencies(trx)
-    const participantCurrencies = nonHubParticipantWithCurrencies.map(nonHubParticipantWithCurrency => ({
-      participantId: nonHubParticipantWithCurrency.participantId,
-      currencyId: nonHubParticipantWithCurrency.currencyId,
-      ledgerAccountTypeId: ledgerAccountTypeId,
-      isActive: true,
-      createdBy: createdBy
-    }))
-    const participantCurrencyCreatedRecordIds = await ParticipantCurrency.createParticipantCurrencyRecords(participantCurrencies, trx)
-    const participantPositionRecords = participantCurrencyCreatedRecordIds.map(currencyId => ({
-      participantCurrencyId: currencyId.participantCurrencyId,
-      value: 0.0000,
-      reservedValue: 0.0000
-    }))
-    await ParticipantPosition.createParticipantPositionRecords(participantPositionRecords, trx)
+    await LedgerAccountTypeModel.create(name, description, isActive, isSettleable)
+    return true
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
 async function getAll () {
   try {
     return await LedgerAccountTypeModel.getAll()
@@ -97,7 +53,6 @@ async function getByName (name) {
 
 module.exports = {
   getByName,
-  createAssociatedParticipantAccounts,
-  // create,
+  create,
   getAll
 }
