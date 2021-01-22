@@ -34,6 +34,7 @@ const Util = require('@mojaloop/central-services-shared').Util
 
 const createSettlementModel = async (settlementModel, trx = null) => {
   try {
+    // check for existing hub account with the settlementModel currency
     await ParticipantService.validateHubAccounts(settlementModel.currency)
 
     const settlementGranularityId = Enum.SettlementGranularity[settlementModel.settlementGranularity]

@@ -69,15 +69,3 @@ exports.prepareData = async () => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-
-// exports.deletePreparedData = async (participantName) => {
-//   if (!participantName) {
-//     throw new Error('Please provide a valid participant name!')
-//   }
-
-//   try {
-//     return await Model.destroyByName(participantName)
-//   } catch (err) {
-//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//   }
-// }

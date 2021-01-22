@@ -1609,7 +1609,7 @@
         },
         "ledgerAccountType" : {
           "type" : "string",
-          "description" : "Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE",
+          "description" : "Account type for the settlement model",
           "enum" : [ "INTERCHANGE_FEE", "POSITION" ]
         },
         "settlementAccountType" : {
