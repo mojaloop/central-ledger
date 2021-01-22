@@ -55,6 +55,7 @@ const ParticipantInactiveText = 'Participant is currently set inactive'
 const ParticipantInitialPositionExistsText = 'Participant Limit or Initial Position already set'
 const ParticipantNotFoundText = 'Participant does not exist'
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { destroyParticipantEndpointByParticipantId } = require('../../models/participant/participant')
 
 const create = async (payload) => {
   try {
@@ -147,6 +148,7 @@ const destroyByName = async (name) => {
     await ParticipantLimitModel.destroyByParticipantId(participant.participantId)
     await ParticipantPositionModel.destroyByParticipantId(participant.participantId)
     await ParticipantCurrencyModel.destroyByParticipantId(participant.participantId)
+    await destroyParticipantEndpointByParticipantId(participant.participantId)
     return await ParticipantModel.destroyByName(name)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

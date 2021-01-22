@@ -1573,7 +1573,7 @@
     },
     "SettlementModel" : {
       "type" : "object",
-      "required" : [ "autoPositionReset", "ledgerAccountType", "settlementAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange" ],
+      "required" : [ "autoPositionReset", "ledgerAccountType", "settlementAccountType", "name", "requireLiquidityCheck", "settlementDelay", "settlementGranularity", "settlementInterchange", "currency" ],
       "properties" : {
         "name" : {
           "type" : "string",

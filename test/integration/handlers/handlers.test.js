@@ -40,12 +40,19 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const ParticipantHelper = require('../helpers/participant')
 const ParticipantLimitHelper = require('../helpers/participantLimit')
 const ParticipantEndpointHelper = require('../helpers/participantEndpoint')
+const SettlementHelper = require('../helpers/settlementModels')
+const HubAccountsHelper = require('../helpers/hubAccounts')
 const TransferService = require('../../../src/domain/transfer')
 const ParticipantService = require('../../../src/domain/participant')
 const TransferExtensionModel = require('../../../src/models/transfer/transferExtension')
 const Util = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { sleepPromise } = require('../../util/helpers')
+
+const ParticipantCached = require('../../../src/models/participant/participantCached')
+const ParticipantCurrencyCached = require('../../../src/models/participant/participantCurrencyCached')
+const ParticipantLimitCached = require('../../../src/models/participant/participantLimitCached')
+const SettlementModelCached = require('../../../src/models/settlement/settlementModelCached')
 
 const Handlers = {
   index: require('../../../src/handlers/register'),
@@ -91,163 +98,174 @@ const testData = {
 }
 
 const prepareTestData = async (dataObj) => {
-  const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
-  const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
+  try {
+    const payer = await ParticipantHelper.prepareData(dataObj.payer.name, dataObj.amount.currency)
+    const payee = await ParticipantHelper.prepareData(dataObj.payee.name, dataObj.amount.currency)
 
-  const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
-  if (debug) console.error(kafkacat)
+    const kafkacat = 'GROUP=abc; T=topic; TR=transfer; kafkacat -b localhost -G $GROUP $T-$TR-prepare $T-$TR-position $T-$TR-fulfil $T-$TR-get $T-admin-$TR $T-notification-event $T-bulk-prepare'
+    if (debug) console.error(kafkacat)
 
-  const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
-    currency: dataObj.amount.currency,
-    limit: { value: dataObj.payer.limit }
-  })
-  const payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
-    currency: dataObj.amount.currency,
-    limit: { value: dataObj.payee.limit }
-  })
-
-  for (const name of [payer.participant.name, payee.participant.name]) {
-    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
-    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
-    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
-    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${dataObj.endpoint.base}/bulkTransfers`)
-    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{id}}`)
-    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{id}}/error`)
-    await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
-  }
-
-  const transferPayload = {
-    transferId: Uuid(),
-    payerFsp: payer.participant.name,
-    payeeFsp: payee.participant.name,
-    amount: {
+    const payerLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payer.participant.name, {
       currency: dataObj.amount.currency,
-      amount: dataObj.amount.amount
-    },
-    ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
-    condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
-    expiration: dataObj.expiration,
-    extensionList: {
-      extension: [
-        {
-          key: 'key1',
-          value: 'value1'
-        },
-        {
-          key: 'key2',
-          value: 'value2'
-        }
-      ]
+      limit: { value: dataObj.payer.limit }
+    })
+    const payeeLimitAndInitialPosition = await ParticipantLimitHelper.prepareLimitAndInitialPosition(payee.participant.name, {
+      currency: dataObj.amount.currency,
+      limit: { value: dataObj.payee.limit }
+    })
+
+    for (const name of [payer.participant.name, payee.participant.name]) {
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_POST', `${dataObj.endpoint.base}/transfers`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_PUT', `${dataObj.endpoint.base}/transfers/{{transferId}}`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_TRANSFER_ERROR', `${dataObj.endpoint.base}/transfers/{{transferId}}/error`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_POST', `${dataObj.endpoint.base}/bulkTransfers`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_PUT', `${dataObj.endpoint.base}/bulkTransfers/{{id}}`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_BULK_TRANSFER_ERROR', `${dataObj.endpoint.base}/bulkTransfers/{{id}}/error`)
+      await ParticipantEndpointHelper.prepareData(name, 'FSPIOP_CALLBACK_URL_QUOTES', `${dataObj.endpoint.base}`)
     }
-  }
 
-  const prepareHeaders = {
-    'fspiop-source': payer.participant.name,
-    'fspiop-destination': payee.participant.name,
-    'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
-  }
-  const fulfilAbortRejectHeaders = {
-    'fspiop-source': payee.participant.name,
-    'fspiop-destination': payer.participant.name,
-    'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
-  }
-
-  const fulfilPayload = {
-    fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
-    completedTimestamp: dataObj.now,
-    transferState: 'COMMITTED',
-    extensionList: {
-      extension: [
-        {
-          key: 'key1',
-          value: 'value1'
-        },
-        {
-          key: 'key2',
-          value: 'value2'
-        }
-      ]
+    const transferPayload = {
+      transferId: Uuid(),
+      payerFsp: payer.participant.name,
+      payeeFsp: payee.participant.name,
+      amount: {
+        currency: dataObj.amount.currency,
+        amount: dataObj.amount.amount
+      },
+      ilpPacket: 'AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA',
+      condition: 'GRzLaTP7DJ9t4P-a_BA0WA9wzzlsugf00-Tn6kESAfM',
+      expiration: dataObj.expiration,
+      extensionList: {
+        extension: [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+      }
     }
-  }
 
-  const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
+    const prepareHeaders = {
+      'fspiop-source': payer.participant.name,
+      'fspiop-destination': payee.participant.name,
+      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+    }
+    const fulfilAbortRejectHeaders = {
+      'fspiop-source': payee.participant.name,
+      'fspiop-destination': payer.participant.name,
+      'content-type': 'application/vnd.interoperability.transfers+json;version=1.1'
+    }
 
-  const errorPayload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject()
-  errorPayload.errorInformation.extensionList = { extension: [{ key: 'errorDetail', value: 'This is an abort extension' }] }
+    const fulfilPayload = {
+      fulfilment: 'UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA',
+      completedTimestamp: dataObj.now,
+      transferState: 'COMMITTED',
+      extensionList: {
+        extension: [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+      }
+    }
 
-  const messageProtocolPrepare = {
-    id: Uuid(),
-    from: transferPayload.payerFsp,
-    to: transferPayload.payeeFsp,
-    type: 'application/json',
-    content: {
-      headers: prepareHeaders,
-      payload: transferPayload
-    },
-    metadata: {
-      event: {
-        id: Uuid(),
-        type: TransferEventAction.PREPARE,
-        action: TransferEventType.PREPARE,
-        createdAt: dataObj.now,
-        state: {
-          status: 'success',
-          code: 0
+    const rejectPayload = Object.assign({}, fulfilPayload, { transferState: TransferInternalState.ABORTED_REJECTED })
+
+    const errorPayload = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_REJECTED_TXN).toApiErrorObject()
+    errorPayload.errorInformation.extensionList = { extension: [{ key: 'errorDetail', value: 'This is an abort extension' }] }
+
+    const messageProtocolPrepare = {
+      id: Uuid(),
+      from: transferPayload.payerFsp,
+      to: transferPayload.payeeFsp,
+      type: 'application/json',
+      content: {
+        headers: prepareHeaders,
+        payload: transferPayload
+      },
+      metadata: {
+        event: {
+          id: Uuid(),
+          type: TransferEventAction.PREPARE,
+          action: TransferEventType.PREPARE,
+          createdAt: dataObj.now,
+          state: {
+            status: 'success',
+            code: 0
+          }
         }
       }
     }
-  }
 
-  const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
-  messageProtocolFulfil.id = Uuid()
-  messageProtocolFulfil.from = transferPayload.payeeFsp
-  messageProtocolFulfil.to = transferPayload.payerFsp
-  messageProtocolFulfil.content.headers = fulfilAbortRejectHeaders
-  messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
-  messageProtocolFulfil.content.payload = fulfilPayload
-  messageProtocolFulfil.metadata.event.id = Uuid()
-  messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
-  messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
+    const messageProtocolFulfil = Util.clone(messageProtocolPrepare)
+    messageProtocolFulfil.id = Uuid()
+    messageProtocolFulfil.from = transferPayload.payeeFsp
+    messageProtocolFulfil.to = transferPayload.payerFsp
+    messageProtocolFulfil.content.headers = fulfilAbortRejectHeaders
+    messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
+    messageProtocolFulfil.content.payload = fulfilPayload
+    messageProtocolFulfil.metadata.event.id = Uuid()
+    messageProtocolFulfil.metadata.event.type = TransferEventType.FULFIL
+    messageProtocolFulfil.metadata.event.action = TransferEventAction.COMMIT
 
-  const messageProtocolReject = Util.clone(messageProtocolFulfil)
-  messageProtocolReject.id = Uuid()
-  messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
-  messageProtocolReject.content.payload = rejectPayload
-  messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
+    const messageProtocolReject = Util.clone(messageProtocolFulfil)
+    messageProtocolReject.id = Uuid()
+    messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
+    messageProtocolReject.content.payload = rejectPayload
+    messageProtocolReject.metadata.event.action = TransferEventAction.REJECT
 
-  const messageProtocolError = Util.clone(messageProtocolFulfil)
-  messageProtocolError.id = Uuid()
-  messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
-  messageProtocolError.content.payload = errorPayload
-  messageProtocolError.metadata.event.action = TransferEventAction.ABORT
+    const messageProtocolError = Util.clone(messageProtocolFulfil)
+    messageProtocolError.id = Uuid()
+    messageProtocolFulfil.content.uriParams = { id: transferPayload.transferId }
+    messageProtocolError.content.payload = errorPayload
+    messageProtocolError.metadata.event.action = TransferEventAction.ABORT
 
-  const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
-  const topicConfTransferFulfil = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL)
+    const topicConfTransferPrepare = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.PREPARE)
+    const topicConfTransferFulfil = Utility.createGeneralTopicConf(Config.KAFKA_CONFIG.TOPIC_TEMPLATES.GENERAL_TOPIC_TEMPLATE.TEMPLATE, TransferEventType.TRANSFER, TransferEventType.FULFIL)
 
-  return {
-    transferPayload,
-    fulfilPayload,
-    rejectPayload,
-    errorPayload,
-    messageProtocolPrepare,
-    messageProtocolFulfil,
-    messageProtocolReject,
-    messageProtocolError,
-    topicConfTransferPrepare,
-    topicConfTransferFulfil,
-    payer,
-    payerLimitAndInitialPosition,
-    payee,
-    payeeLimitAndInitialPosition
+    return {
+      transferPayload,
+      fulfilPayload,
+      rejectPayload,
+      errorPayload,
+      messageProtocolPrepare,
+      messageProtocolFulfil,
+      messageProtocolReject,
+      messageProtocolError,
+      topicConfTransferPrepare,
+      topicConfTransferFulfil,
+      payer,
+      payerLimitAndInitialPosition,
+      payee,
+      payeeLimitAndInitialPosition
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
 Test('Handlers test', async handlersTest => {
   const startTime = new Date()
+  await Db.connect(Config.DATABASE)
+  await ParticipantCached.initialize()
+  await ParticipantCurrencyCached.initialize()
+  await ParticipantLimitCached.initialize()
+  await SettlementModelCached.initialize()
+  await Cache.initCache()
+  await SettlementHelper.prepareData()
+  await HubAccountsHelper.prepareData()
+
   await handlersTest.test('registerAllHandlers should', async registerAllHandlers => {
     await registerAllHandlers.test('setup handlers', async (test) => {
-      await Db.connect(Config.DATABASE)
-      await Cache.initCache()
       await Handlers.transfers.registerPrepareHandler()
       await Handlers.positions.registerPositionHandler()
       await Handlers.transfers.registerFulfilHandler()
@@ -293,7 +311,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#1 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -333,7 +351,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.COMMITTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#2 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -372,7 +390,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#3 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -450,7 +468,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferInternalState.ABORTED_REJECTED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#4 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -489,7 +507,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#5 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -536,7 +554,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferInternalState.ABORTED_ERROR) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `#6 Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
@@ -582,7 +600,7 @@ Test('Handlers test', async handlersTest => {
           const transfer = await TransferService.getById(td.messageProtocolPrepare.content.payload.transferId) || {}
           if (transfer.transferState !== TransferState.RESERVED) {
             if (debug) console.log(`retrying in ${retryDelay / 1000}s..`)
-            throw new Error(`Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
+            throw new Error(`#7   Max retry count ${retryCount} reached after ${retryCount * retryDelay / 1000}s. Tests fail`)
           }
           return tests()
         }, retryOpts)
