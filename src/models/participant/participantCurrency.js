@@ -93,4 +93,3 @@ exports.getByName = async (accountParams) => {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-

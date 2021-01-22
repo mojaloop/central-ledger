@@ -741,20 +741,20 @@ const createAssociatedParticipantAccounts = async (currency, ledgerAccountTypeId
     }))
 
     const participantPositionRecords = []
-    for( const participantCurrency of participantCurrencies ) {
+    for (const participantCurrency of participantCurrencies) {
       // create account only if it doesn't exist
       const existingParticipant = await getById(participantCurrency.participantId)
       const currencyExists = existingParticipant.currencyList.find(curr => {
-          return curr.currencyId === currency && curr.ledgerAccountTypeId === ledgerAccountTypeId
+        return curr.currencyId === currency && curr.ledgerAccountTypeId === ledgerAccountTypeId
       })
       if (!currencyExists) {
-        const participantCurrencyId =  await createParticipantCurrency(participantCurrency.participantId, participantCurrency.currencyId, participantCurrency.ledgerAccountTypeId, participantCurrency.isActive)
+        const participantCurrencyId = await createParticipantCurrency(participantCurrency.participantId, participantCurrency.currencyId, participantCurrency.ledgerAccountTypeId, participantCurrency.isActive)
         participantPositionRecords.push({
           participantCurrencyId,
           value: 0.0000,
           reservedValue: 0.0000
         })
-      }     
+      }
     }
     await ParticipantPositionModel.createParticipantPositionRecords(participantPositionRecords, trx)
   } catch (err) {

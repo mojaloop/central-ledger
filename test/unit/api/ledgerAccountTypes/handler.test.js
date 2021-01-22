@@ -48,66 +48,63 @@ Test('LedgerAccountTypes', ledgerAccountTypesHandlerTest => {
   })
 
   ledgerAccountTypesHandlerTest.test('Handler Test', async handlerTest => {
-    // TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
-    //  uncomment it when such requirement arises
+    handlerTest.test('create should create a new ledgerAccountType model', async function (test) {
+      const payload = {
+        name: 'INTERCHANGE_FEE_SETTLEMENT',
+        description: 'settlement account type for interchange fees',
+        isActive: true,
+        isSettleable: true
+      }
+      LedgerAccountTypeService.getByName.returns(Promise.resolve(false))
+      const reply = {
+        response: () => {
+          return {
+            code: statusCode => {
+              test.equal(statusCode, 201, 'should return a 201')
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.create({ payload }, reply)
+    })
 
-    // handlerTest.test('create should create a new ledgerAccountType model', async function (test) {
-    //   const payload = {
-    //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-    //     description: 'settlement account type for interchange fees',
-    //     isActive: true,
-    //     isSettleable: true
-    //   }
-    //   LedgerAccountTypeService.getByName.returns(Promise.resolve(false))
-    //   const reply = {
-    //     response: () => {
-    //       return {
-    //         code: statusCode => {
-    //           test.equal(statusCode, 201, 'should return a 201')
-    //           test.end()
-    //         }
-    //       }
-    //     }
-    //   }
-    //   await Handler.create({ payload }, reply)
-    // })
+    handlerTest.test('create should fail if the ledger Account type model exists', async function (test) {
+      const payload = {
+        name: 'INTERCHANGE_FEE_SETTLEMENT',
+        description: 'settlement account type for interchange fees',
+        isActive: true,
+        isSettleable: true
+      }
+      LedgerAccountTypeService.getByName.returns(Promise.resolve(true))
+      try {
+        await Handler.create({ payload })
+        test.fail('An error should have been thrown')
+      } catch (e) {
+        test.ok(e instanceof Error, 'should return an error')
+        test.equal(e.message, 'This Ledger Account Type already exists', 'should return an error with the message This Ledger Account Type already exists')
+        test.end()
+      }
+    })
 
-    // handlerTest.test('create should fail if the ledger Account type model exists', async function (test) {
-    //   const payload = {
-    //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-    //     description: 'settlement account type for interchange fees',
-    //     isActive: true,
-    //     isSettleable: true
-    //   }
-    //   LedgerAccountTypeService.getByName.returns(Promise.resolve(true))
-    //   try {
-    //     await Handler.create({ payload })
-    //     test.fail('An error should have been thrown')
-    //   } catch (e) {
-    //     test.ok(e instanceof Error, 'should return an error')
-    //     test.equal(e.message, 'This Ledger Account Type already exists', 'should return an error with the message This Ledger Account Type already exists')
-    //     test.end()
-    //   }
-    // })
+    handlerTest.test('create should fail if some error occurs', async function (test) {
+      const payload = {
+        name: 'INTERCHANGE_FEE_SETTLEMENT',
+        description: 'settlement account type for interchange fees',
+        isActive: true,
+        isSettleable: true
+      }
+      LedgerAccountTypeService.getByName.rejects(new Error('Something happened'))
 
-    // handlerTest.test('create should fail if some error occurs', async function (test) {
-    //   const payload = {
-    //     name: 'INTERCHANGE_FEE_SETTLEMENT',
-    //     description: 'settlement account type for interchange fees',
-    //     isActive: true,
-    //     isSettleable: true
-    //   }
-    //   LedgerAccountTypeService.getByName.rejects(new Error('Something happened'))
-
-    //   try {
-    //     await Handler.create({ payload })
-    //     test.fail('Error not thrown')
-    //   } catch (e) {
-    //     test.ok(e instanceof Error, 'should return an instance of an error')
-    //     test.equal(e.message, 'Something happened', 'should return the error message thrown')
-    //     test.end()
-    //   }
-    // })
+      try {
+        await Handler.create({ payload })
+        test.fail('Error not thrown')
+      } catch (e) {
+        test.ok(e instanceof Error, 'should return an instance of an error')
+        test.equal(e.message, 'Something happened', 'should return the error message thrown')
+        test.end()
+      }
+    })
 
     handlerTest.test('getAll should return all the ledgerAccount Types models', async function (test) {
       const ledgerAccountTypes = [

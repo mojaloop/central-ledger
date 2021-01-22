@@ -31,20 +31,17 @@ const AdminRoutes = require('../../../../src/api/routes')
 Test('/ledgerAccountTypes router ', async ledgerAccountTypesRoutesTest => {
   ledgerAccountTypesRoutesTest.test('should have the routes', async function (test) {
     const server = await Base.setup(AdminRoutes)
-    // TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
-    //  uncomment it when such requirement arises
-
-    // let req = Base.buildRequest({
-    //   url: '/ledgerAccountTypes',
-    //   method: 'POST'
-    // })
-    // let res = await server.inject(req)
-    // test.ok(res.statusCode, 400, 'should have POST /ledgerAccountTypes route')
-    const req = Base.buildRequest({
+    let req = Base.buildRequest({
+      url: '/ledgerAccountTypes',
+      method: 'POST'
+    })
+    let res = await server.inject(req)
+    test.ok(res.statusCode, 400, 'should have POST /ledgerAccountTypes route')
+    req = Base.buildRequest({
       url: '/ledgerAccountTypes',
       method: 'GET'
     })
-    const res = await server.inject(req)
+    res = await server.inject(req)
     test.ok(res.statusCode, 500, 'should have GET /ledgerAccountTypes route')
 
     await server.stop()
