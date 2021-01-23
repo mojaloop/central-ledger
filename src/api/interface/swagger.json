@@ -1211,7 +1211,7 @@
         }
       },
       "post" : {
-        "summary": "Create a settlement model.",
+        "summary": "Create a settlement model. This will create  any associated ledgerAccountTypes for every participant that matches the settlementModel's currency",
         "tags" : [ "settlementModels" ],
         "operationId" : "postSettlementmodels",
         "parameters" : [ {
