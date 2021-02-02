@@ -25,32 +25,30 @@
 'use strict'
 
 const LedgerAccountTypesService = require('../../domain/ledgerAccountTypes')
-// const Sidecar = require('../../lib/sidecar')
-// const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Sidecar = require('../../lib/sidecar')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getAll = async function () {
   return LedgerAccountTypesService.getAll()
 }
-// TODO: Below code is commented since there is no requirement to create ledgerAccountType using API.
-//  uncomment it when such requirement arises
-// async function create (request, h) {
-//   Sidecar.logRequest(request)
-//   try {
-//     const ledgerAccountTypeExist = await LedgerAccountTypesService.getByName(request.payload.name)
-//     if (ledgerAccountTypeExist) {
-//       throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Ledger Account Type already exists')
-//     } else {
-//       const body = request.payload
-//       await LedgerAccountTypesService.create(body.name, body.description, body.isActive, body.isSettleable)
-//       return h.response().code(201)
-//     }
-//   } catch (err) {
-//     throw ErrorHandler.Factory.reformatFSPIOPError(err)
-//   }
-// }
+async function create (request, h) {
+  Sidecar.logRequest(request)
+  try {
+    const ledgerAccountTypeExist = await LedgerAccountTypesService.getByName(request.payload.name)
+    if (ledgerAccountTypeExist) {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'This Ledger Account Type already exists')
+    } else {
+      const body = request.payload
+      await LedgerAccountTypesService.create(body.name, body.description, body.isActive, body.isSettleable)
+      return h.response().code(201)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 
 module.exports = {
-  // create,
+  create,
   // getByName,
   getAll
   // update

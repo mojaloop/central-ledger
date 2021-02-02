@@ -19,40 +19,36 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * ModusBox
- - Claudio Viola <claudio.viola@modusbox.com>
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Valentin Genev <valentin.genev@modusbox.com>
+ - Nikolay Anastasov <nikolay.anastasov@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
+
 'use strict'
 
-const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
+const Config = require('../../../src/lib/config')
+const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const ParticipantService = require('../../../src/domain/participant')
 
-async function create (name, description, isActive = false, isSettleable = false) {
+const testData = {
+  currency: 'USD'
+}
+
+exports.prepareData = async () => {
   try {
-    await LedgerAccountTypeModel.create(name, description, isActive, isSettleable)
-    return true
+    const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(testData.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
+    if (!hubReconciliationAccountExists) {
+      await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION)
+    }
+    const hubMlnsAccountExists = await ParticipantService.hubAccountExists(testData.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+    if (!hubMlnsAccountExists) {
+      await ParticipantService.createHubAccount(Config.HUB_ID, testData.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
-}
-
-async function getAll () {
-  try {
-    return await LedgerAccountTypeModel.getAll()
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-async function getByName (name) {
-  try {
-    return await LedgerAccountTypeModel.getLedgerAccountByName(name)
-  } catch (err) {
-    throw ErrorHandler.Factory.reformatFSPIOPError(err)
-  }
-}
-
-module.exports = {
-  getByName,
-  create,
-  getAll
 }

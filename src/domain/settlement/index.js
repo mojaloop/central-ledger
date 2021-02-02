@@ -28,38 +28,28 @@
 const SettlementModelModel = require('../../models/settlement/settlementModel')
 const LedgerAccountTypeModel = require('../../models/ledgerAccountType/ledgerAccountType')
 const Enum = require('@mojaloop/central-services-shared').Enum.Settlements
-
+const ParticipantService = require('../participant')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Util = require('@mojaloop/central-services-shared').Util
-const LedgerAccountTypesService = require('../ledgerAccountTypes')
 
 const createSettlementModel = async (settlementModel, trx = null) => {
   try {
-    // Make sure DEFERREDNET and CGS can't be used together
-    const existingSettlementModels = await getAll()
-    if (Array.isArray(existingSettlementModels) && existingSettlementModels.length > 0) {
-      for (const item of existingSettlementModels) {
-        if (item.name === settlementModel.name) {
-          throw new Error(`Settlement model: '${settlementModel.name}' already exists`)
-        }
-        if ((item.name === 'CGS' && settlementModel.name === 'DEFERREDNET') || (item.name === 'DEFERREDNET' && settlementModel.name === 'CGS')) {
-          throw new Error(`Settlement model: '${settlementModel.name}' can't be used with the existing settlement model '${item.name}'`)
-        }
-      }
-    }
+    // check for existing hub account with the settlementModel to be able to create participant accounts automatically
+    await ParticipantService.validateHubAccounts(settlementModel.currency)
+
     const settlementGranularityId = Enum.SettlementGranularity[settlementModel.settlementGranularity]
     const settlementInterchangeId = Enum.SettlementInterchange[settlementModel.settlementInterchange]
     const settlementDelayId = Enum.SettlementDelay[settlementModel.settlementDelay]
 
     const [ledgerAccountType, settlementAccountType] = await validateSettlementModel(settlementModel, settlementModel.settlementDelay, settlementModel.settlementGranularity, settlementModel.settlementInterchange, trx)
     await SettlementModelModel.create(settlementModel.name, true, settlementGranularityId,
-      settlementInterchangeId, settlementDelayId, settlementModel.currencyId,
+      settlementInterchangeId, settlementDelayId, settlementModel.currency,
       settlementModel.requireLiquidityCheck,
       ledgerAccountType.ledgerAccountTypeId, settlementAccountType.ledgerAccountTypeId, settlementModel.autoPositionReset, trx)
 
     // create the accounts required for the settlementModel for existing participants
-    await LedgerAccountTypesService.createAssociatedParticipantAccounts(ledgerAccountType.ledgerAccountTypeId, 'configSeeder', trx)
-    await LedgerAccountTypesService.createAssociatedParticipantAccounts(settlementAccountType.ledgerAccountTypeId, 'configSeeder', trx)
+    await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, ledgerAccountType.ledgerAccountTypeId, trx)
+    await ParticipantService.createAssociatedParticipantAccounts(settlementModel.currency, settlementAccountType.ledgerAccountTypeId, trx)
 
     return true
   } catch (err) {

@@ -425,7 +425,8 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
         const result = await knex('participantLimit').transacting(trx).insert(participantLimit)
         participantLimit.participantLimitId = result[0]
 
-        const settlementModels = await SettlementModelModel.getAll()
+        const allSettlementModels = await SettlementModelModel.getAll()
+        const settlementModels = allSettlementModels.filter(model => model.currencyId === limitPositionObj.currency)
         if (Array.isArray(settlementModels) && settlementModels.length > 0) {
           for (const settlementModel of settlementModels) {
             const positionAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.ledgerAccountTypeId)

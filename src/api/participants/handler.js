@@ -75,14 +75,7 @@ const create = async function (request, h) {
   Logger.isDebugEnabled && Logger.debug(`create: request - ${JSON.stringify(request)}`)
   try {
     const ledgerAccountTypes = await Enums.getEnums('ledgerAccountType')
-    const hubReconciliationAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_RECONCILIATION)
-    if (!hubReconciliationAccountExists) {
-      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub reconciliation account for the specified currency does not exist')
-    }
-    const hubMlnsAccountExists = await ParticipantService.hubAccountExists(request.payload.currency, ledgerAccountTypes.HUB_MULTILATERAL_SETTLEMENT)
-    if (!hubMlnsAccountExists) {
-      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.ADD_PARTY_INFO_ERROR, 'Hub multilateral net settlement account for the specified currency does not exist')
-    }
+    await ParticipantService.validateHubAccounts(request.payload.currency)
     let participant = await ParticipantService.getByName(request.payload.name)
     if (participant) {
       const currencyExists = participant.currencyList.find(currency => {
@@ -96,8 +89,8 @@ const create = async function (request, h) {
       participant = await ParticipantService.getById(participantId)
     }
     const ledgerAccountIds = Util.transpose(ledgerAccountTypes)
-    const settlementModels = await SettlementService.getAll()
-
+    const allSettlementModels = await SettlementService.getAll()
+    const settlementModels = allSettlementModels.filter(model => model.currencyId === request.payload.currency)
     if (Array.isArray(settlementModels) && settlementModels.length > 0) {
       for (const settlementModel of settlementModels) {
         const participantCurrencyId1 = await ParticipantService.createParticipantCurrency(participant.participantId, request.payload.currency, settlementModel.ledgerAccountTypeId, false)

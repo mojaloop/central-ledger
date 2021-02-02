@@ -25,7 +25,6 @@ Test('setup', setupTest => {
   let HapiStub
   let UrlParserStub
   let serverStub
-  let ConfigDataSeederStub
   let processExitStub
   // let KafkaCronStub
 
@@ -114,9 +113,6 @@ Test('setup', setupTest => {
         registerBulkProcessingHandler: sandbox.stub().returns(Promise.resolve())
       }
     }
-    ConfigDataSeederStub = {
-      initializeSeedData: sandbox.stub().resolves()
-    }
     const ConfigStub = Config
     ConfigStub.HANDLERS_API_DISABLED = false
     ConfigStub.HANDLERS_CRON_DISABLED = false
@@ -134,8 +130,7 @@ Test('setup', setupTest => {
       './plugins': PluginsStub,
       '../lib/urlParser': UrlParserStub,
       '@hapi/hapi': HapiStub,
-      '../lib/config': ConfigStub,
-      '../lib/configDataSeeder': ConfigDataSeederStub
+      '../lib/config': ConfigStub
       // '../handlers/lib/kafka': KafkaCronStub
     })
 
@@ -178,8 +173,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStubThrowError,
-        '../lib/config': Config,
-        '../lib/configDataSeeder': ConfigDataSeederStub
+        '../lib/config': Config
 
         // '../handlers/lib/kafka': KafkaCronStub
       })
@@ -231,8 +225,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': ConfigStub,
-        '../lib/configDataSeeder': ConfigDataSeederStub
+        '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -323,17 +316,6 @@ Test('setup', setupTest => {
       })
     })
 
-    initializeTest.test('initialize configurable seeded data', async (test) => {
-      const service = 'api'
-
-      Setup.initialize({ service, runMigrations: true }).then(() => {
-        test.ok(ConfigDataSeederStub.initializeSeedData.called)
-        test.end()
-      }).catch(err => {
-        test.fail(`Should have not received an error: ${err}`)
-        test.end()
-      })
-    })
     initializeTest.test('run Handlers if runHandlers flag enabled and start API', async (test) => {
       const service = 'handler'
 
@@ -360,8 +342,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': Config,
-        '../lib/configDataSeeder': ConfigDataSeederStub
+        '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -393,8 +374,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': ConfigStub,
-        '../lib/configDataSeeder': ConfigDataSeederStub
+        '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -427,8 +407,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': ConfigStub,
-        '../lib/configDataSeeder': ConfigDataSeederStub
+        '../lib/config': ConfigStub
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -463,8 +442,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': Config,
-        '../lib/configDataSeeder': ConfigDataSeederStub
+        '../lib/config': Config
         // '../handlers/lib/kafka': KafkaCronStub
       })
 
@@ -697,8 +675,7 @@ Test('setup', setupTest => {
         './plugins': PluginsStub,
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
-        '../lib/config': Config,
-        '../lib/configDataSeeder': ConfigDataSeederStub
+        '../lib/config': Config
 
         // '../handlers/lib/kafka': KafkaCronStub
       })

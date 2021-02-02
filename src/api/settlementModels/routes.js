@@ -31,7 +31,6 @@ const currencyList = require('../../../seeds/currency.js').currencyList
 const settlementGranularityList = require('../../../seeds/settlementGranularity.js').settlementGranularityList
 const settlementInterchangeList = require('../../../seeds/settlementInterchange.js').settlementInterchangeList
 const settlementDelayList = require('../../../seeds/settlementDelay.js').settlementDelayList
-const ledgerAccountList = require('../../../seeds/ledgerAccountType.js').ledgerAccountList
 const tags = ['api', 'settlement']
 
 module.exports = [
@@ -72,9 +71,9 @@ module.exports = [
           settlementGranularity: Joi.string().required().valid(...settlementGranularityList).description('Granularity type for the settlement model GROSS or NET'),
           settlementInterchange: Joi.string().required().valid(...settlementInterchangeList).description('Interchange type for the settlement model BILATERAL or MULTILATERAL'),
           settlementDelay: Joi.string().required().valid(...settlementDelayList).description('Delay type for the settlement model IMMEDIATE or DEFERRED'),
-          currency: Joi.string().valid(...currencyList).description('Currency code'),
+          currency: Joi.string().required().valid(...currencyList).description('Currency code'),
           requireLiquidityCheck: Joi.boolean().required().description('Liquidity Check boolean'),
-          ledgerAccountType: Joi.string().required().valid(...ledgerAccountList).description('Account type for the settlement model POSITION, SETTLEMENT or INTERCHANGE_FEE'),
+          ledgerAccountType: Joi.string().required().description('Account type for the settlement model'),
           autoPositionReset: Joi.boolean().required().description('Automatic position reset setting, which determines whether to execute the settlement transfer or not'),
           settlementAccountType: Joi.string().valid('SETTLEMENT', 'INTERCHANGE_FEE_SETTLEMENT').required().description('Settlement account linked to the ledger account')
         })
