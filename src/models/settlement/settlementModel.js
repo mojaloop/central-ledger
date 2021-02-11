@@ -99,7 +99,7 @@ exports.getByName = async (name, trx = null) => {
 }
 exports.getAll = async () => {
   try {
-    return await Db.settlementModel.find()
+    return await Db.from('settlementModel').find()
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

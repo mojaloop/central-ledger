@@ -32,7 +32,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.getAll = async () => {
   try {
-    return Db.participant.find({}, { order: 'name asc' })
+    return Db.from('participant').find({}, { order: 'name asc' })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -52,7 +52,7 @@ const update = async (participantLimit) => {
 
 const getAll = async () => {
   try {
-    return await Db.participantLimit.find({})
+    return await Db.from('participantLimit').find({})
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -73,7 +73,7 @@ const getAll = async () => {
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantLimit.findOne({ participantCurrencyId, isActive: 1 })
+    return Db.from('participantLimit').findOne({ participantCurrencyId, isActive: 1 })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err

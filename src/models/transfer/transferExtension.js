@@ -40,7 +40,7 @@ const saveTransferExtension = async (extension) => {
 
 const getByTransferId = async (transferId, isFulfilment = false, isError = false) => {
   try {
-    return await Db.transferExtension.find({ transferId, isFulfilment, isError })
+    return await Db.from('transferExtension').find({ transferId, isFulfilment, isError })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -48,7 +48,7 @@ const getByTransferId = async (transferId, isFulfilment = false, isError = false
 
 const getByTransferExtensionId = async (transferExtensionId) => {
   try {
-    return await Db.transferExtension.findOne({ transferExtensionId })
+    return await Db.from('transferExtension').findOne({ transferExtensionId })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

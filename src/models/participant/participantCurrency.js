@@ -43,7 +43,7 @@ exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive
 
 exports.getAll = async () => {
   try {
-    return Db.participantCurrency.find({}, { order: 'participantCurrencyId asc' })
+    return Db.from('participantCurrency').find({}, { order: 'participantCurrencyId asc' })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -51,7 +51,7 @@ exports.getAll = async () => {
 
 exports.getById = async (id) => {
   try {
-    return await Db.participantCurrency.findOne({ participantCurrencyId: id })
+    return await Db.from('participantCurrency').findOne({ participantCurrencyId: id })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -71,7 +71,7 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
     if (ledgerAccountTypeId) {
       params.ledgerAccountTypeId = ledgerAccountTypeId
     }
-    return await Db.participantCurrency.find(params)
+    return await Db.from('participantCurrency').find(params)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -87,7 +87,7 @@ exports.destroyByParticipantId = async (id) => {
 
 exports.getByName = async (accountParams) => {
   try {
-    const participantCurrency = await Db.participantCurrency.findOne(accountParams)
+    const participantCurrency = await Db.from('participantCurrency').findOne(accountParams)
     return participantCurrency
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

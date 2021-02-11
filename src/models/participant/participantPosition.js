@@ -51,7 +51,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantPosition.findOne({ participantCurrencyId })
+    return Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -72,7 +72,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
 
 const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantPosition.destroy({ participantCurrencyId })
+    return Db.from('participantPosition').destroy({ participantCurrencyId })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err

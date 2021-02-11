@@ -36,7 +36,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const endpointType = async function () {
   try {
     const endpointType = {}
-    for (const record of await Db.endpointType.find({})) {
+    for (const record of await Db.from('endpointType').find({})) {
       endpointType[`${record.name}`] = record.endpointTypeId
     }
     return endpointType
@@ -47,7 +47,7 @@ const endpointType = async function () {
 }
 const hubParticipant = async function () {
   try {
-    return (await Db.participant.find({ participantId: Config.HUB_ID }))[0]
+    return (await Db.from('participant').find({ participantId: Config.HUB_ID }))[0]
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -56,7 +56,7 @@ const hubParticipant = async function () {
 const ledgerAccountType = async function () {
   try {
     const ledgerAccountType = {}
-    for (const record of await Db.ledgerAccountType.find({})) {
+    for (const record of await Db.from('ledgerAccountType').find({})) {
       ledgerAccountType[`${record.name}`] = record.ledgerAccountTypeId
     }
     return ledgerAccountType
@@ -68,7 +68,7 @@ const ledgerAccountType = async function () {
 const ledgerEntryType = async function () {
   try {
     const ledgerEntryType = {}
-    for (const record of await Db.ledgerEntryType.find({})) {
+    for (const record of await Db.from('ledgerEntryType').find({})) {
       ledgerEntryType[`${record.name}`] = record.ledgerEntryTypeId
     }
     return ledgerEntryType
@@ -80,7 +80,7 @@ const ledgerEntryType = async function () {
 const participantLimitType = async function () {
   try {
     const participantLimitType = {}
-    for (const record of await Db.participantLimitType.find({})) {
+    for (const record of await Db.from('participantLimitType').find({})) {
       participantLimitType[`${record.name}`] = record.participantLimitTypeId
     }
     return participantLimitType
@@ -92,7 +92,7 @@ const participantLimitType = async function () {
 const transferParticipantRoleType = async function () {
   try {
     const transferParticipantRoleType = {}
-    for (const record of await Db.transferParticipantRoleType.find({})) {
+    for (const record of await Db.from('transferParticipantRoleType').find({})) {
       transferParticipantRoleType[`${record.name}`] = record.transferParticipantRoleTypeId
     }
     return transferParticipantRoleType
@@ -104,7 +104,7 @@ const transferParticipantRoleType = async function () {
 const transferState = async function () {
   try {
     const transferState = {}
-    for (const record of await Db.transferState.find({})) {
+    for (const record of await Db.from('transferState').find({})) {
       transferState[`${record.transferStateId}`] = record.transferStateId
     }
     return transferState
@@ -116,7 +116,7 @@ const transferState = async function () {
 const transferStateEnum = async function () {
   try {
     const transferStateEnum = {}
-    for (const record of await Db.transferState.find({})) {
+    for (const record of await Db.from('transferState').find({})) {
       transferStateEnum[`${record.transferStateId}`] = record.enumeration
     }
     return transferStateEnum
@@ -128,7 +128,7 @@ const transferStateEnum = async function () {
 const bulkProcessingState = async function () {
   try {
     const bulkProcessingState = {}
-    for (const record of await Db.bulkProcessingState.find({})) {
+    for (const record of await Db.from('bulkProcessingState').find({})) {
       bulkProcessingState[`${record.name}`] = record.bulkProcessingStateId
     }
     return bulkProcessingState
@@ -140,7 +140,7 @@ const bulkProcessingState = async function () {
 const bulkTransferState = async function () {
   try {
     const bulkTransferState = {}
-    for (const record of await Db.bulkTransferState.find({})) {
+    for (const record of await Db.from('bulkTransferState').find({})) {
       bulkTransferState[`${record.bulkTransferStateId}`] = record.bulkTransferStateId
     }
     return bulkTransferState
@@ -152,7 +152,7 @@ const bulkTransferState = async function () {
 const bulkTransferStateEnum = async function () {
   try {
     const bulkTransferStateEnum = {}
-    for (const record of await Db.bulkTransferState.find({})) {
+    for (const record of await Db.from('bulkTransferState').find({})) {
       bulkTransferStateEnum[`${record.bulkTransferStateId}`] = record.enumeration
     }
     return bulkTransferStateEnum

@@ -29,7 +29,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.getById = async (id) => {
   try {
-    return await Db.ilpPacket.find({ transferId: id })
+    return await Db.from('ilpPacket').find({ transferId: id })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

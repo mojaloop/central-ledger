@@ -47,7 +47,7 @@ const update = async (participantPosition) => {
 
 const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
-    return await Db.participantPosition.findOne({ participantCurrencyId })
+    return await Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err

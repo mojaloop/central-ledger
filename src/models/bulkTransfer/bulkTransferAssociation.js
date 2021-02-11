@@ -51,7 +51,7 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
 
 exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
   try {
-    return Db.bulkTransferAssociation.findOne({
+    return Db.from('bulkTransferAssociation').findOne({
       bulkTransferId, bulkProcessingStateId
     })
   } catch (err) {
