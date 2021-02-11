@@ -80,7 +80,7 @@ const saveTransferDuplicateCheck = async (transferId, hash) => {
   ).startTimer()
   Logger.isDebugEnabled && Logger.debug(`save transferDuplicateCheck (transferId=${transferId}, hash=${hash})`)
   try {
-    const result = Db.transferDuplicateCheck.insert({ transferId, hash })
+    const result = Db.from('transferDuplicateCheck').insert({ transferId, hash })
     histTimerSaveTransferDuplicateCheckEnd({ success: true, queryName: 'transferDuplicateCheck_saveTransferDuplicateCheck' })
     return result
   } catch (err) {

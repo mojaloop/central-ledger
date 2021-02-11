@@ -40,7 +40,7 @@ const getByTransferId = async (transferId) => {
 const saveTransferFulfilment = async (record) => {
   Logger.isDebugEnabled && Logger.debug('save transferFulfilment ' + record.toString())
   try {
-    return await Db.transferFulfilment.insert(record)
+    return await Db.from('transferFulfilment').insert(record)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

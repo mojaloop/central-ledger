@@ -29,7 +29,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.create = async (participantId, currencyId, ledgerAccountTypeId, isActive = true) => {
   try {
-    return await Db.participantCurrency.insert({
+    return await Db.from('participantCurrency').insert({
       participantId,
       currencyId,
       ledgerAccountTypeId,
@@ -59,7 +59,7 @@ exports.getById = async (id) => {
 
 exports.update = async (participantCurrencyId, isActive) => {
   try {
-    return await Db.participantCurrency.update({ participantCurrencyId }, { isActive })
+    return await Db.from('participantCurrency').update({ participantCurrencyId }, { isActive })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -79,7 +79,7 @@ exports.getByParticipantId = async (id, ledgerAccountTypeId = null) => {
 
 exports.destroyByParticipantId = async (id) => {
   try {
-    return await Db.participantCurrency.destroy({ participantId: id })
+    return await Db.from('participantCurrency').destroy({ participantId: id })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

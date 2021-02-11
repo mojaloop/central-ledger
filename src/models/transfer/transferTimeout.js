@@ -34,7 +34,7 @@ const cleanup = async () => {
   try {
     const knex = await Db.getKnex()
 
-    const ttIdList = await Db.transferTimeout.query(async (builder) => {
+    const ttIdList = await Db.from('transferTimeout').query(async (builder) => {
       const b = await builder
         .whereIn('tsc.transferStateId', [`${TS.RECEIVED_FULFIL}`, `${TS.COMMITTED}`, `${TS.FAILED}`, `${TS.RESERVED_TIMEOUT}`,
           `${TS.RECEIVED_REJECT}`, `${TS.EXPIRED_PREPARED}`, `${TS.EXPIRED_RESERVED}`, `${TS.ABORTED_REJECTED}`])
@@ -50,7 +50,7 @@ const cleanup = async () => {
       return b
     })
 
-    await Db.transferTimeout.query(async (builder) => {
+    await Db.from('transferTimeout').query(async (builder) => {
       const b = await builder
         .whereIn('transferTimeout.transferTimeoutId', ttIdList.map(elem => elem.transferTimeoutId))
         .del()

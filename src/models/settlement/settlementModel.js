@@ -106,7 +106,7 @@ exports.getAll = async () => {
 }
 exports.update = async (settlementModel, isActive) => {
   try {
-    return await Db.settlementModel.update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
+    return await Db.from('settlementModel').update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

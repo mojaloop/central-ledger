@@ -28,7 +28,7 @@ const Logger = require('@mojaloop/central-services-logger')
 
 const getByBulkTransferId = async (id) => {
   try {
-    return await Db.bulkTransferExtension.query(async (builder) => {
+    return await Db.from('bulkTransferExtension').query(async (builder) => {
       const result = builder
         .where({ bulkTransferId: id })
         .select('key', 'value', 'isFulfilment')

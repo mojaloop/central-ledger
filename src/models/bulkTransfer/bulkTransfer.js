@@ -28,7 +28,7 @@ const Logger = require('@mojaloop/central-services-logger')
 
 const getById = async (id) => {
   try {
-    return await Db.bulkTransfer.query(async (builder) => {
+    return await Db.from('bulkTransfer').query(async (builder) => {
       const result = builder
         .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
         .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
@@ -49,7 +49,7 @@ const getById = async (id) => {
 
 const getByTransferId = async (id) => {
   try {
-    return await Db.bulkTransfer.query(async (builder) => {
+    return await Db.from('bulkTransfer').query(async (builder) => {
       const result = builder
         .innerJoin('bulkTransferAssociation AS bta', 'bta.bulkTransferId', 'bulkTransfer.bulkTransferId')
         .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
@@ -72,7 +72,7 @@ const getByTransferId = async (id) => {
 
 const getParticipantsById = async (id) => {
   try {
-    return await Db.bulkTransfer.query(async (builder) => {
+    return await Db.from('bulkTransfer').query(async (builder) => {
       const result = builder
         .innerJoin('participant AS payer', 'payer.participantId', 'bulkTransfer.payerParticipantId')
         .innerJoin('participant AS payee', 'payee.participantId', 'bulkTransfer.payeeParticipantId')
