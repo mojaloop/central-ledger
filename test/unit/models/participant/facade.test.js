@@ -72,6 +72,9 @@ Test('Participant facade', async (facadeTest) => {
     Db.participantPosition = {
       query: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     t.end()
   })
 

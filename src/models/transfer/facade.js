@@ -52,7 +52,7 @@ const UnsupportedActionText = 'Unsupported action'
 const getById = async (id) => {
   try {
     /** @namespace Db.transfer **/
-    return await Db.transfer.query(async (builder) => {
+    return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
         .where({
           'transfer.transferId': id,
@@ -123,7 +123,7 @@ const getById = async (id) => {
 const getByIdLight = async (id) => {
   try {
     /** @namespace Db.transfer **/
-    return await Db.transfer.query(async (builder) => {
+    return await Db.from('transfer').query(async (builder) => {
       const transferResult = await builder
         .where({ 'transfer.transferId': id })
         .leftJoin('ilpPacket AS ilpp', 'ilpp.transferId', 'transfer.transferId')
@@ -174,7 +174,7 @@ const getByIdLight = async (id) => {
 
 const getAll = async () => {
   try {
-    return await Db.transfer.query(async (builder) => {
+    return await Db.from('transfer').query(async (builder) => {
       const transferResultList = await builder
         .where({
           'tprt1.name': 'PAYER_DFSP', // TODO: refactor to use transferParticipantRoleTypeId
@@ -229,7 +229,7 @@ const getAll = async () => {
 const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId, ledgerEntryTypeId) => {
   try {
     /** @namespace Db.transferParticipant **/
-    return await Db.transferParticipant.query(async builder => {
+    return await Db.from('transferParticipant').query(async builder => {
       return builder
         .where({
           'transferParticipant.transferId': id,
@@ -337,7 +337,7 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
     await knex.transaction(async (trx) => {
       try {
         if (!fspiopError && [TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
-          const res = await Db.settlementWindow.query(builder => {
+          const res = await Db.from('settlementWindow').query(builder => {
             return builder
               .leftJoin('settlementWindowStateChange AS swsc', 'swsc.settlementWindowStateChangeId', 'settlementWindow.currentStateChangeId')
               .select(
@@ -574,7 +574,7 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
 const getTransferStateByTransferId = async (id) => {
   try {
     /** @namespace Db.transferStateChange **/
-    return await Db.transferStateChange.query(async (builder) => {
+    return await Db.from('transferStateChange').query(async (builder) => {
       return builder
         .innerJoin('transferState AS ts', 'ts.transferStateId', 'transferStateChange.transferStateId')
         .where({
@@ -1124,7 +1124,7 @@ const reconciliationTransferAbort = async function (payload, transactionTimestam
 
 const getTransferParticipant = async (participantName, transferId) => {
   try {
-    return Db.participant.query(async (builder) => {
+    return Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'participant.name': participantName,

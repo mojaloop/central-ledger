@@ -99,14 +99,14 @@ exports.getByName = async (name, trx = null) => {
 }
 exports.getAll = async () => {
   try {
-    return await Db.settlementModel.find()
+    return await Db.from('settlementModel').find()
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 exports.update = async (settlementModel, isActive) => {
   try {
-    return await Db.settlementModel.update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
+    return await Db.from('settlementModel').update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -30,7 +30,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const getByParams = async (params) => {
   try {
-    return await Db.segment.findOne(params)
+    return await Db.from('segment').findOne(params)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

@@ -51,7 +51,7 @@ const getByParticipantPositionId = async (participantPositionId) => {
     ['success', 'queryName', 'hit']
   ).startTimer()
   try {
-    return await Db.participantPositionChange.query(async (builder) => {
+    return await Db.from('participantPositionChange').query(async (builder) => {
       const result = builder
         .where({ 'participantPositionChange.participantPositionId': participantPositionId })
         .select('participantPositionChange.*')

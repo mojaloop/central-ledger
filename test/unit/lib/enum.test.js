@@ -163,6 +163,7 @@ Test('Enum test', async (enumTest) => {
 
   enumTest.beforeEach(t => {
     sandbox = Sinon.createSandbox()
+
     Db.endpointType = {
       find: sandbox.stub()
     }
@@ -191,6 +192,10 @@ Test('Enum test', async (enumTest) => {
       find: sandbox.stub()
     }
 
+    Db.from = (table) => {
+      return Db[table]
+    }
+
     t.end()
   })
 
@@ -202,7 +207,7 @@ Test('Enum test', async (enumTest) => {
   await enumTest.test('endpointType should', async (endpointTypeTest) => {
     await endpointTypeTest.test('return the endpoints', async (test) => {
       try {
-        Db.endpointType.find.returns(Promise.resolve(allEnums.endpointType))
+        Db.from('endpointType').find.returns(Promise.resolve(allEnums.endpointType))
         const result = await Model.endpointType()
         test.deepEqual(result, allEnumExpected.endpointType, 'Results match')
         test.end()

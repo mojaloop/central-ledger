@@ -54,6 +54,9 @@ Test('TransferStateChange model', async (transferStateChangeModel) => {
       truncate: sandbox.stub(),
       query: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     t.end()
   })
 

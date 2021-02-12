@@ -32,7 +32,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const saveTransferExtension = async (extension) => {
   try {
-    return await Db.transferExtension.insert(extension)
+    return await Db.from('transferExtension').insert(extension)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -40,7 +40,7 @@ const saveTransferExtension = async (extension) => {
 
 const getByTransferId = async (transferId, isFulfilment = false, isError = false) => {
   try {
-    return await Db.transferExtension.find({ transferId, isFulfilment, isError })
+    return await Db.from('transferExtension').find({ transferId, isFulfilment, isError })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -48,7 +48,7 @@ const getByTransferId = async (transferId, isFulfilment = false, isError = false
 
 const getByTransferExtensionId = async (transferExtensionId) => {
   try {
-    return await Db.transferExtension.findOne({ transferExtensionId })
+    return await Db.from('transferExtension').findOne({ transferExtensionId })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -56,7 +56,7 @@ const getByTransferExtensionId = async (transferExtensionId) => {
 
 const destroyByTransferId = async (transferId) => {
   try {
-    return await Db.transferExtension.destroy({ transferId })
+    return await Db.from('transferExtension').destroy({ transferId })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

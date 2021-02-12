@@ -56,9 +56,14 @@ const ParticipantLimitCached = require('../models/participant/participantLimitCa
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
 }
+
 const connectDatabase = async () => {
-  return Db.connect(Config.DATABASE)
+  Logger.isDebugEnabled && Logger.debug(`Conneting to DB ${JSON.stringify(Config.DATABASE)}`)
+  await Db.connect(Config.DATABASE)
+  const dbLoadedTables = Db._tables ? Db._tables.length : -1
+  Logger.isDebugEnabled && Logger.debug(`DB.connect loaded '${dbLoadedTables}' tables!`)
 }
+
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {

@@ -29,7 +29,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const getAllById = async (id) => {
   try {
     const knex = await Db.getKnex()
-    return await Db.bulkTransferAssociation.query(async (builder) => {
+    return await Db.from('bulkTransferAssociation').query(async (builder) => {
       const result = builder
         .innerJoin('transfer AS t', 't.transferId', 'bulkTransferAssociation.transferId')
         .innerJoin('ilpPacket AS ip', 'ip.transferId', 't.transferId')

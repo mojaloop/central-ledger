@@ -55,3 +55,7 @@ jspm_packages
 **/*.iml
 
 .history
+
+# Add ignores
+*IGNORE*
+*ignore*

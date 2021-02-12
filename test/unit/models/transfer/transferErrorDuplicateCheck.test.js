@@ -45,6 +45,9 @@ Test('TransferErrorDuplicateCheck model', async (TransferErrorDuplicateCheckTest
       findOne: sandbox.stub(),
       insert: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     test.end()
   })
 

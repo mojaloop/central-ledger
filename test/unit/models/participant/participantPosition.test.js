@@ -46,6 +46,9 @@ Test('Participant Position model', async (participantPositionTest) => {
       find: sandbox.stub(),
       destroy: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     t.end()
   })
 

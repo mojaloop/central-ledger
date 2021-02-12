@@ -51,6 +51,9 @@ Test('TransferFulfilment model', async (transferFulfilment) => {
       insert: sandbox.stub(),
       find: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     beforeTest.end()
   })
 

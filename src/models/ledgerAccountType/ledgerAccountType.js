@@ -168,7 +168,7 @@ exports.create = async (name, description, isActive, isSettleable, trx = null) =
 
 exports.getAll = async () => {
   try {
-    return await Db.ledgerAccountType.find({ })
+    return await Db.from('ledgerAccountType').find({ })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

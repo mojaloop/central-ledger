@@ -29,7 +29,7 @@ const LibUtil = require('@mojaloop/central-services-shared').Util
 
 exports.create = async (bulkTransferAssociation) => {
   try {
-    return Db.bulkTransferAssociation.insert(bulkTransferAssociation)
+    return Db.from('bulkTransferAssociation').insert(bulkTransferAssociation)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -43,7 +43,7 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
       errorCode: bulkTransferAssociation.errorCode,
       errorDescription: bulkTransferAssociation.errorDescription
     })
-    return Db.bulkTransferAssociation.update({ transferId, bulkTransferId }, record)
+    return Db.from('bulkTransferAssociation').update({ transferId, bulkTransferId }, record)
   } catch (err) {
     throw new Error(err.message)
   }
@@ -51,7 +51,7 @@ exports.update = async (transferId, bulkTransferId, bulkTransferAssociation) => 
 
 exports.exists = async (bulkTransferId, bulkProcessingStateId) => {
   try {
-    return Db.bulkTransferAssociation.findOne({
+    return Db.from('bulkTransferAssociation').findOne({
       bulkTransferId, bulkProcessingStateId
     })
   } catch (err) {

@@ -32,7 +32,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const saveTransferStateChange = async (stateChange) => {
   Logger.isDebugEnabled && Logger.debug('save transferStateChange' + stateChange.toString())
   try {
-    return Db.transferStateChange.insert(stateChange)
+    return Db.from('transferStateChange').insert(stateChange)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -41,7 +41,7 @@ const saveTransferStateChange = async (stateChange) => {
 
 const getByTransferId = async (id) => {
   try {
-    return await Db.transferStateChange.query(async (builder) => {
+    return await Db.from('transferStateChange').query(async (builder) => {
       const result = builder
         .where({ 'transferStateChange.transferId': id })
         .select('transferStateChange.*')
@@ -57,7 +57,7 @@ const getByTransferId = async (id) => {
 
 const getByTransferIdList = async (transfersIdList) => {
   try {
-    return await Db.transferStateChange.query(async (builder) => {
+    return await Db.from('transferStateChange').query(async (builder) => {
       const result = builder
         .whereIn('transferStateChange.transferId', transfersIdList)
       return result
@@ -70,7 +70,7 @@ const getByTransferIdList = async (transfersIdList) => {
 
 const getLatest = async () => {
   try {
-    return await Db.transferStateChange.query(async (builder) => {
+    return await Db.from('transferStateChange').query(async (builder) => {
       return builder
         .select('transferStateChangeId')
         .orderBy('transferStateChangeId', 'desc')
@@ -84,7 +84,7 @@ const getLatest = async () => {
 
 const truncate = async () => {
   try {
-    return await Db.transferStateChange.truncate()
+    return await Db.from('transferStateChange').truncate()
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err

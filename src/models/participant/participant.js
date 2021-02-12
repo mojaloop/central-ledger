@@ -32,7 +32,8 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 exports.getAll = async () => {
   try {
-    return Db.participant.find({}, { order: 'name asc' })
+    const result = await Db.from('participant').find({}, { order: 'name asc' })
+    return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -40,7 +41,7 @@ exports.getAll = async () => {
 
 exports.create = async (participant) => {
   try {
-    const result = await Db.participant.insert({
+    const result = await Db.from('participant').insert({
       name: participant.name,
       createdBy: 'unknown'
     })
@@ -52,7 +53,7 @@ exports.create = async (participant) => {
 
 exports.update = async (participant, isActive) => {
   try {
-    const result = await Db.participant.update({ participantId: participant.participantId }, { isActive })
+    const result = await Db.from('participant').update({ participantId: participant.participantId }, { isActive })
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -61,7 +62,7 @@ exports.update = async (participant, isActive) => {
 
 exports.destroyByName = async (name) => {
   try {
-    const result = await Db.participant.destroy({ name: name })
+    const result = await Db.from('participant').destroy({ name: name })
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
@@ -70,7 +71,7 @@ exports.destroyByName = async (name) => {
 
 exports.destroyParticipantEndpointByParticipantId = async (participantId) => {
   try {
-    const result = Db.participantEndpoint.destroy({ participantId: participantId })
+    const result = Db.from('participantEndpoint').destroy({ participantId: participantId })
     return result
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)

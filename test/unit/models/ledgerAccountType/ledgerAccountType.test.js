@@ -72,15 +72,22 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
       insert: sandbox.stub(),
       find: sandbox.stub()
     }
+
     Db.participantCurrency = {
       findOne: sandbox.stub(),
       destroy: sandbox.stub()
     }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
     t.end()
   })
 
   ledgerAccountTypeTest.afterEach(t => {
     sandbox.restore()
+
     t.end()
   })
 
