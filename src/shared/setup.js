@@ -62,7 +62,6 @@ const connectDatabase = async () => {
   await Db.connect(Config.DATABASE)
   const dbLoadedTables = Db._tables ? Db._tables.length : -1
   Logger.isDebugEnabled && Logger.debug(`Db._tables.length = ${dbLoadedTables}`)
-  return
 }
 
 const connectMongoose = async () => {

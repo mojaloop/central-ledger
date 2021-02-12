@@ -38,6 +38,10 @@ Test('MigrationLock model', async (migrationLockTest) => {
       query: sandbox.stub()
     }
 
+    Db.from = (table) => {
+      return Db[table]
+    }
+
     const builderStub = sandbox.stub()
     builderStub.select = sandbox.stub()
 

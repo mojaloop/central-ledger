@@ -52,6 +52,9 @@ Test('Transfer model', async (transfer) => {
       destroy: sandbox.stub(),
       truncate: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     beforeTest.end()
   })
 

@@ -41,6 +41,9 @@ Test('Transfer Timeout', async (transferTimeoutTest) => {
     Db.transferTimeout = {
       query: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     t.end()
   })
 

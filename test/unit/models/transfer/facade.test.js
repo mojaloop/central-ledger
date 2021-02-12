@@ -114,6 +114,9 @@ Test('Transfer facade', async (transferFacadeTest) => {
     Db.participant = {
       query: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     clock = Sinon.useFakeTimers(now.getTime())
     sandbox.stub(ParticipantFacade, 'getByNameAndCurrency')
     t.end()

@@ -188,6 +188,10 @@ Test('Participant service', async (participantTest) => {
       destroy: sandbox.stub()
     }
 
+    Db.from = (table) => {
+      return Db[table]
+    }
+
     participantFixtures.forEach((participant, index) => {
       participantMap.set(index + 1, participantResult[index])
       Db.participant.insert.withArgs({ participant }).returns(index)

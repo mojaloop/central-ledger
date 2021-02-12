@@ -31,10 +31,26 @@ const Logger = require('@mojaloop/central-services-logger')
 const IlpPacketsModel = require('../../../../src/models/ilpPackets/ilpPacket')
 
 Test('IlpPackets', async (IlpPacketsTest) => {
-  const sandbox = Sinon.createSandbox()
-  Db.ilpPacket = {
-    find: sandbox.stub()
-  }
+  let sandbox
+
+  IlpPacketsTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    Db.ilpPacket = {
+      find: sandbox.stub()
+    }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
+    t.end()
+  })
+
+  IlpPacketsTest.afterEach(t => {
+    sandbox.restore()
+
+    t.end()
+  })
 
   await IlpPacketsTest.test('get IlpPackets with transferId', async (assert) => {
     try {

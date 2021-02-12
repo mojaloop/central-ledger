@@ -28,7 +28,7 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
@@ -43,16 +43,33 @@ Test('ilpPacket model', async (ilpTest) => {
   ]
   const ilpPacket = ilpPacketTestValues[0]
 
-  const sandbox = Sinon.createSandbox()
-  Db.ilpPacket = {
-    select: sandbox.stub(),
-    insert: sandbox.stub(),
-    update: sandbox.stub(),
-    findOne: sandbox.stub(),
-    find: sandbox.stub(),
-    query: sandbox.stub(),
-    destroy: sandbox.stub()
-  }
+  let sandbox
+
+  ilpTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+
+    Db.ilpPacket = {
+      select: sandbox.stub(),
+      insert: sandbox.stub(),
+      update: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub(),
+      query: sandbox.stub(),
+      destroy: sandbox.stub()
+    }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
+    t.end()
+  })
+
+  ilpTest.afterEach(t => {
+    sandbox.restore()
+
+    t.end()
+  })
 
   await ilpTest.test('create false ilpPacket', async (assert) => {
     const falseIlp = { transferId: '1', value: undefined }

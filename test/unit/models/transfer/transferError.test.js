@@ -56,7 +56,9 @@ Test('TransferError model', async (TransferErrorTest) => {
       find: sandbox.stub(),
       query: sandbox.stub()
     }
-
+    Db.from = (table) => {
+      return Db[table]
+    }
     test.end()
   })
 

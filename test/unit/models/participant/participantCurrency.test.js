@@ -45,6 +45,9 @@ Test('Participant Currency model', async (participantCurrencyTest) => {
       destroy: sandbox.stub(),
       update: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     t.end()
   })
 

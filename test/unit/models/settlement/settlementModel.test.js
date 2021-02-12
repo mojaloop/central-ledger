@@ -34,7 +34,6 @@ const SettlementModelModel = require('../../../../src/models/settlement/settleme
 Test('Settlement model', async (settlementTest) => {
   const settlementModelId = 1
   const settlementModel = [
-
     {
       settlementModelId: 106,
       name: 'DEFERRED_NET',
@@ -48,7 +47,24 @@ Test('Settlement model', async (settlementTest) => {
     }
   ]
 
-  const sandbox = Sinon.createSandbox()
+  let sandbox
+
+  settlementTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
+    t.end()
+  })
+
+  settlementTest.afterEach(t => {
+    sandbox.restore()
+
+    t.end()
+  })
+
   await settlementTest.test('create settlement model', async (assert) => {
     Db.settlementModel = {
       insert: sandbox.stub().returns(true),

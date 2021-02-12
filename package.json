@@ -34,7 +34,7 @@
     ]
   },
   "pre-commit": [
-    "standard",
+    "lint",
     "dep:check",
     "test"
   ],
@@ -45,7 +45,8 @@
     "start:handlers": "node src/handlers/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "test": "npm run test:unit | faucet",
-    "standard": "standard",
+    "lint": "standard",
+    "lint:fix": "standard --fix",
     "test:unit": "tape 'test/unit/**/**.test.js'",
     "test:int": "tape 'test/integration/**/*.test.js'",
     "test:all": "run-s test test:integration test:functional test:spec",
@@ -92,7 +93,7 @@
     "@mojaloop/event-sdk": "10.6.0",
     "@mojaloop/forensic-logging-client": "8.3.0",
     "@mojaloop/ml-number": "11.0.0",
-    "@now-ims/hapi-now-auth": "2.0.2",
+    "@now-ims/hapi-now-auth": "2.0.3",
     "awaitify-stream": "1.0.2",
     "base64url": "3.0.1",
     "blipp": "4.0.2",
