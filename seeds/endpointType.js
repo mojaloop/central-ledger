@@ -141,6 +141,78 @@ const endpointTypes = [
   {
     name: 'FSPIOP_CALLBACK_URL_BULK_QUOTES',
     description: 'Bulk Quotes callback URL to which put bulkQuotes requests can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_GET',
+    description: 'Participant callback URL where GET /thirdpartyRequests/transactions/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_POST',
+    description: 'Participant callback URL where POST /thirdpartyRequests/transactions can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_PUT',
+    description: 'Participant callback URL where PUT /thirdpartyRequests/transactions/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_PUT_ERROR',
+    description: 'Participant callback URL to which PUT /thirdpartyRequests/transactions/{ID}/error error information can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_PATCH',
+    description: 'Participant callback URL where PATCH /thirdpartyRequests/transactions/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_AUTH_POST',
+    description: 'Participant callback URL where POST /thirdpartyRequests/transactions/{ID}/authorizations can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_AUTH_PUT',
+    description: 'Participant callback URL where PUT /thirdpartyRequests/transactions/{ID}/authorizations can be sent'
+  },
+  {
+    name: 'TP_CB_URL_TRANSACTION_REQUEST_AUTH_PUT_ERROR',
+    description: 'Participant callback URL where PUT /thirdpartyRequests/transactions/{ID}/authorizations/error error information can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_REQUEST_POST',
+    description: 'Participant callback URL where POST /consentRequests can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_REQUEST_PUT',
+    description: 'Participant callback URL where PUT /consentRequests/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_REQUEST_PUT_ERROR',
+    description: 'Participant callback URL where PUT /consentRequests/{ID}/error error information can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CREATE_CREDENTIAL_POST',
+    description: 'Participant callback URL where POST /consentRequests/{ID}/createCredential can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_POST',
+    description: 'Participant callback URL where POST /consents/ can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_GET',
+    description: 'Participant callback URL where GET /consents/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_PUT',
+    description: 'Participant callback URL where PUT /consents/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_PUT_ERROR',
+    description: 'Participant callback URL where PUT /consents/{ID}/error error information can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_GENERATE_CHALLENGE_POST',
+    description: 'Participant callback URL where POST /consents/{ID}/generateChallenge can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_GENERATE_CHALLENGE_PUT_ERROR',
+    description: 'Participant callback URL where PUT /consents/{ID}/generateChallenge/error error information can be sent'
   }
 ]
 
