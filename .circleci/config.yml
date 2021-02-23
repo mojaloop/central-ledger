@@ -8,10 +8,9 @@ version: 2.1
 ##
 orbs:
   anchore: anchore/anchore-engine@1.6.0
-  deploy-kube: mojaloop/deployment@0.1.6
   slack: circleci/slack@3.4.2
   pr-tools: mojaloop/pr-tools@0.1.8
-
+  github-release: h-matsuo/github-release@0.1.3
 
 ##
 # defaults
@@ -23,7 +22,7 @@ defaults_Dependencies: &defaults_Dependencies |
     apk --no-cache add ca-certificates
     apk --no-cache add curl
     apk --no-cache add openssh-client
-    apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
+    apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake jq
     npm config set unsafe-perm true
     npm install -g node-gyp
 
@@ -66,10 +65,13 @@ jobs:
   setup:
     executor: default-docker
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
+      - restore_cache:
+          keys:
+            - dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
@@ -80,20 +82,20 @@ jobs:
           name: Delete build dependencies
           command: apk del build-dependencies
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
           paths:
             - node_modules
 
   test-unit:
     executor: default-docker
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - restore_cache:
           keys:
-          - dependency-cache-{{ checksum "package.json" }}
+          - dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Install tape, tapes and tap-xunit
           command: npm install -g tape tapes tap-xunit
@@ -112,16 +114,16 @@ jobs:
   test-coverage:
     executor: default-docker
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
+      - checkout
       - restore_cache:
           keys:
-            - dependency-cache-{{ checksum "package.json" }}
+            - dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Execute code coverage check
           command: npm -s run test:coverage-check
@@ -146,7 +148,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./test/results
@@ -163,12 +165,12 @@ jobs:
   vulnerability-check:
     executor: default-docker
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Create dir for test results
           command: mkdir -p ./audit/results
@@ -182,14 +184,14 @@ jobs:
   audit-licenses:
     executor: default-docker
     steps:
-      - checkout
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
+      - checkout
       - run:
           <<: *defaults_license_scanner
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Prune non-production packages before running license-scanner
           command: npm prune --production
@@ -199,6 +201,71 @@ jobs:
       - store_artifacts:
           path: /tmp/license-scanner/results
           prefix: licenses
+
+  release:
+    executor: default-docker
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_Dependencies
+      - checkout
+      - restore_cache:
+          keys:
+          - dependency-cache-{{ checksum "package-lock.json" }}
+      - run:
+          name: Configure git
+          command: |
+            git config user.email ${GIT_CI_EMAIL}
+            git config user.name ${GIT_CI_USER}
+            git checkout ${CIRCLE_BRANCH}
+      - run:
+          name: Configure ssh
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan -p 443 ssh.github.com >> ~/.ssh/known_hosts
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - run:
+          name: Generate changelog and bump package version
+          command: npm run release
+      - run:
+          name: Push the release
+          command: git push --follow-tags origin ${CIRCLE_BRANCH}
+
+  github-release:
+    executor: default-machine
+    steps:
+      - run:
+          name: Install git
+          command: |
+            sudo apt-get update && sudo apt-get install -y git
+      - checkout
+      - run:
+          name: Fetch updated release branch
+          command: |
+            git config user.email ${GIT_CI_EMAIL}
+            git config user.name ${GIT_CI_USER}
+            git fetch origin
+            git checkout origin/${CIRCLE_BRANCH}
+      - run:
+          # Note: this is rather imperfect, but will do for now
+          name: Format the changelog into the github release body and get release tag
+          command: |
+            git diff --no-indent-heuristic master~1 HEAD CHANGELOG.md | sed -n '/^+[^+]/ s/^+//p' > /tmp/changes
+            echo 'export RELEASE_CHANGES=`cat /tmp/changes`' >> $BASH_ENV
+            echo 'export RELEASE_TAG=`cat package-lock.json | jq -r .version`' >> $BASH_ENV
+      - run:
+          name: check the release changes
+          command: |
+            echo "Changes are: ${RELEASE_CHANGES}"
+      - github-release/create:
+          github-token-variable: ${GITHUB_TOKEN}
+          tag: v${RELEASE_TAG}
+          title: v${RELEASE_TAG} Release
+          description: ${RELEASE_CHANGES}
+          file-path: CHANGELOG.md
+      - slack/status:
+          webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
+          success_message: '*"${CIRCLE_PROJECT_REPONAME}"* - Release \`"v${RELEASE_TAG}"\` \nhttps://github.com/mojaloop/"${CIRCLE_PROJECT_REPONAME}"/releases/tag/"v${RELEASE_TAG}"'
 
   build:
     executor: default-machine
@@ -323,37 +390,6 @@ jobs:
       - slack/status:
           webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
           success_message: '*"${CIRCLE_PROJECT_REPONAME}"* - Release \`"${CIRCLE_TAG}"\` \nhttps://github.com/mojaloop/"${CIRCLE_PROJECT_REPONAME}"/releases/tag/"${CIRCLE_TAG}"'
-      
-  deploy:
-    executor: deploy-kube/helm-kube
-    steps:
-      - checkout
-      - deploy-kube/setup_and_run:
-          helm_set_values: |
-            --set central.centralledger.centralledger-service.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set central.centralledger.centralledger-service.containers.api.image.tag=$CIRCLE_TAG \
-            --set central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set central.centralledger.centralledger-handler-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
-            --set central.centralledger.centralledger-handler-admin-transfer.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set central.centralledger.centralledger-handler-admin-transfer.containers.api.image.tag=$CIRCLE_TAG \
-            --set central.centralledger.centralledger-handler-transfer-position.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set central.centralledger.centralledger-handler-transfer-position.containers.api.image.tag=$CIRCLE_TAG \
-            --set central.centralledger.centralledger-handler-transfer-get.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set central.centralledger.centralledger-handler-transfer-get.containers.api.image.tag=$CIRCLE_TAG \
-            --set central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set central.centralledger.centralledger-handler-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
-            --set central.centralledger.centralledger-handler-timeout.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set central.centralledger.centralledger-handler-timeout.containers.api.image.tag=$CIRCLE_TAG \
-            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-prepare.containers.api.image.tag=$CIRCLE_TAG \
-            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-fulfil.containers.api.image.tag=$CIRCLE_TAG \
-            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
-            --set mojaloop-bulk.bulk-centralledger.cl-handler-bulk-transfer-processing.containers.api.image.tag=$CIRCLE_TAG
-      - slack/status:
-          fail_only: true
-          webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
-          failure_message: 'Deployment failed for: \`"${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"\`'
 
 
 ##
@@ -466,24 +502,44 @@ workflows:
             branches:
               ignore:
                 - /.*/
+      # New commits to master release automatically
+      - release:
+          context: org-global
+          requires:
+            - pr-tools/pr-title-check
+            - test-unit
+            - test-coverage
+            - vulnerability-check
+            - audit-licenses
+            - test-integration
+            - license-scan
+            - image-scan
+          filters:
+            branches:
+              only:
+                - master
+      - github-release:
+          context: org-global
+          requires:
+            - release
+          filters:
+            branches:
+              only:
+                - master
       - publish:
           context: org-global
           requires:
+            - pr-tools/pr-title-check
+            - test-unit
+            - test-coverage
+            - vulnerability-check
+            - audit-licenses
+            - test-integration
             - license-scan
             - image-scan
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?(\-hotfix(\.[0-9]+))?/
-            branches:
-              ignore:
-                - /.*/
-      - deploy:
-          context: org-global
-          requires:
-            - publish
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*(\-snapshot)?/
+              only: /.*/
             branches:
               ignore:
                 - /.*/
