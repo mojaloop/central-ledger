@@ -518,6 +518,7 @@ workflows:
             branches:
               only:
                 - master
+                - /release\/v.*/
       - github-release:
           context: org-global
           requires:
@@ -526,6 +527,7 @@ workflows:
             branches:
               only:
                 - master
+                - /release\/v.*/
       - publish:
           context: org-global
           requires:
