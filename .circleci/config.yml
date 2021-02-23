@@ -387,10 +387,6 @@ jobs:
             docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
             echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
             docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
-      - slack/status:
-          webhook: "$SLACK_WEBHOOK_ANNOUNCEMENT"
-          success_message: '*"${CIRCLE_PROJECT_REPONAME}"* - Release \`"${CIRCLE_TAG}"\` \nhttps://github.com/mojaloop/"${CIRCLE_PROJECT_REPONAME}"/releases/tag/"${CIRCLE_TAG}"'
-
 
 ##
 # Workflows
@@ -518,6 +514,7 @@ workflows:
             branches:
               only:
                 - master
+                - release\/v.*
       - github-release:
           context: org-global
           requires:
@@ -526,6 +523,7 @@ workflows:
             branches:
               only:
                 - master
+                - release\/v.*
       - publish:
           context: org-global
           requires:
