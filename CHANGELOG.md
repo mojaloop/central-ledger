@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.2.1](https://github.com/mojaloop/central-ledger/compare/v13.2.0...v13.2.1) (2021-02-23)
+
+
+### Bug Fixes
+
+* branch filter regex ([#820](https://github.com/mojaloop/central-ledger/issues/820)) ([14a04be](https://github.com/mojaloop/central-ledger/commit/14a04bedfcbde05b495f36938c6fef666090eef3))
+
 ## [13.2.0](https://github.com/mojaloop/central-ledger/compare/v13.1.1...v13.2.0) (2021-02-23)
 
 
