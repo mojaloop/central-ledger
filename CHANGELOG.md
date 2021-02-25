@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.2.3](https://github.com/mojaloop/central-ledger/compare/v13.2.2...v13.2.3) (2021-02-25)
+
+
+### Chore
+
+* add accounts callback endpoints ([#822](https://github.com/mojaloop/central-ledger/issues/822)) ([9e4d017](https://github.com/mojaloop/central-ledger/commit/9e4d017120dc8030c1cb66ded31b73c9f47aafa5))
+
 ### [13.2.2](https://github.com/mojaloop/central-ledger/compare/v13.2.1...v13.2.2) (2021-02-24)
 
 
