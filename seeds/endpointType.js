@@ -213,6 +213,18 @@ const endpointTypes = [
   {
     name: 'TP_CB_URL_CONSENT_GENERATE_CHALLENGE_PUT_ERROR',
     description: 'Participant callback URL where PUT /consents/{ID}/generateChallenge/error error information can be sent'
+  },
+  {
+    name: 'TP_CB_URL_ACCOUNTS_GET',
+    description: 'Accounts callback URL where GET /accounts/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_ACCOUNTS_PUT',
+    description: 'Accounts callback URL where PUT /accounts/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_ACCOUNTS_PUT_ERROR',
+    description: 'Accounts callback URL where PUT /accounts/{ID}/error error information can be sent'
   }
 ]
 
