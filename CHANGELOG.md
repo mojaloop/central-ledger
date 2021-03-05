@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.2.5](https://github.com/mojaloop/central-ledger/compare/v13.2.4...v13.2.5) (2021-03-05)
+
+
+### Bug Fixes
+
+* [#1977](https://github.com/mojaloop/central-ledger/issues/1977) timeout enumeration for cron job fixed ([#824](https://github.com/mojaloop/central-ledger/issues/824)) ([2bb426d](https://github.com/mojaloop/central-ledger/commit/2bb426d52b29a9c797b1a2307110acf3c0082b7e))
+
 ### [13.2.4](https://github.com/mojaloop/central-ledger/compare/v13.2.3...v13.2.4) (2021-03-05)
 
 ### [13.2.3](https://github.com/mojaloop/central-ledger/compare/v13.2.2...v13.2.3) (2021-02-25)
