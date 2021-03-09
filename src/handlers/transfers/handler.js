@@ -24,6 +24,7 @@
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Georgi Logodazhki <georgi.logodazhki@modusbox.com>
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  - Miguel de Barros <miguel.debarros@modusbox.com>
  - Deon Botha <deon.botha@modusbox.com>
@@ -70,7 +71,7 @@ const toDestination = true
  * the relevant tables. If the validation fails it is still written to the database for auditing purposes but with an
  * INVALID status. For any duplicate requests we will send appropriate callback based on the transfer state and the hash validation
  *
- * Validator.validateByName called to validate the payload of the message
+ * Validator.validatePrepare called to validate the payload of the message
  * TransferService.getById called to get the details of the existing transfer
  * TransferObjectTransform.toTransfer called to transform the transfer object
  * TransferService.prepare called and creates new entries in transfer tables for successful prepare transfer
@@ -111,13 +112,17 @@ const prepare = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'prepare' }))
 
-    const actionLetter = action === TransferEventAction.PREPARE ? Enum.Events.ActionLetter.prepare
-      : (action === TransferEventAction.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
-        : Enum.Events.ActionLetter.unknown)
+    const actionLetter = action === TransferEventAction.PREPARE
+      ? Enum.Events.ActionLetter.prepare
+      : (action === TransferEventAction.BULK_PREPARE
+          ? Enum.Events.ActionLetter.bulkPrepare
+          : Enum.Events.ActionLetter.unknown)
 
-    let functionality = action === TransferEventAction.PREPARE ? TransferEventType.NOTIFICATION
-      : (action === TransferEventAction.BULK_PREPARE ? TransferEventType.BULK_PROCESSING
-        : Enum.Events.ActionLetter.unknown)
+    let functionality = action === TransferEventAction.PREPARE
+      ? TransferEventType.NOTIFICATION
+      : (action === TransferEventAction.BULK_PREPARE
+          ? TransferEventType.BULK_PROCESSING
+          : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
@@ -170,7 +175,7 @@ const prepare = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
-      const { validationPassed, reasons } = await Validator.validateByName(payload, headers)
+      const { validationPassed, reasons } = await Validator.validatePrepare(payload, headers)
       if (validationPassed) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
         try {
@@ -272,21 +277,49 @@ const fulfil = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: `fulfil:${action}` }))
 
-    const actionLetter = action === TransferEventAction.COMMIT ? Enum.Events.ActionLetter.commit
-      : (action === TransferEventAction.REJECT ? Enum.Events.ActionLetter.reject
-        : (action === TransferEventAction.ABORT ? Enum.Events.ActionLetter.abort
-          : (action === TransferEventAction.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-            : Enum.Events.ActionLetter.unknown)))
-    const functionality = action === TransferEventAction.COMMIT ? TransferEventType.NOTIFICATION
-      : (action === TransferEventAction.REJECT ? TransferEventType.NOTIFICATION
-        : (action === TransferEventAction.ABORT ? TransferEventType.NOTIFICATION
-          : (action === TransferEventAction.BULK_COMMIT ? TransferEventType.BULK_PROCESSING
-            : Enum.Events.ActionLetter.unknown)))
+    const actionLetter = action === TransferEventAction.COMMIT
+      ? Enum.Events.ActionLetter.commit
+      : (action === TransferEventAction.RESERVE
+          ? Enum.Events.ActionLetter.reserve
+          : (action === TransferEventAction.REJECT
+              ? Enum.Events.ActionLetter.reject
+              : (action === TransferEventAction.ABORT
+                  ? Enum.Events.ActionLetter.abort
+                  : (action === TransferEventAction.BULK_COMMIT
+                      ? Enum.Events.ActionLetter.bulkCommit
+                      : (action === TransferEventAction.BULK_ABORT
+                          ? Enum.Events.ActionLetter.bulkAbort
+                          : Enum.Events.ActionLetter.unknown)))))
+    const functionality = action === TransferEventAction.COMMIT
+      ? TransferEventType.NOTIFICATION
+      : (action === TransferEventAction.RESERVE
+          ? TransferEventType.NOTIFICATION
+          : (action === TransferEventAction.REJECT
+              ? TransferEventType.NOTIFICATION
+              : (action === TransferEventAction.ABORT
+                  ? TransferEventType.NOTIFICATION
+                  : (action === TransferEventAction.BULK_COMMIT
+                      ? TransferEventType.BULK_PROCESSING
+                      : (action === TransferEventAction.BULK_ABORT
+                          ? TransferEventType.BULK_PROCESSING
+                          : Enum.Events.ActionLetter.unknown)))))
     // fulfil-specific declarations
     const isTransferError = action === TransferEventAction.ABORT
     const params = { message, kafkaTopic, decodedPayload: payload, span, consumer: Consumer, producer: Producer }
 
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'getById' }))
+
+    // We fail early and silently to allow timeout handler abort transfer
+    // if 'RESERVED' transfer state is sent in with v1.0 content-type
+    if (headers['content-type'].split('=')[1] === '1.0' && payload.transferState === TransferState.RESERVED) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `failSilentlyforReservedStateWith1.0ContentType--${actionLetter}0`))
+      const errorMessage = 'action "RESERVE" is not allowed in fulfil handler for v1.0 clients.'
+      Logger.isErrorEnabled && Logger.error(errorMessage)
+      !!span && span.error(errorMessage)
+      histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+      return true
+    }
+
     const transfer = await TransferService.getById(transferId)
     const transferStateEnum = transfer && transfer.transferStateEnumeration
 
@@ -341,22 +374,22 @@ const fulfil = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'handleResend'))
       if (transferStateEnum === TransferState.COMMITTED || transferStateEnum === TransferState.ABORTED) {
         message.value.content.payload = TransferObjectTransform.toFulfil(transfer)
-        if (!isTransferError) {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized2--${actionLetter}3`))
-          const eventDetail = { functionality, action: TransferEventAction.FULFIL_DUPLICATE }
-          /**
-           * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
-           */
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
-        } else {
-          Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized3--${actionLetter}4`))
-          const eventDetail = { functionality, action: TransferEventAction.ABORT_DUPLICATE }
-          await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
-          histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
-          return true
+        const eventDetail = { functionality, action }
+        if (action !== TransferEventAction.RESERVE) {
+          if (!isTransferError) {
+            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized2--${actionLetter}3`))
+            eventDetail.action = TransferEventAction.FULFIL_DUPLICATE
+            /**
+             * HOWTO: During bulk fulfil use an individualTransfer from a previous bulk fulfil
+             */
+          } else {
+            Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackFinilized3--${actionLetter}4`))
+            eventDetail.action = TransferEventAction.ABORT_DUPLICATE
+          }
         }
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
+        return true
       } else if (transferStateEnum === TransferState.RECEIVED || transferStateEnum === TransferState.RESERVED) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `inProgress2--${actionLetter}5`))
         /**
@@ -398,7 +431,7 @@ const fulfil = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     } else { // !hasDuplicateId
-      if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT].includes(action)) {
+      if (type === TransferEventType.FULFIL && [TransferEventAction.COMMIT, TransferEventAction.RESERVE, TransferEventAction.REJECT, TransferEventAction.ABORT, TransferEventAction.BULK_COMMIT, TransferEventAction.BULK_ABORT].includes(action)) {
         Util.breadcrumb(location, { path: 'validationCheck' })
         if (payload.fulfilment && !Validator.validateFulfilCondition(payload.fulfilment, transfer.condition)) {
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorInvalidFulfilment--${actionLetter}9`))
@@ -431,7 +464,7 @@ const fulfil = async (error, messages) => {
           throw fspiopError
         } else { // validations success
           Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'validationPassed' }))
-          if ([TransferEventAction.COMMIT, TransferEventAction.BULK_COMMIT].includes(action)) {
+          if ([TransferEventAction.COMMIT, TransferEventAction.RESERVE, TransferEventAction.BULK_COMMIT].includes(action)) {
             Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic2--${actionLetter}12`))
             await TransferService.handlePayeeResponse(transferId, payload, action)
             const eventDetail = { functionality: TransferEventType.POSITION, action }
@@ -441,12 +474,12 @@ const fulfil = async (error, messages) => {
           } else {
             if (action === TransferEventAction.REJECT) {
               Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic3--${actionLetter}13`))
-              await TransferService.handlePayeeResponse(transferId, payload, action)
-              const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.REJECT }
-              await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, toDestination })
+              const errorMessage = 'action REJECT is not allowed into fulfil handler'
+              Logger.isErrorEnabled && Logger.error(errorMessage)
+              !!span && span.error(errorMessage)
               histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })
               return true
-            } else { // action === TransferEventAction.ABORT // error-callback request to be processed
+            } else { // action === TransferEventAction.ABORT || action === TransferEventAction.BULK_ABORT // error-callback request to be processed
               Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `positionTopic4--${actionLetter}14`))
               let fspiopError
               const eInfo = payload.errorInformation
@@ -459,12 +492,12 @@ const fulfil = async (error, messages) => {
                  */
                 fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'API specification undefined errorCode')
                 await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-                const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+                const eventDetail = { functionality: TransferEventType.POSITION, action }
                 await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
                 throw fspiopError
               }
               await TransferService.handlePayeeResponse(transferId, payload, action, fspiopError.toApiErrorObject(Config.ERROR_HANDLING))
-              const eventDetail = { functionality: TransferEventType.POSITION, action: TransferEventAction.ABORT }
+              const eventDetail = { functionality: TransferEventType.POSITION, action }
               await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, toDestination })
               throw fspiopError
             }
@@ -555,6 +588,13 @@ const getTransfer = async (error, messages) => {
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
       throw fspiopError
     }
+    if (transfer.transferState === Enum.Transfers.TransferInternalState.EXPIRED_RESERVED) {
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackTransferExpired--${actionLetter}3`))
+      const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch })
+      throw fspiopError
+    }
+
     // ============================================================================================
     Util.breadcrumb(location, { path: 'validationPassed' })
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackMessage--${actionLetter}4`))

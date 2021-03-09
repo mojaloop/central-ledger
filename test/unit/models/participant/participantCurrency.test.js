@@ -27,21 +27,34 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/participant/participantCurrency')
 
 Test('Participant Currency model', async (participantCurrencyTest) => {
-  const sandbox = Sinon.createSandbox()
-  Db.participantCurrency = {
-    insert: sandbox.stub(),
-    findOne: sandbox.stub(),
-    find: sandbox.stub(),
-    destroy: sandbox.stub(),
-    update: sandbox.stub()
-  }
+  let sandbox
+
+  participantCurrencyTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    Db.participantCurrency = {
+      insert: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub(),
+      destroy: sandbox.stub(),
+      update: sandbox.stub()
+    }
+    Db.from = (table) => {
+      return Db[table]
+    }
+    t.end()
+  })
+
+  participantCurrencyTest.afterEach(t => {
+    sandbox.restore()
+    t.end()
+  })
 
   await participantCurrencyTest.test('create currency for fake participant', async (assert) => {
     Db.participantCurrency.insert.withArgs({ participantId: 3, currencyId: 'FAKE', createdBy: 'unknown' }).throws(new Error('message'))

@@ -7,9 +7,9 @@ const Logger = require('@mojaloop/central-services-logger')
 const Handler = require('../../../../src/api/participants/handler')
 const Sidecar = require('../../../../src/lib/sidecar')
 const Participant = require('../../../../src/domain/participant')
-const Enum = require('@mojaloop/central-services-shared').Enum
 const EnumCached = require('../../../../src/lib/enumCached')
 const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
+const SettlementModel = require('../../../../src/domain/settlement')
 
 const createRequest = ({ payload, params, query }) => {
   const sandbox = Sinon.createSandbox()
@@ -109,6 +109,22 @@ Test('Participant', participantHandlerTest => {
       ]
     }
   ]
+  const settlementModelFixtures = [
+    {
+      settlementModelId: 1,
+      name: 'DEFERREDNET',
+      isActive: 1,
+      settlementGranularityId: 2,
+      settlementInterchangeId: 2,
+      settlementDelayId: 2,
+      currencyId: null,
+      requireLiquidityCheck: 1,
+      ledgerAccountTypeId: 1,
+      autoPositionReset: 1,
+      adjustPosition: 0,
+      settlementAccountTypeId: 2
+    }
+  ]
 
   participantHandlerTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
@@ -116,7 +132,9 @@ Test('Participant', participantHandlerTest => {
     sandbox.stub(Logger)
     sandbox.stub(Participant)
     sandbox.stub(EnumCached)
+    sandbox.stub(SettlementModel, 'getAll')
     EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
+    Logger.isDebugEnabled = true
     test.end()
   })
 
@@ -210,7 +228,7 @@ Test('Participant', participantHandlerTest => {
       }
     })
 
-    handlerTest.test('create should create and return the new participant', async function (test) {
+    handlerTest.test('create should create and return the new participant with settlementModel', async function (test) {
       const payload = {
         name: 'fsp1',
         currency: 'USD'
@@ -236,6 +254,48 @@ Test('Participant', participantHandlerTest => {
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(Promise.resolve(participantCurrencyId2))
       Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(Promise.resolve(currencyList1))
       Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(Promise.resolve(currencyList2))
+      SettlementModel.getAll.returns(Promise.resolve(settlementModelFixtures))
+      const reply = {
+        response: (response) => {
+          return {
+            code: statusCode => {
+              test.deepEqual(response, participantResults[0], 'The results match')
+              test.equal(statusCode, 201)
+              test.end()
+            }
+          }
+        }
+      }
+      await Handler.create(createRequest({ payload }), reply)
+    })
+
+    handlerTest.test('create should create and return the new participant without settlementModel', async function (test) {
+      const payload = {
+        name: 'fsp1',
+        currency: 'USD'
+      }
+      const participant = {
+        participantId: 1,
+        name: 'fsp1',
+        currency: 'USD',
+        isActive: 1,
+        createdDate: '2018-07-17T16:04:24.185Z'
+      }
+
+      const participantCurrencyId1 = 1
+      const participantCurrencyId2 = 2
+      const currencyList1 = { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
+      const currencyList2 = { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
+
+      Participant.hubAccountExists.withArgs(participant.currency).returns(Promise.resolve(true))
+      Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(null))
+      Participant.create.withArgs(payload).returns(Promise.resolve(participant.participantId))
+      Participant.getById.withArgs(participant.participantId).returns(Promise.resolve(participant))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(Promise.resolve(participantCurrencyId1))
+      Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 2).returns(Promise.resolve(participantCurrencyId2))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId1).returns(Promise.resolve(currencyList1))
+      Participant.getParticipantCurrencyById.withArgs(participantCurrencyId2).returns(Promise.resolve(currencyList2))
+      SettlementModel.getAll.returns(Promise.resolve([]))
       const reply = {
         response: (response) => {
           return {
@@ -269,6 +329,7 @@ Test('Participant', participantHandlerTest => {
       const currencyList1 = { participantCurrencyId: 1, currencyId: 'USD', ledgerAccountTypeId: 1, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
       const currencyList2 = { participantCurrencyId: 2, currencyId: 'USD', ledgerAccountTypeId: 2, isActive: 1, createdBy: 'unknown', createdDate: '2018-07-17T16:04:24.185Z' }
 
+      SettlementModel.getAll.returns(Promise.resolve(settlementModelFixtures))
       Participant.hubAccountExists.withArgs(participant.currency).returns(Promise.resolve(true))
       Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
       Participant.createParticipantCurrency.withArgs(participant.participantId, payload.currency, 1).returns(Promise.resolve(participantCurrencyId1))
@@ -332,38 +393,13 @@ Test('Participant', participantHandlerTest => {
       }
 
       Participant.getByName.withArgs(participantFixtures[0].name).returns(Promise.resolve(participant))
+      Participant.validateHubAccounts.throws(new Error('Hub reconciliation account for the specified currency does not exist'))
       try {
         await Handler.create(createRequest({ payload }))
         test.fail('Error not thrown')
       } catch (e) {
         test.ok(e instanceof Error)
         test.equal(e.message, 'Hub reconciliation account for the specified currency does not exist')
-        test.end()
-      }
-    })
-
-    handlerTest.test('create should fail if hmlns account does not exists', async function (test) {
-      const payload = {
-        name: 'fsp1',
-        currency: 'USD'
-      }
-      const participant = {
-        participantId: 1,
-        name: 'fsp1',
-        currency: 'USD',
-        isActive: 1,
-        createdDate: '2018-07-17T16:04:24.185Z',
-        currencyList: []
-      }
-
-      Participant.hubAccountExists.withArgs(participant.currency, Enum.Accounts.LedgerAccountType.HUB_RECONCILIATION).returns(Promise.resolve(true))
-      Participant.hubAccountExists.withArgs(participant.currency, Enum.Accounts.LedgerAccountType.HUB_MULTILATERAL_SETTLEMENT).returns(Promise.resolve(false))
-      try {
-        await Handler.create(createRequest({ payload }))
-        test.fail('Error not thrown')
-      } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Hub multilateral net settlement account for the specified currency does not exist')
         test.end()
       }
     })

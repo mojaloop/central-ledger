@@ -40,6 +40,7 @@ const ParticipantPositionChangeModel = require('../../../../src/models/participa
 const LedgerAccountTypeFacade = require('../../../../src/models/participant/facade')
 const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const LedgerAccountTypeModel = require('../../../../src/models/ledgerAccountType/ledgerAccountType')
+const EnumCached = require('../../../../src/lib/enumCached')
 
 const Service = require('../../../../src/domain/participant/index')
 
@@ -69,7 +70,7 @@ Test('Participant service', async (participantTest) => {
       currency: 'USD',
       isActive: 1,
       createdDate: new Date(),
-      currencyList: 'USD'
+      currencyList: ['USD']
     },
     {
       participantId: 1,
@@ -77,7 +78,7 @@ Test('Participant service', async (participantTest) => {
       currency: 'EUR',
       isActive: 1,
       createdDate: new Date(),
-      currencyList: 'EUR'
+      currencyList: ['EUR']
     }
   ]
   const participantCurrencyResult = [
@@ -138,6 +139,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantCurrencyModel, 'getById')
     sandbox.stub(ParticipantCurrencyModel, 'destroyByParticipantId')
     sandbox.stub(ParticipantCurrencyModel, 'findOneByParams')
+    sandbox.stub(ParticipantCurrencyModel, 'hubAccountExists')
 
     sandbox.stub(ParticipantFacade, 'getEndpoint')
     sandbox.stub(ParticipantFacade, 'getAllEndpoints')
@@ -150,6 +152,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantFacade, 'getAllAccountsByNameAndCurrency')
     sandbox.stub(ParticipantFacade, 'addHubAccountAndInitPosition')
     sandbox.stub(ParticipantFacade, 'getLimitsForAllParticipants')
+    sandbox.stub(ParticipantFacade, 'getAllNonHubParticipantsWithCurrencies')
 
     sandbox.stub(ParticipantLimitModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantLimitModel, 'destroyByParticipantCurrencyId')
@@ -157,6 +160,7 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(ParticipantPositionModel, 'getByParticipantCurrencyId')
     sandbox.stub(ParticipantPositionModel, 'destroyByParticipantCurrencyId')
     sandbox.stub(ParticipantPositionModel, 'destroyByParticipantId')
+    sandbox.stub(ParticipantPositionModel, 'createParticipantPositionRecords')
 
     sandbox.stub(ParticipantPositionChangeModel, 'getByParticipantPositionId')
 
@@ -166,6 +170,9 @@ Test('Participant service', async (participantTest) => {
     sandbox.stub(LedgerAccountTypeModel, 'getLedgerAccountByName')
 
     sandbox.stub(Kafka, 'produceGeneralMessage')
+    sandbox.stub(EnumCached)
+    EnumCached.getEnums.returns(Promise.resolve({ POSITION: 1, SETTLEMENT: 2, HUB_RECONCILIATION: 3, HUB_MULTILATERAL_SETTLEMENT: 4, HUB_FEE: 5 }))
+
     Db.participant = {
       insert: sandbox.stub(),
       update: sandbox.stub(),
@@ -179,6 +186,10 @@ Test('Participant service', async (participantTest) => {
       findOne: sandbox.stub(),
       find: sandbox.stub(),
       destroy: sandbox.stub()
+    }
+
+    Db.from = (table) => {
+      return Db[table]
     }
 
     participantFixtures.forEach((participant, index) => {
@@ -641,6 +652,7 @@ Test('Participant service', async (participantTest) => {
       const settlementAccount = {
         participantCurrencyId: 2
       }
+      payload.name = participant.name
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
@@ -687,6 +699,7 @@ Test('Participant service', async (participantTest) => {
       const settlementAccount = {
         participantCurrencyId: 2
       }
+      limitPositionObj.name = participant.name
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 1).returns(participant)
       ParticipantFacade.getByNameAndCurrency.withArgs(participant.name, payload.currency, 2).returns(settlementAccount)
       ParticipantLimitModel.getByParticipantCurrencyId.withArgs(participant.participantCurrencyId).returns(null)
@@ -2069,6 +2082,106 @@ Test('Participant service', async (participantTest) => {
       assert.end()
     } catch (err) {
       assert.ok(err.message, 'Error thrown')
+      assert.end()
+    }
+  })
+
+  await participantTest.test('validateHubAccounts should', async (assert) => {
+    try {
+      const currency = 'USD'
+      ParticipantCurrencyModel.hubAccountExists.withArgs(currency, 3).resolves(true)
+      ParticipantCurrencyModel.hubAccountExists.withArgs(currency, 4).resolves(true)
+      const result = await Service.validateHubAccounts(currency)
+      assert.equal(result, true, 'return true')
+      assert.end()
+    } catch (err) {
+      Logger.error(`validateHubAccounts failed with error - ${err}`)
+      assert.fail()
+      assert.end()
+    }
+  })
+
+  await participantTest.test('validateHubAccounts should throw error when hub reconciliation account does not exist', async (assert) => {
+    try {
+      const currency = 'USD'
+      ParticipantCurrencyModel.hubAccountExists.withArgs(currency, 3).resolves(false)
+      ParticipantCurrencyModel.hubAccountExists.withArgs(currency, 4).resolves(true)
+      await Service.validateHubAccounts(currency)
+      assert.fail('should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`validateHubAccounts failed with error - ${err}`)
+      assert.equal(err.message, 'Hub reconciliation account for the specified currency does not exist', 'throws Hub reconciliation account for the specified currency does not exist')
+      assert.end()
+    }
+  })
+
+  await participantTest.test('validateHubAccounts should throw error when hub settlement account does not exist', async (assert) => {
+    try {
+      const currency = 'USD'
+      ParticipantCurrencyModel.hubAccountExists.withArgs(currency, 3).resolves(true)
+      ParticipantCurrencyModel.hubAccountExists.withArgs(currency, 4).resolves(false)
+      await Service.validateHubAccounts(currency)
+      assert.fail('should throw')
+      assert.end()
+    } catch (err) {
+      Logger.error(`validateHubAccounts failed with error - ${err}`)
+      assert.equal(err.message, 'Hub multilateral net settlement account for the specified currency does not exist', 'throws Hub multilateral net settlement account for the specified currency does not exist')
+      assert.end()
+    }
+  })
+
+  await participantTest.test('createAssociatedParticipantAccounts should create ParticipantPositionRecords records', async (assert) => {
+    try {
+      const currency = 'AUD'
+      const ledgerAccountTypeId = 127
+      const existingParticipantWithCurrencies = [
+        {
+          participantCurrencyId: 2,
+          participantId: '2',
+          currencyId: 'USD'
+        }
+      ]
+
+      ParticipantFacade.getAllNonHubParticipantsWithCurrencies.resolves(existingParticipantWithCurrencies)
+
+      ParticipantCurrencyModel.getByParticipantId.resolves(['EUR', 'USD'])
+      ParticipantCurrencyModel.create.resolves(1)
+      ParticipantModelCached.getById.withArgs('1').resolves(participantResult[1])
+      ParticipantModelCached.getById.withArgs('2').resolves(participantResult[0])
+      ParticipantPositionModel.createParticipantPositionRecords.resolves(true)
+      await Service.createAssociatedParticipantAccounts(currency, ledgerAccountTypeId)
+      assert.equal(ParticipantFacade.getAllNonHubParticipantsWithCurrencies.callCount, 1, 'should retrieve non HUB Participants with currencies')
+      assert.deepEqual(ParticipantCurrencyModel.create.callCount, 1, 'should call the create partipant currency record function')
+      assert.equal(ParticipantCurrencyModel.create.lastCall.args[1], 'AUD', 'should call the create partipant currency records function with currency AUD')
+      assert.equal(ParticipantCurrencyModel.create.lastCall.args[2], 127, 'should call the create partipant currency records function with ledgerAccountTypeId')
+
+      assert.equal(ParticipantPositionModel.createParticipantPositionRecords.callCount, 1, 'should call the model create function')
+      const expectedParticipantPositionArg = [
+        { participantCurrencyId: 1, value: 0, reservedValue: 0 }
+      ]
+      assert.deepEqual(ParticipantPositionModel.createParticipantPositionRecords.lastCall.args[0], expectedParticipantPositionArg, 'should call the create partipant position records function with the right arguments')
+
+      assert.end()
+    } catch (err) {
+      console.log(err)
+      assert.fail(err instanceof Error, ` throws ${err} `)
+      assert.end()
+    }
+  })
+
+  await participantTest.test('createAssociatedParticipantAccounts should throw an error if the LedgerAccountTypeModel service fails', async (assert) => {
+    try {
+      ParticipantFacade.getAllNonHubParticipantsWithCurrencies.rejects(new Error('Error message'))
+      const ledgerAccountTypeId = 127
+      const currency = 'AUD'
+
+      await Service.createAssociatedParticipantAccounts(currency, ledgerAccountTypeId)
+      assert.fail('Error not thrown', 'should have thrown an error')
+      assert.end()
+    } catch (err) {
+      assert.assert(err instanceof Error, 'should throw an error')
+      assert.ok(err.message, 'Error message', 'should throw the right error message')
       assert.end()
     }
   })

@@ -38,6 +38,11 @@ Test('Segment model', async (segmentTest) => {
     Db.segment = {
       findOne: sandbox.stub()
     }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
     t.end()
   })
 

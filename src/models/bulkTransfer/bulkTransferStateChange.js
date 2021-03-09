@@ -29,7 +29,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const create = async (stateChange) => {
   Logger.isDebugEnabled && Logger.debug('save bulkTransferStateChange' + stateChange.toString())
   try {
-    return await Db.bulkTransferStateChange.insert(stateChange)
+    return await Db.from('bulkTransferStateChange').insert(stateChange)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -38,7 +38,7 @@ const create = async (stateChange) => {
 
 const getByBulkTransferId = async (id) => {
   try {
-    return await Db.bulkTransferStateChange.query(async (builder) => {
+    return await Db.from('bulkTransferStateChange').query(async (builder) => {
       const result = builder
         .where({ 'bulkTransferStateChange.bulkTransferId': id })
         .select('bulkTransferStateChange.*')
@@ -54,7 +54,7 @@ const getByBulkTransferId = async (id) => {
 
 const getByTransferId = async (id) => {
   try {
-    return await Db.bulkTransferStateChange.query(async (builder) => {
+    return await Db.from('bulkTransferStateChange').query(async (builder) => {
       const result = builder
         .innerJoin('bulkTransferAssociation AS bta', 'bta.bulkTransferId', 'bulkTransferStateChange.bulkTransferId')
         .where({ 'bta.transferId': id })

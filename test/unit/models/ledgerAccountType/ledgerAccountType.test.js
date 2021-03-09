@@ -68,17 +68,26 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     sandbox = Sinon.createSandbox()
     Db.ledgerAccountType = {
       findOne: sandbox.stub(),
-      destroy: sandbox.stub()
+      destroy: sandbox.stub(),
+      insert: sandbox.stub(),
+      find: sandbox.stub()
     }
+
     Db.participantCurrency = {
       findOne: sandbox.stub(),
       destroy: sandbox.stub()
     }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
     t.end()
   })
 
   ledgerAccountTypeTest.afterEach(t => {
     sandbox.restore()
+
     t.end()
   })
 
@@ -118,14 +127,254 @@ Test('ledgerAccountType model', async (ledgerAccountTypeTest) => {
     }
   })
 
-  await ledgerAccountTypeTest.test('ledger account name', async (assert) => {
+  await ledgerAccountTypeTest.test('create should', async (test) => {
+    const ledgerAccountType = {
+      name: 'POSITION',
+      description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+      isActive: 1,
+      isSettleable: true
+    }
     try {
-      Db.ledgerAccountType.findOne.withArgs(name).returns(ledgerAccountType)
-      const result = await Model.getLedgerAccountByName(name.name)
-      assert.equal(JSON.stringify(result), JSON.stringify(ledgerAccountType))
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const insertStub = sandbox.stub()
+      transactingStub.resolves()
+      insertStub.returns({ transacting: transactingStub })
+      knexStub.returns({ insert: insertStub })
+      const selectStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const whereStub = sandbox.stub()
+      const expectedRecords = [
+        {
+          ledgerAccountTypeId: 100
+        }
+      ]
+      transactingStub.resolves(expectedRecords)
+      whereStub.returns({ transacting: transactingStub })
+      fromStub.returns({ where: whereStub })
+      selectStub.returns({ from: fromStub })
+      knexStub.select = selectStub
+
+      const result = await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable, trxStub)
+      test.deepEqual(result, expectedRecords[0].ledgerAccountTypeId, 'return the created record id')
+      test.equal(insertStub.callCount, 1, 'call insert')
+      test.deepEqual(insertStub.lastCall.args[0], ledgerAccountType, 'pass the payload arguments to insert call')
+      test.equal(selectStub.callCount, 1, 'retrieve the created record')
+      test.equal(transactingStub.callCount, 2, 'make the database calls as transaction')
+      test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
+      test.equal(trxStub.commit.callCount, 0, 'not commit the transaction if transaction is passed')
+      test.end()
+    } catch (err) {
+      console.log(err)
+      test.fail(`should have not throw an error ${err}`)
+      test.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('create should', async (test) => {
+    const ledgerAccountType = {
+      name: 'POSITION',
+      description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+      isActive: 1,
+      isSettleable: true
+    }
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const insertStub = sandbox.stub()
+      transactingStub.resolves()
+      insertStub.returns({ transacting: transactingStub })
+      knexStub.returns({ insert: insertStub })
+
+      const selectStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const whereStub = sandbox.stub()
+      const expectedRecords = [
+        {
+          ledgerAccountTypeId: 100
+        }
+      ]
+      transactingStub.resolves(expectedRecords)
+      whereStub.returns({ transacting: transactingStub })
+      fromStub.returns({ where: whereStub })
+      selectStub.returns({ from: fromStub })
+      knexStub.select = selectStub
+
+      await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
+      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
+      test.end()
+    } catch (err) {
+      test.fail(`should not have thrown an error ${err}`)
+      test.end()
+    }
+  })
+  await ledgerAccountTypeTest.test('create should', async (test) => {
+    let trxStub
+    let trxSpyRollBack
+    const ledgerAccountType = {
+      name: 'POSITION',
+      description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+      isActive: 1,
+      isSettleable: true
+    }
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const insertStub = sandbox.stub()
+      transactingStub.resolves()
+      knexStub.insert = insertStub.returns({ transacting: transactingStub })
+      const selectStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const whereStub = sandbox.stub()
+      transactingStub.rejects(new Error())
+      whereStub.returns({ transacting: transactingStub })
+      fromStub.returns({ whereStub: whereStub })
+      knexStub.select = selectStub.returns({ from: fromStub })
+
+      await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
+      test.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('create should', async (test) => {
+    let trxStub
+    let trxSpyRollBack
+
+    const ledgerAccountType = {
+      name: 'POSITION',
+      description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+      isActive: 1,
+      isSettleable: true
+    }
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const insertStub = sandbox.stub()
+      transactingStub.resolves()
+      knexStub.insert = insertStub.returns({ transacting: transactingStub })
+      const selectStub = sandbox.stub()
+      const fromStub = sandbox.stub()
+      const whereStub = sandbox.stub()
+      transactingStub.rejects(new Error())
+      whereStub.returns({ transacting: transactingStub })
+      fromStub.returns({ whereStub: whereStub })
+      knexStub.select = selectStub.returns({ from: fromStub })
+
+      await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable, trxStub)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if transaction is passed')
+      test.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('create should', async (test) => {
+    try {
+      const ledgerAccountType = {
+        name: 'POSITION',
+        description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+        isActive: 1,
+        isSettleable: true
+      }
+      sandbox.stub(Db, 'getKnex')
+      Db.getKnex.throws(new Error())
+      await Model.create(ledgerAccountType.name, ledgerAccountType.description, ledgerAccountType.isActive, ledgerAccountType.isSettleable)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('getAll', async (assert) => {
+    const ledgerAccountTypes = [
+      {
+        name: 'POSITION',
+        description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch',
+        isActive: 1,
+        isSettleable: true
+      },
+      {
+        name: 'INTERCHANGE_FEE_SETTLEMENT',
+        description: 'settlement account for interchange fees',
+        isActive: 1,
+        isSettleable: true
+      }
+    ]
+
+    try {
+      Db.ledgerAccountType.find.resolves(ledgerAccountTypes)
+      const result = await Model.getAll()
+      assert.equal(Db.ledgerAccountType.find.callCount, 1, 'should call the model create function')
+      assert.deepEqual(Db.ledgerAccountType.find.lastCall.args[0], {}, 'should call the model with the right arguments: empty object')
+      assert.deepEqual(result, ledgerAccountTypes)
       assert.end()
     } catch (err) {
-      assert.fail('Error is thrown' + err)
+      assert.fail('should not have thrown an error: ' + err)
+      assert.end()
+    }
+  })
+
+  await ledgerAccountTypeTest.test('getAll when the db fails', async (assert) => {
+    try {
+      Db.ledgerAccountType.find.throws(new Error())
+      await Model.getAll()
+      assert.fail('should have thrown an error')
+      assert.end()
+    } catch (err) {
+      assert.ok(err instanceof Error, 'should throw an error')
       assert.end()
     }
   })

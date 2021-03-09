@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -33,7 +34,7 @@ const ledgerEntryTypes = [
   {
     name: 'INTERCHANGE_FEE',
     description: 'Fees to be paid between DFSP',
-    ledgerAccountTypeId: 6 // INTERCHANGE_FEE
+    ledgerAccountTypeId: 5 // INTERCHANGE_FEE
   },
   {
     name: 'HUB_FEE',
@@ -71,12 +72,9 @@ const ledgerEntryTypes = [
 
 exports.seed = async function (knex) {
   try {
-    return await knex('ledgerEntryType').insert(ledgerEntryTypes)
+    return await knex('ledgerEntryType').insert(ledgerEntryTypes).onConflict('name').ignore()
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for ledgerEntryType has failed with the following error: ${err}`)
-      return -1000
-    }
+    console.log(`Uploading seeds for ledgerEntryType has failed with the following error: ${err}`)
+    return -1000
   }
 }

@@ -30,6 +30,7 @@ const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const ModelParticipant = require('../../../../src/models/participant/facade')
 const ModelPosition = require('../../../../src/models/position/facade')
+const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const Enum = require('@mojaloop/central-services-shared').Enum
 
 Test('Position facade', async (positionFacadeTest) => {
@@ -47,6 +48,11 @@ Test('Position facade', async (positionFacadeTest) => {
     Db.participantPosition = {
       query: sandbox.stub()
     }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
     t.end()
   })
 
@@ -250,17 +256,31 @@ Test('Position facade', async (positionFacadeTest) => {
         thresholdAlarmPercentage: 0.5
       }
 
-      const initialParticipantPosition = {
+      const initialParticipantPositions = [{
         participantPositionId: 1,
+        participantCurrencyId: 1,
         value: 1000,
         reservedValue: 0
-      }
+      },
+      {
+        participantPositionId: 2,
+        participantCurrencyId: 2,
+        value: 1000,
+        reservedValue: 0
+      }]
 
-      const exceededParticipantPosition = {
+      const exceededParticipantPositions = [{
         participantPositionId: 1,
+        participantCurrencyId: 1,
         value: 10000,
         reservedValue: 0
-      }
+      },
+      {
+        participantPositionId: 2,
+        participantCurrencyId: 2,
+        value: 1000,
+        reservedValue: 0
+      }]
 
       await prepareChangeParticipantPositionTransaction.test('adjust position of payer when transfer is RESERVED', async test => {
         // const listOfTransferStatesChanged = [transferStateChange, incorrectTransferStateChange]
@@ -286,24 +306,35 @@ Test('Position facade', async (positionFacadeTest) => {
               }),
               where: sandbox.stub().returns({
                 update: sandbox.stub().returns(Promise.resolve()),
-                forUpdate: sandbox.stub().returns({
-                  select: sandbox.stub().returns({
-                    first: sandbox.stub().returns(initialParticipantPosition)
-                  })
-                }),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(Object.assign({}, transferStateChange))
+                })
+              }),
+              whereIn: sandbox.stub().returns({
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns(initialParticipantPositions)
                 })
               })
             })
           })
 
           sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
-          sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
+          const getByNameAndCurrencyStub = sandbox.stub(ModelParticipant, 'getByNameAndCurrency')
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 1).resolves({
             participantCurrencyId: 1,
             participantId: 1,
             currencyId: 'USD',
             isActive: 1
+          })
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 2).resolves({
+            participantCurrencyId: 2,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          sandbox.stub(SettlementModelCached, 'getByLedgerAccountTypeId').resolves({
+            settlementDelayId: Enum.Settlements.SettlementDelay.DEFERRED,
+            settlementAccountTypeId: Enum.Accounts.LedgerAccountType.SETTLEMENT
           })
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
@@ -345,24 +376,35 @@ Test('Position facade', async (positionFacadeTest) => {
               }),
               where: sandbox.stub().returns({
                 update: sandbox.stub().returns(Promise.resolve()),
-                forUpdate: sandbox.stub().returns({
-                  select: sandbox.stub().returns({
-                    first: sandbox.stub().returns(initialParticipantPosition)
-                  })
-                }),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(incorrectTransferStateChange)
+                })
+              }),
+              whereIn: sandbox.stub().returns({
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns(initialParticipantPositions)
                 })
               })
             })
           })
 
           sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
-          sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
+          const getByNameAndCurrencyStub = sandbox.stub(ModelParticipant, 'getByNameAndCurrency')
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 1).resolves({
             participantCurrencyId: 1,
             participantId: 1,
             currencyId: 'USD',
             isActive: 1
+          })
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 2).resolves({
+            participantCurrencyId: 2,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          sandbox.stub(SettlementModelCached, 'getByLedgerAccountTypeId').resolves({
+            settlementDelayId: Enum.Settlements.SettlementDelay.DEFERRED,
+            settlementAccountTypeId: Enum.Accounts.LedgerAccountType.SETTLEMENT
           })
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')
@@ -426,24 +468,35 @@ Test('Position facade', async (positionFacadeTest) => {
               }),
               where: sandbox.stub().returns({
                 update: sandbox.stub().returns(Promise.resolve()),
-                forUpdate: sandbox.stub().returns({
-                  select: sandbox.stub().returns({
-                    first: sandbox.stub().returns(exceededParticipantPosition)
-                  })
-                }),
                 orderBy: sandbox.stub().returns({
                   first: sandbox.stub().resolves(transferStateChange)
+                })
+              }),
+              whereIn: sandbox.stub().returns({
+                forUpdate: sandbox.stub().returns({
+                  select: sandbox.stub().returns(exceededParticipantPositions)
                 })
               })
             })
           })
 
           sandbox.stub(ModelParticipant, 'getParticipantLimitByParticipantCurrencyLimit').returns(Promise.resolve(participantLimit))
-          sandbox.stub(ModelParticipant, 'getByNameAndCurrency').resolves({
+          const getByNameAndCurrencyStub = sandbox.stub(ModelParticipant, 'getByNameAndCurrency')
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 1).resolves({
             participantCurrencyId: 1,
             participantId: 1,
             currencyId: 'USD',
             isActive: 1
+          })
+          getByNameAndCurrencyStub.withArgs('dfsp1', 'USD', 2).resolves({
+            participantCurrencyId: 2,
+            participantId: 1,
+            currencyId: 'USD',
+            isActive: 1
+          })
+          sandbox.stub(SettlementModelCached, 'getByLedgerAccountTypeId').resolves({
+            settlementDelayId: Enum.Settlements.SettlementDelay.DEFERRED,
+            settlementAccountTypeId: Enum.Accounts.LedgerAccountType.SETTLEMENT
           })
           const { preparedMessagesList, limitAlarms } = await ModelPosition.prepareChangeParticipantPositionTransaction([{ value: messageProtocol }])
           test.ok(Array.isArray(preparedMessagesList), 'array of prepared transfers is returned')

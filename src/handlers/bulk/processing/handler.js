@@ -91,13 +91,21 @@ const bulkProcessing = async (error, messages) => {
     const kafkaTopic = message.topic
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { method: 'bulkProcessing' }))
 
-    const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE ? Enum.Events.ActionLetter.bulkPrepare
-      : (action === Enum.Events.Event.Action.BULK_COMMIT ? Enum.Events.ActionLetter.bulkCommit
-        : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED ? Enum.Events.ActionLetter.bulkTimeoutReceived
-          : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED ? Enum.Events.ActionLetter.bulkTimeoutReserved
-            : (action === Enum.Events.Event.Action.PREPARE_DUPLICATE ? Enum.Events.ActionLetter.bulkPrepareDuplicate
-              : (action === Enum.Events.Event.Action.FULFIL_DUPLICATE ? Enum.Events.ActionLetter.bulkFulfilDuplicate
-                : Enum.Events.ActionLetter.unknown)))))
+    const actionLetter = action === Enum.Events.Event.Action.BULK_PREPARE
+      ? Enum.Events.ActionLetter.bulkPrepare
+      : (action === Enum.Events.Event.Action.BULK_COMMIT
+          ? Enum.Events.ActionLetter.bulkCommit
+          : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED
+              ? Enum.Events.ActionLetter.bulkTimeoutReceived
+              : (action === Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED
+                  ? Enum.Events.ActionLetter.bulkTimeoutReserved
+                  : (action === Enum.Events.Event.Action.PREPARE_DUPLICATE
+                      ? Enum.Events.ActionLetter.bulkPrepareDuplicate
+                      : (action === Enum.Events.Event.Action.FULFIL_DUPLICATE
+                          ? Enum.Events.ActionLetter.bulkFulfilDuplicate
+                          : (action === Enum.Events.Event.Action.BULK_ABORT
+                              ? Enum.Events.ActionLetter.bulkAbort
+                              : Enum.Events.ActionLetter.unknown))))))
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
     const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
 
@@ -175,6 +183,12 @@ const bulkProcessing = async (error, messages) => {
         processingStateId = Enum.Transfers.BulkProcessingState.EXPIRED
         errorCode = payload.errorInformation && payload.errorInformation.errorCode
         errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
+      } else if (action === Enum.Events.Event.Action.BULK_ABORT) {
+        // TODO: Need to validate `state.status`
+        processingStateId = Enum.Transfers.BulkProcessingState.REJECTED
+        completedBulkState = Enum.Transfers.BulkTransferState.REJECTED
+        errorCode = payload.errorInformation && payload.errorInformation.errorCode
+        errorDescription = payload.errorInformation && payload.errorInformation.errorDescription
       } else {
         const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, `Invalid action for bulk in ${Enum.Transfers.BulkTransferState.PROCESSING} state`)
         throw fspiopError
@@ -233,7 +247,8 @@ const bulkProcessing = async (error, messages) => {
     if (bulkTransferState !== bulkTransferInfo.bulkTransferStateId) {
       await BulkTransferService.createBulkTransferState({
         bulkTransferId: bulkTransferInfo.bulkTransferId,
-        bulkTransferStateId: bulkTransferState
+        bulkTransferStateId: bulkTransferState,
+        reason: errorDescription || null
       })
     }
 
@@ -279,7 +294,7 @@ const bulkProcessing = async (error, messages) => {
           Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, 'notImplemented'))
           return true
         }
-      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
+      } else if (eventType === Enum.Events.Event.Type.BULK_PROCESSING && [Enum.Events.Event.Action.BULK_COMMIT, Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED, Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `bulkFulfil--${actionLetter}3`))
         const participants = await BulkTransferService.getParticipantsById(bulkTransferInfo.bulkTransferId)
         const normalizedKeys = Object.keys(headers).reduce((keys, k) => { keys[k.toLowerCase()] = k; return keys }, {})
@@ -292,25 +307,36 @@ const bulkProcessing = async (error, messages) => {
         await (new BulkTransferResultModel(payeeBulkResponse)).save()
         const payerParams = Util.clone(params)
         const payeeParams = Util.clone(params)
+        let payerPayload
+        let payeePayload
 
-        const payerPayload = Util.omitNil({
-          bulkTransferId: payerBulkResponse.bulkTransferId,
-          bulkTransferState: payerBulkResponse.bulkTransferState,
-          completedTimestamp: payerBulkResponse.completedTimestamp,
-          extensionList: payerBulkResponse.extensionList
-        })
+        if (action === Enum.Events.Event.Action.BULK_ABORT && params.decodedPayload.errorInformation) {
+          payerPayload = { bulkTransferId: payerBulkResponse.bulkTransferId, errorInformation: params.decodedPayload.errorInformation }
+          payeePayload = { bulkTransferId: payeeBulkResponse.bulkTransferId, errorInformation: params.decodedPayload.errorInformation }
+        } else {
+          payerPayload = Util.omitNil({
+            bulkTransferId: payerBulkResponse.bulkTransferId,
+            bulkTransferState: payerBulkResponse.bulkTransferState,
+            completedTimestamp: payerBulkResponse.completedTimestamp,
+            extensionList: payerBulkResponse.extensionList
+          })
+          payeePayload = Util.omitNil({
+            bulkTransferId: payeeBulkResponse.bulkTransferId,
+            bulkTransferState: payeeBulkResponse.bulkTransferState,
+            completedTimestamp: payeeBulkResponse.completedTimestamp,
+            extensionList: payeeBulkResponse.extensionList
+          })
+        }
+
         const payerMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payerParams.message.value.metadata.type, payerParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         payerParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payerFsp, payerBulkResponse.headers[normalizedKeys[Enum.Http.Headers.FSPIOP.SOURCE]], payerMetadata, payerBulkResponse.headers, payerPayload)
-        const payeePayload = Util.omitNil({
-          bulkTransferId: payeeBulkResponse.bulkTransferId,
-          bulkTransferState: payeeBulkResponse.bulkTransferState,
-          completedTimestamp: payeeBulkResponse.completedTimestamp,
-          extensionList: payeeBulkResponse.extensionList
-        })
+
         const payeeMetadata = Util.StreamingProtocol.createMetadataWithCorrelatedEvent(params.message.value.metadata.event.id, payeeParams.message.value.metadata.type, payeeParams.message.value.metadata.action, Enum.Events.EventStatus.SUCCESS)
         payeeParams.message.value = Util.StreamingProtocol.createMessage(params.message.value.id, participants.payeeFsp, Enum.Http.Headers.FSPIOP.SWITCH.value, payeeMetadata, payeeBulkResponse.headers, payeePayload)
         if ([Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED, Enum.Events.Event.Action.BULK_TIMEOUT_RESERVED].includes(action)) {
           eventDetail.action = Enum.Events.Event.Action.BULK_COMMIT
+        } else if ([Enum.Events.Event.Action.BULK_ABORT].includes(action)) {
+          eventDetail.action = Enum.Events.Event.Action.BULK_ABORT
         }
         await Kafka.proceed(Config.KAFKA_CONFIG, payerParams, { consumerCommit, eventDetail })
         histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId })

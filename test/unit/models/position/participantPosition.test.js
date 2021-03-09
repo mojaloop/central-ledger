@@ -24,13 +24,14 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
 const Model = require('../../../../src/models/position/participantPosition')
 
 Test('Participant Limit model', async (participantPositionTest) => {
+  let sandbox
   const participantPosition1 = {
     participantCurrencyId: 1,
     value: 100,
@@ -38,12 +39,26 @@ Test('Participant Limit model', async (participantPositionTest) => {
     changedDate: new Date()
   }
 
-  const sandbox = Sinon.createSandbox()
-  Db.participantPosition = {
-    insert: sandbox.stub(),
-    update: sandbox.stub(),
-    findOne: sandbox.stub()
-  }
+  participantPositionTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+    Db.participantPosition = {
+      insert: sandbox.stub(),
+      update: sandbox.stub(),
+      findOne: sandbox.stub()
+    }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
+    t.end()
+  })
+
+  participantPositionTest.afterEach(t => {
+    sandbox.restore()
+
+    t.end()
+  })
 
   await participantPositionTest.test('insert participant position', async (assert) => {
     try {

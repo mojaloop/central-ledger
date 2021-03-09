@@ -34,7 +34,6 @@ const SettlementModelModel = require('../../../../src/models/settlement/settleme
 Test('Settlement model', async (settlementTest) => {
   const settlementModelId = 1
   const settlementModel = [
-
     {
       settlementModelId: 106,
       name: 'DEFERRED_NET',
@@ -48,7 +47,24 @@ Test('Settlement model', async (settlementTest) => {
     }
   ]
 
-  const sandbox = Sinon.createSandbox()
+  let sandbox
+
+  settlementTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
+    t.end()
+  })
+
+  settlementTest.afterEach(t => {
+    sandbox.restore()
+
+    t.end()
+  })
+
   await settlementTest.test('create settlement model', async (assert) => {
     Db.settlementModel = {
       insert: sandbox.stub().returns(true),
@@ -78,41 +94,6 @@ Test('Settlement model', async (settlementTest) => {
       assert.pass('Error thrown')
     }
     assert.end()
-  })
-
-  await settlementTest.test('get settlement model', async (assert) => {
-    try {
-      Db.settlementModel.find.withArgs({ name: 'test' }).returns([
-        {
-          settlementModelId: 106,
-          name: 'testingSevennnnN91',
-          isActive: 1,
-          settlementGranularityId: 1,
-          settlementInterchangeId: 1,
-          settlementDelayId: 2,
-          currencyId: null,
-          requireLiquidityCheck: 1,
-          ledgerAccountTypeId: 6
-        }])
-      const expected = {
-        settlementModelId: 106,
-        name: 'testingSevennnnN91',
-        isActive: 1,
-        settlementGranularityId: 1,
-        settlementInterchangeId: 1,
-        settlementDelayId: 2,
-        currencyId: null,
-        requireLiquidityCheck: 1,
-        ledgerAccountTypeId: 6
-      }
-      const result = await SettlementModelModel.getByName('test')
-      assert.equal(JSON.stringify(result), JSON.stringify(expected))
-      assert.end()
-    } catch (err) {
-      Logger.error(`get settlement model by name failed with error - ${err}`)
-      assert.fail()
-      assert.end()
-    }
   })
 
   await settlementTest.test('get with empty name', async (assert) => {

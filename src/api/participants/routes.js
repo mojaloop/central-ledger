@@ -25,7 +25,7 @@
 'use strict'
 
 const Handler = require('./handler')
-const Joi = require('@hapi/joi')
+const Joi = require('joi')
 const currencyList = require('../../../seeds/currency.js').currencyList
 
 const tags = ['api', 'participants']

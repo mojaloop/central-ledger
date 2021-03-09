@@ -18,21 +18,157 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * ModusBox
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Valentin Genev <valentin.genev@modusbox.com>
  * Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  * Miguel de Barros <miguel.debarros@modusbox.com>
+ * Claudio Viola <claudio.viola@modusbox.com>
  --------------
  ******/
-
 'use strict'
 
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.getLedgerAccountByName = async (name) => {
+/* istanbul ignore next */
+exports.getLedgerAccountByName = async (name, trx = null) => {
   try {
-    return await Db.ledgerAccountType.findOne({ name })
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const ledgerAccountType = await knex('ledgerAccountType')
+          .select()
+          .where('name', name)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return ledgerAccountType.length > 0 ? ledgerAccountType[0] : null
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+/* istanbul ignore next */
+exports.getLedgerAccountsByName = async (names, trx = null) => {
+  try {
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const ledgerAccountTypes = await knex('ledgerAccountType')
+          .select('name')
+          .whereIn('name', names)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return ledgerAccountTypes
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+/* istanbul ignore next */
+exports.bulkInsert = async (records, trx = null) => {
+  try {
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        await knex('ledgerAccountType')
+          .insert(records)
+          .transacting(trx)
+        const recordsNames = records.map(record => record.name)
+        const createdIds = await knex.select('ledgerAccountTypeId')
+          .from('ledgerAccountType')
+          .whereIn('name', recordsNames)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return createdIds.map(record => record.ledgerAccountTypeId)
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+exports.create = async (name, description, isActive, isSettleable, trx = null) => {
+  try {
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        await knex('ledgerAccountType')
+          .insert({
+            name,
+            description,
+            isActive,
+            isSettleable
+          })
+          .transacting(trx)
+        const createdId = await knex.select('ledgerAccountTypeId')
+          .from('ledgerAccountType')
+          .where('name', name)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return createdId[0].ledgerAccountTypeId
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback()
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+exports.getAll = async () => {
+  try {
+    return await Db.from('ledgerAccountType').find({ })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

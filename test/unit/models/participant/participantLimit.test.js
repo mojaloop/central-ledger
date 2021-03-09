@@ -59,6 +59,9 @@ Test('Participant Limit model', async (participantLimitTest) => {
       find: sandbox.stub(),
       destroy: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     t.end()
   })
 

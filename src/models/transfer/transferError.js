@@ -49,7 +49,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const insert = async (transferId, transferStateChangeId, errorCode, errorDescription) => {
   Logger.isDebugEnabled && Logger.debug(`insert transferError - errorCode: ${errorCode}, errorDesc: ${errorDescription}`)
   try {
-    return Db.transferError.insert({ transferId, transferStateChangeId, errorCode, errorDescription })
+    return Db.from('transferError').insert({ transferId, transferStateChangeId, errorCode, errorDescription })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -78,7 +78,7 @@ const insert = async (transferId, transferStateChangeId, errorCode, errorDescrip
 
 const getByTransferStateChangeId = async (transferStateChangeId) => {
   try {
-    return Db.transferError.find({ transferStateChangeId: transferStateChangeId })
+    return Db.from('transferError').find({ transferStateChangeId: transferStateChangeId })
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
@@ -107,7 +107,7 @@ const getByTransferStateChangeId = async (transferStateChangeId) => {
 
 const getByTransferId = async (id) => {
   try {
-    const transferError = await Db.transferError.query(async (builder) => {
+    const transferError = await Db.from('transferError').query(async (builder) => {
       const result = builder
         .where({ transferId: id })
         .select('*')

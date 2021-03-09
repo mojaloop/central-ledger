@@ -56,9 +56,14 @@ const ParticipantLimitCached = require('../models/participant/participantLimitCa
 const migrate = (runMigrations) => {
   return runMigrations ? Migrator.migrate() : true
 }
+
 const connectDatabase = async () => {
-  return Db.connect(Config.DATABASE)
+  Logger.isDebugEnabled && Logger.debug(`Conneting to DB ${JSON.stringify(Config.DATABASE)}`)
+  await Db.connect(Config.DATABASE)
+  const dbLoadedTables = Db._tables ? Db._tables.length : -1
+  Logger.isDebugEnabled && Logger.debug(`DB.connect loaded '${dbLoadedTables}' tables!`)
 }
+
 const connectMongoose = async () => {
   if (!Config.MONGODB_DISABLED) {
     try {
@@ -186,6 +191,10 @@ const createHandlers = async (handlers) => {
           await RegisterHandlers.bulk.registerBulkProcessingHandler()
           break
         }
+        case 'bulkget': {
+          await RegisterHandlers.bulk.registerBulkGetHandler()
+          break
+        }
         default: {
           const error = `Handler Setup - ${JSON.stringify(handler)} is not a valid handler to register!`
           Logger.isErrorEnabled && Logger.error(error)
@@ -232,45 +241,52 @@ const initializeCache = async () => {
  * @returns {object} Returns HTTP Server object
  */
 const initialize = async function ({ service, port, modules = [], runMigrations = false, runHandlers = false, handlers = [] }) {
-  await migrate(runMigrations)
-  await connectDatabase()
-  await connectMongoose()
-  await initializeCache()
-  await Sidecar.connect(service)
-  initializeInstrumentation()
-  let server
-  switch (service) {
-    case 'api':
-    case 'admin': {
-      server = await createServer(port, modules)
-      break
-    }
-    case 'handler': {
-      if (!Config.HANDLERS_API_DISABLED) {
+  try {
+    await migrate(runMigrations)
+    await connectDatabase()
+    await connectMongoose()
+    await initializeCache()
+    await Sidecar.connect(service)
+    initializeInstrumentation()
+    let server
+    switch (service) {
+      case 'api':
+      case 'admin': {
         server = await createServer(port, modules)
+        break
       }
-      break
+      case 'handler': {
+        if (!Config.HANDLERS_API_DISABLED) {
+          server = await createServer(port, modules)
+        }
+        break
+      }
+      default: {
+        Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
+      }
     }
-    default: {
-      Logger.isErrorEnabled && Logger.error(`No valid service type ${service} found!`)
-      throw ErrorHandler.Factory.createInternalServerFSPIOPError(`No valid service type ${service} found!`)
-    }
-  }
 
-  if (runHandlers) {
-    if (Array.isArray(handlers) && handlers.length > 0) {
-      await createHandlers(handlers)
-    } else {
-      await RegisterHandlers.registerAllHandlers()
-      // if (!Config.HANDLERS_CRON_DISABLED) {
-      //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-      //   // await KafkaCron.start('prepare')
-      //   await KafkaCron.start('position')
-      // }
+    if (runHandlers) {
+      if (Array.isArray(handlers) && handlers.length > 0) {
+        await createHandlers(handlers)
+      } else {
+        await RegisterHandlers.registerAllHandlers()
+        // if (!Config.HANDLERS_CRON_DISABLED) {
+        //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
+        //   // await KafkaCron.start('prepare')
+        //   await KafkaCron.start('position')
+        // }
+      }
     }
-  }
 
-  return server
+    return server
+  } catch (err) {
+    Logger.isErrorEnabled && Logger.error(`Error while initializing ${err}`)
+
+    await Db.disconnect()
+    process.exit(1)
+  }
 }
 
 module.exports = {

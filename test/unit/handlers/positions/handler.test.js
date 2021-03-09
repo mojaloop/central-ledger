@@ -6,6 +6,7 @@ const Kafka = require('@mojaloop/central-services-shared').Util.Kafka
 const Validator = require('../../../../src/handlers/transfers/validator')
 const TransferService = require('../../../../src/domain/transfer')
 const PositionService = require('../../../../src/domain/position')
+const SettlementModelCached = require('../../../../src/models/settlement/settlementModelCached')
 const MainUtil = require('@mojaloop/central-services-shared').Util
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 const KafkaConsumer = Consumer.Consumer
@@ -177,6 +178,7 @@ Test('Position handler', transferHandlerTest => {
     sandbox.stub(TransferService)
     sandbox.stub(PositionService)
     sandbox.stub(TransferStateChange)
+    sandbox.stub(SettlementModelCached)
     Kafka.transformAccountToTopicName.returns(topicName)
     Kafka.produceGeneralMessage.resolves()
     test.end()
@@ -785,6 +787,30 @@ Test('Position handler', transferHandlerTest => {
       TransferStateChange.saveTransferStateChange.resolves(true)
       PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isIncrease, transferInfo.amount, transferStateChange).resolves(true)
       m.value.metadata.event.action = transferEventAction.BULK_COMMIT
+      Kafka.proceed.returns(true)
+
+      const result = await allTransferHandlers.positions(null, m)
+      Logger.info(result)
+      test.equal(result, true)
+      test.end()
+    })
+
+    positionsTest.test('update transferStateChange for BULK_ABORT action', async (test) => {
+      const isReversal = true
+      const transferStateChange = {
+        transferId: transferInfo.transferId,
+        transferStateId: TransferState.ABORTED_ERROR
+      }
+
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+
+      const m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE).returns(transferInfo)
+      TransferStateChange.saveTransferStateChange.resolves(true)
+      PositionService.changeParticipantPosition.withArgs(transferInfo.participantCurrencyId, isReversal, transferInfo.amount, transferStateChange).resolves(true)
+      m.value.metadata.event.action = transferEventAction.BULK_ABORT
       Kafka.proceed.returns(true)
 
       const result = await allTransferHandlers.positions(null, m)

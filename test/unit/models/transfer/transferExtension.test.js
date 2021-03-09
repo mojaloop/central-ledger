@@ -27,7 +27,7 @@
 
 'use strict'
 
-const Test = require('tape')
+const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Db = require('../../../../src/lib/db')
 const Logger = require('@mojaloop/central-services-logger')
@@ -49,14 +49,31 @@ Test('Extension model', async (extensionModelTest) => {
     }
   ]
 
-  const sandbox = Sinon.createSandbox()
-  Db.transferExtension = {
-    insert: sandbox.stub(),
-    update: sandbox.stub(),
-    findOne: sandbox.stub(),
-    find: sandbox.stub(),
-    destroy: sandbox.stub()
-  }
+  let sandbox
+
+  extensionModelTest.beforeEach(t => {
+    sandbox = Sinon.createSandbox()
+
+    Db.transferExtension = {
+      insert: sandbox.stub(),
+      update: sandbox.stub(),
+      findOne: sandbox.stub(),
+      find: sandbox.stub(),
+      destroy: sandbox.stub()
+    }
+
+    Db.from = (table) => {
+      return Db[table]
+    }
+
+    t.end()
+  })
+
+  extensionModelTest.afterEach(t => {
+    sandbox.restore()
+
+    t.end()
+  })
 
   await extensionModelTest.test('create false extension', async (assert) => {
     Db.transferExtension.insert.withArgs({

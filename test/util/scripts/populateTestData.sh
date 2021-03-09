@@ -240,6 +240,16 @@ do
     \"value\": \"http://localhost:1080/${FSP}\"
   }'"
 
+  sh -c "curl -X POST \
+    ${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints \
+    -H 'Cache-Control: no-cache' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    \"type\": \"FSPIOP_CALLBACK_URL_BULK_QUOTES\",
+    \"value\": \"http://localhost:1080\"
+  }'"
+
+
   echo
   echo "Retrieving EndPoints for '$FSP'"
   echo "---------------------------------------------------------------------"

@@ -19,6 +19,7 @@
  - Name Surname <name.surname@gatesfoundation.com>
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -45,34 +46,17 @@ Test('Ledger entry type', async (ledgerEntryTypeTest) => {
   await ledgerEntryTypeTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
-      insert: sandbox.stub().returns(true)
+      insert: sandbox.stub().returns({
+        onConflict: sandbox.stub().returns({
+          ignore: sandbox.stub().returns(true)
+        })
+      })
     })
 
     try {
       const result = await Model.seed(knexStub)
       test.equal(result, true, 'call insert')
       test.ok(knexStub.withArgs('ledgerEntryType').calledOnce, 'knex called with ledgerEntryType once')
-      test.end()
-    } catch (err) {
-      Logger.error(`ledgerEntryType seed failed with error - ${err}`)
-      test.fail()
-      test.end()
-    }
-  })
-
-  await ledgerEntryTypeTest.test('seed should', async (test) => {
-    function DuplicateEntryError (message) {
-      this.name = 'DuplicateEntryError'
-      this.message = message || ''
-      this.code = 'ER_DUP_ENTRY'
-    }
-    DuplicateEntryError.prototype = Error.prototype
-
-    const knexStub = sandbox.stub()
-    knexStub.throws(new DuplicateEntryError())
-    try {
-      const result = await Model.seed(knexStub)
-      test.equal(result, -1001, 'Duplicate error intercepted and ignored')
       test.end()
     } catch (err) {
       Logger.error(`ledgerEntryType seed failed with error - ${err}`)

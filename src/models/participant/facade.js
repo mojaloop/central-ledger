@@ -36,6 +36,9 @@ const Cache = require('../../lib/cache')
 const ParticipantModelCached = require('../../models/participant/participantCached')
 const ParticipantCurrencyModelCached = require('../../models/participant/participantCurrencyCached')
 const ParticipantLimitCached = require('../../models/participant/participantLimitCached')
+const Config = require('../../lib/config')
+const SettlementModelModel = require('../settlement/settlementModel')
+const { Enum } = require('@mojaloop/central-services-shared')
 
 const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCurrencyActive) => {
   const histTimerParticipantGetByNameAndCurrencyEnd = Metrics.getHistogram(
@@ -73,7 +76,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
       }
     } else {
       /* Non-cached version - direct call to DB */
-      participant = await Db.participant.query(async (builder) => {
+      participant = await Db.from('participant').query(async (builder) => {
         let b = builder
           .where({ 'participant.name': name })
           .andWhere({ 'pc.currencyId': currencyId })
@@ -105,7 +108,7 @@ const getByNameAndCurrency = async (name, currencyId, ledgerAccountTypeId, isCur
 
 const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    return await Db.participant.query(async (builder) => {
+    return await Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'participant.participantId': participantId,
@@ -139,7 +142,7 @@ const getParticipantLimitByParticipantIdAndCurrencyId = async (participantId, cu
 
 const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId) => {
   try {
-    return Db.participant.query(async (builder) => {
+    return Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'pc.ledgerAccountTypeId': ledgerAccountTypeId,
@@ -190,7 +193,7 @@ const getLimitsForAllParticipants = async (currencyId, type, ledgerAccountTypeId
 
 const getEndpoint = async (participantId, endpointType) => {
   try {
-    return Db.participantEndpoint.query(builder => {
+    return Db.from('participantEndpoint').query(builder => {
       return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
         .where({
           'participantEndpoint.participantId': participantId,
@@ -218,7 +221,7 @@ const getEndpoint = async (participantId, endpointType) => {
 
 const getAllEndpoints = async (participantId) => {
   try {
-    return Db.participantEndpoint.query(builder => {
+    return Db.from('participantEndpoint').query(builder => {
       return builder.innerJoin('endpointType AS et', 'participantEndpoint.endpointTypeId', 'et.endpointTypeId')
         .where({
           'participantEndpoint.participantId': participantId,
@@ -334,7 +337,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
       }
     } else {
       /* Non-cached version - direct call to DB */
-      participantLimit = await Db.participant.query(async (builder) => {
+      participantLimit = await Db.from('participant').query(async (builder) => {
         return builder
           .where({
             'participant.participantId': participantId,
@@ -364,7 +367,7 @@ const getParticipantLimitByParticipantCurrencyLimit = async (participantId, curr
 
 const getParticipantPositionByParticipantIdAndCurrencyId = async (participantId, currencyId, ledgerAccountTypeId) => {
   try {
-    return await Db.participant.query(async (builder) => {
+    return await Db.from('participant').query(async (builder) => {
       return builder
         .where({
           'participant.participantId': participantId,
@@ -411,9 +414,7 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
     const knex = Db.getKnex()
     return knex.transaction(async trx => {
       try {
-        let result
         const limitType = await knex('participantLimitType').where({ name: limitPositionObj.limit.type, isActive: 1 }).select('participantLimitTypeId').first()
-        //  let limitType = await trx.first('participantLimitTypeId').from('participantLimitType').where({ 'name': limitPositionObj.limit.type, 'isActive': 1 })
         const participantLimit = {
           participantCurrencyId,
           participantLimitTypeId: limitType.participantLimitTypeId,
@@ -421,34 +422,60 @@ const addLimitAndInitialPosition = async (participantCurrencyId, settlementAccou
           isActive: 1,
           createdBy: 'unknown'
         }
-        result = await knex('participantLimit').transacting(trx).insert(participantLimit)
+        const result = await knex('participantLimit').transacting(trx).insert(participantLimit)
         participantLimit.participantLimitId = result[0]
-        const participantPosition = {
-          participantCurrencyId,
-          value: limitPositionObj.initialPosition,
-          reservedValue: 0
+
+        const allSettlementModels = await SettlementModelModel.getAll()
+        const settlementModels = allSettlementModels.filter(model => model.currencyId === limitPositionObj.currency)
+        if (Array.isArray(settlementModels) && settlementModels.length > 0) {
+          for (const settlementModel of settlementModels) {
+            const positionAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.ledgerAccountTypeId)
+            const settlementAccount = await getByNameAndCurrency(limitPositionObj.name, limitPositionObj.currency, settlementModel.settlementAccountTypeId)
+
+            const participantPosition = {
+              participantCurrencyId: positionAccount.participantCurrencyId,
+              value: (settlementModel.ledgerAccountTypeId === Enum.Accounts.LedgerAccountType.POSITION ? limitPositionObj.initialPosition : 0),
+              reservedValue: 0
+            }
+            await knex('participantPosition').transacting(trx).insert(participantPosition)
+
+            const settlementPosition = {
+              participantCurrencyId: settlementAccount.participantCurrencyId,
+              value: 0,
+              reservedValue: 0
+            }
+            await knex('participantPosition').transacting(trx).insert(settlementPosition)
+            if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
+              await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', positionAccount.participantCurrencyId)
+              await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccount.participantCurrencyId)
+              await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+              await ParticipantLimitCached.invalidateParticipantLimitCache()
+            }
+          }
+        } else {
+          const participantPosition = {
+            participantCurrencyId,
+            value: limitPositionObj.initialPosition,
+            reservedValue: 0
+          }
+          const participantPositionResult = await knex('participantPosition').transacting(trx).insert(participantPosition)
+          participantPosition.participantPositionId = participantPositionResult[0]
+          const settlementPosition = {
+            participantCurrencyId: settlementAccountId,
+            value: 0,
+            reservedValue: 0
+          }
+          await knex('participantPosition').transacting(trx).insert(settlementPosition)
+          if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
+            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
+            await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
+            await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
+            await ParticipantLimitCached.invalidateParticipantLimitCache()
+          }
         }
-        result = await knex('participantPosition').transacting(trx).insert(participantPosition)
-        participantPosition.participantPositionId = result[0]
-        const settlementPosition = {
-          participantCurrencyId: settlementAccountId,
-          value: 0,
-          reservedValue: 0
-        }
-        result = await knex('participantPosition').transacting(trx).insert(settlementPosition)
-        settlementPosition.participantPositionId = result[0]
-        if (setCurrencyActive) { // if the flag is true then set the isActive flag for corresponding participantCurrency record to true
-          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', participantCurrencyId)
-          await knex('participantCurrency').transacting(trx).update({ isActive: 1 }).where('participantCurrencyId', settlementAccountId)
-          await ParticipantCurrencyModelCached.invalidateParticipantCurrencyCache()
-          await ParticipantLimitCached.invalidateParticipantLimitCache()
-        }
+
         await trx.commit
-        return {
-          participantLimit,
-          participantPosition,
-          settlementPosition
-        }
+        return true
       } catch (err) {
         await trx.rollback
         throw err
@@ -548,7 +575,7 @@ const adjustLimits = async (participantCurrencyId, limit, trx) => {
 
 const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => {
   try {
-    return Db.participantLimit.query(builder => {
+    return Db.from('participantLimit').query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
         .where({
           'participantLimit.participantCurrencyId': participantCurrencyId,
@@ -584,7 +611,7 @@ const getParticipantLimitsByCurrencyId = async (participantCurrencyId, type) => 
 
 const getParticipantLimitsByParticipantId = async (participantId, type, ledgerAccountTypeId) => {
   try {
-    return Db.participantLimit.query(builder => {
+    return Db.from('participantLimit').query(builder => {
       return builder.innerJoin('participantLimitType AS lt', 'participantLimit.participantLimitTypeId', 'lt.participantLimitTypeId')
         .innerJoin('participantCurrency AS pc', 'participantLimit.participantCurrencyId', 'pc.participantCurrencyId')
         .where({
@@ -650,7 +677,7 @@ const addHubAccountAndInitPosition = async (participantId, currencyId, ledgerAcc
 
 const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccountActive = 1) => {
   try {
-    return Db.participantCurrency.query(builder => {
+    return Db.from('participantCurrency').query(builder => {
       return builder
         .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'participantCurrency.ledgerAccountTypeId')
         .innerJoin('participant AS p', 'p.participantId', 'participantCurrency.participantId')
@@ -675,6 +702,39 @@ const getAllAccountsByNameAndCurrency = async (name, currencyId = null, isAccoun
   }
 }
 
+const getAllNonHubParticipantsWithCurrencies = async (trx) => {
+  try {
+    const HUB_ACCOUNT_NAME = Config.HUB_NAME
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const res = await knex.distinct('participant.participantId', 'pc.participantId', 'pc.currencyId')
+          .from('participant')
+          .innerJoin('participantCurrency as pc', 'participant.participantId', 'pc.participantId')
+          .whereNot('participant.name', HUB_ACCOUNT_NAME)
+          .transacting(trx)
+
+        if (doCommit) {
+          await trx.commit
+        }
+        return res
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
 module.exports = {
   addHubAccountAndInitPosition,
   getByNameAndCurrency,
@@ -689,5 +749,6 @@ module.exports = {
   getParticipantLimitsByCurrencyId,
   getParticipantLimitsByParticipantId,
   getAllAccountsByNameAndCurrency,
-  getLimitsForAllParticipants
+  getLimitsForAllParticipants,
+  getAllNonHubParticipantsWithCurrencies
 }

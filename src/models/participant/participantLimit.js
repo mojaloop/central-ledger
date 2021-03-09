@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-logger')
 
 const insert = async (participantLimit) => {
   try {
-    return await Db.participantLimit.insert(participantLimit)
+    return await Db.from('participantLimit').insert(participantLimit)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -43,7 +43,7 @@ const insert = async (participantLimit) => {
 
 const update = async (participantLimit) => {
   try {
-    return await Db.participantLimit.update({ participantCurrencyId: participantLimit.participantCurrencyId }, { value: participantLimit.value, isActive: participantLimit.isActive })
+    return await Db.from('participantLimit').update({ participantCurrencyId: participantLimit.participantCurrencyId }, { value: participantLimit.value, isActive: participantLimit.isActive })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -52,7 +52,7 @@ const update = async (participantLimit) => {
 
 const getAll = async () => {
   try {
-    return await Db.participantLimit.find({})
+    return await Db.from('participantLimit').find({})
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -73,7 +73,7 @@ const getAll = async () => {
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantLimit.findOne({ participantCurrencyId, isActive: 1 })
+    return Db.from('participantLimit').findOne({ participantCurrencyId, isActive: 1 })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -94,7 +94,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
 
 const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantLimit.destroy({ participantCurrencyId })
+    return Db.from('participantLimit').destroy({ participantCurrencyId })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err

@@ -33,6 +33,7 @@
 const Db = require('../../lib/db')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const participantFacade = require('../participant/facade')
+const SettlementModelCached = require('../../models/settlement/settlementModelCached')
 const Logger = require('@mojaloop/central-services-logger')
 const Time = require('@mojaloop/central-services-shared').Util.Time
 const MLNumber = require('@mojaloop/ml-number')
@@ -51,7 +52,9 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
     const knex = await Db.getKnex()
     const participantName = transferList[0].value.content.payload.payerFsp
     const currencyId = transferList[0].value.content.payload.amount.currency
+    const settlementModel = await SettlementModelCached.getByLedgerAccountTypeId(Enum.Accounts.LedgerAccountType.POSITION)
     const participantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, Enum.Accounts.LedgerAccountType.POSITION)
+    const settlementParticipantCurrency = await participantFacade.getByNameAndCurrency(participantName, currencyId, settlementModel.settlementAccountTypeId)
     const processedTransfers = {} // The list of processed transfers - so that we can store the additional information around the decision. Most importantly the "running" position
     const reservedTransfers = []
     const abortedTransfers = []
@@ -127,7 +130,13 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateEffectivePosition - Metrics for position model',
           ['success', 'queryName']
         ).startTimer()
-        const initialParticipantPosition = await knex('participantPosition').transacting(trx).where({ participantCurrencyId: participantCurrency.participantCurrencyId }).forUpdate().select('*').first()
+        const participantPositions = await knex('participantPosition')
+          .transacting(trx)
+          .whereIn('participantCurrencyId', [participantCurrency.participantCurrencyId, settlementParticipantCurrency.participantCurrencyId])
+          .forUpdate()
+          .select('*')
+        const initialParticipantPosition = participantPositions.find(position => position.participantCurrencyId === participantCurrency.participantCurrencyId)
+        const settlementParticipantPosition = participantPositions.find(position => position.participantCurrencyId === settlementParticipantCurrency.participantCurrencyId)
         const currentPosition = new MLNumber(initialParticipantPosition.value)
         const reservedPosition = new MLNumber(initialParticipantPosition.reservedValue)
         const effectivePosition = currentPosition.add(reservedPosition).toFixed(Config.AMOUNT.SCALE)
@@ -143,7 +152,14 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           ['success', 'queryName']
         ).startTimer()
         const participantLimit = await participantFacade.getParticipantLimitByParticipantCurrencyLimit(participantCurrency.participantId, participantCurrency.currencyId, Enum.Accounts.LedgerAccountType.POSITION, Enum.Accounts.ParticipantLimitType.NET_DEBIT_CAP)
-        let availablePosition = new MLNumber(participantLimit.value).subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
+        // Calculate liquidity cover as per story OTC-651
+        let liquidityCover
+        if (settlementModel.settlementDelayId === Enum.Settlements.SettlementDelay.IMMEDIATE) {
+          liquidityCover = new MLNumber(settlementParticipantPosition.value).add(new MLNumber(participantLimit.value))
+        } else {
+          liquidityCover = new MLNumber(participantLimit.value)
+        }
+        let availablePosition = liquidityCover.subtract(effectivePosition).toFixed(Config.AMOUNT.SCALE)
         /* Validate entire batch if availablePosition >= sumTransfersInBatch - the impact is that applying per transfer rules would require to be handled differently
            since further rules are expected we do not do this at this point
            As we enter this next step the order in which the transfer is processed against the Position is critical.
@@ -184,7 +200,7 @@ const prepareChangeParticipantPositionTransaction = async (transferList) => {
           changedDate: transactionTimestamp
         })
         // TODO this limit needs to be clarified
-        if (processedPositionValue.toNumber() > new MLNumber(participantLimit.value).multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
+        if (processedPositionValue.toNumber() > liquidityCover.multiply(participantLimit.thresholdAlarmPercentage).toNumber()) {
           limitAlarms.push(participantLimit)
         }
         histTimerUpdateParticipantPositionEnd({ success: true, queryName: 'facade_prepareChangeParticipantPositionTransaction_transaction_UpdateParticipantPosition' })
@@ -303,7 +319,7 @@ const changeParticipantPositionTransaction = async (participantCurrencyId, isRev
 
 const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null) => {
   try {
-    return Db.participantPosition.query(builder => {
+    return Db.from('participantPosition').query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
         .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')
         .where({
@@ -327,7 +343,7 @@ const getByNameAndCurrency = async (name, ledgerAccountTypeId, currencyId = null
 
 const getAllByNameAndCurrency = async (name, currencyId = null) => {
   try {
-    return Db.participantPosition.query(builder => {
+    return Db.from('participantPosition').query(builder => {
       return builder.innerJoin('participantCurrency AS pc', 'participantPosition.participantCurrencyId', 'pc.participantCurrencyId')
         .innerJoin('ledgerAccountType AS lap', 'lap.ledgerAccountTypeId', 'pc.ledgerAccountTypeId')
         .innerJoin('participant AS p', 'pc.participantId', 'p.participantId')

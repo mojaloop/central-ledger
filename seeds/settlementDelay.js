@@ -20,6 +20,7 @@
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -40,13 +41,10 @@ const settlementDelayList = settlementDelayTypes.map(currentValue => {
 }).sort()
 const seed = async function (knex) {
   try {
-    return await knex('settlementDelay').insert(settlementDelayTypes)
+    return await knex('settlementDelay').insert(settlementDelayTypes).onConflict('name').ignore()
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for settlementDelay has failed with the following error: ${err}`)
-      return -1000
-    }
+    console.log(`Uploading seeds for settlementDelay has failed with the following error: ${err}`)
+    return -1000
   }
 }
 module.exports = {

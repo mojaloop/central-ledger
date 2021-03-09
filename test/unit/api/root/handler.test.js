@@ -25,7 +25,7 @@
 'use strict'
 
 const Test = require('tapes')(require('tape'))
-const Joi = require('@hapi/joi')
+const Joi = require('joi')
 const Sinon = require('sinon')
 
 const Handler = require('../../../../src/api/root/handler')

@@ -119,8 +119,7 @@ Test('SettlementModel', settlementModelHandlerTest => {
         type: 'POSITION',
         autoPositionReset: true
       }
-      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(ledgerAccountType))
-      SettlementService.getByName.returns(Promise.resolve(false))
+      SettlementService.createSettlementModel.resolves()
       const reply = {
         response: () => {
           return {
@@ -134,7 +133,7 @@ Test('SettlementModel', settlementModelHandlerTest => {
       await Handler.create({ payload }, reply)
     })
 
-    handlerTest.test('create should fail if the settlement model exists', async function (test) {
+    handlerTest.test('create should fail if the settlement model creation fails', async function (test) {
       const payload = {
         name: 'IMMEDIATE_GROSS',
         settlementGranularity: 'GROSS',
@@ -145,60 +144,12 @@ Test('SettlementModel', settlementModelHandlerTest => {
         type: 'POSITION',
         autoPositionReset: true
       }
-      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(ledgerAccountType))
-      SettlementService.getByName.returns(Promise.resolve(true))
+      SettlementService.createSettlementModel.throws()
       try {
         await Handler.create({ payload })
         test.fail('Error not thrown')
       } catch (e) {
         test.ok(e instanceof Error)
-        test.equal(e.message, 'This Settlement Model already exists')
-        test.end()
-      }
-    })
-
-    handlerTest.test('create should fail if account type does not exists', async function (test) {
-      const payload = {
-        name: 'DEFERRED_NET',
-        settlementGranularity: 'NET',
-        settlementInterchange: 'MULTILATERAL',
-        settlementDelay: 'DEFERRED',
-        settlementCurrency: 'USD',
-        requireLiquidityCheck: true,
-        type: 'POSITION',
-        autoPositionReset: true
-      }
-      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(false))
-
-      try {
-        await Handler.create({ payload })
-        test.fail('Error not thrown')
-      } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Ledger account type was not found')
-        test.end()
-      }
-    })
-
-    handlerTest.test('create should fail if definition is not supported', async function (test) {
-      const payload = {
-        name: 'DEFERRED_NET',
-        settlementGranularity: 'GROSS',
-        settlementInterchange: 'MULTILATERAL',
-        settlementDelay: 'DEFERRED',
-        settlementCurrency: 'USD',
-        requireLiquidityCheck: true,
-        type: 'POSITION',
-        autoPositionReset: true
-      }
-      SettlementService.getLedgerAccountTypeName.returns(Promise.resolve(false))
-
-      try {
-        await Handler.create({ payload })
-        test.fail('Error not thrown')
-      } catch (e) {
-        test.ok(e instanceof Error)
-        test.equal(e.message, 'Invalid settlement model definition - delay-granularity-interchange combination is not supported')
         test.end()
       }
     })
@@ -254,6 +205,21 @@ Test('SettlementModel', settlementModelHandlerTest => {
         }))
         test.deepEqual(result, settlementModel[0], 'The results match')
         test.ok(Logger.info.withArgs('SettlementModel has been disabled :: {"name":"DEFERRED_NET","isActive":0}'))
+        test.end()
+      } catch (err) {
+        test.fail('Error thrown')
+        test.end()
+      }
+    })
+
+    handlerTest.test('update should update, return settlement model if settlement model when inactive and utilize', async function (test) {
+      SettlementService.update.withArgs(settlementModel[0].name, { }).returns(Promise.resolve(settlementModelService[0]))
+      try {
+        const result = await Handler.update(createRequest({
+          params: { name: settlementModel[0].name },
+          payload: { }
+        }))
+        test.deepEqual(result, settlementModel[0], 'The results match')
         test.end()
       } catch (err) {
         test.fail('Error thrown')

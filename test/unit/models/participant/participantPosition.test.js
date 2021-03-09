@@ -46,6 +46,9 @@ Test('Participant Position model', async (participantPositionTest) => {
       find: sandbox.stub(),
       destroy: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     t.end()
   })
 
@@ -150,6 +153,220 @@ Test('Participant Position model', async (participantPositionTest) => {
       test.end()
     } catch (err) {
       test.pass('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantPositionTest.test('createParticipantPositionRecords should', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = sandbox.stub()
+      trxStub.commit = sandbox.stub()
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.resolves()
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+      const participantPositions = [
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 1,
+          value: 0.000,
+          reservedValue: 0.000
+        },
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 2,
+          value: 0.000,
+          reservedValue: 0.000
+        }
+      ]
+      await Model.createParticipantPositionRecords(participantPositions, trxStub)
+      test.equal(batchInsertStub.callCount, 1, 'call batch insert')
+      test.equal(batchInsertStub.lastCall.args[0], 'participantPosition', 'write to the participantPosition table')
+      test.deepEqual(batchInsertStub.lastCall.args[1], participantPositions, 'all records should be inserted')
+      test.equal(transactingStub.callCount, 1, 'make the database calls as transaction')
+      test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
+      test.equal(trxStub.commit.callCount, 0, 'not commit the transaction if transaction is passed')
+      test.end()
+    } catch (err) {
+      Logger.error(`createParticipantPositionRecords failed with error - ${err}`)
+      test.fail('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantPositionTest.test('createParticipantPositionRecords should', async (test) => {
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      const trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      const trxSpyCommit = sandbox.spy(trxStub, 'commit', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.resolves()
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+      const participantPositions = [
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 1,
+          value: 0.000,
+          reservedValue: 0.000
+        },
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 2,
+          value: 0.000,
+          reservedValue: 0.000
+        }
+      ]
+      await Model.createParticipantPositionRecords(participantPositions)
+      test.equal(batchInsertStub.callCount, 1, 'call batch insert')
+      test.equal(batchInsertStub.lastCall.args[0], 'participantPosition', 'write to the participantPosition table')
+      test.deepEqual(batchInsertStub.lastCall.args[1], participantPositions, 'all records should be inserted')
+      test.equal(transactingStub.callCount, 1, 'make the database calls as transaction')
+      test.equal(transactingStub.lastCall.args[0], trxStub, 'run as transaction')
+      test.equal(trxSpyCommit.get.calledOnce, true, 'commit the transaction if no transaction is passed')
+
+      test.end()
+    } catch (err) {
+      Logger.error(`createParticipantPositionRecords failed with error - ${err}`)
+      test.fail('Error thrown')
+      test.end()
+    }
+  })
+
+  await participantPositionTest.test('createParticipantPositionRecords should', async (test) => {
+    let trxStub
+    let trxSpyRollBack
+
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, trxStub)
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.rejects(new Error())
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+
+      const participantPositions = [
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 1,
+          value: 0.000,
+          reservedValue: 0.000
+        },
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 2,
+          value: 0.000,
+          reservedValue: 0.000
+        }
+      ]
+      await Model.createParticipantPositionRecords(participantPositions)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.equal(trxSpyRollBack.get.calledOnce, true, 'rollback the transaction if no transaction is passed')
+      test.end()
+    }
+  })
+
+  await participantPositionTest.test('createParticipantCurrencyRecords should', async (test) => {
+    let trxStub
+    let trxSpyRollBack
+
+    try {
+      sandbox.stub(Db, 'getKnex')
+      const knexStub = sandbox.stub()
+      trxStub = {
+        get commit () {
+
+        },
+        get rollback () {
+
+        }
+      }
+      trxSpyRollBack = sandbox.spy(trxStub, 'rollback', ['get'])
+
+      knexStub.transaction = sandbox.stub().callsArgWith(0, [trxStub, true])
+      Db.getKnex.returns(knexStub)
+      const transactingStub = sandbox.stub()
+      const batchInsertStub = sandbox.stub()
+      transactingStub.rejects(new Error())
+      knexStub.batchInsert = batchInsertStub.returns({ transacting: transactingStub })
+
+      const participantPositions = [
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 1,
+          value: 0.000,
+          reservedValue: 0.000
+        },
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 2,
+          value: 0.000,
+          reservedValue: 0.000
+        }
+      ]
+      await Model.createParticipantPositionRecords(participantPositions)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
+      test.equal(trxSpyRollBack.get.calledOnce, false, 'not rollback the transaction if  transaction is passed')
+      test.end()
+    }
+  })
+
+  await participantPositionTest.test('createParticipantCurrencyRecords should', async (test) => {
+    try {
+      const participantPositions = [
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 1,
+          value: 0.000,
+          reservedValue: 0.000
+        },
+        {
+          participantPositionId: 1,
+          participantCurrencyId: 2,
+          value: 0.000,
+          reservedValue: 0.000
+        }
+      ]
+      sandbox.stub(Db, 'getKnex')
+      Db.getKnex.throws(new Error())
+      await Model.createParticipantPositionRecords(participantPositions)
+      test.fail('have thrown an error')
+      test.end()
+    } catch (err) {
+      test.pass('throw an error')
       test.end()
     }
   })

@@ -28,41 +28,116 @@
 const Db = require('../../lib/db')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, autoPositionReset) => {
+/* istanbul ignore next */
+exports.create = async (name, isActive, settlementGranularityId, settlementInterchangeId, settlementDelayId, currencyId, requireLiquidityCheck, ledgerAccountTypeId, settlementAccountTypeId, autoPositionReset, trx = null) => {
   try {
-    return await Db.settlementModel.insert({
-      name,
-      isActive,
-      settlementGranularityId,
-      settlementInterchangeId,
-      settlementDelayId,
-      currencyId,
-      requireLiquidityCheck,
-      ledgerAccountTypeId,
-      autoPositionReset
-    })
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        await knex('settlementModel')
+          .insert({
+            name,
+            isActive,
+            settlementGranularityId,
+            settlementInterchangeId,
+            settlementDelayId,
+            currencyId,
+            requireLiquidityCheck,
+            ledgerAccountTypeId,
+            settlementAccountTypeId,
+            autoPositionReset
+          })
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
-exports.getByName = async (name) => {
+/* istanbul ignore next */
+exports.getByName = async (name, trx = null) => {
   try {
-    const result = await Db.settlementModel.find({ name: name })
-    return result[0]
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const result = await knex('settlementModel')
+          .select()
+          .where('name', name)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return result.length > 0 ? result[0] : null
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 exports.getAll = async () => {
   try {
-    return await Db.settlementModel.find()
+    return await Db.from('settlementModel').find()
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 exports.update = async (settlementModel, isActive) => {
   try {
-    return await Db.settlementModel.update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
+    return await Db.from('settlementModel').update({ settlementModelId: settlementModel.settlementModelId }, { isActive })
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
+
+/* istanbul ignore next */
+exports.getSettlementModelsByName = async (names, trx = null) => {
+  try {
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        const settlementModelNames = knex('settlementModel')
+          .select('name')
+          .whereIn('name', names)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+        return settlementModelNames
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }

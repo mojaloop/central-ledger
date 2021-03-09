@@ -29,7 +29,7 @@ const Logger = require('@mojaloop/central-services-logger')
 
 const insert = async (participantPosition) => {
   try {
-    return await Db.participantPosition.insert(participantPosition)
+    return await Db.from('participantPosition').insert(participantPosition)
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -38,7 +38,7 @@ const insert = async (participantPosition) => {
 
 const update = async (participantPosition) => {
   try {
-    return await Db.participantPosition.update({ participantCurrencyId: participantPosition.participantCurrencyId }, { value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date() })
+    return await Db.from('participantPosition').update({ participantCurrencyId: participantPosition.participantCurrencyId }, { value: participantPosition.value, reservedValue: participantPosition.reservedValue, changedDate: new Date() })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -47,7 +47,7 @@ const update = async (participantPosition) => {
 
 const getPositionByCurrencyId = async (participantCurrencyId) => {
   try {
-    return await Db.participantPosition.findOne({ participantCurrencyId })
+    return await Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err

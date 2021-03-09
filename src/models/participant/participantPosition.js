@@ -35,6 +35,7 @@
 const Db = require('../../lib/db')
 const ParticipantCurrencyModel = require('./participantCurrencyCached')
 const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  * @function GetByParticipantCurrencyId
@@ -50,7 +51,7 @@ const Logger = require('@mojaloop/central-services-logger')
 
 const getByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantPosition.findOne({ participantCurrencyId })
+    return Db.from('participantPosition').findOne({ participantCurrencyId })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -71,7 +72,7 @@ const getByParticipantCurrencyId = async (participantCurrencyId) => {
 
 const destroyByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
-    return Db.participantPosition.destroy({ participantCurrencyId })
+    return Db.from('participantPosition').destroy({ participantCurrencyId })
   } catch (err) {
     Logger.isErrorEnabled && Logger.error(err)
     throw err
@@ -103,7 +104,35 @@ const destroyByParticipantId = async (participantId) => {
   }
 }
 
+const createParticipantPositionRecords = async (participantPositions, trx) => {
+  try {
+    const knex = Db.getKnex()
+    const trxFunction = async (trx, doCommit = true) => {
+      try {
+        await knex
+          .batchInsert('participantPosition', participantPositions)
+          .transacting(trx)
+        if (doCommit) {
+          await trx.commit
+        }
+      } catch (err) {
+        if (doCommit) {
+          await trx.rollback
+        }
+        throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      }
+    }
+    if (trx) {
+      return trxFunction(trx, false)
+    } else {
+      return knex.transaction(trxFunction)
+    }
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
+  }
+}
 module.exports = {
+  createParticipantPositionRecords,
   getByParticipantCurrencyId,
   destroyByParticipantCurrencyId,
   destroyByParticipantId

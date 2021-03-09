@@ -20,6 +20,7 @@
 
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Lazola Lucas <lazola.lucas@modusbox.com>
+ * Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -44,31 +45,31 @@ const ledgerAccountTypes = [
     description: 'A single account for each currency with which the hub operates. The account is "held" by the Participant representing the hub in the switch'
   },
   {
-    name: 'HUB_FEE',
-    description: 'An account to which fees will be charged or collected'
-  },
-  {
     name: 'INTERCHANGE_FEE',
     description: null,
     isSettleable: 1
+  },
+  {
+    name: 'INTERCHANGE_FEE_SETTLEMENT',
+    description: null
   }
 ]
+
 const ledgerAccountList = ledgerAccountTypes.filter(currentValue => {
   return currentValue.isSettleable
 }).map(currentValue => {
   return currentValue.name
 }).sort()
+
 const seed = async function (knex) {
   try {
-    return await knex('ledgerAccountType').insert(ledgerAccountTypes)
+    return await knex('ledgerAccountType').insert(ledgerAccountTypes).onConflict('name').ignore()
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return -1001
-    else {
-      console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
-      return -1000
-    }
+    console.log(`Uploading seeds for ledgerAccountType has failed with the following error: ${err}`)
+    return -1000
   }
 }
+
 module.exports = {
   ledgerAccountList,
   seed

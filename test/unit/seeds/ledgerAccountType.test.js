@@ -45,34 +45,17 @@ Test('Ledger Account type', async (ledgerAccountTypeTest) => {
   await ledgerAccountTypeTest.test('seed should', async (test) => {
     const knexStub = sandbox.stub()
     knexStub.returns({
-      insert: sandbox.stub().returns(true)
+      insert: sandbox.stub().returns({
+        onConflict: sandbox.stub().returns({
+          ignore: sandbox.stub().returns(true)
+        })
+      })
     })
 
     try {
       const result = await Model.seed(knexStub)
       test.equal(result, true, 'call insert')
       test.ok(knexStub.withArgs('ledgerAccountType').calledOnce, 'knex called with ledgerAccountType once')
-      test.end()
-    } catch (err) {
-      Logger.error(`ledgerAccountType seed failed with error - ${err}`)
-      test.fail()
-      test.end()
-    }
-  })
-
-  await ledgerAccountTypeTest.test('seed should', async (test) => {
-    function DuplicateEntryError (message) {
-      this.name = 'DuplicateEntryError'
-      this.message = message || ''
-      this.code = 'ER_DUP_ENTRY'
-    }
-    DuplicateEntryError.prototype = Error.prototype
-
-    const knexStub = sandbox.stub()
-    knexStub.throws(new DuplicateEntryError())
-    try {
-      const result = await Model.seed(knexStub)
-      test.equal(result, -1001, 'Duplicate error intercepted and ignored')
       test.end()
     } catch (err) {
       Logger.error(`ledgerAccountType seed failed with error - ${err}`)

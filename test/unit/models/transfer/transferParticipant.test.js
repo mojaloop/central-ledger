@@ -50,6 +50,9 @@ Test('TransferParticipant model', async (transferParticipant) => {
     Db.transferParticipant = {
       insert: sandbox.stub()
     }
+    Db.from = (table) => {
+      return Db[table]
+    }
     beforeTest.end()
   })
 
