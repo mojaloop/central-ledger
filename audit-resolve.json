@@ -124,6 +124,14 @@
       "decision": "ignore",
       "madeAt": 1614766410157,
       "expiresAt": 1617358384743
+    },
+    "1649|@mojaloop/central-object-store>mongoose>mquery": {
+      "decision": "ignore",
+      "madeAt": 1615523563034
+    },
+    "1179|faucet>minimist": {
+      "decision": "ignore",
+      "madeAt": 1615523782712
     }
   },
   "rules": {},
