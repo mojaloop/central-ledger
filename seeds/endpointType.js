@@ -187,6 +187,14 @@ const endpointTypes = [
     description: 'Participant callback URL where PUT /consentRequests/{ID}/error error information can be sent'
   },
   {
+    name: 'TP_CB_URL_CONSENT_REQUEST_PATCH',
+    description: 'Participant callback URL where PATCH /consentRequests/{ID} can be sent'
+  },
+  {
+    name: 'TP_CB_URL_CONSENT_REQUEST_PUT_ERROR',
+    description: 'Participant callback URL where PUT /consentRequests/{ID}/error error information can be sent'
+  },
+  {
     name: 'TP_CB_URL_CREATE_CREDENTIAL_POST',
     description: 'Participant callback URL where POST /consentRequests/{ID}/createCredential can be sent'
   },
