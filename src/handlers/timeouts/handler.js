@@ -175,7 +175,7 @@ const registerTimeoutHandler = async () => {
       cronTime: Config.HANDLERS_TIMEOUT_TIMEXP,
       onTick: timeout,
       start: false,
-      timeZone: Config.HANDLERS_CRON_TIMEZONE
+      timeZone: Config.HANDLERS_TIMEOUT_TIMEZONE
     })
     isRegistered = true
 
