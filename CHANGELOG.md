@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.2.6](https://github.com/mojaloop/central-ledger/compare/v13.2.5...v13.2.6) (2021-03-15)
+
+
+### Chore
+
+* add patch consentRequest and put cr error endpoints ([#828](https://github.com/mojaloop/central-ledger/issues/828)) ([6cb311a](https://github.com/mojaloop/central-ledger/commit/6cb311a5526efc12011b96f09d4857f7926fe345))
+
 ### [13.2.5](https://github.com/mojaloop/central-ledger/compare/v13.2.4...v13.2.5) (2021-03-05)
 
 
