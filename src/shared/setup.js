@@ -65,17 +65,14 @@ const connectDatabase = async () => {
 }
 
 const connectMongoose = async () => {
-  if (!Config.MONGODB_DISABLED) {
-    try {
-      return ObjStoreDb.connect(Config.MONGODB_URI)
-    } catch (err) {
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-      // TODO: review as code is being changed from returning null to returning a FSPIOPError
-      // Logger.isErrorEnabled && Logger.error(`error - ${err}`)
-      // return null
-    }
-  } else {
-    return null
+  if (Config.MONGODB_DISABLED === true) {
+    return
+  }
+
+  try {
+    return ObjStoreDb.connect(Config.MONGODB_URI, Config.MONGODB_OPTIONS)
+  } catch (err) {
+    throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
 
