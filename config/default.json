@@ -35,7 +35,11 @@
   },
   "MONGODB": {
     "DISABLED": true,
-    "URI": "mongodb://localhost:27017/mlos"
+    "URI": "mongodb://localhost:27017/mlos",
+    "OPTIONS": {
+      "ssl": false,
+      "sslValidate": false
+    }
   },
   "ERROR_HANDLING": {
     "includeCauseExtension": true,

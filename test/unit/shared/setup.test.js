@@ -4,6 +4,7 @@ const Test = require('tapes')(require('tape'))
 const Sinon = require('sinon')
 const Config = require('../../../src/lib/config')
 const Proxyquire = require('proxyquire')
+const { connect } = require('../../../src/lib/db')
 
 Test('setup', setupTest => {
   let sandbox
@@ -16,7 +17,6 @@ Test('setup', setupTest => {
   let DbStub
   let CacheStub
   let ObjStoreStub
-  // let ObjStoreStubThrows
   let SidecarStub
   let MigratorStub
   let RegisterHandlersStub
@@ -26,10 +26,12 @@ Test('setup', setupTest => {
   let UrlParserStub
   let serverStub
   let processExitStub
-  // let KafkaCronStub
+  let connectObjStoreMock
 
   setupTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
+
+    connectObjStoreMock = sandbox.stub()
     processExitStub = sandbox.stub(process, 'exit')
     PluginsStub = {
       registerPlugins: sandbox.stub().returns(Promise.resolve())
@@ -74,15 +76,9 @@ Test('setup', setupTest => {
 
     ObjStoreStub = {
       Db: {
-        connect: sandbox.stub().returns(Promise.resolve())
+        connect: connectObjStoreMock
       }
     }
-    // ObjStoreStubThrows = {
-    //   Db: {
-    //     connect: sandbox.stub().throws(new Error('MongoDB unavailable'))
-    //   }
-    // }
-
     uuidStub = sandbox.stub()
 
     MigratorStub = {
@@ -95,7 +91,6 @@ Test('setup', setupTest => {
         registerPrepareHandler: sandbox.stub().returns(Promise.resolve()),
         registerGetHandler: sandbox.stub().returns(Promise.resolve()),
         registerFulfilHandler: sandbox.stub().returns(Promise.resolve())
-        // registerRejectHandler: sandbox.stub().returns(Promise.resolve())
       },
       positions: {
         registerPositionHandler: sandbox.stub().returns(Promise.resolve())
@@ -131,7 +126,6 @@ Test('setup', setupTest => {
       '../lib/urlParser': UrlParserStub,
       '@hapi/hapi': HapiStub,
       '../lib/config': ConfigStub
-      // '../handlers/lib/kafka': KafkaCronStub
     })
 
     oldHostName = Config.HOSTNAME
@@ -151,6 +145,8 @@ Test('setup', setupTest => {
     test.end()
   })
 
+  // TODO: this testis invalid - the error is `TypeError: server.ext is not a function`
+  // not: Throw Boom Error as it should be!!!
   setupTest.test('createServer should', async (createServerTest) => {
     createServerTest.test('throw Boom error on fail', async (test) => {
       const errorToThrow = new Error('Throw Boom error')
@@ -174,19 +170,72 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStubThrowError,
         '../lib/config': Config
-
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       Setup.createServer(200, []).then(() => {
         test.fail('Should not have successfully created server')
         test.end()
       }).catch(err => {
+        console.log('error is', err)
         test.ok(err instanceof Error)
         test.end()
       })
     })
     createServerTest.end()
+  })
+
+  setupTest.test('connectMongoose', async connectMongooseTest => {
+
+    connectMongooseTest.test('returns null when MONGODB_DISABLED === true', async test => {
+      // Arrange  
+      // Act
+      const result = await Setup._connectMongoose({ MONGODB_DISABLED: true})
+      
+      // Assert
+      test.equals(result, null)
+      test.end()
+    })
+
+    connectMongooseTest.test('connect to mongodb', async test => {
+      // Arrange  
+      connectObjStoreMock.resolves({mongodb: { instance: true}})
+      // Act
+      const result = await Setup._connectMongoose({ 
+        MONGODB_DISABLED: false,
+        MONGODB_URI: 'objstore',
+        MONGODB_OPTIONS: {}
+      })
+
+      // Assert
+      test.deepEqual(result, { mongodb: { instance: true } })
+      test.end()
+    })
+
+    connectMongooseTest.test('throw an error when the connection to mongodb fails', async test => {
+      // Arrange  
+      connectObjStoreMock.rejects(new Error('Test Error'))
+      // Act
+      const action = async () => await Setup._connectMongoose({
+        MONGODB_DISABLED: false,
+        MONGODB_URI: 'objstore',
+        MONGODB_OPTIONS: {}
+      })
+
+      // Assert
+      // TODO... not sure what's going on here
+      try {
+        await action()
+        // shouldn't reach here!
+        test.fail('connectMongoose did not throw error')
+      } catch (err) {
+        test.equals(err.message, 'Test Error')
+      } finally {
+        test.end()
+      }
+    })
+
+
+    connectMongooseTest.end()
   })
 
   setupTest.test('initialize should', async (initializeTest) => {
@@ -226,7 +275,6 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       Setup.initialize({ service }).then(s => {
@@ -343,7 +391,6 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
         '../lib/config': Config
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       const service = 'handler'
@@ -375,7 +422,6 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       const service = 'handler'
@@ -408,7 +454,6 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
         '../lib/config': ConfigStub
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       const service = 'handler'
@@ -443,7 +488,6 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
         '../lib/config': Config
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       const service = 'handler'
@@ -528,7 +572,6 @@ Test('setup', setupTest => {
         bulkFulfilHandler,
         bulkProcessingHandler,
         unknownHandler
-        // rejectHandler
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
@@ -587,7 +630,6 @@ Test('setup', setupTest => {
         fulfilHandler,
         timeoutHandler,
         getHandler
-        // rejectHandler
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
@@ -641,7 +683,6 @@ Test('setup', setupTest => {
         fulfilHandler,
         timeoutHandler,
         getHandler
-        // rejectHandler
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
@@ -650,7 +691,6 @@ Test('setup', setupTest => {
         test.ok(RegisterHandlersStub.positions.registerPositionHandler.called)
         test.ok(RegisterHandlersStub.timeouts.registerTimeoutHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerGetHandler.called)
-        // test.ok(KafkaCronStub.Cron.start.calledOnce)
         test.end()
       }).catch(err => {
         test.fail(`Should have not received an error: ${err}`)
@@ -676,8 +716,6 @@ Test('setup', setupTest => {
         '../lib/urlParser': UrlParserStub,
         '@hapi/hapi': HapiStub,
         '../lib/config': Config
-
-        // '../handlers/lib/kafka': KafkaCronStub
       })
 
       const service = 'api'
@@ -705,14 +743,12 @@ Test('setup', setupTest => {
         prepareHandler,
         positionHandler,
         fulfilHandler
-        // rejectHandler
       ]
 
       Setup.initialize({ service, runHandlers: true, handlers: modulesList }).then(() => {
         test.ok(RegisterHandlersStub.transfers.registerPrepareHandler.called)
         test.ok(RegisterHandlersStub.transfers.registerFulfilHandler.called)
         test.ok(RegisterHandlersStub.positions.registerPositionHandler.called)
-        // test.ok(!KafkaCronStub.Cron.start.called)
         test.end()
       }).catch(err => {
         test.fail(`Should have not received an error: ${err}`)

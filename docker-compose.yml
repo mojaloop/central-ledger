@@ -136,9 +136,12 @@ services:
   objstore:
     image: mongo:latest
     container_name: cl_objstore
-    # Disable logging as it is far too verbose for debugging locally
-    logging:
-      driver: none
+    # Allows TLS without requiring client to provide certs
+    # lets us test both with TLS and non-TLS connections
+    command: --tlsMode allowTLS --tlsCertificateKeyFile /etc/ssl/test-server1.pem --tlsCAFile /etc/ssl/test-ca.pem --tlsAllowConnectionsWithoutCertificates
+    volumes:
+      - ./docker/objstore/test-server1.pem:/etc/ssl/test-server1.pem
+      - ./docker/objstore/test-ca.pem:/etc/ssl/test-ca.pem
     ports:
       - "27017:27017"
     networks:
