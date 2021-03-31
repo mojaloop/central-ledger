@@ -18,7 +18,6 @@ Test('Config should', configTest => {
   })
 
   configTest.test('disable API_DOC_ENDPOINTS_ENABLED', async function (test) {
-    console.log(Defaults)
     const DefaultsStub = { ...Defaults }
     DefaultsStub.API_DOC_ENDPOINTS_ENABLED = false
 
@@ -27,6 +26,18 @@ Test('Config should', configTest => {
     })
 
     test.ok(Config.API_DOC_ENDPOINTS_ENABLED === false)
+    test.end()
+  })
+
+  configTest.test('default MONGODB_OPTIONS to {}', async (test) => {
+    const DefaultsStub = { ...Defaults }
+    delete DefaultsStub.MONGODB.OPTIONS
+
+    const Config = Proxyquire('../../../src/lib/config', {
+      '../../config/default.json': DefaultsStub
+    })
+
+    test.deepEqual(Config.MONGODB_OPTIONS, {})
     test.end()
   })
 
