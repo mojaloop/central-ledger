@@ -64,9 +64,17 @@ const connectDatabase = async () => {
   Logger.isDebugEnabled && Logger.debug(`DB.connect loaded '${dbLoadedTables}' tables!`)
 }
 
+/**
+ * @function connectMongoose
+ * @description Connects to mongodb using `mojaloop/central-object-store` library
+ * @param {*} config - central-ledger config object
+ * @returns {Promise<null | mongoose>} 
+ *   - If MONGODB_DISABLED === true, returns a promise that resolves to null, 
+ *   - otherwise returns a promise that resolves to the mongoose instance
+ */
 const connectMongoose = async (config) => {
   if (config.MONGODB_DISABLED === true) {
-    return
+    return null
   }
 
   try {

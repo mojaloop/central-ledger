@@ -68,9 +68,9 @@ Test('setup', async setupTest => {
 
       let notMongoose
       try {
-        // _connectMongoose should return undefined here.
+        // _connectMongoose should return null here.
         notMongoose = await _connectMongoose(config)
-        assert.equal(notMongoose, undefined, 'mongoose connection was made when `MONGODB_DISABLED = true`')
+        assert.equal(notMongoose, null, 'mongoose connection was made when `MONGODB_DISABLED = true`')
         assert.end()
       } catch (err) {
         Logger.error(`connectMongooseTest failed - ${err}`)
