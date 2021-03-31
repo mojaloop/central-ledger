@@ -17,7 +17,6 @@ Test('setup', setupTest => {
   let DbStub
   let CacheStub
   let ObjStoreStub
-  // let ObjStoreStubThrows
   let SidecarStub
   let MigratorStub
   let RegisterHandlersStub
@@ -28,7 +27,6 @@ Test('setup', setupTest => {
   let serverStub
   let processExitStub
   let connectObjStoreMock
-  // let KafkaCronStub
 
   setupTest.beforeEach(test => {
     sandbox = Sinon.createSandbox()
@@ -81,12 +79,6 @@ Test('setup', setupTest => {
         connect: connectObjStoreMock
       }
     }
-    // ObjStoreStubThrows = {
-    //   Db: {
-    //     connect: sandbox.stub().throws(new Error('MongoDB unavailable'))
-    //   }
-    // }
-
     uuidStub = sandbox.stub()
 
     MigratorStub = {
@@ -230,6 +222,7 @@ Test('setup', setupTest => {
       })
 
       // Assert
+      // TODO... not sure what's going on here
       try {
         await action()
         // shouldn't reach here!

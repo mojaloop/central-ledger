@@ -78,7 +78,7 @@ const connectMongoose = async (config) => {
   }
 
   try {
-    return ObjStoreDb.connect(config.MONGODB_URI, config.MONGODB_OPTIONS)
+    return await ObjStoreDb.connect(config.MONGODB_URI, config.MONGODB_OPTIONS)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
