@@ -314,6 +314,7 @@ Test('Participant service', async (participantTest) => {
     }
   })
 
+  // TODO: these integration tests are failing...
   await participantTest.test('add participant limit and initial position', async (assert) => {
     try {
       let result = await ParticipantLimitHelper.prepareLimitAndInitialPosition(participantFixtures[0].name, { limit: { value: 111 } })

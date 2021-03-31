@@ -15,7 +15,8 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
+      # - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
+      - ./test/integration-config.json:/opt/central-ledger/config/default.json
       - ./test:/opt/central-ledger/test
       - ./src:/opt/central-ledger/src
       # Only mount in node_modules if you want to update dependencies on the fly

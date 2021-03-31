@@ -63,43 +63,51 @@ clean_docker() {
 }
 
 ftest() {
-  docker run -i --rm \
-    --link $KAFKA_HOST \
-    --link $DB_HOST \
-    --network $DOCKER_NETWORK \
-    --env HOST_IP="$APP_HOST" \
-    --env KAFKA_HOST="$KAFKA_HOST" \
-    --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
-    --env DB_HOST=$DB_HOST \
-    --env DB_PORT=$DB_PORT \
-    --env DB_USER=$DB_USER \
-    --env DB_PASSWORD=$DB_PASSWORD \
-    --env DB_NAME=$DB_NAME \
-    --env TEST_DIR=$TEST_DIR \
-    $DOCKER_IMAGE:$DOCKER_TAG \
-    /bin/sh \
-    -c "source $TEST_DIR/.env; $@"
+  docker exec -it cl_central-ledger sh -c "$@"
+
+
+  # docker run -i --rm \
+  #   --link $KAFKA_HOST \
+  #   --link $DB_HOST \
+  #   --network $DOCKER_NETWORK \
+  #   --env HOST_IP="$APP_HOST" \
+  #   --env KAFKA_HOST="$KAFKA_HOST" \
+  #   --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
+  #   --env DB_HOST=$DB_HOST \
+  #   --env DB_PORT=$DB_PORT \
+  #   --env DB_USER=$DB_USER \
+  #   --env DB_PASSWORD=$DB_PASSWORD \
+  #   --env DB_NAME=$DB_NAME \
+  #   --env TEST_DIR=$TEST_DIR \
+  #   $DOCKER_IMAGE:$DOCKER_TAG \
+  #   /bin/sh \
+  #   -c "source $TEST_DIR/.env; $@"
+}
+
+runInContainer() {
+  docker exec -it 
 }
 
 run_test_command() {
-  >&2 echo "Running $APP_HOST Test command: $TEST_CMD"
-  docker run -it \
-    --link $KAFKA_HOST \
-    --link $DB_HOST \
-    --network $DOCKER_NETWORK \
-    --name $APP_HOST \
-    --env HOST_IP="$APP_HOST" \
-    --env KAFKA_HOST="$KAFKA_HOST" \
-    --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
-    --env DB_HOST=$DB_HOST \
-    --env DB_PORT=$DB_PORT \
-    --env DB_USER=$DB_USER \
-    --env DB_PASSWORD=$DB_PASSWORD \
-    --env DB_NAME=$DB_NAME \
-    --env TEST_DIR=$TEST_DIR \
-    $DOCKER_IMAGE:$DOCKER_TAG \
-    /bin/sh \
-    -c "source $TEST_DIR/.env; $TEST_CMD"
+  npm run test:int
+  # >&2 echo "Running $APP_HOST Test command: $TEST_CMD"
+  # docker run -it \
+  #   --link $KAFKA_HOST \
+  #   --link $DB_HOST \
+  #   --network $DOCKER_NETWORK \
+  #   --name $APP_HOST \
+  #   --env HOST_IP="$APP_HOST" \
+  #   --env KAFKA_HOST="$KAFKA_HOST" \
+  #   --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
+  #   --env DB_HOST=$DB_HOST \
+  #   --env DB_PORT=$DB_PORT \
+  #   --env DB_USER=$DB_USER \
+  #   --env DB_PASSWORD=$DB_PASSWORD \
+  #   --env DB_NAME=$DB_NAME \
+  #   --env TEST_DIR=$TEST_DIR \
+  #   $DOCKER_IMAGE:$DOCKER_TAG \
+  #   /bin/sh \
+  #   -c "source $TEST_DIR/.env; $TEST_CMD"
 }
 
 fcurl() {
@@ -162,103 +170,50 @@ start_db() {
 }
 
 fdb() {
-  docker run -it --rm \
-    --link $DB_HOST:mysql \
-    --network $DOCKER_NETWORK \
-    -e DB_HOST=$DB_HOST \
-    -e DB_PORT=$DB_PORT \
-    -e DB_PASSWORD=$DB_PASSWORD \
-    -e DB_USER=$DB_USER \
-    -e DB_NAME=$DB_NAME \
-    mysql \
-    sh -c \
-    "$@"
+  docker exec -it cl_mysql sh -c "$@"
 }
 
 is_db_up() {
-  fdb 'mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "select 1"' > /dev/null 2>&1
+  fdb "mysql -P$DB_PORT -u$DB_USER -p$DB_PASSWORD -e 'select 1'" > /dev/null 2>&1
 }
 
 # Script execution
+# docker-compose stop
+# TODO: maybe remove this?
+# docker-compose -f docker-compose.yml -f docker-compose.integration.yml build
+docker-compose -f docker-compose.yml -f docker-compose.integration.yml up -d kafka mysql objstore central-ledger
 
-stop_docker
-
->&1 echo "Building Docker Image $DOCKER_IMAGE:$DOCKER_TAG with $DOCKER_FILE"
-docker build --cache-from $DOCKER_IMAGE:$DOCKER_TAG -t $DOCKER_IMAGE:$DOCKER_TAG -f $DOCKER_FILE .
-
-if [ "$?" != 0 ]
-then
-  >&2 echo "Build failed...exiting"
-  clean_docker
-  exit 1
-fi
-
->&1 echo "Creating test network: $DOCKER_NETWORK"
-docker network create $DOCKER_NETWORK
-
->&1 echo "Kafka is starting"
-start_kafka
-
-if [ "$?" != 0 ]
-then
-  >&2 echo "Starting Kafka failed...exiting"
-  clean_docker
-  exit 1
-fi
-
->&1 echo "Waiting for Kafka to start"
-until is_kafka_up; do
-  >&1 printf "."
-  sleep 5
-done
-
->&1 echo "DB is starting"
-start_db
-
-if [ "$?" != 0 ]
-then
-  >&2 echo "Starting DB failed...exiting"
-  clean_docker
-  exit 1
-fi
-
->&2 echo "Waiting for DB to start"
 until is_db_up; do
   >&2 printf "."
   sleep 5
 done
 
+
+
 >&1 echo "Running migrations"
 ftest "npm run migrate"
 
-if [ "$?" != 0 ]
-then
-  >&2 echo "Migration failed...exiting"
-  clean_docker
-  exit 1
-fi
-
->&1 echo "Integration tests are starting"
-run_test_command
+echo "Integration tests are starting"
+ftest "npm run test:int"
 test_exit_code=$?
->&2 echo "Test exited with result code.... $test_exit_code ..."
+echo "Test exited with result code.... $test_exit_code ..."
 
->&1 echo "Displaying test logs"
-docker logs $APP_HOST
+# >&1 echo "Displaying test logs"
+# docker logs $APP_HOST
 
->&1 echo "Copy results to local directory"
-docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
+# >&1 echo "Copy results to local directory"
+# docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
 
-if [ "$test_exit_code" = "0" ]
-then
-  >&1 echo "Showing results..."
-  cat $APP_DIR_TEST_RESULTS/$TEST_RESULTS_FILE
-else
-  >&2 echo "Integration tests failed...exiting"
-  >&2 echo "Test environment logs..."
-  docker logs $APP_HOST
-fi
+# if [ "$test_exit_code" = "0" ]
+# then
+#   >&1 echo "Showing results..."
+#   cat $APP_DIR_TEST_RESULTS/$TEST_RESULTS_FILE
+# else
+#   >&2 echo "Integration tests failed...exiting"
+#   >&2 echo "Test environment logs..."
+#   docker logs $APP_HOST
+# fi
 
-clean_docker
->&1 echo "Integration tests exited with code: $test_exit_code"
-exit "$test_exit_code"
+# clean_docker
+# >&1 echo "Integration tests exited with code: $test_exit_code"
+# exit "$test_exit_code"
