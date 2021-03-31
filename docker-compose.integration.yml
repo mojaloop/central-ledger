@@ -18,6 +18,8 @@ services:
       - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
       - ./test:/opt/central-ledger/test
       - ./src:/opt/central-ledger/src
+      # Only mount in node_modules if you want to update dependencies on the fly
+      # This comes with it's own issues... so beware
       # - ./node_modules:/opt/central-ledger/node_modules
     environment:
       - CLEDG_SIDECAR__DISABLED=true

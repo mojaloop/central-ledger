@@ -58,23 +58,24 @@ const migrate = (runMigrations) => {
 }
 
 const connectDatabase = async () => {
-  Logger.isDebugEnabled && Logger.debug(`Conneting to DB ${JSON.stringify(Config.DATABASE)}`)
+  Logger.isDebugEnabled && Logger.debug(`Connecting to DB ${JSON.stringify(Config.DATABASE)}`)
   await Db.connect(Config.DATABASE)
   const dbLoadedTables = Db._tables ? Db._tables.length : -1
   Logger.isDebugEnabled && Logger.debug(`DB.connect loaded '${dbLoadedTables}' tables!`)
 }
 
-const connectMongoose = async () => {
-  if (Config.MONGODB_DISABLED === true) {
+const connectMongoose = async (config) => {
+  if (config.MONGODB_DISABLED === true) {
     return
   }
 
   try {
-    return ObjStoreDb.connect(Config.MONGODB_URI, Config.MONGODB_OPTIONS)
+    return ObjStoreDb.connect(config.MONGODB_URI, config.MONGODB_OPTIONS)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
   }
 }
+
 
 /**
  * @function createServer
@@ -146,18 +147,10 @@ const createHandlers = async (handlers) => {
       switch (handler.type) {
         case 'prepare': {
           await RegisterHandlers.transfers.registerPrepareHandler()
-          // if (!Config.HANDLERS_CRON_DISABLED) {
-          //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-          //   await KafkaCron.start('prepare')
-          // }
           break
         }
         case 'position': {
           await RegisterHandlers.positions.registerPositionHandler()
-          // if (!Config.HANDLERS_CRON_DISABLED) {
-          //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-          //   await KafkaCron.start('position')
-          // }
           break
         }
         case 'fulfil': {
@@ -241,7 +234,7 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
   try {
     await migrate(runMigrations)
     await connectDatabase()
-    await connectMongoose()
+    await connectMongoose(Config)
     await initializeCache()
     await Sidecar.connect(service)
     initializeInstrumentation()
@@ -269,11 +262,6 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
         await createHandlers(handlers)
       } else {
         await RegisterHandlers.registerAllHandlers()
-        // if (!Config.HANDLERS_CRON_DISABLED) {
-        //   Logger.isInfoEnabled && Logger.info('Starting Kafka Cron Jobs...')
-        //   // await KafkaCron.start('prepare')
-        //   await KafkaCron.start('position')
-        // }
       }
     }
 
@@ -288,5 +276,8 @@ const initialize = async function ({ service, port, modules = [], runMigrations 
 
 module.exports = {
   initialize,
-  createServer
+  createServer,
+
+  // exported for testing purposes
+  _connectMongoose: connectMongoose,
 }
