@@ -116,7 +116,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-prepare",
               "group.id": "cl-group-transfer-prepare",
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -139,7 +139,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-get",
               "group.id": "cl-group-transfer-get",
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -162,7 +162,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-fulfil",
               "group.id": "cl-group-transfer-fulfil",
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -185,7 +185,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-reject",
               "group.id": "cl-group-transfer-reject",
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -208,7 +208,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-position",
               "group.id": "cl-group-transfer-position",
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -233,7 +233,7 @@
             "rdkafkaConf": {
               "client.id": "cl-con-transfer-admin",
               "group.id": "cl-group-transfer-admin",
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "socket.keepalive.enable": true
             },
             "topicConf": {
@@ -251,7 +251,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "cl-prod-transfer-prepare",
               "event_cb": true,
               "dr_cb": true,
@@ -269,7 +269,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "cl-prod-transfer-fulfil",
               "event_cb": true,
               "dr_cb": true,
@@ -287,7 +287,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "cl-prod-transfer-reject",
               "event_cb": true,
               "dr_cb": true,
@@ -305,7 +305,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "cl-prod-transfer-position",
               "event_cb": true,
               "dr_cb": true,
@@ -325,7 +325,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "cl-prod-notification-event",
               "event_cb": true,
               "dr_cb": true,
@@ -345,7 +345,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "cl-prod-transfer-admin",
               "event_cb": true,
               "dr_cb": true,

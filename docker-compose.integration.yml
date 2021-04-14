@@ -15,7 +15,6 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      # - ./docker/central-ledger/default.json:/opt/central-ledger/config/default.json
       - ./test/integration-config.json:/opt/central-ledger/config/default.json
       - ./test:/opt/central-ledger/test
       - ./src:/opt/central-ledger/src
@@ -25,6 +24,8 @@ services:
     environment:
       - CLEDG_SIDECAR__DISABLED=true
       - CLEDG_MONGODB__DISABLED=true
+      - CSL_LOG_TRANSPORT=console
+      - LOG_LEVEL=info
     command:
       - tail
       - -f

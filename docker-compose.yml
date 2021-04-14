@@ -122,6 +122,7 @@ services:
     ports:
       - "2181:2181"
       - "9092:9092"
+      - "29092:29092"
     environment:
       - ZOO_LOG4J_PROP=WARN
     networks:

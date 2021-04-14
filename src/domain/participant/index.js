@@ -317,6 +317,7 @@ const addLimitAndInitialPosition = async (participantName, limitAndInitialPositi
 
 const getPositionByParticipantCurrencyId = async (participantCurrencyId) => {
   try {
+    console.log('getPositionByParticipantCurrencyId 1')
     return ParticipantPositionModel.getByParticipantCurrencyId(participantCurrencyId)
   } catch (err) {
     throw ErrorHandler.Factory.reformatFSPIOPError(err)
