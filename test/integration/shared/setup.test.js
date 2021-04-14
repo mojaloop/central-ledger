@@ -63,7 +63,7 @@ Test('setup', async setupTest => {
     async assert => {
       const config = {
         MONGODB_URI: 'mongodb://objstore:27017/test',
-        MONGODB_DISABLED: false,
+        MONGODB_DISABLED: true,
       }
 
       let notMongoose

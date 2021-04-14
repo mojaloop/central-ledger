@@ -84,32 +84,6 @@ ftest() {
   #   -c "source $TEST_DIR/.env; $@"
 }
 
-runInContainer() {
-  docker exec -it 
-}
-
-run_test_command() {
-  npm run test:int
-  # >&2 echo "Running $APP_HOST Test command: $TEST_CMD"
-  # docker run -it \
-  #   --link $KAFKA_HOST \
-  #   --link $DB_HOST \
-  #   --network $DOCKER_NETWORK \
-  #   --name $APP_HOST \
-  #   --env HOST_IP="$APP_HOST" \
-  #   --env KAFKA_HOST="$KAFKA_HOST" \
-  #   --env KAFKA_ZOO_PORT="$KAFKA_ZOO_PORT" \
-  #   --env DB_HOST=$DB_HOST \
-  #   --env DB_PORT=$DB_PORT \
-  #   --env DB_USER=$DB_USER \
-  #   --env DB_PASSWORD=$DB_PASSWORD \
-  #   --env DB_NAME=$DB_NAME \
-  #   --env TEST_DIR=$TEST_DIR \
-  #   $DOCKER_IMAGE:$DOCKER_TAG \
-  #   /bin/sh \
-  #   -c "source $TEST_DIR/.env; $TEST_CMD"
-}
-
 fcurl() {
 	docker run --rm -i \
 		--link $ENDPOINT_HOST \
@@ -118,24 +92,6 @@ fcurl() {
 		"jlekie/curl:latest" \
         --silent --head --fail \
 		"$@"
-}
-
-# Kafka functions
-
-start_kafka() {
-  echo "docker run -td -i -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT --name=$KAFKA_HOST --env ADVERTISED_HOST=$KAFKA_HOST --env ADVERTISED_PORT=$KAFKA_BROKER_PORT --env CONSUMER_THREADS=1 --env TOPICS=my-topic,some-other-topic --env ZK_CONNECT=kafka7zookeeper:2181/root/path --env GROUP_ID=mymirror $KAFKA_IMAGE"
-  docker run -td -i \
-    -p $KAFKA_ZOO_PORT:$KAFKA_ZOO_PORT \
-    -p $KAFKA_BROKER_PORT:$KAFKA_BROKER_PORT \
-    --network $DOCKER_NETWORK \
-    --name=$KAFKA_HOST \
-    --env ADVERTISED_HOST=$KAFKA_HOST \
-    --env ADVERTISED_PORT=$KAFKA_BROKER_PORT \
-    --env CONSUMER_THREADS=1 \
-    --env TOPICS=my-topic,some-other-topic \
-    --env ZK_CONNECT=kafka7zookeeper:2181/root/path \
-    --env GROUP_ID=mymirror \
-    $KAFKA_IMAGE
 }
 
 fkafka() {
@@ -198,7 +154,6 @@ until is_db_up; do
 done
 
 
-
 >&1 echo "Running migrations"
 ftest "npm run migrate"
 
@@ -213,16 +168,16 @@ echo "Test exited with result code.... $test_exit_code ..."
 # >&1 echo "Copy results to local directory"
 # docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
 
-# if [ "$test_exit_code" = "0" ]
-# then
-#   >&1 echo "Showing results..."
-#   cat $APP_DIR_TEST_RESULTS/$TEST_RESULTS_FILE
-# else
-#   >&2 echo "Integration tests failed...exiting"
-#   >&2 echo "Test environment logs..."
-#   docker logs $APP_HOST
-# fi
+if [ "$test_exit_code" = "0" ]
+then
+  >&1 echo "Showing results..."
+  cat $APP_DIR_TEST_RESULTS/$TEST_RESULTS_FILE
+else
+  >&2 echo "Integration tests failed...exiting"
+  >&2 echo "Test environment logs..."
+  docker logs $APP_HOST
+fi
 
 # clean_docker
-# >&1 echo "Integration tests exited with code: $test_exit_code"
-# exit "$test_exit_code"
+>&1 echo "Integration tests exited with code: $test_exit_code"
+exit "$test_exit_code"
