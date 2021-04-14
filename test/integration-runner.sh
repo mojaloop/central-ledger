@@ -73,19 +73,14 @@ test_exit_code=$?
 echo "Test exited with result code.... $test_exit_code ..."
 
 >&1 echo "Displaying test logs"
-docker logs $APP_HOST
+docker logs cl_central-ledger
 
 >&1 echo "Copy results to local directory"
-docker cp $APP_HOST:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
+docker cp cl_central-ledger:$DOCKER_WORKING_DIR/$APP_DIR_TEST_RESULTS $TEST_DIR
 
-if [ "$test_exit_code" = "0" ]
-then
+if [ "$test_exit_code" = "0" ] then
   >&1 echo "Showing results..."
   cat $APP_DIR_TEST_RESULTS/$TEST_RESULTS_FILE
-else
-  >&2 echo "Integration tests failed...exiting"
-  >&2 echo "Test environment logs..."
-  docker logs $APP_HOST
 fi
 
 >&1 echo "Integration tests exited with code: $test_exit_code"
